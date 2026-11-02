@@ -649,7 +649,7 @@ Every ticket must stand alone as one GitHub issue. A ticket never relies on a ra
   (screen). A spec with k bullets therefore reports `4×k passed`; a bullet that the ticket marks
   "once" runs a single time and adds 1.
 - Every test starts `const errors = trackConsoleErrors(page);` and ends `expect(errors).toEqual([])` for
-  harness specs. Screen (route) specs first drop messages matching
+  harness specs (`trackConsoleErrors` itself drops `CONSOLE_NOISE` = `/example\.convex\.cloud|WebSocket/i`, TFV2-0000b, because the root layout's Convex client cannot reach the placeholder URL on harness pages either). Screen (route) specs first drop messages matching
   `/example\.convex\.cloud|WebSocket/i` (the placeholder Convex URL under the Playwright `webServer`
   cannot connect), then assert `[]`.
 - In a harness page every state section is stacked, so every locator is scoped to its section:

@@ -341,6 +341,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>;
   export function openScreen(page: Page, route: string, opts: { state: string; lang?: HarnessLang }): Promise<void>;
   export function expectDir(page: Page, lang: HarnessLang): Promise<void>;        // <html dir="rtl" lang="he"> or <html dir="ltr" lang="en">
+  /** Collects the text of every `console` message of type "error" and every `pageerror`, except messages matching CONSOLE_NOISE. */
+  export const CONSOLE_NOISE = /example\.convex\.cloud|WebSocket/i; // the root layout's ConvexReactClient (apps/web/components/providers/providers.tsx line 9) points at the placeholder https://example.convex.cloud under the Playwright webServer and cannot connect
   export function trackConsoleErrors(page: Page): string[];
   export function expectTargetSize(page: Page, selector: string): Promise<void>; // every visible button, a[href], input, select, textarea, [role=switch|checkbox|radio|tab|option|button] under selector ≥ 24×24
   export function expectMotionBudget(page: Page, selector: string): Promise<void>; // max transition/animation duration ≤ 0.25 s; ≤ 0.001 s under reduced motion (tempo.css sets 0.01ms)
@@ -353,7 +355,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `page.setContent('<html dir="rtl" lang="he"><body></body></html>')` / When `expectDir(page, "he")` runs / Then it passes; and `expectDir(page, "en")` throws.
   - Given content with a `<button style="width:40px;height:40px">` / When `expectTargetSize(page, "body")` runs / Then it passes; given a `<button style="width:20px;height:20px;padding:0;border:0">` it throws with a message starting `"target smaller than 24x24"`.
   - Given `page.setContent('<style>div { transition: opacity 120ms; } @media (prefers-reduced-motion: reduce) { div { transition-duration: 0.01ms; } }</style><div>a</div>')` (a stylesheet rule, not an inline `style`, so the reduced-motion rule can override it) / When `expectMotionBudget(page, "body")` runs / Then it passes; given `page.setContent('<style>div { transition: opacity 400ms; }</style><div>a</div>')` / Then it throws with a message starting `"motion over 250ms"`.
-  - Given `trackConsoleErrors(page)` then `page.evaluate(() => console.error("boom"))` / Then the returned array equals `["boom"]`.
+  - Given `trackConsoleErrors(page)` then `page.evaluate(() => console.error("boom"))` / Then the returned array equals `["boom"]`; and after `page.evaluate(() => console.error("WebSocket connection to 'wss://example.convex.cloud/api/1.32.0/sync' failed"))` the array still equals `["boom"]` (CONSOLE_NOISE dropped).
   - Given `await page.route("http://helpers.test/", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<html><body><h1>Hi</h1></body></html>" }))` (no `setContent`; the page is served by the route) / When `measureVitals(page, "http://helpers.test/")` runs / Then `lcpMs` is a finite number ≥ 0 and `cls` is a finite number ≥ 0.
 - **NUMBERS:** 7 of 7 cases pass. The helper thresholds are the catalogue numbers: target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum); motion ≤ 250 ms (DESIGN.md motion rule; CONVENTIONS §5).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -2610,6 +2612,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 ## Chunk 1 — MVP · Core (chat-first)
 
 ### TFV2-0001 — Bounded list helper `convex/lib/bounded.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1348 (TM-0032)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -2623,7 +2626,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/lib/bounded.test.ts` (`import { describe, expect, test } from "bun:test";`) with exactly the 9 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test convex/lib/bounded.test.ts` → `9 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus the `bun run lint` and `bun run typecheck` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/bounded.test.ts` pasted into the PR, plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** change any existing query to call the helper (later tickets do); measure bytes with `string.length` or `JSON.stringify(x).length` alone; sort or skip rows; use `ConvexError` (new modules throw plain `Error`, CONVENTIONS §8); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0001 / evidence: <DONE command> -> <summary> / changed: convex/lib/bounded.ts, convex/lib/bounded.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -2653,6 +2656,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0002 — Mock runtime model `convex/lib/mockModel.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1349 (TM-0050)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -2662,11 +2666,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/mockModel.ts` (new) · `convex/lib/mockModel.test.ts` (new). No table, route, env or schema change.
 - **STEPS:**
   1. Code-map: `ls convex/lib | grep -i mock` → no output; `grep -n "^export type AiCallOptions\|^export type AiResult\|^export async function callLLM" convex/lib/ai_router.ts` → the three types/functions the mock mirrors (lines 10, 18, 140 today).
-  2. Create `convex/lib/mockModel.ts` exactly as SPEC; its only import is `import type { AiCallOptions, AiResult } from "./ai_router";` (type-only, so nothing that calls `fetch` is loaded).
+  2. Create `convex/lib/mockModel.ts` as in SPEC; its only import is `import type { AiCallOptions, AiResult } from "./ai_router";` (type-only, so nothing that calls `fetch` is loaded).
   3. Create `convex/lib/mockModel.test.ts` with exactly the 10 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck` (TESTS 10 is a compile-time check).
 - **DONE:** `bun test convex/lib/mockModel.test.ts` → `10 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck/lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/mockModel.test.ts` pasted into the PR, plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** call `fetch`, `callLLM` or any provider; read `process.env`; edit `convex/coach.ts` or `convex/coach_chat.test.ts` (adopting the mock there is not this ticket); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0002 / evidence / changed: convex/lib/mockModel.ts, convex/lib/mockModel.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -2697,6 +2701,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0003 — Anti-shaming word check `convex/lib/shameWords.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1350 (TM-0049)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -2706,11 +2711,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/shameWords.ts` (new) · `convex/lib/shameWords.test.ts` (new). No table, route, env or schema change.
 - **STEPS:**
   1. Code-map: `ls convex/lib | grep -i shame` → no output (CONVENTIONS §12 names the file; it does not exist yet); `grep -n "CRISIS_PHRASES" convex/lib/crisisWords.ts` (style reference only; do not edit).
-  2. Create `convex/lib/shameWords.ts` exactly as SPEC. No imports.
+  2. Create `convex/lib/shameWords.ts` as in SPEC. No imports.
   3. Create `convex/lib/shameWords.test.ts` with exactly the 12 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test convex/lib/shameWords.test.ts` → `12 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/shameWords.test.ts` pasted into the PR, plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** add, remove or reword a term (the list is CONVENTIONS §12's, exactly); return or log the input text; wire the check into any caller (later tickets); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0003 / evidence / changed: convex/lib/shameWords.ts, convex/lib/shameWords.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -2742,6 +2747,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0004 — Entitlements: verify the premium-for-all grant `convex/lib/entitlements.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1340 (TEMPO-BL-0001)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -2751,10 +2757,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/entitlements.test.ts` (edit: one new `describe` block appended). No source, table, route, env or schema change.
 - **STEPS:**
   1. Code-map: `grep -n "^export" convex/lib/entitlements.ts` → `EntitlementTier`, `UserType`, `BetaAccess`, `GRANTED_ENTITLEMENT_TIER`, `GRANTED_USER_TYPE`, `GRANTED_BETA_ACCESS`, `GRANTED_SUBSCRIPTION`, `SignInProfile`, `ReturningUserSnapshot`, `ReturningUserPatch`, `newUserFields`, `buildReturningUserPatch`, `SubscriptionGrantSnapshot`, `shouldGrantSubscription`; `bun test convex/lib/entitlements.test.ts` → `13 pass` before any edit.
-  2. Append `describe("grant rules without a test until TFV2-0004", () => { … })` to `convex/lib/entitlements.test.ts` with exactly the 4 TESTS cases, importing any extra names from `./entitlements` in the existing import line.
+  2. Append `describe("grant rules without a test until TFV2-0004", () => {})` to `convex/lib/entitlements.test.ts` holding exactly the 4 TESTS cases, each written with `it` (the file's 13 cases use `it`, not `test`), and add `GRANTED_BETA_ACCESS` and `GRANTED_SUBSCRIPTION` to the existing `./entitlements` import line.
   3. Run DONE. If any new case fails, the code disagrees with its own comment: stop and report `blocked: question — <which rule>` (do not change the source).
 - **DONE:** `bun test convex/lib/entitlements.test.ts` → `17 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (13 pass) and after (17 pass), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/entitlements.test.ts` pasted into the PR (before the edit: `13 pass`; after: `17 pass`).
 - **DO NOT:** edit `convex/lib/entitlements.ts` or any `GRANTED_*` value; edit or reorder the 13 existing tests; call RevenueCat or Polar; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0004 / evidence / changed: convex/lib/entitlements.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged signatures under test:
@@ -2772,31 +2778,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0005 — Lighthouse budget in CI — config lane: Amit — OPEN
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1342 (TEMPO-BL-0004)
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (touches `.github/**`, `package.json`, `bun.lock` — CONVENTIONS §18). Factory lanes never build this.
-- **WHEN:** first.
-- **WHY:** PRD §4.8 F-80 (polished, fast); TICKET-STANDARD NUMBERS (Core Web Vitals); CONVENTIONS §20 (INP is "measured on preview, not a ticket gate"); REWRITE-PLAN-v2 §6 chunk 1 "smoke + a11y + perf budget".
-- **GOAL:** CI runs Lighthouse against named routes and fails when performance, accessibility, best-practices or SEO score, LCP, CLS or TBT is outside the SPEC budget.
-- **SCOPE:** `scripts/lighthouse-budget.mjs` · `.github/workflows/ci.yml` · `package.json` + `bun.lock` (one pinned dev dependency) · test: the CI step itself (no separate test file).
-- **MUTATES:** `scripts/lighthouse-budget.mjs` (new) · `.github/workflows/ci.yml` (edit: one job step) · `package.json` and `bun.lock` (edit: one dev dependency) · CI workflow behaviour.
-- **STEPS:**
-  1. Code-map: `grep -rn "lighthouse" .github package.json` → no output today.
-  2. After Amit answers OPEN: add the pinned dev dependency he names to `package.json` and run `bun install` so `bun.lock` updates.
-  3. Create `scripts/lighthouse-budget.mjs` that runs Lighthouse on each route in SPEC, prints one line per metric per route, and exits 1 on any failure.
-  4. Add one step to `.github/workflows/ci.yml` in the job Amit names in the OPEN answer.
-  5. Run `bun scripts/lighthouse-budget.mjs` locally against the dev server and paste the output.
-- **DONE:** `bun scripts/lighthouse-budget.mjs` → one `PASS` line per metric per route and exit code 0; the same step green in CI.
-- **EVIDENCE:** the script output and the CI step log line with the exit code, pasted into the PR.
-- **DO NOT:** lower a threshold, skip a category or route, or gate the step behind an env flag; touch secrets or any other workflow; edit `convex/**`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0005 / evidence / changed: scripts/lighthouse-budget.mjs, .github/workflows/ci.yml, package.json, bun.lock / unknowns / notes for ticket sync`.
-- **SPEC:** Routes: `/`, `/sign-in`, `/today` (the bypass releases `/today`). Budgets: performance ≥ 90, accessibility ≥ 90, best-practices ≥ 90, SEO ≥ 90, LCP ≤ 2,500 ms, CLS ≤ 0.1, TBT ≤ 200 ms. Output line format: `<PASS|FAIL> <route> <metric> <value> (budget <op> <limit>)`. When Google Fonts are unreachable (AGENTS.md sandbox rule) the script prints `UNKNOWN: lighthouse (Google Fonts blocked)` and exits 0 — only for that cause.
-- **TESTS:** (config ticket; the CI step is the test) Given the dev server / When the script runs / Then it prints 7 lines per route; Given a budget forced to an impossible value in a local scratch copy (never committed) / Then exit code 1; Given fonts blocked / Then the `UNKNOWN` line and exit 0.
-- **NUMBERS:** Lighthouse categories ≥ 90 (https://developer.chrome.com/docs/lighthouse/overview); LCP ≤ 2.5 s, CLS ≤ 0.1 (https://web.dev/articles/vitals); TBT ≤ 200 ms (https://web.dev/articles/lighthouse-total-blocking-time).
-- **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: (1) Does Lighthouse run on every PR against the local dev server, or once per loop against the preview URL (the batch PR's `e2e-preview` job)? (2) Which dev dependency and exact version may be added for it (for example `@lhci/cli` at a pinned version), given CONVENTIONS §7 B? — Amit.
+### TFV2-0005 — Lighthouse budget in CI — superseded by CFG-059
+- **Status:** superseded by CFG-059; not a build ticket.
 
 ### TFV2-0006 — Block codec ↔ `noteBlocks` schema parity test `convex/lib/blocks.test.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -2806,14 +2792,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/blocks.test.ts` (edit: one `describe` block appended and one import line added). No source, table, route, env or schema change.
 - **STEPS:**
   1. Code-map: `cat convex/lib/blocks.ts` (a 20-line re-export of `@tempo/utils`); `grep -n "noteBlocks: defineTable" -A120 convex/schema.ts` (a `v.union` of four `v.object`s: `page-meta`, `task`, `template`, `broken`; `broken.errorCode` is a union of 12 literals); `bun test convex/lib/blocks.test.ts` → `16 pass` before any edit.
-  2. Add `import schema from "../schema";` and `tempoBlockSchema` (already exported by `./blocks`) to the imports of `convex/lib/blocks.test.ts`.
-  3. Append `describe("codec output fits the noteBlocks table", () => { … })` with exactly the 3 TESTS cases and the fixture helpers in SPEC.
+  2. Add `import schema from "../schema";` and add `pageMetaDataSchema`, `taskDataSchema` and `templateDataSchema` (re-exported by `./blocks` from `@tempo/utils`; TESTS 2 reads them) to the existing `./blocks` import line of `convex/lib/blocks.test.ts`.
+  3. Append `describe("codec output fits the noteBlocks table", () => {})` holding exactly the 3 TESTS cases, with the SPEC fixture helpers declared inside that `describe` callback (the file already declares top-level `fence`, `meta` and `task`; the block-scoped helpers shadow them only inside the new block).
   4. Run DONE. A failing case means the codec and the schema disagree: stop and report `blocked: question — <the mismatch>` (fixing either file is not this ticket).
 - **DONE:** `bun test convex/lib/blocks.test.ts` → `19 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (16 pass) and after (19 pass), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/blocks.test.ts` pasted into the PR (before the edit: `16 pass`; after: `19 pass`).
 - **DO NOT:** change `BLOCK_CODEC_LIMITS`, any Zod schema, `convex/lib/blocks.ts`, `packages/utils/src/blocks.ts` or `convex/schema.ts`; edit the 16 existing tests; surface JSON to any UI; touch `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0006 / evidence / changed: convex/lib/blocks.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
-- **SPEC:** Fixture helpers (in the test file):
+- **SPEC:** Fixture helpers (declared inside the new `describe` callback):
   ```ts
   const id = (n: number) => `blk_01JQ8Z3K4M5N6P7Q8R9S${String(n).padStart(6, "0")}`;
   const fence = (json: string) => "```json tempo\n" + json + "\n```\n";
@@ -2848,6 +2834,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0007a — `notes.save`: whole-body save with a ledger receipt (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -2858,12 +2845,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map: `grep -n "^export const\|^export async function\|throw new Error" convex/notes.ts` (no `save` today; existing messages include `"Note not found"` and `"Page body is too long"`); `grep -n "^export function computePageRequestDigest\|^export function decideRequestAdmission\|^export function checkExpectedRevision\|^export function planBodyChange\|^export function buildOperationFacts\|^export function buildPayloadFacts\|^export type PageLedgerErrorCode\|^export type BodyChangePlan" convex/lib/pageLedger.ts` (all present); `grep -n "pageOperations: defineTable" -A50 convex/schema.ts` (receipt shape); `grep -n "makeSignedOutCtx\|delete:" convex/lib/testFakeCtx.ts` (present after TFV2-0000a); `bun test convex/notes.test.ts` and record the pass count (6 today).
   2. In `convex/notes.ts` add imports: `type PageLedgerErrorCode, type PageLedgerResult, type BodyChangePlan, computePageRequestDigest, decideRequestAdmission, checkExpectedRevision, planBodyChange, buildOperationFacts, buildPayloadFacts` from `./lib/pageLedger`.
-  3. Add the module-private helpers `LEDGER_ERROR_MESSAGES`, `unwrap`, `loadOwnedLiveNote`, `admitPageRequest`, `toWriteResult`, `commitPageChange` exactly as SPEC (TFV2-0007b, TFV2-0008 and TFV2-0010 reuse them; do not export them).
-  4. Add the exported `pageWriteResult` validator, `PageWriteResult` type and the `save` mutation exactly as SPEC, after the existing `update` mutation. Leave `update` and every other export unchanged.
+  3. Add the module-private helpers `LEDGER_ERROR_MESSAGES`, `unwrap`, `loadOwnedLiveNote`, `admitPageRequest`, `toWriteResult`, `commitPageChange` as in SPEC (TFV2-0007b, TFV2-0008 and TFV2-0010 reuse them; do not export them).
+  4. Add the exported `pageWriteResult` validator, `PageWriteResult` type and the `save` mutation as in SPEC, after the existing `update` mutation. Leave `update` and every other export unchanged.
   5. Append `describe("notes.save", …)` to `convex/notes.test.ts` with exactly the 13 TESTS cases, importing `import { makeFakeCtx as ledgerCtx, makeSignedOutCtx, run as runHandler } from "./lib/testFakeCtx";` (aliases avoid the file's own local `makeFakeCtx`) and the `reqId` helper from TESTS.
   6. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 13 (`19 pass` today).
-- **EVIDENCE:** the `bun test` summary before and after, plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/notes.test.ts` pasted into the PR (before the edit and after), plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** write `noteBlocks` (TFV2-0008); change, rename or remove `update`, `create`, `remove`, `restore` or any other export; edit `convex/lib/pageLedger.ts`, `convex/schema.ts` or `convex/lib/testFakeCtx.ts`; use `ConvexError` (the file throws plain `Error`); accept a `source` from the caller (the server sets `"ui"`); touch `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0007a / evidence / changed: convex/notes.ts, convex/notes.test.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -2943,20 +2930,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0007b — `notes.patchBlock`: change one task block by id (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0007a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0007a.
 - **WHY:** PRD §4.1 F-05 (tasks are task blocks; ticking one must not touch the rest of the page); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (patchBlock)". The ledger already defines the `patch_block` request (`PageRequestInput` in `convex/lib/pageLedger.ts`): an allow-listed task-field patch (`PageTaskPatch`, keys of `taskDataSchema`), validated value by value, applied by an exact splice (`planSpliceChange`).
 - **GOAL:** `convex/notes.ts` exports the mutation `patchBlock`, which merges an allow-listed patch into one valid task block found by `blockId`, rewrites only that block's source slice, and commits through the TFV2-0007a receipt path.
 - **SCOPE:** `convex/notes.ts` · test: `convex/notes.test.ts`.
-- **MUTATES:** `convex/notes.ts` (edit: add `patchBlock` and the private helper `taskBlockSource`; add `type TempoBlock` to the existing `@tempo/utils` import and `planSpliceChange` to the `./lib/pageLedger` import) · `convex/notes.test.ts` (edit: one `describe("notes.patchBlock")` block appended) · data: `notes` rows, new `pageOperations` rows (`kind: "patch_block"`), new `pageOperationPayloads` rows.
+- **MUTATES:** `convex/notes.ts` (edit: add `patchBlock` and the private helper `taskBlockSource`; add `type TempoBlock` and `type ValidBlockSegment` to the existing `@tempo/utils` import and `planSpliceChange` to the `./lib/pageLedger` import) · `convex/notes.test.ts` (edit: one `describe("notes.patchBlock")` block appended) · data: `notes` rows, new `pageOperations` rows (`kind: "patch_block"`), new `pageOperationPayloads` rows.
 - **STEPS:**
   1. Code-map: `grep -n "^export const save\|function commitPageChange\|function admitPageRequest\|function unwrap\|LEDGER_ERROR_MESSAGES" convex/notes.ts` (present after TFV2-0007a); `grep -n "^export function planSpliceChange\|^export type PageTaskPatch\|kind: \"patch_block\"" convex/lib/pageLedger.ts`; `grep -n "function asPlainPageBody" -A12 convex/notes.ts` (the existing way one block's source is rewritten); `bun test convex/notes.test.ts` and record the pass count.
-  2. Add the private helper `taskBlockSource` and the exported `patchBlock` exactly as SPEC, after `save`.
+  2. Add the private helper `taskBlockSource` and the exported `patchBlock` as in SPEC, after `save`.
   3. Append `describe("notes.patchBlock", …)` with exactly the 12 TESTS cases, reusing `ledgerCtx`, `makeSignedOutCtx`, `runHandler` and `reqId` from TFV2-0007a's block.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 12.
-- **EVIDENCE:** the `bun test` summary before and after, plus lint/typecheck exit codes, pasted into the PR.
+- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 12 (`31 pass` on top of TFV2-0007a's 19).
+- **EVIDENCE:** the summary of `bun test convex/notes.test.ts` pasted into the PR (before the edit and after), plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** write `noteBlocks` (TFV2-0008); re-serialize or re-order any segment other than the addressed block; accept patches to `page-meta` or `template` blocks; change `save`'s behaviour or any helper's signature; edit `convex/lib/pageLedger.ts` or `convex/schema.ts`; touch `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0007b / evidence / changed: convex/notes.ts, convex/notes.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -2978,7 +2966,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     return `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`${eol}`;
   }
   ```
-  - Handler order: 1) `requireUser`; 2) `loadOwnedLiveNote`; 3) `requestDigest = unwrap(await computePageRequestDigest({ kind: "patch_block", noteId, expectedRevision, blockId, patch }))` — this validates the patch: unknown key → `patch_not_allowed`, value that fails its `taskDataSchema` field → `patch_value_invalid`, empty patch → `invalid_shape`; 4) `nowMs`, `admitPageRequest` → replay returns early; 5) `unwrap(checkExpectedRevision(note.revision, expectedRevision))`; 6) `segment = parseTempoBlocks(note.body).find((s) => s.kind === "valid" && s.block.id === blockId)`; none → `throw new Error("Block not found")`; `segment.block.type !== "task"` → `throw new Error("Block is not a task")`; 7) `next = { ...segment.block, data: { ...segment.block.data, ...patch } }`, `source = taskBlockSource(next, segment.source)`; `splices = source === segment.source ? [] : [{ startUtf16: segment.start, removedText: segment.source, insertedText: source }]`; 8) `plan = unwrap(await planSpliceChange({ before: note.body, splices, noteRevision: note.revision }))`; 9) `return commitPageChange(ctx, { …, kind: "patch_block", plan, nowMs })`.
+  - Handler order: 1) `requireUser`; 2) `loadOwnedLiveNote`; 3) `requestDigest = unwrap(await computePageRequestDigest({ kind: "patch_block", noteId, expectedRevision, blockId, patch }))` — this validates the patch: unknown key → `patch_not_allowed`, value that fails its `taskDataSchema` field → `patch_value_invalid`, empty patch → `invalid_shape`; 4) `nowMs`, `admitPageRequest` → replay returns early; 5) `unwrap(checkExpectedRevision(note.revision, expectedRevision))`; 6) `segment = parseTempoBlocks(note.body).find((s): s is ValidBlockSegment => s.kind === "valid" && s.block.id === blockId)` (a type guard, so `segment.block` typechecks); none → `throw new Error("Block not found")`; `segment.block.type !== "task"` → `throw new Error("Block is not a task")`; 7) `next = { ...segment.block, data: { ...segment.block.data, ...patch } }`, `source = taskBlockSource(next, segment.source)`; `splices = source === segment.source ? [] : [{ startUtf16: segment.start, removedText: segment.source, insertedText: source }]`; 8) `plan = unwrap(await planSpliceChange({ before: note.body, splices, noteRevision: note.revision }))`; 9) `return commitPageChange(ctx, { …, kind: "patch_block", plan, nowMs })`.
   - Everything before `segment.start` and after `segment.end` stays byte-identical. A patch that changes nothing is a `noop` receipt.
   - Errors (exact message · trigger · test):
     | message | trigger | TESTS |
@@ -2992,7 +2980,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | `Page write rejected: patch_value_invalid` | `durationMin: 0` | 10 |
     | `Request id already used` | same `requestId`, different patch | 11 |
     | `Page body is too long` | patched body over 131,072 UTF-8 bytes | 12 |
-- **TESTS:** (`describe("notes.patchBlock")`; fixture helpers as in TFV2-0006: `id(n)`, `fence(json)`, `task(n)` (status `"later"`, `durationMin` 5), `meta(n)`; seed the note body as given per case with `revision` absent)
+- **TESTS:** (`describe("notes.patchBlock")`; every case seeds `const ctx = ledgerCtx("users:1", ["users:2"])` and `const noteId = await ctx.db.insert("notes", { userId: "users:1", title: "P", body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1 })` with the `body` given per case (`revision` absent); define these fixture helpers at the top of `convex/notes.test.ts` (TFV2-0008 and TFV2-0010 reuse them):
+  ```ts
+  const id = (n: number) => `blk_01JQ8Z3K4M5N6P7Q8R9S${String(n).padStart(6, "0")}`;
+  const fence = (json: string) => "```json tempo\n" + json + "\n```\n";
+  const task = (n: number) => fence(JSON.stringify({ id: id(n), v: 1, type: "task", data: { title: `t${n}`, durationMin: 5, status: "later", order: n, inelastic: false } }));
+  const meta = (n: number) => fence(JSON.stringify({ id: id(n), v: 1, type: "page-meta", data: { pageType: "plain", tags: [] } }));
+  ```
+  )
   1. Given body `"Intro\n" + task(1) + "Outro\n"` / When `patchBlock({ noteId, expectedRevision: 0, blockId: id(1), patch: { status: "done" }, requestId: reqId() })` runs / Then the result is `applied` with `revision 1`; re-parsing the new body gives block `id(1)` with `data.status "done"` and every other data field unchanged; the new body starts with `"Intro\n"` and ends with `"Outro\n"`; the `pageOperations` row has `kind "patch_block"`.
   2. Given body `task(1) + task(2)` / When `id(2)` is patched with `{ title: "New" }` / Then the new body starts with exactly `task(1)` (byte-identical).
   3. Given body `task(1)` / When patched with `{ status: "later" }` (its current value) / Then `{ result: "noop", revision: 0, undoUntilMs: null }` and the body is unchanged.
@@ -3010,6 +3005,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0008 — `noteBlocks` derived index rebuilt on every page write (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0007b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0007b.
@@ -3019,12 +3015,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/notes.ts` (edit: add `NOTE_BLOCK_INDEX_MAX_ROWS`, the private `rebuildNoteBlocks`, one call inside `commitPageChange`; import `BLOCK_CODEC_LIMITS` from `@tempo/utils`) · `convex/notes.test.ts` (edit: one `describe("noteBlocks index")` appended) · data: `noteBlocks` rows hard-deleted and inserted.
 - **STEPS:**
   1. Code-map: `grep -n "noteBlocks: defineTable" -A110 convex/schema.ts` (union of `page-meta` / `task` / `template` / `broken`; index `by_userId_noteId_deletedAt_position`); `grep -rn "\"noteBlocks\"" convex --include=*.ts | grep -v test` (only reads in `convex/lib/pagePrivacy.ts` and cleanup code; no writer); `grep -n "function commitPageChange" -A30 convex/notes.ts`; `bun test convex/notes.test.ts` and record the pass count.
-  2. Add `export const NOTE_BLOCK_INDEX_MAX_ROWS = BLOCK_CODEC_LIMITS.maxBlocks + 1;` and the private `rebuildNoteBlocks` exactly as SPEC.
+  2. Add `export const NOTE_BLOCK_INDEX_MAX_ROWS = BLOCK_CODEC_LIMITS.maxBlocks + 1;` and the private `rebuildNoteBlocks` as in SPEC.
   3. In `commitPageChange`, inside the `plan.facts.result === "applied"` branch and after the `notes` patch, add `await rebuildNoteBlocks(ctx, input.userId, input.note._id, plan.resultBody, input.nowMs);`. No other change to `save` or `patchBlock`.
   4. Append `describe("noteBlocks index", …)` with exactly the 8 TESTS cases.
   5. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 8.
-- **EVIDENCE:** the `bun test` summary before and after, plus lint/typecheck exit codes, pasted into the PR.
+- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 8 (`39 pass` on top of TFV2-0007b's 31).
+- **EVIDENCE:** the summary of `bun test convex/notes.test.ts` pasted into the PR (before the edit and after), plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** soft-delete index rows (the index is rebuildable from `notes.body`, so rows are hard-deleted); write `noteBlocks` from any other module or for a `noop`; change `convex/schema.ts`; read more than `NOTE_BLOCK_INDEX_MAX_ROWS` existing rows; touch `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0008 / evidence / changed: convex/notes.ts, convex/notes.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -3033,21 +3029,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export const NOTE_BLOCK_INDEX_MAX_ROWS = BLOCK_CODEC_LIMITS.maxBlocks + 1; // 257
   async function rebuildNoteBlocks(ctx: MutationCtx, userId: Id<"users">, noteId: Id<"notes">, body: string, nowMs: number): Promise<number>;
   ```
-  1) `old = await ctx.db.query("noteBlocks").withIndex("by_userId_noteId_deletedAt_position", (q) => q.eq("userId", userId).eq("noteId", noteId).eq("deletedAt", undefined)).take(NOTE_BLOCK_INDEX_MAX_ROWS)`; `for (const row of old) await ctx.db.delete(row._id)`. 2) For each segment of `parseTempoBlocks(body)` with `kind !== "markdown"` and `position <= NOTE_BLOCK_INDEX_MAX_ROWS`, insert: valid → `{ userId, noteId, type: segment.block.type, blockId: segment.block.id, v: 1, data: segment.block.data, position: segment.position, createdAt: nowMs, updatedAt: nowMs }`; broken → `{ userId, noteId, type: "broken", ...(segment.blockId ? { blockId: segment.blockId } : {}), position: segment.position, errorCode: segment.errorCode, createdAt: nowMs, updatedAt: nowMs }`. 3) Return the number of rows inserted. Positions are the codec's 1-based block positions (TFV2-0006 TESTS 3). No new error messages; no user-facing copy.
-- **TESTS:** (`describe("noteBlocks index")`; helpers `id`, `fence`, `task`, `meta` and `reqId` as in TFV2-0007a/b; `rows = () => all noteBlocks rows of noteId sorted by position`, read with `ctx.db.query("noteBlocks").withIndex("by_userId_noteId_deletedAt_position", …).take(1000)`)
+  1) `old = await ctx.db.query("noteBlocks").withIndex("by_userId_noteId_deletedAt_position", (q) => q.eq("userId", userId).eq("noteId", noteId).eq("deletedAt", undefined)).take(NOTE_BLOCK_INDEX_MAX_ROWS)`; `for (const row of old) await ctx.db.delete(row._id)`. 2) For each segment of `parseTempoBlocks(body)` with `kind !== "markdown"` and `position <= NOTE_BLOCK_INDEX_MAX_ROWS`, insert: valid → `switch (segment.block.type)` with one `ctx.db.insert("noteBlocks", …)` per case `"page-meta"`, `"task"`, `"template"` (one insert per type keeps `type` and `data` paired for the typechecker), each inserting `{ userId, noteId, type: segment.block.type, blockId: segment.block.id, v: 1, data: segment.block.data, position: segment.position, createdAt: nowMs, updatedAt: nowMs }`; broken → `{ userId, noteId, type: "broken", ...(segment.blockId ? { blockId: segment.blockId } : {}), position: segment.position, errorCode: segment.errorCode, createdAt: nowMs, updatedAt: nowMs }`. 3) Return the number of rows inserted. Positions are the codec's 1-based block positions (TFV2-0006 TESTS 3). No new error messages; no user-facing copy.
+- **TESTS:** (`describe("noteBlocks index")`; the helpers `id`, `fence`, `task`, `meta` (defined in TFV2-0007b's TESTS) and `reqId` (defined in TFV2-0007a's TESTS) already in `convex/notes.test.ts`; every case seeds `const ctx = ledgerCtx("users:1", ["users:2"])` and `const noteId = await ctx.db.insert("notes", { userId: "users:1", title: "P", body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1 })` with `body: ""`; `rows = () => all noteBlocks rows of noteId sorted by position`, read with `ctx.db.query("noteBlocks").withIndex("by_userId_noteId_deletedAt_position", (q) => q.eq("userId", "users:1").eq("noteId", noteId).eq("deletedAt", undefined)).take(1000)`)
   1. Given a save of `meta(1) + task(2) + task(3) + task(4)` / Then 4 rows exist with `type` `["page-meta", "task", "task", "task"]`, `position` `[1, 2, 3, 4]`, `blockId` `[id(1), id(2), id(3), id(4)]`, `v` 1, and row 2's `data` equals `{ title: "t2", durationMin: 5, status: "later", order: 2, inelastic: false }`.
   2. Given that save then a save of `meta(1) + task(2) + task(4)` / Then 3 rows with `blockId` `[id(1), id(2), id(4)]`, `position` `[1, 2, 3]`, and no row has `blockId id(3)`.
   3. Given a save of `"x\n" + fence("{nope}")` / Then exactly one row: `type "broken"`, `errorCode "malformed_json"`, `position 1`, and `"blockId" in row` is `false`.
   4. Given a page with 2 block rows, then a save of `"plain text only"` / Then 0 rows.
   5. Given saves of body A (`task(1)`), then B (`task(2)`), then A again / Then the rows after the third save equal the rows after the first save in `type`, `blockId`, `position`, `data`.
   6. Given a save of `task(1)`, then `patchBlock` with `{ status: "done" }` / Then the single row's `data.status` is `"done"`.
-  7. Given a save of 258 task blocks `task(1)…task(258)` / Then exactly 257 rows: positions 1–256 are `type "task"`, position 257 is `type "broken"` with `errorCode "too_many_blocks"`, and no row has position 258.
-  8. Given a `noteBlocks` row seeded for user 2 on another note, then user 1 saves `task(1)` on its own note / Then user 2's row still exists unchanged.
+  7. Given a save of 258 task blocks `Array.from({ length: 258 }, (_, i) => task(i + 1)).join("")` / Then exactly 257 rows: positions 1–256 are `type "task"`, position 257 is `type "broken"` with `errorCode "too_many_blocks"`, and no row has position 258.
+  8. Given a `noteBlocks` row seeded with `{ userId: "users:2", noteId: "notes:999", type: "broken", position: 1, errorCode: "malformed_json", createdAt: 1, updatedAt: 1 }`, then user 1 saves `task(1)` on its own note / Then user 2's row still exists unchanged.
 - **NUMBERS:** rows per page ≤ 257 (`NOTE_BLOCK_INDEX_MAX_ROWS` = `BLOCK_CODEC_LIMITS.maxBlocks` 256 + 1; TESTS 7, the bounded-read check of CONVENTIONS §20); index ↔ body consistency exact after every applied write (TESTS 1–6). Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0009a — `notes.backlinks`: verify the "Linked here" query (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -3056,11 +3053,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/notes.ts` (read only, unchanged) · test: `convex/notes_links.test.ts`.
 - **MUTATES:** `convex/notes_links.test.ts` (edit: one `describe` block appended, one import line added). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "export const backlinks" -A18 convex/notes.ts` (returns `backlinksFor(self.title, self._id, pages).slice(0, 50)`); `grep -n "export function backlinksFor" -A25 packages/utils/src/wiki-links.ts` (row `{ id, title, context }`, one row per linking page, context = the linking line with link brackets and list/quote markers removed, max 160 chars); `bun test convex/notes_links.test.ts` → `10 pass` before any edit.
+  1. Code-map: `grep -n "export const backlinks" -A18 convex/notes.ts` (returns `backlinksFor(self.title, self._id, pages).slice(0, 50)`); `grep -n "export function backlinksFor" -A25 packages/utils/src/wiki-links.ts` (row `{ id, title, context }`, one row per linking page, context = the linking line with link brackets and list/quote markers removed, max 160 chars); `grep -n "^function makeCtx\|^function note\|^const search\|^const backlinks" convex/notes_links.test.ts` → line 9 `makeCtx(userId: string, rows: Row[])` (a fake ctx whose identity is `userId`), line 63 `note(id: string, title: string, body: string, over: Partial<Row> = {}): Row` (`_id: "notes:<id>"`, `userId: "users:a"`, `updatedAt: Number(id)`), line 68 `search` and line 69 `backlinks` (the queries' `_handler`s); `bun test convex/notes_links.test.ts` → `10 pass` before any edit.
   2. Add `import { makeSignedOutCtx } from "./lib/testFakeCtx";` and append `describe("notes.backlinks rules", …)` with exactly the 6 TESTS cases, using the file's existing `makeCtx(userId, rows)`, `note(id, title, body, over)` and `backlinks` helpers.
   3. Run DONE. A failing case means the query disagrees with this ticket: report `blocked: question — <case>`; do not change `convex/notes.ts`.
 - **DONE:** `bun test convex/notes_links.test.ts` → `16 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (10) and after (16), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/notes_links.test.ts` pasted into the PR (before the edit: `10 pass`; after: `16 pass`).
 - **DO NOT:** create a `noteLinks` table or a `convex/notes_links.ts` module; edit `convex/notes.ts`, `packages/utils/src/wiki-links.ts` or the 10 existing cases; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0009a / evidence / changed: convex/notes_links.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing query, unchanged:
@@ -3071,7 +3068,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Rules: `requireUser` first; a `noteId` that does not normalize, or a target that is missing, foreign, deleted or has a blank title returns `[]`; rows come from the owner's live pages within the bounded scan, newest edit first, one row per linking page, at most 50; a link inside code or a `json tempo` fence does not count; `[[Title|label]]` and a different letter case count. Errors: `"Not authenticated"` (no identity) — TESTS 1. No user-facing copy (the UI owns "Linked here", TFV2-0044).
-- **TESTS:** (target page `note("1", "Target", "body")`, owner `"users:a"`)
+- **TESTS:** (target page `note("1", "Target", "body")`, owner `"users:a"`; except TESTS 1, each case runs `backlinks(makeCtx("users:a", [target, ...the case's rows]), { noteId: "notes:1" })`)
   1. Given `makeSignedOutCtx()` / When `backlinks(ctx, { noteId: "notes:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given `note("2", "A", "see [[Target]]", { deletedAt: 3 })` and `note("3", "B", "see [[Target]]")` / Then the result's ids equal `["notes:3"]`.
   3. Given `note("2", "A", "first [[Target]] line\nsecond [[Target]]")` / Then exactly one row with `id "notes:2"` and `context "first Target line"`.
@@ -3083,6 +3080,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0009b — `notes.searchTitles`: verify the `[[` picker query (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0009a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0009a.
@@ -3091,11 +3089,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/notes.ts` (read only, unchanged) · test: `convex/notes_links.test.ts`.
 - **MUTATES:** `convex/notes_links.test.ts` (edit: one `describe` block appended). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "export const searchTitles" -A26 convex/notes.ts` (limit `Math.min(Math.max(Math.floor(args.limit ?? 8), 1), 20)`; `titleKey` = trim + lower-case; exact, then starts-with, then contains; skips deleted and blank titles); `bun test convex/notes_links.test.ts` → `16 pass` before any edit (after TFV2-0009a).
+  1. Code-map: `grep -n "export const searchTitles" -A26 convex/notes.ts` (limit `Math.min(Math.max(Math.floor(args.limit ?? 8), 1), 20)`; `titleKey` = trim + lower-case; exact, then starts-with, then contains; skips deleted and blank titles); `grep -n "^function makeCtx\|^function note\|^const search" convex/notes_links.test.ts` → lines 9, 63, 68 (`makeCtx(userId: string, rows: Row[])`, `note(id: string, title: string, body: string, over: Partial<Row> = {}): Row`, `search` = `notes.searchTitles._handler`); `bun test convex/notes_links.test.ts` → `16 pass` before any edit (after TFV2-0009a).
   2. Append `describe("notes.searchTitles rules", …)` with exactly the 4 TESTS cases (`makeSignedOutCtx` is already imported by TFV2-0009a).
   3. Run DONE; a failing case is reported as `blocked: question — <case>`, never fixed in `convex/notes.ts`.
 - **DONE:** `bun test convex/notes_links.test.ts` → `20 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (16) and after (20), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/notes_links.test.ts` pasted into the PR (before the edit: `16 pass`; after: `20 pass`).
 - **DO NOT:** edit `convex/notes.ts` or any existing case; return bodies; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0009b / evidence / changed: convex/notes_links.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing query, unchanged:
@@ -3106,9 +3104,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Errors: `"Not authenticated"` (no identity) — TESTS 1. No user-facing copy.
-- **TESTS:**
+- **TESTS:** (except TESTS 1, each case runs `search(makeCtx("users:a", rows), args)` with the case's rows, built with the file's `note(id, title, body, over)` helper)
   1. Given `makeSignedOutCtx()` / When `search(ctx, { query: "a" })` runs / Then it rejects with `"Not authenticated"`.
-  2. Given 25 live pages titled `Page ${i}` / When `search` runs with `{ query: "page", limit: 0 }` / Then 1 row; with `limit: 99` / Then 20 rows; with no `limit` / Then 8 rows.
+  2. Given 25 live pages `note(String(i + 1), \`Page ${i}\`, "x")` for `i` in 0…24 / When `search` runs with `{ query: "page", limit: 0 }` / Then 1 row; with `limit: 99` / Then 20 rows; with no `limit` / Then 8 rows.
   3. Given `note("1", "Plan", "x", { deletedAt: 2 })`, `note("2", "  ", "x")`, `note("3", "Plan B", "x", { userId: "users:b" })` and `note("4", "Plan C", "x")` / When `search` runs with `{ query: "plan" }` / Then the ids equal `["notes:4"]`.
   4. Given `note("1", "Target", "x")` and a newer `note("2", "Targets list", "x")` / When `search` runs with `{ query: "  TARGET " }` / Then the first id is `"notes:1"` (case- and space-insensitive exact match wins over a newer prefix match).
 - **NUMBERS:** limit clamped to 1…20, default 8 (code; TESTS 2). 20 of 20 pass. Backend p95 latency: UNKNOWN (no baseline; not a gate).
@@ -3116,21 +3114,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0010 — `notes.undo`: 5-minute Undo of one page change (`convex/notes.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0008 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0008.
 - **WHY:** PRD §4.11 F-131 (Undo for 5 minutes on internal changes); REWRITE-PLAN-v2 §6 chunk 1 "operation ledger + 5-min Undo"; REWRITE-PLAN-v2 §4 conflict 6. The ledger logic already exists and is tested (175 cases in `convex/lib/pageLedger.test.ts`: `decideUndoRequest`, `planUndo`, `markOperationUndone`, the half-open window `appliedAtMs <= now < undoUntilMs`); what is missing is the mutation that commits an Undo. The old "verify the ledger" scope has nothing left to add, so this ticket now ships that endpoint.
 - **GOAL:** `convex/notes.ts` exports the mutation `undo`, which reverses exactly one applied `save` / `patch_block` operation within its 5-minute window by a surgical splice (later unrelated edits survive), records an `undo` receipt, marks the target undone, and rebuilds `noteBlocks`.
 - **SCOPE:** `convex/notes.ts` · test: `convex/notes.test.ts`.
-- **MUTATES:** `convex/notes.ts` (edit: add `undo`, three entries in `LEDGER_ERROR_MESSAGES`, imports `decideUndoRequest`, `planUndo`, `markOperationUndone`, `PAGE_LEDGER_LIMITS` from `./lib/pageLedger`) · `convex/notes.test.ts` (edit: one `describe("notes.undo")` appended) · data: `notes` rows, new `pageOperations` rows (`kind: "undo"`), `pageOperations` target rows patched (`undoneAtMs`, `undoneByOperationId`, `updatedAt`), `noteBlocks` rows rebuilt.
+- **MUTATES:** `convex/notes.ts` (edit: add `undo`, four entries in `LEDGER_ERROR_MESSAGES`, imports `decideUndoRequest`, `planUndo`, `markOperationUndone`, `PAGE_LEDGER_LIMITS` from `./lib/pageLedger`) · `convex/notes.test.ts` (edit: one `describe("notes.undo")` appended) · data: `notes` rows, new `pageOperations` rows (`kind: "undo"`), `pageOperations` target rows patched (`undoneAtMs`, `undoneByOperationId`, `updatedAt`), `noteBlocks` rows rebuilt.
 - **STEPS:**
   1. Code-map: `grep -n "^export function decideUndoRequest\|^export function planUndo\|^export function markOperationUndone\|^export const PAGE_LEDGER_LIMITS" convex/lib/pageLedger.ts`; read the `planUndo` doc comment (inputs: `nowMs`, `userId`, `noteId`, `noteRevision`, `currentBody`, `target: { operation, payload? }`, `intervening` fetched with `take(257)`); `grep -n "function rebuildNoteBlocks\|function commitPageChange\|LEDGER_ERROR_MESSAGES" convex/notes.ts` (present after TFV2-0008); `bun test convex/notes.test.ts` and record the pass count.
   2. Add to `LEDGER_ERROR_MESSAGES`: `undo_expired: "Undo window has passed"`, `undo_payload_expired: "Undo window has passed"`, `conflict_overlapping_edit: "Undo conflicts with a later edit"`, `conflict_target_changed: "Undo conflicts with a later edit"`.
-  3. Add the exported `undo` mutation exactly as SPEC, after `patchBlock`.
+  3. Add the exported `undo` mutation as in SPEC, after `patchBlock`.
   4. Append `describe("notes.undo", …)` with exactly the 11 TESTS cases; restore the clock with `setSystemTime()` (from `bun:test`) in `afterEach`.
   5. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 11.
-- **EVIDENCE:** the `bun test` summary before and after, plus lint/typecheck exit codes, pasted into the PR.
+- **DONE:** `bun test convex/notes.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 11 (`50 pass` on top of TFV2-0008's 39).
+- **EVIDENCE:** the summary of `bun test convex/notes.test.ts` pasted into the PR (before the edit and after), plus the `bun run lint` and `bun run typecheck` exit codes.
 - **DO NOT:** restore a whole earlier body (Undo is a splice plan or nothing); change the 5-minute window or any ledger helper; delete receipts or payloads; undo an `undo`; touch `convex/schema.ts`, `convex/lib/pageLedger.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0010 / evidence / changed: convex/notes.ts, convex/notes.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -3148,7 +3147,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. `decision = unwrap(decideUndoRequest({ nowMs, target }))`; if `decision.decision === "already_undone"` → return `toWriteResult((await ctx.db.get(decision.undoOperationId as Id<"pageOperations">))!)` (no write).
   5. `payload = await ctx.db.query("pageOperationPayloads").withIndex("by_userId_operationId", (q) => q.eq("userId", user._id).eq("operationId", target._id)).first()`.
   6. `intervening = await ctx.db.query("pageOperations").withIndex("by_userId_noteId_affectsBody_resultRevision", (q) => q.eq("userId", user._id).eq("noteId", args.noteId).eq("affectsBody", true).gte("resultRevision", target.resultRevision + 1)).take(PAGE_LEDGER_LIMITS.maxInterveningRevisions + 1)`.
-  7. `plan = unwrap(await planUndo({ nowMs, userId: user._id, noteId: args.noteId, noteRevision: note.revision, currentBody: note.body, target: payload ? { operation: target, payload } : { operation: target }, intervening }))`.
+  7. `plan = unwrap(await planUndo({ nowMs, userId: user._id, noteId: args.noteId, noteRevision: note.revision, currentBody: note.body, target: { operation: target, payload: payload ?? undefined }, intervening }))` (`planUndo` types `target` as `{ operation: unknown; payload: unknown }` and drops an `undefined` payload).
   8. `facts = unwrap(buildOperationFacts({ userId: user._id, noteId: args.noteId, requestId: args.requestId, requestDigest, kind: "undo", source: "ui", change: plan.facts, nowMs, undoOfOperationId: target._id }))`; `undoId = await ctx.db.insert("pageOperations", facts)`.
   9. `marked = unwrap(markOperationUndone({ target, undoOperationId: undoId, nowMs }))`; `await ctx.db.patch(target._id, { undoneAtMs: marked.undoneAtMs, undoneByOperationId: marked.undoneByOperationId, updatedAt: marked.updatedAt })`.
   10. `await ctx.db.patch(args.noteId, { body: plan.candidateBody, revision: plan.facts.resultRevision, updatedAt: nowMs })`; `await rebuildNoteBlocks(ctx, user._id, args.noteId, plan.candidateBody, nowMs)`.
@@ -3162,7 +3161,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   | `Undo window has passed` | `now >= undoUntilMs` | 4 |
   | `Undo conflicts with a later edit` | a later edit overlaps the target's inserted text | 3 |
   | `Page write rejected: undo_not_undoable` | target is a `noop` receipt | 10 |
-- **TESTS:** (`describe("notes.undo")`; seed as in TFV2-0007a with body `"Hello"`; `saveAs(body, expectedRevision, tail)` calls `save` with `reqId(Date.now(), tail)`)
+- **TESTS:** (`describe("notes.undo")`; every case seeds `const ctx = ledgerCtx("users:1", ["users:2"])` and `const noteId = await ctx.db.insert("notes", { userId: "users:1", title: "P", body: "Hello", pinned: false, periodType: "none", createdAt: 1, updatedAt: 1 })` (TESTS 2 seeds `body: "A\nB"`), with `ledgerCtx`, `runHandler`, `makeSignedOutCtx` and `reqId` as defined in TFV2-0007a's TESTS; `const saveAs = (body: string, expectedRevision: number, tail: string) => runHandler(notes.save, ctx, { noteId, expectedRevision, body, requestId: reqId(Date.now(), tail) })`)
   1. Given a save `"Hello"` → `"Hello world"` (operation T) / When `undo({ noteId, targetOperationId: T, requestId: reqId(Date.now(), "0000000000000009") })` runs / Then the note body is `"Hello"` and `revision 2`; the result has `revision 2`, `result "applied"`, `undoUntilMs null`; the new `pageOperations` row has `kind "undo"` and `undoOfOperationId T`; row T has `undoneByOperationId` equal to the new id and a numeric `undoneAtMs`.
   2. Given saves `"A\nB"` (seeded body) → `"A\nB\nC"` (T) → `"Z\nB\nC"` / When T is undone / Then the body is `"Z\nB"` (the later edit survives) and `revision 3`.
   3. Given saves `"Hello"` → `"Hello world"` (T) → `"Hello there"` / When T is undone / Then it rejects with `"Undo conflicts with a later edit"` and the body is still `"Hello there"`.
@@ -3179,6 +3178,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0011a — Page privacy guards: own tests for `requireActiveOwner`, `requireLivePage`, `readLivePageBlocks` (`convex/lib/pagePrivacy.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -3191,7 +3191,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/lib/pagePrivacy.test.ts` with exactly the 9 TESTS cases, seeding with `makeFakeCtx("users:1", ["users:2"])` from `./testFakeCtx` and asserting errors with `await expect(p).rejects.toMatchObject({ name: "PagePrivacyError", code: "<code>", message: "<message>" })`.
   3. Run DONE; a failing case is reported as `blocked: question — <case>`, never fixed in the source.
 - **DONE:** `bun test convex/lib/pagePrivacy.test.ts` → `9 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/pagePrivacy.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/lib/pagePrivacy.ts` or `convex/lib/accountDeletion.test.ts`; add a quota helper (TFV2-0011b); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0011a / evidence / changed: convex/lib/pagePrivacy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing signatures, unchanged:
@@ -3208,7 +3208,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given id `"notes:404"` / Then `requireLivePage` rejects with `page_unavailable`.
   5. Given user 1 patched with `isActive: false` / When `requireActiveOwner(ctx, "users:1")` runs / Then it rejects with code `account_unavailable` and message `"This account is not active."`.
   6. Given user 1 patched with `deletedAt: 9` / When `requireLivePage(ctx, "users:1", A)` runs / Then it rejects with `account_unavailable` (the account is checked before the page).
-  7. Given three live block rows of note A inserted in order with positions 1, 2, 3, one row of note A with `deletedAt: 5`, and one row of another note / When `readLivePageBlocks(ctx, "users:1", A)` runs / Then `blocks.map((b) => b.position)` equals `[1, 2, 3]` and `truncated === false`.
+  7. Given three live block rows of note A inserted in order with positions 1, 2, 3, one row of note A with `deletedAt: 5`, and one row with `noteId: "notes:999"` / When `readLivePageBlocks(ctx, "users:1", A)` runs / Then `blocks.map((b) => b.position)` equals `[1, 2, 3]` and `truncated === false`.
   8. Given the same three live rows / When `readLivePageBlocks(ctx, "users:1", A, 2)` runs / Then `blocks.length === 2` and `truncated === true`.
   9. Given `limit: 0` / Then `readLivePageBlocks` rejects with a `RangeError` whose message is `"limit must be a positive integer"`.
 - **NUMBERS:** 9 of 9 pass (exact). Bounded read: `take(limit + 1)` with default limit 256 (`BLOCK_CODEC_LIMITS.maxBlocks`; TESTS 8). Latency: n/a (guards; no baseline).
@@ -3216,6 +3216,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0011b — Per-user storage quotas (4 MiB per file · 50 MiB · 100 files) — OPEN
+- **STATUS:** open — new: Where do a user's files live (Convex `_storage` with a new `files` table from a CFG ticket, or a provider-side store), so `checkStorageQuota` has a usage source, and which upload path calls it?
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0011a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0011a.
@@ -3223,9 +3224,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** A pure quota check rejects a file write that would exceed 4 MiB for one file, 50 MiB in total or 100 files for one user.
 - **SCOPE:** `convex/lib/storageQuota.ts` · test: `convex/lib/storageQuota.test.ts`.
 - **MUTATES:** `convex/lib/storageQuota.ts` (new) · `convex/lib/storageQuota.test.ts` (new).
-- **STEPS:** 1) Code-map: `grep -n "_storage\|storageId\|files:" convex/schema.ts` → no file table and no `_storage` reference exist today. 2) After Amit answers OPEN: create `storageQuota.ts` exactly as SPEC, reading usage from the store he names. 3) Create the test file with the TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map: `grep -n "_storage\|storageId\|files:" convex/schema.ts` → no file table and no `_storage` reference exist today. 2) After Amit answers OPEN: create `storageQuota.ts` as in SPEC, reading usage from the store he names. 3) Create the test file with the TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lib/storageQuota.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/storageQuota.test.ts` pasted into the PR.
 - **DO NOT:** add a table (a CFG ticket would); edit `convex/lib/pagePrivacy.ts`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0011b / evidence / changed / unknowns / notes for ticket sync`.
 - **SPEC:**
@@ -3238,26 +3239,27 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** Given 5 MiB incoming / Then `"File is larger than 4 MB"`. Given usage 50 MiB and 1 incoming byte / Then `"Storage is full"`. Given 100 files / Then `"Too many files"`. Given usage under every limit / Then it returns without throwing. Given a 0-byte file at 99 files / Then it returns.
 - **NUMBERS:** 4 MiB, 50 MiB, 100 files — source REWRITE-PLAN-v2 §6 chunk 1 (product numbers, no industry standard).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Where do a user's files live (Convex `_storage` with a new `files` table from a CFG ticket, or a provider-side store), so `checkStorageQuota` has a usage source, and which upload path calls it? There is no file table in `convex/schema.ts` today. — Amit.
+- **OPEN:** new: Where do a user's files live (Convex `_storage` with a new `files` table from a CFG ticket, or a provider-side store), so `checkStorageQuota` has a usage source, and which upload path calls it? — Amit.
 
 ### TFV2-0012 — Approval gate: tests for `requireApprovedUser` (`convex/lib/approval.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`. Not config lane: this ticket edits no `convex/auth*` file.
 - **WHEN:** after TFV2-0000a.
 - **WHY:** PRD §4.1 F-01a (an unapproved email can never use the product); REWRITE-PLAN-v2 §6 chunk 1 "approval-gated sign-up". `requireApprovedUser` gates every chat and AI path (`coach.sendMessage`, `approval.assertApprovedForAi`); `convex/lib/approval.test.ts` (9 cases) tests the pure status rules but never calls the gate itself. The sign-up policy question (Q-04: cap 30 vs unlimited-with-approval) does not change this existing gate, so this ticket is not blocked by it.
 - **GOAL:** `convex/lib/approval.test.ts` gains 7 cases that call `requireApprovedUser` against a fake ctx for every status, with `convex/lib/approval.ts` unchanged.
 - **SCOPE:** `convex/lib/approval.ts` (read only, unchanged) · test: `convex/lib/approval.test.ts`.
-- **MUTATES:** `convex/lib/approval.test.ts` (edit: one `describe` block appended, one import line added). No source or data change.
+- **MUTATES:** `convex/lib/approval.test.ts` (edit: two import lines extended, one import line added, one `rejection` helper and one `describe` block appended). No source or data change.
 - **STEPS:**
   1. Code-map: `grep -n "export async function requireApprovedUser" -A8 convex/lib/approval.ts` (`requireUser` then `isApproved`, throwing `PENDING_APPROVAL_MESSAGE`); `grep -n "PENDING_APPROVAL_MESSAGE =\|APPROVAL_GATE_EPOCH_MS =" convex/lib/approval.ts`; `bun test convex/lib/approval.test.ts` → `9 pass`.
-  2. Add `import { makeFakeCtx, makeSignedOutCtx } from "./testFakeCtx";` and append `describe("requireApprovedUser", …)` with exactly the 7 TESTS cases. In that block, `beforeEach` saves and deletes `process.env.TEMPO_ADMIN_EMAILS`; `afterEach` restores it.
+  2. Add `beforeEach` to the `bun:test` import (line 1), add `PENDING_APPROVAL_MESSAGE` and `requireApprovedUser` to the `./approval` import (line 2), add `import { makeFakeCtx, makeSignedOutCtx } from "./testFakeCtx";`, declare the standard §16 `rejection` helper (`async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`) once below the imports, and append `describe("requireApprovedUser", …)` with exactly the 7 TESTS cases. In that block, `beforeEach(() => { delete process.env.TEMPO_ADMIN_EMAILS; })`; the file's existing top-level `afterEach` (line 18, restores `TEMPO_ADMIN_EMAILS` from `originalAdmins`) restores it.
   3. Run DONE; a failing case is reported, never fixed in `approval.ts`.
 - **DONE:** `bun test convex/lib/approval.test.ts` → `16 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (9) and after (16), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/approval.test.ts` pasted into the PR, before (`9 pass`) and after (`16 pass`).
 - **DO NOT:** edit `convex/lib/approval.ts`, `convex/auth.ts` or the 9 existing cases; print or log any admin email; change the premium grant; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0012 / evidence / changed: convex/lib/approval.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
-- **SPEC:** Existing, unchanged: `export async function requireApprovedUser(ctx: QueryCtx | MutationCtx): Promise<Doc<"users">>`. Errors (exact · trigger · test): `"Not authenticated"` · no identity · 1; `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (`PENDING_APPROVAL_MESSAGE`) · `approvalStatus: "pending"` · 3; same message · `approvalStatus: "revoked"` · 4; same message · no `approvalStatus` and `_creationTime` after `APPROVAL_GATE_EPOCH_MS` · 7. No user-facing copy is added.
-- **TESTS:** (`ctx = makeFakeCtx("users:1")`; set fields with `await ctx.db.patch("users:1", {…})`)
+- **SPEC:** Existing, unchanged: `export async function requireApprovedUser(ctx: QueryCtx | MutationCtx)` (no annotated return type; it returns the `Doc<"users">` row from `requireUser`). **Relies on:** `makeFakeCtx("users:1")` seeds `users:1` as `{ _id: "users:1", email: "users:1@example.com" }` with no `_creationTime`, and `makeSignedOutCtx()` (TFV2-0000a) resolves `getUserIdentity()` to `null`. Errors (exact · trigger · test): `"Not authenticated"` · no identity · 1; `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (`PENDING_APPROVAL_MESSAGE`) · `approvalStatus: "pending"` · 3; same message · `approvalStatus: "revoked"` · 4; same message · no `approvalStatus` and `_creationTime` after `APPROVAL_GATE_EPOCH_MS` · 7. No user-facing copy is added.
+- **TESTS:** (`ctx = makeFakeCtx("users:1")`; set fields with `await ctx.db.patch("users:1", { <the fields the case names> })`; "rejects with X" means `expect(await rejection(requireApprovedUser(ctx))).toBe(X)`)
   1. Given `makeSignedOutCtx()` / When `requireApprovedUser(ctx)` runs / Then it rejects with `"Not authenticated"`.
   2. Given user 1 patched `approvalStatus: "approved"` / Then it resolves the user row with `_id "users:1"`.
   3. Given `approvalStatus: "pending"` / Then it rejects with `PENDING_APPROVAL_MESSAGE`.
@@ -3270,6 +3272,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0013 — Remove the passkeys settings route (magic link is the only sign-in) — OPEN
+- **STATUS:** open — new: Gate 8 forbids deleting a test, so do you approve deleting `apps/web/app/settings/passkeys/passkeys-view.test.ts` together with the module it tests and rewriting `tests/e2e/fix/passkeys-signed-in.spec.ts` to expect a 404 for this ticket?
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -3277,18 +3280,19 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** No passkey surface exists in the web app: `/settings/passkeys` answers 404 for a signed-in user, and a repo grep for `passkey` (case-insensitive) in `apps/`, `convex/` and `packages/` finds nothing.
 - **SCOPE:** `apps/web/app/settings/passkeys/page.tsx` (delete) · `apps/web/app/settings/passkeys/passkeys-view.ts` (delete) · `apps/web/app/settings/passkeys/passkeys-view.test.ts` (delete with its module) · test: `tests/e2e/fix/passkeys-signed-in.spec.ts` (rewritten to assert the removal). Four entries because the module's own unit test goes with the module.
 - **MUTATES:** the three files above (deleted) · `tests/e2e/fix/passkeys-signed-in.spec.ts` (edit) · route `/settings/passkeys` removed.
-- **STEPS:** 1) Code-map: `grep -rniE "passkey|webauthn" apps convex packages tests --include=*.ts --include=*.tsx -l` (today: the three files above, the e2e spec, and the string `"/settings/passkeys"` in `tests/e2e/feature-sweep.spec.ts` smoke list, which records a 404 as `not-wired` and needs no edit). 2) After Amit answers OPEN: delete the three files. 3) Rewrite the spec: signed-in case (skipped without `TEMPO_E2E_STORAGE_STATE`) expects HTTP 404 for `/settings/passkeys`; the signed-out case keeps expecting a redirect to `/sign-in`. 4) Run DONE.
+- **STEPS:** 1) Code-map: `grep -rniE "passkey|webauthn" apps convex packages tests --include=*.ts --include=*.tsx -l` (today: the three files above, the e2e spec, and the string `"/settings/passkeys"` in `tests/e2e/feature-sweep.spec.ts` smoke list, which records a 404 as `not-wired` and needs no edit). 2) After Amit answers OPEN: delete the three files. 3) Rewrite the spec: the signed-in case keeps its existing skip condition (`!storageStatePath || !process.env.PLAYWRIGHT_BASE_URL`) and expects HTTP 404 for `/settings/passkeys`; the signed-out case keeps expecting a redirect to `/sign-in`. 4) Run DONE.
 - **DONE:** `grep -rniE "passkey|webauthn" apps convex packages --include=*.ts --include=*.tsx` → no output; `CI=1 bunx playwright test tests/e2e/fix/passkeys-signed-in.spec.ts --reporter=line` → `1 passed, 1 skipped`.
-- **EVIDENCE:** the empty grep output and the Playwright summary pasted into the PR.
+- **EVIDENCE:** the empty output of the DONE grep and the summary of `CI=1 bunx playwright test tests/e2e/fix/passkeys-signed-in.spec.ts --reporter=line` pasted into the PR.
 - **DO NOT:** touch `convex/auth.ts`, the Resend sender or secret names; add any sign-in method; edit `feature-sweep.spec.ts`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0013 / evidence / changed / unknowns / notes for ticket sync`.
 - **SPEC:** After the change the app exposes exactly one sign-in method, the email magic link (`convex/lib/signInEmail.ts` unchanged: subject `"Your Tempo Flow sign-in link · קישור הכניסה שלכם"`, link valid 30 minutes and once). No new copy.
 - **TESTS:** Given a signed-in storage state / When `/settings/passkeys` is opened / Then the response status is 404. Given no session on the local webServer / When it is opened / Then the URL matches `/\/sign-in/`.
 - **NUMBERS:** 0 passkey references (grep); magic-link lifetime 30 minutes (PRD F-01; unchanged). No industry number applies.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Gate 8 forbids deleting a test. Removing the passkeys route requires deleting `apps/web/app/settings/passkeys/passkeys-view.test.ts` together with the module it tests, and rewriting `tests/e2e/fix/passkeys-signed-in.spec.ts` to expect a 404. Do you approve that deletion and rewrite for this ticket? — Amit.
+- **OPEN:** new: Gate 8 forbids deleting a test, so do you approve deleting `apps/web/app/settings/passkeys/passkeys-view.test.ts` together with the module it tests and rewriting `tests/e2e/fix/passkeys-signed-in.spec.ts` to expect a 404 for this ticket? — Amit.
 
 ### TFV2-0014 — AI seam `callLLM`: missing failure-path tests (`convex/lib/ai_router.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #743 (TEMPO-N2-01)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -3297,40 +3301,41 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/lib/ai_router.ts` (read only, unchanged) · test: `convex/lib/ai_router.test.ts`.
 - **MUTATES:** `convex/lib/ai_router.test.ts` (edit: one `describe` block appended). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "^export" convex/lib/ai_router.ts convex/lib/ai_errors.ts`; read `attemptCall` (request body `max_tokens: opts.maxTokens ?? 1024`, `temperature: opts.temperature ?? 0.3`, `response_format` only for `"json_object"`; a thrown `fetch` becomes `AiUpstreamError(String(err), 0, String(err))`; 401 → `AiAuthError("DeepInfra auth failed: " + body.slice(0, 200))`; 429 → `AiRateLimitedError(…, retryAfterMs)`); `bun test convex/lib/ai_router.test.ts` → `10 pass`.
-  2. Append `describe("callLLM failure paths and defaults", …)` with exactly the 7 TESTS cases, reusing the file's `jsonResponse`, `errorResponse`, `successBody`, and its `beforeEach`/`afterEach` env and `fetch` restore.
+  1. Code-map: `grep -n "^export" convex/lib/ai_router.ts convex/lib/ai_errors.ts`; read `attemptCall` (request body `max_tokens: opts.maxTokens ?? 1024`, `temperature: opts.temperature ?? 0.3`, `response_format` only for `"json_object"`; a thrown `fetch` becomes `AiUpstreamError(String(err), 0, String(err))`; 401 → `AiAuthError("DeepInfra auth failed: " + body.slice(0, 200))`; 429 → `AiRateLimitedError(…, retryAfterMs)`); `grep -n "^function jsonResponse\|^function errorResponse\|^function successBody\|^beforeEach\|^afterEach" convex/lib/ai_router.test.ts` → lines 14, 22, 30, 37, 42; `bun test convex/lib/ai_router.test.ts` → `10 pass`.
+  2. Append `describe("callLLM failure paths and defaults", …)` with exactly the 7 TESTS cases, reusing the file's helpers listed under **Relies on** and its top-level `beforeEach`/`afterEach`.
   3. Run DONE.
 - **DONE:** `bun test convex/lib/ai_router.test.ts` → `17 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (10) and after (17), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/ai_router.test.ts` pasted into the PR, before (`10 pass`) and after (`17 pass`).
 - **DO NOT:** call the real network (every case replaces `globalThis.fetch` with `mock()`); print or log a key; edit `convex/lib/ai_router.ts`, `ai_errors.ts` or the 10 existing cases; change the provider URL or `DEFAULT_AI_MODEL`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0014 / evidence / changed: convex/lib/ai_router.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
-- **SPEC:** Existing, unchanged: `export function resolveAiModel(): string`; `export async function callLLM(opts: AiCallOptions): Promise<AiResult>` (`AiCallOptions = { tier: AiTier; messages: AiMessage[]; maxTokens?: number; temperature?: number; responseFormat?: "text" | "json_object" }`). Errors asserted: `AiUpstreamError` with `status 0` after two thrown fetches (TESTS 3); `AiAuthError` whose message never contains the key (TESTS 4); `AiRateLimitedError` with `retryAfterMs 2000` (TESTS 7). No user-facing copy (callers map errors).
+- **SPEC:** Existing, unchanged: `export function resolveAiModel(): string`; `export async function callLLM(opts: AiCallOptions): Promise<AiResult>` (`AiCallOptions = { tier: AiTier; messages: AiMessage[]; maxTokens?: number; temperature?: number; responseFormat?: "text" | "json_object" }`). **Relies on** (existing in `convex/lib/ai_router.test.ts`): `function jsonResponse(body: unknown, init?: ResponseInit): Response` (line 14, status 200, JSON body); `function errorResponse(status: number, body: string, headers?: HeadersInit): Response` (line 22); `function successBody(content = "ok")` (line 30, returns `{ choices: [{ message: { content } }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } }`); top-level `beforeEach` (line 37: `DEEPINFRA_API_KEY = "test-key"`, deletes `TEMPO_AI_MODEL`) and `afterEach` (line 42: restores `globalThis.fetch` and both env vars). Each case sets `const fetchMock = mock(<impl>); globalThis.fetch = fetchMock;` (`mock` is already imported from `bun:test`); the posted JSON is `JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))` and the headers are `(fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>`. A mock that returns a `Response` builds a new one on every call. Errors asserted: `AiUpstreamError` with `status 0` after two thrown fetches (TESTS 3); `AiAuthError` whose message never contains the key (TESTS 4); `AiRateLimitedError` with `retryAfterMs 2000` (TESTS 7). No user-facing copy (callers map errors).
 - **TESTS:** (`opts = { tier: "balanced", messages: [{ role: "user", content: "hi" }] }`; `DEEPINFRA_API_KEY` is `"test-key"` from the file's `beforeEach`)
   1. Given `process.env.TEMPO_AI_MODEL = "   "` / When `callLLM(opts)` succeeds / Then the posted JSON `model` equals `DEFAULT_AI_MODEL`.
   2. Given `fetch` that rejects once with `new Error("ECONNRESET")` then returns `successBody("ok")` / Then `content === "ok"` and `fetch` was called 2 times.
-  3. Given `fetch` that always rejects with `new Error("ECONNRESET")` / Then `callLLM` rejects with an `AiUpstreamError` whose `status === 0`, and `fetch` was called 2 times.
-  4. Given a 401 response with body `"invalid"` / Then it rejects with `AiAuthError` whose message is `"DeepInfra auth failed: invalid"` and does not contain `"test-key"`; and the request's `Authorization` header was `"Bearer test-key"`.
-  5. Given `{ …opts, responseFormat: "json_object" }` / Then the posted JSON has `response_format: { type: "json_object" }`, `max_tokens: 1024` and `temperature: 0.3`; and with plain `opts` the posted JSON has no `response_format` key.
-  6. Given a 200 response `{ choices: [] }` (no `usage`) / Then the result has `content ""` and `usage` `{ promptTokens: 0, completionTokens: 0, totalTokens: 0 }`.
-  7. Given two 429 responses with header `Retry-After: 2` / Then it rejects with `AiRateLimitedError` whose `retryAfterMs === 2000`.
+  3. Given `fetch` that always rejects with `new Error("ECONNRESET")` / Then `callLLM` rejects with an `AiUpstreamError` whose `status === 0` and `message === "Error: ECONNRESET"`, and `fetch` was called 2 times.
+  4. Given `fetch` returning `errorResponse(401, "invalid")` / Then it rejects with `AiAuthError` whose message is `"DeepInfra auth failed: invalid"` and does not contain `"test-key"`; and the request's `Authorization` header was `"Bearer test-key"`; `fetch` was called 1 time.
+  5. Given `{ tier: "balanced", messages: [{ role: "user", content: "hi" }], responseFormat: "json_object" }` and `fetch` returning `jsonResponse(successBody("ok"))` / Then the posted JSON has `response_format: { type: "json_object" }`, `max_tokens: 1024` and `temperature: 0.3`; and with plain `opts` the posted JSON has no `response_format` key.
+  6. Given `fetch` returning `jsonResponse({ choices: [] })` (no `usage`) / Then the result has `content ""` and `usage` `{ promptTokens: 0, completionTokens: 0, totalTokens: 0 }`.
+  7. Given `fetch` returning `errorResponse(429, "slow down", { "Retry-After": "2" })` on both calls / Then it rejects with `AiRateLimitedError` whose `retryAfterMs === 2000`.
 - **NUMBERS:** retries = exactly 1 (code; TESTS 2–3); request timeout 30,000 ms and retry delay 500 ms (code constants, not re-tested); 17 of 17 pass. Provider latency: UNKNOWN offline (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0015 — `coach.sendMessage`: input and access tests (`convex/coach.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #744 (TEMPO-N2-02)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** PRD §4.2 F-20 (coach chat); REWRITE-PLAN-v2 §6 chunk 1 "/coach chat uses send + Thinking + Retry". The reply path (`reply` → `runCoachReply` → `callLLM`, single retry inside `callLLM`, failures → `unavailable`) already has 60+ cases in `convex/coach_chat.test.ts`; `sendMessage`'s own input rules (signed out, empty, length cap, trim, exact foreign-conversation message) have none.
 - **GOAL:** `convex/coach_chat.test.ts` gains 7 cases pinning every rule of the existing `coach.sendMessage` mutation, with `convex/coach.ts` unchanged.
 - **SCOPE:** `convex/coach.ts` (read only, unchanged) · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/coach_chat.test.ts` (edit: one `describe` block appended). No source or data change.
+- **MUTATES:** `convex/coach_chat.test.ts` (edit: one `rejection` helper and one `describe` block appended). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "export const sendMessage" -A40 convex/coach.ts` (`requireApprovedUser`, `requireLegacyWritableConversation`, trim, `"Message is empty"`, `MAX_MESSAGE_CHARS` 4000 → `"That message is too long. Try a shorter one."`, insert, crisis card, `updatedAt` patch); `grep -n "CONVERSATION_UNAVAILABLE_MESSAGE =" convex/messages.ts` (`"Conversation not found or access denied"`); `grep -n "function makeWorld\|async function say\|async function seedConversation\|^const A\|^const PENDING" convex/coach_chat.test.ts`; `bun test convex/coach_chat.test.ts` and record the pass count (68 today).
-  2. Append `describe("sendMessage input rules", …)` with exactly the 7 TESTS cases, using `makeWorld`, `seedConversation`, `say`, `messages`, `run`, `A`, `B`, `PENDING` already in the file and `PENDING_APPROVAL_MESSAGE` (already imported there).
+  1. Code-map: `grep -n "export const sendMessage" -A40 convex/coach.ts` (`requireApprovedUser`, `requireLegacyWritableConversation`, trim, `"Message is empty"`, `MAX_MESSAGE_CHARS` 4000 → `"That message is too long. Try a shorter one."`, insert, crisis card, `updatedAt` patch); `grep -n "CONVERSATION_UNAVAILABLE_MESSAGE =" convex/messages.ts` (`"Conversation not found or access denied"`); `grep -n "^function makeWorld\|^async function say\|^async function seedConversation\|^function messages\|^const run\|^const A\|^const B\|^const PENDING\|function rejection" convex/coach_chat.test.ts` → lines 34, 169, 134, 173, 130, 30, 31, 32 and no `rejection`; `bun test convex/coach_chat.test.ts` and record the pass count (68 today).
+  2. Declare the standard §16 `rejection` helper (`async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`) once above the new block, and append `describe("sendMessage input rules", …)` with exactly the 7 TESTS cases, using the helpers under **Relies on** and `PENDING_APPROVAL_MESSAGE` (already imported, line 11). "Rejects with X" means `expect(await rejection(<call>)).toBe(X)`.
   3. Run DONE.
 - **DONE:** `bun test convex/coach_chat.test.ts` → `0 fail`, and the pass count is the STEP 1 count + 7 (`75 pass` today).
-- **EVIDENCE:** the `bun test` summary before and after, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/coach_chat.test.ts` pasted into the PR, before and after.
 - **DO NOT:** call a real model; edit `convex/coach.ts`, `convex/messages.ts` or existing cases; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0015 / evidence / changed: convex/coach_chat.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -3341,7 +3346,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: MutationCtx, args: { conversationId: Id<"conversations">; content: string }) => { … },
   });
   ```
-  Errors (exact · trigger · test): `"Not authenticated"` · no identity · 1; `PENDING_APPROVAL_MESSAGE` · pending account · 2; `"Message is empty"` · content `"   "` · 3; `"That message is too long. Try a shorter one."` · 4,001 characters after trim · 4; `"Conversation not found or access denied"` · another user's conversation · 6. No user-facing copy is added.
+  Handler behaviour, in order: `const user = await requireApprovedUser(ctx)`; `requireLegacyWritableConversation(ctx, user._id, args.conversationId)`; `text = args.content.trim()`; empty `text` → `"Message is empty"`; `text.length > MAX_MESSAGE_CHARS` (`export const MAX_MESSAGE_CHARS = 4000`, `convex/coach.ts` line 104) → the too-long error; insert `{ conversationId, role: "user", content: text, createdAt: now }` into `messages` (`now = Date.now()`); for crisis text also insert the fixed crisis-card assistant message; patch the conversation's `updatedAt` to `now` (`now + 1` for crisis text); return `{ success: true }` (`{ success: true, crisis: true }` for crisis text).
+  Errors (exact · trigger · test): `"Not authenticated"` · no identity · 1; `PENDING_APPROVAL_MESSAGE` · pending account · 2; `"Message is empty"` · content `"   "` · 3; `"That message is too long. Try a shorter one."` · 4,001 characters after trim · 4; `"Conversation not found or access denied"` · another user's conversation · 6. Not re-tested here: the `ConvexError({ code: "legacy_chat_moved", message: LEGACY_CHAT_MOVED_MESSAGE })` that `requireLegacyWritableConversation` throws for a conversation with `agentThreadId` is already covered by `convex/messages.test.ts` ("coach.sendMessage refuses with the moved message, crisis text included", line 328). No user-facing copy is added. **Relies on** (existing in `convex/coach_chat.test.ts`): `const A = "users:a"`, `const B = "users:b"`, `const PENDING = "users:pending"` (lines 30–32); `function makeWorld()` (line 34: seeds A and B with `approvalStatus: "approved"`, PENDING with `"pending"`, all `_creationTime: 0`; returns `{ db, as, actionAs, rows, row }`, `as(userId)` is a ctx whose identity subject is `` `${userId}|session` ``); `const run = (fn: unknown, ctx: unknown, args: unknown)` (line 130); `async function seedConversation(world: World, userId = A)` (line 134: inserts `{ userId, title: "Chat", createdAt: 1, updatedAt: 1 }`, returns its id); `async function say(world: World, conversationId: Id<"conversations">, content: string, userId = A)` (line 169: runs `coach.sendMessage` as `userId`); `function messages(world: World, conversationId: string)` (line 173: the `messages` rows of that conversation).
 - **TESTS:**
   1. Given `const world = makeWorld()` and a conversation of `A` / When `run(coach.sendMessage, { auth: { getUserIdentity: async () => null }, db: world.db }, { conversationId, content: "hi" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given a conversation of `PENDING` / When `say(world, conversationId, "hi", PENDING)` runs / Then it rejects with `PENDING_APPROVAL_MESSAGE`.
@@ -3355,38 +3361,42 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0016 — Coach Agent wrapper `convex/lib/agentComponent.ts` — OPEN
+- **STATUS:** open — Q-12: HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted? For this ticket: if `@convex-dev/agent` (pinned 0.3.2) is permitted, must `convex/coach.ts` reach it through one wrapper module `convex/lib/agentComponent.ts` instead of importing it directly?
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** first.
-- **WHY:** PRD §4.2 F-20 (coach built on Convex's Agent component: threads, tool calls, streaming); REWRITE-PLAN-v2 §6 chunk 1 "coach Agent foundation". Code truth: `@convex-dev/agent` is pinned at `0.3.2` in `package.json`; `convex/lib/agentComponent.test.ts` only proves the package loads under Bun; no `convex/lib/agentComponent.ts` exists.
+- **WHY:** PRD §4.2 F-20 (coach built on Convex's Agent component: threads, tool calls, streaming); REWRITE-PLAN-v2 §6 chunk 1 "coach Agent foundation". Code truth: `@convex-dev/agent` is pinned at `0.3.2` in `package.json` and registered as the `agent` component in `convex/convex.config.ts` (ticket #806, registration only); `convex/lib/agentComponent.test.ts` only proves the package loads under Bun; no `convex/lib/agentComponent.ts` exists.
 - **GOAL:** One wrapper module is the only place the coach touches `@convex-dev/agent`, exposing typed thread and message helpers.
 - **SCOPE:** `convex/lib/agentComponent.ts` · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (new) · `convex/lib/agentComponent.test.ts` (edit).
-- **STEPS:** 1) Code-map: `grep -rn "@convex-dev/agent" convex --include=*.ts` and `ls convex/lib/agentComponent.ts` (absent). 2) After Amit answers OPEN: the exact wrapper API is written into this ticket by the spec line; then create the module and tests.
+- **STEPS:**
+  1. Code-map: `grep -rn "@convex-dev/agent" convex --include=*.ts` (today: `convex/convex.config.ts`, `convex/lib/agentComponent.test.ts`) and `ls convex/lib/agentComponent.ts` (absent).
+  2. After Amit answers OPEN: the exact wrapper API is written into this ticket by the spec line; then create the module and tests.
 - **DONE:** `bun test convex/lib/agentComponent.test.ts` → `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/agentComponent.test.ts` pasted into the PR.
 - **DO NOT:** upgrade or unpin `@convex-dev/agent`; call a real model; touch `convex/schema.ts`, `convex/convex.config.ts`, `convex/auth*`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0016 / evidence / changed / unknowns / notes for ticket sync`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0016 / evidence / changed / unknowns / notes for ticket sync`; list STEPS 1–2 each with its evidence.
 - **SPEC:** Undecided until OPEN is answered: whether the wrapper exists at all, and so its exports. Fixed either way: no added tables, side-effect-free import, no `import.meta.glob` (unsupported in Bun, per the existing test's notes).
 - **TESTS:** Written once the API is decided; they will use `convex-test`-free fakes and no network.
 - **NUMBERS:** pinned `@convex-dev/agent` = 0.3.2 (`package.json`). No industry number.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-12: HARD_RULES §2 forbids AI SDKs while TRD §3 permits AI SDK + Convex Agent — is `@convex-dev/agent` (pinned 0.3.2) permitted as the coach foundation, and if so must `convex/coach.ts` go through one wrapper module `convex/lib/agentComponent.ts` instead of importing `@convex-dev/agent` directly? — Amit.
+- **OPEN:** Q-12: HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted? For this ticket: if `@convex-dev/agent` (pinned 0.3.2) is permitted, must `convex/coach.ts` reach it through one wrapper module `convex/lib/agentComponent.ts` instead of importing it directly? — Amit.
 
 ### TFV2-0017a — `crisis.check`: tests for the fixed crisis word check (`convex/crisis.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
 - **WHY:** PRD §4.2 F-24 (crisis text stops coaching and shows a fixed card, never model-written); REWRITE-PLAN-v2 §6 chunk 1 "crisis card". `convex/crisis.ts` has no test file; `convex/lib/crisisWords.test.ts` covers only the word list. Code truth: `CRISIS_PHRASES` is English-only; Hebrew phrases and per-country numbers are Q-15 and are not part of this ticket.
-- **GOAL:** `convex/crisis.test.ts` exists and proves `crisis.check` requires sign-in and returns `{ isCrisis }` exactly as `isCrisisText` decides, with `convex/crisis.ts` unchanged.
+- **GOAL:** `convex/crisis.test.ts` exists and proves `crisis.check` requires sign-in and returns `{ isCrisis }` equal to what `isCrisisText` decides, with `convex/crisis.ts` unchanged.
 - **SCOPE:** `convex/crisis.ts` (read only, unchanged) · test: `convex/crisis.test.ts`.
 - **MUTATES:** `convex/crisis.test.ts` (new). No source or data change.
 - **STEPS:**
   1. Code-map: `cat convex/crisis.ts` (queries `check` and `resourcesCard`, each starting with `requireUser`); `grep -n "CRISIS_PHRASES\|function normalise\|export function isCrisisText" -A4 convex/lib/crisisWords.ts`; `ls convex/crisis.test.ts` → absent.
-  2. Create `convex/crisis.test.ts` with `describe("crisis.check", …)` holding exactly the 5 TESTS cases, using `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`.
+  2. Create `convex/crisis.test.ts`: import `{ describe, expect, test }` from `bun:test`, `{ check }` from `./crisis`, and `{ makeFakeCtx, makeSignedOutCtx, run }` from `./lib/testFakeCtx`; declare the standard §16 `rejection` helper (`async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`) at the top; then `describe("crisis.check", …)` holding exactly the 5 TESTS cases.
   3. Run DONE.
 - **DONE:** `bun test convex/crisis.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/crisis.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/crisis.ts`, `convex/lib/crisisWords.ts` or the card text (written by people); add Hebrew phrases (Q-15); call a model; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0017a / evidence / changed: convex/crisis.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -3397,9 +3407,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: QueryCtx, args: { text: string }): Promise<{ isCrisis: boolean }> => { … },
   });
   ```
-  Errors: `"Not authenticated"` · no identity · TESTS 1. No user-facing copy is added.
+  The handler is `await requireUser(ctx); return { isCrisis: isCrisisText(args.text) };`. **Relies on:** `isCrisisText` (`convex/lib/crisisWords.ts`) lower-cases, maps `‘`/`’` to `'`, collapses whitespace, trims, returns `false` for empty text, else `true` when any `CRISIS_PHRASES` entry is a substring (the list holds `"kill myself"` and `"don't want to live"`, not `"plan"`). Errors: `"Not authenticated"` · no identity · TESTS 1. No user-facing copy is added.
 - **TESTS:** (`ctx = makeFakeCtx("users:1")`)
-  1. Given `makeSignedOutCtx()` / When `run(check, ctx, { text: "hi" })` runs / Then it rejects with `"Not authenticated"`.
+  1. Given `makeSignedOutCtx()` / When `run(check, ctx, { text: "hi" })` runs / Then `await rejection(run(check, ctx, { text: "hi" }))` is `"Not authenticated"`.
   2. Given `text: "I want to KILL   myself"` / Then `{ isCrisis: true }` (case and spacing ignored).
   3. Given `text: "I don’t want to live"` (curly apostrophe) / Then `{ isCrisis: true }`.
   4. Given `text: "Help me plan my Tuesday"` / Then `{ isCrisis: false }`.
@@ -3409,6 +3419,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0017b — `crisis.resourcesCard`: tests for the fixed resource card (`convex/crisis.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0017a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0017a.
@@ -3417,36 +3428,37 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/crisis.ts` (read only, unchanged) · test: `convex/crisis.test.ts`.
 - **MUTATES:** `convex/crisis.test.ts` (edit: one `describe` block appended). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "export const CRISIS_CARD" -A20 convex/lib/crisisWords.ts` (title, body, three resources); `bun test convex/crisis.test.ts` → `5 pass`.
-  2. Append `describe("crisis.resourcesCard", …)` with exactly the 3 TESTS cases.
+  1. Code-map: `grep -n "export const CRISIS_CARD" -A20 convex/lib/crisisWords.ts` (title, body, three resources); `grep -n "async function rejection" convex/crisis.test.ts` → 1 line (the standard §16 helper TFV2-0017a declared); `bun test convex/crisis.test.ts` → `5 pass`.
+  2. Add `resourcesCard` to the `./crisis` import, add `import { CRISIS_CARD } from "./lib/crisisWords";`, and append `describe("crisis.resourcesCard", …)` with exactly the 3 TESTS cases, reusing that `rejection` helper.
   3. Run DONE.
 - **DONE:** `bun test convex/crisis.test.ts` → `8 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (5) and after (8), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/crisis.test.ts` pasted into the PR, before (`5 pass`) and after (`8 pass`).
 - **DO NOT:** edit the card text or `convex/crisis.ts`; add emoji, animation or model output; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0017b / evidence / changed: convex/crisis.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
-- **SPEC:** Existing, unchanged: `export const resourcesCard = query({ args: {}, returns: v.object({ title: v.string(), body: v.string(), resources: v.array(v.object({ label: v.string(), detail: v.string() })) }), handler: async (ctx: QueryCtx): Promise<CrisisCard> => … })`. Errors: `"Not authenticated"` · no identity · TESTS 1. The card copy is English only today (`"You are not alone, and help is available"`); its Hebrew text and country numbers are Q-15, outside this ticket.
+- **SPEC:** Existing, unchanged: `export const resourcesCard = query({ args: {}, returns: v.object({ title: v.string(), body: v.string(), resources: v.array(v.object({ label: v.string(), detail: v.string() })) }), handler: async (ctx) => { await requireUser(ctx); return CRISIS_CARD; } })`. Errors: `"Not authenticated"` · no identity · TESTS 1. The card copy is English only today (`"You are not alone, and help is available"`); its Hebrew text and country numbers are Q-15, outside this ticket.
 - **TESTS:**
-  1. Given `makeSignedOutCtx()` / When `run(resourcesCard, ctx, {})` runs / Then it rejects with `"Not authenticated"`.
-  2. Given a signed-in ctx / Then the result `toEqual`s `CRISIS_CARD` imported from `./lib/crisisWords`.
+  1. Given `makeSignedOutCtx()` / When `run(resourcesCard, ctx, {})` runs / Then `await rejection(run(resourcesCard, ctx, {}))` is `"Not authenticated"`.
+  2. Given `makeFakeCtx("users:1")` / Then the result `toEqual`s `CRISIS_CARD` imported from `./lib/crisisWords`.
   3. Given the result / Then `resources.map((r) => r.label)` equals `["Emergency services", "A crisis line near you", "Someone you trust"]` and `body` contains `"Country-specific helpline numbers are not set up in Tempo yet"`.
 - **NUMBERS:** card is 100% fixed text (TESTS 2); 8 of 8 pass. Latency: n/a.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0018 — AI gate `requireApprovedForAi`: tests (`convex/lib/aiGate.ts`)
-- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0012 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0012.
+- **WHEN:** after TFV2-0000a, TFV2-0012.
 - **WHY:** PRD §4.11 (no model call before the account is signed in and approved); REWRITE-PLAN-v2 §6 chunk 1 "auth→entitlement→quota ordering". Code truth: `requireApprovedForAi(ctx: ActionCtx)` runs `internal.approval.assertApprovedForAi` (an `internalQuery` that calls `requireApprovedUser` and returns `null`); there is no quota stage, and adding one is not this ticket (see TFV2-0011b). Neither file has a test.
 - **GOAL:** `convex/lib/aiGate.test.ts` exists and proves the gate delegates to `approval:assertApprovedForAi`, propagates its refusal, and that the internal query accepts only approved, signed-in users, with no source change.
 - **SCOPE:** `convex/lib/aiGate.ts` (read only, unchanged) · test: `convex/lib/aiGate.test.ts`.
 - **MUTATES:** `convex/lib/aiGate.test.ts` (new). No source or data change.
 - **STEPS:**
   1. Code-map: `cat convex/lib/aiGate.ts`; `grep -n "export const assertApprovedForAi" -A8 convex/approval.ts`; `ls convex/lib/aiGate.test.ts` → absent.
-  2. Create `convex/lib/aiGate.test.ts` with exactly the 6 TESTS cases. Import `getFunctionName` from `convex/server`, `requireApprovedForAi` from `./aiGate`, `assertApprovedForAi` from `../approval`, `PENDING_APPROVAL_MESSAGE` from `./approval`, and `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./testFakeCtx`. Save/delete/restore `process.env.TEMPO_ADMIN_EMAILS` around each case as in TFV2-0012.
+  2. Create `convex/lib/aiGate.test.ts` with exactly the 6 TESTS cases. Import `{ afterEach, beforeEach, expect, mock, test }` from `bun:test`, `getFunctionName` from `convex/server`, `type ActionCtx` from `../_generated/server`, `requireApprovedForAi` from `./aiGate`, `assertApprovedForAi` from `../approval`, `PENDING_APPROVAL_MESSAGE` from `./approval`, and `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./testFakeCtx`; declare the standard §16 `rejection` helper (`async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`). Around each case: `const originalAdmins = process.env.TEMPO_ADMIN_EMAILS; beforeEach(() => { delete process.env.TEMPO_ADMIN_EMAILS; }); afterEach(() => { if (originalAdmins === undefined) delete process.env.TEMPO_ADMIN_EMAILS; else process.env.TEMPO_ADMIN_EMAILS = originalAdmins; });`.
   3. Run DONE.
 - **DONE:** `bun test convex/lib/aiGate.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/aiGate.test.ts` pasted into the PR.
 - **DO NOT:** add a quota stage; call a model or the network; edit `convex/lib/aiGate.ts` or `convex/approval.ts`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0018 / evidence / changed: convex/lib/aiGate.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -3457,11 +3469,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Errors (exact · trigger · test): rejection passed through unchanged · `runQuery` rejects with `PENDING_APPROVAL_MESSAGE` · 2; `"Not authenticated"` · internal query with no identity · 5; `PENDING_APPROVAL_MESSAGE` · internal query for a pending user · 6. No user-facing copy.
 - **TESTS:** (fake action ctx: `const runQuery = mock(async (_ref: unknown, _args: unknown) => null); const actionCtx = { runQuery } as unknown as ActionCtx;`)
   1. Given `actionCtx` / When `requireApprovedForAi(actionCtx)` runs / Then `runQuery` was called once, `getFunctionName(runQuery.mock.calls[0][0])` equals `"approval:assertApprovedForAi"` and the second argument equals `{}`.
-  2. Given `runQuery` rejecting with `new Error(PENDING_APPROVAL_MESSAGE)` / Then `requireApprovedForAi` rejects with that exact message.
+  2. Given `runQuery` rejecting with `new Error(PENDING_APPROVAL_MESSAGE)` / Then `await rejection(requireApprovedForAi(actionCtx))` is `PENDING_APPROVAL_MESSAGE`.
   3. Given `runQuery` resolving `null` / Then `requireApprovedForAi` resolves `undefined`.
   4. Given `makeFakeCtx("users:1")` with user 1 patched `approvalStatus: "approved"` / When `run(assertApprovedForAi, ctx, {})` runs / Then it resolves `null`.
-  5. Given `makeSignedOutCtx()` / Then `run(assertApprovedForAi, ctx, {})` rejects with `"Not authenticated"`.
-  6. Given user 1 patched `approvalStatus: "pending"` / Then it rejects with `PENDING_APPROVAL_MESSAGE`.
+  5. Given `makeSignedOutCtx()` / Then `await rejection(run(assertApprovedForAi, ctx, {}))` is `"Not authenticated"`.
+  6. Given `makeFakeCtx("users:1")` with user 1 patched `approvalStatus: "pending"` / Then `await rejection(run(assertApprovedForAi, ctx, {}))` is `PENDING_APPROVAL_MESSAGE`.
 - **NUMBERS:** ordering invariant: authentication, then approval, then (in callers) the model — 100% of cases; 6 of 6 pass. Latency: n/a.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -3470,6 +3482,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0171; not a build ticket.
 
 ### TFV2-0020a — Hebrew voice detector `apps/web/lib/heVoice.ts`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lib lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -3479,11 +3492,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/lib/heVoice.ts` (new) · `apps/web/lib/heVoice.test.ts` (new). No copy, route or data change.
 - **STEPS:**
   1. Code-map: `ls apps/web/lib | grep -i voice` → no `heVoice*` file today.
-  2. Create `apps/web/lib/heVoice.ts` exactly as SPEC (no imports).
+  2. Create `apps/web/lib/heVoice.ts` as in SPEC (no imports).
   3. Create `apps/web/lib/heVoice.test.ts` with exactly the 8 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test apps/web/lib/heVoice.test.ts` → `8 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/heVoice.test.ts` pasted into the PR, plus the exit codes of `bun run lint` and `bun run typecheck`.
 - **DO NOT:** edit any copy file (`apps/web/lib/i18n.ts`, `apps/web/lib/i18n-groups/*` — that is TFV2-0020b); run the detector over `MESSAGES` in a test (it would fail until the sweep lands); add or remove a form from the SPEC list; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0020a / evidence / changed: apps/web/lib/heVoice.ts, apps/web/lib/heVoice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -3497,10 +3510,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   /** Every listed form found as a whole word (no Hebrew letter immediately before or after), deduplicated, in list order. */
   export function findGenderedHebrew(text: string): string[];
   ```
-  Matching: for each form `f`, `new RegExp(\`(?<![\\u05D0-\\u05EA])${escapeRegExp(f)}(?![\\u05D0-\\u05EA])\`, "u")` where `escapeRegExp` escapes `/` and other regex characters; forms are compiled once at module load. Pure; no errors thrown; no user-facing copy.
+  Matching: for each form `f`, `new RegExp(\`(?<![\\u05D0-\\u05EA])${escapeRegExp(f)}(?![\\u05D0-\\u05EA])\`, "u")` where `const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");` (a module-private helper; it escapes `/` and every regex syntax character); forms are compiled once at module load. A form glued to a one-letter prefix (ש, כש, ו, ה, ל, ב) is not matched unless the list holds the prefixed form itself (`כשתחזרי`, `כשתחזור`). Pure; no errors thrown; no user-facing copy.
 - **TESTS:**
   1. Given `"נסי שוב"` / Then `["נסי"]`.
-  2. Given `"כל מה שתרשמי לפני חצות"` / Then `["תרשמי"]`.
+  2. Given `"תרשמי מה שקרה"` / Then `["תרשמי"]`.
   3. Given `"מנסים שוב"` (contains the letters נסי inside a word) / Then `[]`.
   4. Given `"לנסות שוב"` / Then `[]` (the §12 infinitive voice passes).
   5. Given `"אם אתה מוכן/ה"` / Then `["אתה", "מוכן/ה"]` (list order).
@@ -3512,6 +3525,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0020b — Hebrew voice sweep of existing web copy — OPEN
+- **STATUS:** open — new: The replacement Hebrew wording for every key the STEP 1 command lists (about 30 strings across 5 group files) — machine-written Hebrew is not final (OVERNIGHT-RUN.md), so who approves the wording, and do you approve splitting the sweep into one ticket per group file?
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0020a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0020a.
@@ -3531,6 +3545,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: The replacement Hebrew wording for every key the STEP 1 command lists (about 30 strings across 5 group files) — machine-written Hebrew is not final (OVERNIGHT-RUN.md), so who approves the wording, and do you approve splitting the sweep into one ticket per group file? — Amit.
 
 ### TFV2-0021 — TempoShell: route-level layout spec (`apps/web/components/tempo/TempoShell.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b.
@@ -3539,12 +3554,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/tempo/TempoShell.tsx` (read only, unchanged) · test: `tests/e2e/screens/tempo-shell.spec.ts`.
 - **MUTATES:** `tests/e2e/screens/tempo-shell.spec.ts` (new). No source, route registration (`/plan` is already in `E2E_WIRING_ROUTES`), data or env change.
 - **STEPS:**
-  1. Code-map: `grep -n "\"/plan\"" apps/web/lib/e2eWiringRoutes.ts` (present); `grep -n "className=\"tp-app\"" -A8 apps/web/components/tempo/TempoShell.tsx` (`data-component="TempoShell"`, `data-rail`, `data-coach`); `grep -n "\.tp-app {\|\.tp-rail {\|\.tp-topbar {\|\.tp-tabbar {\|max-width: 1023px\|max-width: 767px" apps/web/app/tempo.css`; `cat tests/e2e/wiring/plan.spec.ts` (how `/plan` renders signed out).
-  2. Create `tests/e2e/screens/tempo-shell.spec.ts` with exactly the TESTS cases, using `VIEWPORTS`, `expectDir` and `expectMotionBudget` from `tests/e2e/helpers/harness.ts`. Open the route with `page.goto(\`/plan?lang=${lang}\`)` and wait for `[data-component="TempoShell"]`.
+  1. Code-map: `grep -n "\"/plan\"" apps/web/lib/e2eWiringRoutes.ts` (present); `grep -n "className=\"tp-app\"" -A8 apps/web/components/tempo/TempoShell.tsx` (`data-component="TempoShell"`, `data-rail`, `data-coach`); `grep -n "\.tp-app {\|\.tp-rail {\|\.tp-topbar {\|\.tp-tabbar {\|max-width: 1023px\|max-width: 767px" apps/web/app/tempo.css`; `cat tests/e2e/wiring/plan.spec.ts` (how `/plan` renders signed out); `grep -n "^html, body\|^\.tp-tabbar { display: none\|max-width: 1023px\|\[dir=\"rtl\"\] \.tp-rail\|\.tp-topbar__menu { display: inline-flex" apps/web/app/tempo.css` → lines 57, 460, 497, 501, 504; `grep -n "inert={(narrow\|\[data-component=\"CommandTrigger\"\]" apps/web/components/tempo/TempoShell.tsx` → includes lines 124 and 305; `grep -n '^  "skip"\|^  "top.menu"\|^  "rail.label"\|^  "tab.label"' apps/web/lib/i18n.ts` → 8 lines (EN and HE).
+  2. Create `tests/e2e/screens/tempo-shell.spec.ts` with exactly the 4 numbered TESTS bullets, using the §22 spec skeleton: import `{ test, expect }` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `expectMotionBudget`, `trackConsoleErrors` from `../helpers/harness` (TFV2-0000b); first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every test starts `const errors = trackConsoleErrors(page);`, calls `page.setViewportSize(vp)`, then `openScreen(page, "/plan", { state: "default", lang })` (opens `/plan?state=default&lang=<lang>` and waits for networkidle; `/plan` ignores `state`), waits for `[data-component="TempoShell"]` to be visible, and ends `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])` (§22 screen rule: the placeholder Convex URL cannot connect). A (loop) bullet runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`, named `"<bullet name> · ${vpName} · ${lang}"`; a (once) bullet runs one time at the viewport and language it names (§23.1).
   3. Run DONE. A failing case is a shell defect: report `blocked: question — <case>`; do not edit `TempoShell.tsx` here.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tempo-shell.spec.ts --reporter=line` → `7 passed`, no failures.
-- **EVIDENCE:** the Playwright summary pasted into the PR.
-- **DO NOT:** edit any file under `apps/`; set `PLAYWRIGHT_BASE_URL`; assert on Convex data (the route renders signed out with a placeholder Convex URL); assert console errors on this real route (its Convex socket cannot connect); touch `convex/**`, `.github/**`, `.env*`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tempo-shell.spec.ts --reporter=line` → `7 passed` (4 × 1 loop bullet + 3 once bullets), no failures.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/tempo-shell.spec.ts --reporter=line` pasted into the PR.
+- **DO NOT:** edit any file under `apps/`; set `PLAYWRIGHT_BASE_URL`; assert on Convex data (the route renders signed out with a placeholder Convex URL); assert the console-error array without first dropping messages matching `/example\.convex\.cloud|WebSocket/i`; run `expectMotionBudget` on `.tp-app` (a loading skeleton in the page body loops for 1.4 s, §22); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0021 / evidence / changed: tests/e2e/screens/tempo-shell.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Behaviour under test (existing code):
   - Elements: shell `[data-component="TempoShell"]` (`.tp-app`); rail `nav[data-component="Sidebar"]` (`.tp-rail`, `aria-label` EN "Pages" / HE "דפים"); top bar `header[data-component="Topbar"]`; main `main#main`; tab bar `nav[data-component="TabBar"]` (`aria-label` EN "Main" / HE "ראשי"); skip link `a.tp-skip` EN "Skip to page" / HE "דלגו לדף"; drawer opener = the top bar button with `aria-label` EN "Open pages" / HE "פתיחת הדפים".
@@ -3552,30 +3567,33 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Mobile 390×844: rail has the `inert` attribute and lies fully outside the viewport (EN: its right edge ≤ 0; HE: its left edge ≥ 390, because `[dir="rtl"] .tp-rail { transform: translateX(100%) }`); tab bar visible with height ≥ 64 px (`--tp-tabbar-h`); `document.documentElement.scrollWidth <= 390` (no sideways scroll).
   - Direction: in HE the docked rail's box is to the right of `main` (logical properties); in EN to the left.
   - Drawer (mobile): clicking the opener sets `data-rail="open"`, the opener's `aria-expanded="true"`, removes `inert` from the rail and moves focus inside the rail; Escape sets `data-rail="closed"` and returns focus to the opener.
-  - Motion: `.tp-rail` transition `--tp-dur-slow` (240 ms) ≤ 250 ms; reduced motion collapses it (tempo.css `0.01ms` rule).
+  - Motion: below 1024 px `.tp-rail` has `transition: transform var(--tp-dur-slow) var(--tp-ease-out)` (240 ms) ≤ 250 ms; reduced motion collapses it (tempo.css `0.01ms` rule). The motion check is scoped to `.tp-rail`.
+  - **Relies on** (checked in STEP 1): `html, body { margin: 0; padding: 0; }` (`apps/web/app/tempo.css` line 57), so the shell spans the full viewport; `.tp-tabbar { display: none; }` (line 460); inside `@media (max-width: 1023px)` (line 497): `.tp-rail { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 40; width: min(var(--tp-rail-w), 86vw); transform: translateX(-100%); transition: transform var(--tp-dur-slow) var(--tp-ease-out); box-shadow: var(--tp-shadow-modal); }` (line 500; at 390 px the width is 264 px), `[dir="rtl"] .tp-rail { transform: translateX(100%); }` (line 501), `.tp-topbar__menu { display: inline-flex; }` (line 504); `TempoShell.tsx` passes `inert={(narrow && !railOpen) || coachModal}` to `Sidebar` (line 305) and on drawer open focuses `[data-component="Sidebar"] [data-component="CommandTrigger"]` (line 124); the opener is `header[data-component="Topbar"] .tp-topbar__menu` with `aria-expanded={railOpen}` (`Topbar.tsx` lines 41–44); i18n keys `skip` (EN "Skip to page" / HE "דלגו לדף"), `top.menu` ("Open pages" / "פתיחת הדפים"), `rail.label` ("Pages" / "דפים"), `tab.label` ("Main" / "ראשי") in `apps/web/lib/i18n.ts`.
   - States: `default` (docked), `drawer-closed`, `drawer-open`, RTL. `loading`, `empty`, `error`, `offline`, `success`, `disabled`: n/a for the shell — each slot's content owns them.
-- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`)
-  1–4. For each of `[["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]]` × `["en", "he"]`: Given `page.setViewportSize(viewport)` and `/plan?lang=<lang>` / Then `expectDir(page, lang)` passes, the skip link has the SPEC text for `lang`, and the viewport's SPEC geometry holds (desktop: rail 264±1 px wide, not inert, top bar ≥ 56 px tall, tab bar hidden, rail on the left in EN / right in HE; mobile: rail inert and off-screen on the leading side, tab bar ≥ 64 px tall and visible, `scrollWidth <= 390`).
-  5–6. For `lang` in `["en", "he"]` at 390×844: Given the page / When the opener (SPEC `aria-label` for `lang`) is clicked / Then `data-rail="open"`, `aria-expanded="true"`, the rail has no `inert`, and `document.activeElement` is inside the rail; When Escape is pressed / Then `data-rail="closed"` and the opener is focused.
-  7. Given 1280×800, EN / When `expectMotionBudget(page, ".tp-app")` runs / Then it passes (≤ 250 ms, collapsed under reduced motion).
+- **TESTS:** (numbered; §22 spec skeleton as STEP 2 states)
+  1. (loop) Given the viewport and `lang` / Then `expectDir(page, lang)` passes, `a.tp-skip` has the SPEC text for `lang`, and the viewport's SPEC geometry holds (desktop: rail 264±1 px wide, not inert, top bar ≥ 56 px tall, tab bar hidden, rail box left of `main#main` in EN / right of it in HE; mobile: rail has `inert` and lies off-screen on the leading side (EN right edge ≤ 0, HE left edge ≥ 390), tab bar visible and ≥ 64 px tall, `document.documentElement.scrollWidth <= 390`).
+  2. (once · en · mobile) Given the page / When the opener (`aria-label` "Open pages") is clicked / Then the shell has `data-rail="open"`, the opener `aria-expanded="true"`, the rail has no `inert`, and `document.activeElement` is inside the rail; When Escape is pressed / Then `data-rail="closed"` and the opener is focused.
+  3. (once · he · mobile) Given the page / When the opener (`aria-label` "פתיחת הדפים") is clicked / Then the shell has `data-rail="open"`, the opener `aria-expanded="true"`, the rail has no `inert`, and `document.activeElement` is inside the rail; When Escape is pressed / Then `data-rail="closed"` and the opener is focused.
+  4. (once · en · mobile) When `expectMotionBudget(page, ".tp-rail")` runs / Then it passes (240 ms ≤ 250 ms; ≤ 0.001 s under reduced motion).
 - **NUMBERS:** rail 264 px ±1 (`--tp-rail-w`); top bar ≥ 56 px (`--tp-topbar-h`); tab bar ≥ 64 px (`--tp-tabbar-h`) — tokens, CONVENTIONS §5; no horizontal overflow at 390 px; motion ≤ 250 ms and collapsed under reduced motion (DESIGN.md motion rule; `expectMotionBudget`). LCP/CLS: measured by the screen tickets, not here.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0022 — Sidebar / PageTree: route-level spec (`apps/web/components/tempo/Sidebar.tsx`)
-- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0021 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0021 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0021.
+- **WHEN:** after TFV2-0000b, TFV2-0021.
 - **WHY:** DESIGN.md §9 Sidebar / PageTree; docs/design/v3/components.md §1; REWRITE-PLAN-v2 §6 chunk 1. Code truth: `Sidebar.tsx` renders the brand, the `CommandTrigger` button, four primary links, the page tree (`data-component="PageTree"`, up to 7 pages from `notes.listForRail`, then "All pages" and "Templates"), a "Library" group of 7 links, a "You" group of 6 links, and a foot with reading font, language, settings and sign-out. Depends on TFV2-0021 only so the two shell specs land one at a time.
 - **GOAL:** `tests/e2e/screens/sidebar.spec.ts` proves on `/plan` the rail's groups, link names, `aria-current`, the reading-font and language toggles, and target sizes in both languages, with no source change.
 - **SCOPE:** `apps/web/components/tempo/Sidebar.tsx` (read only, unchanged) · test: `tests/e2e/screens/sidebar.spec.ts`.
 - **MUTATES:** `tests/e2e/screens/sidebar.spec.ts` (new). No source or data change.
 - **STEPS:**
   1. Code-map: `grep -n "const PRIMARY\|const LIBRARY\|const YOU" -A9 apps/web/components/tempo/Sidebar.tsx`; `grep -n "^  \"rail\.\|^  \"nav\." apps/web/lib/i18n.ts` (EN lines 61–105, HE lines 665–708).
-  2. Create `tests/e2e/screens/sidebar.spec.ts` with exactly the TESTS cases at 1280×800 unless a case names 390×844; scope every locator to `nav[data-component="Sidebar"]`.
+  2. Create `tests/e2e/screens/sidebar.spec.ts` with exactly the 4 numbered TESTS bullets, using the §22 spec skeleton: import `{ test, expect }` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectTargetSize`, `trackConsoleErrors` from `../helpers/harness` (TFV2-0000b); first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every test starts `const errors = trackConsoleErrors(page);`, calls `page.setViewportSize(vp)`, then `openScreen(page, "/plan", { state: "default", lang })` (opens `/plan?state=default&lang=<lang>` and waits for networkidle; `/plan` ignores `state`), waits for `[data-component="TempoShell"]` to be visible, and ends `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])` (§22 screen rule: the placeholder Convex URL cannot connect). A (loop) bullet runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`, named `"<bullet name> · ${vpName} · ${lang}"`; a (once) bullet runs one time at the viewport and language it names (§23.1). Scope every locator to `nav[data-component="Sidebar"]` and read text with CSS locators (`.tp-rail__label`, `.tp-tree-item__label`, `[aria-current="page"]`) and `allTextContents()` / `toHaveText`, not role queries: at 390 px the rail is `inert`, which removes it from the accessibility tree.
   3. Run DONE; a failing case is reported, never fixed in `Sidebar.tsx`.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sidebar.spec.ts --reporter=line` → `5 passed`.
-- **EVIDENCE:** the Playwright summary pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sidebar.spec.ts --reporter=line` → `10 passed` (4 × 2 loop bullets + 2 once bullets).
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/sidebar.spec.ts --reporter=line` pasted into the PR.
 - **DO NOT:** edit `Sidebar.tsx` or `apps/web/lib/i18n.ts`; click "Sign out" (it calls Convex Auth); assert page-tree rows from Convex (signed out, `notes.listForRail` is skipped, so neither pages nor "No pages yet" render); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0022 / evidence / changed: tests/e2e/screens/sidebar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Copy (existing keys; EN / HE):
@@ -3590,43 +3608,44 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   | You links | Insights · Search · Coach history · Recent activity · Memory · Nags | תובנות · חיפוש · היסטוריית מאמן · פעילות אחרונה · זיכרון · תזכורות |
   | foot | Reading font · עברית (shown in EN, `lang="he"`) · Settings · Sign out | גופן קריאה · English (`lang="en"`) · הגדרות · התנתקות |
   Behaviour: on `/plan` exactly one link in the rail has `aria-current="page"`: "Plan"; the reading-font button has `aria-pressed` that flips on click; the language button switches `<html lang dir>`; every `.tp-tree-item` is ≥ 36 px tall (tempo.css), so ≥ 24×24. States: `default`, `rtl`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a for the rail chrome (the signed-in page list is Convex data, verified by the page-tree screen tickets).
-- **TESTS:**
-  1–2. For `lang` in `["en", "he"]`: Given `/plan?lang=<lang>` / Then the rail's group labels, the CommandTrigger text and `Ctrl K` kbd, and the link names of the primary, page tree, Library and You groups equal the SPEC table in order; and `[aria-current="page"]` inside the rail has count 1 with accessible name "Plan" / "תכנון".
-  3. Given EN / When the "Reading font" button is clicked / Then its `aria-pressed` changes from `"false"` to `"true"`; clicked again / Then `"false"`.
-  4. Given EN / When the "עברית" button is clicked / Then `<html>` has `lang="he"` and `dir="rtl"` and the button now reads "English".
-  5. Given EN at 1280×800 / Then `expectTargetSize(page, 'nav[data-component="Sidebar"]')` passes.
+- **TESTS:** (numbered; §22 spec skeleton as STEP 2 states)
+  1. (loop) Given the viewport and `lang` / Then the rail's group labels, the CommandTrigger text and `Ctrl K` kbd, and the link labels of the primary, page tree, Library and You groups equal the SPEC table for `lang` in order; and `[aria-current="page"]` inside the rail has count 1 and its `.tp-tree-item__label` text is "Plan" (EN) / "תכנון" (HE).
+  2. (loop) Given the viewport and `lang` / Then `expectTargetSize(page, 'nav[data-component="Sidebar"]')` passes.
+  3. (once · en · desktop) When the "Reading font" button is clicked / Then its `aria-pressed` changes from `"false"` to `"true"`; clicked again / Then `"false"`.
+  4. (once · en · desktop) When the "עברית" button is clicked / Then `<html>` has `lang="he"` and `dir="rtl"` and the button now reads "English".
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`); text contrast ≥ 4.5:1 via tokens only (WCAG 2.2 SC 1.4.3; `bun run scan:design-tokens`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023 — Topbar: route-level spec (`apps/web/components/tempo/Topbar.tsx`)
-- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0022 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0022 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0022.
+- **WHEN:** after TFV2-0000b, TFV2-0022.
 - **WHY:** DESIGN.md §9 Topbar (glass, breadcrumb); DESIGN.md §5 (glass fallback); REWRITE-PLAN-v2 §6 chunk 1. Code truth: `Topbar.tsx` renders the drawer opener (`.tp-topbar__menu`, hidden ≥ 1024 px), breadcrumbs (`crumbsFor`), a search button, a theme toggle with `aria-pressed`, and an Avatar only when the profile has initials. There is no "Saved" indicator in the Topbar today (the old ticket's "Saved" state does not exist; save status belongs to the page editor screen).
 - **GOAL:** `tests/e2e/screens/topbar.spec.ts` proves on `/plan` the top bar's breadcrumb, buttons, theme toggle, glass fallback and responsive menu button in both languages, with no source change.
 - **SCOPE:** `apps/web/components/tempo/Topbar.tsx` (read only, unchanged) · test: `tests/e2e/screens/topbar.spec.ts`.
 - **MUTATES:** `tests/e2e/screens/topbar.spec.ts` (new). No source or data change.
 - **STEPS:**
-  1. Code-map: `cat apps/web/components/tempo/Topbar.tsx`; `grep -n "route: \"/plan\"" apps/web/lib/tempo-nav.ts` (label `nav.plan`); `grep -n "\.tp-glass\|data-glass=\"off\"\|\.tp-topbar__menu" apps/web/app/tempo.css`.
-  2. Create `tests/e2e/screens/topbar.spec.ts` with exactly the TESTS cases, scoping locators to `header[data-component="Topbar"]`.
+  1. Code-map: `cat apps/web/components/tempo/Topbar.tsx`; `grep -n "route: \"/plan\"" apps/web/lib/tempo-nav.ts` (label `nav.plan`); `grep -n "\.tp-glass\|data-glass=\"off\"\|\.tp-topbar__menu" apps/web/app/tempo.css` (line 118 holds the `data-glass="off"` rule); `grep -n 'data-component="Avatar"' apps/web/components/tempo/Topbar.tsx` → 1 line; `grep -n "Dialog\." apps/web/components/tempo/CommandPalette.tsx` → the palette is a Radix `Dialog`.
+  2. Create `tests/e2e/screens/topbar.spec.ts` with exactly the 4 numbered TESTS bullets, using the §22 spec skeleton: import `{ test, expect }` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `trackConsoleErrors` from `../helpers/harness` (TFV2-0000b); first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every test starts `const errors = trackConsoleErrors(page);`, calls `page.setViewportSize(vp)`, then `openScreen(page, "/plan", { state: "default", lang })` (opens `/plan?state=default&lang=<lang>` and waits for networkidle; `/plan` ignores `state`), waits for `[data-component="TempoShell"]` to be visible, and ends `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])` (§22 screen rule: the placeholder Convex URL cannot connect). A (loop) bullet runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`, named `"<bullet name> · ${vpName} · ${lang}"`; a (once) bullet runs one time at the viewport and language it names (§23.1). Scope locators to `header[data-component="Topbar"]`. Declare the §23.2 `tokenValue(scope, cssProp, token)` helper at the top of the spec as §23.2 gives it (with `import type { Locator } from "@playwright/test";`).
   3. Run DONE; a failing case is reported, never fixed in `Topbar.tsx`.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/topbar.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** the Playwright summary pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/topbar.spec.ts --reporter=line` → `7 passed` (4 × 1 loop bullet + 3 once bullets).
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/topbar.spec.ts --reporter=line` pasted into the PR.
 - **DO NOT:** edit `Topbar.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/shell.ts`; add a "Saved" indicator; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0023 / evidence / changed: tests/e2e/screens/topbar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
-- **SPEC:** Copy (existing keys; EN / HE): current crumb (`.tp-topbar__crumbs strong`) on `/plan` "Plan" / "תכנון"; menu button `aria-label` "Open pages" / "פתיחת הדפים"; search button `aria-label` "Search or jump to" / "חיפוש או מעבר אל"; theme button `aria-label` "Dark theme" / "ערכת צבעים כהה" while light (`aria-pressed="false"`) and "Light theme" / "ערכת צבעים בהירה" while dark (`aria-pressed="true"`). Layout: `.tp-topbar.tp-glass`, min-height 56 px (`--tp-topbar-h`); menu button `display: none` at ≥ 1024 px, shown below. Glass fallback: with `data-glass="off"` on `<html>`, the top bar's `background-color` equals the computed value of `var(--tp-glass-solid)` (DESIGN.md §5). Signed out, the profile is `undefined`, so no Avatar renders. States: `default`, `dark`, `glass-off`, `rtl`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (the bar shows no async content of its own).
-- **TESTS:**
-  1–2. For `lang` in `["en", "he"]` at 1280×800: Given `/plan?lang=<lang>` / Then the current crumb text, the search and theme button labels equal SPEC; the menu button is not visible; the bar's height ≥ 56 px; and `[data-component="Avatar"]` has count 0.
-  3. Given 390×844, EN / Then the menu button is visible with `aria-expanded="false"`.
-  4. Given 1280×800, EN / When the theme button is clicked / Then `<html>` has `data-theme="dark"`, the button has `aria-pressed="true"` and label "Light theme"; clicked again / Then `data-theme="light"` and `aria-pressed="false"`.
-  5. Given 1280×800, EN / When the search button is clicked / Then a `role="dialog"` (the command palette) is visible; Escape closes it.
-  6. Given 1280×800, EN / When `document.documentElement.dataset.glass = "off"` is set and a probe `<div style="background: var(--tp-glass-solid)">` is appended to `<body>` / Then the bar's computed `background-color` equals the probe's.
+- **SPEC:** Copy (existing keys; EN / HE): current crumb (`.tp-topbar__crumbs strong`) on `/plan` "Plan" / "תכנון"; menu button `aria-label` "Open pages" / "פתיחת הדפים"; search button `aria-label` "Search or jump to" / "חיפוש או מעבר אל"; theme button `aria-label` "Dark theme" / "ערכת צבעים כהה" while light (`aria-pressed="false"`) and "Light theme" / "ערכת צבעים בהירה" while dark (`aria-pressed="true"`). Layout: `.tp-topbar.tp-glass`, min-height 56 px (`--tp-topbar-h`); menu button `display: none` at ≥ 1024 px, shown below. Glass fallback: with `data-glass="off"` on `<html>` (`[data-glass="off"] .tp-glass { background: var(--tp-glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }`, tempo.css line 118), the top bar's computed `background-color` equals `tokenValue(header, "background-color", "--tp-glass-solid")` (§23.2; DESIGN.md §5). The search button opens the command palette, a Radix `Dialog` (`CommandPalette.tsx`) whose content has `role="dialog"`. The Avatar, when rendered, is `span.tp-avatar[data-component="Avatar"]` (`Topbar.tsx` line 87). Signed out, the profile is `undefined`, so no Avatar renders. States: `default`, `dark`, `glass-off`, `rtl`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (the bar shows no async content of its own).
+- **TESTS:** (numbered; §22 spec skeleton as STEP 2 states)
+  1. (loop) Given the viewport and `lang` / Then the current crumb text and the search and theme button labels equal SPEC for `lang`; `[data-component="Avatar"]` has count 0; at desktop the menu button is not visible and the bar's height ≥ 56 px; at mobile the menu button is visible with `aria-expanded="false"`.
+  2. (once · en · desktop) When the theme button is clicked / Then `<html>` has `data-theme="dark"`, the button has `aria-pressed="true"` and label "Light theme"; clicked again / Then `data-theme="light"` and `aria-pressed="false"`.
+  3. (once · en · desktop) When the search button is clicked / Then a `role="dialog"` is visible; When Escape is pressed / Then it is gone.
+  4. (once · en · desktop) When `page.evaluate(() => { document.documentElement.dataset.glass = "off"; })` runs / Then the bar's computed `background-color` equals `await tokenValue(page.locator('header[data-component="Topbar"]'), "background-color", "--tp-glass-solid")`.
 - **NUMBERS:** height ≥ 56 px (`--tp-topbar-h`); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `.tp-btn` min-height 44 px); contrast via tokens (WCAG 2.2 SC 1.4.3).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023a — Component harness route: register `/e2e/components` + index page
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c.
@@ -3641,7 +3660,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
        "/e2e/components",
        "/e2e/components/(.*)",
      ```
-  3. Create `apps/web/app/e2e/components/page.tsx` exactly as SPEC.
+  3. Create `apps/web/app/e2e/components/page.tsx` as in SPEC.
   4. Create `tests/e2e/screens/components-harness.spec.ts` with exactly the 2 TESTS cases.
   5. Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/components-harness.spec.ts --reporter=line` → `2 passed`.
@@ -3652,6 +3671,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   // apps/web/app/e2e/components/page.tsx
   "use client";
+  import type React from "react";
   import { notFound } from "next/navigation";
   import { isE2EBypass } from "@/lib/e2e/e2eState";
   export default function ComponentHarnessIndex(): React.JSX.Element {
@@ -3660,24 +3680,25 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   }
   ```
   The heading is a developer-only label on a dev-only route that 404s in production; it is not product copy and has no Hebrew. No states beyond `default`.
-- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`)
-  1. Given the local webServer (bypass on) / When `page.goto("/e2e/components")` runs / Then the response status is 200 and `[data-testid="component-harness-index"] h1` has text "Component harness".
-  2. Given `/e2e/components/not-built-yet` / When it is opened / Then the URL does not contain `/sign-in` (the proxy released it; the page itself is a 404 until a component ticket creates it).
+- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` imports `{ test, expect }` from `@playwright/test` and `VIEWPORTS`, `trackConsoleErrors` from `../helpers/harness`; this developer route has no states, copy or direction, so both bullets run once; the index has no `<id>-default` section, so it is opened with `page.goto`, not `openHarness`)
+  1. (once · en · desktop) Given `const errors = trackConsoleErrors(page)`, the local webServer (bypass on) and `page.setViewportSize(VIEWPORTS.desktop)` / When `page.goto("/e2e/components")` runs / Then the response status is 200, `[data-testid="component-harness-index"] h1` has text "Component harness", and `expect(errors).toEqual([])`.
+  2. (once · en · desktop) Given `page.setViewportSize(VIEWPORTS.desktop)` and `/e2e/components/not-built-yet` / When it is opened / Then the URL does not contain `/sign-in` (the proxy released it; the page itself is a 404 until a component ticket creates it). This bullet does not collect console errors: the 404 response logs a "Failed to load resource" console error by design.
 - **NUMBERS:** 2 of 2 pass; production builds return 404 for the route (guarded by `isE2EBypass`, unit-tested in TFV2-0000c). No UI number applies (developer route).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023b — Component harness frame: `layout.tsx` + `HarnessFrame`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0023a.
-- **WHY:** CONVENTIONS §4 (the shared frame: a server `layout.tsx` wrapping `<Suspense>` + a client `HarnessFrame` that reads `?lang=` / `?theme=` inside Suspense, wraps in `LocaleProvider`, sets `dir` / `lang` / `data-theme`, and 404s without the bypass); §13 (harness pages render inside this frame). Split from the old TFV2-0023a (see TFV2-0023a WHY).
+- **WHY:** CONVENTIONS §4 (the shared frame: a server `layout.tsx` wrapping `<Suspense>` + a client `HarnessFrame` that reads `?lang=` / `?theme=` inside Suspense, wraps in `LocaleProvider`, sets `dir` / `lang` / `data-theme`, and 404s without the bypass); §13 (harness pages render inside this frame). Split from the old TFV2-0023a, which needed four files (over the 3-file limit).
 - **GOAL:** Every page under `/e2e/components/` renders inside one frame `<div data-testid="component-harness">` that applies `?lang=` and `?theme=` and the real `LocaleProvider`, proven on the index page from TFV2-0023a.
 - **SCOPE:** `apps/web/app/e2e/components/layout.tsx` · `apps/web/lib/e2e/HarnessFrame.tsx` · test: `tests/e2e/screens/components-frame.spec.ts`.
 - **MUTATES:** `apps/web/app/e2e/components/layout.tsx` (new) · `apps/web/lib/e2e/HarnessFrame.tsx` (new) · `tests/e2e/screens/components-frame.spec.ts` (new).
 - **STEPS:**
   1. Code-map: `ls apps/web/app/e2e/components apps/web/lib/e2e` (TFV2-0023a's `page.tsx`; TFV2-0000c's `e2eState.ts`, `useE2EState.ts`); `grep -n "export function LocaleProvider\|export function useLocale" apps/web/components/providers/LocaleProvider.tsx`; `grep -n "export function resolveLang\|export function dirFor" apps/web/lib/i18n.ts`.
-  2. Create `apps/web/lib/e2e/HarnessFrame.tsx` and `apps/web/app/e2e/components/layout.tsx` exactly as SPEC.
+  2. Create `apps/web/lib/e2e/HarnessFrame.tsx` and `apps/web/app/e2e/components/layout.tsx` as in SPEC.
   3. Create `tests/e2e/screens/components-frame.spec.ts` with exactly the TESTS cases.
   4. Run DONE, then `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/components-frame.spec.ts --reporter=line` → `5 passed`.
@@ -3687,6 +3708,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/e2e/components/layout.tsx (server component)
+  import type React from "react";
   import { type ReactNode, Suspense } from "react";
   import { HarnessFrame } from "@/lib/e2e/HarnessFrame";
   export default function ComponentHarnessLayout({ children }: { children: ReactNode }): React.JSX.Element {
@@ -3696,6 +3718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/lib/e2e/HarnessFrame.tsx
   "use client";
   import { notFound, useSearchParams } from "next/navigation";
+  import type React from "react";
   import type { ReactNode } from "react";
   import { LocaleProvider } from "@/components/providers/LocaleProvider";
   import { dirFor, resolveLang } from "@/lib/i18n";
@@ -3713,17 +3736,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     );
   }
   ```
-  `LocaleProvider` also sets `<html lang dir>` from `?lang=` on mount, so `expectDir` (which reads `<html>`) agrees with the frame. No user-facing copy; the frame has no states of its own (component states live in each component's page).
-- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`)
-  1–2. For each viewport in `VIEWPORTS`: Given `/e2e/components` / Then `[data-testid="component-harness"]` contains `[data-testid="component-harness-index"]`, and has `lang="en"`, `dir="ltr"`, `data-theme="light"`.
-  3. Given `/e2e/components?lang=he` / Then the frame has `lang="he"` and `dir="rtl"`, and `expectDir(page, "he")` passes.
-  4. Given `/e2e/components?theme=dark` / Then the frame has `data-theme="dark"`.
-  5. Given `/e2e/components?lang=fr&theme=neon` / Then the frame has `lang="en"`, `dir="ltr"`, `data-theme="light"` (invalid values fall back).
+  `LocaleProvider` also sets `<html lang dir>` from `?lang=` on mount, so `expectDir` (which reads `<html>`) agrees with the frame.
+  **Relies on:** `resolveLang(param: string | null | undefined, stored: string | null | undefined): Lang` (apps/web/lib/i18n.ts line 34: URL value if it is `"en"` or `"he"`, else stored, else `"en"`, so `resolveLang("fr", null)` → `"en"`); `dirFor(lang: Lang): "ltr" | "rtl"` (line 29: `"he"` → `"rtl"`, else `"ltr"`); `LocaleProvider({ children }: { children: ReactNode })` (apps/web/components/providers/LocaleProvider.tsx line 43); `isE2EBypass` (TFV2-0000c, signature in CONVENTIONS §15). html/body margin and padding are 0 (tempo.css line 57) and the frame `div` adds no width or padding, so a harness section is 390 / 1280 CSS px wide. No user-facing copy; the frame has no states of its own (component states live in each component's page).
+- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` every test starts `const errors = trackConsoleErrors(page)` and `page.setViewportSize(<its viewport>)`, opens the URL with `page.goto` (the index has no `<id>-default` section for `openHarness`), and ends `expect(errors).toEqual([])`; each bullet checks one query value, so each runs once)
+  1. (once · en · mobile) Given `/e2e/components` at 390×844 / Then `[data-testid="component-harness"]` contains `[data-testid="component-harness-index"]`, and has `lang="en"`, `dir="ltr"`, `data-theme="light"`.
+  2. (once · en · desktop) Given `/e2e/components` at 1280×800 / Then `[data-testid="component-harness"]` contains `[data-testid="component-harness-index"]`, and has `lang="en"`, `dir="ltr"`, `data-theme="light"`.
+  3. (once · he · desktop) Given `/e2e/components?lang=he` at 1280×800 / Then the frame has `lang="he"` and `dir="rtl"`, and `expectDir(page, "he")` passes.
+  4. (once · en · desktop) Given `/e2e/components?theme=dark` at 1280×800 / Then the frame has `data-theme="dark"`.
+  5. (once · en · desktop) Given `/e2e/components?lang=fr&theme=neon` at 1280×800 / Then the frame has `lang="en"`, `dir="ltr"`, `data-theme="light"` (invalid values fall back).
 - **NUMBERS:** 5 of 5 pass. No UI number applies (developer frame).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0024 — Avatar `apps/web/components/primitives/Avatar.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3732,9 +3758,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/primitives/Avatar.tsx` · `apps/web/app/e2e/components/avatar/page.tsx` · test: `tests/e2e/screens/avatar.spec.ts`.
 - **MUTATES:** `apps/web/components/primitives/Avatar.tsx` (new) · `apps/web/app/e2e/components/avatar/page.tsx` (new) · `tests/e2e/screens/avatar.spec.ts` (new). No data, env or schema change; TFV2-0023a already releases `/e2e/components/(.*)`.
 - **STEPS:**
-  1. Code-map: `ls apps/web/components/primitives` (absent or without `Avatar.tsx`); `grep -n "\.tp-avatar" apps/web/app/tempo.css` (Stage 1: 32×32 circle, `--tp-ink` ground, `--tp-ground` text, `--tp-text-xs`, weight 700); `grep -n "export function initialsFor" -A8 apps/web/lib/shell.ts`; `ls apps/web/app/e2e/components` (`page.tsx`, `layout.tsx` from TFV2-0023a/b).
+  1. Code-map: `ls apps/web/components/primitives` (absent or without `Avatar.tsx`); `grep -n "\.tp-avatar" apps/web/app/tempo.css` (Stage 1: 32×32 circle, `--tp-ink` ground, `--tp-ground` text, `--tp-text-xs`, weight 700); `grep -n "export function initialsFor" -A8 apps/web/lib/shell.ts`; `ls apps/web/app/e2e/components` (`page.tsx`, `layout.tsx` from TFV2-0023a/b); `grep -n '^  "user":' apps/web/components/tempo/TpIcon.tsx` (one line); `grep -n "export function useLocale" apps/web/components/providers/LocaleProvider.tsx` (one line).
   2. Stylesheet: Case A (Stage 1 `.tp-avatar`). Add no stylesheet; edit no CSS file.
-  3. Create `Avatar.tsx` exactly as SPEC: `"use client";`, imports (`useLocale` from `@/components/providers/LocaleProvider`, `type Lang` from `@/lib/i18n`, `initialsFor` from `@/lib/shell`, `TpIcon` from `@/components/tempo/TpIcon`), the `COPY` constant, the exported type and function.
+  3. Create `Avatar.tsx` as in SPEC: `"use client";`, imports (`import type React from "react";`, `useLocale` from `@/components/providers/LocaleProvider`, `type Lang` from `@/lib/i18n`, `initialsFor` from `@/lib/shell`, `TpIcon` from `@/components/tempo/TpIcon`), the `COPY` constant, the exported type and function.
   4. Create `apps/web/app/e2e/components/avatar/page.tsx` (`"use client";`) importing only React types, `Avatar` and `type AvatarProps`; declare the five SPEC fixtures as `const` values typed `AvatarProps`; render the five state sections in SPEC order, each `<section data-testid="avatar-<state>">`.
   5. Create `tests/e2e/screens/avatar.spec.ts` with exactly the TESTS cases, using only `tests/e2e/helpers/harness.ts` helpers.
   6. Run DONE, then `bun run lint` and `bun run typecheck`.
@@ -3764,24 +3790,26 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - States (harness order, fixture, shown, accessible name): `default` `{ name: "Maya Ronen" }` → `MR`, "Maya Ronen"; `single` `{ name: "Yoni" }` → `YO`, "Yoni"; `override` `{ name: "Dana Levi", initials: "D" }` → `D`, "Dana Levi"; `hebrew` `{ name: "מאיה רונן" }` → `מר`, "מאיה רונן"; `no-name` `{ name: "   " }` → the `user` icon, EN "Your profile" / HE "הפרופיל שלך". `loading`, `empty`, `error`, `offline`, `success`, `disabled`: n/a (static, non-interactive picture with no data fetch; `no-name` is its empty case).
   - Copy (every string): `noName` EN: "Your profile" / HE: "הפרופיל שלך". Names are user data, never translated.
   - RTL: symmetric; no change in `?lang=he`. Keyboard: not focusable. Screen reader: `role="img"` + `aria-label`; the letters are `aria-hidden`. Motion: none.
-- **TESTS:** (`test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` cases 1–2 run in `for` loops over `[["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]]` × `["en", "he"]` = 8 tests, case 3 once = 9)
-  1. Given `trackConsoleErrors(page)` then `openHarness(page, "avatar", { lang })` / Then `expectDir(page, lang)` passes; `avatar-default`'s `[data-component="Avatar"]` has `role="img"`, `aria-label="Maya Ronen"`, text `MR` and a 32×32 (±0.5) bounding box; `avatar-single` text `YO`; `avatar-override` text `D` with `aria-label="Dana Levi"`; `avatar-hebrew` text `מר`; the console-error array is empty.
-  2. Given the same page / Then the `no-name` avatar has no text, one `svg.tp-icon`, `aria-label` "Your profile" (en) or "הפרופיל שלך" (he), and `page.getByText("User", { exact: true })` has count 0.
-  3. Given EN at 1280×800 / When Tab is pressed 5 times / Then `document.activeElement` is never inside `[data-component="Avatar"]`; and `expectMotionBudget(page, '[data-testid^="avatar-"]')` passes.
+  - **Relies on:** `initialsFor(profile: { greetingName?: string; email?: string } | null | undefined): string` (apps/web/lib/shell.ts line 75; outputs for the fixtures: "Maya Ronen" → `MR`, "Yoni" → `YO`, "מאיה רונן" → `מר`, "" → `""`); `useLocale()` returns an object whose `lang: Lang` field is the active language (LocaleProvider.tsx line 87); `TpIcon` and its `<svg class="tp-icon">` (CONVENTIONS §22 code facts); `.tp-avatar` (tempo.css line 221).
+- **TESTS:** (§22 spec skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` cases 1–2 run in `for` loops over `[["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]]` × `["en", "he"]` = 8 tests, case 3 once = 9; every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `trackConsoleErrors(page)` then `openHarness(page, "avatar", { lang })` / Then `expectDir(page, lang)` passes; `avatar-default`'s `[data-component="Avatar"]` has `role="img"`, `aria-label="Maya Ronen"`, text `MR` and a 32×32 (±0.5) bounding box; `avatar-single` text `YO`; `avatar-override` text `D` with `aria-label="Dana Levi"`; `avatar-hebrew` text `מר`; the console-error array is empty.
+  2. (loop) Given `trackConsoleErrors(page)` then `openHarness(page, "avatar", { lang })` / Then the `no-name` avatar has no text, one `svg.tp-icon`, `aria-label` "Your profile" (en) or "הפרופיל שלך" (he), and `page.getByText("User", { exact: true })` has count 0.
+  3. (once · en · desktop) Given EN at 1280×800 / When Tab is pressed 5 times / Then `document.activeElement` is never inside `[data-component="Avatar"]`; and `expectMotionBudget(page, '[data-testid^="avatar-"]')` passes.
 - **NUMBERS:** text contrast `--tp-ground` on `--tp-ink` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`); size 32×32 ±0.5 CSS px (tempo.css `.tp-avatar`; case 1); motion none (`expectMotionBudget`, case 3). Target size n/a (not interactive). LCP/CLS n/a (component).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0025 — TabBar: route-level spec (`apps/web/components/tempo/TabBar.tsx`)
-- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0023 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023.
-- **WHY:** DESIGN.md §8 (glass tab bar under 768 px); docs/design/v3/components.md §1 TabBar; REWRITE-PLAN-v2 §6 chunk 1. Code truth: `TabBar.tsx` renders four links (Today `/today`, Tasks `/tasks`, Pages `/notes`, Calendar `/plan`) and a "More" button that toggles the rail drawer; `.tp-tabbar` is `display: none` above 767 px. Depends on TFV2-0023 only so the shell specs land one at a time.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** DESIGN.md §8 (glass tab bar under 768 px); docs/design/v3/components.md §1 TabBar; REWRITE-PLAN-v2 §6 chunk 1. Code truth: `TabBar.tsx` renders four links (Today `/today`, Tasks `/tasks`, Pages `/notes`, Calendar `/plan`) and a "More" button that toggles the rail drawer; `.tp-tabbar` is `display: none` above 767 px. Depends on TFV2-0000b for the e2e helpers and on TFV2-0023b only so the shell specs land one at a time.
 - **GOAL:** `tests/e2e/screens/tabbar.spec.ts` proves on `/plan` the tab names, `aria-current`, the "More" drawer toggle, RTL order, size and visibility rules, with no source change.
 - **SCOPE:** `apps/web/components/tempo/TabBar.tsx` (read only, unchanged) · test: `tests/e2e/screens/tabbar.spec.ts`.
 - **MUTATES:** `tests/e2e/screens/tabbar.spec.ts` (new). No source or data change.
 - **STEPS:**
-  1. Code-map: `cat apps/web/components/tempo/TabBar.tsx`; `grep -n "\.tp-tabbar\|\.tp-tab\b\|\.tp-tab\[" apps/web/app/tempo.css`.
+  1. Code-map: `cat apps/web/components/tempo/TabBar.tsx`; `grep -n "\.tp-tabbar\|\.tp-tab\b\|\.tp-tab\[" apps/web/app/tempo.css`; `grep -n '"tab\.label"\|"tab\.tasks"\|"tab\.cal"\|"tab\.more"\|"nav\.today"\|"rail\.pages"' apps/web/lib/i18n.ts` (12 lines: the EN and HE values in SPEC); `grep -n 'data-rail=\|e.key === "Escape"' apps/web/components/tempo/TempoShell.tsx` (2 lines: `data-rail={railOpen ? "open" : "closed"}` and the Escape branch that calls `dismissRail()` when the drawer is modal); `grep -n '"/plan"' apps/web/lib/e2eWiringRoutes.ts` (one line).
   2. Create `tests/e2e/screens/tabbar.spec.ts` with exactly the TESTS cases, scoping locators to `nav[data-component="TabBar"]`.
   3. Run DONE; a failing case is reported, never fixed in `TabBar.tsx`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tabbar.spec.ts --reporter=line` → `5 passed`.
@@ -3789,16 +3817,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DO NOT:** edit `TabBar.tsx`, `TempoShell.tsx` or `apps/web/lib/i18n.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0025 / evidence / changed: tests/e2e/screens/tabbar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Copy (existing keys; EN / HE): nav `aria-label` "Main" / "ראשי"; items in DOM order "Today", "Tasks", "Pages", "Calendar", "More" / "היום", "משימות", "דפים", "לוח שנה", "עוד". On `/plan` the "Calendar" link (`href="/plan"`) has `aria-current="page"` and it is the only one. "More" is a `button` with `aria-expanded` mirroring the shell's `data-rail`. Layout: `.tp-tabbar.tp-glass`, 5 equal columns, min-height 64 px (`--tp-tabbar-h`), each `.tp-tab` ≥ 52 px tall; hidden at ≥ 768 px; in RTL the grid mirrors, so "Today" sits at the right end. States: `default`, `rail-open`, `rtl`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (navigation chrome).
-- **TESTS:**
-  1–2. For `lang` in `["en", "he"]` at 390×844: Given `/plan?lang=<lang>` / Then the nav is visible with the SPEC `aria-label`, its link/button names equal the SPEC list in order, `[aria-current="page"]` has count 1 and name "Calendar" / "לוח שנה", its height ≥ 64 px, and the "Today" item's box is left of "More" in EN and right of it in HE.
-  3. Given EN at 1280×800 / Then the nav is not visible.
-  4. Given EN at 390×844 / When "More" is clicked / Then it has `aria-expanded="true"` and `[data-component="TempoShell"]` has `data-rail="open"`; When Escape is pressed / Then `data-rail="closed"`.
-  5. Given EN at 390×844 / Then `expectTargetSize(page, 'nav[data-component="TabBar"]')` passes.
+- **TESTS:** (§22 spec skeleton, screen form: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` every test starts `const errors = trackConsoleErrors(page)`, calls `page.setViewportSize(<its viewport>)` and `openScreen(page, "/plan", { state: "default", lang })`, and ends by dropping messages matching `/example\.convex\.cloud|WebSocket/i` and asserting `expect(errors).toEqual([])`; the tab bar exists only under 768 px, so every bullet runs once at its named viewport and language)
+  1. (once · en · mobile) Given `/plan` at 390×844 in EN / Then the nav is visible with `aria-label` "Main", its link/button names in order are "Today", "Tasks", "Pages", "Calendar", "More", `[aria-current="page"]` has count 1 and name "Calendar", its height ≥ 64 px, and the "Today" item's box is left of the "More" item's box.
+  2. (once · he · mobile) Given `/plan` at 390×844 in HE / Then the nav is visible with `aria-label` "ראשי", its link/button names in order are "היום", "משימות", "דפים", "לוח שנה", "עוד", `[aria-current="page"]` has count 1 and name "לוח שנה", its height ≥ 64 px, and the "היום" item's box is right of the "עוד" item's box.
+  3. (once · en · desktop) Given EN at 1280×800 / Then the nav is not visible.
+  4. (once · en · mobile) Given EN at 390×844 / When "More" is clicked / Then it has `aria-expanded="true"` and `[data-component="TempoShell"]` has `data-rail="open"`; When Escape is pressed / Then `data-rail="closed"`.
+  5. (once · en · mobile) Given EN at 390×844 / Then `expectTargetSize(page, 'nav[data-component="TabBar"]')` passes.
 - **NUMBERS:** tab bar ≥ 64 px (`--tp-tabbar-h`); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8); contrast via tokens (WCAG 2.2 SC 1.4.3).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0026 — CommandTrigger: extract the rail's search button (`apps/web/components/tempo/CommandTrigger.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0022, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0022, TFV2-0023b.
@@ -3807,14 +3837,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/tempo/CommandTrigger.tsx` · `apps/web/components/tempo/Sidebar.tsx` · `apps/web/app/e2e/components/command-trigger/page.tsx` · test: `tests/e2e/screens/command-trigger.spec.ts`.
 - **MUTATES:** `apps/web/components/tempo/CommandTrigger.tsx` (new) · `apps/web/components/tempo/Sidebar.tsx` (edit: the inline button replaced by `<CommandTrigger onOpen={onOpenPalette} />` plus one import) · `apps/web/app/e2e/components/command-trigger/page.tsx` (new) · `tests/e2e/screens/command-trigger.spec.ts` (new).
 - **STEPS:**
-  1. Code-map: `grep -n "data-component=\"CommandTrigger\"" -B2 -A8 apps/web/components/tempo/Sidebar.tsx` (the 10-line inline button); `grep -n "e.key.toLowerCase() === \"k\"" apps/web/components/tempo/TempoShell.tsx` (global shortcut stays there); `bun run test:browser` → record `0 fail` before any edit.
+  1. Code-map: `grep -n "data-component=\"CommandTrigger\"" -B2 -A8 apps/web/components/tempo/Sidebar.tsx` (the 10-line inline button); `grep -n "e.key.toLowerCase() === \"k\"" apps/web/components/tempo/TempoShell.tsx` (global shortcut stays there); `grep -n '^  "search":' apps/web/components/tempo/TpIcon.tsx` (one line); `grep -n '"rail.search"' apps/web/lib/i18n.ts` (2 lines: "Search or jump to", "חיפוש או מעבר אל"); `ls tests/unit/kb-74.test.tsx`; `bun run test:browser` → record `0 fail` before any edit.
   2. Stylesheet: Case A (Stage 1 `.tp-btn`, `.tp-btn--secondary`, `.tp-rail__search`, `.tp-kbd`). No stylesheet.
-  3. Create `CommandTrigger.tsx` exactly as SPEC.
+  3. Create `CommandTrigger.tsx` as in SPEC.
   4. In `Sidebar.tsx`, replace the inline button (from `<button` with `data-component="CommandTrigger"` to its `</button>`) with `<CommandTrigger onOpen={onOpenPalette} />` and add `import { CommandTrigger } from "./CommandTrigger";`. Change nothing else in `Sidebar.tsx`.
-  5. Create the harness page (`"use client";`) importing only React, `CommandTrigger` and `type CommandTriggerProps`; one section `command-trigger-default` rendering `<CommandTrigger onOpen={() => log("onOpen", null)} />` and the shared `<output data-testid="command-trigger-log">`, whose text becomes `onOpen:null` on each call.
+  5. Create the harness page (`"use client";`) importing only React (`useState`, `import type React from "react";`), `CommandTrigger` and `type CommandTriggerProps`; it declares the CONVENTIONS §13 `log` helper (`const [logText, setLog] = useState("");` and `const log = (name: string) => (...args: unknown[]) => setLog(args.length === 0 ? `${name}:` : `${name}:${JSON.stringify(args.length === 1 ? args[0] : args)}`);`); one section `command-trigger-default` rendering `<CommandTrigger onOpen={() => log("onOpen")()} />` (the arrow drops the click event the button passes, so the call has no argument) and the shared `<output data-testid="command-trigger-log">{logText}</output>`, whose text becomes `onOpen:` on each call.
   6. Create the spec with exactly the TESTS cases. 7. Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command-trigger.spec.ts --reporter=line` → `6 passed`; `bun run test:browser` → `0 fail`.
-- **EVIDENCE:** both summaries and lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/command-trigger.spec.ts --reporter=line`, the summary of `bun run test:browser`, and lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** move the Ctrl K listener out of `TempoShell`; rebuild `CommandPalette`; change the button's classes, text or `data-component`; edit any other part of `Sidebar.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0026 / evidence / changed: apps/web/components/tempo/CommandTrigger.tsx, apps/web/components/tempo/Sidebar.tsx, apps/web/app/e2e/components/command-trigger/page.tsx, tests/e2e/screens/command-trigger.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -3822,6 +3852,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   "use client";
   import { useLocale } from "@/components/providers/LocaleProvider";
   import type { Lang } from "@/lib/i18n";
+  import type React from "react";
   import { TpIcon } from "./TpIcon";
   type CopyKey = "label";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
@@ -3840,16 +3871,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     );
   }
   ```
-  The strings equal today's `rail.search` values; the kbd text `Ctrl K` is a key name, the same in both languages, LTR-isolated by `.tp-num`. Keyboard: native button (Enter and Space activate). RTL: `.tp-rail__search .tp-kbd { margin-inline-start: auto }` puts the kbd at the inline end (left in HE). States: `default`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (always-enabled trigger). Motion: `.tp-btn` background 120 ms (`--tp-dur-fast`).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `trackConsoleErrors` and `openHarness(page, "command-trigger", { lang })` / Then `expectDir` passes; the button has the SPEC label for `lang` and a `kbd.tp-kbd.tp-num` with text `Ctrl K`; the kbd box is right of the label in EN and left of it in HE; clicking the button sets the log to `onOpen:null`; focusing it and pressing Enter logs `onOpen:null` again; console errors are empty.
-  5. Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="command-trigger-default"]')` and `expectMotionBudget(page, '[data-testid="command-trigger-default"]')` pass.
-  6. Given `/plan` at 1280×800 / When `nav[data-component="Sidebar"] button[data-component="CommandTrigger"]` is clicked / Then a `role="dialog"` is visible (the command palette).
+  The strings equal today's `rail.search` values; the kbd text `Ctrl K` is a key name, the same in both languages, LTR-isolated by `.tp-num`. Keyboard: native button (Enter and Space activate). RTL: `.tp-rail__search .tp-kbd { margin-inline-start: auto }` puts the kbd at the inline end (left in HE). States: `default`; `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (always-enabled trigger). Motion: `.tp-btn` background 120 ms (`--tp-dur-fast`). **Relies on:** `Sidebar` receives `onOpenPalette: () => void` and passes it to the inline button's `onClick` (Sidebar.tsx lines 149–158); `TempoShell`'s `openPalette` opens `CommandPalette` as a `role="dialog"`.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`; bullet 3 is a screen test and first drops messages matching `/example\.convex\.cloud|WebSocket/i`)
+  1. (loop) Given `trackConsoleErrors` and `openHarness(page, "command-trigger", { lang })` / Then `expectDir` passes; the button has the SPEC label for `lang` and a `kbd.tp-kbd.tp-num` with text `Ctrl K`; the kbd box is right of the label in EN and left of it in HE; clicking the button sets the log to `onOpen:`; after the log is cleared by reloading the page, focusing the button and pressing Enter sets it to `onOpen:` again; console errors are empty.
+  2. (once · en · desktop) Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="command-trigger-default"]')` and `expectMotionBudget(page, '[data-testid="command-trigger-default"]')` pass.
+  3. (once · en · desktop) Given `openScreen(page, "/plan", { state: "default", lang: "en" })` at 1280×800 / When `nav[data-component="Sidebar"] button[data-component="CommandTrigger"]` is clicked / Then a `role="dialog"` is visible (the command palette).
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `.tp-btn` min-height 44 px); contrast via tokens (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms (`expectMotionBudget`); the browser suite stays at `0 fail`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0027 — LivePreviewEditor: harness spec for the markdown editor (`apps/web/components/editor/LivePreviewEditor.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3858,8 +3890,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/editor/LivePreviewEditor.tsx` (read only, unchanged) · `apps/web/app/e2e/components/live-preview-editor/page.tsx` · test: `tests/e2e/screens/live-preview-editor.spec.ts`.
 - **MUTATES:** `apps/web/app/e2e/components/live-preview-editor/page.tsx` (new) · `tests/e2e/screens/live-preview-editor.spec.ts` (new). No source or data change.
 - **STEPS:**
-  1. Code-map: `grep -n "type Props = {" -A12 apps/web/components/editor/LivePreviewEditor.tsx`; `grep -n "export type EditorLabels" -A9 apps/web/components/editor/live-preview.ts`; `grep -o 'class: "cm-tp-[a-z-]*"' apps/web/components/editor/live-preview.ts | sort -u`; `grep -n "const labels = {" -A8 apps/web/components/notes/PageEditorView.tsx` (the label keys PageEditor passes).
-  2. Create the harness page exactly as SPEC (`"use client";`, imports React, `useLocale` for picking the fixture label set, `LivePreviewEditor` and its types; nothing else).
+  1. Code-map: `grep -n "type Props = {" -A12 apps/web/components/editor/LivePreviewEditor.tsx`; `grep -n "export type EditorLabels" -A9 apps/web/components/editor/live-preview.ts`; `grep -o 'class: "cm-tp-[a-z-]*"' apps/web/components/editor/live-preview.ts | sort -u`; `grep -n "const labels = {" -A8 apps/web/components/notes/PageEditorView.tsx` (the label keys PageEditor passes); `grep -n '"page.bodyLabel"\|"editor\.' apps/web/lib/i18n.ts` (the EN and HE values written in SPEC); `grep -n 'el("input", {' -A2 apps/web/components/editor/live-preview.ts` (the task title is an `input.tp-task-row__title`); `grep -n 'tp-block-broken"' apps/web/components/editor/live-preview.ts` (the broken card).
+  2. Create the harness page as in SPEC (`"use client";`, imports React, `useLocale` for picking the fixture label set, `LivePreviewEditor` and its types; nothing else).
   3. Create the spec with exactly the TESTS cases. 4. Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/live-preview-editor.spec.ts --reporter=line` → `5 passed`.
 - **EVIDENCE:** the Playwright summary pasted into the PR.
@@ -3874,18 +3906,19 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | `broken` | `"Intro\n\n```json tempo\n{nope}\n```\n"` |
     | `hebrew` | `"לארוז את הספרים\nPack the books\n"` |
     where `TASK = "```json tempo\n" + JSON.stringify({ id: "blk_01JQ8Z3K4M5N6P7Q8R9S000001", v: 1, type: "task", data: { title: "Call the plumber", durationMin: 15, status: "later", order: 0, inelastic: false } }) + "\n```\n"`.
-  - Props per language (copied from the keys PageEditor passes; EN / HE): `ariaLabel` "Note body" / "גוף הפתק"; `placeholder` "Write whatever is on your mind. Type / for blocks, [[ to link a page." / "אפשר לכתוב כל מה שעל הלב. / לבלוקים, [[ לקישור לדף."; `labels` = `{ minutes: "min" / "דק׳", removeBlock: "Remove" / "הסרה", brokenBlock: "This part has a problem. The rest of your page is safe." / "יש בעיה בחלק הזה. שאר הדף שלך שמור.", template: "Template" / "תבנית", taskDone: "Done" / "בוצע", taskTitle: "Task title" / "שם המשימה" }`. `onChange` writes `onChange:<JSON of the body>` to `<output data-testid="live-preview-editor-log">`.
-  - Behaviour asserted: the editor content (`.cm-content`) has the SPEC `aria-label`; with focus elsewhere, `**Pack**` draws as `.cm-tp-strong` "Pack", `- [ ]` draws one unchecked `input.cm-tp-checkbox` (plain markdown, not a block), `[[Moving checklist]]` draws `.cm-tp-wikilink` "Moving checklist", the task fence draws `.tp-task-row__title` "Call the plumber"; no visible text in a section contains `json tempo`, `{"id"` or `{nope}`; the broken fence draws `.tp-block-broken` with the `brokenBlock` text; every `.cm-line` has `dir="auto"`; the empty editor shows `.cm-placeholder` with the SPEC placeholder.
+  - Props per language (the values of `page.bodyLabel`, `editor.placeholder`, `editor.minutes`, `editor.remove`, `editor.broken`, `editor.template`, `editor.done`, `editor.taskTitle` in apps/web/lib/i18n.ts, written inline in the harness page; EN / HE): `ariaLabel` "Note body" / "גוף הפתק"; `placeholder` "Write whatever is on your mind. Type / for blocks, [[ to link a page." / "אפשר לכתוב כל מה שעל הלב. / לבלוקים, [[ לקישור לדף."; `labels` = `{ minutes: "min" / "דק׳", removeBlock: "Remove" / "הסרה", brokenBlock: "This part has a problem. The rest of your page is safe." / "יש בעיה בחלק הזה. שאר הדף שלך שמור.", template: "Template" / "תבנית", taskDone: "Done" / "בוצע", taskTitle: "Task title" / "שם המשימה" }`. `onChange` writes `onChange:<JSON of the body>` to `<output data-testid="live-preview-editor-log">`.
+  - Behaviour asserted: the editor content (`.cm-content`) has the SPEC `aria-label`; with focus elsewhere, `**Pack**` draws as `.cm-tp-strong` "Pack", `- [ ]` draws one unchecked `input.cm-tp-checkbox` (plain markdown, not a block), `[[Moving checklist]]` draws `.cm-tp-wikilink` "Moving checklist", the task fence draws an `input.tp-task-row__title` whose value is "Call the plumber" (`toHaveValue`); no visible text in a section contains `json tempo`, `{"id"` or `{nope}`; the broken fence draws `.tp-block-broken` with the `brokenBlock` text; every `.cm-line` has `dir="auto"`; the empty editor shows `.cm-placeholder` with the SPEC placeholder.
   - States: `default`, `empty`, `broken`, `hebrew` (mixed direction). `loading`/`error`/`offline`/`success`/`disabled`: n/a for the editor surface (the page screen owns load, save and offline states).
   - Motion: n/a as a budget — CodeMirror's caret blink is a cursor animation, not a token transition, so `expectMotionBudget` is not applied to this editor.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "live-preview-editor", { lang })` / Then `expectDir` passes and every SPEC "Behaviour asserted" item holds in its section (`default`, `broken`, `empty`, `hebrew`), with the language's strings.
-  5. Given EN at 1280×800 / When the `empty` section's `.cm-content` is clicked and `Hello` is typed / Then the log text is `onChange:"Hello"`.
-- **NUMBERS:** body text ≥ 13 px (`--tp-text-xs` floor; editor uses `--tp-text-md`); contrast via tokens (WCAG 2.2 SC 1.4.3); JSON shown to the user = 0 occurrences (PRD F-03; cases 1–4).
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "live-preview-editor", { lang })` / Then `expectDir` passes and every SPEC "Behaviour asserted" item holds in its section (`default`, `broken`, `empty`, `hebrew`), with the language's strings.
+  2. (once · en · desktop) Given EN at 1280×800 / When the `empty` section's `.cm-content` is clicked and `Hello` is typed / Then the log text is `onChange:"Hello"`.
+- **NUMBERS:** body text ≥ 13 px (`--tp-text-xs` floor; editor uses `--tp-text-md`); contrast via tokens (WCAG 2.2 SC 1.4.3); JSON shown to the user = 0 occurrences (PRD F-03; case 1).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0028 — PageTitle and Heading `apps/web/components/primitives/PageTitle.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3896,7 +3929,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map: `grep -n "\.tp-page-title\|\.tp-h2\|\.tp-h3\|^h1, h2, h3, h4" apps/web/app/tempo.css` (h1–h4 use `--tp-font-serif`, weight 500, `--tp-leading-heading`; `.tp-page-title` `--tp-text-3xl`, `--tp-text-2xl` under 768 px; `.tp-h2` `--tp-text-xl`; `.tp-h3` `--tp-text-lg`); `ls apps/web/components/primitives`.
   2. Stylesheet: Case A (Stage 1 classes). No stylesheet.
-  3. Create `PageTitle.tsx` exactly as SPEC.
+  3. Create `PageTitle.tsx` as in SPEC.
   4. Create the harness page (imports React types, `PageTitle`, `Heading` and their props types only) with the SPEC sections.
   5. Create the spec with exactly the TESTS cases. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-title.spec.ts --reporter=line` → `5 passed`.
@@ -3905,20 +3938,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0028 / evidence / changed: apps/web/components/primitives/PageTitle.tsx, apps/web/app/e2e/components/page-title/page.tsx, tests/e2e/screens/page-title.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   export type PageTitleProps = { title: string; id?: string };
   export type HeadingProps = { level: 2 | 3; text: string; id?: string };
   export function PageTitle({ title, id }: PageTitleProps): React.JSX.Element; // <h1 className="tp-page-title" data-component="PageTitle" id={id} dir="auto">{title}</h1>
-  export function Heading({ level, text, id }: HeadingProps): React.JSX.Element; // level 2 → <h2 className="tp-h2" data-component="Heading" dir="auto">; level 3 → <h3 className="tp-h3" …>
+  export function Heading({ level, text, id }: HeadingProps): React.JSX.Element; // level 2 → <h2 className="tp-h2" data-component="Heading" dir="auto">; level 3 → <h3 className="tp-h3" data-component="Heading" dir="auto">; both get id={id} and render {text}
   ```
   No copy of its own (the text is the person's or the caller's). Sections in order: `default` (`PageTitle` "Moving day"), `hebrew` (`PageTitle` "יום מעבר"), `long` (`PageTitle` "A very long page title that has to wrap onto a second line on a phone screen without overflowing"), `h2` (`Heading` level 2 "This afternoon"), `h3` (`Heading` level 3 "Errands"). `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static typography). RTL: `dir="auto"` makes a Hebrew title right-aligned on an English page and vice versa. Keyboard/screen reader: real heading elements, levels 1–3. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `trackConsoleErrors` and `openHarness(page, "page-title", { lang })` / Then `expectDir` passes; `page.getByRole("heading", { level: 1, name: "Moving day" })` and `{ level: 1, name: "יום מעבר" }` are visible with `dir="auto"`; the level-2 heading "This afternoon" has class `tp-h2` and the level-3 "Errands" has `tp-h3`; each heading's computed `font-family` equals the computed value of `var(--tp-font-serif)` read from a probe element; the h1's computed `font-size` equals the probe value of `var(--tp-text-2xl)` at 390 px and `var(--tp-text-3xl)` at 1280 px; the `long` section's `scrollWidth` ≤ its `clientWidth`; console errors empty.
-  5. Given EN at 1280×800 / Then `expectMotionBudget(page, '[data-testid^="page-title-"]')` passes.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`; `tokenValue(scope, cssProp, token)` is declared at the top of the spec as in CONVENTIONS §23.2, with `import type { Locator } from "@playwright/test";`)
+  1. (loop) Given `const errors = trackConsoleErrors(page)` and `openHarness(page, "page-title", { lang })` / Then `expectDir` passes; `page.getByRole("heading", { level: 1, name: "Moving day" })` and `{ level: 1, name: "יום מעבר" }` are visible with `dir="auto"`; the level-2 heading "This afternoon" has class `tp-h2` and the level-3 "Errands" has `tp-h3`; each heading's computed `font-family` equals `tokenValue(<its section>, "font-family", "--tp-font-serif")`; the `page-title-default` h1's computed `font-size` equals `tokenValue(page.getByTestId("page-title-default"), "font-size", "--tp-text-2xl")` at 390 px and `tokenValue(page.getByTestId("page-title-default"), "font-size", "--tp-text-3xl")` at 1280 px (a harness section is the viewport width, so tempo.css line 514's under-768 px rule applies at 390 only); the `long` section's `scrollWidth` ≤ its `clientWidth`; `expect(errors).toEqual([])`.
+  2. (once · en · desktop) Given EN at 1280×800 / Then `expectMotionBudget(page, '[data-testid^="page-title-"]')` passes.
 - **NUMBERS:** type sizes are tokens (`--tp-text-3xl`, `--tp-text-2xl`, `--tp-text-xl`, `--tp-text-lg`; CONVENTIONS §5) asserted by computed value, not pixels; contrast via tokens (WCAG 2.2 SC 1.4.3); no horizontal overflow at 390 px.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0029 — Tag `apps/web/components/primitives/Tag.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3929,27 +3964,29 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map: `grep -n "\.tp-tag" apps/web/app/tempo.css`.
   2. Stylesheet: Case A. No stylesheet.
-  3. Create `Tag.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec with exactly the TESTS cases. 6. Run DONE, then lint and typecheck.
+  3. Create `Tag.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec with exactly the TESTS cases. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tag.spec.ts --reporter=line` → `5 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** add a "selected" variant (Stage 1 has none); add colours or a stylesheet; call Convex; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0029 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0029 / evidence / changed: apps/web/components/primitives/Tag.tsx, apps/web/app/e2e/components/tag/page.tsx, tests/e2e/screens/tag.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   export type TagProps = { name: string; href?: string };
   export function Tag({ name, href }: TagProps): React.JSX.Element;
   // href → <a className="tp-tag" data-component="Tag" href={href} dir="auto">{name}</a>
   // else → <span className="tp-tag" data-component="Tag" dir="auto">{name}</span>
   ```
   The `#` is drawn by CSS (`::before`), so the DOM text is the bare name; screen readers read the generated "#" with the name. No copy of its own (the name is user data). Sections: `default` (`{ name: "home" }`), `link` (`{ name: "work", href: "/search?tag=work" }`), `hebrew` (`{ name: "בית" }`). `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static label or plain link). Keyboard: the link is focusable and shows the `:focus-visible` accent ring. Motion: none in Stage 1 (hover changes colour without a transition).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "tag", { lang })` / Then `expectDir` passes; `tag-default` shows text "home" whose `::before` content is `"\"#\""` (`getComputedStyle(el, "::before").content`); `tag-link` is an `a[href="/search?tag=work"]`; `tag-hebrew` has `dir="auto"`; the default pill's height ≥ 28 px; console errors empty.
-  5. Given EN at 1280×800 / When Tab focuses the link / Then its computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid="tag-link"]')` passes.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "tag", { lang })` / Then `expectDir` passes; `tag-default` shows text "home" whose `::before` content is `"\"#\""` (`getComputedStyle(el, "::before").content`); `tag-link` is an `a[href="/search?tag=work"]`; `tag-hebrew` has `dir="auto"`; the default pill's height ≥ 28 px; console errors empty.
+  2. (once · en · desktop) Given EN at 1280×800 / When Tab focuses the link / Then its computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid="tag-link"]')` passes.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; pill min-height 28 px); focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7, `--tp-focus-w`); contrast via tokens (WCAG 2.2 SC 1.4.3).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0030 — Wikilink `apps/web/components/primitives/Wikilink.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3958,30 +3995,35 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/primitives/Wikilink.tsx` · `apps/web/app/e2e/components/wikilink/page.tsx` · test: `tests/e2e/screens/wikilink.spec.ts`.
 - **MUTATES:** the three files above (new).
 - **STEPS:**
-  1. Code-map: `grep -n "\.tp-wikilink" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Wikilink.tsx` exactly as SPEC. 4. Create the harness page: sections per SPEC; `onCreate` writes `onCreate:<JSON title>` to `<output data-testid="wikilink-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+  1. Code-map: `grep -n "\.tp-wikilink" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Wikilink.tsx` as in SPEC. 4. Create the harness page: sections per SPEC; `onCreate={log("onCreate")}` with the CONVENTIONS §13 `log` helper writes `onCreate:<JSON title>` to `<output data-testid="wikilink-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/wikilink.spec.ts --reporter=line` → `5 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** build a page picker (it exists in `PageEditorView`); query Convex; edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0030 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0030 / evidence / changed: apps/web/components/primitives/Wikilink.tsx, apps/web/app/e2e/components/wikilink/page.tsx, tests/e2e/screens/wikilink.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  "use client";
+  import type React from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import type { Lang } from "@/lib/i18n";
   type CopyKey = "create";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { create: "Create the page {title}" }, he: { create: "ליצור את הדף {title}" } };
   export type WikilinkProps = { title: string; href: string | null; onCreate?: (title: string) => void };
-  export function Wikilink({ title, href, onCreate }: WikilinkProps): React.JSX.Element;
+  export function Wikilink({ title, href, onCreate }: WikilinkProps): React.JSX.Element; // reads `const { lang } = useLocale();`
   // href !== null → <a className="tp-wikilink" data-component="Wikilink" href={href} dir="auto">{title}</a>
   // href === null → <button type="button" className="tp-wikilink" data-component="Wikilink" data-unresolved="true" dir="auto"
   //                   aria-label={COPY[lang].create.replace("{title}", title)} onClick={() => onCreate?.(title)}>{title}</button>
   ```
   The brackets are CSS (`::before`/`::after`); DOM text is the title. Sections: `resolved` (`{ title: "Moving checklist", href: "/notes/n1" }`), `unresolved` (`{ title: "Packing list", href: null }`), `hebrew` (`{ title: "רשימת אריזה", href: "/notes/n2" }`). Copy: `create` EN "Create the page {title}" / HE "ליצור את הדף {title}". `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (resolved vs unresolved are its two states). Keyboard: link and button are focusable; Enter/Space activate the button. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "wikilink", { lang })` / Then `expectDir` passes; `wikilink-resolved` is `a[href="/notes/n1"]` with text "Moving checklist" whose computed `::before` content is the CSS string `"[["` and `::after` is `"]]"` (as returned by `getComputedStyle(el, "::before").content`, quotes included); `wikilink-unresolved` is a button with the `create` label for `lang` and `data-unresolved="true"`; clicking it sets the log to `onCreate:"Packing list"`; `wikilink-hebrew` has `dir="auto"`.
-  5. Given EN at 1280×800 / When Tab reaches the unresolved button and Enter is pressed / Then the log is `onCreate:"Packing list"`; and `expectTargetSize(page, '[data-testid="wikilink-unresolved"]')` passes.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "wikilink", { lang })` / Then `expectDir` passes; `wikilink-resolved` is `a[href="/notes/n1"]` with text "Moving checklist" whose computed `::before` content is the CSS string `"[["` and `::after` is `"]]"` (as returned by `getComputedStyle(el, "::before").content`, quotes included); `wikilink-unresolved` is a button with the `create` label for `lang` and `data-unresolved="true"`; clicking it sets the log to `onCreate:"Packing list"`; `wikilink-hebrew` has `dir="auto"`.
+  2. (once · en · desktop) Given EN at 1280×800 / When Tab reaches the unresolved button and Enter is pressed / Then the log is `onCreate:"Packing list"`; and `expectTargetSize(page, '[data-testid="wikilink-unresolved"]')` passes.
 - **NUMBERS:** contrast via tokens (WCAG 2.2 SC 1.4.3; `--tp-ink` text on paper); target ≥ 24×24 CSS px for the button (WCAG 2.2 SC 2.5.8 — inline links in a sentence are exempt, the standalone button is not).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0031 — Chip `apps/web/components/primitives/Chip.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -3989,29 +4031,32 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Chip` renders an icon plus a word in one of four Stage 1 tones, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Chip.tsx` · `apps/web/app/e2e/components/chip/page.tsx` · test: `tests/e2e/screens/chip.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-chip" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Chip.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-chip" apps/web/app/tempo.css`; `grep -n '^  "pin":\|^  "refresh":\|^  "check":' apps/web/components/tempo/TpIcon.tsx` (3 lines). 2. Stylesheet: Case A. 3. Create `Chip.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chip.spec.ts --reporter=line` → `5 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** render a chip without its word; add a `danger` tone (Stage 1 has none); edit `Pill.tsx` or `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0031 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0031 / evidence / changed: apps/web/components/primitives/Chip.tsx, apps/web/app/e2e/components/chip/page.tsx, tests/e2e/screens/chip.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
   export type ChipKind = "neutral" | "fixed" | "flex" | "done";
   export type ChipProps = { kind: ChipKind; label: string };
   const ICON: Record<ChipKind, TpIconName | null> = { neutral: null, fixed: "pin", flex: "refresh", done: "check" };
-  export function Chip({ kind, label }: ChipProps): React.JSX.Element;
+  export function Chip({ kind, label }: ChipProps): React.JSX.Element; // body starts `const icon = ICON[kind];` (a local, so TypeScript narrows it)
   // <span className={kind === "neutral" ? "tp-chip" : `tp-chip tp-chip--${kind}`} data-component="Chip" data-kind={kind}>
-  //   {ICON[kind] ? <TpIcon name={ICON[kind]} size="sm" /> : null}<span>{label}</span></span>
+  //   {icon ? <TpIcon name={icon} size="sm" /> : null}<span>{label}</span></span>
   ```
-  The word is a prop because callers own it; the harness uses the product words (EN / HE): `fixed` "Fixed" / "קבוע", `flex` "Flexible" / "גמיש", `done` "Done" / "בוצע", `neutral` "15 min" / "15 דק׳" (neutral wraps the number in `.tp-num` in the harness markup: `label` is the full string). Sections in order: `fixed`, `flex`, `done`, `neutral`. `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static badge). Not focusable. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "chip", { lang })` / Then `expectDir` passes; each section's chip has the class for its kind (`tp-chip--fixed`, `tp-chip--flex`, `tp-chip--done`, plain `tp-chip`), the word for `lang` from SPEC, and one `svg.tp-icon` except `neutral` (none); each chip's height ≥ 28 px.
-  5. Given EN at 1280×800 and `page.emulateMedia({ forcedColors: "active" })` / Then every chip's text is still visible and non-empty (meaning never relies on colour).
+  The word is a prop because callers own it; the harness uses the product words (EN / HE): `fixed` "Fixed" / "קבוע", `flex` "Flexible" / "גמיש", `done` "Done" / "בוצע", `neutral` "15 min" / "15 דק׳"; `label` is always the full string. Sections in order: `fixed`, `flex`, `done`, `neutral`. `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static badge). Not focusable. Motion: none.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "chip", { lang })` / Then `expectDir` passes; each section's chip has the class for its kind (`tp-chip--fixed`, `tp-chip--flex`, `tp-chip--done`, plain `tp-chip`), the word for `lang` from SPEC, and one `svg.tp-icon` except `neutral` (none); each chip's height ≥ 28 px.
+  2. (once · en · desktop) Given EN at 1280×800 and `page.emulateMedia({ forcedColors: "active" })` / Then every chip's text is still visible and non-empty (meaning never relies on colour).
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs`); contrast via tone/wash token pairs (WCAG 2.2 SC 1.4.3; `bun run scan:design-tokens`); meaning carried by word + icon (WCAG 2.2 SC 1.4.1).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0032 — Button `apps/web/components/primitives/Button.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4019,34 +4064,38 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** A props-only `Button` maps variants and sizes to the Stage 1 classes, supports icon-only buttons with an accessible name, and handles disabled correctly, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Button.tsx` · `apps/web/app/e2e/components/button/page.tsx` · test: `tests/e2e/screens/button.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-btn" apps/web/app/tempo.css`; `grep -rn "@tempo/ui/primitives" apps/web --include=*.tsx` (callers of the old button; do not touch). 2. Stylesheet: Case A. 3. Create `Button.tsx` exactly as SPEC. 4. Create the harness page: SPEC sections; each `onClick` writes `onClick:<JSON of the section name>` to `<output data-testid="button-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-btn" apps/web/app/tempo.css`; `grep -rn "@tempo/ui/primitives" apps/web --include=*.tsx` (callers of the old button; do not touch); `grep -n '^  "x":\|^  "plus":' apps/web/components/tempo/TpIcon.tsx` (2 lines); `grep -n 'tp-btn\[disabled\]' apps/web/app/tempo.css` (opacity 0.55). 2. Stylesheet: Case A. 3. Create `Button.tsx` as in SPEC. 4. Create the harness page: SPEC sections; each section's `onClick={() => log("onClick")("<section name>")}` uses the CONVENTIONS §13 `log` helper (one argument, the section name, not the click event), so the `<output data-testid="button-log">` text becomes `onClick:<JSON of the section name>`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/button.spec.ts --reporter=line` → `6 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** edit `packages/ui/src/primitives/Button.tsx` or its callers; add variants Stage 1 does not style; set colours inline; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0032 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0032 / evidence / changed: apps/web/components/primitives/Button.tsx, apps/web/app/e2e/components/button/page.tsx, tests/e2e/screens/button.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import type { ButtonHTMLAttributes } from "react";
+  import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
   export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger-ghost";
   export type ButtonSize = "md" | "sm";
   export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
     label: string; variant?: ButtonVariant; size?: ButtonSize; icon?: TpIconName; iconOnly?: boolean;
   };
   export function Button({ label, variant = "secondary", size = "md", icon, iconOnly = false, type = "button", className, ...rest }: ButtonProps): React.JSX.Element;
-  // classes: "tp-btn", `tp-btn--${variant}`, size === "sm" ? "tp-btn--sm" : "", iconOnly ? "tp-btn--icon" : "", className
+  // const classes = ["tp-btn", `tp-btn--${variant}`, size === "sm" ? "tp-btn--sm" : "", iconOnly ? "tp-btn--icon" : "", className ?? ""].filter(Boolean).join(" "); rendered <button type={type} className={classes} data-component="Button" data-variant={variant} {...rest}>
   // iconOnly → aria-label={label}, children = <TpIcon name={icon ?? "plus"} size={size === "sm" ? "sm" : "md"} />
   // else → children = {icon ? <TpIcon name={icon} size="sm" /> : null}<span>{label}</span>
   // data-component="Button" data-variant={variant}
   ```
   The label is a prop (callers own copy); the harness uses EN / HE: `primary` "Save" / "שמירה", `secondary` "Cancel" / "ביטול", `ghost` "Edit" / "עריכה", `danger-ghost` "Delete" / "מחיקה", `icon` (iconOnly, `icon: "x"`) "Close" / "סגירה", `small` (size `sm`) "Add" / "הוספה", `disabled` (`disabled`) "Save" / "שמירה". States: `default` (each variant), `disabled` (native `disabled`: no click, opacity 0.55), focus-visible ring. `loading`/`empty`/`error`/`offline`/`success`: n/a (a button has no data state). RTL: an icon before the label sits at the inline start (right in HE). Motion: background/border 120 ms (`--tp-dur-fast`); `:active` moves 1 px.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "button", { lang })` / Then `expectDir` passes; each section's button has `tp-btn` plus its variant class and the label for `lang`; `button-icon`'s button has `aria-label` "Close" / "סגירה", class `tp-btn--icon` and no visible text; `button-small` has `tp-btn--sm` and height 36 px ±1; every md button's height ≥ 44 px; clicking `primary` sets the log to `onClick:"primary"`.
-  5. Given EN at 1280×800 / When the `disabled` button is clicked with `{ force: true }` / Then the log is unchanged and the button `isDisabled()`; its computed `opacity` is `0.55`.
-  6. Given EN at 1280×800 / When Tab focuses the `primary` button / Then computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid^="button-"]')` and `expectMotionBudget(page, '[data-testid^="button-"]')` pass.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "button", { lang })` / Then `expectDir` passes; each section's button has `tp-btn` plus its variant class and the label for `lang`; `button-icon`'s button has `aria-label` "Close" / "סגירה", class `tp-btn--icon` and no visible text; `button-small` has `tp-btn--sm` and height 36 px ±1; every md button's height ≥ 44 px; clicking `primary` sets the log to `onClick:"primary"`.
+  2. (once · en · desktop) Given EN at 1280×800 / When the `disabled` button is clicked with `{ force: true }` / Then the log is unchanged and the button `isDisabled()`; its computed `opacity` is `0.55`.
+  3. (once · en · desktop) Given EN at 1280×800 / When Tab focuses the `primary` button / Then computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid^="button-"]')` and `expectMotionBudget(page, '[data-testid^="button-"]')` pass.
 - **NUMBERS:** height ≥ 44 px md / 36 px sm (`--tp-touch`, tempo.css); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8); focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7); primary text `--tp-on-accent` on `--tp-accent` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens); motion ≤ 250 ms (`expectMotionBudget`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0033 — Kbd `apps/web/components/primitives/Kbd.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4054,13 +4103,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Kbd` renders a key hint in mono, LTR-isolated in Hebrew, mapping `Mod` to `⌘` or `Ctrl` by an explicit `platform` prop, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Kbd.tsx` · `apps/web/app/e2e/components/kbd/page.tsx` · test: `tests/e2e/screens/kbd.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-kbd" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Kbd.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-kbd" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Kbd.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/kbd.spec.ts --reporter=line` → `4 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** read `navigator.platform` inside the component (callers pass `platform`, so tests are deterministic); translate key names; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0033 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0033 / evidence / changed: apps/web/components/primitives/Kbd.tsx, apps/web/app/e2e/components/kbd/page.tsx, tests/e2e/screens/kbd.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   export type KbdPlatform = "mac" | "other";
   export type KbdProps = { keys: readonly string[]; platform?: KbdPlatform };
   export function Kbd({ keys, platform = "other" }: KbdProps): React.JSX.Element;
@@ -4068,13 +4118,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // <kbd className="tp-kbd tp-num" data-component="Kbd" dir="ltr">{text}</kbd>
   ```
   Key names are not translated. Sections: `default` (`{ keys: ["Mod", "K"] }` → "Ctrl K"), `mac` (`{ keys: ["Mod", "K"], platform: "mac" }` → "⌘ K"), `symbol` (`{ keys: ["[["] }` → "[["), `enter` (`{ keys: ["Shift", "Enter"] }` → "Shift Enter"). `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static hint). Not focusable. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "kbd", { lang })` / Then `expectDir` passes; the four sections show exactly "Ctrl K", "⌘ K", "[[", "Shift Enter"; each `kbd` has `dir="ltr"`, computed `direction` `ltr` and `unicode-bidi` `isolate` (also in HE), and computed `font-family` equal to the probe value of `var(--tp-font-mono)`.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "kbd", { lang })` / Then `expectDir` passes; the four sections show exactly "Ctrl K", "⌘ K", "[[", "Shift Enter"; each `kbd` has `dir="ltr"`, computed `direction` `ltr` and `unicode-bidi` `isolate` (also in HE), and computed `font-family` equal to `tokenValue(<its section>, "font-family", "--tp-font-mono")` (`tokenValue` declared at the top of the spec as in CONVENTIONS §23.2).
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs`); contrast `--tp-ink-muted` on `--tp-paper` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0034 — Card `apps/web/components/primitives/Card.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4082,28 +4133,33 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Card` renders a solid paper card with an optional head (icon + title) around its children, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Card.tsx` · `apps/web/app/e2e/components/card/page.tsx` · test: `tests/e2e/screens/card.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-card" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Card.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-card" apps/web/app/tempo.css`; `grep -n '^  "star":' apps/web/components/tempo/TpIcon.tsx` (one line). 2. Stylesheet: Case A. 3. Create `Card.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/card.spec.ts --reporter=line` → `4 passed`.
 - **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** add `tp-glass` or hover lift (Stage 1 cards are static); edit `SoftCard.tsx` or `apps/web/components/ui/card.tsx`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0034 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0034 / evidence / changed: apps/web/components/primitives/Card.tsx, apps/web/app/e2e/components/card/page.tsx, tests/e2e/screens/card.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import type { ReactNode } from "react";
+  import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
   export type CardProps = { title?: string; icon?: TpIconName; as?: "section" | "div"; children: ReactNode };
   export function Card({ title, icon, as = "section", children }: CardProps): React.JSX.Element;
+  // body starts `const Tag = as;`
   // <Tag className="tp-card" data-component="Card" aria-label={as === "section" && title ? title : undefined}>
   //   {title ? <div className="tp-card__head">{icon ? <TpIcon name={icon} size="sm" /> : null}<span className="tp-card__title" dir="auto">{title}</span></div> : null}
   //   {children}
   // </Tag>
   ```
   Sections (harness; EN / HE): `default` (title "Next up" / "הבא בתור", icon `star`, child `<p>Call the bank</p>` / `<p>להתקשר לבנק</p>`), `untitled` (no title, child `<p>Plain card</p>` / `<p>כרטיס פשוט</p>`), `div` (`as: "div"`, title "Notes" / "פתקים"). `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static surface). A `section` with a title is a named region for screen readers. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "card", { lang })` / Then `expectDir` passes; `card-default` contains a `section.tp-card` with `role="region"` named by its title, a `.tp-card__head` with one `svg.tp-icon` and the title for `lang`; `card-untitled` has no `.tp-card__head`; `card-div`'s card is a `div`; each card's computed `background-color` equals the probe value of `var(--tp-paper)`, `border-radius` equals the probe of `var(--tp-radius-lg)`, and `backdrop-filter` is `none`.
+- **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
+  1. (loop) Given `openHarness(page, "card", { lang })` / Then `expectDir` passes; `card-default` contains a `section.tp-card` with `role="region"` named by its title, a `.tp-card__head` with one `svg.tp-icon` and the title for `lang`; `card-untitled` has no `.tp-card__head`; `card-div`'s card is a `div`; each card's computed `background-color` equals `tokenValue(<its section>, "background-color", "--tp-paper")`, `border-radius` equals `tokenValue(<its section>, "border-radius", "--tp-radius-lg")` (`tokenValue` declared at the top of the spec as in CONVENTIONS §23.2), and `backdrop-filter` is `none`.
 - **NUMBERS:** contrast via tokens (WCAG 2.2 SC 1.4.3); radius `--tp-radius-lg` (token, asserted by computed value).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0035 — BlockHandle `apps/web/components/editor/BlockHandle.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4111,13 +4167,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `BlockHandle` renders the two handle buttons and reports clicks through props, visible on hover/focus at ≥ 768 px and hidden on phones, proven in the harness.
 - **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` · `apps/web/app/e2e/components/block-handle/page.tsx` · test: `tests/e2e/screens/block-handle.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-block\b\|\.tp-block__handle\|\.tp-block\[data-hover\]" apps/web/app/tempo.css`; `ls apps/web/components/editor` (no `BlockHandle.tsx`). 2. Stylesheet: Case A. 3. Create `BlockHandle.tsx` exactly as SPEC. 4. Create the harness page: sections per SPEC, each rendering `<div className="tp-block" …><BlockHandle …/><p>Pack the books</p></div>`; callbacks write `onAdd:null` / `onOptions:null` to `<output data-testid="block-handle-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-block\b\|\.tp-block__handle\|\.tp-block\[data-hover\]" apps/web/app/tempo.css` (lines 250–259 and 515, the `display: none` inside `@media (max-width: 767px)` at line 506); `grep -n "^\.tp-btn {\|^\.tp-btn--ghost" apps/web/app/tempo.css` (lines 121, 131); `grep -n '^  "plus":\|^  "grip":' apps/web/components/tempo/TpIcon.tsx` (two lines); `ls apps/web/components/editor` (no `BlockHandle.tsx`). 2. Stylesheet: Case A. 3. Create `BlockHandle.tsx` as in SPEC. 4. Create the harness page: sections per SPEC, each `<section data-testid="block-handle-<state>" style={{ paddingInline: "var(--tp-space-12)" }}>` (48 px on both sides, so the handle at `inset-inline-start: -40px` stays inside the 390 / 1280 px frame) holding `<div className="tp-block"><BlockHandle onAdd={log("onAdd")} onOptions={log("onOptions")} /><p>Pack the books</p></div>` (plus `data-hover` and `optionsOpen` per SPEC section); the CONVENTIONS §13 `log` helper writes `onAdd:` / `onOptions:` (no argument, nothing after the colon) to `<output data-testid="block-handle-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/block-handle.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/block-handle.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** build the options menu (move/copy/delete is the editor's job when it mounts the handle); call any backend; make an action drag-only; edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0035 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   type CopyKey = "add" | "options";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { add: "Add a block below", options: "Block options" },
@@ -4131,15 +4191,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // </div>
   ```
   Sections: `default` (wrapper `<div className="tp-block">`, handle hidden until hover/focus), `hover` (wrapper with `data-hover`, handle visible), `open` (`data-hover`, `optionsOpen`). Copy: `add` EN "Add a block below" / HE "הוספת בלוק מתחת"; `options` EN "Block options" / HE "אפשרויות בלוק". `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (two always-enabled buttons). RTL: the handle sits at the inline start (left of the block in EN, right in HE). Keyboard: both buttons are reachable by Tab; focusing one makes the handle visible (`:focus-within`). Motion: opacity 120 ms (`--tp-dur-fast`).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "block-handle", { lang })` / Then `expectDir` passes; at 1280: `block-handle-default`'s handle has computed opacity `0`, `block-handle-hover`'s is `1`, both buttons carry the SPEC `aria-label`s for `lang`, `block-handle-open`'s options button has `aria-expanded="true"`, and the hover handle's box is left of the paragraph in EN and right of it in HE; at 390: every handle has computed `display` `none`.
-  5. Given EN at 1280×800 / When Tab focuses the default section's add button / Then that handle's opacity becomes `1`; Enter logs `onAdd:null`; clicking the hover section's options button logs `onOptions:null`.
-  6. Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="block-handle-hover"]')` and `expectMotionBudget(page, '[data-testid^="block-handle-"]')` pass.
+  **Relies on:** tempo.css `.tp-block` (line 250, `position: relative`), `.tp-block__handle` (line 251: absolute, `inset-inline-start: calc(-1 * var(--tp-space-10))`, `opacity: 0`, `transition: opacity var(--tp-dur-fast)`; line 256: inner `.tp-btn` 28×28; lines 257–259: `opacity: 1` on `.tp-block:hover`, `:focus-within`, `[data-hover]`; line 515: `display: none` under 768 px); `.tp-btn`, `.tp-btn--ghost`; `TpIcon` (`{ name: TpIconName; size?: "sm" | "md" | "lg" }`, renders `<svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-<name>"/></svg>`) with icons `plus`, `grip`; `useLocale()` → `{ lang }`. All checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–3 run once (4 + 2 = 6).
+  1. (loop) Given `openHarness(page, "block-handle", { lang })` / Then `expectDir` passes; at 1280: `block-handle-default`'s handle has computed opacity `0`, `block-handle-hover`'s is `1`, both buttons carry the SPEC `aria-label`s for `lang`, `block-handle-open`'s options button has `aria-expanded="true"`, and the hover handle's left edge is left of the paragraph's left edge in EN (8 px vs 48 px) and its right edge is right of the paragraph's right edge in HE; at 390: every handle has computed `display` `none`.
+  2. (once · en · 1280×800) Given `openHarness(page, "block-handle", { lang: "en" })` / When the default section's "Add a block below" button gets `.focus()` / Then that handle reaches computed opacity `1` (`toHaveCSS`); Enter logs `onAdd:`; clicking the hover section's "Block options" button logs `onOptions:`.
+  3. (once · en · 1280×800) Given `openHarness(page, "block-handle", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="block-handle-hover"]')` and `expectMotionBudget(page, '[data-testid^="block-handle-"]')` pass.
 - **NUMBERS:** target 28×28 CSS px ≥ 24×24 (WCAG 2.2 SC 2.5.8); contrast `--tp-ink-muted` icons via tokens (WCAG 2.2 SC 1.4.11 non-text ≥ 3:1); motion ≤ 250 ms (`expectMotionBudget`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0036 — SlashMenu: harness spec (`apps/web/components/editor/SlashMenu.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4147,25 +4209,28 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `tests/e2e/screens/slash-menu.spec.ts` proves the menu's listbox semantics, group headings, active option, empty text, choose/hover callbacks and phone layout, with no source change.
 - **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` (read only, unchanged) · `apps/web/app/e2e/components/slash-menu/page.tsx` · test: `tests/e2e/screens/slash-menu.spec.ts`.
 - **MUTATES:** `apps/web/app/e2e/components/slash-menu/page.tsx` (new) · `tests/e2e/screens/slash-menu.spec.ts` (new).
-- **STEPS:** 1. Code-map: `cat apps/web/components/editor/SlashMenu.tsx`; `grep -n "\.tp-slash" apps/web/app/tempo.css`. 2. Create the harness page exactly as SPEC; `onChoose` logs `onChoose:<JSON item.id>`, `onHover` logs `onHover:<index>` to `<output data-testid="slash-menu-log">`. 3. Create the spec. 4. Run DONE.
+- **STEPS:** 1. Code-map: `grep -n "export type MenuItem\|export function SlashMenu\|aria-activedescendant\|onMouseDown\|onMouseEnter\|min-width: 768px" apps/web/components/editor/SlashMenu.tsx` (each present); `grep -n "\.tp-slash" apps/web/app/tempo.css` (`.tp-slash-anchor` 341, `.tp-slash-menu` 342 `position: absolute`, `.tp-slash-menu__group` 350, `.tp-slash-item` 351 `min-height: 48px`, line 533 `position: fixed` inside `@media (max-width: 767px)`); `grep -n '^  "search":\|^  "task":\|^  "link":\|^  "heading":\|^  "list":' apps/web/components/tempo/TpIcon.tsx` (five lines). 2. Create the harness page as in SPEC; CONVENTIONS §13 `log` helper: `onChoose={log("onChoose")}` writes `onChoose:<JSON of the whole MenuItem>`, `onHover={log("onHover")}` writes `onHover:<index>` to `<output data-testid="slash-menu-log">`. 3. Create the spec. 4. Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/slash-menu.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** the Playwright summary pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/slash-menu.spec.ts --reporter=line`, pasted into the PR.
 - **DO NOT:** edit `SlashMenu.tsx` or `PageEditorView.tsx`; call any `notes` mutation; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0036 / evidence / changed: apps/web/app/e2e/components/slash-menu/page.tsx, tests/e2e/screens/slash-menu.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
+  - Harness layout: each state is `<section data-testid="slash-menu-<state>" style={{ contain: "layout", position: "relative", minBlockSize: "calc(var(--tp-space-20) * 6)" }}>` (480 px; `contain: layout` makes the section the containing block of the menu's `position: fixed` under 768 px, so the three menus never overlap) holding `<div className="tp-slash-anchor"><p>/</p></div>` whose second child is the `SlashMenu` with the props below. The menu is 340 px wide at ≥ 768 px and at most 380 px tall (52vh = 438 px at 844 px high under 768 px), so it fits inside 480 px. The harness imports `SlashMenu` and `type MenuItem` (the props type is not exported); fixtures are typed `readonly MenuItem[]`. The language comes from `useLocale().lang` (the frame's `LocaleProvider`).
   - Harness props per language (EN / HE): `label` "Insert a block" / "הוספת בלוק"; `hint` "Type to filter · ↑ ↓ to move · Enter to add" / "להקליד לסינון · ↑ ↓ למעבר · Enter להוספה"; `empty` "Nothing matches. Keep typing, or press Esc." / "אין התאמה. אפשר להמשיך להקליד, או Esc."; `coords: null` (bottom-sheet/static placement, no fixed position); `items` = `[{ id: "task", group: G1, name: "Task" / "משימה", hint: "Shows on Today when it has a day" / "מופיעה בהיום כשיש לה תאריך", icon: "task" }, { id: "link", group: G1, name: "Link to a page" / "קישור לדף", icon: "link" }, { id: "h2", group: G2, name: "Heading 2" / "כותרת 2", icon: "heading" }, { id: "bullet", group: G2, name: "Bullet list" / "רשימת נקודות", icon: "list" }]` with `G1` "Tempo blocks" / "בלוקים של Tempo" and `G2` "Text" / "טקסט".
   - Sections: `default` (`active: 0`), `active-third` (`active: 2`), `empty` (`items: []`).
   - Behaviour asserted: `[role="listbox"]` named by `label`; `aria-activedescendant` equals `slash-<active id>`; exactly one `[role="option"][aria-selected="true"]`; group headings appear once each, before their first item; option names in order; the empty section shows the `empty` text and no options; under 768 px `.tp-slash-menu` is `position: fixed` at the bottom (tempo.css), at ≥ 768 px it is `position: absolute`.
+  - **Relies on:** `SlashMenu` (`apps/web/components/editor/SlashMenu.tsx`, unchanged) props `{ label: string; hint: string; items: readonly MenuItem[]; active: number; coords: { left: number; top: number; bottom: number } | null; empty: string; onChoose: (item: MenuItem) => void; onHover: (index: number) => void }`, `MenuItem = { id: string; group: string; name: string; hint?: string; icon: TpIconName }`; DOM: root `div.tp-slash-menu.tp-glass#slash`, `.tp-slash-menu__search` with the hint, `[role="listbox"][aria-label]` with `aria-activedescendant="slash-<id>"`, one `.tp-slash-menu__group` before each new group, `.tp-slash-item[role="option"]#slash-<id>[aria-selected]` whose `onMouseDown` calls `onChoose(item)` and `onMouseEnter` calls `onHover(index)`; empty list → one `.tp-slash-menu__group` holding `empty`; with `coords: null` no inline style at any width. Every section repeats the ids `slash` and `slash-<id>`, so every locator is scoped to its section.
   - States: `default`, `active-third`, `empty`; `loading`/`error`/`offline`/`success`/`disabled`: n/a (synchronous listbox). Motion: `tp-pop` 180 ms (`--tp-dur-base`).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "slash-menu", { lang })` / Then `expectDir` passes and every "Behaviour asserted" item holds in its section with the strings for `lang`, including the viewport's `position` rule.
-  5. Given EN at 1280×800 / When the "Link to a page" option receives `mousedown` (`locator.dispatchEvent("mousedown")`) / Then the log is `onChoose:"link"`; When the "Bullet list" option is hovered / Then the log is `onHover:3`.
-  6. Given EN at 1280×800 / Then `expectMotionBudget(page, '[data-testid^="slash-menu-"]')` passes and each option's height ≥ 48 px.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–3 run once (4 + 2 = 6).
+  1. (loop) Given `openHarness(page, "slash-menu", { lang })` / Then `expectDir` passes and every "Behaviour asserted" item holds in its section with the strings for `lang`, including the viewport's `position` rule.
+  2. (once · en · 1280×800) Given `openHarness(page, "slash-menu", { lang: "en" })` / When the default section's "Link to a page" option is clicked / Then the log is `onChoose:{"id":"link","group":"Tempo blocks","name":"Link to a page","icon":"link"}`; When its "Bullet list" option is hovered / Then the log is `onHover:3`.
+  3. (once · en · 1280×800) Given `openHarness(page, "slash-menu", { lang: "en" })` / Then `expectMotionBudget(page, '[data-testid^="slash-menu-"]')` passes and each option's height ≥ 48 px.
 - **NUMBERS:** option height ≥ 48 px (tempo.css `.tp-slash-item`) ≥ 24×24 target (WCAG 2.2 SC 2.5.8); contrast on glass via tokens (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0037 — Composer `apps/web/components/coach/Composer.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4173,32 +4238,39 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Composer` sends trimmed text on Enter or the send button, inserts a newline on Shift+Enter, blocks sending while empty or disabled, and clears after sending, proven in the harness.
 - **SCOPE:** `apps/web/components/coach/Composer.tsx` · `apps/web/app/e2e/components/composer/page.tsx` · test: `tests/e2e/screens/composer.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-composer" apps/web/app/tempo.css`; `grep -n "tp-composer" -A3 apps/web/components/coach/CoachChat.tsx` (reference only; do not edit). 2. Stylesheet: Case A. 3. Create `Composer.tsx` exactly as SPEC. 4. Create the harness page: sections per SPEC; `onSend` writes `onSend:<JSON text>` to `<output data-testid="composer-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-composer" apps/web/app/tempo.css` (lines 428–439; `__send` line 438 has `background: var(--tp-ink); color: var(--tp-paper)`); `grep -n "^\.tp-btn {\|^\.tp-btn--sm\|^\.tp-sr-only\|^\.tp-num" apps/web/app/tempo.css` (lines 121, 134, 81, 82); `grep -n '^  "send":' apps/web/components/tempo/TpIcon.tsx` (one line); `grep -n "tp-composer" -A3 apps/web/components/coach/CoachChat.tsx` (reference only; do not edit). 2. Stylesheet: Case A. 3. Create `Composer.tsx` as in SPEC. 4. Create the harness page: sections per SPEC; `onSend={log("onSend")}` (CONVENTIONS §13 helper) writes `onSend:<JSON text>` to `<output data-testid="composer-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/composer.spec.ts --reporter=line` → `7 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/composer.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** add a microphone or voice button (Q-01); colour the send button accent; call Convex; edit `CoachChat.tsx` or `apps/web/lib/i18n.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0037 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
-  type CopyKey = "message" | "placeholder" | "hint" | "send";
+  import type React from "react";
+  import { useId, useState } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
+  type CopyKey = "message" | "placeholder" | "hintSend" | "hintLine" | "send";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
-    en: { message: "Message", placeholder: "Help me pick one thing for this afternoon", hint: "Enter to send · Shift+Enter for a new line", send: "Send" },
-    he: { message: "הודעה", placeholder: "עזרה בבחירת דבר אחד לאחר הצהריים", hint: "Enter לשליחה · Shift+Enter לשורה חדשה", send: "שליחה" },
+    en: { message: "Message", placeholder: "Help me pick one thing for this afternoon", hintSend: "to send", hintLine: "for a new line", send: "Send" },
+    he: { message: "הודעה", placeholder: "עזרה בבחירת דבר אחד לאחר הצהריים", hintSend: "לשליחה", hintLine: "לשורה חדשה", send: "שליחה" },
   };
   export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean };
   export function Composer({ onSend, disabled = false }: ComposerProps): React.JSX.Element;
   ```
-  Markup: `<form className="tp-composer" data-component="Composer" onSubmit>` → `<div className="tp-composer__box">` → `<label className="tp-sr-only" htmlFor={id}>{message}</label>`, `<textarea id={id} className="tp-composer__input" rows={2} dir="auto" aria-label={message} placeholder={placeholder}>`, `<div className="tp-composer__bar"><button type="submit" className="tp-btn tp-btn--sm tp-composer__send" disabled={disabled || text.trim() === ""}><TpIcon name="send" size="sm" /><span>{send}</span></button></div>`; then `<p className="tp-composer__hint">` with the hint, where "Enter" and "Shift+Enter" are wrapped in `<span className="tp-num">`. `id` from `useId()`. Behaviour: Enter without Shift and not during IME composition (`event.nativeEvent.isComposing`) submits; submit calls `onSend(text.trim())` only when the trim is non-empty and `disabled` is false, then clears the textarea; Shift+Enter inserts a newline. States (sections): `default`, `disabled` (`disabled: true`, the "thinking" state: typing allowed, send disabled). `loading`/`empty`/`error`/`offline`/`success`: `empty` = send disabled while the text is blank; `success` = cleared after send; `loading`/`error`/`offline` n/a (the screen owns them). RTL: `dir="auto"` per message. Motion: send button 120 ms.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "composer", { lang })` / Then `expectDir` passes; `composer-default`'s textarea has `aria-label` and placeholder for `lang` and `dir="auto"`; its send button has the `send` word and is disabled while empty; the hint text equals `hint` for `lang`; typing `"  Plan my evening  "` and pressing Enter sets the log to `onSend:"Plan my evening"` and empties the textarea.
-  5. Given EN at 1280×800 / When `Line one`, Shift+Enter, `Line two` are typed / Then the textarea value is `"Line one\nLine two"` and the log is unchanged.
-  6. Given EN / When `Hello` is typed in `composer-disabled` and Enter is pressed / Then the log is unchanged and the send button is disabled.
-  7. Given EN at 1280×800 / Then the send button's computed `background-color` equals the probe value of `var(--tp-ink)`; `expectTargetSize(page, '[data-testid="composer-default"]')` and `expectMotionBudget(page, '[data-testid^="composer-"]')` pass.
+  Markup: `<form className="tp-composer" data-component="Composer" onSubmit>` → `<div className="tp-composer__box">` → `<label className="tp-sr-only" htmlFor={id}>{message}</label>`, `<textarea id={id} className="tp-composer__input" rows={2} dir="auto" aria-label={message} placeholder={placeholder}>`, `<div className="tp-composer__bar"><button type="submit" className="tp-btn tp-btn--sm tp-composer__send" disabled={disabled || text.trim() === ""}><TpIcon name="send" size="sm" /><span>{send}</span></button></div>`; then `<p className="tp-composer__hint"><span className="tp-num">Enter</span> {copy.hintSend} · <span className="tp-num">Shift+Enter</span> {copy.hintLine}</p>`, whose text is EN "Enter to send · Shift+Enter for a new line" / HE "Enter לשליחה · Shift+Enter לשורה חדשה" (the key names stay Latin, CONVENTIONS §12). `id` from `useId()`. Behaviour: Enter without Shift and not during IME composition (`event.nativeEvent.isComposing`) submits; submit calls `onSend(text.trim())` only when the trim is non-empty and `disabled` is false, then clears the textarea; Shift+Enter inserts a newline. States (sections): `default`, `disabled` (`disabled: true`, the "thinking" state: typing allowed, send disabled). `loading`/`empty`/`error`/`offline`/`success`: `empty` = send disabled while the text is blank; `success` = cleared after send; `loading`/`error`/`offline` n/a (the screen owns them). RTL: `dir="auto"` per message. Motion: send button 120 ms.
+  **Relies on:** tempo.css `.tp-composer` (428), `__box` (432), `__input` (433), `__bar` (437), `__send` (438, ink ground, paper text), `__hint` (439); `.tp-btn` (121, `transition` 120 ms), `.tp-btn--sm` (134, `min-height: 36px`), `.tp-btn[disabled]` (142, opacity 0.55, background unchanged); `.tp-sr-only`, `.tp-num`; `TpIcon` icon `send`; `useLocale()` → `{ lang }`. All checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. The spec declares the CONVENTIONS §23.2 `tokenValue` helper at its top, as written there. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–4 run once (4 + 3 = 7).
+  1. (loop) Given `openHarness(page, "composer", { lang })` / Then `expectDir` passes; `composer-default`'s textarea has the accessible name `message` and the placeholder for `lang` and `dir="auto"`; its send button has the `send` word and is disabled while empty; the hint text equals the SPEC hint text for `lang`; typing `"  Plan my evening  "` and pressing Enter sets the log to `onSend:"Plan my evening"` and empties the textarea.
+  2. (once · en · 1280×800) Given `openHarness(page, "composer", { lang: "en" })` / When `Line one`, Shift+Enter, `Line two` are typed / Then the textarea value is `"Line one\nLine two"` and the log is unchanged.
+  3. (once · en · 1280×800) Given `openHarness(page, "composer", { lang: "en" })` / When `Hello` is typed in `composer-disabled` and Enter is pressed / Then the log text is empty and the send button is disabled.
+  4. (once · en · 1280×800) Given `openHarness(page, "composer", { lang: "en" })` / Then the default section's send button's computed `background-color` equals `await tokenValue(page.getByTestId("composer-default"), "background-color", "--tp-ink")`; `expectTargetSize(page, '[data-testid="composer-default"]')` and `expectMotionBudget(page, '[data-testid^="composer-"]')` pass.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; send 36 px); contrast `--tp-paper` on `--tp-ink` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0038 — UndoToast: harness spec (`apps/web/components/you/UndoToast.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4206,25 +4278,27 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `tests/e2e/screens/undo-toast.spec.ts` proves the countdown, Undo, Dismiss, auto-close, failure message and notice variant with a controlled clock, with no source change.
 - **SCOPE:** `apps/web/components/you/UndoToast.tsx` (read only, unchanged) · `apps/web/app/e2e/components/undo-toast/page.tsx` · test: `tests/e2e/screens/undo-toast.spec.ts`.
 - **MUTATES:** `apps/web/app/e2e/components/undo-toast/page.tsx` (new) · `tests/e2e/screens/undo-toast.spec.ts` (new).
-- **STEPS:** 1. Code-map: `cat apps/web/components/you/UndoToast.tsx`; `grep -rn "\"you.toast" apps/web/lib/i18n-groups/you.ts`. 2. Create the harness page exactly as SPEC. 3. Create the spec; every case calls `page.clock.install({ time: new Date("2026-11-02T10:00:00Z") })` before `openHarness`. 4. Run DONE.
+- **STEPS:** 1. Code-map: `grep -n "export function UndoToast\|untilMs\|closeRef.current()\|role=\"alert\"\|aria-live" apps/web/components/you/UndoToast.tsx` (each present); `grep -n "export function formatCountdown" -A3 apps/web/lib/you/screenState.ts` (`Math.ceil(ms / 1000)`, `m:ss`); `grep -rn "\"you.toast" apps/web/lib/i18n-groups/you.ts` (5 EN + 5 HE keys); `grep -n "^\.tp-toast-region\|^\.tp-toast {\|tp-toast-region { bottom" apps/web/app/tempo.css` (lines 442, 445, and the under-768 `bottom: calc(var(--tp-tabbar-h) + var(--tp-space-5))`). 2. Create the harness page as in SPEC. 3. Create the spec; every case calls `page.clock.install({ time: new Date("2026-11-02T10:00:00Z") })` before `openHarness`. 4. Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/undo-toast.spec.ts --reporter=line` → `7 passed`.
-- **EVIDENCE:** the Playwright summary pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/undo-toast.spec.ts --reporter=line`, pasted into the PR.
 - **DO NOT:** edit `UndoToast.tsx`, `habits/UndoToast.tsx` or the `you.toast.*` strings; shorten the window; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0038 / evidence / changed: apps/web/app/e2e/components/undo-toast/page.tsx, tests/e2e/screens/undo-toast.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
-  - Harness: each section is `<section data-testid="undo-toast-<state>" style={{ contain: "layout", minBlockSize: "var(--tp-space-20)" }}>` (so each fixed-position region is placed inside its own section) and holds `const [until] = useState(() => Date.now() + 300_000)` and `const [open, setOpen] = useState(true)`. Sections: `default` (`title` "Task added" / "המשימה נוספה", `onUndo` resolves and logs `onUndo:null`), `notice` (same title, no `onUndo`), `failing` (`onUndo` throws `new Error("x")` after logging). `onClose` logs `onClose:<JSON section name>` and sets `open` false. Log: `<output data-testid="undo-toast-log">` (last call wins).
+  - Harness: each section is `<section data-testid="undo-toast-<state>" style={{ contain: "layout", minBlockSize: "calc(var(--tp-space-20) * 2)" }}>` (160 px; `contain: layout` places each fixed-position region inside its own section: the region sits 24 px above the section bottom at ≥ 768 px and 84 px above it under 768 px, and the 56 px toast fits either way) and holds `const [until] = useState(() => Date.now() + 300_000)` and `const [open, setOpen] = useState(true)`. Sections: `default` (`title` "Task added" / "המשימה נוספה", `onUndo` calls `log("onUndo")()` and resolves), `notice` (same title, no `onUndo`), `failing` (`onUndo` calls `log("onUndo")()` then throws `new Error("x")`). `onClose` calls `log("onClose")()` and sets that section's `open` to false. The CONVENTIONS §13 `log` helper writes to `<output data-testid="undo-toast-log">`; both callbacks have no argument, so the text is `onUndo:` / `onClose:` (last call wins). The title is chosen with `useLocale().lang`.
   - Existing copy (EN / HE): sub "You can undo for" / "אפשר לבטל במשך" + countdown in `.tp-num.tp-mono` (`aria-hidden`) + screen-reader text "5 minutes" / "5 דקות"; Undo button "Undo" / "ביטול"; Dismiss `aria-label` "Dismiss" / "סגירה"; error "That didn't undo. Try again in a moment." / "הביטול לא הצליח. אפשר לנסות שוב בעוד רגע." (`role="alert"`). Live region: `.tp-toast-region[aria-live="polite"]`.
   - States: `default` (counting), `notice` (no Undo, no countdown), `failing` (error shown, toast stays), auto-closed. `loading`/`empty`/`offline`/`disabled`: n/a; `success` = Undo resolved → closed. Motion: rise 240 ms (`--tp-dur-slow`), exit 160 ms.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given the clock installed and `openHarness(page, "undo-toast", { lang })` / Then `expectDir` passes; `undo-toast-default` shows the title, the sub text for `lang`, countdown `5:00` and the sr-only window text; the Undo button and Dismiss `aria-label` match `lang`; `undo-toast-notice` has no Undo button and no countdown; the region has `aria-live="polite"`.
-  5. Given EN at 1280×800 / When `page.clock.fastForward(1000)` runs / Then `undo-toast-default` shows `4:59`; When the Undo button is clicked / Then the log is `onClose:"default"` and that toast is gone.
-  6. Given EN / When the `failing` section's Undo is clicked / Then a `role="alert"` with "That didn't undo. Try again in a moment." is visible and the toast stays; When `page.clock.fastForward(300_000)` runs / Then no `.tp-toast` remains in the `notice` and `failing` sections (auto-close at `untilMs`) and the log text matches `/^onClose:"(notice|failing)"$/` (both close at the same tick; last call wins).
-  7. Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="undo-toast-default"]')` and `expectMotionBudget(page, '[data-testid^="undo-toast-"]')` pass.
-- **NUMBERS:** Undo window 300,000 ms (PRD F-131; case 6); motion ≤ 250 ms (case 7); target ≥ 24×24 (WCAG 2.2 SC 2.5.8); contrast on glass via tokens (WCAG 2.2 SC 1.4.3).
+  - **Relies on:** `UndoToast` props `{ title: string; untilMs: number; onUndo?: () => Promise<unknown> | unknown; onClose: () => void }`; it ticks every 1,000 ms and calls `onClose()` once `Date.now() >= untilMs`; Undo awaits `onUndo()` then calls `onClose()`, and a throw shows the `role="alert"` text and keeps the toast; Dismiss calls `onClose()`; `formatCountdown(300_000)` → `"5:00"`, `formatCountdown(299_000)` → `"4:59"`; DOM `div.tp-toast-region[aria-live="polite"] > output.tp-toast.tp-glass`. All checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–4 run once (4 + 3 = 7).
+  1. (loop) Given the clock installed and `openHarness(page, "undo-toast", { lang })` / Then `expectDir` passes; `undo-toast-default` shows the title, the sub text for `lang`, countdown `5:00` and the sr-only window text; the Undo button and Dismiss `aria-label` match `lang`; `undo-toast-notice` has no Undo button and no countdown; the region has `aria-live="polite"`.
+  2. (once · en · 1280×800) Given the clock installed and `openHarness(page, "undo-toast", { lang: "en" })` / When `page.clock.fastForward(1000)` runs / Then `undo-toast-default` shows `4:59`; When its Undo button is clicked / Then the log is `onClose:` and `undo-toast-default` holds no `.tp-toast`.
+  3. (once · en · 1280×800) Given the clock installed and `openHarness(page, "undo-toast", { lang: "en" })` / When the `failing` section's Undo is clicked / Then the log is `onUndo:`, a `role="alert"` with "That didn't undo. Try again in a moment." is visible and the toast stays; When `page.clock.fastForward(300_000)` runs / Then no `.tp-toast` remains in any section (auto-close at `untilMs`) and the log is `onClose:`.
+  4. (once · en · 1280×800) Given the clock installed and `openHarness(page, "undo-toast", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="undo-toast-default"]')` and `expectMotionBudget(page, '[data-testid^="undo-toast-"]')` pass.
+- **NUMBERS:** Undo window 300,000 ms (PRD F-131; bullet 3); motion ≤ 250 ms (bullet 4); target ≥ 24×24 (WCAG 2.2 SC 2.5.8); contrast on glass via tokens (WCAG 2.2 SC 1.4.3).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0039 — Skeleton `apps/web/components/primitives/Skeleton.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4232,13 +4306,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Skeleton` renders one decorative placeholder bar at a chosen width, or a card-height block, hidden from assistive tech, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Skeleton.tsx` · `apps/web/app/e2e/components/skeleton/page.tsx` · test: `tests/e2e/screens/skeleton.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-skeleton\|tp-shimmer" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Skeleton.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-skeleton\|tp-shimmer" apps/web/app/tempo.css` (line 463 base rule `min-height: 16px`; lines 464–465 the `tp-shimmer` animation only inside `@media (prefers-reduced-motion: no-preference)`; line 476 the keyframes). 2. Stylesheet: Case A. 3. Create `Skeleton.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/skeleton.spec.ts --reporter=line` → `5 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/skeleton.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** add text, `role="status"` or a live region (StateLoading's job); animate `transform`; edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0039 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   export type SkeletonWidth = 40 | 60 | 80 | 100;
   export type SkeletonProps = { width?: SkeletonWidth; block?: boolean };
   export function Skeleton({ width = 100, block = false }: SkeletonProps): React.JSX.Element;
@@ -4246,14 +4321,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //   style={{ display: "block", inlineSize: `${width}%`, blockSize: block ? "var(--tp-space-20)" : undefined }} />
   ```
   No copy. Sections: `w40`, `w60`, `w80`, `w100` (bars), `block` (`block: true`). Only state is `loading` (this is the loading placeholder); `empty`/`error`/`offline`/`success`/`disabled`: n/a. Motion: the shimmer is a 1.4 s looping background animation defined by tempo.css; it is not a transition and so is outside the 250 ms transition budget; under reduced motion it is removed.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "skeleton", { lang })` / Then `expectDir` passes; each bar has `aria-hidden="true"` and no text; the `w40`/`w60`/`w80`/`w100` bars' widths are 40/60/80/100% (±1 px) of their section's content width; every bar is ≥ 16 px tall; the `block` bar's height equals the probe value of `var(--tp-space-20)`; with default media the bars' computed `animation-name` is `tp-shimmer`.
-  5. Given EN at 1280×800 and `page.emulateMedia({ reducedMotion: "reduce" })` / Then every bar's computed `animation-name` is `none`.
-- **NUMBERS:** shown only for content slower than 100 ms (DESIGN.md §9; enforced by callers); shimmer removed under reduced motion (case 5); no contrast target (decorative, `aria-hidden`).
+  **Relies on:** tempo.css `.tp-skeleton` (line 463: `--tp-radius-sm`, `--tp-sunken`, `min-height: 16px`; line 465: `animation: tp-shimmer 1.4s linear infinite` only under `prefers-reduced-motion: no-preference`, so the computed `animation-name` is `none` under `reduce`). Checked in STEP 1. Each harness section is the full 390 / 1280 px frame width (html/body margin 0).
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. The spec declares the CONVENTIONS §23.2 `tokenValue` helper at its top, as written there. Bullet 1 runs at both viewports × both languages (4 tests); bullet 2 runs once (4 + 1 = 5).
+  1. (loop) Given `openHarness(page, "skeleton", { lang })` / Then `expectDir` passes; each bar has `aria-hidden="true"` and no text; the `w40`/`w60`/`w80`/`w100` bars' widths are 40/60/80/100% (±1 px) of their section's content width; every bar is ≥ 16 px tall; the `block` bar's computed `height` equals `await tokenValue(page.getByTestId("skeleton-block"), "height", "--tp-space-20")`; with default media the bars' computed `animation-name` is `tp-shimmer`.
+  2. (once · en · 1280×800) Given `openHarness(page, "skeleton", { lang: "en" })` and `page.emulateMedia({ reducedMotion: "reduce" })` / Then every bar's computed `animation-name` is `none`.
+- **NUMBERS:** shown only for content slower than 100 ms (DESIGN.md §9; enforced by callers); shimmer removed under reduced motion (bullet 2); no contrast target (decorative, `aria-hidden`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0040 — Empty `apps/web/components/primitives/Empty.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4261,13 +4338,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Empty` renders an optional icon, a title, an optional body and an optional action, proven in the harness.
 - **SCOPE:** `apps/web/components/primitives/Empty.tsx` · `apps/web/app/e2e/components/empty/page.tsx` · test: `tests/e2e/screens/empty.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-empty" apps/web/app/tempo.css`. 2. Stylesheet: Case A. 3. Create `Empty.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections; the action fixture is `<button className="tp-btn tp-btn--primary" type="button" onClick={() => log("action", null)}>` with the SPEC word, logging `action:null` to `<output data-testid="empty-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "^\.tp-empty\|^\.tp-small\|^\.tp-btn--primary" apps/web/app/tempo.css` (lines 467 with `text-align: center`, 85, 129); `grep -n '^  "page":' apps/web/components/tempo/TpIcon.tsx` (one line). 2. Stylesheet: Case A. 3. Create `Empty.tsx` as in SPEC. 4. Create the harness page with the SPEC sections; the action fixture is `<button className="tp-btn tp-btn--primary" type="button" onClick={() => log("action")()}>` with the SPEC word; the CONVENTIONS §13 `log` helper (called with no argument) writes `action:` to `<output data-testid="empty-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/empty.spec.ts --reporter=line` → `5 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/empty.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** use shaming words (`convex/lib/shameWords.ts` list); add an illustration; duplicate `StateEmpty`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0040 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import type { ReactNode } from "react";
+  import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
   export type EmptyProps = { icon?: TpIconName; title: string; body?: string; action?: ReactNode };
   export function Empty({ icon, title, body, action }: EmptyProps): React.JSX.Element;
   // <div className="tp-empty" data-component="Empty">
@@ -4278,14 +4358,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // </div>
   ```
   Harness copy (EN / HE): `full` — icon `page`, title "No pages yet. Your first one can be tiny." / "עוד אין דפים. הראשון יכול להיות קטנטן.", body "Start with one line." / "אפשר להתחיל בשורה אחת.", action "New page" / "דף חדש"; `title-only` — title "Nothing here today." / "אין כאן כלום היום.". This component IS the empty state; `loading`/`error`/`offline`/`success`/`disabled`: n/a. Keyboard: the optional action is the only focusable element. Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "empty", { lang })` / Then `expectDir` passes; `empty-full` shows one `svg.tp-icon`, the title in `strong`, the body and the action button with the words for `lang`; `empty-title-only` has no icon, no body and no button; the container's computed `text-align` is `center`.
-  5. Given EN at 1280×800 / When the action is clicked / Then the log is `action:null`; and `expectTargetSize(page, '[data-testid="empty-full"]')` passes.
+  **Relies on:** tempo.css `.tp-empty` (line 467: grid, `justify-items: center`, `text-align: center`, `--tp-ink-muted`), `.tp-small` (85), `.tp-btn--primary` (129, harness only); `TpIcon` with icon `page` (renders `svg.tp-icon`). Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullet 2 runs once (4 + 1 = 5).
+  1. (loop) Given `openHarness(page, "empty", { lang })` / Then `expectDir` passes; `empty-full` shows one `svg.tp-icon`, the title in `strong`, the body and the action button with the words for `lang`; `empty-title-only` has no icon, no body and no button; the container's computed `text-align` is `center`.
+  2. (once · en · 1280×800) Given `openHarness(page, "empty", { lang: "en" })` / When the action is clicked / Then the log is `action:`; and `expectTargetSize(page, '[data-testid="empty-full"]')` passes.
 - **NUMBERS:** contrast `--tp-ink-muted` on paper ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens); target ≥ 24×24 for the action (WCAG 2.2 SC 2.5.8).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0041 — Glass surface `apps/web/components/primitives/Glass.tsx` + helper-class checks
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4293,26 +4375,30 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Glass` wraps floating chrome in `.tp-glass`, and one spec proves the glass recipe, its `data-glass="off"` fallback and the RTL/LTR helper classes.
 - **SCOPE:** `apps/web/components/primitives/Glass.tsx` · `apps/web/app/e2e/components/glass/page.tsx` · test: `tests/e2e/screens/glass.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-glass\|\.tp-num\|\.tp-sr-only\|tp-icon--flip\|\.tp-eyebrow" apps/web/app/tempo.css`; `grep -n "tp-glass-blur\|tp-glass-saturate" apps/web/app/globals.css`. 2. Stylesheet: Case A. 3. Create `Glass.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-glass\|\.tp-num\|\.tp-sr-only\|tp-icon--flip\|\.tp-eyebrow" apps/web/app/tempo.css` (`.tp-glass` 104, `[data-glass="off"] .tp-glass` 118, `[dir="rtl"] .tp-icon--flip` 78 `transform: scaleX(-1)`, `.tp-sr-only` 81 1×1 px, `.tp-num` 82 `direction: ltr; unicode-bidi: isolate`); `grep -n "tp-glass-blur\|tp-glass-saturate" apps/web/app/globals.css` (18px, 150%); `grep -n '^  "chevron":' apps/web/components/tempo/TpIcon.tsx` (one line). 2. Stylesheet: Case A. 3. Create `Glass.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/glass.spec.ts --reporter=line` → `5 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/glass.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** apply glass to paper, cards, blocks or text; create `helpers.ts`; edit `tempo.css` or `globals.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0041 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import type { ReactNode } from "react";
   export type GlassProps = { as?: "div" | "header" | "nav" | "aside"; className?: string; children: ReactNode };
   export function Glass({ as = "div", className, children }: GlassProps): React.JSX.Element;
   // <Tag className={["tp-glass", className].filter(Boolean).join(" ")} data-component="Glass">{children}</Tag>
   ```
   Harness sections (EN / HE text): `glass` (`<Glass><p>Floating bar</p></Glass>` / "סרגל צף"), `helpers` (`<p>At <span className="tp-num tp-mono">12:30</span></p>` / `<p>ב־<span className="tp-num tp-mono">12:30</span></p>`, `<span className="tp-sr-only">Hidden label</span>` / "תווית מוסתרת", and `<svg className="tp-icon tp-icon--flip" aria-hidden="true"><use href="#i-chevron" /></svg>`). States: `default` glass, `glass-off` fallback; others n/a (a surface, not a control). Motion: none (blur is static).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "glass", { lang })` / Then `expectDir` passes; the Glass element's computed `backdrop-filter` contains `blur(` and its `background-color` equals the probe value of `var(--tp-glass)`; the `.tp-num` span has computed `direction` `ltr` and `unicode-bidi` `isolate` and text `12:30`; the `.tp-sr-only` span's box is 1×1 px; the flip icon's computed `transform` is `matrix(-1, 0, 0, 1, 0, 0)` in HE and `none` in EN.
-  5. Given EN at 1280×800 / When `document.documentElement.dataset.glass = "off"` / Then the Glass element's `background-color` equals the probe value of `var(--tp-glass-solid)` and `backdrop-filter` is `none`.
-- **NUMBERS:** text on glass ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; DESIGN.md §6 worst case muted-on-glass 5.13:1); solid fallback present (case 5).
+  **Relies on:** tempo.css `.tp-glass` (line 104: `background: var(--tp-glass)`, `backdrop-filter: blur(var(--tp-glass-blur)) saturate(var(--tp-glass-saturate))`), `[data-glass="off"] .tp-glass` (line 118: `--tp-glass-solid`, `backdrop-filter: none`), `.tp-num`, `.tp-mono`, `.tp-sr-only`, `[dir="rtl"] .tp-icon--flip`; the sprite is not mounted, so the flip icon asserts only its computed `transform`. Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. The spec declares the CONVENTIONS §23.2 `tokenValue` helper at its top, as written there. Bullet 1 runs at both viewports × both languages (4 tests); bullet 2 runs once because it changes `<html>` (4 + 1 = 5).
+  1. (loop) Given `openHarness(page, "glass", { lang })` / Then `expectDir` passes; the Glass element's computed `backdrop-filter` contains `blur(` and its computed `background-color` equals `await tokenValue(page.getByTestId("glass-glass"), "background-color", "--tp-glass")`; the `.tp-num` span has computed `direction` `ltr` and `unicode-bidi` `isolate` and text `12:30`; the `.tp-sr-only` span's box is 1×1 px; the flip icon's computed `transform` is `matrix(-1, 0, 0, 1, 0, 0)` in HE and `none` in EN.
+  2. (once · en · 1280×800) Given `openHarness(page, "glass", { lang: "en" })` / When `page.evaluate(() => { document.documentElement.dataset.glass = "off"; })` runs / Then the Glass element's computed `background-color` equals `await tokenValue(page.getByTestId("glass-glass"), "background-color", "--tp-glass-solid")` and its `backdrop-filter` is `none`.
+- **NUMBERS:** text on glass ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; DESIGN.md §6 worst case muted-on-glass 5.13:1); solid fallback present (bullet 2).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0042 — TaskBlock `apps/web/components/blocks/TaskBlock.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4320,13 +4406,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `TaskBlock` renders a list of task rows whose check buttons report `onToggle(id, nextDone)`, proven in the harness.
 - **SCOPE:** `apps/web/components/blocks/TaskBlock.tsx` · `apps/web/app/e2e/components/task-block/page.tsx` · test: `tests/e2e/screens/task-block.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-block-task\|\.tp-task-row\|\.tp-check" apps/web/app/tempo.css`; `ls apps/web/components/blocks` (absent). 2. Stylesheet: Case A. 3. Create `TaskBlock.tsx` exactly as SPEC. 4. Create the harness page; `onToggle` writes `onToggle:<JSON {id, done}>` to `<output data-testid="task-block-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-block-task\|\.tp-task-row\|\.tp-check" apps/web/app/tempo.css` (lines 282–305; line 292 `data-done="true"` → `text-decoration: line-through`; line 295 `.tp-check` 44×44; line 302 `transition` 120 ms); `grep -n '^  "check":' apps/web/components/tempo/TpIcon.tsx` (one line); `ls apps/web/components/blocks` (absent). 2. Stylesheet: Case A. 3. Create `TaskBlock.tsx` as in SPEC. 4. Create the harness page; `onToggle={log("onToggle")}` (CONVENTIONS §13 helper; two arguments, so the text is a JSON array `onToggle:["<id>",<done>]`) writes to `<output data-testid="task-block-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/task-block.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/task-block.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** call `useMutation` or any Convex API (the screen does); keep local "optimistic" state (the screen passes the new `done`); show JSON; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0042 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   type CopyKey = "minutes";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { minutes: "{n} min" }, he: { minutes: "{n} דק׳" } };
   export type TaskBlockItem = { id: string; title: string; durationMin?: number; done: boolean };
@@ -4337,19 +4427,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //     <button type="button" className="tp-check" role="checkbox" aria-checked={t.done} aria-labelledby={`task-${t.id}`} onClick={() => onToggle(t.id, !t.done)}>
   //       <span className="tp-check__box"><TpIcon name="check" /></span></button>
   //     <div className="tp-task-row__body"><span className="tp-task-row__title" id={`task-${t.id}`} dir="auto">{t.title}</span>
-  //       {t.durationMin ? <span className="tp-task-row__meta"><span className="tp-num">{minutes with {n}}</span></span> : null}</div>
+  //       {t.durationMin ? <span className="tp-task-row__meta"><span className="tp-num">{copy.minutes.replace("{n}", String(t.durationMin))}</span></span> : null}</div>
   //   </div>)}</div>
   ```
   The duration string is `COPY[lang].minutes.replace("{n}", String(t.durationMin))` inside `.tp-num`. Harness sections: `default` (`[{ id: "t1", title: "Call the bank", durationMin: 15, done: false }, { id: "t2", title: "Pack the books", done: true }]`), `hebrew` (`[{ id: "t3", title: "להתקשר לבנק", durationMin: 30, done: false }]`), `empty` (`[]`, renders nothing). `loading`/`error`/`offline`/`disabled`: n/a (the screen owns them); `success` = the new `done` the screen passes. Keyboard: each check is a focusable `role="checkbox"`; Space and Enter toggle (native button). Screen reader: name = the task title, state = `aria-checked`. Motion: check box 120 ms (`--tp-dur-fast`).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "task-block", { lang })` / Then `expectDir` passes; `task-block-default` has two `.tp-task-row`; `page.getByRole("checkbox", { name: "Call the bank" })` has `aria-checked="false"` and its row shows `15 min` (en) / `15 דק׳` (he) in `.tp-num`; the "Pack the books" row has `data-done="true"` and its title's computed `text-decoration-line` is `line-through`; `task-block-empty` contains no `.tp-block-task`.
-  5. Given EN at 1280×800 / When the "Call the bank" checkbox is clicked / Then the log is `onToggle:{"id":"t1","done":true}`; When the "Pack the books" checkbox is focused and Space is pressed / Then the log is `onToggle:{"id":"t2","done":false}`.
-  6. Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="task-block-default"]')` and `expectMotionBudget(page, '[data-testid^="task-block-"]')` pass.
+  **Relies on:** tempo.css `.tp-block-task` (282), `.tp-task-row` (283), `.tp-task-row__body` (289), `__title` (290), `__meta` (291), `.tp-task-row[data-done="true"] .tp-task-row__title` (292, `line-through`), `.tp-check` (295, `var(--tp-touch)` square), `.tp-check__box` (299, transition 120 ms); `TpIcon` icon `check`; `useLocale()` → `{ lang }`. Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–3 run once (4 + 2 = 6).
+  1. (loop) Given `openHarness(page, "task-block", { lang })` / Then `expectDir` passes; `task-block-default` has two `.tp-task-row`; `page.getByRole("checkbox", { name: "Call the bank" })` has `aria-checked="false"` and its row shows `15 min` (en) / `15 דק׳` (he) in `.tp-num`; the "Pack the books" row has `data-done="true"` and its title's computed `text-decoration-line` is `line-through`; `task-block-empty` contains no `.tp-block-task`.
+  2. (once · en · 1280×800) Given `openHarness(page, "task-block", { lang: "en" })` / When the "Call the bank" checkbox is clicked / Then the log is `onToggle:["t1",true]`; When the "Pack the books" checkbox is focused and Space is pressed / Then the log is `onToggle:["t2",false]`.
+  3. (once · en · 1280×800) Given `openHarness(page, "task-block", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="task-block-default"]')` and `expectMotionBudget(page, '[data-testid^="task-block-"]')` pass.
 - **NUMBERS:** check target 44×44 CSS px ≥ 24×24 (WCAG 2.2 SC 2.5.8); state not by colour alone (check mark + strike-through, WCAG 2.2 SC 1.4.1); contrast via tokens (SC 1.4.3); motion ≤ 250 ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0043 — EnergyBlock `apps/web/components/blocks/EnergyBlock.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4357,13 +4449,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `EnergyBlock` is a three-option radio group with roving focus and RTL-aware arrow keys that reports `onChange(level)`, proven in the harness.
 - **SCOPE:** `apps/web/components/blocks/EnergyBlock.tsx` · `apps/web/app/e2e/components/energy-block/page.tsx` · test: `tests/e2e/screens/energy-block.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-block-energy\|\.tp-seg" apps/web/app/tempo.css`; `grep -n "next.energy" apps/web/lib/i18n.ts`. 2. Stylesheet: Case A. 3. Create `EnergyBlock.tsx` exactly as SPEC. 4. Create the harness page; `onChange` writes `onChange:<JSON level>` to `<output data-testid="energy-block-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-block-energy\|\.tp-seg" apps/web/app/tempo.css` (line 308 three-column grid; 309 `.tp-seg__opt` `min-height: var(--tp-touch)`; 315–316 `aria-checked="true"` paper ground + dot); `grep -n "next.energy" apps/web/lib/i18n.ts` (EN lines 330–332, HE 932–934); `grep -n "dir: dirFor(lang)" apps/web/components/providers/LocaleProvider.tsx` (one line). 2. Stylesheet: Case A. 3. Create `EnergyBlock.tsx` as in SPEC. 4. Create the harness page; `onChange` (CONVENTIONS §13 helper, `log("onChange")`, called from the harness handler that also stores the value) writes `onChange:<JSON level>` to `<output data-testid="energy-block-log">`. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/energy-block.spec.ts --reporter=line` → `7 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/energy-block.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** keep selection state inside the component (the caller passes `value`); call Convex; add colours; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0043 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import type { Lang } from "@/lib/i18n";
   export type EnergyLevel = "quiet" | "steady" | "push";
   type CopyKey = "group" | EnergyLevel;
   const COPY: Record<Lang, Record<CopyKey, string>> = {
@@ -4377,16 +4472,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //     tabIndex={(value ?? "quiet") === l ? 0 : -1} onClick={() => onChange(l)} onKeyDown={arrows}>{copy[l]}</button>)}</div></div>
   ```
   `LEVELS = ["quiet", "steady", "push"]` (DOM order). Arrows: ArrowRight → next in EN, previous in HE; ArrowLeft → the reverse (read `dir` from `useLocale().dir`); ArrowDown = next, ArrowUp = previous in both; wrap at the ends; an arrow calls `onChange` with the new level and moves focus to it. Sections: `none` (`value: null`), `steady` (`value: "steady"`); the harness keeps `value` in `useState` and updates it from `onChange` so keyboard moves are visible. `loading`/`empty`/`error`/`offline`/`disabled`: n/a; `success` = the passed `value` shown checked. The word carries meaning; the dot is decorative. Motion: none (selection is instant).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "energy-block", { lang })` / Then `expectDir` passes; each section has `role="radiogroup"` named "Energy" / "אנרגיה" with three radios named by the `lang` words in DOM order; in `energy-block-none` no radio is checked and only "Quiet"/"שקט" has `tabindex="0"`; in `energy-block-steady` "Steady"/"יציב" has `aria-checked="true"` and `tabindex="0"`.
-  5. Given EN at 1280×800 / When the `steady` section's checked radio is focused and ArrowRight is pressed / Then the log is `onChange:"push"` and "Push" is focused and checked; ArrowRight again / Then `onChange:"quiet"` (wraps).
-  6. Given HE at 1280×800 / When the `steady` radio is focused and ArrowRight is pressed / Then the log is `onChange:"quiet"` (reversed in RTL).
-  7. Given EN at 1280×800 / When "Push" in `energy-block-none` is clicked / Then the log is `onChange:"push"`; and `expectTargetSize(page, '[data-testid^="energy-block-"]')` passes.
+  **Relies on:** tempo.css `.tp-block-energy .tp-seg` (308, `repeat(3, minmax(0, 1fr))` with `--tp-space-1` gap and padding, so each option is (390 − 16) / 3 ≈ 124 px wide at 390 px), `.tp-seg__opt` (309, 44 px tall), `.tp-seg__opt[aria-checked="true"]` (315–316); `useLocale()` → `{ lang, dir }` (`dir` is `dirFor(lang)`). Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullets 2–4 run once (4 + 3 = 7).
+  1. (loop) Given `openHarness(page, "energy-block", { lang })` / Then `expectDir` passes; each section has `role="radiogroup"` named "Energy" / "אנרגיה" with three radios named by the `lang` words in DOM order; in `energy-block-none` no radio is checked and only "Quiet"/"שקט" has `tabindex="0"`; in `energy-block-steady` "Steady"/"יציב" has `aria-checked="true"` and `tabindex="0"`.
+  2. (once · en · 1280×800) Given `openHarness(page, "energy-block", { lang: "en" })` / When the `steady` section's checked radio is focused and ArrowRight is pressed / Then the log is `onChange:"push"` and "Push" is focused and checked; ArrowRight again / Then `onChange:"quiet"` (wraps).
+  3. (once · he · 1280×800) Given `openHarness(page, "energy-block", { lang: "he" })` / When the `steady` radio is focused and ArrowRight is pressed / Then the log is `onChange:"quiet"` (reversed in RTL).
+  4. (once · en · 1280×800) Given `openHarness(page, "energy-block", { lang: "en" })` / When "Push" in `energy-block-none` is clicked / Then the log is `onChange:"push"`; and `expectTargetSize(page, '[data-testid^="energy-block-"]')` passes.
 - **NUMBERS:** option target ≥ 44 px tall (`--tp-touch`) ≥ 24×24 (WCAG 2.2 SC 2.5.8); selection shown by word, dot and border, not colour alone (SC 1.4.1); contrast via tokens (SC 1.4.3).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0044 — Backlinks ("Linked here") `apps/web/components/blocks/Backlinks.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0009a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0009a.
@@ -4394,13 +4491,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `Backlinks` renders the "Linked here" section in loading, empty and list states from props, each row linking to `/notes/<id>`, proven in the harness.
 - **SCOPE:** `apps/web/components/blocks/Backlinks.tsx` · `apps/web/app/e2e/components/backlinks/page.tsx` · test: `tests/e2e/screens/backlinks.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "\.tp-backlink" apps/web/app/tempo.css`; `grep -n "export type Backlink" packages/utils/src/wiki-links.ts`; `grep -n "bl.head" apps/web/lib/i18n.ts`. 2. Stylesheet: Case A. 3. Create `Backlinks.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "\.tp-backlink" apps/web/app/tempo.css` (lines 332–338); `grep -n "^\.tp-eyebrow\|^\.tp-muted\|^\.tp-sr-only\|^\.tp-num\|^\.tp-skeleton" apps/web/app/tempo.css` (lines 86, 84, 81, 82, 463); `grep -n "export type Backlink" packages/utils/src/wiki-links.ts` (line 10, `{ id: string; title: string; context: string }`); `grep -n "bl.head" apps/web/lib/i18n.ts` (EN "Linked here", HE "מקושר לכאן"). 2. Stylesheet: Case A. 3. Create `Backlinks.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/backlinks.spec.ts --reporter=line` → `5 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/backlinks.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery` (the screen does); render page bodies; edit `PageEditorView.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0044 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
+  import { useId } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import type { Lang } from "@/lib/i18n";
   type CopyKey = "head" | "empty" | "loading" | "untitled";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { head: "Linked here", empty: "Nothing links here yet.", loading: "Loading…", untitled: "Untitled" },
@@ -4416,15 +4517,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //   else → links.map((l) => <a className="tp-backlink" href={`/notes/${l.id}`} key={l.id}><span className="tp-backlink__page" dir="auto">{l.title.trim() || copy.untitled}</span><span className="tp-backlink__ctx" dir="auto">{l.context}</span></a>)
   // </section>
   ```
-  Sections: `default` (`[{ id: "n1", title: "Week 42", context: "Monday: slides, then today." }, { id: "n2", title: "", context: "see the day" }, { id: "n3", title: "שבוע 43", context: "להכין שקפים" }]`), `empty` (`[]`), `loading` (`undefined`). `error`/`offline`/`disabled`: n/a (the screen shows page-level error and offline; offline keeps the last rows); `success` = the list. Keyboard: each row is a link. Motion: none (row hover is a colour change).
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "backlinks", { lang })` / Then `expectDir` passes; each section is a region named "Linked here" / "מקושר לכאן"; `backlinks-default` shows count `3` in `.tp-num` and three `a.tp-backlink` with `href` `/notes/n1`, `/notes/n2`, `/notes/n3`, the second titled "Untitled" / "ללא כותרת", each `__page`/`__ctx` with `dir="auto"`; `backlinks-empty` shows the `empty` text and no count; `backlinks-loading` has a `role="status"` containing the `loading` text and one `.tp-skeleton`.
-  5. Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="backlinks-default"]')` passes and each row's height ≥ 44 px.
+  Sections: `default` (`[{ id: "n1", title: "Week 42", context: "Monday: slides, then today." }, { id: "n2", title: "", context: "plan the day" }, { id: "n3", title: "שבוע 43", context: "להכין שקפים" }]`), `empty` (`[]`), `loading` (`undefined`). `error`/`offline`/`disabled`: n/a (the screen shows page-level error and offline; offline keeps the last rows); `success` = the list. Keyboard: each row is a link. Motion: none (row hover is a colour change).
+  **Relies on:** tempo.css `.tp-backlinks` (332), `.tp-backlinks__head` (333), `.tp-backlink` (335, `padding: var(--tp-space-3)`, two lines of `--tp-text-sm` text, so each row is above 44 px), `__page` (336), `__ctx` (337), `.tp-eyebrow`, `.tp-muted`, `.tp-sr-only`, `.tp-num`, `.tp-skeleton`; the row shape is the existing `Backlink` type of `packages/utils/src/wiki-links.ts` returned by `notes.backlinks` (pinned by TFV2-0009a). `headId` comes from `useId()`. Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 tests); bullet 2 runs once (4 + 1 = 5).
+  1. (loop) Given `openHarness(page, "backlinks", { lang })` / Then `expectDir` passes; each section is a region named "Linked here" / "מקושר לכאן"; `backlinks-default` shows count `3` in `.tp-num` and three `a.tp-backlink` with `href` `/notes/n1`, `/notes/n2`, `/notes/n3`, the second titled "Untitled" / "ללא כותרת", each `__page`/`__ctx` with `dir="auto"`; `backlinks-empty` shows the `empty` text and no count; `backlinks-loading` has a `role="status"` containing the `loading` text and one `.tp-skeleton`.
+  2. (once · en · 1280×800) Given `openHarness(page, "backlinks", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="backlinks-default"]')` passes and each row's height ≥ 44 px.
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs` floor; rows use `--tp-text-sm`); contrast via tokens (WCAG 2.2 SC 1.4.3); target ≥ 24×24 (WCAG 2.2 SC 2.5.8).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0045 — PageMetaBlock `apps/web/components/blocks/PageMetaBlock.tsx`
+- **STATUS:** approved-unsent
 - **Stage:** A · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -4432,22 +4535,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `PageMetaBlock` keeps a page-meta element in the DOM that paints nothing, is hidden from assistive tech, and never shows JSON, proven in the harness.
 - **SCOPE:** `apps/web/components/blocks/PageMetaBlock.tsx` · `apps/web/app/e2e/components/page-meta-block/page.tsx` · test: `tests/e2e/screens/page-meta-block.spec.ts`.
 - **MUTATES:** the three files above (new).
-- **STEPS:** 1. Code-map: `grep -n "@component PageMetaBlock" -A5 apps/web/app/tempo.css`. 2. Stylesheet: Case A (`@component PageMetaBlock` block). 3. Create `PageMetaBlock.tsx` exactly as SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
+- **STEPS:** 1. Code-map: `grep -n "@component PageMetaBlock" -A5 apps/web/app/tempo.css` (line 726; line 730 `.tp-block-meta { display: none !important; }`). 2. Stylesheet: Case A (`@component PageMetaBlock` block). 3. Create `PageMetaBlock.tsx` as in SPEC. 4. Create the harness page with the SPEC sections. 5. Create the spec. 6. Run DONE, then lint and typecheck.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-meta-block.spec.ts --reporter=line` → `4 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/page-meta-block.spec.ts --reporter=line` plus the lint and typecheck exit codes, pasted into the PR.
 - **DO NOT:** render any text, child or JSON; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0045 / evidence / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   export type PageMeta = { pageType?: "daily" | "weekly" | "project" | "plain" | "template"; date?: string; tags?: readonly string[] };
   export type PageMetaBlockProps = { meta: PageMeta };
   export function PageMetaBlock({ meta }: PageMetaBlockProps): React.JSX.Element;
   // <div className="tp-block-meta" data-component="PageMetaBlock" aria-hidden="true" data-page-type={meta.pageType} />
   ```
   No children, no copy. Sections: `daily` (`{ pageType: "daily", date: "2026-11-02", tags: ["home"] }`), `plain` (`{ pageType: "plain" }`). The only state is "hidden"; every other state is n/a (nothing is drawn). Motion: none.
-- **TESTS:** (cases 1–4 loop viewports × langs)
-  1–4. Given `openHarness(page, "page-meta-block", { lang })` / Then `expectDir` passes; each `[data-component="PageMetaBlock"]` is attached, has `aria-hidden="true"`, computed `display` `none`, an empty `textContent`, `data-page-type` `daily` / `plain`, and is not visible; and the section's visible text (`innerText`) contains neither `{` nor `2026-11-02`.
-- **NUMBERS:** none (no visible or interactive surface; `display: none` + `aria-hidden` asserted in cases 1–4).
+  **Relies on:** tempo.css `@component PageMetaBlock` (line 726) and `.tp-block-meta { display: none !important; }` (line 730). Checked in STEP 1.
+- **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 × 1 = 4).
+  1. (loop) Given `openHarness(page, "page-meta-block", { lang })` / Then `expectDir` passes; each `[data-component="PageMetaBlock"]` is attached, has `aria-hidden="true"`, computed `display` `none`, an empty `textContent`, `data-page-type` `daily` / `plain`, and is not visible; and the section's visible text (`innerText`) contains neither `{` nor `2026-11-02`.
+- **NUMBERS:** none (no visible or interactive surface; `display: none` + `aria-hidden` asserted in bullet 1).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
