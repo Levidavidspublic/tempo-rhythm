@@ -17,7 +17,9 @@ fields (`FOR`, `WHEN`, `WHY`, `GOAL`, `SCOPE`, `MUTATES`, `STEPS`, `DONE`, `EVID
 `GATES`, and `OPEN`. The authority for what each field must contain is `TICKET-STANDARD.md`.
 
 Ticket IDs are `TFV2-0001` upward, one per screen / component / backend function-table-endpoint, in
-build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens/motion exactly.
+build order; a unit split in the Opus rewrite keeps its number with a letter (`TFV2-0065a`, `TFV2-0065b`).
+Config-lane tickets are `CFG-NNN` (schema, dependencies, test config, CI; built by Amit, CONVENTIONS §18)
+and sit in the Groundwork section, before Chunk 1, with TFV2-0000a…d. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens/motion exactly.
 
 ## Chunk progress
 
@@ -30,6 +32,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 | 5 | Gen 1 | TFV2-0317 … TFV2-0396 | 80 | done |
 | 6 | Gen 2 (later) | TFV2-0397 … TFV2-0456 | 60 | done |
 
+The counts above are the pre-rewrite chunk plan. Current counts are in the Opus rewrite status below.
+
 
 
 ## Opus rewrite (2 Nov 2026) — status
@@ -40,20 +44,38 @@ Ranges are rewritten by sub-agents in `docs/backlog/work/` and spliced in here o
 The ticket count and the split map are listed below and updated after each range.
 
 <!-- rewrite-status:start -->
-| Range | Status |
+**All ranges rewritten and merged (2 Nov 2026).** Counts after the rewrite:
+
+| What | Count |
 |---|---|
-| Groundwork (TFV2-0000a…d, CFG-001…CFG-032) | done |
-| TFV2-0001 … TFV2-0045 (range 1) | rewritten (merged) |
-| TFV2-0046 … TFV2-0090 (range 2) | rewritten (merged) |
-| TFV2-0091 … TFV2-0137 (range 3) | rewritten (merged) |
-| TFV2-0138 … TFV2-0184 (range 4) | rewritten (merged) |
-| TFV2-0185 … TFV2-0231 (range 5) | rewritten (merged) |
-| TFV2-0232 … TFV2-0266b (range 6) | rewritten (merged) |
-| TFV2-0267 … TFV2-0313 (range 7) | rewritten (merged) |
-| TFV2-0314 … TFV2-0360 (range 8) | rewritten (merged) |
-| TFV2-0361 … TFV2-0408 (range 9) | rewritten (merged) |
-| TFV2-0409 … TFV2-0456 (range 10) | rewritten (merged) |
-| TFV2-0001 … TFV2-0456 | being rewritten |
+| Entries in this file | 807 |
+| CFG tickets (config lane: Amit) | 58 (CFG-001 … CFG-058; 36 of them OPEN) |
+| TFV2 entries | 749 (TFV2-0000a … TFV2-0456, with a/b/c… splits) |
+| Superseded stubs (not build tickets) | 24 |
+| Build tickets (TFV2 + CFG, stubs excluded) | 783 |
+| OPEN (not buildable until Amit answers) | 273 |
+| Buildable now (`OPEN: none.`) | 510 |
+| Original ids accounted for | 478 of 478 (kept, split or superseded; see the split map) |
+
+| Range | Status | Commit |
+|---|---|---|
+| Groundwork (CONVENTIONS Part 2, TFV2-0000a…d, CFG-001…CFG-032) | merged | a7584b6d |
+| TFV2-0001 … TFV2-0045 (range 1) | merged | c8b8ba6d |
+| TFV2-0046 … TFV2-0090 (range 2) | merged | 66604b5c |
+| TFV2-0091 … TFV2-0137 (range 3) | merged | d1a9042a |
+| TFV2-0138 … TFV2-0184 (range 4, + CFG-033) | merged | c2c8d6e8 |
+| TFV2-0185 … TFV2-0231 (range 5, + CFG-034, CFG-035) | merged | 8144dd10 |
+| TFV2-0232 … TFV2-0266b (range 6, + CFG-036 … CFG-040) | merged | 577339d3 |
+| TFV2-0267 … TFV2-0313 (range 7) | merged | 9cc47e77 |
+| TFV2-0314 … TFV2-0360 (range 8, + CFG-041 … CFG-043) | merged | 9727c6d5 |
+| TFV2-0361 … TFV2-0408 (range 9, + CFG-044 … CFG-046) | merged | 70605bf6 |
+| TFV2-0409 … TFV2-0456 (range 10, + CFG-047 … CFG-058) | merged | 279f7431 |
+
+Whole-file check (lead's validator): every ticket has all 16 fields; every `Depends` id exists and is
+earlier in the file (so there are no cycles); `WHEN` matches `Depends`; nothing depends on a stub;
+every ticket that depends on an OPEN ticket is OPEN and names it; OPEN tickets carry only the §21
+n/a GATES line; no "e.g." or "see the HTML". Ticket order in this file is build order; in a few
+places a ticket comes before a lower number so that it is earlier than the ticket needing it.
 <!-- rewrite-status:end -->
 
 ### Split map (old id → new ids)
@@ -446,7 +468,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0174, TFV2-0177, TFV2-0183, TFV2-0184, TFV2-0185. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0164b, TFV2-0174a, TFV2-0174b, TFV2-0183a, TFV2-0184a. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.memories.validator.fields)` is read / Then it contains every one of `["embedding"]`.
   - Given the schema / When each of `["embedding"]` is read from `schema.tables.memories.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -485,7 +507,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_kind", ["userId", "kind"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0186a, TFV2-0186b, TFV2-0186c, TFV2-0187, TFV2-0189. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-003, TFV2-0175, TFV2-0186a. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.entities.validator.fields).sort()` is read / Then it equals `["aliases", "createdAt", "deletedAt", "kind", "name", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.entities.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -531,7 +553,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_toEntityId", ["userId", "toEntityId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0187, TFV2-0188, TFV2-0189, TFV2-0175. `confidence` is a number in [0, 1]; writers validate it. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-034, TFV2-0175, TFV2-0187a, TFV2-0187c, TFV2-0188a, TFV2-0188b, TFV2-0189, TFV2-0224e, TFV2-0224f. `confidence` is a number in [0, 1]; writers validate it. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.edges.validator.fields).sort()` is read / Then it equals `["confidence", "createdAt", "deletedAt", "fromEntityId", "origin", "relation", "sourceMemoryId", "toEntityId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["sourceMemoryId", "deletedAt"]` is read from `schema.tables.edges.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -572,7 +594,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0190, TFV2-0191. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0190b, TFV2-0191a, TFV2-0191b. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.observations.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "memoryIds", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.observations.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -603,7 +625,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     endsAtMs: v.optional(v.number()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0066, TFV2-0131. Missing `endsAtMs` means the event has no end time (shown as a point in time). Writers enforce `endsAtMs > startsAtMs`. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0066a, TFV2-0066b, TFV2-0127b, TFV2-0131b, TFV2-0437a. Missing `endsAtMs` means the event has no end time (shown as a point in time). Writers enforce `endsAtMs > startsAtMs`. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.calendarEvents.validator.fields)` is read / Then it contains every one of `["endsAtMs"]`.
   - Given the schema / When each of `["endsAtMs"]` is read from `schema.tables.calendarEvents.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -635,7 +657,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_goalId", ["userId", "goalId"])
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0069b, TFV2-0069c, TFV2-0136, TFV2-0137. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0069b, TFV2-0069h, TFV2-0069c. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.tasks.validator.fields)` is read / Then it contains every one of `["goalId"]`.
   - Given the schema / When each of `["goalId"]` is read from `schema.tables.tasks.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -673,7 +695,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_goalId", ["userId", "goalId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0136, TFV2-0137, TFV2-0139, TFV2-0140, TFV2-0141. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0139, TFV2-0140, TFV2-0141. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.projects.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "goalId", "name", "updatedAt", "userId"]`.
   - Given the schema / When each of `["goalId", "deletedAt"]` is read from `schema.tables.projects.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -707,7 +729,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     summary: v.optional(v.string()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0233, TFV2-0234, TFV2-0235, TFV2-0240e, TFV2-0241d, TFV2-0246, TFV2-0248a, TFV2-0248b. Missing `status` reads as `"live"`; missing `enabled` reads as `true`. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0159, TFV2-0233, TFV2-0243, TFV2-0246a. Missing `status` reads as `"live"`; missing `enabled` reads as `true`. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.templates.validator.fields)` is read / Then it contains every one of `["status", "enabled", "summary"]`.
   - Given the schema / When each of `["status", "enabled", "summary"]` is read from `schema.tables.templates.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -744,7 +766,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_templateId", ["userId", "templateId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0239a, TFV2-0239b, TFV2-0239c. `templateId` is a string because starter templates use `starter:*` ids. `answers` maps a step key to the typed answer. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0239a. `templateId` is a string because starter templates use `starter:*` ids. `answers` maps a step key to the typed answer. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.templateRunDrafts.validator.fields).sort()` is read / Then it equals `["answers", "createdAt", "deletedAt", "templateId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateRunDrafts.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -783,7 +805,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0241a, TFV2-0241b, TFV2-0241c. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0241a. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.templateSketches.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateSketches.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -814,7 +836,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     plainMode: v.optional(v.boolean()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0247, TFV2-0248a, TFV2-0273, TFV2-0275. Missing means `false`. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0247a. Missing means `false`. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["plainMode"]`.
   - Given the schema / When each of `["plainMode"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -858,7 +880,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_enabled", ["enabled"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0250, TFV2-0251, TFV2-0252a, TFV2-0252b, TFV2-0274, TFV2-0275. `cron` is a 5-field cron string in UTC; `timeZone` is the IANA zone used to show it (TFV2-0250 STEP 3). A job runs only when `enabled === true` and `approvedAt` is set. `targetPageType` uses the `notes.pageType` values a job may write to. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0161, TFV2-0250b. `cron` is a 5-field cron string in UTC; `timeZone` is the IANA zone used to show it (TFV2-0250 STEP 3). A job runs only when `enabled === true` and `approvedAt` is set. `targetPageType` uses the `notes.pageType` values a job may write to. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.jobs.validator.fields).sort()` is read / Then it equals `["approvedAt", "createdAt", "cron", "deletedAt", "enabled", "lastRunAt", "lastRunNoteId", "lastRunResult", "targetPageType", "task", "timeZone", "updatedAt", "userId"]`.
   - Given the schema / When each of `["approvedAt", "lastRunAt", "lastRunResult", "lastRunNoteId", "deletedAt"]` is read from `schema.tables.jobs.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -891,7 +913,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     trialEndsAt: v.optional(v.number()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0261b, TFV2-0264, TFV2-0285. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): CFG-040, TFV2-0264b, TFV2-0285b. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.subscriptionStates.validator.fields)` is read / Then it contains every one of `["renewsAt", "trialEndsAt"]`.
   - Given the schema / When each of `["renewsAt", "trialEndsAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -919,7 +941,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     conversionAcknowledgedAt: v.optional(v.number()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0263b, TFV2-0285. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0263b. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.subscriptionStates.validator.fields)` is read / Then it contains every one of `["conversionAcknowledgedAt"]`.
   - Given the schema / When each of `["conversionAcknowledgedAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -947,7 +969,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     analyticsOptIn: v.optional(v.boolean()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0265, TFV2-0310. Missing means `false` (opted out). No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0265b. Missing means `false` (opted out). No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["analyticsOptIn"]`.
   - Given the schema / When each of `["analyticsOptIn"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -976,7 +998,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     address: v.optional(v.union(v.literal("fem"), v.literal("masc"))),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0266a, TFV2-0266b, TFV2-0308. The profile language is the existing `userPreferences.locale`; no `users.lang` column is added. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0266a. The profile language is the existing `userPreferences.locale`; no `users.lang` column is added. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.users.validator.fields)` is read / Then it contains every one of `["callMe", "address"]`.
   - Given the schema / When each of `["callMe", "address"]` is read from `schema.tables.users.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1017,7 +1039,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_notifiedAt", ["notifiedAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0268, TFV2-0269, TFV2-0291. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0268. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.askFounderQueue.validator.fields).sort()` is read / Then it equals `["body", "createdAt", "deletedAt", "email", "name", "notifiedAt", "priority", "subject", "updatedAt", "userId"]`.
   - Given the schema / When each of `["name", "notifiedAt", "deletedAt"]` is read from `schema.tables.askFounderQueue.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1065,7 +1087,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_sourceNoteId", ["sourceNoteId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0337, TFV2-0338, TFV2-0340, TFV2-0343, TFV2-0344. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0337a. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.studyCards.validator.fields).sort()` is read / Then it equals `["back", "createdAt", "deletedAt", "dueAtMs", "easeFactor", "front", "intervalDays", "repetitions", "sourceNoteId", "status", "updatedAt", "userId"]`.
   - Given the schema / When each of `["sourceNoteId", "deletedAt"]` is read from `schema.tables.studyCards.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1111,7 +1133,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0361, TFV2-0362, TFV2-0363, TFV2-0364. `keyCipher` holds only ciphertext from `byokCrypto.encrypt`; the plaintext key is never stored. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-044, TFV2-0361a, TFV2-0362c. `keyCipher` holds only ciphertext from `byokCrypto.encrypt`; the plaintext key is never stored. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.byokKeys.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "endpointUrl", "keyCipher", "keyVersion", "label", "lastCheckOk", "lastCheckedAt", "provider", "updatedAt", "userId"]`.
   - Given the schema / When each of `["lastCheckedAt", "lastCheckOk", "deletedAt"]` is read from `schema.tables.byokKeys.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1143,7 +1165,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     voiceLanguage: v.optional(v.union(v.literal("en"), v.literal("he"))),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0390. Missing `voicePushToTalk` means `false`; missing `voiceLanguage` means the `locale` value. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0390a, TFV2-0390c. Missing `voicePushToTalk` means `false`; missing `voiceLanguage` means the `locale` value. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["voicePushToTalk", "voiceLanguage"]`.
   - Given the schema / When each of `["voicePushToTalk", "voiceLanguage"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1186,7 +1208,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_status_category", ["status", "category"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0407, TFV2-0408, TFV2-0412, TFV2-0413. Unique `slug` is enforced in code. A listing has no `userId`; only the author (and admins) may change it. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-022, CFG-023, TFV2-0407a, TFV2-0407b, TFV2-0407c, TFV2-0408. Unique `slug` is enforced in code. A listing has no `userId`; only the author (and admins) may change it. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.marketplaceListings.validator.fields).sort()` is read / Then it equals `["authorId", "category", "createdAt", "currentVersion", "deletedAt", "installCount", "manifest", "ratingAverage", "ratingCount", "slug", "status", "updatedAt"]`.
   - Given the schema / When each of `["ratingAverage", "ratingCount", "deletedAt"]` is read from `schema.tables.marketplaceListings.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1231,7 +1253,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_pluginId", ["userId", "pluginId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0401, TFV2-0402, TFV2-0414. `manifest` is the validated manifest object from `packages/types/src/plugins.ts`, stored whole. One row per `pluginId` per user is enforced in code. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-046, TFV2-0401a, TFV2-0401b, TFV2-0401c, TFV2-0402a, TFV2-0402b, TFV2-0405a, TFV2-0405b. `manifest` is the validated manifest object from `packages/types/src/plugins.ts`, stored whole. One row per `pluginId` per user is enforced in code. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.plugins.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "enabled", "listingId", "manifest", "pluginId", "source", "updatedAt", "userId", "version"]`.
   - Given the schema / When each of `["listingId", "deletedAt"]` is read from `schema.tables.plugins.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1273,7 +1295,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_listingId_createdAt", ["listingId", "createdAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0412. `stars` is an integer 1–5 and `text` ≤ 1,000 characters, enforced by the writer. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0412a. `stars` is an integer 1–5 and `text` ≤ 1,000 characters, enforced by the writer. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.marketplaceReviews.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "listingId", "stars", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["text", "deletedAt"]` is read from `schema.tables.marketplaceReviews.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1314,7 +1336,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_token", ["token"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0426, TFV2-0427. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0426a, TFV2-0426e. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.deviceTokens.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "platform", "token", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.deviceTokens.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1349,7 +1371,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     pushEnabled: v.optional(v.boolean()),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0429. Missing means `true` for the three `notify*` fields and `false` for `pushEnabled`. No data migration: every added field is optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0426c, TFV2-0427f, TFV2-0429a. Missing means `true` for the three `notify*` fields and `false` for `pushEnabled`. No data migration: every added field is optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]`.
   - Given the schema / When each of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1384,7 +1406,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_ownerId", ["ownerId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0452, TFV2-0453. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-027, TFV2-0452a. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.familyGroups.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "memberLimit", "name", "ownerId", "updatedAt"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.familyGroups.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1426,7 +1448,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_inviteEmail", ["inviteEmail"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0452, TFV2-0453. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0452a. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.familyMembers.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "groupId", "inviteEmail", "joinedAt", "role", "status", "updatedAt", "userId"]`.
   - Given the schema / When each of `["userId", "joinedAt", "deletedAt"]` is read from `schema.tables.familyMembers.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1464,7 +1486,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_createdAt", ["userId", "createdAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0454, TFV2-0455. Append-only: no `updatedAt`/`deletedAt`. `metadata` never holds a secret value. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0454a. Append-only: no `updatedAt`/`deletedAt`. `metadata` never holds a secret value. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.auditEvents.validator.fields).sort()` is read / Then it equals `["createdAt", "event", "metadata", "target", "userId"]`.
   - Given the schema / When each of `["target"]` is read from `schema.tables.auditEvents.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1504,7 +1526,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0076, TFV2-0134, TFV2-0135. `steps` ≤ 20 items, each ≤ 200 characters (writer-enforced). The window hours are integers 0–23 in the user's `userPreferences.timeZone`. No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): CFG-030, TFV2-0076a, TFV2-0076b, TFV2-0076c, TFV2-0076d, TFV2-0076e, TFV2-0076f, TFV2-0076g, TFV2-0076h, TFV2-0076i. `steps` ≤ 20 items, each ≤ 200 characters (writer-enforced). The window hours are integers 0–23 in the user's `userPreferences.timeZone`. No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.routines.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "steps", "title", "updatedAt", "userId", "windowEndHour", "windowStartHour"]`.
   - Given the schema / When each of `["windowStartHour", "windowEndHour", "deletedAt"]` is read from `schema.tables.routines.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1545,7 +1567,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_routineId", ["userId", "routineId"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0076, TFV2-0135. `cursor` is the index of the next step to do (0-based). No data migration: the table starts empty.
+  Readers/writers (tickets that depend on this one): TFV2-0076f, TFV2-0076g, TFV2-0076h. `cursor` is the index of the next step to do (0-based). No data migration: the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.routineRuns.validator.fields).sort()` is read / Then it equals `["completedAt", "createdAt", "cursor", "deletedAt", "routineId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["completedAt", "deletedAt"]` is read from `schema.tables.routineRuns.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1672,7 +1694,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_sourceNoteId", ["userId", "sourceNoteId"])
 ```
 
-  `confirmedAt` = when the person confirmed a guessed edge (unset on written links and unconfirmed guesses); `sourceNoteId` = the page an extracted or guessed edge came from. Readers/writers (tickets that depend on this one): TFV2-0187a, TFV2-0187c, TFV2-0188a, TFV2-0188b, TFV2-0189. No data migration: both fields are optional and the table starts empty.
+  `confirmedAt` = when the person confirmed a guessed edge (unset on written links and unconfirmed guesses); `sourceNoteId` = the page an extracted or guessed edge came from. Readers/writers (tickets that depend on this one): TFV2-0187a, TFV2-0187c, TFV2-0188a, TFV2-0188b, TFV2-0189, TFV2-0224e. No data migration: both fields are optional and the table starts empty.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.edges.validator.fields)` is read / Then it contains `"confirmedAt"` and `"sourceNoteId"`.
   - Given the schema / When each of `["confirmedAt", "sourceNoteId"]` is read from `schema.tables.edges.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1711,7 +1733,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_utcDateKey", ["userId", "utcDateKey"]),
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0199 (OPEN: the cap value). No data migration: the table starts empty. Rows are never shown to the person; pruning old days is not part of this ticket.
+  Readers/writers (tickets that depend on this one): TFV2-0199. No data migration: the table starts empty. Rows are never shown to the person; pruning old days is not part of this ticket.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.coachTurns.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "updatedAt", "userId", "utcDateKey"]`.
   - Given the schema / When `deletedAt` is read from `schema.tables.coachTurns.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -1748,7 +1770,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   app.use(crons);
   export default app;
   ```
-  Readers/writers (tickets that depend on this one): TFV2-0251d (`new Crons(components.crons)`). Component API used: `register(ctx, { kind: "cron", cronspec }, fn, args, name?)`, `get(ctx, { name })`, `delete(ctx, { name })`.
+  Readers/writers (tickets that depend on this one): TFV2-0251d.crons)`). Component API used: `register(ctx, { kind: "cron", cronspec }, fn, args, name?)`, `get(ctx, { name })`, `delete(ctx, { name })`.
 - **TESTS:**
   - Given `package.json` / When parsed / Then `dependencies["@convex-dev/crons"]` equals `"0.2.3"`.
   - Given `convex/convex.config.ts` read as text / Then it contains `import crons from "@convex-dev/crons/convex.config";` and `app.use(crons);`.
@@ -2069,7 +2091,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     .index("by_userId_externalId", ["userId", "externalId"])
 ```
 
-  Readers/writers (tickets that depend on this one): TFV2-0437a, TFV2-0437b, TFV2-0437c. Missing `externalId` means the event was made in Tempo. `externalSource` is set together with `externalId`. No data migration: both fields are optional, so existing rows stay valid.
+  Readers/writers (tickets that depend on this one): TFV2-0437a. Missing `externalId` means the event was made in Tempo. `externalSource` is set together with `externalId`. No data migration: both fields are optional, so existing rows stay valid.
 - **TESTS:**
   - Given the schema / When `Object.keys(schema.tables.calendarEvents.validator.fields)` is read / Then it contains both `"externalId"` and `"externalSource"`.
   - Given the schema / When each of `["externalId", "externalSource"]` is read from `schema.tables.calendarEvents.validator.fields` / Then its `isOptional` is `"optional"`.
@@ -2180,7 +2202,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   { "identifier": "remote", "windows": ["main"], "remote": { "urls": ["https://www.tempoflow.dev/*"] },
     "permissions": ["allow-desktop-settings-get", "allow-desktop-settings-set", "allow-desktop-page-cache-put", "allow-desktop-page-cache-clear", "allow-desktop-update-status", "allow-desktop-update-restart"] }
   ```
-  Readers/writers (tickets that depend on this one): TFV2-0418a, TFV2-0418b, TFV2-0421b; through them every TFV2-0416/0417/0421/0422/0423/0424 ticket. Secret names used later by a release pipeline (not set here): `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; Apple/Windows signing identities UNKNOWN until Amit answers.
+  Readers/writers (tickets that depend on this one): CFG-049, TFV2-0418a, TFV2-0418b, TFV2-0421b. Secret names used later by a release pipeline (not set here): `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; Apple/Windows signing identities UNKNOWN until Amit answers.
 - **TESTS:** (`tests/unit/config_cfg048_desktop.test.ts`, `bun:test`, reading files with `Bun.file(…).json()` / `.text()`)
   1. Given `apps/desktop/package.json` / Then `name === "tempo-rhythm-desktop"`, `devDependencies` equals `{ "@tauri-apps/cli": "2.12.4", "typescript": "5.9.3" }`, `dependencies` is undefined and `scripts` has no `build` and no `test` key.
   2. Given `tauri.conf.json` / Then `identifier === "dev.tempoflow.desktop"`, `app.withGlobalTauri === true`, `app.windows` equals `[]`, `build.frontendDist === "../dist"`, `plugins["deep-link"].desktop.schemes` equals `["tempo-flow"]`, and every `plugins.updater.endpoints` entry starts with `https://`.
@@ -18308,7 +18330,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`; given `"starter:journal"` / Then `"Starter templates cannot be changed"`.
 - **NUMBERS:** at most 50 blocks (`MAX_TEMPLATE_BLOCKS`); 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
+- **OPEN:** inherits TFV2-0240b, which inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
 
 ### TFV2-0240d — Template builder: `templates.removeBlock` (`convex/templates.ts`) — OPEN
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240c · **Folds-in:** none
@@ -18343,7 +18365,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`; given a row of user B / Then `"Access denied"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
+- **OPEN:** inherits TFV2-0240c, which inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
 
 ### TFV2-0240e — Template builder: `templates.publish` (draft → live) (`convex/templates.ts`) — OPEN
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235a · **Folds-in:** none
@@ -19225,7 +19247,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given content `"   "` / Then `"didnt_finish"`.
 - **NUMBERS:** exactly 1 model call per run (cases 1, 3); 26 of 26 file cases pass. Model latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.
+- **OPEN:** inherits TFV2-0251b (OPEN), and asks its own question: new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.
 
 ### TFV2-0251d — Scheduled jobs: `jobs.syncCron` registers or removes a job's runtime cron (internal mutation) (`convex/jobs.ts`) — OPEN
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-036, TFV2-0251c · **Folds-in:** none
@@ -20142,7 +20164,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the id `"askFounderQueue:999"` that does not exist / When it runs / Then it rejects with `"Message not found"`.
 - **NUMBERS:** 15 of 15 tests pass · p95 latency UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+- **OPEN:** inherits TFV2-0269a, which inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
 
 ### TFV2-0269c — Ask the founder: `askFounder.notifyQueued` (internal action) + cron line (`convex/askFounder.ts`, `convex/crons.ts`) — OPEN
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0269b · **Folds-in:** #475
@@ -20191,7 +20213,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `BETA_FOUNDER_EMAIL` unset / When it runs / Then `runQuery` and `fetch` were never called and it returns `{ sent: 0, failed: 0, skipped: true }`.
 - **NUMBERS:** ≤ 20 emails per 5-minute run (`NOTIFY_BATCH`; cron interval 5 min, the same interval as the existing job) · notice reaches Resend ≤ 5 min after submit (delivery time after Resend UNKNOWN; not a gate) · 20 of 20 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback`, and is this shape right?) — Amit. Own question: is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)? — Amit.
+- **OPEN:** inherits TFV2-0269b, which inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback`, and is this shape right?) — Amit. Own question: is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)? — Amit.
 
 ### TFV2-0270 — Built-in module catalog (starter templates → built-in modules) — superseded by TFV2-0248a
 - **Status:** superseded by TFV2-0248a; not a build ticket.
@@ -32926,7 +32948,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given the constants / Then `STORE_FILE == "settings.json"`, `STORE_KEY == "desktop"`, `SETTINGS_CHANGED_EVENT == "desktop-settings-changed"`.
 - **NUMBERS:** 10 of 10 tests pass (exact). Stored fields = 5 (exact, test 1). Latency: n/a (local file). Store file size: UNKNOWN in bytes (a few hundred; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0422 — Desktop auto-update: check, download, install on quit or restart (`apps/desktop/src-tauri/src/updater.rs`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423a · **Folds-in:** none
@@ -32989,7 +33011,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `map_install_error::<&str>(Err("disk"))` / Then `Err("The update could not be installed")`; and `map_install_error::<&str>(Ok(()))` / Then `Ok(())`.
 - **NUMBERS:** downloads only over HTTPS and only with a valid signature (exact; enforced by `tauri-plugin-updater` and the CFG-048 `https://` endpoint). 0 installs without a Quit or Restart (exact; tests 4–5 and DO NOT). 6 of 6 tests pass. Update check latency and package size: UNKNOWN (no feed yet).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0423a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0416 — Desktop native menu + tray + keep-in-tray close (`apps/desktop/src-tauri/src/menu.rs`, `tray.rs`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423a, TFV2-0422 · **Folds-in:** none
@@ -33064,7 +33086,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given settings with `close_to_tray: true` / Then `on_close_action == CloseAction::Hide`; with `false` / Then `CloseAction::Quit`.
 - **NUMBERS:** accelerators follow platform conventions — `CmdOrCtrl+Q` quit, `CmdOrCtrl+,` settings, `CmdOrCtrl+R` reload (Apple Human Interface Guidelines, Menus, https://developer.apple.com/design/human-interface-guidelines/the-menu-bar ; pass = tests 3 and 5). 9 of 9 tests pass. Menu rebuild time after a language change: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0423a, TFV2-0422, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0417a — Desktop deep link `tempo-flow://auth` → sign in inside the window (`apps/desktop/src-tauri/src/deeplink.rs`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418a · **Folds-in:** none
@@ -33114,7 +33136,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `"not a url"` / Then `None`.
 - **NUMBERS:** code length = 32 (source: `@convex-dev/auth` 0.0.91 `generateRandomString(32, alphabet)`); magic link valid 30 min (`convex/auth.ts` `maxAge: 60 * 30`); session 30 days (`convex/auth.ts` `session.totalDurationMs`). 9 of 9 tests pass. Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0417b — Web: `/desktop/handoff` is public and its magic-link code is not exchanged in the browser (`apps/web/lib/rootEntry.ts`, `apps/web/proxy.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b · **Folds-in:** none
@@ -33153,7 +33175,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (new) Given `decideEntryRedirect({ pathname: "/desktop/handoff", search: "?code=abc", isAuthenticated: false, isPublicRoute: true, isCalendarE2EBypass: false })` / Then `null` (no redirect to `/sign-in`).
 - **NUMBERS:** routes that skip the code exchange = exactly 1 (test 2). 10 of 10 unit cases pass; wiring specs 0 failed. Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0417c — Web route `/desktop/handoff`: open the desktop app with the sign-in code — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0417b, TFV2-0418b, TFV2-0000b · **Folds-in:** none
@@ -33207,7 +33229,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the opening URL / Then `expectDir(page, lang)` and `expectTargetSize(page, "main")` pass, and Tab focus on the button gives a computed `outline-width` ≥ `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. 20 of 20 tests pass. LCP/CLS: not measured (a one-time hand-off page; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0417b, TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0417d — Web sign-in inside the desktop app asks for a hand-off link (`apps/web/app/sign-in/page.tsx`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b, TFV2-0417c, TFV2-0000b · **Folds-in:** none
@@ -33244,7 +33266,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Browser with next: Given no init script and `/sign-in?next=%2Fnotes` / When submitted / Then `captured.args.params.redirectTo === "/notes"`.
 - **NUMBERS:** 12 of 12 tests pass (3 bullets × 2 viewports × 2 languages). Requests that leave the desktop with a non-hand-off `redirectTo` = 0 (Desktop bullet). Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b, TFV2-0417c, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0421a — Desktop offline page cache: LRU store + commands (`apps/desktop/src-tauri/src/page_cache.rs`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418a · **Folds-in:** none
@@ -33318,7 +33340,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given a store with `[n1, n2]` / When `get("n2")` and `get("zz")` / Then `Some(n2)` and `None`; When `clear` / Then the store holds `[]`.
 - **NUMBERS:** cap 200 pages (product value carried from the old TFV2-0421; test 4) · body ≤ 262,144 UTF-8 bytes (= 256 KiB; product bound; test 5; "bytes" per CONVENTIONS §7 H) · worst-case cache size ≈ 200 × 256 KiB = 50 MiB (derived). 10 of 10 tests pass. Latency: n/a (local file).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)? — Amit.
+- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)? — Amit.
 
 ### TFV2-0421b — Desktop offline reader view (`apps/desktop/src/offline.ts` + `offline.css`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-048, TFV2-0000b, TFV2-0421a · **Folds-in:** none
@@ -33612,7 +33634,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="desktop-settings-view-default"]')` and `expectMotionBudget(page, '[data-testid="desktop-settings-view-default"]')` pass, and Tab focus on `#ds-launch-switch` gives a computed `outline-width` ≥ `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (switch and buttons ≥ `--tp-touch` 44 px). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 / non-text ≥ 3:1 · WCAG 2.2 SC 1.4.3 / 1.4.11 · tokens only. Motion ≤ 250 ms / ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
 
 ### TFV2-0423c — Route: `/desktop/settings` — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423b, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a, TFV2-0422, TFV2-0421a · **Folds-in:** TFV2-0423 (old: desktop settings screen)
@@ -33727,7 +33749,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="desktop-welcome-view-choices"]')` and `expectMotionBudget(page, '[data-testid="desktop-welcome-view-choices"]')` pass; in `welcome`, Tab focus on the checked radio then `ArrowRight` (en) / `ArrowLeft` (he) logs `onLang:"he"`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible` (tempo.css line 91). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Motion ≤ 250 ms / ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. Steps = 2 (product proposal replacing the old 3-step Welcome/Language/Theme; theme stays a web preference). 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow? — Amit.
+- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow? — Amit.
 
 ### TFV2-0424b — Route: `/desktop/welcome` (desktop first run) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0424a, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a · **Folds-in:** TFV2-0424 (old: desktop first-run onboarding)
@@ -37259,7 +37281,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   17. Given the group already has 5 live rows / Then inviting a sixth address rejects with `"Member limit reached"` and no row is added.
 - **NUMBERS:** Live rows per family ≤ `memberLimit` (5 proposed; UNKNOWN until Amit answers) · email ≤ 254 characters (RFC 5321 §4.5.3.1.3). p95 latency: UNKNOWN (not a gate). 17 of 17 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452b, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
 
 ### TFV2-0452d — Family plans: `familyPlans.acceptInvite` (`convex/familyPlans.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452c · **Folds-in:** none
@@ -37296,7 +37318,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   22. Given `users:3` already active in another family / Then accepting rejects with `"Already in a family"`.
 - **NUMBERS:** One active family per person (exact invariant; cases 22 and 11). p95 latency: UNKNOWN (not a gate). 22 of 22 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452c, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
 
 ### TFV2-0452e — Family plans: `familyPlans.removeMember` (owner removes a member or cancels an invite) (`convex/familyPlans.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452d · **Folds-in:** none
@@ -37333,7 +37355,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   27. Given the owner's own row / Then it rejects with `"The owner cannot be removed"`.
 - **NUMBERS:** Soft delete only (exact; PRD F-131; case 24). p95 latency: UNKNOWN (not a gate). 27 of 27 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452d, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
 
 ### TFV2-0452f — Family plans: `familyPlans.leave` (a member leaves) (`convex/familyPlans.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452e · **Folds-in:** none
@@ -37369,7 +37391,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   31. Given owner `users:1` / Then it rejects with `"The owner cannot leave the family"`.
 - **NUMBERS:** Soft delete only (exact; PRD F-131). p95 latency: UNKNOWN (not a gate). 31 of 31 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit. Also new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first? — Amit.
+- **OPEN:** inherits TFV2-0452e, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit. Also new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first? — Amit.
 
 ### TFV2-0453a — View: FamilyView (family members, invite, leave) (`apps/web/components/family/FamilyView.tsx`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0088, TFV2-0090, TFV2-0092, TFV2-0093, TFV2-0097, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0452a · **Folds-in:** none
