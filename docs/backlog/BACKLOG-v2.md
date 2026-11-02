@@ -2178,460 +2178,460 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0101 — Component: LoadMore
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
-- **WHY:** components.md §2.4; pagination on list screens.
-- **GOAL:** A "show more" control with a running "Showing 20 of 48" status.
-- **SCOPE:** `packages/ui/src/lists/LoadMore.tsx` · `packages/ui/src/lists/LoadMore.test.tsx` · `packages/ui/src/index.ts`.
+- **WHEN:** after TFV2-0023a.
+- **WHY:** components.md §2.4; pagination on list screens; REWRITE-PLAN-v2 §6 chunk 2.
+- **GOAL:** A "show more" button with a live "Showing 20 of 48" status, used by every paginated list.
+- **SCOPE:** `packages/ui/src/lists/LoadMore.tsx` · `packages/ui/src/lists/LoadMore.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/load-more/page.tsx` · `tests/e2e/screens/load-more.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → LoadMore cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** auto-load on scroll (explicit button).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `LoadMore` primitive; list screens currently hand-roll the button); 2) implement `LoadMore({ shown, total, onLoadMore }: LoadMoreProps)` per SPEC; 3) export `LoadMore` and `LoadMoreProps` from `index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/load-more/page.tsx` (client) rendering each documented state under a `data-testid="load-more-<state>"` anchor inside the TFV2-0023a frame + the Playwright spec `tests/e2e/screens/load-more.spec.ts`; 5) run DONE.
+- **DONE:** `bun test packages/ui` → LoadMore cases pass; and `CI=1 bunx playwright test tests/e2e/screens/load-more.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** auto-load on scroll (explicit button only); render a button when `shown >= total`; touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-load-more`, `__status`; rows `[data-row]`, hidden `[data-more][hidden]`; `data-component="LoadMore"`; shadcn `button`; props `{ shown, total, onLoadMore }`. Status copy: EN "Showing 20 of 48" / HE "מוצגות 20 מתוך 48". Counts in `.tp-num`. States: default, `__status` updates. Motion: none.
-- **TESTS:** Given shown 20 total 48 / When render / Then status "Showing 20 of 48" and button when `shown < total`. Given shown = total / When render / Then no button. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **SPEC:** Type `export type LoadMoreProps = { shown: number; total: number; onLoadMore: () => void }`. Class `.tp-load-more`, `__status`, `__button`; `data-component="LoadMore"`; shadcn `button` (secondary, `--tp-btn--secondary`). Status copy `EN: "Showing {shown} of {total}" / HE: "מוצגות {shown} מתוך {total}"` — counts wrapped in `.tp-num` (`--tp-font-mono`) so they stay isolated LTR. Button label `EN: "Show more" / HE: "להציג עוד"`. Behaviour: the button renders only when `shown < total`; the status line always renders. States: default (`shown < total`, button visible), complete (`shown === total`, no button, status still shown); loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states (this is a presentational control). Keyboard: the button is a native `<button>` (Enter/Space activate, visible focus ring `--tp-accent` 2px `--tp-focus-w`). RTL: status reads right-to-left but the `.tp-num` counts stay LTR. Breakpoints: full width at 390, inline at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given `shown=20 total=48` / When render / Then status text "Showing 20 of 48" (counts in `.tp-num`) and a visible button. Given `shown=48 total=48` / When render / Then no button and status "Showing 48 of 48". Given a click on the button / When activated / Then `onLoadMore` is called once. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state holds at both widths, and `?lang=he` renders the Hebrew status with LTR `.tp-num` counts.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0102 — Component: MonthGrid
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+### TFV2-0102 — Component: MonthGrid — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0103 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0103.
 - **WHY:** components.md §2.5; used in `web/calendar.html`, `web/plan.html`.
-- **GOAL:** A month grid with dots, day number, item count, and day selection.
-- **SCOPE:** `packages/ui/src/calendar/MonthGrid.tsx` · `packages/ui/src/calendar/MonthGrid.test.tsx` · `packages/ui/src/index.ts`.
+- **GOAL:** A month grid with a dot per item, day number, item count, and day selection.
+- **SCOPE:** `packages/ui/src/calendar/MonthGrid.tsx` · `packages/ui/src/calendar/MonthGrid.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/month-grid/page.tsx` · `tests/e2e/screens/month-grid.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → MonthGrid cases pass; Playwright asserts selection + count at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING — no standalone `MonthGrid` primitive; `apps/web/components/calendar/CalendarViews.tsx` is a wired screen view, not a reusable primitive); 2) implement `MonthGrid({ days, monthTitle, onSelectDay }: MonthGridProps)` per SPEC; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → MonthGrid cases pass; and `CI=1 bunx playwright test tests/e2e/screens/month-grid.spec.ts --reporter=line` → all pass (selection + count, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** render the count text visually under 768 (sr-only); hardcode Sunday-first.
+- **DO NOT:** render the count text visually under 768 px (sr-only); hardcode Sunday-first (see OPEN); touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-month`, `__head`, `__title`, `__grid`, `__dow`, `__day[data-outside][aria-current][aria-pressed]`, `__n`, `__dots`, `__count`; `data-component="MonthGrid"`; shadcn `calendar`; props `{ days, monthTitle, onSelectDay }`. `__count` is "N items" EN "N items" / HE "N פריטים" (sr-only under 768). Day dots via Dot. Keyboard: arrow grid, Home/End. Breakpoints: count text sr-only at 390, visible at 1280. Motion: none.
-- **TESTS:** Given a day with 3 items / When render / Then 3 dots + count. Given select / When click / Then `aria-pressed` + `onSelectDay`. Playwright: select + count at 390/1280, EN/HE.
+- **SPEC:** Type `export type MonthGridProps = { days: { localDate: string; n: number; count: number; outside?: boolean }[]; monthTitle: string; onSelectDay: (localDate: string) => void }`. Class `.tp-month`, `__head`, `__title`, `__grid`, `__dow`, `__day[data-outside][aria-current][aria-pressed]`, `__n`, `__dots`, `__count`; `data-component="MonthGrid"`; shadcn `calendar`. `__count` copy `EN: "{n} items" / HE: "{n} פריטים"` (`.tp-sr-only` under 768 px, visible at 1280). Day dots use the `Dot` primitive (TFV2-0103). `monthTitle` is the caller-supplied heading (e.g. `EN: "October 2026" / HE: "אוקטובר 2026"`). Keyboard: arrow-key grid navigation + Home/End (month start/end), `aria-pressed` + `aria-current="date"` on the selected day, `data-outside` marks leading/trailing days of adjacent months. RTL: the grid flows right-to-left and weekday order mirrors. Breakpoints: count text sr-only at 390, visible at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given a day with 3 items / When render / Then that day shows 3 dots + count "3 items" (sr-only at 390). Given select a day / When clicked / Then `aria-pressed` + `aria-current="date"` set and `onSelectDay(localDate)` called. Given `data-outside` days / When render / Then they are visually muted but still selectable. Playwright: select + count at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+- **OPEN:** week start (Sunday vs Monday) — UNKNOWN, Amit answers (conflict #10); this decides the `__dow` order and which day is first in the grid.
 
 ### TFV2-0103 — Component: Dot
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.5; decorative shapes for fixed/flex/done/habit.
-- **GOAL:** A decorative dot with four kinds; shapes differ (filled vs ring).
-- **SCOPE:** `packages/ui/src/calendar/Dot.tsx` · `packages/ui/src/calendar/Dot.test.tsx` · `packages/ui/src/index.ts`.
+- **GOAL:** A decorative dot with four kinds whose shapes differ (filled vs ring), never colour-only.
+- **SCOPE:** `packages/ui/src/calendar/Dot.tsx` · `packages/ui/src/calendar/Dot.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/dot/page.tsx` · `tests/e2e/screens/dot.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Dot cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** use colour alone as the only signal (always paired with a word elsewhere).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Dot({ kind }: DotProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec (asserts the four modifiers render at both widths); 5) run DONE.
+- **DONE:** `bun test packages/ui` → Dot cases pass; and `CI=1 bunx playwright test tests/e2e/screens/dot.spec.ts --reporter=line` → all pass (four kinds, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** use colour as the only signal (the paired word lives in the parent control, never the dot alone); make the dot focusable; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-dot` (`--fixed`, `--flex`, `--done`, `--habit`); `data-component="Dot"`; props `{ kind }`. Decorative (`aria-hidden`). Motion: none.
-- **TESTS:** Given each kind / When render / Then correct modifier and shape. (Primitive.)
-- **NUMBERS:** none beyond token usage (decorative, not interactive).
+- **SPEC:** Type `export type DotProps = { kind: "fixed" | "flex" | "done" | "habit" }`. Class `.tp-dot` (`--fixed`, `--flex`, `--done`, `--habit`); `data-component="Dot"`. Shapes: `fixed` = filled `--tp-info` (#36628C light / #94B8DA dark); `flex` = ring outline `--tp-caution` (#7E5A0C light / #DDB45E dark); `done` = filled `--tp-done` (#3B6948 light / #8FC09C dark); `habit` = ring outline `--tp-accent` (#A3461F light / #EE9468 dark). Size 8 px (`.tp-dot`). Decorative: `aria-hidden="true"`. No visible text. States: default + the four `kind` modifiers; loading/empty/error/offline/success/disabled are n/a (a static decorative element). Keyboard/screen-reader: not focusable, hidden from the accessibility tree. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given each `kind` / When render / Then the correct modifier class and shape (filled vs ring) is applied. Given a screen reader / When the tree is exposed / Then the dot is not announced (`aria-hidden="true"`). Playwright: all four kinds render at 390/1280.
+- **NUMBERS:** none beyond token usage (decorative, non-interactive) | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0104 — Component: WeekColumns
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0103 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0103 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0103.
 - **WHY:** components.md §2.5; used in `web/calendar.html`, `web/plan.html`.
 - **GOAL:** Seven side-by-side day columns that scroll sideways inside themselves only.
-- **SCOPE:** `packages/ui/src/calendar/WeekColumns.tsx` · `packages/ui/src/calendar/WeekColumns.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/calendar/WeekColumns.tsx` · `packages/ui/src/calendar/WeekColumns.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/week-columns/page.tsx` · `tests/e2e/screens/week-columns.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → WeekColumns cases pass; Playwright asserts internal scroll at 390 and static at 1280.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `WeekColumns({ days }: WeekColumnsProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec (internal scroll at 390, static at 1280); 5) run DONE.
+- **DONE:** `bun test packages/ui` → WeekColumns cases pass; and `CI=1 bunx playwright test tests/e2e/screens/week-columns.spec.ts --reporter=line` → all pass (internal scroll at 390, static at 1280).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** scroll the whole page; fix columns wider than the container.
+- **DO NOT:** scroll the whole page (only the week container); fix columns wider than the container; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-week`, `__col[aria-current]`, `__head`, `__item[data-kind]`, `__time`, `__title`, `__kind`; `data-component="WeekColumns"`; props `{ days }`. `__item[data-kind]` solid fixed / dashed flex. Time `.tp-week__time` is `.tp-mono`/`.tp-num`. Breakpoints: internal horizontal scroll at 390; static fit at 1280. Motion: none.
-- **TESTS:** Given 7 days / When render / Then 7 columns. Given overflow at 390 / When render / Then `overflow-x` on the week container only. Playwright: scroll container at 390 vs 1280.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **SPEC:** Type `export type WeekColumnsProps = { days: { localDate: string; items: { id: string; title: string; start: number; end: number; kind: "fixed" | "flex" }[] }[] }`. Class `.tp-week`, `__col[aria-current]`, `__head`, `__item[data-kind]`, `__time`, `__title`, `__kind`; `data-component="WeekColumns"`. `__item[data-kind="fixed"]` = solid `--tp-info` inline-start edge; `__item[data-kind="flex"]` = dashed `--tp-caution` edge. Times render in `--tp-font-mono` + `.tp-num` (isolated LTR). Each `__col` carries `aria-current="date"` when it is the selected/current day. Breakpoints: internal `overflow-x` scroll on the `.tp-week` container only at 390; static fit (no scroll) at 1280. Keyboard: each item is a button with a visible focus ring. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given 7 days / When render / Then 7 `__col` columns. Given overflow at 390 / When render / Then `overflow-x` is set on the `.tp-week` container only (not the page). Given a fixed vs flex item / When render / Then solid vs dashed edge. Playwright: assert the scroll container at 390 vs the static layout at 1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0105 — Component: DayTimeline
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0103 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0103 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0103.
 - **WHY:** components.md §2.5; half-hour slots; used in `web/calendar.html`, `web/plan.html`.
-- **GOAL:** A day timeline of half-hour slots with fixed/flexible items and a now line.
-- **SCOPE:** `packages/ui/src/calendar/DayTimeline.tsx` · `packages/ui/src/calendar/DayTimeline.test.tsx` · `packages/ui/src/index.ts`.
+- **GOAL:** A presentational day timeline of half-hour slots with fixed/flexible items and a now line.
+- **SCOPE:** `packages/ui/src/calendar/DayTimeline.tsx` · `packages/ui/src/calendar/DayTimeline.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/day-timeline/page.tsx` · `tests/e2e/screens/day-timeline.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → DayTimeline cases pass; Playwright asserts now line + slot heights at 390/1280.
+- **STEPS:** 1) Graphify code-map check (the WIRED `apps/web/components/day-timeline/DayTimeline.tsx` EXISTS and fetches `timeBlocks.listForDate` / `calendar_events.listInRange`; this ticket builds only the PRESENTATIONAL primitive `packages/ui/src/calendar/DayTimeline.tsx` that the wired component will later mount — no data fetching, props only); 2) implement `DayTimeline({ items, now }: DayTimelineProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → DayTimeline cases pass; and `CI=1 bunx playwright test tests/e2e/screens/day-timeline.spec.ts --reporter=line` → all pass (now line + slot spans, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** use whole-hour-only slots (half-hour); animate the now line.
+- **DO NOT:** use whole-hour-only slots (half-hour); animate the now line; fetch data; touch `convex/**` or the wired `apps/web/components/day-timeline/DayTimeline.tsx`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-timeline`, `__hours`, `__hour`, `__items` (`--cols`), `__item[data-kind]` (`--row`, `--span`, `--col`), `__time`, `__title`, `__now`; `data-component="DayTimeline"`; props `{ items, now }`. Rows are half-hour slots; fixed = solid + "Fixed", flex = dashed + "Flexible". Time `.tp-mono`/`.tp-num`. Breakpoints: 390/1280. Motion: none.
-- **TESTS:** Given an item 08:00–08:30 / When render / Then `--span` correct. Given now / When render / Then `__now` positioned. Playwright: slot span + now at 390/1280.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **SPEC:** Type `export type DayTimelineProps = { items: { id: string; title: string; start: number; end: number; kind: "fixed" | "flex" }[]; now: number }`. Class `.tp-timeline`, `__hours`, `__hour`, `__items` (`--cols`), `__item[data-kind]` (`--row`, `--span`, `--col`), `__time`, `__title`, `__now`; `data-component="DayTimeline"`. Rows are half-hour slots; `start`/`end` are ms-since-epoch and `--span`/`--row`/`--col` are derived from them. fixed = solid `--tp-info` edge + label `EN: "Fixed" / HE: "קבוע"`; flex = dashed `--tp-caution` edge + `EN: "Flexible" / HE: "גמיש"`. Times `.tp-mono`/`.tp-num`. `__now` is a horizontal line positioned at `now` (no animation). Breakpoints: same at 390/1280 (the container scrolls internally if needed). Keyboard: each item is a button with a focus ring and `aria-label` = title + time. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given an item 08:00–08:30 / When render / Then its `--span` covers one half-hour slot. Given `now` / When render / Then `__now` is positioned at that time. Given a fixed vs flex item / When render / Then solid vs dashed edge + "Fixed"/"Flexible" label. Playwright: slot span + now line at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
+- **OPEN:** none.
 
 ### TFV2-0106 — Component: Kanban
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.6; used in `web/project-kanban.html`.
-- **GOAL:** A multi-column kanban board that snap-scrolls on phone.
-- **SCOPE:** `packages/ui/src/kanban/Kanban.tsx` · `packages/ui/src/kanban/Kanban.test.tsx` · `packages/ui/src/index.ts`.
+- **GOAL:** A multi-column kanban board that snap-scrolls on phone, static grid at 1280.
+- **SCOPE:** `packages/ui/src/kanban/Kanban.tsx` · `packages/ui/src/kanban/Kanban.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/kanban/page.tsx` · `tests/e2e/screens/kanban.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Kanban cases pass; Playwright asserts snap-scroll at 390 and columns at 1280.
+- **STEPS:** 1) Graphify code-map check (the WIRED `apps/web/components/tasks/TaskKanbanBoard.tsx` EXISTS; this ticket builds the PRESENTATIONAL primitive `packages/ui/src/kanban/Kanban.tsx` it can mount — no data fetching); 2) implement `Kanban({ columns }: KanbanProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Kanban cases pass; and `CI=1 bunx playwright test tests/e2e/screens/kanban.spec.ts --reporter=line` → all pass (snap-scroll at 390, columns at 1280).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** require drag (cards have move buttons); exceed the page with columns.
+- **DO NOT:** require drag (cards have move buttons); exceed the page with columns; fetch data; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-kanban`, `__col`, `__head`, `__name`, `__count`, `__list`, `__empty`; `data-component="Kanban"`; shadcn `card`; props `{ columns: {id,name,count,cards[]}[] }`. Column names EN "To do"·"Doing"·"Done" / HE "לעשות"·"בעבודה"·"הושלם" (caller may override). `__empty` per column. Breakpoints: snap-scroll horizontally at 390; static grid at 1280. Motion: none.
-- **TESTS:** Given 3 columns / When render / Then 3 `__col` with name + count. Given empty column / When render / Then `__empty` shows. Playwright: snap-scroll at 390, grid at 1280.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **SPEC:** Type `export type KanbanProps = { columns: { id: string; name: string; count: number; cards: ReactNode[] }[] }`. Class `.tp-kanban`, `__col`, `__head`, `__name`, `__count`, `__list`, `__empty`; `data-component="Kanban"`; shadcn `card`. Column names default `EN: "To do"·"Doing"·"Done" / HE: "לעשות"·"בעבודה"·"הושלם"` (caller may override via `name`). `__count` in `.tp-num`. `__empty` renders per-column when `cards` is empty (copy supplied by the mounting screen). Breakpoints: horizontal snap-scroll on the board only at 390; static grid (`--cols`) at 1280. Keyboard: columns are regions (`aria-label` = column name); cards are reachable. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given 3 columns / When render / Then 3 `__col` with name + count. Given an empty column / When render / Then that column shows `__empty`. Given overflow at 390 / When render / Then the board container scrolls horizontally (snap), not the page. Playwright: snap-scroll at 390, static grid at 1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0107 — Component: KanbanCard
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0106 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0106 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0106.
 - **WHY:** components.md §2.6; move buttons on every card.
-- **GOAL:** A kanban card with title, meta and prev/next move buttons; edges disabled.
-- **SCOPE:** `packages/ui/src/kanban/KanbanCard.tsx` · `packages/ui/src/kanban/KanbanCard.test.tsx` · `packages/ui/src/index.ts`.
+- **GOAL:** A kanban card with title, meta and prev/next move buttons; edge buttons disabled.
+- **SCOPE:** `packages/ui/src/kanban/KanbanCard.tsx` · `packages/ui/src/kanban/KanbanCard.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/kanban-card/page.tsx` · `tests/e2e/screens/kanban-card.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → KanbanCard cases pass; Playwright asserts move buttons + disabled edges at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING — card is currently inline in `TaskKanbanBoard.tsx`); 2) implement `KanbanCard({ card, canPrev, canNext, onMove }: KanbanCardProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → KanbanCard cases pass; and `CI=1 bunx playwright test tests/e2e/screens/kanban-card.spec.ts --reporter=line` → all pass (move buttons + disabled edges, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** rely on drag; miss `aria-label` on move buttons.
+- **DO NOT:** rely on drag; omit `aria-label` on move buttons; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-kanban-card`, `__title`, `__meta`, `__move`; `data-component="KanbanCard"`; shadcn `card + button`; props `{ card, canPrev, canNext, onMove }`. Event `kanban-move` + `data-dir="prev|next"` → `tasks.moveColumn`. Move buttons on every card; edge buttons disabled; icons `.tp-icon--flip`/`.tp-icon--back`. Copy (aria): EN "Move left"/"Move right" / HE "הזזה שמאלה"/"הזזה ימינה". Breakpoints: 390/1280. Motion: none.
-- **TESTS:** Given a middle card / When render / Then both move buttons enabled. Given first column / When render / Then prev disabled. Given move / When click next / Then `onMove("next")`. Playwright: disabled edges + move at 390/1280, EN/HE.
+- **SPEC:** Type `export type KanbanCardProps = { card: { id: string; title: string; meta?: string }; canPrev: boolean; canNext: boolean; onMove: (dir: "prev" | "next") => void }`. Class `.tp-kanban-card`, `__title`, `__meta`, `__move`; `data-component="KanbanCard"`; shadcn `card + button`. Two move buttons on every card; the prev button is disabled when `!canPrev` and the next when `!canNext`. Move-button `aria-label`: `EN: "Move left" / HE: "הזזה שמאלה"` (prev) and `EN: "Move right" / HE: "הזזה ימינה"` (next). Icons `.tp-icon--flip`/`.tp-icon--back`. Keyboard: buttons are focusable with a visible focus ring; Enter/Space move. RTL: prev/next semantics mirror (`.tp-icon--flip`). Breakpoints: 390/1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a; disabled is the edge-button state itself (`disabled` + `aria-disabled`).
+- **TESTS:** Given a middle card (`canPrev`+`canNext` true) / When render / Then both move buttons enabled. Given `canPrev=false` / When render / Then the prev button is disabled. Given a click on next / When activated / Then `onMove("next")` is called once. Playwright: disabled edges + move at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0108 — Component: BarChart
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0110 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0110.
 - **WHY:** components.md §2.7; used in `web/insights.html`, `web/goals-progress.html`.
 - **GOAL:** A bar chart where every bar has a number and a label.
-- **SCOPE:** `packages/ui/src/charts/BarChart.tsx` · `packages/ui/src/charts/BarChart.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/charts/BarChart.tsx` · `packages/ui/src/charts/BarChart.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/bar-chart/page.tsx` · `tests/e2e/screens/bar-chart.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → BarChart cases pass; Playwright asserts bars + labels at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING — charts are inline in `apps/web/components/insights/InsightsScreen.tsx`); 2) implement `BarChart({ title, bars }: BarChartProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → BarChart cases pass; and `CI=1 bunx playwright test tests/e2e/screens/bar-chart.spec.ts --reporter=line` → all pass (bars + labels, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** omit a label or number per bar; colour-only bars.
+- **DO NOT:** omit a label or number per bar; use colour alone; require an external chart lib; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-chart` (figure), `__title`, `__bars`, `__bar[data-highlight]` (`--pct`), `__value`, `__track`, `__fill`, `__label`; `data-component="BarChart"`; shadcn `chart`; props `{ title, bars:{label,value,pct}[] }`. Every bar has a number and a label. Requires a ChartSummary sibling (figcaption). RTL: labels flip, values stay `.tp-num`. Breakpoints: 390/1280. Motion: none.
-- **TESTS:** Given bars / When render / Then each has `--pct`, value and label. Given highlight / When render / Then `data-highlight`. Playwright: bars + labels at 390/1280, EN/HE.
+- **SPEC:** Type `export type BarChartProps = { title: string; bars: { label: string; value: number; pct: number }[] }`. Class `.tp-chart` (figure), `__title`, `__bars`, `__bar[data-highlight]` (`--pct`), `__value`, `__track`, `__fill`, `__label`; `data-component="BarChart"`; shadcn `chart`. Every bar shows its `value` (in `.tp-num`) and `label`. `--pct` sets the bar height (0..100). Requires a `ChartSummary` sibling (TFV2-0110) as its `<figcaption>` — the mounting screen supplies it. RTL: labels flip, values stay `.tp-num`. Breakpoints: full width 390, inline 1280. Keyboard/screen-reader: the figure is `role="img"` + `aria-labelledby` the summary id. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given bars / When render / Then each bar has `--pct`, a `value` in `.tp-num`, and a `label`. Given `data-highlight` on one bar / When render / Then that bar carries the highlight. Playwright: bars + labels at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · values isolated via `.tp-num` (components.md) · INP ≤200 ms (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0109 — Component: LineChart
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0110 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0110.
 - **WHY:** components.md §2.7; used in `web/insights.html`, `web/goals-progress.html`.
 - **GOAL:** An SVG line chart with labelled points and an accessible summary.
-- **SCOPE:** `packages/ui/src/charts/LineChart.tsx` · `packages/ui/src/charts/LineChart.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/charts/LineChart.tsx` · `packages/ui/src/charts/LineChart.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/line-chart/page.tsx` · `tests/e2e/screens/line-chart.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → LineChart cases pass; Playwright asserts points at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `LineChart({ points, summaryId }: LineChartProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → LineChart cases pass; and `CI=1 bunx playwright test tests/e2e/screens/line-chart.spec.ts --reporter=line` → all pass (points, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** skip `role="img"` + `aria-labelledby`; use an external chart lib.
+- **DO NOT:** skip `role="img"` + `aria-labelledby`; use an external chart lib; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `svg.tp-chart__svg` with `__axis`, `__grid`, `__line`, `__point`, `<text>`; `data-component="LineChart"`; shadcn `chart`; props `{ points:{label,value}[], summaryId }`. Points labelled in the SVG; svg has `role="img"` + `aria-labelledby` the summary. Breakpoints: 390/1280 (viewBox scales). Motion: none.
-- **TESTS:** Given points / When render / Then each point has a `<text>` label and `aria-labelledby`. Playwright: points at 390/1280.
+- **SPEC:** Type `export type LineChartProps = { points: { label: string; value: number }[]; summaryId: string }`. `svg.tp-chart__svg` with `__axis`, `__grid`, `__line`, `__point`, `<text>`; `data-component="LineChart"`; shadcn `chart`. Each point renders a `<text>` label (value). The `svg` carries `role="img"` + `aria-labelledby={summaryId}` pointing at the `ChartSummary` (TFV2-0110). Breakpoints: 390/1280 (the `viewBox` scales). Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a — the mounting screen owns data states.
+- **TESTS:** Given points / When render / Then each point has a `<text>` label and the svg has `role="img"` + `aria-labelledby={summaryId}`. Playwright: points render at 390/1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0110 — Component: ChartSummary
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.7; required figcaption for every chart.
 - **GOAL:** A one-sentence summary of a chart, required as its figcaption.
-- **SCOPE:** `packages/ui/src/charts/ChartSummary.tsx` · `packages/ui/src/charts/ChartSummary.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/charts/ChartSummary.tsx` · `packages/ui/src/charts/ChartSummary.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/chart-summary/page.tsx` · `tests/e2e/screens/chart-summary.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → ChartSummary cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** render a chart without a summary; write shaming copy.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `ChartSummary({ id, text }: ChartSummaryProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → ChartSummary cases pass; and `CI=1 bunx playwright test tests/e2e/screens/chart-summary.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** render a chart without a summary; write shaming copy; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-chart__summary`; `data-component="ChartSummary"`; shadcn `figcaption`; props `{ text }`. The chart in one sentence. Copy supplied by the screen. Motion: none.
-- **TESTS:** Given text / When render / Then `<figcaption>` with text. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Type `export type ChartSummaryProps = { id: string; text: string }`. Class `.tp-chart__summary`; `data-component="ChartSummary"`; shadcn `figcaption`. The `id` is referenced by the chart's `aria-labelledby`; `text` is the one-sentence plain-language summary, supplied by the mounting screen (never invented here). Muted text (`--tp-ink-muted`). RTL: `dir="auto"`. Motion: none. Loading/empty/error/offline/success/disabled are n/a — presentational.
+- **TESTS:** Given `text` and `id` / When render / Then a `<figcaption id={id}>` with the text. Playwright: the caption renders at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0111 — Component: Form
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; used by task sheet, nags, goals, journal, calendar.
 - **GOAL:** A form container (width up to 68ch) with an actions slot and submit handling.
-- **SCOPE:** `packages/ui/src/forms/Form.tsx` · `packages/ui/src/forms/Form.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Form.tsx` · `packages/ui/src/forms/Form.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/form/page.tsx` · `tests/e2e/screens/form.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Form cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** exceed 68ch width; suppress native validation.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Form({ onSubmit, children }: FormProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Form cases pass; and `CI=1 bunx playwright test tests/e2e/screens/form.spec.ts --reporter=line` → all pass (submit, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** exceed 68ch width; suppress native validation; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-form`, `__actions`; `data-component="Form"`; shadcn `form`; props `{ onSubmit, children }`. Width up to 68ch. Motion: none.
-- **TESTS:** Given children / When render / Then `<form>` with max-width 68ch. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · form width ≤68ch (components.md).
+- **SPEC:** Type `export type FormProps = { onSubmit: () => void; children: ReactNode }`. Class `.tp-form`, `__actions`; `data-component="Form"`; shadcn `form`. Width up to 68ch (`--tp-measure`). `onSubmit` fires on native form submit (Enter in a field or the submit button); native HTML validation is left intact (no `noValidate`). `__actions` is the trailing action slot. Motion: none. Loading/empty/error/offline/success/disabled are n/a — presentational (the fields' states are their own).
+- **TESTS:** Given children / When render / Then a `<form>` with max-width 68ch. Given a submit / When fired / Then `onSubmit` is called once. Playwright: the form renders and submits at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · form width ≤68ch (`--tp-measure`, components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0112 — Component: Field
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+### TFV2-0112 — Component: Field — superseded by packages/ui/src/primitives/Field.tsx
+- **Superseded by:** `packages/ui/src/primitives/Field.tsx` (already exists on `integration` with `FieldProps = { label?, helper?, error?, trailing? }` on a labelled input). Do not build a second `Field`. Form items re-use the existing `Field` primitive; a bare label + help + error wrapper is not a separate unit.
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
-- **WHY:** components.md §2.8; label + help + error with `aria-describedby`.
-- **GOAL:** A form item with label, help and error text, wired to `aria-describedby`/`aria-invalid`.
-- **SCOPE:** `packages/ui/src/forms/Field.tsx` · `packages/ui/src/forms/Field.test.tsx` · `packages/ui/src/index.ts`.
+- **WHEN:** n/a (do not build).
+- **WHY:** components.md §2.8; label + help + error.
+- **GOAL:** n/a (superseded).
+- **SCOPE:** none (superseded).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Field cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** omit `aria-describedby`; use colour alone for error.
+- **STEPS:** n/a.
+- **DONE:** n/a.
+- **EVIDENCE:** n/a.
+- **DO NOT:** build a duplicate `Field`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-field`, `.tp-label`, `.tp-label__opt`, `.tp-help`, `.tp-error-text`; `data-component="Field"`; shadcn `form item`; props `{ id, label, help?, error?, children }`. `aria-describedby="x-help x-error"`, `aria-invalid="true"` on error. Copy: label + help supplied by caller. Motion: none.
-- **TESTS:** Given error / When render / Then `aria-invalid` + error text linked. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** n/a (the existing `packages/ui/src/primitives/Field.tsx` is the canonical labelled-input primitive).
+- **TESTS:** n/a.
+- **NUMBERS:** n/a.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0113 — Component: TextInput
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0112.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; emails `dir="ltr"`.
 - **GOAL:** A text input; emails force LTR.
-- **SCOPE:** `packages/ui/src/forms/TextInput.tsx` · `packages/ui/src/forms/TextInput.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/TextInput.tsx` · `packages/ui/src/forms/TextInput.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/text-input/page.tsx` · `tests/e2e/screens/text-input.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → TextInput cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** omit `dir="ltr"` for email; break the label link.
+- **STEPS:** 1) Graphify code-map check (MISSING — the existing `packages/ui/src/primitives/Field.tsx` renders an input but does not special-case email direction); 2) implement `TextInput({ type, value, onChange, id, ariaInvalid, ariaDescribedBy }: TextInputProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → TextInput cases pass; and `CI=1 bunx playwright test tests/e2e/screens/text-input.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** omit `dir="ltr"` + `autocomplete="email"` for email; break the label link; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-input`; `data-component="TextInput"`; shadcn `input`; props `{ type?, value, onChange, id, aria-* }`. `type="email"` forces `dir="ltr"`. Motion: none.
-- **TESTS:** Given type email / When render / Then `dir="ltr"` and `autocomplete=email`. (Primitive.)
+- **SPEC:** Type `export type TextInputProps = { type?: "text" | "email" | "tel" | "url" | "password"; value: string; onChange: (value: string) => void; id?: string; ariaInvalid?: boolean; ariaDescribedBy?: string }`. Class `.tp-input`; `data-component="TextInput"`; shadcn `input`. When `type="email"`: forces `dir="ltr"` and `autocomplete="email"`. Radius `--tp-radius-md` (10 px), outline `--tp-line-control` (#877C6B light / #7F7669 dark). States: default, focus (ring `--tp-accent` 2px), disabled, error (via `aria-invalid`); loading/empty/offline/success are n/a — presentational. Keyboard: native input. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given `type="email"` / When render / Then `dir="ltr"` and `autocomplete="email"` are set. Given a typed value / When `onChange` fires / Then the value updates. Playwright: the input renders and focuses at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0114 — Component: Textarea
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0112.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; user text `dir="auto"`.
 - **GOAL:** A textarea with `dir="auto"` for mixed-language user text.
-- **SCOPE:** `packages/ui/src/forms/Textarea.tsx` · `packages/ui/src/forms/Textarea.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Textarea.tsx` · `packages/ui/src/forms/Textarea.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/textarea/page.tsx` · `tests/e2e/screens/textarea.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Textarea cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** fix a hard direction (must be auto).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Textarea({ rows, value, onChange }: TextareaProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Textarea cases pass; and `CI=1 bunx playwright test tests/e2e/screens/textarea.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** fix a hard direction (must be `auto`); touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-textarea`; `data-component="Textarea"`; shadcn `textarea`; props `{ rows?, value, onChange }`. `dir="auto"`. Motion: none.
-- **TESTS:** Given rows 4 / When render / Then `dir="auto"` + rows=4. (Primitive.)
+- **SPEC:** Type `export type TextareaProps = { rows?: number; value: string; onChange: (value: string) => void }`. Class `.tp-textarea`; `data-component="Textarea"`; shadcn `textarea`. `dir="auto"` always. Radius `--tp-radius-md` (10 px), outline `--tp-line-control`. States: default, focus, disabled; loading/empty/offline/success are n/a — presentational. Keyboard: native textarea. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given `rows=4` / When render / Then `dir="auto"` and `rows=4`. Given a typed value / When `onChange` fires / Then the value updates. Playwright: renders at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0115 — Component: Select
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0112.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; used by task sheet, habits, settings.
 - **GOAL:** A native select with options and an icon.
-- **SCOPE:** `packages/ui/src/forms/Select.tsx` · `packages/ui/src/forms/Select.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Select.tsx` · `packages/ui/src/forms/Select.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/select/page.tsx` · `tests/e2e/screens/select.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Select cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** build a custom dropdown (native select); omit the label.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Select({ options, value, onChange, id }: SelectProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Select cases pass; and `CI=1 bunx playwright test tests/e2e/screens/select.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** build a custom dropdown (native `<select>`); omit the label; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-select` > `select.tp-select__input` + `.tp-select__icon`; `data-component="Select"`; shadcn `select`; props `{ options:{label,value}[], value, onChange, id }`. Motion: none.
-- **TESTS:** Given options / When render / Then native `<select>` with options. (Primitive.)
+- **SPEC:** Type `export type SelectProps = { options: { label: string; value: string }[]; value: string; onChange: (value: string) => void; id?: string }`. Class `.tp-select` > `select.tp-select__input` + `.tp-select__icon`; `data-component="Select"`; shadcn `select`. Native `<select>` (no custom dropdown). Radius `--tp-radius-md` (10 px). States: default, focus, disabled; loading/empty/offline/success are n/a — presentational. Keyboard: native select. Motion: none.
+- **TESTS:** Given options / When render / Then a native `<select>` with one `<option>` per entry and the current `value` selected. Given a change / When `onChange` fires / Then the value updates. Playwright: renders at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0116 — Component: Switch
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; visible On/Off word.
 - **GOAL:** A switch with a visible "On"/"Off" word and correct `role="switch"`.
-- **SCOPE:** `packages/ui/src/forms/Switch.tsx` · `packages/ui/src/forms/Switch.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Switch.tsx` · `packages/ui/src/forms/Switch.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/switch/page.tsx` · `tests/e2e/screens/switch.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Switch cases pass; Playwright asserts toggle + word at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Switch({ checked, onChange }: SwitchProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Switch cases pass; and `CI=1 bunx playwright test tests/e2e/screens/switch.spec.ts --reporter=line` → all pass (toggle + word, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** omit the word; use `aria-checked` incorrectly.
+- **DO NOT:** omit the word; set `aria-checked` incorrectly; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `button.tp-switch[role=switch][aria-checked]`, `__track`, `__thumb`, `__state`; `data-component="Switch"`; shadcn `switch`; props `{ checked, onChange }`. Visible word: EN On/Off "On"·"Off" / HE "פועל"·"כבוי". RTL: thumb origin flips (`[dir="rtl"]` rule). Breakpoints: 390/1280. Motion: thumb ≤250 ms transform.
-- **TESTS:** Given checked / When render / Then `aria-checked=true` + "On". Given click / When toggle / Then `onChange(false)` + "Off". Playwright: toggle + word at 390/1280, EN/HE.
+- **SPEC:** Type `export type SwitchProps = { checked: boolean; onChange: (checked: boolean) => void }`. Markup `button.tp-switch[role="switch"][aria-checked]`, `__track`, `__thumb`, `__state`; `data-component="Switch"`; shadcn `switch`. Visible word `__state`: `EN: "On" / HE: "פועל"` when checked, `EN: "Off" / HE: "כבוי"` when not. `aria-checked` = `checked`. RTL: the thumb origin flips (`[dir="rtl"]` rule). Breakpoints: 390/1280. Motion: thumb ≤250 ms transform; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success are n/a; disabled n/a (always enabled in this primitive).
+- **TESTS:** Given `checked=true` / When render / Then `aria-checked="true"` + "On". Given a click / When toggled / Then `onChange(false)` fires + "Off" shows. Playwright: toggle + word at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0117 — Component: Checkbox
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0112.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; used in forms and checklists.
 - **GOAL:** A checkbox inside a labelled choice with text and hint.
-- **SCOPE:** `packages/ui/src/forms/Checkbox.tsx` · `packages/ui/src/forms/Checkbox.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Checkbox.tsx` · `packages/ui/src/forms/Checkbox.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/checkbox/page.tsx` · `tests/e2e/screens/checkbox.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Checkbox cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** render a bare checkbox without a label.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Checkbox({ checked, label, hint, onChange }: CheckboxProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Checkbox cases pass; and `CI=1 bunx playwright test tests/e2e/screens/checkbox.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** render a bare checkbox without a label; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `input.tp-checkbox` inside `label.tp-choice` (`__text`, `__hint`); `data-component="Checkbox"`; shadcn `checkbox`; props `{ checked, label, hint?, onChange }`. Motion: none.
-- **TESTS:** Given label + hint / When render / Then checkbox inside `<label>` with text + hint. (Primitive.)
+- **SPEC:** Type `export type CheckboxProps = { checked: boolean; label: string; hint?: string; onChange: (checked: boolean) => void }`. Markup `input.tp-checkbox` inside `label.tp-choice` (`__text`, `__hint`); `data-component="Checkbox"`; shadcn `checkbox`. The input sits inside the `<label>` so the whole choice is clickable; `__hint` is secondary text under the label. States: default, checked, focus, disabled; loading/empty/offline/success are n/a. Keyboard: native checkbox. Motion: none.
+- **TESTS:** Given `label` + `hint` / When render / Then the checkbox is inside a `<label>` with the text and hint. Given a click / When toggled / Then `onChange` fires with the new value. Playwright: renders at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0118 — Component: Radio
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0112.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.8; used in task sheet, energy pick.
 - **GOAL:** A radio inside a labelled choice within a radiogroup.
-- **SCOPE:** `packages/ui/src/forms/Radio.tsx` · `packages/ui/src/forms/Radio.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Radio.tsx` · `packages/ui/src/forms/Radio.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/radio/page.tsx` · `tests/e2e/screens/radio.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Radio cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** omit `name` (grouping).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Radio({ name, value, label, checked, onChange }: RadioProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Radio cases pass; and `CI=1 bunx playwright test tests/e2e/screens/radio.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** omit `name` (grouping); touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `input.tp-radio` inside `label.tp-choice`; `data-component="Radio"`; shadcn `radio-group`; props `{ name, value, label, checked, onChange }`. Motion: none.
-- **TESTS:** Given name "energy" / When render / Then radio with matching `name`. (Primitive.)
+- **SPEC:** Type `export type RadioProps = { name: string; value: string; label: string; checked: boolean; onChange: (value: string) => void }`. Markup `input.tp-radio` inside `label.tp-choice`; `data-component="Radio"`; shadcn `radio-group`. All radios sharing a `name` form one group (native behaviour). States: default, checked, focus, disabled; loading/empty/offline/success are n/a. Keyboard: native radio arrow keys within the group. Motion: none.
+- **TESTS:** Given `name="energy"` / When render / Then the radio has `name="energy"` (grouping). Given `checked` / When render / Then it is selected. Given a click / When fired / Then `onChange(value)`. Playwright: renders at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0119 — Component: Dial 0–10
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
-- **WHY:** components.md §2.8; used by Today energy and coach dial.
+- **WHEN:** after TFV2-0023a.
+- **WHY:** components.md §2.8; used by Today energy and the coach dial.
 - **GOAL:** A 0–10 slider showing number and word (quiet/steady/push).
-- **SCOPE:** `packages/ui/src/forms/Dial.tsx` · `packages/ui/src/forms/Dial.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/Dial.tsx` · `packages/ui/src/forms/Dial.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/dial/page.tsx` · `tests/e2e/screens/dial.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun test packages/ui` → Dial cases pass; Playwright asserts number + word at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map check (MISSING — `apps/web/components/coach-controls/dial.ts` is a dial *controller*, not a presentational 0–10 slider primitive); 2) implement `Dial({ value, label, onChange }: DialProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Dial cases pass; and `CI=1 bunx playwright test tests/e2e/screens/dial.spec.ts --reporter=line` → all pass (number + word, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** show only a number (word required); miss `aria-valuetext`.
+- **DO NOT:** show only a number (word required); miss `aria-valuetext`; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-dial`, `__head`, `__value`, `__num [data-dial-num]`, `__of`, `__word [data-dial-word]`, `__scale` + `input.tp-slider`; `data-component="Dial"`; shadcn `slider`; props `{ value, label, onChange }`. Words: 0–3 EN "Quiet" / HE "שקט"; 4–7 EN "Steady" / HE "יציב"; 8–10 EN "Push" / HE "דחיפה". `aria-valuetext` = "N of 10, word". RTL: slider direction flips. Breakpoints: 390/1280. Motion: thumb ≤250 ms.
-- **TESTS:** Given value 2 / When render / Then number 2 + word "Quiet" + `aria-valuetext`. Given value 9 / When render / Then "Push". Playwright: drag to change + word updates at 390/1280, EN/HE.
+- **SPEC:** Type `export type DialProps = { value: number; label: string; onChange: (value: number) => void }`. Class `.tp-dial`, `__head`, `__value`, `__num[data-dial-num]`, `__of`, `__word[data-dial-word]`, `__scale` + `input.tp-slider`; `data-component="Dial"`; shadcn `slider`. Words: `value` 0–3 → `EN: "Quiet" / HE: "שקט"`; 4–7 → `EN: "Steady" / HE: "יציב"`; 8–10 → `EN: "Push" / HE: "דחיפה"`. `aria-valuetext` = `"{value} of 10, {word}"` (EN) / `"{value} מתוך 10, {word}"` (HE). The number is always shown alongside the word. RTL: the slider direction flips. Breakpoints: 390/1280. Motion: thumb ≤250 ms; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled are n/a.
+- **TESTS:** Given `value=2` / When render / Then number "2" + word "Quiet" + `aria-valuetext="2 of 10, Quiet"`. Given `value=9` / When render / Then "Push". Given a drag / When changed / Then `onChange` fires with the new integer. Playwright: drag to change + word updates at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0120 — Component: StateEmpty
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.18; every screen's empty state.
 - **GOAL:** An empty state with icon, title, body and a next-step action.
-- **SCOPE:** `packages/ui/src/states/StateEmpty.tsx` · `packages/ui/src/states/StateEmpty.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/states/StateEmpty.tsx` · `packages/ui/src/states/StateEmpty.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/state-empty/page.tsx` · `tests/e2e/screens/state-empty.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → StateEmpty cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** write shaming empty copy (kind copy only).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StateEmpty({ title, body, action }: StateEmptyProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → StateEmpty cases pass; and `CI=1 bunx playwright test tests/e2e/screens/state-empty.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** write shaming empty copy (kind copy only); touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-state.tp-state--empty`, `__icon`, `__title`, `__body`, `__actions`; `data-component="StateEmpty"`; props `{ title, body, action? }`. Copy supplied by the screen (kind + next step). Motion: none.
-- **TESTS:** Given title/body/action / When render / Then all present. (Primitive.)
+- **SPEC:** Type `export type StateEmptyProps = { title: string; body?: string; action?: ReactNode }`. Class `.tp-state.tp-state--empty`, `__icon`, `__title`, `__body`, `__actions`; `data-component="StateEmpty"`. Copy (title/body) and the next-step action are supplied by the mounting screen (kind + next step, never shaming). `action` renders in `__actions` as a single secondary button slot. States: default; loading/error/offline/success/disabled are n/a — the mounting screen owns data states. RTL: `dir="auto"` on title/body. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given title/body/action / When render / Then all three present (icon, title, body, action). Given no `action` / When render / Then `__actions` is empty. Playwright: renders at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0121 — Component: StateLoading
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0001.
+- **WHEN:** after TFV2-0023a.
 - **WHY:** components.md §2.18; skeleton rows + sr-only label.
 - **GOAL:** Skeleton loading rows with a screen-reader "Loading…" label.
-- **SCOPE:** `packages/ui/src/states/StateLoading.tsx` · `packages/ui/src/states/StateLoading.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/states/StateLoading.tsx` · `packages/ui/src/states/StateLoading.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/state-loading/page.tsx` · `tests/e2e/screens/state-loading.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → StateLoading cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** animate shimmer under reduced motion.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StateLoading({ rows, label }: StateLoadingProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → StateLoading cases pass; and `CI=1 bunx playwright test tests/e2e/screens/state-loading.spec.ts --reporter=line` → all pass (skeleton rows + sr-only label, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** animate shimmer under reduced motion; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-state--loading[role=status]`, `.tp-skel-list`, `.tp-skel-row`, `__box`, `__lines`, `.tp-skeleton--w40/w60/w80/w100/sm/block`; `data-component="StateLoading"`; props `{ rows, label }`. `.tp-sr-only` label e.g. EN "Loading your tasks" / HE "טוען את המשימות שלך" (caller supplies). Shimmer stops with reduced motion. Motion: shimmer only, ≤250 ms opacity loop or off.
-- **TESTS:** Given rows 4 / When render / Then 4 skeleton rows + sr-only label + `role="status"`. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · reduced-motion respected (components.md).
+- **SPEC:** Type `export type StateLoadingProps = { rows: number; label: string }`. Class `.tp-state--loading[role="status"]`, `.tp-skel-list`, `.tp-skel-row`, `__box`, `__lines`, `.tp-skeleton--w40/w60/w80/w100/sm/block`; `data-component="StateLoading"`. `.tp-sr-only` label, e.g. `EN: "Loading your tasks" / HE: "טוען את המשימות שלך"` (caller supplies the exact noun). `role="status"` announces the label. Shimmer stops under `prefers-reduced-motion: reduce` (a static skeleton remains). Motion: shimmer only, opacity loop ≤250 ms or off under reduced motion. Loading/empty/error/offline/success/disabled: only `loading` applies here; the others are n/a.
+- **TESTS:** Given `rows=4` / When render / Then 4 skeleton rows + the sr-only label + `role="status"`. Given `prefers-reduced-motion: reduce` / When render / Then no shimmer animation runs. Playwright: renders at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · reduced-motion respected (components.md) · motion ≤250 ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0122 — Component: StateError
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0120 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0120 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0120.
 - **WHY:** components.md §2.18; "Couldn't load… your data is safe" + Retry.
 - **GOAL:** An error state with a safe-reassurance line and a Retry action.
-- **SCOPE:** `packages/ui/src/states/StateError.tsx` · `packages/ui/src/states/StateError.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/states/StateError.tsx` · `packages/ui/src/states/StateError.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/state-error/page.tsx` · `tests/e2e/screens/state-error.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → StateError cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** show JSON or a raw error; omit Retry.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StateError({ what, onRetry }: StateErrorProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → StateError cases pass; and `CI=1 bunx playwright test tests/e2e/screens/state-error.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** show JSON or a raw error; omit Retry; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-state.tp-state--error`; `data-component="StateError"`; shadcn `alert`; props `{ what, onRetry }`. Copy supplied by screen: EN "Couldn't load your … Your data is safe." + "Retry" / HE "לא הצלחנו לטעון… המידע שלך שמור." + "לנסות שוב". Motion: none.
-- **TESTS:** Given what "tasks" / When render / Then title + body + Retry button, no JSON. (Primitive.)
+- **SPEC:** Type `export type StateErrorProps = { what: string; onRetry: () => void }`. Class `.tp-state.tp-state--error`; `data-component="StateError"`; shadcn `alert`. Copy: title `EN: "Couldn't load your {what}." / HE: "לא הצלחנו לטעון את ה{what} שלך."`; body `EN: "Your data is safe." / HE: "המידע שלך שמור."`; Retry button `EN: "Retry" / HE: "לנסות שוב"`. Never renders JSON or a raw error message. States: error; default/loading/empty/offline/success/disabled are n/a. RTL: `dir="auto"` on title/body. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given `what="tasks"` / When render / Then title + body + Retry button render and no JSON appears. Given a Retry click / When fired / Then `onRetry` is called once. Playwright: renders + Retry at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0123 — Component: StateOffline
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0092 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0092 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0092.
 - **WHY:** components.md §2.18; offline banner; content stays.
 - **GOAL:** An offline banner that says changes save when back, while content stays usable.
-- **SCOPE:** `packages/ui/src/states/StateOffline.tsx` · `packages/ui/src/states/StateOffline.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/states/StateOffline.tsx` · `packages/ui/src/states/StateOffline.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/state-offline/page.tsx` · `tests/e2e/screens/state-offline.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun test packages/ui` → StateOffline cases pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** hide content when offline.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StateOffline({ text }: StateOfflineProps)`; 3) export from `index.ts`; 4) unit tests + harness page + Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → StateOffline cases pass; and `CI=1 bunx playwright test tests/e2e/screens/state-offline.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** hide content when offline; touch `convex/**`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-notice[data-tone=caution].tp-offline[role=status]`; `data-component="StateOffline"`; shadcn `alert`; props `{ text }`. Copy: EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת." Content stays. Motion: none.
-- **TESTS:** Given offline / When render / Then banner `role=status` + text, and page content still rendered. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Type `export type StateOfflineProps = { text: string }`. Class `.tp-notice[data-tone="caution"].tp-offline[role="status"]`; `data-component="StateOffline"`; shadcn `alert`. Default `text`: `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת."`. `role="status"` announces it. The banner renders above content; page content stays rendered and usable underneath (it does not unmount children). States: offline; default/loading/empty/error/success/disabled are n/a. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given offline / When render / Then the banner carries `role="status"` + the text, and page content is still present. Playwright: renders at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
-
-### TFV2-0124 — Screen: Today
+### TFV2-0124 — Screen: Today — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0070, TFV2-0071, TFV2-0072, TFV2-0084, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #537
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-05; APP-FLOW §5 item 1; screen `web/today.html`.
 - **GOAL:** Today shows the daily page with intention, energy pick, tasks, time blocks and Next up, all five states working.
-- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/today/today-client.tsx` · `apps/web/e2e/today.spec.ts`.
-- **MUTATES:** none (wires `pages.getDaily`, `tasks.nextUp`, `tasks.complete`, `tasks.skipNextUp`, `focus.start`, `energy.log`, `tasks.create`).
+- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/today/today-client.tsx` · `tests/e2e/screens/today.spec.ts`.
+- **MUTATES:** none (wires `pages.getDaily`, `tasks.nextUp`, `tasks.toggleCompletion`, `tasks.skipNextUp`, `focusBlocks.create`, `energy.log`, `tasks.create`).
 - **STEPS:** 1) Graphify code-map of `apps/web/app/(tempo)/today` and `components/today`; 2) wire the queries/actions per SPEC; 3) implement the five states + Undo toast; 4) copy the full string table from `web/today.html` `TP_STRINGS`; 5) write the Playwright test; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test today.spec.ts` → pass; all states asserted at 390 and 1280, EN and HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/today.spec.ts --reporter=line` → pass; all states asserted at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + the two-viewport, two-lang screenshots for each state.
 - **DO NOT:** call the model on load; edit `convex/`; add a second `.tp-btn--primary`; merge energy pick with the coach dial.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/today`, layout TempoShell. Data: `dailyPage = pages.getDaily({date})`, `nextUp = tasks.nextUp({date})`, `backlinks = pages.backlinks({pageId})`. Actions: tick → `tasks.complete` (optimistic, 5-min Undo); Start → `focus.start({taskId, minutes:25})`; Not now → `tasks.skipNextUp`; Make it smaller → open CoachPanel with task attached (proposal-only); set energy → `energy.log({date, value})`; add task → `tasks.create`. States: default, empty, loading, error, offline. One primary: Next up "Start 25 minutes". Key copy EN/HE — EN "Next up"/HE "הבא בתור"; EN "How is your energy right now?"/HE "איך האנרגיה שלך עכשיו?"; energy EN Quiet·Steady·Push /HE שקט·יציב·דחיפה; empty EN "Nothing on Today yet."/HE "עוד אין כלום בהיום."; error EN "Couldn't load your day."/HE "לא הצלחנו לטעון את היום שלך."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת."; done EN "That's the list. Rest counts."/HE "זו הרשימה. גם מנוחה נחשבת." RTL: full mirror, times `.tp-num`/`.tp-mono`, energy radio arrows swap. Breakpoints 390/768/1024/1280 (rail collapses under 768). Motion: tick strike ≤250 ms; toast ≤250 ms. Full string table = `web/today.html`.
+- **SPEC:** Route `(tempo)/today`, layout TempoShell. Data: `dailyPage = pages.getDaily({date})`, `nextUp = tasks.nextUp({date})`, `backlinks = pages.backlinks({pageId})`. Actions: tick → `tasks.toggleCompletion` (optimistic, 5-min Undo); Start → `focus.start({taskId, minutes:25})`; Not now → `tasks.skipNextUp`; Make it smaller → open CoachPanel with task attached (proposal-only); set energy → `energy.log({date, value})`; add task → `tasks.create`. States: default, empty, loading, error, offline. One primary: Next up "Start 25 minutes". Key copy EN/HE — EN "Next up"/HE "הבא בתור"; EN "How is your energy right now?"/HE "איך האנרגיה שלך עכשיו?"; energy EN Quiet·Steady·Push /HE שקט·יציב·דחיפה; empty EN "Nothing on Today yet."/HE "עוד אין כלום בהיום."; error EN "Couldn't load your day."/HE "לא הצלחנו לטעון את היום שלך."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת."; done EN "That's the list. Rest counts."/HE "זו הרשימה. גם מנוחה נחשבת." RTL: full mirror, times `.tp-num`/`.tp-mono`, energy radio arrows swap. Breakpoints 390/768/1024/1280 (rail collapses under 768). Motion: tick strike ≤250 ms; toast ≤250 ms. Full string table = `web/today.html`.
 - **TESTS:** Given a day with 3 tasks / When open / Then intention, energy, tasks, Next up show. Given empty / When open / Then empty copy + "Open brain dump". Given error / When query fails / Then safe copy + Retry. Given offline / When open / Then banner + content stays. Given tick a task / When click / Then struck + Undo toast for 5 min. Playwright: click through default/empty/error/offline and tick→undo at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md) · one `.tp-btn--primary` (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `tasks.nextUp`, `tasks.skipNextUp`, `energy.log` (none exist on `integration`; no earlier ticket defines them) — UNKNOWN, Amit answers (which backend provides Next-up / energy logging)
 
 ### TFV2-0125 — Screen: Daily note
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0075, TFV2-0124 · **Folds-in:** none
@@ -2639,10 +2639,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0075 and TFV2-0124.
 - **WHY:** PRD F-05/F-06; screen `web/daily-note.html`.
 - **GOAL:** The bare daily-note page offers the Daily template on first open and saves the day's sections.
-- **SCOPE:** `apps/web/app/(bare)/daily-note/page.tsx` · `apps/web/components/today/daily-note-client.tsx` · `apps/web/e2e/daily-note.spec.ts`.
-- **MUTATES:** none (wires `pages.getDaily`, `pages.backlinks`, journal save).
+- **SCOPE:** `apps/web/app/(bare)/daily-note/page.tsx` · `apps/web/components/today/daily-note-client.tsx` · `tests/e2e/screens/daily-note.spec.ts`.
+- **MUTATES:** none (wires `pages.getDaily`, `notes.backlinks`, journal save).
 - **STEPS:** 1) Graphify code-map of the bare daily-note route; 2) wire queries; 3) implement template offer + five states; 4) copy `web/daily-note.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test daily-note.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/daily-note.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** add a second primary; edit `convex/`; offer the template twice once accepted.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2658,10 +2658,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0073 and TFV2-0074.
 - **WHY:** PRD F-09; APP-FLOW §5 item 6; screen `web/brain-dump.html`.
 - **GOAL:** Brain dump captures raw text and turns it into an accept/edit/reject proposal, adding only accepted rows to Today.
-- **SCOPE:** `apps/web/app/(tempo)/brain-dump/page.tsx` · `apps/web/components/brain-dump/brain-dump-client.tsx` · `apps/web/e2e/brain-dump.spec.ts`.
-- **MUTATES:** none (wires `brainDumps.getDraft`, `brainDumps.saveDraft`, `brainDumps.prioritize`, `brainDumps.apply`).
+- **SCOPE:** `apps/web/app/(tempo)/brain-dump/page.tsx` · `apps/web/components/brain-dump/brain-dump-client.tsx` · `tests/e2e/screens/brain-dump.spec.ts`.
+- **MUTATES:** none (wires `brainDumps.getDraft`, `brainDumps.saveDraft`, `brain_dump.prioritize`, `brain_dump.acceptPlan`).
 - **STEPS:** 1) Graphify code-map of `components/brain-dump`; 2) wire; 3) implement default + `?view=review` (proposal) + five states; 4) copy `web/brain-dump.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test brain-dump.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/brain-dump.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** write to Today before Add; call the model without a fallback; show JSON.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2677,10 +2677,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-07; APP-FLOW §5 item 2; screen `web/plan.html`.
 - **GOAL:** Plan switches day/week/month views of the same time data; elastic items reflow around fixed ones.
-- **SCOPE:** `apps/web/app/(tempo)/plan/page.tsx` · `apps/web/components/today/plan-client.tsx` · `apps/web/e2e/plan.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/plan/page.tsx` · `apps/web/components/today/plan-client.tsx` · `tests/e2e/screens/plan.spec.ts`.
 - **MUTATES:** none (wires `plan.getDay`, `plan.getWeek`, `plan.getMonth`, `timeBlocks.*`).
 - **STEPS:** 1) Graphify code-map of the plan route; 2) wire; 3) implement `?view=day|week|month` + five states; 4) copy `web/plan.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test plan.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plan.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** call the model; reflow fixed events; edit `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2696,14 +2696,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-05 (task blocks); screen `web/tasks.html`.
 - **GOAL:** Tasks list shows all open tasks with search, filter, sort and load-more, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/tasks/page.tsx` · `apps/web/components/tasks/tasks-client.tsx` · `apps/web/e2e/tasks.spec.ts`.
-- **MUTATES:** none (wires `tasks.list`, `tasks.listChecklists`, `tasks.complete`).
+- **SCOPE:** `apps/web/app/(tempo)/tasks/page.tsx` · `apps/web/components/tasks/tasks-client.tsx` · `tests/e2e/screens/tasks.spec.ts`.
+- **MUTATES:** none (wires `tasks.list`, `tasks.listChecklists`, `tasks.toggleCompletion`).
 - **STEPS:** 1) Graphify code-map of `components/tasks`; 2) wire; 3) implement toolbar (SearchInput + Segmented filter + SortMenu) + ListRow + LoadMore; 4) copy `web/tasks.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tasks.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tasks.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; show JSON; filter client-side if the query supports it server-side.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/tasks`, layout TempoShell. Data: `tasks.list`, `tasks.listChecklists`. Actions: tick → `tasks.complete` (optimistic, Undo). Components: Toolbar (SearchInput, Segmented, SortMenu), ListRow, LoadMore. States: default, empty, filtered-to-nothing, loading, error, offline. One primary: none (list). Key copy: EN "Tasks"/HE "משימות"; empty EN "No tasks yet. An empty list is a good place to start."/HE "עוד אין משימות. רשימה ריקה היא מקום טוב להתחיל בו."; empty body EN "Add one from quick add, or dump everything in a brain dump and pick from there."/HE "אפשר להוסיף אחת בהוספה המהירה, או לפרוק הכול בפריקת מחשבות ולבחור משם."; error EN "Couldn't load tasks."/HE "לא הצלחנו לטעון את המשימות."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; sort EN "Sort"/HE "מיון". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: tick strike ≤250 ms. Full strings = `web/tasks.html`.
+- **SPEC:** Route `(tempo)/tasks`, layout TempoShell. Data: `tasks.list`, `tasks.listChecklists`. Actions: tick → `tasks.toggleCompletion` (optimistic, Undo). Components: Toolbar (SearchInput, Segmented, SortMenu), ListRow, LoadMore. States: default, empty, filtered-to-nothing, loading, error, offline. One primary: none (list). Key copy: EN "Tasks"/HE "משימות"; empty EN "No tasks yet. An empty list is a good place to start."/HE "עוד אין משימות. רשימה ריקה היא מקום טוב להתחיל בו."; empty body EN "Add one from quick add, or dump everything in a brain dump and pick from there."/HE "אפשר להוסיף אחת בהוספה המהירה, או לפרוק הכול בפריקת מחשבות ולבחור משם."; error EN "Couldn't load tasks."/HE "לא הצלחנו לטעון את המשימות."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; sort EN "Sort"/HE "מיון". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: tick strike ≤250 ms. Full strings = `web/tasks.html`.
 - **TESTS:** Given 3 tasks / When load / Then 3 ListRows. Given search "bank" / When type / Then filtered. Given sort / When choose / Then reordered. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: search→filter→sort→tick, plus empty/error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · row ≥56px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -2715,10 +2715,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/task-sheet.html`; PRD F-60 (nag target).
 - **GOAL:** The task sheet edits a task and offers a nag, with new-task and error states.
-- **SCOPE:** `apps/web/components/tasks/TaskSheet.tsx` · `apps/web/components/tasks/task-sheet-form.tsx` · `apps/web/e2e/task-sheet.spec.ts`.
+- **SCOPE:** `apps/web/components/tasks/TaskSheet.tsx` · `apps/web/components/tasks/task-sheet-form.tsx` · `tests/e2e/screens/task-sheet.spec.ts`.
 - **MUTATES:** none (wires `tasks.get`, `nags.getForTarget`).
 - **STEPS:** 1) Graphify code-map of `components/tasks` TaskSheet; 2) wire; 3) implement form + nag + five states + empty=new task; 4) copy `web/task-sheet.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test task-sheet.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/task-sheet.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; submit without validation; add a second primary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2734,10 +2734,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0075.
 - **WHY:** #446 (Journal backend); screen `web/journal.html`.
 - **GOAL:** Journal shows a daily prompt and saves one entry per day, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/journal/page.tsx` · `apps/web/components/journal/journal-client.tsx` · `apps/web/e2e/journal.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/journal/page.tsx` · `apps/web/components/journal/journal-client.tsx` · `tests/e2e/screens/journal.spec.ts`.
 - **MUTATES:** none (wires `journal.list`, `journal.promptForToday`, `journal.saveEntry`).
 - **STEPS:** 1) Graphify code-map of `components/journal`; 2) wire; 3) implement prompt + save + five states; 4) copy `web/journal.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test journal.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/journal.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; invent prompts; add a second primary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2753,14 +2753,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-07; APP-FLOW §5 item 7; screen `web/calendar.html`.
 - **GOAL:** Calendar shows month/day/week with a legend, add event, and edit/delete, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/calendar/page.tsx` · `apps/web/components/calendar/calendar-client.tsx` · `apps/web/e2e/calendar.spec.ts`.
-- **MUTATES:** none (wires `events.listMonth`, `events.listDay`, `events.update`, `events.delete`).
+- **SCOPE:** `apps/web/app/(tempo)/calendar/page.tsx` · `apps/web/components/calendar/calendar-client.tsx` · `tests/e2e/screens/calendar.spec.ts`.
+- **MUTATES:** none (wires `calendar_events.listInRange`, `calendar_events.listInRange`, `calendar_events.update`, `calendar_events.remove`).
 - **STEPS:** 1) Graphify code-map of the calendar route; 2) wire; 3) implement month grid + day timeline + legend + add/edit/delete + five states; 4) copy `web/calendar.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test calendar.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/calendar.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; allow end-before-start; hard-delete.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/calendar`, layout TempoShell. Data: `events.listMonth`, `events.listDay`. Actions: add event, edit, delete (soft). Components: MonthGrid, DayTimeline, WeekColumns, Dot, legend. States: default, empty day, form error (end before start), loading, error, offline. One primary: "Add event". Key copy: EN "Calendar"/HE "לוח שנה"; EN "Add event"/HE "הוספת אירוע"; legend EN "What the dots mean"/HE "מה הנקודות אומרות"; EN Fixed "Fixed"/HE "קבוע"; EN Flexible "Flexible"/HE "גמיש"; empty day EN "Nothing on this day. A free day is allowed."/HE "אין כלום ביום הזה. מותר שיהיה יום פנוי."; error EN "Couldn't load the calendar."/HE "לא הצלחנו לטעון את לוח השנה."; form error EN "End can't be before start."/HE "הסיום לא יכול להיות לפני ההתחלה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: event add ≤250 ms. Full strings = `web/calendar.html`.
+- **SPEC:** Route `(tempo)/calendar`, layout TempoShell. Data: `calendar_events.listInRange`, `calendar_events.listInRange`. Actions: add event, edit, delete (soft). Components: MonthGrid, DayTimeline, WeekColumns, Dot, legend. States: default, empty day, form error (end before start), loading, error, offline. One primary: "Add event". Key copy: EN "Calendar"/HE "לוח שנה"; EN "Add event"/HE "הוספת אירוע"; legend EN "What the dots mean"/HE "מה הנקודות אומרות"; EN Fixed "Fixed"/HE "קבוע"; EN Flexible "Flexible"/HE "גמיש"; empty day EN "Nothing on this day. A free day is allowed."/HE "אין כלום ביום הזה. מותר שיהיה יום פנוי."; error EN "Couldn't load the calendar."/HE "לא הצלחנו לטעון את לוח השנה."; form error EN "End can't be before start."/HE "הסיום לא יכול להיות לפני ההתחלה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: event add ≤250 ms. Full strings = `web/calendar.html`.
 - **TESTS:** Given events / When load / Then grid with dots + day list. Given empty day / When select / Then empty-day copy. Given add with end before start / When Save / Then form error. Given edit / When change title / Then saved. Given delete / When confirm / Then event gone (soft). Playwright: add→edit→delete, empty-day, form-error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -2772,10 +2772,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-10; screen `web/habits.html`.
 - **GOAL:** Habits list shows each habit with a log toggle and a welcome-back state, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/habits/page.tsx` · `apps/web/components/habits/habits-client.tsx` · `apps/web/e2e/habits.spec.ts`.
-- **MUTATES:** none (wires `habits.list`, `habits.log`).
+- **SCOPE:** `apps/web/app/(tempo)/habits/page.tsx` · `apps/web/components/habits/habits-client.tsx` · `tests/e2e/screens/habits.spec.ts`.
+- **MUTATES:** none (wires `habits.list`, `habits.completeToday`).
 - **STEPS:** 1) Graphify code-map of `components/habits`; 2) wire; 3) implement ListRow/HabitBlock + add form + welcome-back + five states; 4) copy `web/habits.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test habits.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habits.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** show a streak counter; edit `convex/`; label a missed day as failure.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2791,10 +2791,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** APP-FLOW §5 item 4 (6-week grid); screen `web/habit-detail.html`.
 - **GOAL:** Habit detail shows a 6-week day grid and a nag, with a paused state.
-- **SCOPE:** `apps/web/app/(tempo)/habits/[id]/page.tsx` · `apps/web/components/habit-detail/habit-detail-client.tsx` · `apps/web/e2e/habit-detail.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/habits/[id]/page.tsx` · `apps/web/components/habit-detail/habit-detail-client.tsx` · `tests/e2e/screens/habit-detail.spec.ts`.
 - **MUTATES:** none (wires `habits.get`, `habits.listDays`, `habits.summary`, `nags.getForHabit`).
 - **STEPS:** 1) Graphify code-map of `components/habit-detail`; 2) wire; 3) implement 42-day grid + summary + nag + paused + five states; 4) copy `web/habit-detail.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test habit-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habit-detail.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** show a streak counter; edit `convex/`; ring a missed day as failure.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2810,10 +2810,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0076 and TFV2-0097.
 - **WHY:** #447 (Routines backend); screen `web/routines.html`.
 - **GOAL:** Routines list shows each routine with a run suggestion and a paused-run state.
-- **SCOPE:** `apps/web/app/(tempo)/routines/page.tsx` · `apps/web/components/routines/routines-client.tsx` · `apps/web/e2e/routines.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/routines/page.tsx` · `apps/web/components/routines/routines-client.tsx` · `tests/e2e/screens/routines.spec.ts`.
 - **MUTATES:** none (wires `routines.list`, `routines.suggestNow`, `routines.startRun`).
 - **STEPS:** 1) Graphify code-map of `components/routines`; 2) wire; 3) implement ListRow + suggest + five states; 4) copy `web/routines.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test routines.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routines.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; call a model; auto-run a routine.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2829,10 +2829,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0076 and TFV2-0097.
 - **WHY:** screen `web/routine-detail.html`.
 - **GOAL:** Routine detail shows ordered steps and a run cursor, with paused and finished states.
-- **SCOPE:** `apps/web/app/(tempo)/routines/[id]/page.tsx` · `apps/web/components/routines/routine-detail-client.tsx` · `apps/web/e2e/routine-detail.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/routines/[id]/page.tsx` · `apps/web/components/routines/routine-detail-client.tsx` · `tests/e2e/screens/routine-detail.spec.ts`.
 - **MUTATES:** none (wires `routines.get`, `routines.getRun`, `routines.completeStep`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement step list + run cursor + paused/finished + five states; 4) copy `web/routine-detail.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test routine-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routine-detail.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; auto-advance without a tap.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2842,16 +2842,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0136 — Screen: Goals
+### TFV2-0136 — Screen: Goals — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0096, TFV2-0097, TFV2-0098 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after the Depends set.
 - **WHY:** #457 (Goals); screen `web/goals.html`.
 - **GOAL:** Goals list shows goals with status and a filter, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/goals/page.tsx` · `apps/web/components/goals/goals-client.tsx` · `apps/web/e2e/goals.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/goals/page.tsx` · `apps/web/components/goals/goals-client.tsx` · `tests/e2e/screens/goals.spec.ts`.
 - **MUTATES:** none (wires `goals.list`, `goals.create`, `projects.listByGoals`).
 - **STEPS:** 1) Graphify code-map of the goals route; 2) wire; 3) implement ListRow + Segmented filter + create + five states; 4) copy `web/goals.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test goals.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; auto-link projects; add a second primary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2859,18 +2859,18 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** Given 2 goals / When load / Then 2 rows. Given create / When submit / Then new goal appears. Given filter / When choose / Then filtered. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `projects.listByGoals` (no `projects` table or query exists; projects are a `projectId` string on tasks) — UNKNOWN, Amit answers
 
-### TFV2-0137 — Screen: Goal detail
+### TFV2-0137 — Screen: Goal detail — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0097 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0069 and TFV2-0097.
 - **WHY:** screen `web/goal-detail.html`.
 - **GOAL:** Goal detail shows linked projects/tasks and a suggested next step.
-- **SCOPE:** `apps/web/app/(tempo)/goals/[id]/page.tsx` · `apps/web/components/goals/goal-detail-client.tsx` · `apps/web/e2e/goal-detail.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/goals/[id]/page.tsx` · `apps/web/components/goals/goal-detail-client.tsx` · `tests/e2e/screens/goal-detail.spec.ts`.
 - **MUTATES:** none (wires `goals.get`, `projects.listByGoal`, `tasks.listByGoal`, `goals.nextStep`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement links + next step + five states; 4) copy `web/goal-detail.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test goal-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goal-detail.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; call a model for next step; add a second primary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2878,7 +2878,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** Given a goal with 2 projects / When load / Then both listed. Given next step / When load / Then suggested step. Given no steps / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: open→next step, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `projects.listByGoal` (no `projects` table; `goals.nextStep` is provided by TFV2-0069b) — UNKNOWN, Amit answers
 
 ### TFV2-0138 — Screen: Goals progress
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
@@ -2886,10 +2886,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/goals-progress.html`.
 - **GOAL:** Goals progress shows per-goal and per-week charts, each with a required summary.
-- **SCOPE:** `apps/web/app/(tempo)/goals/progress/page.tsx` · `apps/web/components/goals/goals-progress-client.tsx` · `apps/web/e2e/goals-progress.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/goals/progress/page.tsx` · `apps/web/components/goals/goals-progress-client.tsx` · `tests/e2e/screens/goals-progress.spec.ts`.
 - **MUTATES:** none (wires `goals.progressByGoal`, `goals.stepsByWeek`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement BarChart/LineChart + ChartSummary + five states; 4) copy `web/goals-progress.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test goals-progress.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals-progress.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** render a chart without a summary; edit `convex/`; invent metrics.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2899,16 +2899,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0139 — Screen: Projects
+### TFV2-0139 — Screen: Projects — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0096, TFV2-0098 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-08; screen `web/projects.html`.
 - **GOAL:** Projects list shows projects with status badges and a filter.
-- **SCOPE:** `apps/web/app/(tempo)/projects/page.tsx` · `apps/web/components/projects/projects-client.tsx` · `apps/web/e2e/projects.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/projects/page.tsx` · `apps/web/components/projects/projects-client.tsx` · `tests/e2e/screens/projects.spec.ts`.
 - **MUTATES:** none (wires `projects.list`, `goals.listNames`).
 - **STEPS:** 1) Graphify code-map of `components/projects`; 2) wire; 3) implement ListRow + ProjectStatus + Segmented + create + five states; 4) copy `web/projects.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test projects.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/projects.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; invent statuses beyond four.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2916,37 +2916,37 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** Given 3 projects / When load / Then 3 rows with status badges. Given filter Active / When choose / Then filtered. Given create / When submit / Then new project. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `projects.list` (no `projects` table; projects are a `projectId` string on tasks) — UNKNOWN, Amit answers
 
-### TFV2-0140 — Screen: Project detail
+### TFV2-0140 — Screen: Project detail — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0097, TFV2-0096 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/project-detail.html`.
 - **GOAL:** Project detail shows linked pages, tasks and goals, with empty and error states.
-- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/page.tsx` · `apps/web/components/projects/project-detail-client.tsx` · `apps/web/e2e/project-detail.spec.ts`.
-- **MUTATES:** none (wires `projects.get`, `pages.listByProject`, `tasks.listByProject`, `pages.backlinks`).
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/page.tsx` · `apps/web/components/projects/project-detail-client.tsx` · `tests/e2e/screens/project-detail.spec.ts`.
+- **MUTATES:** none (wires `projects.get`, `pages.listByProject`, `tasks.listByProject`, `notes.backlinks`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement pages/tasks/goals sections + five states; 4) copy `web/project-detail.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test project-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-detail.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; auto-rename; add a second primary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/projects/[id]`, layout TempoShell. Data: `projects.get`, `pages.listByProject`, `tasks.listByProject`, `pages.backlinks`. Actions: add task. States: default, empty (name only), loading, error, offline. One primary: "Add task". Key copy: EN "Pages in this project"/HE "דפים בפרויקט הזה"; EN "Tasks"/HE "משימות"; EN "Goals"/HE "מטרות"; empty EN "This project is just a name for now."/HE "הפרויקט הזה הוא בינתיים רק שם."; EN "Add a first task"/HE "הוספת משימה ראשונה"; error EN "Couldn't open this project."/HE "לא הצלחנו לפתוח את הפרויקט הזה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/project-detail.html`.
+- **SPEC:** Route `(tempo)/projects/[id]`, layout TempoShell. Data: `projects.get`, `pages.listByProject`, `tasks.listByProject`, `notes.backlinks`. Actions: add task. States: default, empty (name only), loading, error, offline. One primary: "Add task". Key copy: EN "Pages in this project"/HE "דפים בפרויקט הזה"; EN "Tasks"/HE "משימות"; EN "Goals"/HE "מטרות"; empty EN "This project is just a name for now."/HE "הפרויקט הזה הוא בינתיים רק שם."; EN "Add a first task"/HE "הוספת משימה ראשונה"; error EN "Couldn't open this project."/HE "לא הצלחנו לפתוח את הפרויקט הזה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/project-detail.html`.
 - **TESTS:** Given a project / When load / Then title + pages + tasks + goals. Given empty / When load / Then empty copy + Add first task. Given error / When fail / Then Retry. Playwright: open, empty, error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `projects.get`, `tasks.listByProject` (no `projects` table) — UNKNOWN, Amit answers
 
-### TFV2-0141 — Screen: Project kanban
+### TFV2-0141 — Screen: Project kanban — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0106, TFV2-0107 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/project-kanban.html`; PRD F-08.
 - **GOAL:** Project kanban shows task columns with move buttons on every card.
-- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` · `apps/web/components/projects/project-kanban-client.tsx` · `apps/web/e2e/project-kanban.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` · `apps/web/components/projects/project-kanban-client.tsx` · `tests/e2e/screens/project-kanban.spec.ts`.
 - **MUTATES:** none (wires `projects.get`, `tasks.listByProjectColumns`, `tasks.moveColumn`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement Kanban + KanbanCard + five states; 4) copy `web/project-kanban.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test project-kanban.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-kanban.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** require drag; edit `convex/`; enable an edge move button.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2954,7 +2954,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** Given 3 columns / When load / Then 3 columns with counts. Given move next / When click / Then card moves + counts update, edge disabled. Given empty column / When render / Then column empty copy. Given error / When fail / Then Retry. Playwright: move card between columns, disabled edges, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** missing backend: `tasks.moveColumn`, `tasks.listByProjectColumns` (no move-column mutation or column-grouping query exists) — UNKNOWN, Amit answers
 
 ### TFV2-0142 — Screen: Insights
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0079, TFV2-0080, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
@@ -2962,14 +2962,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/insights.html`; PRD F-55 (observations).
 - **GOAL:** Insights shows pattern sentences plus weekday and focus charts, each with a summary.
-- **SCOPE:** `apps/web/app/(tempo)/insights/page.tsx` · `apps/web/components/insights/insights-client.tsx` · `apps/web/e2e/insights.spec.ts`.
-- **MUTATES:** none (wires `insights.getPatterns`, `insights.tasksByWeekday`, `insights.focusMinutesByWeek`).
+- **SCOPE:** `apps/web/app/(tempo)/insights/page.tsx` · `apps/web/components/insights/insights-client.tsx` · `tests/e2e/screens/insights.spec.ts`.
+- **MUTATES:** none (wires `analytics.insightsSummary`, `analytics.tasksByWeekday`, `analytics.focusMinutesByWeek`).
 - **STEPS:** 1) Graphify code-map of `components/insights`; 2) wire; 3) implement pattern list + charts + summaries + five states; 4) copy `web/insights.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test insights.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/insights.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** write shaming copy; render a chart without a summary; edit `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/insights`, layout TempoShell. Data: `insights.getPatterns`, `insights.tasksByWeekday`, `insights.focusMinutesByWeek`. Components: BarChart, LineChart, ChartSummary. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Insights"/HE "תובנות"; empty EN "Patterns need about a week."/HE "לדפוסים צריך בערך שבוע."; empty body EN "Use Tempo however works for you. Gentle patterns appear here on their own. There is nothing to do."/HE "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות."; error EN "Couldn't load insights."/HE "לא הצלחנו לטעון את התובנות." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/insights.html`.
+- **SPEC:** Route `(tempo)/insights`, layout TempoShell. Data: `analytics.insightsSummary`, `analytics.tasksByWeekday`, `analytics.focusMinutesByWeek`. Components: BarChart, LineChart, ChartSummary. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Insights"/HE "תובנות"; empty EN "Patterns need about a week."/HE "לדפוסים צריך בערך שבוע."; empty body EN "Use Tempo however works for you. Gentle patterns appear here on their own. There is nothing to do."/HE "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות."; error EN "Couldn't load insights."/HE "לא הצלחנו לטעון את התובנות." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/insights.html`.
 - **TESTS:** Given patterns + data / When load / Then sentences + two charts each with summary. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -2981,14 +2981,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-22 (5-min Undo); screen `web/activity.html`.
 - **GOAL:** Activity shows a 7-day feed of changes, coach changes undoable for 5 minutes.
-- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/components/activity/activity-client.tsx` · `apps/web/e2e/activity.spec.ts`.
-- **MUTATES:** none (wires `activity.listRecent`, `activity.undo`).
+- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/components/activity/activity-client.tsx` · `tests/e2e/screens/activity.spec.ts`.
+- **MUTATES:** none (wires `activity.list`, `activity.undo`).
 - **STEPS:** 1) Graphify code-map of `components/activity`; 2) wire; 3) implement feed + filter + Undo + five states; 4) copy `web/activity.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test activity.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** show Undo after 5 minutes; edit `convex/`; undo a user's own action.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/activity`, layout TempoShell. Data: `activity.listRecent`. Actions: `activity.undo({activityId})` (coach-origin, ≤5 min). Components: ListRow, Segmented filter. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Recent activity"/HE "פעילות אחרונה"; EN "Everything that changed in the last seven days, by you or the coach."/HE "כל מה שהשתנה בשבעת הימים האחרונים, על ידייך או על ידי המאמן."; empty EN "Nothing changed this week."/HE "שום דבר לא השתנה השבוע."; filter EN "By you"/"By the coach"/HE "על ידייך"/"על ידי המאמן"; EN "Undo"/HE "ביטול"; undo toast EN "The change was undone."/HE "השינוי בוטל. שום דבר אחר לא זז."; error EN "Couldn't load recent activity."/HE "לא הצלחנו לטעון את הפעילות האחרונה." RTL full mirror; timestamps `.tp-num`. Breakpoints 390/768/1024/1280. Motion: row removal ≤250 ms. Full strings = `web/activity.html`.
+- **SPEC:** Route `(tempo)/activity`, layout TempoShell. Data: `activity.list`. Actions: `activity.undo({activityId})` (coach-origin, ≤5 min). Components: ListRow, Segmented filter. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Recent activity"/HE "פעילות אחרונה"; EN "Everything that changed in the last seven days, by you or the coach."/HE "כל מה שהשתנה בשבעת הימים האחרונים, על ידייך או על ידי המאמן."; empty EN "Nothing changed this week."/HE "שום דבר לא השתנה השבוע."; filter EN "By you"/"By the coach"/HE "על ידייך"/"על ידי המאמן"; EN "Undo"/HE "ביטול"; undo toast EN "The change was undone."/HE "השינוי בוטל. שום דבר אחר לא זז."; error EN "Couldn't load recent activity."/HE "לא הצלחנו לטעון את הפעילות האחרונה." RTL full mirror; timestamps `.tp-num`. Breakpoints 390/768/1024/1280. Motion: row removal ≤250 ms. Full strings = `web/activity.html`.
 - **TESTS:** Given feed / When load / Then rows by you + coach. Given a coach change <5 min / When load / Then Undo shown. Given >5 min / When load / Then no Undo. Given Undo / When click / Then row removed + toast. Playwright: filter→undo, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -3000,14 +3000,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** screen `web/search.html`.
 - **GOAL:** Search searches pages, tasks and coach threads, with a no-results state.
-- **SCOPE:** `apps/web/app/(tempo)/search/page.tsx` · `apps/web/components/global-search/search-client.tsx` · `apps/web/e2e/search.spec.ts`.
-- **MUTATES:** none (wires `search.query`, `search.recentQueries`).
+- **SCOPE:** `apps/web/app/(tempo)/search/page.tsx` · `apps/web/components/global-search/search-client.tsx` · `tests/e2e/screens/search.spec.ts`.
+- **MUTATES:** none (wires `search.all`, `search.recentQueries`).
 - **STEPS:** 1) Graphify code-map of `components/global-search`; 2) wire; 3) implement SearchInput + results + no-results + five states; 4) copy `web/search.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test search.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/search.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** search only client-side; edit `convex/`; show raw JSON.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/search`, layout TempoShell. Data: `search.query`, `search.recentQueries`. Actions: type → query. States: default, no results (`?results=none`), empty (no query), loading, error, offline. One primary: none. Key copy: EN "What are you looking for?"/HE "מה את מחפשת?"; empty body EN "Type a word or idea you roughly remember. Tempo searches pages, tasks and coach chats."/HE "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן."; no-results EN "Nothing found for"/HE "לא נמצא כלום עבור"; loading EN "Searching"/HE "מחפש"; error EN "Couldn't search right now."/HE "לא הצלחנו לחפש כרגע."; offline EN "You're offline. Searching pages and tasks on this device; chats return when connected."/HE "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת." RTL full mirror; query `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: results ≤250 ms. Full strings = `web/search.html`.
+- **SPEC:** Route `(tempo)/search`, layout TempoShell. Data: `search.all`, `search.recentQueries`. Actions: type → query. States: default, no results (`?results=none`), empty (no query), loading, error, offline. One primary: none. Key copy: EN "What are you looking for?"/HE "מה את מחפשת?"; empty body EN "Type a word or idea you roughly remember. Tempo searches pages, tasks and coach chats."/HE "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן."; no-results EN "Nothing found for"/HE "לא נמצא כלום עבור"; loading EN "Searching"/HE "מחפש"; error EN "Couldn't search right now."/HE "לא הצלחנו לחפש כרגע."; offline EN "You're offline. Searching pages and tasks on this device; chats return when connected."/HE "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת." RTL full mirror; query `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: results ≤250 ms. Full strings = `web/search.html`.
 - **TESTS:** Given query "bank" / When type / Then results grouped. Given no match / When search / Then no-results copy. Given empty / When load / Then prompt. Given error / When fail / Then Retry. Playwright: search→results, no-results, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -3019,10 +3019,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0099.
 - **WHY:** components.md §8 (CommandPalette candidate); screen `web/command.html`.
 - **GOAL:** The Ctrl K command palette jumps to pages and actions, with an empty recent list state.
-- **SCOPE:** `apps/web/app/(tempo)/command/page.tsx` · `apps/web/components/global-search/command-palette.tsx` · `apps/web/e2e/command.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/command/page.tsx` · `apps/web/components/global-search/command-palette.tsx` · `tests/e2e/screens/command.spec.ts`.
 - **MUTATES:** none (wires `pages.listRecent`, static jump targets, `search.quick`).
 - **STEPS:** 1) Graphify code-map of `components/global-search`; 2) implement the palette (dialog + listbox, reusing SlashMenu styling); 3) five states; 4) copy `web/command.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test command.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** duplicate the slash-menu listbox (share one list component); edit `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3038,10 +3038,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0078 and TFV2-0097.
 - **WHY:** screen `web/notifications.html`.
 - **GOAL:** Notifications list shows in-app notifications with mark-read, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/notifications/page.tsx` · `apps/web/components/notifications-preferences/notifications-client.tsx` · `apps/web/e2e/notifications.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/notifications/page.tsx` · `apps/web/components/notifications-preferences/notifications-client.tsx` · `tests/e2e/screens/notifications.spec.ts`.
 - **MUTATES:** none (wires `notifications.list`, `notifications.markRead`, `notifications.markAllRead`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement list + mark-read + five states; 4) copy `web/notifications.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test notifications.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notifications.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** add push/email delivery (conflict #11); edit `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3057,10 +3057,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-60, F-61; screen `web/nags.html`.
 - **GOAL:** Nags screen lists the user's phrases and enforces "no accepted phrase → cannot switch on".
-- **SCOPE:** `apps/web/app/(tempo)/nags/page.tsx` · `apps/web/components/nags/nags-client.tsx` · `apps/web/e2e/nags.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/nags/page.tsx` · `apps/web/components/nags/nags-client.tsx` · `tests/e2e/screens/nags.spec.ts`.
 - **MUTATES:** none (wires `nags.list`, `nags.addPhrase`, `nags.setEnabled`).
 - **STEPS:** 1) Graphify code-map of `components/nags`; 2) wire; 3) implement phrase list + add form + switch + five states; 4) copy `web/nags.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test nags.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/nags.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** add stock copy or emoji; allow enable with no phrase; edit `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3076,14 +3076,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after the Depends set.
 - **WHY:** PRD F-07 (weekly view); screen `web/weekly-page.html`.
 - **GOAL:** The weekly page shows intentions and tasks by day, with a WeekStrip to pick the day.
-- **SCOPE:** `apps/web/app/(tempo)/week/[week]/page.tsx` · `apps/web/components/today/weekly-page-client.tsx` · `apps/web/e2e/weekly-page.spec.ts`.
-- **MUTATES:** none (wires `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks`).
+- **SCOPE:** `apps/web/app/(tempo)/week/[week]/page.tsx` · `apps/web/components/today/weekly-page-client.tsx` · `tests/e2e/screens/weekly-page.spec.ts`.
+- **MUTATES:** none (wires `pages.getWeekly`, `tasks.listForWeek`, `notes.backlinks`).
 - **STEPS:** 1) Graphify code-map; 2) wire; 3) implement WeekStrip + intentions + tasks-by-day + five states; 4) copy `web/weekly-page.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test weekly-page.spec.ts` → pass at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/weekly-page.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
 - **EVIDENCE:** Playwright output + screenshots.
 - **DO NOT:** edit `convex/`; hardcode the week; mix weekly view into Today.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/week/[week]` (entry `/week/[isoWeek]`), layout TempoShell. Data: `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks`. Components: WeekStrip, Section, ListRow. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Week"/HE "שבוע"; EN "Intentions for this week"/HE "כוונות לשבוע הזה"; EN "Tasks by day"/HE "משימות לפי יום"; empty EN "This week is still open."/HE "השבוע הזה עוד פתוח."; empty body EN "Write one intention, or give one day one small task."/HE "אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת."; error EN "Couldn't load your week."/HE "לא הצלחנו לטעון את השבוע שלך." RTL: days run RTL per conflict #10; counts `.tp-num`. Breakpoints 390/768/1024/1280. Motion: day select ≤250 ms. Full strings = `web/weekly-page.html`.
+- **SPEC:** Route `(tempo)/week/[week]` (entry `/week/[isoWeek]`), layout TempoShell. Data: `pages.getWeekly`, `tasks.listForWeek`, `notes.backlinks`. Components: WeekStrip, Section, ListRow. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Week"/HE "שבוע"; EN "Intentions for this week"/HE "כוונות לשבוע הזה"; EN "Tasks by day"/HE "משימות לפי יום"; empty EN "This week is still open."/HE "השבוע הזה עוד פתוח."; empty body EN "Write one intention, or give one day one small task."/HE "אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת."; error EN "Couldn't load your week."/HE "לא הצלחנו לטעון את השבוע שלך." RTL: days run RTL per conflict #10; counts `.tp-num`. Breakpoints 390/768/1024/1280. Motion: day select ≤250 ms. Full strings = `web/weekly-page.html`.
 - **TESTS:** Given a week / When load / Then WeekStrip + intentions + tasks-by-day. Given select Tuesday / When click / Then that day's tasks highlight. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: select day, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -3100,7 +3100,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/schema.ts` (one table edit + one index) · `convex/lib/testFakeCtx.ts` (add a fake embedding helper if absent) · test: `convex/schema.test.ts`.
 - **MUTATES:** `convex/schema.ts` (additive column + vector index; no existing column changed).
 - **STEPS:** 1) Graphify code-map check of `convex/schema.ts` → `memories` (the field/index may already exist — then verify and add the missing test). 2) Add `embedding: v.optional(v.array(v.float64()))` to `memories`. 3) Add `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. 4) Add a Zod/validator guard elsewhere is out of scope; only the column + index land here. 5) Write a schema unit test asserting the index registers (dimensions 1024, filter `userId`) and that an insert with and without `embedding` validates. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="schema"` → all schema tests pass (no Convex schema error for the new column/index).
+- **DONE:** `bun test convex/schema.test.ts` → all schema tests pass (no Convex schema error for the new column/index).
 - **EVIDENCE:** terminal output of DONE + the exact diff lines for the `embedding` field and `.vectorIndex` line.
 - **DO NOT:** change any existing `memories` column, drop/rename the existing indexes, edit any other table, or write an embedding *value* (dimension constants only, never data).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3119,7 +3119,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
 - **MUTATES:** `convex/schema.ts` (new table).
 - **STEPS:** 1) Graphify code-map of `convex/schema.ts` (table may exist — then verify + add missing test). 2) Add `entities: defineTable({ userId: v.id("users"), kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit")), name: v.string(), aliases: v.array(v.string()), embedding: v.optional(v.array(v.float64())), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId` and `by_userId_kind`. 3) Test the validators.
-- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **DONE:** `bun test convex/schema.test.ts` → green.
 - **EVIDENCE:** DONE output + the `entities` defineTable lines.
 - **DO NOT:** add business logic, wire extraction, or edit any other table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3138,7 +3138,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
 - **MUTATES:** `convex/schema.ts` (new table).
 - **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `edges: defineTable({ userId: v.id("users"), from: v.string(), to: v.string(), relation: v.string(), origin: v.union(v.literal("extracted"), v.literal("inferred")), confidence: v.number(), sourceRef: v.optional(v.string()), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId`, `by_userId_from`, `by_userId_to`. 3) Test validators.
-- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **DONE:** `bun test convex/schema.test.ts` → green.
 - **EVIDENCE:** DONE output + the `edges` defineTable lines.
 - **DO NOT:** add extraction/confirm logic, or edit any other table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3157,7 +3157,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
 - **MUTATES:** `convex/schema.ts` (new table).
 - **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `observations: defineTable({ userId: v.id("users"), text: v.string(), memoryIds: v.array(v.id("memories")), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with index `by_userId_deletedAt`. 3) Test validators.
-- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **DONE:** `bun test convex/schema.test.ts` → green.
 - **EVIDENCE:** DONE output + the `observations` defineTable lines.
 - **DO NOT:** add the reflect cron or deletion logic, or edit any other table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3176,7 +3176,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/ai_router.ts` · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (new), `convex/lib/ai_router.ts` (expose the language/embedding model seams).
 - **STEPS:** 1) Graphify code-map of `convex/lib/agentComponent.ts` + `convex/lib/ai_router.ts` (the Agent may already be defined — then verify and add the missing test). 2) Define `export const coachAgent = new Agent(...)` with `languageModel` from the AI SDK DeepInfra provider (`deepInfra("…")`) and `embeddingModel` (`deepInfra.embeddingModel("…")`). 3) Set `saveStreamDeltas: true` so replies stream token-by-token to open screens. 4) Register `createTool` stubs for the six tools named in TFV2-0156…0161 (empty handlers that throw `not_implemented` until those tickets land). 5) Keep `requireApprovedForAi` as the first call. 6) Run DONE.
-- **DONE:** `bun run typecheck` → 0 errors, and `bun run test -- --test-name-pattern="agentComponent"` → the component loads its real schema under `convex-test`.
+- **DONE:** `bun run typecheck` → 0 errors, and `bun test convex/lib/agentComponent.test.ts` → the component loads its real schema under `convex-test`.
 - **EVIDENCE:** DONE output + the `Agent` definition lines (model ids as names only).
 - **DO NOT:** hard-code a real key value, call `api.mistral.ai`, edit `convex/auth.ts`, or open the streaming path to unapproved users.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3195,7 +3195,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/coach.ts` · `convex/lib/agentComponent.ts` · test: `convex/coach_chat.test.ts`.
 - **MUTATES:** `convex/coach.ts` (send/reply surface), `convex/lib/agentComponent.ts` (send plumbing).
 - **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`sendMessage`/`reply` exist — extend, don't replace). 2) Add a `send` surface that trims and validates the message (non-empty, ≤ `MAX_MESSAGE_CHARS` 4000), inserts the user `messages` row, then starts the Agent turn. 3) Add a per-turn "Thinking…" state and a Retry idempotency key so Retry re-runs only the newest unanswered turn and overlapping sends resolve to one model call (the existing `claimTurn` lease holds). 4) Surface the exact user-facing error strings below in EN/HE. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → send/Thinking/Retry cases green.
+- **DONE:** `bun test convex/coach_chat.test.ts` → send/Thinking/Retry cases green.
 - **EVIDENCE:** DONE output + the send/retry handler lines.
 - **DO NOT:** replace `claimTurn`'s lease logic, bypass approval, or call the model directly from a mutation.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3214,7 +3214,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachPrompt.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachPrompt.test.ts`.
 - **MUTATES:** `convex/lib/coachPrompt.ts` (context assembly), `convex/lib/coachLoad.ts` (no change — read only).
 - **STEPS:** 1) Graphify code-map of `convex/lib/coachPrompt.ts` (`buildCoachMessages` already injects the page — extend for memory). 2) Add a `memory` context block (recalled memories, capped to `COACH_LIMITS` chars) between the page block and the tasks block. 3) Keep the existing owner-isolation check (only the caller's live page is included, never named otherwise). 4) Add the memory block to the unit test. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachPrompt"` → green including a memory-context assertion.
+- **DONE:** `bun test convex/lib/coachPrompt.test.ts` → green including a memory-context assertion.
 - **EVIDENCE:** DONE output + the `buildCoachMessages` memory-block lines.
 - **DO NOT:** read another user's memories, exceed the char caps, or persist memories in the prompt.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3233,7 +3233,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path uses the tool's proposal shape).
 - **STEPS:** 1) Graphify code-map of the existing `note` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` already do note insert — reuse). 2) Implement `createNote` as a `createTool` whose output is the `note` proposal `{ kind:"note", title, body }`. 3) Title ≤ `COACH_LIMITS.titleChars` (200), body plain Markdown ≤ `COACH_LIMITS.bodyChars` (20,000), both required. 4) Nothing is written until Accept; Accept inserts `notes` with `pageType:"plain"`, `aiGenerated:true`; Undo soft-deletes within 5 min. 5) Test every error case below. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → createNote cases green.
+- **DONE:** `bun test convex/coach_chat.test.ts` → createNote cases green.
 - **EVIDENCE:** DONE output + the `createNote` tool definition.
 - **DO NOT:** auto-create a note (must be a proposal), bypass the 5-min Undo window, or write to any other table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3252,7 +3252,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
 - **STEPS:** 1) Graphify code-map of the existing `task` proposal (coachPrompt.ts + coach.ts `acceptProposal` already create tasks — reuse). 2) Implement `addTaskToToday` as a `createTool` producing `{ kind:"task", title, minutes, when:"today"|"later" }`. 3) `minutes` clamped 1..`COACH_LIMITS.maxMinutes` (480); `when` is `today` or `later` (no other day or clock time). 4) Accept creates the task (`dueAt` = end of the caller's local day for "today", from the client's `dueTodayAt`); Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → addTaskToToday cases green.
+- **DONE:** `bun test convex/coach_chat.test.ts` → addTaskToToday cases green.
 - **EVIDENCE:** DONE output + the tool definition.
 - **DO NOT:** accept a day other than today/later, create the task without Accept, or bypass Undo.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3271,7 +3271,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
 - **STEPS:** 1) Graphify code-map of the existing `template` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` insert into `templates` — reuse). 2) Implement `fillTemplate` producing `{ kind:"template", name, body, period }`, `period` ∈ `daily|weekly|none`. 3) Name ≤ 200, body plain Markdown ≤ 20,000, tokens such as `{{date}}` / `{{weekday}}` allowed verbatim. 4) Accept inserts `templates`; Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → fillTemplate cases green.
+- **DONE:** `bun test convex/coach_chat.test.ts` → fillTemplate cases green.
 - **EVIDENCE:** DONE output + the tool definition.
 - **DO NOT:** set a default template weekday (that is chunk D/billing-scope), or write the template without Accept.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3290,7 +3290,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read only) · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool).
 - **STEPS:** 1) Graphify code-map of module validation (chunk D owns modules; here the tool emits a `draft` module spec using only catalog component/action names). 2) Implement `draftModule` as a `createTool` that returns a `draft` module spec (a data module, catalog-only). 3) Route it through the Agent's built-in tool approval (`approval-requested` state) so the UI shows Approve/Discard. 4) Validation (Zod against the catalog) is invoked here; an unknown component/action/URL/script is rejected and the module stays `draft`. 5) Test the rejection cases. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → draftModule cases green.
+- **DONE:** `bun test convex/lib/agentComponent.test.ts` → draftModule cases green.
 - **EVIDENCE:** DONE output + the tool definition + approval wiring.
 - **DO NOT:** run module code, touch `convex/templates.ts` schema, or make a module `live` without approval.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3309,7 +3309,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/search.ts` · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/search.ts` (read path).
 - **STEPS:** 1) Graphify code-map of `convex/search.ts` (`all` keyword query exists) and `memories` recall (TFV2-0173…0177). 2) Implement `searchMemory` as a `createTool` that merges keyword results (`search.all`) with vector results (the recall-by-meaning path) over the caller's own data. 3) Return at most 8 results per group (notes/tasks/habits/goals/memories), owner-filtered. 4) Test the empty-query and owner-isolation cases. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → searchMemory cases green.
+- **DONE:** `bun test convex/lib/agentComponent.test.ts` → searchMemory cases green.
 - **EVIDENCE:** DONE output + the tool definition.
 - **DO NOT:** search another user's rows, leak embeddings, or persist a search query.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3328,7 +3328,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/crons.ts` · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/crons.ts` (runtime job registration).
 - **STEPS:** 1) Graphify code-map of `convex/crons.ts` (system crons exist — add the runtime path). 2) Implement `scheduleJob` producing a `job` proposal `{ cron, task, targetPageType }`. 3) Route through tool approval; on approval register with `@convex-dev/crons`; each run writes the plan into the target page (e.g. Today). 4) Times stored in UTC, shown in the user's zone. 5) Test invalid cron and approval-gate. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → scheduleJob cases green.
+- **DONE:** `bun test convex/lib/agentComponent.test.ts` → scheduleJob cases green.
 - **EVIDENCE:** DONE output + the tool definition.
 - **DO NOT:** register a job without approval, run `convex dev`/`convex deploy`, or write job output to a page the user did not approve.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3347,7 +3347,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read) · test: `convex/lib/agentComponent.test.ts`.
 - **MUTATES:** `convex/lib/agentComponent.ts` (approval surface).
 - **STEPS:** 1) Graphify code-map of the Agent tool-approval surface. 2) Expose `approval-requested` → pending, and the Approve/Discard actions that resolve it. 3) On Approve a validated draft flips to `live`; on Discard it is dropped (nothing persisted live). 4) A draft that fails validation can never be approved. 5) Test all three. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → approval cases green.
+- **DONE:** `bun test convex/lib/agentComponent.test.ts` → approval cases green.
 - **EVIDENCE:** DONE output + the approval surface lines.
 - **DO NOT:** approve a draft that failed validation, write a second approval system, or bypass the owner.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3366,7 +3366,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
 - **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (re-export/query).
 - **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`conversations`/`messages` exist; `coachHistory.ts` is MISSING). 2) Add `listThreads` as a paginated query over `conversations` (owner-filtered, live only), newest-first. 3) Derive `title` (the conversation title), `lastLine` (last message content, clamped to 2 lines / 160 chars), and `time` (updatedAt). 4) Group client-side into Today / Last week / Earlier (the backend returns a flat newest-first list; the grouping constants are documented). 5) Test empty + owner-isolation. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → listThreads cases green.
+- **DONE:** `bun test convex/lib/coachHistory.test.ts` → listThreads cases green.
 - **EVIDENCE:** DONE output + the `listThreads` query.
 - **DO NOT:** return another user's conversations, load full thread bodies, or exceed pagination defaults.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3385,7 +3385,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachHistory.ts` · `convex/search.ts` · test: `convex/lib/coachHistory.test.ts`.
 - **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/search.ts` (read path).
 - **STEPS:** 1) Graphify code-map of `convex/search.ts` and the `conversations`/`messages` indexes. 2) Add `searchThreads({ query, mode })` — `mode:"words"` = full-text/keyword only; `mode:"meaning"` = vector over thread content merged with keyword. 3) Return `{ id, title, lastLine, updatedAt }` matches, owner-filtered, capped at 20. 4) Empty query returns the newest list. 5) Test both modes + owner isolation. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → searchThreads cases green.
+- **DONE:** `bun test convex/lib/coachHistory.test.ts` → searchThreads cases green.
 - **EVIDENCE:** DONE output + the `searchThreads` action.
 - **DO NOT:** run vector search in a query (action-only), or search another user's threads.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3395,21 +3395,40 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 — vector search across threads permitted vs HARD_RULES §2 is UNKNOWN; answerer: Amit.
 
-### TFV2-0165 — Coach history: `getThread` + `createThread`
+### TFV2-0165a — Coach history: `getThread`
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0153.
-- **WHY:** coach-thread.html `@data thread = coach.getThread({ threadId })`; coach-history.html `coach.createThread({})`.
-- **GOAL:** `getThread` returns one conversation's messages + proposals live, and `createThread` opens an empty conversation.
+- **WHY:** coach-thread.html `@data thread = coach.getThread({ threadId })`.
+- **GOAL:** `getThread` returns one conversation's messages + proposals live, owner-filtered.
 - **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
-- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (query/mutation).
-- **STEPS:** 1) Graphify code-map of `messages` (`storedProposal` already reconstructs proposal cards). 2) Add `getThread({ threadId })` → `{ id, title, messages:[{ role, content, proposal?, status?, streaming? }] }`, owner-filtered, live. 3) Add `createThread({})` → inserts a `conversations` row and returns its id. 4) Proposals reconstructed via `storedProposal` (kind, status, preview). 5) Test owner isolation + empty. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → getThread/createThread cases green.
-- **EVIDENCE:** DONE output + the two functions.
-- **DO NOT:** return another user's thread, persist model replies as stored text, or create a thread without an owner.
+- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (re-export/query).
+- **STEPS:** 1) Graphify code-map of `messages` (`storedProposal` already reconstructs proposal cards). 2) Add `getThread({ threadId })` → `{ id, title, messages:[{ role, content, proposal?, status?, streaming? }] }`, owner-filtered, live. 3) Proposals reconstructed via `storedProposal` (kind, status, preview). 4) Test owner isolation + empty. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachHistory.test.ts` → getThread cases green.
+- **EVIDENCE:** DONE output + the `getThread` query.
+- **DO NOT:** return another user's thread; persist model replies as stored text.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `getThread({ threadId })` → thread with messages in ascending order; each assistant message carries `proposal` (kind/status/`preview`) when present and a `streaming` flag. `createThread({})` → `v.id("conversations")`. Auth: `requireUser`; owner check on every read. Error cases: wrong owner / missing thread → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."`.
-- **TESTS:** Given an owned thread with a proposal message / When `getThread` runs / Then messages + proposal status return. Given another user's threadId / Then "Conversation not found." is thrown. Given `createThread` / Then a new owned conversation returns its id.
+- **SPEC:** `getThread({ threadId })` → thread with messages in ascending order; each assistant message carries `proposal` (kind/status/`preview`) when present and a `streaming` flag. Auth: `requireUser`; owner check on every read. Error cases: wrong owner / missing thread → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."`.
+- **TESTS:** Given an owned thread with a proposal message / When `getThread` runs / Then messages + proposal status return. Given another user's threadId / Then "Conversation not found." is thrown. Given a thread with no messages / Then an empty `messages` array returns.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0165b — Coach history: `createThread`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** coach-history.html `coach.createThread({})`.
+- **GOAL:** `createThread` opens an empty conversation and returns its id.
+- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
+- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (mutation).
+- **STEPS:** 1) Graphify code-map of `conversations`. 2) Add `createThread({})` → inserts a `conversations` row owned by the caller and returns its id. 3) Test empty-create + ownership. 4) Run DONE.
+- **DONE:** `bun test convex/lib/coachHistory.test.ts` → createThread cases green.
+- **EVIDENCE:** DONE output + the `createThread` mutation.
+- **DO NOT:** create a thread without an owner; return another user's thread.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `createThread({})` → `v.id("conversations")`. Auth: `requireUser`. Error cases: none beyond owner (an empty conversation is always valid).
+- **TESTS:** Given `createThread` / When run / Then a new owned conversation row exists and its id is returned.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -3419,10 +3438,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first in adaptive coach.
 - **WHY:** PRD F-25 (adaptive coach dial 0–10); components.md §2.8 Dial 0–10 (`profiles.setCoachDial`).
 - **GOAL:** The 0–10 coach dial is persisted per user and read back, clamped and validated.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/coach.ts` (verify existing `getSettings`/`setDial`).
 - **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`getSettings`/`setDial` + `coachSettings` exist — verify and add the missing test). 2) Confirm `setDial` validates integer 0..10 and `getSettings` returns defaults when no row exists (dial 5). 3) Add the error string EN/HE below. 4) Test clamp/validation + default. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → dial cases green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → dial cases green.
 - **EVIDENCE:** DONE output + the `setDial` validation lines.
 - **DO NOT:** change the dial's effect on the system prompt here (that is TFV2-0226), or allow out-of-range values.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3438,10 +3457,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0166.
 - **WHY:** PRD F-25 (panic button, 10-second action); components.md §2.10 PanicButton (`panic`, no model call).
 - **GOAL:** Pressing panic sets a 30-minute panic window, returns one fixed 10-second action, and clearPanic ends the window.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/coach.ts` (verify `pressPanic`/`clearPanic`).
 - **STEPS:** 1) Graphify code-map (`pressPanic`/`clearPanic` + `pickTenSecondAction` exist — verify + test). 2) Confirm `pressPanic` sets `panicUntil = now + 30 min` and returns a deterministic action from the fixed list. 3) Add EN/HE for the five actions and the two realism notes (shared with TFV2-0169). 4) Test window + deterministic pick + clear. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → panic cases green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → panic cases green.
 - **EVIDENCE:** DONE output + the panic lines.
 - **DO NOT:** call a model for panic, randomise the action per call (deterministic by seed), or leak the panic reason.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3457,10 +3476,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0167.
 - **WHY:** PRD F-25 (bad-day detection); HARD_RULES (no shame — low activity is a quiet stretch, never failure).
 - **GOAL:** `badDay` reports a bad day (panic window, or no completed task in 3 days) and a suggested load of 2.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/coach.ts` (verify `badDay`/`computeBadDay`).
 - **STEPS:** 1) Graphify code-map (`computeBadDay`/`badDay` + `effectiveLoad` exist — verify + test). 2) Confirm reasons `panic` (window active) and `low_activity` (no `done` task in 3 days) and `suggestedLoad = MIN_LOAD` (2). 3) Confirm a completed task in-window clears `low_activity`. 4) Test both reasons + clear. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → bad-day cases green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → bad-day cases green.
 - **EVIDENCE:** DONE output + the `computeBadDay` lines.
 - **DO NOT:** word a bad day as failure/shame in any string, or raise load on a bad day.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3479,7 +3498,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/lib/coachLoad.ts` (verify `checkRealism`).
 - **STEPS:** 1) Graphify code-map (`checkRealism` exists — verify + test). 2) Confirm it sums `taskMinutes` (default 25) vs `availableMinutes` and returns `ok` + EN/HE note. 3) Add Hebrew to the two notes. 4) Test fits / over / defaults. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → realism cases green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → realism cases green.
 - **EVIDENCE:** DONE output + the `checkRealism` lines.
 - **DO NOT:** shame on an over-full plan, lower the threshold silently, or change `DEFAULT_TASK_MINUTES`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3495,10 +3514,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0169.
 - **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract); components.md §3 (`TP.acceptProposal`/`rejectProposal`); HARD_RULES §1 (accept/reject is law).
 - **GOAL:** A code-built proposal (tasks + 10-second action + realism) is created once, and Accept/Reject is the only path that changes tasks and load.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/coach.ts` (verify `createProposal`/`currentProposal`/`decideProposal`).
 - **STEPS:** 1) Graphify code-map (the three exist — verify + test). 2) Confirm `createProposal` returns the existing pending proposal id (idempotent), picks open tasks up to `effectiveLoad`, and builds `realism`. 3) Confirm `decideProposal` Accept sets `dueAt: now` on the chosen tasks and raises load after 3 accepts in a row (max 4); Reject resets load to 2 (forgiveness). 4) Test idempotency, accept, reject, load transitions. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → proposal lifecycle cases green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → proposal lifecycle cases green.
 - **EVIDENCE:** DONE output + the three functions.
 - **DO NOT:** let a rejected proposal change tasks, or accept twice.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3517,7 +3536,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `remember`).
 - **STEPS:** 1) Graphify code-map of `convex/memory.ts` (`remember` exists — verify + test). 2) Confirm trim, non-empty, `CONTENT_MAX` 2000, sector default `general`, salience 0.5. 3) Add EN/HE errors. 4) Test empty/too-long/success. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → remember cases green.
+- **DONE:** `bun test convex/memory.test.ts` → remember cases green.
 - **EVIDENCE:** DONE output + the `remember` mutation.
 - **DO NOT:** accept empty content, exceed 2000 chars, or store another user's memory.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3536,7 +3555,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `list`).
 - **STEPS:** 1) Graphify code-map (`list` exists — verify + test). 2) Confirm sector filter, salience desc (then updatedAt desc), limit clamp 1..200 (default 50). 3) Test filter/bound/owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → list cases green.
+- **DONE:** `bun test convex/memory.test.ts` → list cases green.
 - **EVIDENCE:** DONE output + the `list` query.
 - **DO NOT:** return soft-deleted rows or another user's rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3555,7 +3574,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `recall` keyword path).
 - **STEPS:** 1) Graphify code-map (`recall` exists as substring match — verify + test). 2) Confirm lowercase normalize, empty → `[]`, limit clamp. 3) Test case/empty/owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-keyword cases green.
+- **DONE:** `bun test convex/memory.test.ts` → recall-keyword cases green.
 - **EVIDENCE:** DONE output + the `recall` query.
 - **DO NOT:** return another user's rows or soft-deleted rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3574,7 +3593,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add `recallMeaning` action).
 - **STEPS:** 1) Graphify code-map (no vector recall yet — add it). 2) Add an action that embeds the query (via TFV2-0183's seam), runs Convex vector search over `by_userId_embedding` filtered by `userId`, and returns the top ≤ 256 → capped to `limit` (default 10). 3) Test empty query, owner filter, result cap. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-vector cases green (with a fake embedding seam).
+- **DONE:** `bun test convex/memory.test.ts` → recall-vector cases green (with a fake embedding seam).
 - **EVIDENCE:** DONE output + the `recallMeaning` action.
 - **DO NOT:** run vector search in a query, or use a real provider key in tests.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3585,15 +3604,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** §4.12 (vector search permitted) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0175 — Memory: `recall` — links (edges)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186, TFV2-0187 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186b, TFV2-0187 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0186 (entities) + TFV2-0187 (edges).
+- **WHEN:** after TFV2-0186b (entities) + TFV2-0187 (edges).
 - **WHY:** TRD §5c (recall four ways: links via `edges`); PRD F-54.
 - **GOAL:** `recallLinks` returns memories linked to entities whose names/aliases match the query.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add `recallLinks`).
 - **STEPS:** 1) Graphify code-map of `edges` (table lands in TFV2-0151). 2) Add `recallLinks` that finds edges (from/to) matching the query or an entity alias, then returns the related memories/entities. 3) Test match-by-alias + owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-links cases green.
+- **DONE:** `bun test convex/memory.test.ts` → recall-links cases green.
 - **EVIDENCE:** DONE output + the `recallLinks` query.
 - **DO NOT:** cross user boundaries, or mix user-written vs guessed links without the `origin` tag.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3612,7 +3631,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add `recallByTime`).
 - **STEPS:** 1) Graphify code-map of `memories` indexes. 2) Add `recallByTime({ fromMs, toMs, limit? })` reading the `createdAt` range, owner-filtered, live only. 3) Test range + order + owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-time cases green.
+- **DONE:** `bun test convex/memory.test.ts` → recall-time cases green.
 - **EVIDENCE:** DONE output + the `recallByTime` query.
 - **DO NOT:** read another user's rows or soft-deleted rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3631,7 +3650,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (unify `recall`).
 - **STEPS:** 1) Graphify code-map of the four recall paths. 2) Add `recall({ query, limit?, modes? })` that merges keyword + vector (+ links + time when requested), dedupes by `_id`, and caps at `limit` (default 10). 3) Preserve the keyword results when the vector seam is unavailable (degrade gracefully). 4) Test merge + dedupe + degrade. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-merged cases green.
+- **DONE:** `bun test convex/memory.test.ts` → recall-merged cases green.
 - **EVIDENCE:** DONE output + the merged `recall` action.
 - **DO NOT:** leak provider errors, or let a vector failure empty the keyword results.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3650,7 +3669,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify/extend `context`).
 - **STEPS:** 1) Graphify code-map (`context` exists — verify + test). 2) Confirm it sorts by salience, takes ≤ limit (default 10), joins as `- <content>` lines, returns `{ text, count }`. 3) Add a char/token cap constant. 4) Test cap + join + owner. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → context cases green.
+- **DONE:** `bun test convex/memory.test.ts` → context cases green.
 - **EVIDENCE:** DONE output + the `context` query.
 - **DO NOT:** return another user's memories, or exceed the cap.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3669,7 +3688,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `forget`).
 - **STEPS:** 1) Graphify code-map (`forget` soft-deletes via `deletedAt` — verify + test). 2) Confirm owner check, "Memory not found" for missing/foreign, and that the row is soft-deleted (not hard-deleted). 3) Test missing/foreign/already-deleted. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → forget cases green.
+- **DONE:** `bun test convex/memory.test.ts` → forget cases green.
 - **EVIDENCE:** DONE output + the `forget` mutation.
 - **DO NOT:** hard-delete here (semantics are OPEN §4.8 — soft delete is the current code, kept as-is), or forget another user's row.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3688,7 +3707,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `restore`).
 - **STEPS:** 1) Graphify code-map (`restore` exists — verify + test). 2) Confirm `isRestorable` grace check and clearing `deletedAt`. 3) Test in-window success / out-of-window false / foreign. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → restore cases green.
+- **DONE:** `bun test convex/memory.test.ts` → restore cases green.
 - **EVIDENCE:** DONE output + the `restore` mutation.
 - **DO NOT:** restore after the grace window, or restore another user's row.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3707,7 +3726,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `forgetAll`/`restoreAll`).
 - **STEPS:** 1) Graphify code-map (both exist — verify + test). 2) Confirm `BATCH_MAX` 300, same `deletedAt` stamp, and `restoreAll({ forgottenAt })` restores only that stamp. 3) Test batch bound, restore, foreign ids. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → forgetAll cases green.
+- **DONE:** `bun test convex/memory.test.ts` → forgetAll cases green.
 - **EVIDENCE:** DONE output + the two mutations.
 - **DO NOT:** forget without a batch stamp, exceed 300, or restore a stamp that is another user's.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3726,7 +3745,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify `exportAll`).
 - **STEPS:** 1) Graphify code-map (`exportAll` exists — verify + test). 2) Confirm sections per sector, imported sources marked, empty → "No memories saved yet.". 3) Test grouping + source marks + empty. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → export cases green.
+- **DONE:** `bun test convex/memory.test.ts` → export cases green.
 - **EVIDENCE:** DONE output + the `exportAll` query.
 - **DO NOT:** remove anything, or export another user's rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3745,7 +3764,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · `convex/lib/ai_router.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add `embedMemory` action), `convex/lib/ai_router.ts` (expose `embeddingModel` seam).
 - **STEPS:** 1) Graphify code-map of `convex/lib/ai_router.ts` (add an embedding seam, names only). 2) Add `embedMemory({ memoryId })` that calls the embedding model, keeps the first 1,024 values (re-normalised), and patches `memories.embedding`. 3) Test with a fake embedding seam (no real key). 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → embedding cases green.
+- **DONE:** `bun test convex/memory.test.ts` → embedding cases green.
 - **EVIDENCE:** DONE output + the `embedMemory` action.
 - **DO NOT:** print a key value, call the provider from a query, or exceed 1,024 dims.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3764,7 +3783,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add `reembedAll` action).
 - **STEPS:** 1) Graphify code-map. 2) Add `reembedAll({})` that batches live memories without an embedding (≤ 50 per run) and patches each via the seam. 3) Test batch bound + skip-already-embedded. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → reembed cases green.
+- **DONE:** `bun test convex/memory.test.ts` → reembed cases green.
 - **EVIDENCE:** DONE output + the `reembedAll` action.
 - **DO NOT:** re-embed rows that already have a current-model embedding, or exceed the batch bound.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3783,7 +3802,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `scripts/` (one eval script) · `convex/lib/ai_router.ts` (read the seam) · test: `scripts/hebrew-embedding-eval.test.ts`.
 - **MUTATES:** `scripts/` (new eval script).
 - **STEPS:** 1) Graphify code-map of the embedding seam. 2) Write `scripts/hebrew-embedding-eval.mjs` that, given 20 Hebrew + 20 English (question, expected note) pairs and ~200 note embeddings per model, computes top-3 hit rate for `Qwen/Qwen3-Embedding-8B`, `BAAI/bge-m3`, `intfloat/multilingual-e5-large-instruct`. 3) Print a per-model table (names only, no keys). 4) Unit-test the scoring function (deterministic). 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="hebrew-embedding"` → the scoring function is green (network run reported separately as UNKNOWN if offline).
+- **DONE:** `bun test scripts/hebrew-embedding-eval.test.ts` → the scoring function is green (network run reported separately as UNKNOWN if offline).
 - **EVIDENCE:** DONE output + the script + the scoring test.
 - **DO NOT:** run a paid API without Amit's OK, print a key, or write a value to `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3792,35 +3811,73 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **NUMBERS:** top-3 hit rate (higher is better) → pass range ≥ 0.7 (internal bar) | **UNKNOWN** — no public Hebrew-specific benchmark exists (TRD §5); answerer: Amit.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (which embedding model locks in) — UNKNOWN; answerer: Amit.
-### TFV2-0186 — Life graph: `entities` CRUD
+### TFV2-0186a — Life graph: `upsertEntity`
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0150.
 - **WHY:** TRD §5c (`entities` table); PRD F-54.
-- **GOAL:** Entities (person/project/goal/place/habit) can be created, read, and soft-deleted with aliases.
+- **GOAL:** An entity (person/project/goal/place/habit) can be created or updated with aliases, deduped by name.
 - **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lib/lifeGraph.ts` (new).
-- **STEPS:** 1) Graphify code-map of `entities` (table from TFV2-0150). 2) Add `upsertEntity({ kind, name, aliases })` (dedupe by lower-case name+owner), `listEntities({ kind? })`, and `forgetEntity({ id })` (soft delete). 3) Owner-filter every read. 4) Test dedupe/kind/owner/delete. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → entities cases green.
-- **EVIDENCE:** DONE output + the three functions.
+- **STEPS:** 1) Graphify code-map of `entities` (table from TFV2-0150). 2) Add `upsertEntity({ kind, name, aliases })` (dedupe by lower-case name+owner). 3) Owner-filter. 4) Test dedupe/kind/owner. 5) Run DONE.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → upsertEntity cases green.
+- **EVIDENCE:** DONE output + the function.
 - **DO NOT:** infer entities from text here (that is edges/extraction), or cross user boundaries.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `upsertEntity({ kind, name, aliases })` → `v.id("entities")` (dedupe by lower-case name within the owner); `listEntities({ kind? })` → `{ _id, kind, name, aliases }[]`; `forgetEntity({ id })` → `{ success:true }`. Error: name empty → `EN: "Give it a name." / HE: "תני לו שם."`. Auth: `requireUser`.
-- **TESTS:** Given two upserts of the same name / Then one row. Given `kind:"person"` / Then `listEntities({ kind:"person" })` returns only people. Given `forgetEntity` / Then soft-deleted and excluded. Given another user's entity / Then never returned.
+- **SPEC:** `upsertEntity({ kind, name, aliases })` → `v.id("entities")` (dedupe by lower-case name within the owner; update the row when it exists). Error: name empty → `EN: "Give it a name." / HE: "תני לו שם."`. Auth: `requireUser`.
+- **TESTS:** Given two upserts of the same name / Then one row (no duplicate). Given an empty name / Then the error is thrown. Given `kind:"person"` vs an out-of-union kind / Then the latter is rejected.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0186b — Life graph: `listEntities`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0150.
+- **WHY:** TRD §5c (`entities` table); PRD F-54.
+- **GOAL:** List the owner's entities, optionally filtered by kind.
+- **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (new).
+- **STEPS:** 1) Graphify code-map of `entities`. 2) Add `listEntities({ kind? })` → `{ _id, kind, name, aliases }[]`, owner-filtered, excluding soft-deleted. 3) Test kind filter + owner isolation. 4) Run DONE.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → listEntities cases green.
+- **EVIDENCE:** DONE output + the function.
+- **DO NOT:** return another user's entities.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `listEntities({ kind? })` → `{ _id, kind, name, aliases }[]`. Auth: `requireUser`.
+- **TESTS:** Given `kind:"person"` / Then only people return. Given no `kind` / Then all live entities return. Given another user's entity / Then never returned.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0186c — Life graph: `forgetEntity`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0150.
+- **WHY:** TRD §5c (`entities` table); PRD F-54.
+- **GOAL:** An entity can be soft-deleted.
+- **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (new).
+- **STEPS:** 1) Graphify code-map of `entities`. 2) Add `forgetEntity({ id })` (soft delete via `deletedAt`). 3) Test delete + exclusion. 4) Run DONE.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → forgetEntity cases green.
+- **EVIDENCE:** DONE output + the function.
+- **DO NOT:** hard-delete; touch another user's entity.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `forgetEntity({ id })` → `{ success:true }`. Auth: `requireUser`; owner check. Error: another owner's id → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."` (or equivalent not-found).
+- **TESTS:** Given `forgetEntity` / Then the row is soft-deleted and excluded from `listEntities`. Given another user's entity / Then it is not deleted.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0187 — Life graph: `edges` extraction (extracted vs inferred)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0151, TFV2-0186 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0151, TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0151 + TFV2-0186.
+- **WHEN:** after TFV2-0151 + TFV2-0186a.
 - **WHY:** TRD §5c (extract entities and claims into `edges`; `origin: extracted` from `[[links]]`/blocks, no model; `inferred` model-guessed); PRD F-54.
 - **GOAL:** Links the user wrote (`[[links]]`, blocks) become `extracted` edges with no model; a model may add `inferred` edges marked as guesses.
 - **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lib/lifeGraph.ts` (add extraction).
 - **STEPS:** 1) Graphify code-map of `notes.body` and `[[links]]`. 2) Add `extractEdges({ noteId })` that reads the caller's page, finds `[[links]]`/block references, and writes `origin:"extracted"` edges (no model). 3) Add `inferEdges({ noteId })` (action) that may write `origin:"inferred"` edges with `confidence` from the model (approved-for-AI). 4) Test extracted vs inferred origin + owner. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → edges cases green.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → edges cases green.
 - **EVIDENCE:** DONE output + the two functions.
 - **DO NOT:** mark an inferred link as extracted, or let a model write `extracted`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3839,7 +3896,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lib/lifeGraph.ts` (add confirm + query).
 - **STEPS:** 1) Graphify code-map. 2) Add `confirmEdge({ id })` (inferred → confirmed; the badge changes) and `listEdges({ from?|to? })`. 3) Test confirm + origin preserved + owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → confirm/query cases green.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → confirm/query cases green.
 - **EVIDENCE:** DONE output + the two functions.
 - **DO NOT:** let a confirmed edge revert to a guess, or expose another user's edges.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3858,7 +3915,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lib/lifeGraph.ts` (add query).
 - **STEPS:** 1) Graphify code-map of `edges`. 2) Add `graphNeighbors({ entityName })` returning the entity and its `from`/`to` neighbors in one hop. 3) Test one-hop + owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → neighbors cases green.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → neighbors cases green.
 - **EVIDENCE:** DONE output + the `graphNeighbors` query.
 - **DO NOT:** traverse beyond one hop, or cross users.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3877,7 +3934,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/crons.ts` · `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/crons.ts` (register nightly reflect), `convex/lib/lifeGraph.ts` (add `reflect`).
 - **STEPS:** 1) Graphify code-map of `convex/crons.ts`. 2) Add `reflect({})` (action) that groups recent memories and writes `observations` rows (model-written text + `memoryIds`). 3) Register a nightly cron in `crons.ts`. 4) Test grouping + ids + no-op when few memories. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → reflect cases green.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → reflect cases green.
 - **EVIDENCE:** DONE output + the cron registration + `reflect`.
 - **DO NOT:** run reflect per-message (nightly only), or write observations without supporting memory ids.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3896,7 +3953,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lib/lifeGraph.ts` (add list + delete).
 - **STEPS:** 1) Graphify code-map of `observations`. 2) Add `listObservations({})` and `forgetObservation({ id })` (soft delete). 3) Test owner + delete. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → observations cases green.
+- **DONE:** `bun test convex/lib/lifeGraph.test.ts` → observations cases green.
 - **EVIDENCE:** DONE output + the two functions.
 - **DO NOT:** surface another user's observations, or hard-delete.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3912,10 +3969,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0171.
 - **WHY:** TRD §5 (`importPreview(userId, text, source)` splits into candidate items; nothing saved); PRD F-51; RAM-only rule.
 - **GOAL:** `importPreview` splits pasted/uploaded text into candidate memory items, in RAM, saving nothing.
-- **SCOPE:** `convex/memoryImport.ts` · `convex/lib/memoryImport.ts` · test: `convex/lib/memoryImport.test.ts`.
+- **SCOPE:** `convex/memoryImport.ts` · `convex/lib/memoryImport.ts` · test: `convex/memoryImport.test.ts`.
 - **MUTATES:** `convex/memoryImport.ts` (add preview surface), `convex/lib/memoryImport.ts` (parse helpers).
 - **STEPS:** 1) Graphify code-map of `convex/lib/memoryImport.ts` (`parseMemoryExport` exists — verify + test). 2) Add `importPreview({ source, text })` returning `{ items: string[] }` (≤ 300, cleaned, deduped). 3) Confirm nothing is inserted. 4) Test JSON/line parsing + dedupe + bound. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → preview cases green.
+- **DONE:** `bun test convex/memoryImport.test.ts` → preview cases green.
 - **EVIDENCE:** DONE output + the `importPreview` mutation.
 - **DO NOT:** save anything, persist the raw text, or exceed 1 MB.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3934,7 +3991,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memoryImport.ts` · test: `convex/memoryImport.test.ts`.
 - **MUTATES:** `convex/memoryImport.ts` (verify `saveReviewed`/add `importCommit`).
 - **STEPS:** 1) Graphify code-map (`saveReviewed` exists — verify + test). 2) Add `importCommit({ source, items })` that cleans each item, skips duplicates (case-insensitive), inserts with `metadata:{ source, importedAt }`, and returns `{ added, skipped, memoryIds }`. 3) Test duplicate skip + bound + owner. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → commit cases green.
+- **DONE:** `bun test convex/memoryImport.test.ts` → commit cases green.
 - **EVIDENCE:** DONE output + the `importCommit` mutation.
 - **DO NOT:** persist raw import text, or create a second copy of an existing memory.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3953,7 +4010,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memoryImport.ts` · test: `convex/memoryImport.test.ts`.
 - **MUTATES:** `convex/memoryImport.ts` (add `undoImport`).
 - **STEPS:** 1) Graphify code-map (`forgetAll({ memoryIds })` exists — reuse). 2) Add `undoImport({ memoryIds })` that soft-deletes exactly those ids (≤ 300) via `forgetAll`. 3) Test window + exact batch. 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → undo cases green.
+- **DONE:** `bun test convex/memoryImport.test.ts` → undo cases green.
 - **EVIDENCE:** DONE output + the `undoImport` mutation.
 - **DO NOT:** forget ids the user did not just import, or bypass the 5-minute window.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3972,7 +4029,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/crons.ts` · `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/crons.ts` (register), `convex/memory.ts` (add `decay` action).
 - **STEPS:** 1) Graphify code-map of `memories.decayRate`/`salience`. 2) Add `decay({})` (action) that, for live memories accessed > 1 day ago, lowers `salience` by `salience * (1 - decayRate * days)`, floor 0.1. 3) Register a daily cron. 4) Test floor + decay. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → decay cases green.
+- **DONE:** `bun test convex/memory.test.ts` → decay cases green.
 - **EVIDENCE:** DONE output + the cron + `decay`.
 - **DO NOT:** lower below 0.1, or touch a memory accessed today.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -3991,7 +4048,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/shameWords.ts` (new) · `convex/lib/coachPrompt.ts` · test: `convex/lib/shameWords.test.ts`.
 - **MUTATES:** `convex/lib/shameWords.ts` (new), `convex/lib/coachPrompt.ts` (guard hook).
 - **STEPS:** 1) Graphify code-map (no `shameWords.ts` yet — create it). 2) Add `SHAME_PHRASES` (fixed list: "you are lazy", "why didn't you", "you're behind", "you keep failing", "you should have", "that's easy", "just", etc.) and `isShaming(text)` (normalised substring). 3) Hook a guard into the reply path that, when a reply is shaming, replaces it with a fixed neutral line (no model). 4) Add the neutral line EN/HE. 5) Test detection + replacement. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="shameWords"` → guard cases green.
+- **DONE:** `bun test convex/lib/shameWords.test.ts` → guard cases green.
 - **EVIDENCE:** DONE output + the list + guard.
 - **DO NOT:** call a model to detect shame, or silently drop a reply without the neutral line.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4010,7 +4067,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/mockModel.ts` (new) · test: `convex/lib/mockModel.test.ts`.
 - **MUTATES:** `convex/lib/mockModel.ts` (new).
 - **STEPS:** 1) Graphify code-map (file is MISSING — create). 2) Add `mockLanguageModel` and `mockEmbeddingModel` returning deterministic replies/vectors (no network, no key). 3) Make the coach Agent accept a model seam override so tests inject the mock. 4) Test determinism + no-key. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="mockModel"` → mock cases green.
+- **DONE:** `bun test convex/lib/mockModel.test.ts` → mock cases green.
 - **EVIDENCE:** DONE output + the mock seam.
 - **DO NOT:** let the mock ever hit a network or read a real key; never use the mock as evidence for a real-model DONE check.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4029,7 +4086,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/aiGate.ts` · `convex/lib/entitlements.ts` · test: `convex/lib/aiGate.test.ts`.
 - **MUTATES:** `convex/lib/aiGate.ts` (verify/extend), `convex/lib/entitlements.ts` (read only).
 - **STEPS:** 1) Graphify code-map of `requireApprovedForAi` + `entitlements.ts`. 2) Confirm the order: `ctx.auth` → approval (`assertApprovedForAi`) → entitlement tier check → provider. 3) Add a pure helper `assertEntitledForAi(user)` that reads the granted tier. 4) Test signed-out / pending / revoked / entitled. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="aiGate"` → entitlement-order cases green.
+- **DONE:** `bun test convex/lib/aiGate.test.ts` → entitlement-order cases green.
 - **EVIDENCE:** DONE output + the gate order.
 - **DO NOT:** move the gate after the provider call, or grant AI to a non-entitled account.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4048,7 +4105,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/bounded.ts` (new) · `convex/lib/aiGate.ts` · test: `convex/lib/bounded.test.ts`.
 - **MUTATES:** `convex/lib/bounded.ts` (new), `convex/lib/aiGate.ts` (call quota after entitlement).
 - **STEPS:** 1) Graphify code-map (no quota yet). 2) Add `bounded.ts` with `assertWithinQuota({ used, limit })` and a daily coach-turn counter (UTC day, like `coachWebSearches`). 3) Insert the quota check in the reply path after entitlement. 4) Add the EN/HE over-limit line. 5) Test order + over-limit. 6) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="bounded"` → quota cases green.
+- **DONE:** `bun test convex/lib/bounded.test.ts` → quota cases green.
 - **EVIDENCE:** DONE output + the quota gate.
 - **DO NOT:** bill/charge, or let the quota run after the provider call.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
