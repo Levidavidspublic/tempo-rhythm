@@ -46,6 +46,7 @@ The ticket count and the split map are listed below and updated after each range
 | TFV2-0001 … TFV2-0045 (range 1) | rewritten (merged) |
 | TFV2-0046 … TFV2-0090 (range 2) | rewritten (merged) |
 | TFV2-0091 … TFV2-0137 (range 3) | rewritten (merged) |
+| TFV2-0138 … TFV2-0184 (range 4) | rewritten (merged) |
 | TFV2-0001 … TFV2-0456 | being rewritten |
 <!-- rewrite-status:end -->
 
@@ -95,6 +96,24 @@ The ticket count and the split map are listed below and updated after each range
 - TFV2-0135 → TFV2-0135a, TFV2-0135b
 - TFV2-0136 → TFV2-0136c, TFV2-0136a, TFV2-0136b (0136c = prerequisite test edit of `tests/e2e/wiring/harness.spec.ts`)
 - TFV2-0137 → TFV2-0137a, TFV2-0137b
+- TFV2-0142 → TFV2-0142a, TFV2-0142b
+- TFV2-0143 → TFV2-0143a, TFV2-0143b
+- TFV2-0147 → TFV2-0147a, TFV2-0147b
+- TFV2-0149 → superseded by CFG-001
+- TFV2-0150 → superseded by CFG-002
+- TFV2-0151 → superseded by CFG-003
+- TFV2-0152 → superseded by CFG-004
+- TFV2-0154 → superseded by TFV2-0015
+- TFV2-0155 → TFV2-0155a, TFV2-0155b
+- TFV2-0164 → TFV2-0164a, TFV2-0164b
+- TFV2-0166 → TFV2-0166a, TFV2-0166b
+- TFV2-0167 → TFV2-0167a, TFV2-0167b, TFV2-0167c
+- TFV2-0170 → TFV2-0170a, TFV2-0170b, TFV2-0170c
+- TFV2-0174 → TFV2-0174a, TFV2-0174b, TFV2-0174c, TFV2-0174d
+- TFV2-0181 → TFV2-0181a, TFV2-0181b
+- TFV2-0183 → TFV2-0183a, TFV2-0183b, TFV2-0183c
+- TFV2-0184 → TFV2-0184a, TFV2-0184b
+- CFG-R4-1 (provisional) → CFG-033
 <!-- split-map:end -->
 
 ## Groundwork — test infrastructure and config lane (comes before Chunk 1)
@@ -1423,6 +1442,35 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   - Given the mobile config (flag on, dev server, signed out) / When `page.goto("/habits")` runs / Then the URL stays `/habits` (does not become `/sign-in`) and `page.locator("body")` is visible.
 - **NUMBERS:** 1 of 1 case passes; production behaviour unchanged (asserted by the `tempoGate` unit cases in TFV2-0000d).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+
+### CFG-033 — Schema: `memories` index `by_userId_deletedAt_createdAt` — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Recall by time (TFV2-0176, TRD §5c) must be a bounded index range read (CONVENTIONS §16); `memories` (`convex/schema.ts` line 228) has indexes `by_userId`, `by_userId_salience`, `by_userId_deletedAt`, `by_userId_deletedAt_salience_updatedAt` and none ending in `createdAt`. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the index `by_userId_deletedAt_createdAt` on `memories` exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg033_memories.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: one index appended to `memories`; no field changes) · `convex/schema_cfg033_memories.test.ts` (new) · Convex schema of the deployment on next deploy (index backfill).
+- **STEPS:** 1) Code-map check: `grep -n "by_userId_deletedAt_createdAt" convex/schema.ts` — confirm it is absent on `memories` (if it already exists with this exact field list, add only the test and report it). 2) In `convex/schema.ts`, append the index line in SPEC after the last existing index of `memories` (`by_userId_deletedAt_salience_updatedAt`). 3) Create `convex/schema_cfg033_memories.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg033_memories.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg033_memories.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-033 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg033_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds one index to an existing table in `convex/schema.ts`; no field is added.
+
+```ts
+  // appended to memories after .index("by_userId_deletedAt_salience_updatedAt", [...]):
+    .index("by_userId_deletedAt_createdAt", ["userId", "deletedAt", "createdAt"])
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0176. No data migration: all fields of the index already exist on every row (`createdAt` is required).
+- **TESTS:**
+  - Given the schema / When `schema.tables.memories[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt_createdAt", fields: ["userId", "deletedAt", "createdAt"] }`.
+  - Given the schema / When the same list is read / Then it still contains `{ indexDescriptor: "by_userId_deletedAt_salience_updatedAt", fields: ["userId", "deletedAt", "salience", "updatedAt"] }` and `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }` (nothing existing removed).
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -10850,923 +10898,2651 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0138 — Screen: Goals progress
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** screen `web/goals-progress.html`.
-- **GOAL:** Goals progress shows per-goal and per-week charts, each with a required summary.
-- **SCOPE:** `apps/web/app/(tempo)/goals/progress/page.tsx` · `apps/web/components/goals/goals-progress-client.tsx` · `tests/e2e/screens/goals-progress.spec.ts`.
-- **MUTATES:** none (wires `goals.progressByGoal`, `goals.stepsByWeek`).
-- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement BarChart/LineChart + ChartSummary + five states; 4) copy `web/goals-progress.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals-progress.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** render a chart without a summary; edit `convex/`; invent metrics.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/goals/progress`, layout TempoShell. Data: `goals.progressByGoal`, `goals.stepsByWeek`. Components: BarChart, LineChart, ChartSummary (required figcaption). States: default, empty, loading, error, offline. One primary: none. Key copy: EN "How your goals are going"/HE "איך המטרות שלך מתקדמות"; empty EN "Nothing to show yet."/HE "עדיין אין מה להציג."; empty body EN "Once a goal has a task or two linked, a quiet picture appears here."/HE "ברגע שלמטרה יהיו משימה או שתיים מקושרות, תופיע כאן תמונה שקטה שלה."; offline EN "You're offline. These charts are from your last visit."/HE "אין חיבור כרגע. הגרפים האלה מהביקור הקודם שלך."; error EN "Couldn't load your progress."/HE "לא הצלחנו לטעון את ההתקדמות שלך." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goals-progress.html`.
-- **TESTS:** Given goals with tasks / When load / Then BarChart + LineChart each with a ChartSummary. Given empty / When load / Then empty copy, no charts. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
+### TFV2-0138 — Screen: Goals progress (`/goals/progress`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0137b, TFV2-0069a, TFV2-0069b, TFV2-0069c, TFV2-0093, TFV2-0097, TFV2-0098, TFV2-0108, TFV2-0109, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #457
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0137b, TFV2-0069a, TFV2-0069b, TFV2-0069c, TFV2-0093, TFV2-0097, TFV2-0098, TFV2-0108, TFV2-0109, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-08 (goals and progress); design `docs/design/v3/screens/web/goals-progress.html`; CONVENTIONS §13–§15 (screen data rule, forced states, helpers); TFV2-0137b registers `"/goals/(.*)"` in `E2E_WIRING_ROUTES`, which releases `/goals/progress` for the E2E bypass.
+- **GOAL:** `/goals/progress` shows one bar chart of linked tasks done per goal and one line chart of small steps per week for a chosen goal, each with a written summary, in every state, built only from props-only components.
+- **SCOPE:** `apps/web/app/(tempo)/goals/progress/page.tsx` · `apps/web/lib/e2e/fixtures/goals-progress.ts` · test: `tests/e2e/screens/goals-progress.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in scope: TFV2-0137b's `"/goals/(.*)"` line already releases `/goals/progress`.)
+- **MUTATES:** `apps/web/app/(tempo)/goals/progress/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/goals-progress.ts` (new) · `tests/e2e/screens/goals-progress.spec.ts` (new). No Convex data is written (read-only screen).
+- **STEPS:** 1) Code-map check: read `apps/web/app/(tempo)/goals/progress/page.tsx` (12 lines today, renders `GoalsProgressScreen` from `@/components/goals/GoalsProgressScreen`); confirm `convex/goals.ts` exports `list` and the two queries TFV2-0069b/0069c add (`progressByGoal`, `stepsByWeek`) with the signatures in SPEC "Data"; confirm the component files in SPEC "Imports" exist; `grep -n '"/goals' apps/web/lib/e2eWiringRoutes.ts` (expect `"/goals/(.*)",` from TFV2-0137b; if it is absent, stop and report `blocked: TFV2-0137b not merged`). 2) Create `apps/web/lib/e2e/fixtures/goals-progress.ts` exactly as SPEC "Fixtures". 3) Replace `page.tsx` with the structure in SPEC "Page" (view type, `COPY`, `GoalsProgressBody`, live + forced paths). 4) No E2E route step: TFV2-0137b's `"/goals/(.*)"` already matches `/goals/progress`, so `e2eWiringRoutes.ts` stays untouched (say so in the PR). 5) Create `tests/e2e/screens/goals-progress.spec.ts` with the TESTS cases. 6) Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals-progress.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary line and the typecheck exit code pasted into the PR.
+- **DO NOT:** edit `apps/web/components/goals/GoalsProgressScreen.tsx`, `apps/web/components/goals/shared.tsx`, `apps/web/lib/goals-projects.ts`, `apps/web/lib/e2eWiringRoutes.ts` or any i18n file; add a `"/goals/progress"` line; call Convex outside `page.tsx`; render a chart without its summary; show a streak; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0138 / evidence: <DONE output> / changed: page.tsx, fixtures/goals-progress.ts, goals-progress.spec.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  - **Route and layout:** `apps/web/app/(tempo)/goals/progress/page.tsx`, `"use client"`, rendered inside `TempoShell` by `app/(tempo)/layout.tsx`. Root `<div className="tp-page" data-component="PageLayout" data-testid="goals-progress-screen">`. Header `<header className="tp-pagehead" data-component="PageHeader">` with `.tp-pagehead__text`, `<h1 className="tp-pagehead__title">`, `<p className="tp-pagehead__sub">`, and `.tp-pagehead__actions` holding a `next/link` `<Link href="/goals" className="tp-btn tp-btn--ghost tp-btn--sm" data-component="Button">`. Content sections use `<section className="tp-section" data-component="Section">` with `<div className="tp-section__head"><h2 className="tp-section__title">`. No stylesheet (CONVENTIONS §10).
+  - **Imports:** `useConvexAuth`, `useQuery` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `Suspense`, `useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared` (existing; `fallback: (retry: () => void) => ReactNode`); `FIXTURES` from `@/lib/e2e/fixtures/goals-progress`; `Badge` from `@/components/layout/Badge`; `List`, `ListRow` from `@/components/lists/ListRow`; `Segmented` from `@/components/lists/Segmented`; `BarChart` from `@/components/charts/BarChart`; `LineChart` from `@/components/charts/LineChart`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`.
+  - **Data (live):** `api.users.getProfile` `{}` (gate: run the rest only when it returns a non-null profile); `api.preferences.get` `{}` → `{ weekStartsOn: 0 | 1 | 6; timeZone: string; … }`; `api.goals.list` `{}` → `Doc<"goals">[]` (fields used: `_id`, `title`, `status: "active" | "completed" | "archived"`); `api.goals.progressByGoal` `{}` → `{ goalId: Id<"goals">; openTasks: number; doneTasks: number; progressPercent: number }[]` (TFV2-0069b); `api.goals.stepsByWeek` `{ goalId: Id<"goals">; weekStartsOn: 0 | 1 | 6 }` → `{ weekStart: string /* YYYY-MM-DD */; doneCount: number }[]`, oldest first (TFV2-0069c). Every query gets `"skip"` when `forced !== null`, when signed out, or before the profile exists; `stepsByWeek` also skips until a goal is selected and preferences loaded.
+  - **View type (exported from page.tsx):**
+    ```ts
+    export type GoalsProgressState = "default" | "loading" | "empty" | "error" | "offline" | "signed-out";
+    export type GoalProgressRow = { goalId: string; title: string; status: "active" | "completed" | "archived"; done: number; total: number };
+    export type WeekStep = { weekStart: string; doneCount: number };
+    export type GoalsProgressView =
+      | { status: "loading" }
+      | { status: "error" }
+      | { status: "signed-out" }
+      | { status: "empty" }
+      | { status: "ready"; goals: GoalProgressRow[]; weeksByGoal: Record<string, WeekStep[]> };
+    ```
+    Live mapping: `goals` = every goal from `goals.list` joined with its `progressByGoal` row (`done = doneTasks`, `total = openTasks + doneTasks`; a goal with no row has `done = 0, total = 0`), in `goals.list` order. The view is `empty` when `goals.length === 0` or every `total === 0`. `weeksByGoal` holds only the selected goal's `stepsByWeek` result once it arrives.
+  - **Fixtures (`apps/web/lib/e2e/fixtures/goals-progress.ts`):** `import type { GoalsProgressState, GoalsProgressView } from "@/app/(tempo)/goals/progress/page";` and `export const FIXTURES: Record<GoalsProgressState, GoalsProgressView>` with: `default` and `offline` (same data) = `{ status: "ready", goals: [ { goalId: "goal-home", title: "Feel settled at home", status: "active", done: 4, total: 9 }, { goalId: "goal-talk", title: "Speak calmly on Thursday", status: "active", done: 1, total: 4 }, { goalId: "goal-rest", title: "Rest on purpose", status: "archived", done: 0, total: 2 }, { goalId: "goal-lease", title: "Sign the new lease", status: "completed", done: 3, total: 3 } ], weeksByGoal: { "goal-home": [ {weekStart:"2026-08-24",doneCount:2}, {weekStart:"2026-08-31",doneCount:3}, {weekStart:"2026-09-07",doneCount:5}, {weekStart:"2026-09-14",doneCount:2}, {weekStart:"2026-09-21",doneCount:4}, {weekStart:"2026-09-28",doneCount:3}, {weekStart:"2026-10-05",doneCount:2}, {weekStart:"2026-10-12",doneCount:4} ], "goal-talk": [ {weekStart:"2026-10-12",doneCount:1} ], "goal-rest": [], "goal-lease": [ {weekStart:"2026-09-28",doneCount:2}, {weekStart:"2026-10-05",doneCount:1} ] } }`; `loading` = `{ status: "loading" }`; `empty` = `{ status: "empty" }`; `error` = `{ status: "error" }`; `signed-out` = `{ status: "signed-out" }`. Nothing else is exported.
+  - **Page structure:**
+    ```tsx
+    export default function Page() { return <Suspense fallback={null}><GoalsProgressScreen /></Suspense>; }
+    function GoalsProgressScreen() {
+      const forced = useE2EState();
+      const liveOnline = useOnline();
+      if (forced !== null) {
+        const key = (forced in FIXTURES ? forced : "loading") as GoalsProgressState;
+        return <GoalsProgressBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />;
+      }
+      return <ScreenBoundary fallback={(retry) => <GoalsProgressBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><GoalsProgressLive online={liveOnline} /></ScreenBoundary>;
+    }
+    ```
+    `GoalsProgressLive` reads `useConvexAuth()`; `!isLoading && !isAuthenticated` → view `signed-out`; any query still `undefined` → `loading`; else the mapped view. `GoalsProgressBody({ view, online, onRetry }: { view: GoalsProgressView; online: boolean; onRetry: () => void })` renders the header in every state, then: `<div data-testid="goals-progress-offline"><StateOffline text={copy.offline} /></div>` when `online === false`, then exactly one state block: `loading` → `<div data-testid="goals-progress-loading"><StateLoading label={copy.loading} rows={3} /></div>`; `error` → `<div data-testid="goals-progress-error"><StateError what={copy.error} onRetry={onRetry} /></div>`; `signed-out` → `<div data-testid="goals-progress-signed-out"><StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} /></div>`; `empty` → `<div data-testid="goals-progress-empty"><StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/goals" className="tp-btn tp-btn--secondary" data-component="Button">{copy.emptyAction}</Link>} /></div>`; `ready` → `<div data-testid="goals-progress-default">` holding three sections in this order:
+    1. **By goal:** `<BarChart title={copy.barTitle} bars={…} summary={…} />` with one bar per goal: `label = title`, `value = done`, `pct = total === 0 ? 0 : Math.round(done / total * 100)`. Summary = `copy.barSummary` with `{goals}` = goal count, `{done}` = sum of `done`, `{total}` = sum of `total`.
+    2. **By week:** section head `<h2>` = `copy.lineTitle`; `<Segmented label={copy.rangeLabel} options={[{ value: "4", label: copy.range4 }, { value: "8", label: copy.range8 }]} value={range} onChange={setRange} />` (state `range: "4" | "8"`, initial `"8"`); then, for the selected goal (state `selectedGoalId`, initial = first goal with `status === "active"`, else the first goal): `weeks = view.weeksByGoal[selectedGoalId]`; `undefined` → `<StateLoading label={copy.loadingWeeks} rows={2} />`; else `<LineChart title={copy.lineChartTitle.replace("{goal}", goalTitle)} points={…} summary={…} />` with the last `Number(range)` weeks, `label` = `new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(\`${weekStart}T00:00:00Z\`))`, `value = doneCount`. Summary: zero weeks → `copy.lineSummaryNone`; else `copy.lineSummary` with `{min}`, `{max}` of `doneCount` and `{n}` = number of weeks shown.
+    3. **In words:** `<List label={copy.listLabel}>` with one `<ListRow title={title} meta={copy.rowMeta…} end={<Badge label={statusWord} tone={…} />} onClick={() => setSelectedGoalId(goalId)} current={goalId === selectedGoalId} />` per goal. `meta` = `copy.rowMeta` with `{done}`/`{total}`. Badge: `active` → `copy.statusActive`, tone `"info"`; `completed` → `copy.statusDone`, tone `"done"`; `archived` → `copy.statusResting`, tone `"neutral"`.
+    Numbers placed inside string props (`summary`, `meta`, `title`) are wrapped as `\u2066<n>\u2069` (LTR isolate, the string form of `.tp-num`, CONVENTIONS §12); numbers in JSX text use `<span className="tp-num">`.
+  - **Copy (`COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):**
+    | key | EN | HE |
+    |---|---|---|
+    | title | How your goals are going | איך המטרות מתקדמות |
+    | sub | A quiet look back. Small steps count, and resting is allowed. | מבט שקט לאחור. גם צעדים קטנים נחשבים, ומותר לנוח. |
+    | allGoals | All goals | כל המטרות |
+    | offline | You're offline. These charts are from your last visit. | אין חיבור כרגע. הגרפים האלה מהביקור הקודם. |
+    | loading | Loading your progress | טוענים את ההתקדמות |
+    | loadingWeeks | Loading this goal's weeks | טוענים את השבועות של המטרה |
+    | error | Couldn't load your progress. | לא הצלחנו לטעון את ההתקדמות. |
+    | signedOutTitle | Sign in to see your progress. | צריך להתחבר כדי לראות את ההתקדמות. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | Nothing to chart yet. | עדיין אין מה להציג בגרף. |
+    | emptyBody | Once a goal has a task or two linked to it, a quiet picture of it shows up here. | כשלמטרה יש משימה או שתיים מקושרות, תמונה שקטה שלה מופיעה כאן. |
+    | emptyAction | Go to goals | מעבר למטרות |
+    | barTitle | Linked tasks done, by goal | משימות מקושרות שהושלמו, לפי מטרה |
+    | barSummary | Across {goals} goals, {done} of {total} linked tasks are done. | בכל {goals} המטרות, {done} מתוך {total} משימות מקושרות הושלמו. |
+    | lineTitle | Small steps, week by week | צעדים קטנים, שבוע אחרי שבוע |
+    | lineChartTitle | Small steps done for “{goal}”, by week | צעדים קטנים שהושלמו עבור „{goal}”, לפי שבוע |
+    | lineSummary | Between {min} and {max} small steps a week over the last {n} weeks. | בין {min} ל־{max} צעדים קטנים בשבוע ב־{n} השבועות האחרונים. |
+    | lineSummaryNone | No finished steps for this goal yet. That's fine. | עדיין אין צעדים שהושלמו במטרה הזו. זה בסדר. |
+    | rangeLabel | Weekly chart | גרף שבועי |
+    | range4 | 4 weeks | 4 שבועות |
+    | range8 | 8 weeks | 8 שבועות |
+    | listLabel | Goals in words | המטרות במילים |
+    | rowMeta | {done} of {total} done. | {done} מתוך {total} הושלמו. |
+    | statusActive | Active | פעילה |
+    | statusDone | Done | הושגה |
+    | statusResting | Resting | במנוחה |
+    StateError adds its own "Your data is safe." / "המידע שלך שמור." and "Try again" / "לנסות שוב" (TFV2-0122). The page title is set as the `<h1>` only.
+  - **States:** `default` (ready data), `loading`, `empty`, `error`, `offline` (ready data plus the StateOffline block; charts stay visible), `signed-out`. Each is forced with `?state=<name>` and asserted by `data-testid="goals-progress-<name>"` (`default` → `goals-progress-default`).
+  - **RTL:** the page inherits `<html dir>` from `LocaleProvider`; logical layout comes from the components; goal titles are user text and the components render them with `dir="auto"`; no `left`/`right` anywhere.
+  - **Keyboard and screen reader:** Tab order: All goals link → Segmented → each goal row (buttons) ; Enter/Space on a row selects it (`aria-current` from `current`); each chart is a `<figure>` with its summary as `<figcaption>` (TFV2-0108/0109).
+  - **Breakpoints:** 390 px base, single column; at ≥ 1024 px the same single column inside `.tp-page` (max width from tempo.css). No page-specific breakpoint rules.
+  - **Motion:** none added by the page; component transitions stay within `--tp-dur-*` (≤ 250 ms) and stop under reduced motion.
+- **TESTS:** `tests/e2e/screens/goals-progress.spec.ts` imports `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`. First line inside the file after imports: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case below runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)` with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)` at the start and `expect(errors).toEqual([])` plus `await expectDir(page, lang)` at the end (8 cases × 4 = 32 tests).
+  - Given `openScreen(page, "/goals/progress", { state: "default", lang })` / Then `[data-testid="goals-progress-default"]` is visible, there are exactly 2 `figure` elements, the first `figcaption` has text `COPY[lang].barSummary` filled with goals 4, done 8, total 18 (isolate characters included), 4 rows are in the list named `COPY[lang].listLabel`, `expectTargetSize(page, '[data-testid="goals-progress-screen"]')` and `expectMotionBudget(page, '[data-testid="goals-progress-screen"]')` pass, and `measureVitals(page, "/goals/progress?state=default&lang=" + lang)` returns `lcpMs <= 2500` and `cls <= 0.1`.
+  - Given state `default` / When the row titled "Sign the new lease" is clicked / Then that row has `aria-current="true"` and the second `figcaption` equals `COPY[lang].lineSummary` with min 1, max 2, n 2.
+  - Given state `default` with the first goal selected / When the Segmented option `COPY[lang].range4` is clicked / Then the second `figcaption` equals `lineSummary` with min 2, max 4, n 4.
+  - Given state `default` / When the row "Rest on purpose" is clicked / Then the second `figcaption` equals `COPY[lang].lineSummaryNone`.
+  - Given state `loading` / Then `[data-testid="goals-progress-loading"]` is visible and no `figure` exists.
+  - Given state `empty` / Then `[data-testid="goals-progress-empty"]` contains `COPY[lang].emptyTitle` and a link with name `COPY[lang].emptyAction` whose `href` is `/goals`.
+  - Given state `error` / Then `[data-testid="goals-progress-error"]` contains `COPY[lang].error` and a button named "Try again" (en) / "לנסות שוב" (he).
+  - Given state `offline` / Then `[data-testid="goals-progress-offline"]` contains `COPY[lang].offline` and `[data-testid="goals-progress-default"]` is still visible; and Given state `signed-out` (same test, second `openScreen`) / Then `[data-testid="goals-progress-signed-out"]` holds a link `COPY[lang].signIn` to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms reduced (DESIGN.md; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only, `bun run scan:design-tokens`) · INP ≤ 200 ms UNKNOWN locally (measured on preview, not a gate) · every chart has a summary: 2 of 2 (components.md).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0069b (CFG-006: How does a task link to a goal: this `tasks.goalId` field, or another model?) — Amit. Also inherits TFV2-0069c (same question).
+
+### TFV2-0139 — Screen: Projects (`/projects`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0096, TFV2-0097, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0096, TFV2-0097, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-08; design `docs/design/v3/screens/web/projects.html`; CONVENTIONS §13–§15. `tasks.list` exists in `convex/tasks.ts` (no backend ticket needed).
+- **GOAL:** `/projects` lists projects with their status, a done count and a status filter, starts a new project, and shows every state, using the data model that exists today (a project = the tasks sharing a `projectId`).
+- **SCOPE:** `apps/web/app/(tempo)/projects/page.tsx` · `apps/web/lib/e2e/fixtures/projects.ts` · test: `tests/e2e/screens/projects.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in scope: `/projects` and `/projects/(.*)` are already released by `isCoreTaskViewRoute` in `apps/web/proxy.ts`.)
+- **MUTATES:** `apps/web/app/(tempo)/projects/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/projects.ts` (new) · `tests/e2e/screens/projects.spec.ts` (new). No Convex data written (a new project is saved by its first task on the detail page).
+- **STEPS:** 1) Code-map check: read `apps/web/app/(tempo)/projects/page.tsx` (renders `ProjectsScreen`), `apps/web/components/projects/ProjectsScreen.tsx` lines 50–58 (the signed-out E2E branch that renders `TaskViewsScreen view="project" projectSlug="home-reset"` — `tests/e2e/task-views-core.spec.ts` depends on it), `apps/web/lib/goals-projects.ts` (`summarizeProjects`, `filterProjects`, `newProjectId`, `ProjectSummary`, `ProjectFilter`, `PROJECT_FILTERS`), and `grep -n "/projects" apps/web/proxy.ts` (expect `"/projects"` and `"/projects/(.*)"` in `isCoreTaskViewRoute`). 2) Create the fixtures file (SPEC). 3) Replace `page.tsx` (SPEC "Page"). 4) No E2E route step: say in the PR that `isCoreTaskViewRoute` already releases `/projects`, so `e2eWiringRoutes.ts` is untouched. 5) Create the spec. 6) Run DONE, then `CI=1 bunx playwright test tests/e2e/task-views-core.spec.ts --reporter=line` (must stay green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/projects.spec.ts --reporter=line` → `32 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/task-views-core.spec.ts --reporter=line` → `1 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries and the typecheck exit code pasted into the PR.
+- **DO NOT:** edit `ProjectsScreen.tsx`, `TaskViewsScreen.tsx`, `lib/goals-projects.ts`, `lib/i18n*`, `tests/e2e/task-views-core.spec.ts` or `proxy.ts`; add a line to `e2eWiringRoutes.ts`; invent a status beyond `idea | active | paused | done`; call `projects.*` (no such module); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0139 / evidence: <DONE output> / changed: page.tsx, fixtures/projects.ts, projects.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `apps/web/app/(tempo)/projects/page.tsx`, `"use client"`. Root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-testid="projects-screen">`; header `<header className="tp-pagehead" data-component="PageHeader">` (`.tp-pagehead__text`, `<h1 className="tp-pagehead__title">{copy.title}</h1>`, `<p className="tp-pagehead__sub">{copy.sub}</p>`) with the primary action `<button type="button" className="tp-btn tp-btn--primary" data-component="Button">{copy.newProject}</button>` in `.tp-pagehead__actions` (shown only in `default`, `filtered` and `offline`).
+  - **Imports:** `useConvexAuth`, `useQuery`; `api`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `useRouter` from `next/navigation`; `TaskViewsScreen` from `@/components/tasks/TaskViewsScreen`; `E2E_HARNESS` from `@/components/goals/shared`; `summarizeProjects`, `filterProjects`, `newProjectId`, `PROJECT_FILTERS`, `type ProjectFilter`, `type ProjectSummary` from `@/lib/goals-projects`; `ProjectStatus` from `@/components/layout/ProjectStatus`; `List`, `ListRow` from `@/components/lists/ListRow`; `Segmented` from `@/components/lists/Segmented`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/projects`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Data (live):** `api.users.getProfile` `{}` gate; `api.tasks.list` `{}` → task rows (fields used: `projectId?`, `projectName?`, `status`, `updatedAt`); projects = `summarizeProjects(tasks)`.
+  - **View type:**
+    ```ts
+    export type ProjectsState = "default" | "filtered" | "loading" | "empty" | "error" | "offline" | "signed-out";
+    export type ProjectsView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" } | { status: "empty" }
+      | { status: "ready"; projects: ProjectSummary[]; filter: ProjectFilter };
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/projects.ts` contains only `import type { ProjectsState, ProjectsView } from "@/app/(tempo)/projects/page";` and `export const FIXTURES: Record<ProjectsState, ProjectsView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", filter: "all", projects: [ { id: "moving-flat", name: "Moving flat", done: 3, total: 6, status: "active", updatedAt: 3 }, { id: "thursday-talk", name: "Thursday talk", done: 4, total: 4, status: "done", updatedAt: 2 }, { id: "home-reset", name: "Home reset", done: 0, total: 0, status: "idea", updatedAt: 1 } ] }`; `filtered` = same projects with `filter: "paused"`; `loading`, `empty`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><ProjectsRoute /></Suspense>`. `ProjectsRoute`: `forced = useE2EState()`; `const { isAuthenticated, isLoading } = useConvexAuth()`; **when `forced === null && E2E_HARNESS && !isLoading && !isAuthenticated` return `<TaskViewsScreen view="project" projectSlug="home-reset" />`** (keeps `task-views-core.spec.ts` working; this branch exists only in the dev E2E harness). Otherwise forced → `ProjectsBody` with `FIXTURES[key]` (unknown names → `loading`; `online = key !== "offline"`); live → `ScreenBoundary` around `ProjectsLive` (signed out → `signed-out`; `tasks === undefined` → `loading`; zero projects → `empty`; else `ready` with `filter` from state, initial `"all"`). In `ProjectsBody` the filter is local state initialised from `view.filter`; `shown = filterProjects(projects, filter)`; `shown.length === 0` renders the `filtered` block.
+  - **Blocks:** offline → `<div data-testid="projects-offline"><StateOffline text={copy.offline} /></div>` above everything else; `loading` → `projects-loading` + `StateLoading label={copy.loading} rows={3}`; `error` → `projects-error` + `StateError what={copy.error} onRetry`; `signed-out` → `projects-signed-out` + `StateEmpty title={copy.signedOutTitle}` with a Sign in link to `/sign-in`; `empty` → `projects-empty` + `StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<button className="tp-btn tp-btn--secondary" …>{copy.emptyAction}</button>}`; `ready` → `<div data-testid="projects-default">` with `<Segmented label={copy.filterLabel} options={PROJECT_FILTERS.map(v => ({ value: v, label: copy["filter_" + v] }))} value={filter} onChange={…} />`, `<p role="status" aria-live="polite">{copy.showing filled with {n}}</p>`, then either `<List label={copy.listLabel}>` with one `ListRow` per shown project — `title = name`, `icon = <ProjectStatus status={status} />`, `meta = total === 0 ? copy.countNone : copy.count ({done},{total})`, `end = <><Link href={"/projects/" + encodeURIComponent(id)} className="tp-btn tp-btn--secondary tp-btn--sm" aria-label={copy.openAria.replace("{name}", name)}>{copy.open}</Link><Link href={…+"/kanban"} className="tp-btn tp-btn--ghost tp-btn--sm" aria-label={copy.boardAria…}>{copy.board}</Link></>` (no `href`/`onClick` on the row itself, so it renders a `<div>`) — or, when `shown` is empty, `<div data-testid="projects-filtered"><StateEmpty title={copy.filteredTitle} body={copy.filteredBody} action={<button …onClick={() => setFilter("all")}>{copy.showAll}</button>} /></div>`.
+  - **New project:** `router.push("/projects/" + newProjectId(Date.now(), Math.random()))` from both the header button and the empty-state button (forced mode: the same push; the detail page shows its own state).
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Projects | פרויקטים |
+    | sub | Bigger things, broken into tasks. Each one has a page and a board. | דברים גדולים יותר, מפורקים למשימות. לכל אחד יש דף ולוח. |
+    | newProject | New project | פרויקט חדש |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your projects | טוענים את הפרויקטים |
+    | error | Couldn't load your projects. | לא הצלחנו לטעון את הפרויקטים. |
+    | signedOutTitle | Sign in to see your projects. | צריך להתחבר כדי לראות את הפרויקטים. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | No projects yet. | עדיין אין פרויקטים. |
+    | emptyBody | A project is just a name and a few tasks. Start with one thing that's been on your mind. | פרויקט הוא רק שם וכמה משימות. אפשר להתחיל מדבר אחד שמעסיק אותך. |
+    | emptyAction | Start a first project | להתחיל פרויקט ראשון |
+    | filterLabel | Show | הצגה |
+    | filter_all | All | הכל |
+    | filter_active | Active | פעיל |
+    | filter_paused | Paused | מושהה |
+    | filter_done | Done | הושלם |
+    | showing | Showing {n} projects | מוצגים {n} פרויקטים |
+    | listLabel | Your projects | הפרויקטים שלך |
+    | count | {done} of {total} tasks done | {done} מתוך {total} משימות הושלמו |
+    | countNone | No tasks yet | עדיין אין משימות |
+    | open | Open | פתיחה |
+    | openAria | Open {name} | פתיחת {name} |
+    | board | Board | לוח |
+    | boardAria | Open the board for {name} | פתיחת הלוח של {name} |
+    | filteredTitle | No projects with this filter. | אין פרויקטים עם הסינון הזה. |
+    | filteredBody | Your other projects are still here. | שאר הפרויקטים שלך עדיין כאן. |
+    | showAll | Show all | להציג הכל |
+    ProjectStatus renders its own word (Idea/רעיון, Active/פעיל, Paused/מושהה, Done/הושלם; TFV2-0096).
+  - **States:** `default`, `filtered`, `loading`, `empty`, `error`, `offline`, `signed-out`; testid `projects-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion (components carry RTL and focus; project names `dir="auto"` inside ListRow; Tab order: New project → Segmented → each row's Open, Board). Wide page from 1024 px; no page rules. No motion added.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/projects", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (8 cases × 4 = 32).
+  - Given state `default` / Then `projects-default` shows 3 rows, the status text `showing` with 3, the first row has links named `openAria`("Moving flat") → `/projects/moving-flat` and `boardAria` → `/projects/moving-flat/kanban`; `expectTargetSize`, `expectMotionBudget` on `[data-testid="projects-screen"]` pass; `measureVitals` on `/projects?state=default&lang=<lang>` gives LCP ≤ 2500, CLS ≤ 0.1.
+  - Given state `default` / When the Segmented option `filter_done` is clicked / Then 1 row ("Thursday talk") and `showing` with 1.
+  - Given state `filtered` / Then `projects-filtered` shows `filteredTitle`; When `showAll` is clicked / Then 3 rows.
+  - Given state `default` / When `newProject` is clicked / Then the URL matches `/\/projects\/project-[a-z0-9]+$/` (the `project-<base36>` format `newProjectId` returns in `lib/goals-projects.ts`).
+  - Given state `loading` / Then `projects-loading` is visible and no `projects-default`.
+  - Given state `empty` / Then `projects-empty` shows `emptyTitle` and a button `emptyAction`.
+  - Given state `error` / Then `projects-error` shows `error` and the Try again button.
+  - Given state `offline` / Then `projects-offline` shows `offline` and `projects-default` is visible; and state `signed-out` shows `projects-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · `task-views-core.spec.ts` stays 1 of 1 passing (regression guard).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-007 (Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings?) — Amit. If Amit keeps the strings, this ticket builds as written; if he picks the table, a backend ticket for `projects.list` must exist first and this ticket is rewritten against it.
+
+### TFV2-0140 — Screen: Project detail (`/projects/[id]`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0092, TFV2-0096, TFV2-0097, TFV2-0111, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0092, TFV2-0096, TFV2-0097, TFV2-0111, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-08; design `docs/design/v3/screens/web/project-detail.html`; CONVENTIONS §13–§15. `tasks.list` and `tasks.create` exist in `convex/tasks.ts` (no backend ticket needed).
+- **GOAL:** `/projects/<id>` shows the project's name and status, its open and done tasks, and an add-task form that saves the project's first task, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/project-detail.ts` · test: `tests/e2e/screens/project-detail.spec.ts`. (No `e2eWiringRoutes.ts` line: `isCoreTaskViewRoute` already matches `/projects/(.*)`.)
+- **MUTATES:** `apps/web/app/(tempo)/projects/[id]/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/project-detail.ts` (new) · `tests/e2e/screens/project-detail.spec.ts` (new) · `tasks` rows inserted through the existing `api.tasks.create` (live use only).
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `ProjectDetailScreen projectSlug={id}`), `apps/web/lib/taskKanban.ts` `projectIdFromSlug`, `apps/web/lib/task-view-filters.ts` `titleFromProjectSlug`, `apps/web/lib/goals-projects.ts` `projectStatusFor`, and `convex/tasks.ts` `list` / `create` args. 2) Create the fixtures file. 3) Replace `page.tsx` per SPEC. 4) No E2E route step (already released by `isCoreTaskViewRoute`). 5) Create the spec. 6) Run DONE, `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-detail.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** Playwright summary and typecheck exit code in the PR.
+- **DO NOT:** edit `ProjectDetailScreen.tsx`, `lib/taskKanban.ts`, `lib/task-view-filters.ts`, `lib/goals-projects.ts`, i18n files or `e2eWiringRoutes.ts`; add pages, goals or backlinks sections (no data source until CFG-007 is answered); call a model; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0140 / evidence: <DONE output> / changed: page.tsx, fixtures/project-detail.ts, project-detail.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; the id comes from `useParams<{ id: string }>()` (`next/navigation`); `projectId = projectIdFromSlug(decodeURIComponent(id))`. Root `<div className="tp-page" data-component="PageLayout" data-testid="project-detail-screen">`. Header: `<h1>` = project name; `.tp-pagehead__sub` holds `<ProjectStatus status={status} />`; actions: `<Link href={"/projects/" + encodeURIComponent(projectId) + "/kanban"} className="tp-btn tp-btn--secondary tp-btn--sm" data-component="Button">{copy.openBoard}</Link>` and `<Link href="/projects" className="tp-btn tp-btn--ghost tp-btn--sm">{copy.allProjects}</Link>`.
+  - **Imports:** `useConvexAuth`, `useQuery`, `useMutation`; `api`; `type Id`; `Link`; `useParams`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `projectIdFromSlug` from `@/lib/taskKanban`; `titleFromProjectSlug` from `@/lib/task-view-filters`; `projectStatusFor` from `@/lib/goals-projects`; `Notice`; `ProjectStatus`; `List`, `ListRow`; `Form`, `TextInput`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/project-detail`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><ProjectDetailScreen /></Suspense>`; `ProjectDetailScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<ProjectDetailBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <ProjectDetailBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><ProjectDetailLive online={liveOnline} /></ScreenBoundary>`; `ProjectDetailLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; a `ready` view keeps `tasks` and `added` in local state so the add form updates the list at once.
+  - **Data (live):** `api.users.getProfile` gate; `api.tasks.list` `{ projectId }` → rows; `api.tasks.create` `{ title: string; projectId: string; projectName: string }` → `Id<"tasks">`. `name` = the `projectName` of the most recently updated row that has one, else `titleFromProjectSlug(projectId)`; `status` = `projectStatusFor(done, total)` over non-cancelled rows.
+  - **View type:**
+    ```ts
+    export type ProjectDetailState = "default" | "loading" | "empty" | "error" | "offline" | "signed-out" | "success";
+    export type ProjectTaskRow = { id: string; title: string; status: "todo" | "in_progress" | "done" };
+    export type ProjectDetailView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" }
+      | { status: "ready"; projectId: string; name: string; projectStatus: "idea" | "active" | "paused" | "done"; tasks: ProjectTaskRow[]; added: string | null };
+    ```
+    `cancelled` rows are dropped. `empty` is not a separate status: a `ready` view with `tasks.length === 0` renders the empty block.
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/project-detail.ts` contains only `import type { ProjectDetailState, ProjectDetailView } from "@/app/(tempo)/projects/[id]/page";` and `export const FIXTURES: Record<ProjectDetailState, ProjectDetailView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", projectId: "moving-flat", name: "Moving flat", projectStatus: "active", added: null, tasks: [ {id:"t1",title:"Email Dana about the lease",status:"in_progress"}, {id:"t2",title:"Ask Yoni about the van",status:"todo"}, {id:"t3",title:"Pack one box of books",status:"todo"}, {id:"t4",title:"Get 20 boxes",status:"done"} ] }`; `empty` = `{ status: "ready", projectId: "garden", name: "Garden", projectStatus: "idea", added: null, tasks: [] }`; `success` = the `default` value with `added: "Measure the new kitchen"` and that task appended as `{ id: "t5", title: "Measure the new kitchen", status: "todo" }`; `loading`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Body:** offline block `project-detail-offline` (`StateOffline text={copy.offline}`); `loading` → `project-detail-loading` (`StateLoading label={copy.loading}`); `error` → `project-detail-error` (`StateError what={copy.error}`); `signed-out` → `project-detail-signed-out`; ready with no tasks → `<div data-testid="project-detail-empty"><StateEmpty title={copy.emptyTitle} body={copy.emptyBody} /></div>` followed by the add form with its submit label `copy.addFirst`; ready with tasks → `<div data-testid="project-detail-default">` holding: section "Open" — `<List label={copy.openList}>` rows for `todo`/`in_progress` (`meta` = `copy.statusTodo` or `copy.statusDoing`); section "Done" — `<List label={copy.doneList}>` rows for `done` (`meta` = `copy.statusDone`), omitted when none; then the add form. When `added !== null`: `<div data-testid="project-detail-success"><Notice tone="done" title={copy.added.replace("{title}", added)} live="status" /></div>` above the lists.
+  - **Add form:** `<Form label={copy.formLabel} onSubmit={submit} busy={busy} actions={<button type="submit" className="tp-btn tp-btn--primary" data-component="Button" disabled={busy}>{tasks.length === 0 ? copy.addFirst : copy.add}</button>}><TextInput id="project-task-title" label={copy.taskLabel} value={title} onChange={setTitle} error={fieldError} maxLength={200} required /></Form>`. `submit`: trimmed empty → `fieldError = copy.titleEmpty`, no call; else live `await create({ title, projectId, projectName: name })`, then clear the field and set `added = title`; a thrown error → `fieldError = copy.addFailed`. Forced mode: append `{ id: "local-<n>", title, status: "todo" }` to local state and set `added` (no Convex).
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | openBoard | Open board | פתיחת הלוח |
+    | allProjects | All projects | כל הפרויקטים |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading this project | טוענים את הפרויקט |
+    | error | Couldn't open this project. | לא הצלחנו לפתוח את הפרויקט. |
+    | signedOutTitle | Sign in to see this project. | צריך להתחבר כדי לראות את הפרויקט. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | This project is just a name for now. | הפרויקט הזה הוא בינתיים רק שם. |
+    | emptyBody | That's a fine start. Add one first task. | זו התחלה טובה. אפשר להוסיף משימה ראשונה. |
+    | openList | Open tasks | משימות פתוחות |
+    | doneList | Done | הושלמו |
+    | statusTodo | To do | לעשות |
+    | statusDoing | Doing | בעבודה |
+    | statusDone | Done | הושלם |
+    | formLabel | Add a task to this project | הוספת משימה לפרויקט |
+    | taskLabel | Task | משימה |
+    | add | Add task | הוספת משימה |
+    | addFirst | Add a first task | הוספת משימה ראשונה |
+    | titleEmpty | Write a few words first. | קודם כותבים כמה מילים. |
+    | addFailed | Couldn't add the task. Try again. | לא הצלחנו להוסיף את המשימה. אפשר לנסות שוב. |
+    | added | Added “{title}”. | נוספה המשימה „{title}”. |
+  - **States:** `default`, `loading`, `empty`, `error`, `offline`, `signed-out`, `success`; testid `project-detail-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; Enter in the field submits the form (TFV2-0111 prevents the page reload); the field error is announced by TextInput (TFV2-0113).
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/projects/moving-flat", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (8 cases × 4 = 32).
+  - Given state `default` / Then `project-detail-default` shows the `<h1>` "Moving flat", 3 rows in the list named `openList`, 1 row in `doneList`, a link `openBoard` to `/projects/moving-flat/kanban`; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / When "Measure the new kitchen" is typed and `add` clicked / Then `project-detail-success` shows `added` with that title and `openList` has 4 rows.
+  - Given state `default` / When `add` is clicked with an empty field / Then the field error `titleEmpty` is visible and `openList` still has 3 rows.
+  - Given state `empty` / Then `project-detail-empty` shows `emptyTitle` and the submit button is named `addFirst`.
+  - Given state `success` / Then `project-detail-success` is visible with "Measure the new kitchen".
+  - Given state `loading` / Then `project-detail-loading` is visible.
+  - Given state `error` / Then `project-detail-error` shows `error` and Try again.
+  - Given state `offline` / Then `project-detail-offline` and `project-detail-default` are both visible; and state `signed-out` shows `project-detail-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · task title ≤ 200 characters (`maxLength`; code constant of this screen).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-007 (Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings?) — Amit. Built as written if the strings stay.
+
+### TFV2-0141 — Screen: Project kanban (`/projects/[id]/kanban`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0092, TFV2-0106, TFV2-0107, TFV2-0111, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, CFG-007, TFV2-0092, TFV2-0106, TFV2-0107, TFV2-0111, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-08; design `docs/design/v3/screens/web/project-kanban.html` ("Move cards with the buttons on each card"); CONVENTIONS §13–§15. `tasks.list`, `tasks.create` and `tasks.update` exist in `convex/tasks.ts` (no backend ticket needed).
+- **GOAL:** `/projects/<id>/kanban` shows the project's tasks in three columns (To do, Doing, Done = `tasks.status` `todo`, `in_progress`, `done`) with move buttons on every card and an add-card form, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` · `apps/web/lib/e2e/fixtures/project-kanban.ts` · test: `tests/e2e/screens/project-kanban.spec.ts`. (No `e2eWiringRoutes.ts` line: `/projects/(.*)` is a core route.)
+- **MUTATES:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/project-kanban.ts` (new) · `tests/e2e/screens/project-kanban.spec.ts` (new) · `tasks.status` changed through the existing `api.tasks.update`, and rows inserted through `api.tasks.create` (live use only).
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `TaskKanbanBoard`), `convex/tasks.ts` `list`, `update` (args include `taskId: v.id("tasks")`, `status`), `create`; `lib/taskKanban.ts` `projectIdFromSlug`. 2) Create fixtures. 3) Replace `page.tsx`. 4) No E2E route step (core route). 5) Create the spec. 6) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-kanban.spec.ts --reporter=line` → `36 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** Playwright summary and typecheck exit code in the PR.
+- **DO NOT:** edit `TaskKanbanBoard.tsx`, `lib/taskKanban.ts` or i18n files; require drag; enable the move-prev button in To do or move-next in Done; show `cancelled` tasks; call `tasks.moveColumn` (does not exist); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0141 / evidence: <DONE output> / changed: page.tsx, fixtures/project-kanban.ts, project-kanban.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; `const { id } = useParams<{ id: string }>()`; `projectId = projectIdFromSlug(decodeURIComponent(id))` (`@/lib/taskKanban`). Root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-testid="project-kanban-screen">`. Header `<h1>` = name; sub = `copy.sub`; actions: `<Link href={"/projects/" + encodeURIComponent(projectId)} className="tp-btn tp-btn--ghost tp-btn--sm">{copy.back}</Link>`.
+  - **Imports:** `useConvexAuth`, `useQuery`, `useMutation`; `api`; `type Id`; `Link`; `useParams`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `projectIdFromSlug` from `@/lib/taskKanban`; `titleFromProjectSlug` from `@/lib/task-view-filters`; `Notice`; `Kanban`, `KanbanCard`; `Form`, `TextInput`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/project-kanban`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><ProjectKanbanScreen /></Suspense>`; `ProjectKanbanScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<ProjectKanbanBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <ProjectKanbanBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><ProjectKanbanLive online={liveOnline} /></ScreenBoundary>`; `ProjectKanbanLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; `cards` and `lastMovedId` live in local state so moves show at once.
+  - **Data (live):** `api.users.getProfile` gate; `api.tasks.list` `{ projectId }`; `api.tasks.update` `{ taskId: Id<"tasks">; status: "todo" | "in_progress" | "done" }` → `Id<"tasks">`; `api.tasks.create` `{ title, projectId, projectName, status: "todo" }`. `name` = the `projectName` of the most recently updated row that has one, else `titleFromProjectSlug(projectId)` (`@/lib/task-view-filters`).
+  - **View type:**
+    ```ts
+    export type ProjectKanbanState = "default" | "empty" | "loading" | "error" | "offline" | "signed-out";
+    export type BoardCard = { id: string; title: string; status: "todo" | "in_progress" | "done" };
+    export type ProjectKanbanView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" }
+      | { status: "ready"; projectId: string; name: string; cards: BoardCard[] };
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/project-kanban.ts` contains only `import type { ProjectKanbanState, ProjectKanbanView } from "@/app/(tempo)/projects/[id]/kanban/page";` and `export const FIXTURES: Record<ProjectKanbanState, ProjectKanbanView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", projectId: "moving-flat", name: "Moving flat", cards: [ {id:"c1",title:"Pack one box of books",status:"todo"}, {id:"c2",title:"Ask Yoni about the van",status:"todo"}, {id:"c3",title:"Email Dana about the lease",status:"in_progress"}, {id:"c4",title:"Get 20 boxes",status:"done"} ] }`; `empty` = `{ status: "ready", projectId: "garden", name: "Garden", cards: [] }`; others `{ status: "<name>" }`.
+  - **Board:** column order `[{ id: "todo", name: copy.colTodo, emptyText: copy.emptyTodo }, { id: "in_progress", name: copy.colDoing, emptyText: copy.emptyDoing }, { id: "done", name: copy.colDone, emptyText: copy.emptyDone }]` (in RTL the Kanban component mirrors flow). `<div data-testid="project-kanban-default"><Kanban label={copy.boardLabel.replace("{name}", name)} columns={…} /></div>`; each column's `cards` = `<KanbanCard key={id} card={{ id, title }} prevColumnName={prev?.name ?? null} nextColumnName={next?.name ?? null} onMovePrev={move(-1)} onMoveNext={move(+1)} moved={id === lastMovedId} />`. `move(step)(cardId)`: new status = neighbour column id; local state updates at once (optimistic) and `lastMovedId = cardId`; an sr-only `<p className="tp-sr-only" role="status">` receives `copy.movedSr` with `{title}` and `{column}`; live mode then calls `update({ taskId: cardId as Id<"tasks">, status })`; on failure the card returns to its old column and `<Notice tone="danger" title={copy.moveFailed} live="alert" />` shows. Forced mode: local state only.
+  - **Empty board:** ready with zero cards → `<div data-testid="project-kanban-empty"><StateEmpty title={copy.emptyTitle} body={copy.emptyBody} /></div>` above the add form (no board).
+  - **Add card:** below the board, `Form label={copy.formLabel}` with `TextInput id="kanban-card-title" label={copy.cardLabel} maxLength={200} required` and a submit button `copy.addCard` (`copy.addFirst` when empty). Empty input → `error = copy.titleEmpty`. Live → `create(…)`; forced → append locally with `status: "todo"`.
+  - **Other blocks:** `project-kanban-offline` (`StateOffline text={copy.offline}`), `project-kanban-loading` (`StateLoading label={copy.loading}`), `project-kanban-error` (`StateError what={copy.error}`), `project-kanban-signed-out` (StateEmpty `copy.signedOutTitle` + Sign in link).
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | sub | Move cards with the buttons on each card. | מזיזים כרטיסים עם הכפתורים שעל כל כרטיס. |
+    | back | Back to the project page | חזרה לדף הפרויקט |
+    | boardLabel | {name} board | הלוח של {name} |
+    | colTodo | To do | לעשות |
+    | colDoing | Doing | בעבודה |
+    | colDone | Done | הושלם |
+    | emptyTodo | Nothing waiting here. | שום דבר לא מחכה כאן. |
+    | emptyDoing | Nothing in progress. That's allowed. | שום דבר לא בעבודה. זה בסדר. |
+    | emptyDone | Finished cards land here. | כרטיסים שהושלמו מגיעים לכאן. |
+    | movedSr | Card {title} moved to {column}. | הכרטיס {title} עבר לעמודה {column}. |
+    | moveFailed | Couldn't move the card. It's back where it was. | לא הצלחנו להזיז את הכרטיס. הוא חזר למקומו. |
+    | emptyTitle | This board is empty for now. | הלוח הזה ריק בינתיים. |
+    | emptyBody | Add one card to To do. You can move it along whenever you're ready. | אפשר להוסיף כרטיס אחד ל„לעשות” ולהזיז אותו הלאה מתי שרוצים. |
+    | formLabel | Add a card to To do | הוספת כרטיס ל„לעשות” |
+    | cardLabel | Card | כרטיס |
+    | addCard | Add a card | הוספת כרטיס |
+    | addFirst | Add a first card | הוספת כרטיס ראשון |
+    | titleEmpty | Write a few words first. | קודם כותבים כמה מילים. |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading this board | טוענים את הלוח |
+    | error | Couldn't load this board. | לא הצלחנו לטעון את הלוח. |
+    | signedOutTitle | Sign in to see this board. | צריך להתחבר כדי לראות את הלוח. |
+    | signIn | Sign in | התחברות |
+    KanbanCard renders its own move-button labels from `prevColumnName` / `nextColumnName` (TFV2-0107).
+  - **States:** `default`, `empty`, `loading`, `error`, `offline`, `signed-out`; testid `project-kanban-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** column flow and arrow icons mirror in RTL (TFV2-0106/0107); every move is a button (no drag needed); at 390 px the Kanban component scrolls columns horizontally with snap (component behaviour); the `moved` highlight uses the component's own transition (≤ 250 ms).
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/projects/moving-flat/kanban", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (9 cases × 4 = 36).
+  - Given state `default` / Then `project-kanban-default` shows 3 columns with 2, 1 and 1 cards; target size, motion and vitals pass.
+  - Given state `default` / When the second button in `[data-card="c1"] .tp-kanban-card__move` (move next) is clicked / Then that card is in the Doing column, the sr-only status reads `movedSr` with "Pack one box of books" and `colDoing`.
+  - Given state `default` / Then the first `.tp-kanban-card__move` button of `[data-card="c1"]` and `[data-card="c2"]` and the second one of `[data-card="c4"]` are disabled, and every other move button is enabled.
+  - Given state `default` / When the first button in `[data-card="c4"] .tp-kanban-card__move` (move back) is clicked / Then the Done column shows `emptyDone`.
+  - Given state `default` / When "Measure the kitchen" is added / Then the To do column has 3 cards.
+  - Given state `empty` / Then `project-kanban-empty` shows `emptyTitle` and the submit button `addFirst`, and no Kanban board exists.
+  - Given state `loading` / Then `project-kanban-loading` is visible.
+  - Given state `error` / Then `project-kanban-error` with `error` and Try again.
+  - Given state `offline` / Then `project-kanban-offline` and the board are visible; and state `signed-out` shows `project-kanban-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · 0 move buttons enabled at the board edges (exact).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-007 (Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings?) — Amit. Built as written if the strings stay.
+
+### TFV2-0142a — Pure helper: zoned day math (`apps/web/lib/zonedDay.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §14 (screens take the time zone from `userPreferences.timeZone` via `api.preferences.get`, never the browser's) — the Insights (TFV2-0142b) and Weekly page (TFV2-0148) screens need day and week windows in that zone; `apps/web/lib/localDay.ts` and `todayBounds.ts` only know the browser zone.
+- **GOAL:** One pure module turns instants into calendar dates and calendar dates into midnights in any IANA time zone, and finds the start of a week for `weekStartsOn` 0, 1 or 6, proven by its own test.
+- **SCOPE:** `apps/web/lib/zonedDay.ts` · test: `apps/web/lib/zonedDay.test.ts`.
+- **MUTATES:** `apps/web/lib/zonedDay.ts` (new) · `apps/web/lib/zonedDay.test.ts` (new).
+- **STEPS:** 1) Code-map check: `ls apps/web/lib/zonedDay.ts` (absent); `grep -rn "zonedMidnightMs\|zonedIsoDate" apps/web` (no hits). 2) Create `zonedDay.ts` with exactly the SPEC code (no React, Next or Convex imports). 3) Create `zonedDay.test.ts` (`bun:test`) with the 7 TESTS cases. 4) Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test apps/web/lib/zonedDay.test.ts` → `7 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary and typecheck exit code pasted into the PR.
+- **DO NOT:** edit `apps/web/lib/localDay.ts`, `todayBounds.ts`, `period-pages.ts` or `useLocalDayBounds.ts`; add a date library dependency; read `Date.now()` inside the module; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0142a / evidence: <DONE output> / changed: apps/web/lib/zonedDay.ts, apps/web/lib/zonedDay.test.ts / unknowns / notes for ticket sync`.
+- **SPEC:** Pure module, exact code:
+  ```ts
+  export type WeekStartsOn = 0 | 1 | 6;
+
+  function safeZone(timeZone: string): string {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone });
+      return timeZone;
+    } catch {
+      return "UTC";
+    }
+  }
+
+  function zonedParts(ms: number, timeZone: string): Record<string, number> {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: safeZone(timeZone), hourCycle: "h23",
+      year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+    }).formatToParts(new Date(ms));
+    const out: Record<string, number> = {};
+    for (const p of parts) if (p.type !== "literal") out[p.type] = Number(p.value);
+    return out;
+  }
+
+  /** Offset of `timeZone` from UTC at instant `ms`, in ms (positive east of UTC). */
+  function offsetMs(ms: number, timeZone: string): number {
+    const p = zonedParts(ms, timeZone);
+    const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    return asUtc - Math.floor(ms / 1000) * 1000;
+  }
+
+  /** The calendar date (YYYY-MM-DD) of instant `ms` in `timeZone`; an unknown zone reads as "UTC". */
+  export function zonedIsoDate(ms: number, timeZone: string): string {
+    const p = zonedParts(ms, timeZone);
+    return `${String(p.year).padStart(4, "0")}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+  }
+
+  /** Epoch ms of 00:00 on `isoDate` in `timeZone`; an unknown zone reads as "UTC". */
+  export function zonedMidnightMs(isoDate: string, timeZone: string): number {
+    const [y, m, d] = isoDate.split("-").map(Number);
+    const guess = Date.UTC(y, m - 1, d);
+    const first = guess - offsetMs(guess, timeZone);
+    const second = guess - offsetMs(first, timeZone);
+    return second;
+  }
+
+  /** `isoDate` moved by `days` calendar days (no zone involved). */
+  export function addIsoDays(isoDate: string, days: number): string {
+    const [y, m, d] = isoDate.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+  }
+
+  /** Day of the week of a calendar date: 0 = Sunday … 6 = Saturday. */
+  export function isoWeekday(isoDate: string): number {
+    return new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+  }
+
+  /** The first date of the week that holds `isoDate`, for a week starting on `weekStartsOn`. */
+  export function weekStartDate(isoDate: string, weekStartsOn: WeekStartsOn): string {
+    const back = (isoWeekday(isoDate) - weekStartsOn + 7) % 7;
+    return addIsoDays(isoDate, -back);
+  }
+  ```
+  No user-facing copy; no errors thrown (an unknown zone falls back to `"UTC"`).
+- **TESTS:** (`bun:test`, file `apps/web/lib/zonedDay.test.ts`)
+  - Given `zonedIsoDate(Date.UTC(2026, 9, 12, 21, 30), "Asia/Jerusalem")` / Then `"2026-10-13"`; and with `"UTC"` / Then `"2026-10-12"`.
+  - Given `zonedMidnightMs("2026-10-13", "Asia/Jerusalem")` / Then `Date.UTC(2026, 9, 12, 21, 0)`; and `zonedMidnightMs("2026-10-13", "UTC")` / Then `Date.UTC(2026, 9, 13)`.
+  - Given the New York DST start (Sunday 8 March 2026) / When `zonedMidnightMs("2026-03-08", "America/New_York")` and `zonedMidnightMs("2026-03-09", "America/New_York")` run / Then `Date.UTC(2026, 2, 8, 5)` and `Date.UTC(2026, 2, 9, 4)`.
+  - Given `zonedMidnightMs("2026-10-13", "Not/AZone")` / Then it equals `zonedMidnightMs("2026-10-13", "UTC")`, and `zonedIsoDate(0, "Not/AZone")` equals `"1970-01-01"`.
+  - Given `addIsoDays("2026-10-31", 1)` / Then `"2026-11-01"`; and `addIsoDays("2026-03-01", -1)` / Then `"2026-02-28"`.
+  - Given `isoWeekday("2026-10-15")` / Then `4`; and `isoWeekday("2026-10-11")` / Then `0`.
+  - Given Thursday `"2026-10-15"` / When `weekStartDate` runs with 1, 0 and 6 / Then `"2026-10-12"`, `"2026-10-11"` and `"2026-10-10"`; and `weekStartDate("2026-10-12", 1)` / Then `"2026-10-12"`.
+- **NUMBERS:** 7 of 7 cases pass (exact). No latency or UI number applies to a pure helper.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0139 — Screen: Projects — OPEN
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0096, TFV2-0098 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** PRD F-08; screen `web/projects.html`.
-- **GOAL:** Projects list shows projects with status badges and a filter.
-- **SCOPE:** `apps/web/app/(tempo)/projects/page.tsx` · `apps/web/components/projects/projects-client.tsx` · `tests/e2e/screens/projects.spec.ts`.
-- **MUTATES:** none (wires `projects.list`, `goals.listNames`).
-- **STEPS:** 1) Graphify code-map of `components/projects`; 2) wire; 3) implement ListRow + ProjectStatus + Segmented + create + five states; 4) copy `web/projects.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/projects.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** edit `convex/`; invent statuses beyond four.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/projects`, layout TempoShell. Data: `projects.list`, `goals.listNames`. Actions: create project; filter by status. States: default, filtered-to-nothing, empty, loading, error, offline. One primary: "Start a project". Key copy: EN "Projects"/HE "פרויקטים"; empty EN "No projects yet."/HE "עדיין אין פרויקטים."; empty body EN "A project is just a name and a few tasks. Start with one thing on your mind."/HE "פרויקט הוא רק שם וכמה משימות. אפשר להתחיל מדבר אחד שמעסיק אותך."; statuses EN Idea·Active·Paused·Done /HE רעיון·פעיל·מושהה·הושלם; error EN "Couldn't load your projects."/HE "לא הצלחנו לטעון את הפרויקטים שלך." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/projects.html`.
-- **TESTS:** Given 3 projects / When load / Then 3 rows with status badges. Given filter Active / When choose / Then filtered. Given create / When submit / Then new project. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** missing backend: `projects.list` (no `projects` table; projects are a `projectId` string on tasks) — UNKNOWN, Amit answers
-
-### TFV2-0140 — Screen: Project detail — OPEN
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0097, TFV2-0096 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** screen `web/project-detail.html`.
-- **GOAL:** Project detail shows linked pages, tasks and goals, with empty and error states.
-- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/page.tsx` · `apps/web/components/projects/project-detail-client.tsx` · `tests/e2e/screens/project-detail.spec.ts`.
-- **MUTATES:** none (wires `projects.get`, `pages.listByProject`, `tasks.listByProject`, `notes.backlinks`).
-- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement pages/tasks/goals sections + five states; 4) copy `web/project-detail.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-detail.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** edit `convex/`; auto-rename; add a second primary.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/projects/[id]`, layout TempoShell. Data: `projects.get`, `pages.listByProject`, `tasks.listByProject`, `notes.backlinks`. Actions: add task. States: default, empty (name only), loading, error, offline. One primary: "Add task". Key copy: EN "Pages in this project"/HE "דפים בפרויקט הזה"; EN "Tasks"/HE "משימות"; EN "Goals"/HE "מטרות"; empty EN "This project is just a name for now."/HE "הפרויקט הזה הוא בינתיים רק שם."; EN "Add a first task"/HE "הוספת משימה ראשונה"; error EN "Couldn't open this project."/HE "לא הצלחנו לפתוח את הפרויקט הזה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/project-detail.html`.
-- **TESTS:** Given a project / When load / Then title + pages + tasks + goals. Given empty / When load / Then empty copy + Add first task. Given error / When fail / Then Retry. Playwright: open, empty, error, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** missing backend: `projects.get`, `tasks.listByProject` (no `projects` table) — UNKNOWN, Amit answers
-
-### TFV2-0141 — Screen: Project kanban — OPEN
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065a, TFV2-0065b, TFV2-0065c, TFV2-0065d, TFV2-0106, TFV2-0107 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** screen `web/project-kanban.html`; PRD F-08.
-- **GOAL:** Project kanban shows task columns with move buttons on every card.
-- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` · `apps/web/components/projects/project-kanban-client.tsx` · `tests/e2e/screens/project-kanban.spec.ts`.
-- **MUTATES:** none (wires `projects.get`, `tasks.listByProjectColumns`, `tasks.moveColumn`).
-- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement Kanban + KanbanCard + five states; 4) copy `web/project-kanban.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-kanban.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** require drag; edit `convex/`; enable an edge move button.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/projects/[id]/kanban`, layout TempoShell. Data: `projects.get`, `tasks.listByProjectColumns`. Actions: `tasks.moveColumn` via `kanban-move` `data-dir`. States: default, empty board, empty column, loading, error, offline. One primary: "Add card". Key copy: column names EN "To do"·"Doing"·"Done" /HE "לעשות"·"בעבודה"·"הושלם"; empty board EN "This board is empty for now."/HE "הלוח הזה ריק בינתיים."; empty column EN "Nothing waiting here."/HE "שום דבר לא מחכה כאן."; error EN "Couldn't load this board."/HE "לא הצלחנו לטעון את הלוח הזה." RTL: move buttons `.tp-icon--flip`/`.tp-icon--back`; columns flow RTL. Breakpoints 390/768/1024/1280 (snap-scroll at 390). Motion: card move ≤250 ms. Full strings = `web/project-kanban.html`.
-- **TESTS:** Given 3 columns / When load / Then 3 columns with counts. Given move next / When click / Then card moves + counts update, edge disabled. Given empty column / When render / Then column empty copy. Given error / When fail / Then Retry. Playwright: move card between columns, disabled edges, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** missing backend: `tasks.moveColumn`, `tasks.listByProjectColumns` (no move-column mutation or column-grouping query exists) — UNKNOWN, Amit answers
-
-### TFV2-0142 — Screen: Insights
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0079a, TFV2-0079b, TFV2-0079c, TFV2-0080, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** screen `web/insights.html`; PRD F-55 (observations).
-- **GOAL:** Insights shows pattern sentences plus weekday and focus charts, each with a summary.
-- **SCOPE:** `apps/web/app/(tempo)/insights/page.tsx` · `apps/web/components/insights/insights-client.tsx` · `tests/e2e/screens/insights.spec.ts`.
-- **MUTATES:** none (wires `analytics.insightsSummary`, `analytics.tasksByWeekday`, `analytics.focusMinutesByWeek`).
-- **STEPS:** 1) Graphify code-map of `components/insights`; 2) wire; 3) implement pattern list + charts + summaries + five states; 4) copy `web/insights.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/insights.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** write shaming copy; render a chart without a summary; edit `convex/`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/insights`, layout TempoShell. Data: `analytics.insightsSummary`, `analytics.tasksByWeekday`, `analytics.focusMinutesByWeek`. Components: BarChart, LineChart, ChartSummary. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Insights"/HE "תובנות"; empty EN "Patterns need about a week."/HE "לדפוסים צריך בערך שבוע."; empty body EN "Use Tempo however works for you. Gentle patterns appear here on their own. There is nothing to do."/HE "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות."; error EN "Couldn't load insights."/HE "לא הצלחנו לטעון את התובנות." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/insights.html`.
-- **TESTS:** Given patterns + data / When load / Then sentences + two charts each with summary. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0143 — Screen: Activity
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0081, TFV2-0097, TFV2-0098 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** PRD F-22 (5-min Undo); screen `web/activity.html`.
-- **GOAL:** Activity shows a 7-day feed of changes, coach changes undoable for 5 minutes.
-- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/components/activity/activity-client.tsx` · `tests/e2e/screens/activity.spec.ts`.
-- **MUTATES:** none (wires `activity.list`, `activity.undo`).
-- **STEPS:** 1) Graphify code-map of `components/activity`; 2) wire; 3) implement feed + filter + Undo + five states; 4) copy `web/activity.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** show Undo after 5 minutes; edit `convex/`; undo a user's own action.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/activity`, layout TempoShell. Data: `activity.list`. Actions: `activity.undo({activityId})` (coach-origin, ≤5 min). Components: ListRow, Segmented filter. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Recent activity"/HE "פעילות אחרונה"; EN "Everything that changed in the last seven days, by you or the coach."/HE "כל מה שהשתנה בשבעת הימים האחרונים, על ידייך או על ידי המאמן."; empty EN "Nothing changed this week."/HE "שום דבר לא השתנה השבוע."; filter EN "By you"/"By the coach"/HE "על ידייך"/"על ידי המאמן"; EN "Undo"/HE "ביטול"; undo toast EN "The change was undone."/HE "השינוי בוטל. שום דבר אחר לא זז."; error EN "Couldn't load recent activity."/HE "לא הצלחנו לטעון את הפעילות האחרונה." RTL full mirror; timestamps `.tp-num`. Breakpoints 390/768/1024/1280. Motion: row removal ≤250 ms. Full strings = `web/activity.html`.
-- **TESTS:** Given feed / When load / Then rows by you + coach. Given a coach change <5 min / When load / Then Undo shown. Given >5 min / When load / Then no Undo. Given Undo / When click / Then row removed + toast. Playwright: filter→undo, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0142b — Screen: Insights (`/insights`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0072b, TFV2-0080, TFV2-0092, TFV2-0097, TFV2-0108, TFV2-0109, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0072b, TFV2-0080, TFV2-0092, TFV2-0097, TFV2-0108, TFV2-0109, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a.
+- **WHY:** design `docs/design/v3/screens/web/insights.html` (weekday bar chart, weekly focus line chart, "No streaks here"); PRD F-10 (no streak counter); CONVENTIONS §13–§15. `tasks.listDoneInRange` exists in `convex/tasks.ts` and `preferences.get` in `convex/preferences.ts` (no backend ticket needed); `focusBlocks.listInRange` is TFV2-0072b and `analytics.insightsSummary` TFV2-0080.
+- **GOAL:** `/insights` shows this week's plain numbers, a "tasks finished by weekday" bar chart over the last four weeks and a "focus minutes by week" line chart over the last eight weeks, each with a summary, in every state, using only backend functions that exist today.
+- **SCOPE:** `apps/web/app/(tempo)/insights/page.tsx` · `apps/web/lib/e2e/fixtures/insights.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/insights.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/insights/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/insights.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/insights.spec.ts` (new) · route `/insights` registered for the dev-only E2E bypass. Read-only screen.
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `InsightsScreen`); confirm in code `analytics.insightsSummary` args `{ todayStartMs, todayEndMs, weekStartMs }` and its four window errors, `tasks.listDoneInRange` (`MAX_DONE_RANGE_MS` = 31 days), `focusBlocks.listInRange` (`MAX_RANGE_MS` = 93 days), `preferences.get`; read `tests/e2e/fix/insights-loads.spec.ts` (it opens `/insights` signed out and must still settle on "Done this week", a Retry button, or a "Sign in" link within 8 s with no `[aria-busy=true]`). 2) Create fixtures. 3) Replace `page.tsx` per SPEC. 4) Named step — register the route: insert `  "/insights",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else. 5) Create the spec. 6) Run DONE, then `CI=1 bunx playwright test tests/e2e/fix/insights-loads.spec.ts --reporter=line`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/insights.spec.ts --reporter=line` → `28 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/fix/insights-loads.spec.ts --reporter=line` → `1 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries, the typecheck exit code and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **DO NOT:** show `bestStreak`, `habitsWithActiveStreak` or `tasksOverdue` from `insightsSummary` (PRD F-10; "overdue" is a shaming word, CONVENTIONS §12); call `analytics.tasksByWeekday` or `analytics.focusMinutesByWeek` (TFV2-0079b/0079c add them; this ticket uses the queries that exist today and does not wait on those tickets); edit `InsightsScreen.tsx`, `insightsState.ts`, `tests/e2e/fix/insights-loads.spec.ts` or i18n files; read the browser time zone; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0142b / evidence: <DONE output> / changed: page.tsx, fixtures/insights.ts, e2eWiringRoutes.ts, insights.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="insights-screen">`; header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`; sections `.tp-section` / `.tp-section__head` / `.tp-section__title`.
+  - **Imports:** `useConvexAuth`, `useQuery` from `convex/react`; `api`; `Link`; `Suspense`, `useState` from `react`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `zonedIsoDate`, `zonedMidnightMs`, `addIsoDays`, `isoWeekday`, `weekStartDate`, `type WeekStartsOn` from `@/lib/zonedDay`; `Notice` from `@/components/layout/Notice`; `List`, `ListRow` from `@/components/lists/ListRow`; `BarChart`, `LineChart`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/insights`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Data (live):** `const [now] = useState(() => Date.now())`. `api.users.getProfile` gate; `api.preferences.get` → `weekStartsOn`, `timeZone` (`tz`). Then `today = zonedIsoDate(now, tz)`; `todayStartMs = zonedMidnightMs(today, tz)`; `todayEndMs = zonedMidnightMs(addIsoDays(today, 1), tz)`; `weekStart = weekStartDate(today, weekStartsOn)`; `firstWeek = addIsoDays(weekStart, -49)`. Queries: `api.analytics.insightsSummary` `{ todayStartMs, todayEndMs, weekStartMs: zonedMidnightMs(weekStart, tz) }`; `api.tasks.listDoneInRange` `{ startMs: zonedMidnightMs(addIsoDays(today, -27), tz), endMs: todayEndMs }` (28 days, under the 31-day cap); `api.focusBlocks.listInRange` `{ startMs: zonedMidnightMs(firstWeek, tz), endMs: todayEndMs }` (56 days, under the 93-day cap). All `"skip"` until profile and preferences exist, and when forced or signed out.
+  - **View type:**
+    ```ts
+    export type InsightsState = "default" | "loading" | "empty" | "error" | "offline" | "signed-out";
+    export type InsightsView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" } | { status: "empty" }
+      | {
+          status: "ready";
+          weekStartsOn: 0 | 1 | 6;
+          thisWeek: { done: number; open: number; dueToday: number; goalsActive: number };
+          byWeekday: number[]; // length 7, index = weekday 0 (Sun) … 6 (Sat), tasks finished in the last 28 days
+          focusWeeks: { weekStart: string; minutes: number }[]; // length 8, oldest first
+        };
+    ```
+    Mapping: `thisWeek` = `{ done: s.tasksCompletedThisWeek, open: s.tasksOpen, dueToday: s.tasksDueToday, goalsActive: s.goalsActive }`; `byWeekday[isoWeekday(zonedIsoDate(task.completedAt, tz))] += 1` for each returned task with `completedAt` set; `focusWeeks[i] = { weekStart: addIsoDays(firstWeek, 7 * i), minutes: Math.round(sum of durationMs / 60000 over blocks with weekStartDate(zonedIsoDate(startedAtMs, tz), weekStartsOn) === that weekStart) }`. The view is `empty` when every `thisWeek` number, every `byWeekday` count and every `minutes` is 0.
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/insights.ts` contains only `import type { InsightsState, InsightsView } from "@/app/(tempo)/insights/page";` and `export const FIXTURES: Record<InsightsState, InsightsView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", weekStartsOn: 1, thisWeek: { done: 6, open: 9, dueToday: 3, goalsActive: 2 }, byWeekday: [2, 9, 4, 7, 8, 5, 3], focusWeeks: [ {weekStart:"2026-08-24",minutes:120}, {weekStart:"2026-08-31",minutes:150}, {weekStart:"2026-09-07",minutes:90}, {weekStart:"2026-09-14",minutes:180}, {weekStart:"2026-09-21",minutes:210}, {weekStart:"2026-09-28",minutes:240}, {weekStart:"2026-10-05",minutes:60}, {weekStart:"2026-10-12",minutes:45} ] }`; `loading`, `empty`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><InsightsScreen /></Suspense>`; `InsightsScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<InsightsBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <InsightsBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><InsightsLive online={liveOnline} /></ScreenBoundary>`; `InsightsLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`.
+  - **Body blocks:** offline → `<div data-testid="insights-offline"><StateOffline text={copy.offline} /></div>`; `loading` → `insights-loading` (`StateLoading label={copy.loading} rows={4}`); `error` → `insights-error` (`StateError what={copy.error} onRetry`); `signed-out` → `insights-signed-out` (`StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>}`); `empty` → `insights-empty` (`StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/today" …>{copy.emptyAction}</Link>}`); `ready` → `<div data-testid="insights-default">` with, in order:
+    1. Section `copy.weekTitle`: `<List label={copy.weekTitle}>` with four `ListRow`s — titles `copy.statDone`, `copy.statOpen`, `copy.statDueToday`, `copy.statGoals`, each `end={<span className="tp-num">{n}</span>}`.
+    2. Section `copy.chartsTitle`: `<BarChart title={copy.barTitle} bars={bars} summary={barSummary} />` where the bar order is `[0..6].map((i) => (weekStartsOn + i) % 7)`, `label = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2026, 9, 11 + weekday)))` (11 Oct 2026 is a Sunday), `value = byWeekday[weekday]`, `pct = max === 0 ? 0 : Math.round(value / max * 100)`, `highlight = max > 0 && value === max`; `barSummary` = total 0 → `copy.barSummaryNone`, else `copy.barSummary` with `{total}` and `{day}` = the long weekday name (same formatter with `weekday: "long"`) of the first bar in order whose value is `max`. Then `<LineChart title={copy.lineTitle} points={focusWeeks.map(w => ({ label: dayMonth(w.weekStart), value: w.minutes }))} summary={lineSummary} />` with `dayMonth` = `Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" })` of `${weekStart}T00:00:00Z`; `lineSummary` = all 0 → `copy.lineSummaryNone`, else `copy.lineSummary` with `{min}` and `{max}` minutes. `locale` = `"he-IL"` for `he`, `"en-GB"` for `en`.
+    3. `<Notice tone="neutral" title={copy.noStreaksTitle} body={copy.noStreaksBody} live="off" />`.
+    Numbers in string props are wrapped `\u2066<n>\u2069`.
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Insights | תובנות |
+    | sub | Patterns from your last few weeks, in plain words. Nothing here is a score. | דפוסים מהשבועות האחרונים, במילים פשוטות. שום דבר כאן הוא לא ציון. |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your insights | טוענים את התובנות |
+    | error | Couldn't load your insights. | לא הצלחנו לטעון את התובנות. |
+    | signedOutTitle | Sign in to see your insights. | צריך להתחבר כדי לראות את התובנות. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | Patterns need about a week. | לדפוסים צריך בערך שבוע. |
+    | emptyBody | Use Tempo the way you like. Gentle patterns will show up here on their own. There's nothing you need to do. | אפשר להשתמש ב־Tempo איך שנוח. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות. |
+    | emptyAction | Go to Today | מעבר להיום |
+    | weekTitle | This week | השבוע |
+    | statDone | Done this week | הושלמו השבוע |
+    | statOpen | Open tasks | משימות פתוחות |
+    | statDueToday | Due today | מתוכננות להיום |
+    | statGoals | Active goals | מטרות פעילות |
+    | chartsTitle | Your weeks at a glance | השבועות שלך במבט אחד |
+    | barTitle | Tasks finished, by weekday | משימות שהושלמו, לפי יום בשבוע |
+    | barSummary | Over the last four weeks, {total} tasks were finished. {day} was the fullest day. | ב־4 השבועות האחרונים הושלמו {total} משימות. {day} היה היום המלא ביותר. |
+    | barSummaryNone | No finished tasks in the last four weeks yet. That's fine. | עדיין אין משימות שהושלמו ב־4 השבועות האחרונים. זה בסדר. |
+    | lineTitle | Focus minutes, by week | דקות מיקוד, לפי שבוע |
+    | lineSummary | Focus time ranged from {min} to {max} minutes a week over the last eight weeks. | זמן המיקוד נע בין {min} ל־{max} דקות בשבוע ב־8 השבועות האחרונים. |
+    | lineSummaryNone | No focus sessions in the last eight weeks yet. | עדיין אין זמני מיקוד ב־8 השבועות האחרונים. |
+    | noStreaksTitle | No streaks here | אין כאן רצפים |
+    | noStreaksBody | A missed day is just a day. Coming back is always welcome, and nothing resets. | יום שפוספס הוא פשוט יום. תמיד אפשר לחזור, ושום דבר לא מתאפס. |
+  - **States:** `default`, `loading`, `empty`, `error`, `offline`, `signed-out`; testid `insights-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; the bar chart order follows `weekStartsOn` and the component mirrors it in RTL; no interactive control besides links and the Retry button; no motion added.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/insights", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (7 cases × 4 = 28).
+  - Given state `default` / Then `insights-default` is visible with 2 `figure`s, the first `figcaption` equals `barSummary` with total 38 and the long weekday name for Monday in `lang` (`new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2026, 9, 12)))`), the first bar label in the bar chart is Monday's short name (week starts on 1); `expectTargetSize`, `expectMotionBudget` on `[data-testid="insights-screen"]` and `measureVitals` (`/insights?state=default&lang=<lang>`: LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / Then the list named `weekTitle` has 4 rows, the row `statDone` ends with "6", the second `figcaption` equals `lineSummary` with min 45 and max 240, the Notice title equals `noStreaksTitle`, and no element's text contains `COPY.en` words "overdue" or "best streak" (en) / "באיחור" (he).
+  - Given state `loading` / Then `insights-loading` is visible and there is no `figure`.
+  - Given state `empty` / Then `insights-empty` shows `emptyTitle` and a link `emptyAction` to `/today`.
+  - Given state `error` / Then `insights-error` shows `error` and Try again.
+  - Given state `offline` / Then `insights-offline` shows `offline` and `insights-default` is visible.
+  - Given state `signed-out` / Then `insights-signed-out` has a link `signIn` to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · done-task window 28 days ≤ `MAX_DONE_RANGE_MS` 31 days and focus window 56 days ≤ `MAX_RANGE_MS` 93 days (code constants) · `insights-loads.spec.ts` stays 1 of 1 passing.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0144 — Screen: Search
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0099, TFV2-0097, TFV2-0100 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** screen `web/search.html`.
-- **GOAL:** Search searches pages, tasks and coach threads, with a no-results state.
-- **SCOPE:** `apps/web/app/(tempo)/search/page.tsx` · `apps/web/components/global-search/search-client.tsx` · `tests/e2e/screens/search.spec.ts`.
-- **MUTATES:** none (wires `search.all`, `search.recentQueries`).
-- **STEPS:** 1) Graphify code-map of `components/global-search`; 2) wire; 3) implement SearchInput + results + no-results + five states; 4) copy `web/search.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/search.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** search only client-side; edit `convex/`; show raw JSON.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/search`, layout TempoShell. Data: `search.all`, `search.recentQueries`. Actions: type → query. States: default, no results (`?results=none`), empty (no query), loading, error, offline. One primary: none. Key copy: EN "What are you looking for?"/HE "מה את מחפשת?"; empty body EN "Type a word or idea you roughly remember. Tempo searches pages, tasks and coach chats."/HE "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן."; no-results EN "Nothing found for"/HE "לא נמצא כלום עבור"; loading EN "Searching"/HE "מחפש"; error EN "Couldn't search right now."/HE "לא הצלחנו לחפש כרגע."; offline EN "You're offline. Searching pages and tasks on this device; chats return when connected."/HE "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת." RTL full mirror; query `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: results ≤250 ms. Full strings = `web/search.html`.
-- **TESTS:** Given query "bank" / When type / Then results grouped. Given no match / When search / Then no-results copy. Given empty / When load / Then prompt. Given error / When fail / Then Retry. Playwright: search→results, no-results, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0143a — Screen: Activity feed + filter (`/activity`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0081a, TFV2-0097, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0081a, TFV2-0097, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a.
+- **WHY:** design `docs/design/v3/screens/web/activity.html` (feed grouped by day, filter); PRD F-22 feed (the 5-minute Undo of coach changes is TFV2-0143b); CONVENTIONS §13–§15.
+- **GOAL:** `/activity` shows the last 7 days of the user's own changes from `activity.list`, grouped by local day, filterable by kind, every row linking to the changed item, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/lib/e2e/fixtures/activity.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/activity.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/activity/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/activity.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/activity.spec.ts` (edit: one new `test.describe("activity screen states", …)` block appended after the existing `test.describe("activity screen", …)` block, which stays byte-for-byte unchanged) · route `/activity` registered for the dev-only E2E bypass. Read-only screen.
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `ActivityScreen`), `convex/activity.ts` (TFV2-0081a `list`: args `{}`, returns `ActivityItem[]` = `{ id: string; kind: "task" | "note" | "habit" | "focus" | "calendar" | "goal"; action: string; title: string; href: string; occurredAt: number }`, newest first, at most 50; action strings `"Completed task"`, `"Updated task"`, `"Created note"`, `"Updated note"`, `"Logged habit"`, `"Focused"`, `"Updated event"`, `"Completed goal"`, `"Updated goal"`; fallback titles `"Untitled note"`, `"Habit check-in"`, `"Focus session"`), and the existing `tests/e2e/screens/activity.spec.ts` (it needs the heading "What did you actually do?", a region named "Recent activity", list items whose first link opens the item). 2) Create fixtures. 3) Replace `page.tsx` per SPEC. 4) Named step — register the route: insert `  "/activity",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else. 5) Append the new describe block to `tests/e2e/screens/activity.spec.ts` (new imports from `../helpers/harness` go at the top; do not change the existing block). 6) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` → `32 passed`, `2 skipped` (the two existing storage-state cases skip locally), 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** Playwright summary, typecheck exit code, and `git diff --stat` showing the spec file with additions only.
+- **DO NOT:** edit or remove the existing `activity screen` describe block; edit `ActivityScreen.tsx`, `lib/i18n-groups/kb-66.ts`, `lib/i18n-groups/you.ts` or `convex/activity.ts`; add an Undo button or a "by the coach" filter (no coach rows exist until TFV2-0081b); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0143a / evidence: <DONE output> / changed: page.tsx, fixtures/activity.ts, e2eWiringRoutes.ts, activity.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="activity-screen">`; header `<h1 className="tp-pagehead__title">{copy.title}</h1>` and sub `copy.sub`. The feed sits in `<section className="tp-section" data-component="Section" aria-label={copy.feedRegion}>` (a named region, kept for the existing spec).
+  - **Imports:** `useConvexAuth`, `useQuery`; `api`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `zonedIsoDate`, `addIsoDays` from `@/lib/zonedDay`; `List`, `ListRow`; `Segmented`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/activity`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Data (live):** `const [now] = useState(() => Date.now())`; `api.users.getProfile` gate; `api.preferences.get` → `timeZone`; `api.activity.list` `{}`. Rows kept: `occurredAt >= now - 7 * 86_400_000`.
+  - **View type:**
+    ```ts
+    export type ActivityState = "default" | "filtered" | "loading" | "empty" | "error" | "offline" | "signed-out";
+    export type ActivityKind = "task" | "note" | "habit" | "focus" | "calendar" | "goal";
+    export type ActivityFilter = "all" | ActivityKind;
+    export type ActivityRow = { id: string; kind: ActivityKind; action: string; title: string; href: string; occurredAt: number };
+    export type ActivityView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" } | { status: "empty" }
+      | { status: "ready"; timeZone: string; rows: ActivityRow[]; filter: ActivityFilter };
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/activity.ts` contains only `import type { ActivityState, ActivityView } from "@/app/(tempo)/activity/page";` and `export const FIXTURES: Record<ActivityState, ActivityView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", timeZone: "UTC", filter: "all", rows: [ { id: "task:t1", kind: "task", action: "Completed task", title: "Water the plants", href: "/tasks", occurredAt: Date.UTC(2026, 9, 12, 10, 42) }, { id: "note:n1", kind: "note", action: "Updated note", title: "Weekend reset", href: "/notes/n1", occurredAt: Date.UTC(2026, 9, 12, 7, 50) }, { id: "habit:h1", kind: "habit", action: "Logged habit", title: "Walk outside", href: "/habits/h1", occurredAt: Date.UTC(2026, 9, 11, 12, 45) }, { id: "note:n2", kind: "note", action: "Created note", title: "Untitled note", href: "/notes/n2", occurredAt: Date.UTC(2026, 9, 11, 9, 5) }, { id: "focus:f1", kind: "focus", action: "Focused", title: "Focus session", href: "/tracking", occurredAt: Date.UTC(2026, 9, 10, 8, 0) } ] }`; `filtered` = the same rows with `filter: "goal"`; `loading`, `empty`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><ActivityScreen /></Suspense>`; `ActivityScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<ActivityBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <ActivityBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><ActivityLive online={liveOnline} /></ScreenBoundary>`; `ActivityLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; zero kept rows → `empty`.
+  - **Body blocks:** offline → `activity-offline` (`StateOffline text={copy.offline}`); `loading` → `activity-loading` (`StateLoading label={copy.loading} rows={5}`); `error` → `activity-error` (`StateError what={copy.error}`); `signed-out` → `activity-signed-out` (`StateEmpty title={copy.signedOutTitle}` + Sign in link to `/sign-in`); `empty` → `activity-empty` (`StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/today" className="tp-btn tp-btn--secondary" data-component="Button">{copy.emptyAction}</Link>}`); `ready` → `<div data-testid="activity-default">`: `<Segmented label={copy.filterLabel} options={["all","task","note","habit","focus","calendar","goal"].map(v => ({ value: v, label: copy["filter_" + v] }))} value={filter} onChange={…} />`; `<p role="status" aria-live="polite">` = `copy.showing` with `{n}` shown rows; then the feed region with one group per local day (`zonedIsoDate(occurredAt, timeZone)`, newest day first): `<h2 className="tp-section__title">` = `new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(\`${day}T00:00:00Z\`))`, then `<List label={heading}>` with one `<ListRow title={title} href={href} meta={<><span>{actionWord}</span> · <span className="tp-num">{time}</span></>} />` per row (`time` = `Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone })`). When the filter leaves no rows: `<div data-testid="activity-filtered"><StateEmpty title={copy.filteredTitle} action={<button type="button" className="tp-btn tp-btn--secondary" onClick={() => setFilter("all")}>{copy.showAll}</button>} /></div>`.
+  - **Backend strings → copy:** `action` maps `"Completed task"`→`act_taskDone`, `"Updated task"`→`act_taskEdit`, `"Created note"`→`act_noteNew`, `"Updated note"`→`act_noteEdit`, `"Logged habit"`→`act_habit`, `"Focused"`→`act_focus`, `"Updated event"`→`act_event`, `"Completed goal"`→`act_goalDone`, `"Updated goal"`→`act_goalEdit`; any other value is shown as given. `title` maps `"Untitled note"` (kind `note`)→`untitled`, `"Habit check-in"` (kind `habit`)→`habitCheckIn`, `"Focus session"` (kind `focus`)→`focusSession`; other titles are user text, rendered by ListRow with `dir="auto"`.
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | What did you actually do? | מה באמת קרה? |
+    | sub | Everything that changed in the last 7 days, newest first. | כל מה שהשתנה בשבעת הימים האחרונים, מהחדש לישן. |
+    | feedRegion | Recent activity | פעילות אחרונה |
+    | filterLabel | Show changes | הצגת שינויים |
+    | filter_all | All | הכל |
+    | filter_task | Tasks | משימות |
+    | filter_note | Pages | דפים |
+    | filter_habit | Habits | הרגלים |
+    | filter_focus | Focus | מיקוד |
+    | filter_calendar | Calendar | לוח שנה |
+    | filter_goal | Goals | מטרות |
+    | showing | Showing {n} changes | מוצגים {n} שינויים |
+    | act_taskDone | Completed task | משימה הושלמה |
+    | act_taskEdit | Updated task | משימה עודכנה |
+    | act_noteNew | Created page | דף נוצר |
+    | act_noteEdit | Edited page | דף נערך |
+    | act_habit | Logged habit | הרגל נרשם |
+    | act_focus | Focused | זמן מיקוד |
+    | act_event | Updated event | אירוע עודכן |
+    | act_goalDone | Completed goal | מטרה הושגה |
+    | act_goalEdit | Updated goal | מטרה עודכנה |
+    | untitled | Untitled | ללא כותרת |
+    | habitCheckIn | Habit check-in | רישום הרגל |
+    | focusSession | Focus session | זמן מיקוד |
+    | offline | You're offline. You can still read this list. | אין חיבור כרגע. עדיין אפשר לקרוא את הרשימה. |
+    | loading | Loading recent activity | טוענים את הפעילות האחרונה |
+    | error | Couldn't load recent activity. | לא הצלחנו לטעון את הפעילות האחרונה. |
+    | signedOutTitle | Sign in to see your activity. | צריך להתחבר כדי לראות את הפעילות. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | Nothing has changed this week. | שום דבר לא השתנה השבוע. |
+    | emptyBody | When something changes, it shows up here. | כשמשהו משתנה, זה מופיע כאן. |
+    | emptyAction | Go to Today | מעבר להיום |
+    | filteredTitle | Nothing here for this filter. | אין כאן כלום עם הסינון הזה. |
+    | showAll | Show all | להציג הכל |
+  - **States:** `default`, `filtered`, `loading`, `empty`, `error`, `offline`, `signed-out`; testid `activity-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; Tab order: Segmented → each row link; times in `.tp-num`; no motion added.
+- **TESTS:** in the appended describe block each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/activity", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (8 cases × 4 = 32).
+  - Given state `default` / Then `activity-default` shows 3 day headings (12, 11 and 10 October in `lang`'s long format), 5 list items, the region named `feedRegion`, and the first row link has `href="/tasks"` and its meta contains `act_taskDone` and `10:42`; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / Then the row for `note:n2` shows the title `untitled` and the row for `focus:f1` shows `focusSession`.
+  - Given state `default` / When the Segmented option `filter_note` is clicked / Then 2 list items remain and the status reads `showing` with 2.
+  - Given state `filtered` / Then `activity-filtered` shows `filteredTitle`; When `showAll` is clicked / Then 5 list items.
+  - Given state `loading` / Then `activity-loading` is visible.
+  - Given state `empty` / Then `activity-empty` shows `emptyTitle` and a link `emptyAction` to `/today`.
+  - Given state `error` / Then `activity-error` shows `error` and Try again.
+  - Given state `offline` / Then `activity-offline` and `activity-default` are visible; and state `signed-out` shows `activity-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · feed ≤ 50 rows (`activity.list` cap in `convex/activity.ts`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0145 — Screen: Command palette
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0099 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0099.
-- **WHY:** components.md §8 (CommandPalette candidate); screen `web/command.html`.
-- **GOAL:** The Ctrl K command palette jumps to pages and actions, with an empty recent list state.
-- **SCOPE:** `apps/web/app/(tempo)/command/page.tsx` · `apps/web/components/global-search/command-palette.tsx` · `tests/e2e/screens/command.spec.ts`.
-- **MUTATES:** none (wires `pages.listRecent`, static jump targets, `search.quick`).
-- **STEPS:** 1) Graphify code-map of `components/global-search`; 2) implement the palette (dialog + listbox, reusing SlashMenu styling); 3) five states; 4) copy `web/command.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** duplicate the slash-menu listbox (share one list component); edit `convex/`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/command` (dialog over the last page); also the Ctrl K trigger on every TempoShell screen. Data: `pages.listRecent`, static jump targets, `search.quick`. Keyboard: arrows, Enter, Esc; focus returns on close. States: default, empty (no recent pages), loading, error, offline. Key copy: EN "Search or jump to"/HE "חיפוש או מעבר אל"; EN "Type a page, place or action"/HE "הקלידי דף, מקום או פעולה"; EN "Results"/HE "תוצאות"; empty EN "Pages you open will show here."/HE "דפים שתפתחי יופיעו כאן."; error EN "Couldn't load recent pages. Your data is safe; everything below still works."/HE "לא הצלחנו לטעון את הדפים האחרונים. המידע שלך שמור, וכל מה שלמטה עדיין עובד." RTL full mirror. Breakpoints 390/768/1024/1280 (centred dialog ≥768). Motion: open ≤250 ms opacity. Full strings = `web/command.html`.
-- **TESTS:** Given recent pages / When open Ctrl K / Then list. Given no recent / When open / Then empty copy. Given type / When keys / Then filtered + arrow + Enter navigates. Given Esc / When press / Then closes + focus returns. Playwright: open→type→navigate, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0143b — Screen: Activity — Undo of coach changes (`/activity`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0143a, TFV2-0081b, TFV2-0092 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0143a, TFV2-0081b, TFV2-0092.
+- **WHY:** PRD F-22 (5-minute Undo of coach actions); design `docs/design/v3/screens/web/activity.html` ("By the coach" rows with Undo).
+- **GOAL:** On `/activity`, a change made by the coach shows who made it and an Undo button for 5 minutes, and a "By you / By the coach" filter.
+- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/lib/e2e/fixtures/activity.ts` · test: `tests/e2e/screens/activity.spec.ts`. (Route already registered by TFV2-0143a; `e2eWiringRoutes.ts` is not touched.)
+- **MUTATES:** `apps/web/app/(tempo)/activity/page.tsx` (edit) · `apps/web/lib/e2e/fixtures/activity.ts` (edit: rows gain `actor`/`undoUntil`; new state `undone`) · `tests/e2e/screens/activity.spec.ts` (edit: cases appended to the `activity screen states` block) · coach changes reverted through `activity.undo` (TFV2-0081b).
+- **STEPS:** 1) Code-map check: confirm TFV2-0081b shipped `activity.undo` and the `actor` / `undoUntil` fields with the shapes in SPEC; if not, stop and report `blocked: missing backend activity.undo`. 2) Extend `ActivityRow` and the fixtures. 3) Add the actor filter, the Undo button and the Notice per SPEC. 4) Append the TESTS cases. 5) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` → `48 passed`, `2 skipped`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** Playwright summary and typecheck exit code in the PR.
+- **DO NOT:** show Undo on a user's own change or after `undoUntil`; undo on the client without `activity.undo`; edit the existing `activity screen` describe block or `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0143b / evidence: <DONE output> / changed: page.tsx, fixtures/activity.ts, activity.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Data (assumed from TFV2-0081b):** `activity.list` rows gain `actor: "user" | "coach"` and `undoUntil?: number`; `api.activity.undo` (mutation) `{ activityId: string }` → `{ success: true }`, throwing `"Undo window has passed"` after 5 minutes and `"Not undoable"` for a user change (English; mapped below).
+  - **View change:** `ActivityRow` gains `actor: "user" | "coach"; undoUntil: number | null`; `ActivityFilter` gains `"by-you" | "by-coach"`; `ActivityState` gains `"undone"`; the ready view gains `now: number` (fixtures `Date.UTC(2026, 9, 12, 10, 44)`, live `Date.now()` refreshed every 15 s with `setInterval`).
+  - **UI:** Segmented options become `all`, `by-you`, `by-coach`, then the six kinds. A row with `actor === "coach"` gets meta prefix `copy.byCoach` and, while `now < undoUntil`, `end={<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" aria-label={copy.undoAria.replace("{title}", title)} onClick={…}>{copy.undo}</button>}`; user rows get meta prefix `copy.byYou`. Above the feed: `<Notice tone="info" title={copy.undoNote} live="off" />`. On success: the row's button disappears and `<div data-testid="activity-undone"><Notice tone="done" title={copy.undone} live="status" /></div>` shows; errors map `"Undo window has passed"` → `copy.expired`, anything else → `copy.undoFailed` (Notice tone `"danger"`, `live="alert"`). Forced mode performs the same UI change without Convex.
+  - **Fixtures:** every 0143a row gets `actor: "user", undoUntil: null`, plus two rows `{ id: "task:c1", kind: "task", action: "Updated task", title: "Call the bank", href: "/tasks", occurredAt: Date.UTC(2026, 9, 12, 10, 42), actor: "coach", undoUntil: Date.UTC(2026, 9, 12, 10, 47) }` and `{ id: "task:c2", kind: "task", action: "Updated task", title: "Draft 3 slides", href: "/tasks", occurredAt: Date.UTC(2026, 9, 12, 10, 30), actor: "coach", undoUntil: Date.UTC(2026, 9, 12, 10, 35) }`; new `undone` state = `default` after the Undo of `task:c1`.
+  - **Copy (added keys):**
+    | key | EN | HE |
+    |---|---|---|
+    | filter_by-you | By you | שינויים שלך |
+    | filter_by-coach | By the coach | שינויים של המאמן |
+    | byYou | By you | שינוי שלך |
+    | byCoach | By the coach | שינוי של המאמן |
+    | undo | Undo | ביטול |
+    | undoAria | Undo: {title} | ביטול: {title} |
+    | undoNote | Anything the coach changes can be undone here for 5 minutes. After that, ask the coach and it will change it back. | כל שינוי של המאמן אפשר לבטל כאן במשך 5 דקות. אחר כך אפשר לבקש מהמאמן להחזיר אותו. |
+    | undone | The change was undone. Nothing else moved. | השינוי בוטל. שום דבר אחר לא זז. |
+    | expired | This change can't be undone here anymore. Ask the coach to change it back. | כבר אי אפשר לבטל את השינוי הזה כאן. אפשר לבקש מהמאמן להחזיר אותו. |
+    | undoFailed | Couldn't undo the change. Try again. | לא הצלחנו לבטל את השינוי. אפשר לנסות שוב. |
+  - **States:** 0143a's states plus `undone` (testid `activity-undone`).
+- **TESTS:** appended to `activity screen states`, same loops (4 cases × 4 = 16 more):
+  - Given state `default` / Then the row "Call the bank" has a button named `undoAria` ("Call the bank") and the row "Draft 3 slides" (past `undoUntil`) has none; user rows have none.
+  - Given state `default` / When that Undo button is clicked / Then `activity-undone` shows `undone` and the button is gone.
+  - Given state `default` / When the Segmented option `filter_by-coach` is clicked / Then 2 list items.
+  - Given state `undone` / Then `activity-undone` is visible.
+- **NUMBERS:** as TFV2-0143a · Undo offered only while `now < undoUntil` (5-minute window, PRD F-22).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0081b (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo; and where the undoable coach-change record lives) — Amit.
+
+### TFV2-0144 — Screen: Search (`/search`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0097, TFV2-0099, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0097, TFV2-0099, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** design `docs/design/v3/screens/web/search.html`; CONVENTIONS §13–§15.
+- **GOAL:** `/search` searches pages, tasks, habits and goals through the existing `search.all` query, shows grouped results, a no-results state and an idle prompt, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/search/page.tsx` · `apps/web/lib/e2e/fixtures/search.ts` · test: `tests/e2e/screens/search.spec.ts`. (`e2eWiringRoutes.ts` is not in scope: `"/search"` is already in `E2E_WIRING_ROUTES`.)
+- **MUTATES:** `apps/web/app/(tempo)/search/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/search.ts` (new) · `tests/e2e/screens/search.spec.ts` (new). Read-only screen.
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `SearchHeader` + `SearchScreen` inside `ProfileReady`, root testid `search-route`), `convex/search.ts` (`all`: args `{ query: string }`, returns `{ notes: { _id: Id<"notes">; title: string; snippet: string }[]; tasks: { _id: Id<"tasks">; title: string; status: "todo" | "in_progress" | "done" | "cancelled" }[]; habits: { _id: Id<"habits">; name: string }[]; goals: { _id: Id<"goals">; title: string }[] }`, at most 8 per group, empty groups for a blank query), `tests/e2e/wiring/habits-braindump-search.spec.ts` (it needs a visible `searchbox` named "Search notes, tasks, habits and goals" on `/search` signed out), and `apps/web/components/lists/SearchInput.tsx` (confirm it renders `<input type="search">`; if it does not, stop and report `blocked: SearchInput must render type="search" for the existing wiring spec`); `grep -n '"/search"' apps/web/lib/e2eWiringRoutes.ts` (present). 2) Create fixtures. 3) Replace `page.tsx`. 4) No E2E route step: `/search` is already registered (say so in the PR). 5) Create the spec. 6) Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line`, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/search.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries and the typecheck exit code in the PR.
+- **DO NOT:** edit `SearchScreen.tsx`, `ResultGroup.tsx`, `ProfileReady.tsx`, i18n files or `e2eWiringRoutes.ts`; filter results on the client instead of calling `search.all`; call `search.recentQueries` (does not exist); show raw JSON; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0144 / evidence: <DONE output> / changed: page.tsx, fixtures/search.ts, search.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="search-route">` (testid kept from today's page); header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`; below it, in every state, `<SearchInput id="search-q" label={copy.inputLabel} value={query} onChange={onQuery} placeholder={copy.placeholder} labelHidden />`.
+  - **Imports:** `useConvexAuth`, `useQuery`; `api`; `Link`; `useRouter`, `useSearchParams` from `next/navigation`; `Suspense`, `useState` from `react`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `SearchInput` from `@/components/lists/SearchInput`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/search`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><SearchScreen /></Suspense>`; `SearchScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<SearchBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <SearchBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><SearchLive online={liveOnline} /></ScreenBoundary>`; `SearchLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; `SearchLive` computes the view from the current `query` (see Query handling).
+  - **Query handling:** initial `query` = `useSearchParams().get("q") ?? ""` (live) or `view.query` (forced). `onQuery(next)`: `setQuery(next)`; live only: `router.replace(next.trim() ? "/search?q=" + encodeURIComponent(next.trim()) : "/search", { scroll: false })` (forced mode never rewrites the URL, so `?state=` and `?lang=` stay). Escape clears the box (SearchInput behaviour). In both modes, when the trimmed `query` is empty and the view is not `signed-out`, the body renders the `idle` block (`search-empty`) whatever the view says; in forced mode a non-empty query shows the fixture view unchanged.
+  - **Data (live):** `api.users.getProfile` gate; `api.search.all` `{ query: query.trim() }`, `"skip"` when the trimmed query is empty, when forced, signed out, or before the profile exists.
+  - **View type:**
+    ```ts
+    export type SearchState = "default" | "empty" | "no-results" | "loading" | "error" | "offline" | "signed-out";
+    export type SearchResults = {
+      notes: { id: string; title: string; snippet: string }[];
+      tasks: { id: string; title: string; status: "todo" | "in_progress" | "done" | "cancelled" }[];
+      habits: { id: string; name: string }[];
+      goals: { id: string; title: string }[];
+    };
+    export type SearchView =
+      | { status: "idle"; query: "" }
+      | { status: "loading"; query: string }
+      | { status: "error"; query: string }
+      | { status: "signed-out"; query: string }
+      | { status: "no-results"; query: string }
+      | { status: "ready"; query: string; results: SearchResults };
+    ```
+    Live mapping: empty trimmed query → `idle`; result `undefined` → `loading`; all four groups empty → `no-results`; else `ready` (`_id` → `id`).
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/search.ts` contains only `import type { SearchState, SearchView } from "@/app/(tempo)/search/page";` and `export const FIXTURES: Record<SearchState, SearchView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", query: "moving", results: { notes: [ { id: "n1", title: "Moving checklist", snippet: "…books first, small boxes, ask Yoni about the van…" }, { id: "n2", title: "New address, who to tell", snippet: "Bank, dentist, the gym, and Dana." } ], tasks: [ { id: "t1", title: "Book the van with Yoni", status: "todo" }, { id: "t2", title: "Buy moving boxes and tape", status: "done" } ], habits: [], goals: [ { id: "g1", title: "Feel settled at home" } ] } }`; `empty` = `{ status: "idle", query: "" }`; `no-results` = `{ status: "no-results", query: "zebra" }`; `loading` = `{ status: "loading", query: "moving" }`; `error` = `{ status: "error", query: "moving" }`; `signed-out` = `{ status: "signed-out", query: "" }`.
+  - **Body blocks (below the search box):** offline → `search-offline` (`StateOffline text={copy.offline}`); `idle` → `search-empty` (`StateEmpty title={copy.idleTitle} body={copy.idleBody}`); `loading` → `search-loading` (`StateLoading label={copy.loading} rows={3}`); `error` → `search-error` (`StateError what={copy.error}`); `signed-out` → `search-signed-out` (`StateEmpty title={copy.signedOutTitle}` + Sign in link to `/sign-in`); `no-results` → `search-no-results` (`StateEmpty title={copy.noneTitle.replace("{query}", query)} body={copy.noneBody}`); `ready` → `<div data-testid="search-default">` with `<p role="status" aria-live="polite">` = `copy.count` with `{n}` = total results, then one `.tp-section` per non-empty group in the order notes, tasks, habits, goals, each with `<h2 className="tp-section__title">` (`copy.groupPages`, `copy.groupTasks`, `copy.groupHabits`, `copy.groupGoals`) and `<List label={same heading}>`: notes → `ListRow title={title || copy.untitled} meta={snippet} href={"/notes/" + id}`; tasks → `title`, `meta` = `copy.status_<status>`, `href="/tasks"`; habits → `title={name}`, `href={"/habits/" + id}`; goals → `title`, `href={"/goals/" + id}`. User text (titles, snippets, the query) renders with `dir="auto"` (ListRow; the query in `noneTitle` is wrapped `\u2068{query}\u2069`, first-strong isolate).
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Search | חיפוש |
+    | sub | Pages, tasks, habits and goals, in one place. | דפים, משימות, הרגלים ומטרות, במקום אחד. |
+    | inputLabel | Search notes, tasks, habits and goals | חיפוש בדפים, משימות, הרגלים ומטרות |
+    | placeholder | Type a word you remember | מקלידים מילה שזוכרים |
+    | idleTitle | What are you looking for? | מה מחפשים? |
+    | idleBody | Type a word or a half-remembered idea. Tempo looks through your pages, tasks, habits and goals. | אפשר להקליד מילה או רעיון שזוכרים בערך. Tempo מחפש בדפים, במשימות, בהרגלים ובמטרות. |
+    | loading | Searching | מחפשים |
+    | error | Couldn't search right now. | לא הצלחנו לחפש כרגע. |
+    | offline | You're offline. Search comes back when you're online. | אין חיבור כרגע. החיפוש יחזור כשהחיבור יחזור. |
+    | signedOutTitle | Sign in to search. | צריך להתחבר כדי לחפש. |
+    | signIn | Sign in | התחברות |
+    | noneTitle | Nothing found for “{query}”. | לא נמצא כלום עבור „{query}”. |
+    | noneBody | That happens. Try fewer words, or check the spelling. | זה קורה. אפשר לנסות פחות מילים או לבדוק את האיות. |
+    | count | {n} results | {n} תוצאות |
+    | groupPages | Pages | דפים |
+    | groupTasks | Tasks | משימות |
+    | groupHabits | Habits | הרגלים |
+    | groupGoals | Goals | מטרות |
+    | untitled | Untitled | ללא כותרת |
+    | status_todo | To do | לעשות |
+    | status_in_progress | Doing | בעבודה |
+    | status_done | Done | הושלם |
+    | status_cancelled | Set aside | הונח בצד |
+  - **States:** `default`, `empty`, `no-results`, `loading`, `error`, `offline`, `signed-out`; testid `search-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; focus lands on nothing automatically; Tab: search box → each result link; Escape in the box clears it; no motion added.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/search", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (9 cases × 4 = 36).
+  - Given state `default` / Then `search-default` shows the status `count` with 5, three group headings (`groupPages`, `groupTasks`, `groupGoals`) and no `groupHabits`, the first result link `href="/notes/n1"`, the search box (role `searchbox`, name `inputLabel`) has value "moving"; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / Then the task row "Buy moving boxes and tape" shows `status_done`.
+  - Given state `default` / When the search box is focused and Escape pressed / Then its value is "" and `search-empty` is visible.
+  - Given state `empty` / Then `search-empty` shows `idleTitle` and the search box is visible with value "".
+  - Given state `no-results` / Then `search-no-results` contains `noneTitle` with "zebra" (isolate characters included) and `noneBody`.
+  - Given state `loading` / Then `search-loading` is visible.
+  - Given state `error` / Then `search-error` shows `error` and Try again.
+  - Given state `offline` / Then `search-offline` shows `offline` and `search-default` is visible.
+  - Given state `signed-out` / Then `search-signed-out` has a link to `/sign-in` and the search box is still visible.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · ≤ 8 results per group (`GROUP_LIMIT` in `convex/search.ts`) · existing wiring spec stays 4 of 4 passing.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0146 — Screen: Notifications
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0078a, TFV2-0078b, TFV2-0078c, TFV2-0097 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0078a, TFV2-0078b, TFV2-0078c and TFV2-0097.
-- **WHY:** screen `web/notifications.html`.
-- **GOAL:** Notifications list shows in-app notifications with mark-read, all five states.
-- **SCOPE:** `apps/web/app/(tempo)/notifications/page.tsx` · `apps/web/components/notifications-preferences/notifications-client.tsx` · `tests/e2e/screens/notifications.spec.ts`.
-- **MUTATES:** none (wires `notifications.list`, `notifications.markRead`, `notifications.markAllRead`).
-- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement list + mark-read + five states; 4) copy `web/notifications.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notifications.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** add push/email delivery (conflict #11); edit `convex/`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/notifications`, layout TempoShell. Data: `notifications.list`. Actions: `markRead`, `markAllRead`. States: default, empty, loading, error, offline. One primary: "Mark all read". Key copy: EN "Notifications"/HE "התראות"; empty EN "Nothing new. Quiet is good."/HE "אין שום דבר חדש. שקט זה טוב."; empty body EN "When Amit replies, when your week is ready, or when the coach saves something, it shows here."/HE "כשעמית עונה, כשהשבוע שלך מוכן, או כשהמאמן שומר משהו, זה יופיע כאן."; error EN "Couldn't load notifications."/HE "לא הצלחנו לטעון את ההתראות."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: read-state ≤250 ms. Full strings = `web/notifications.html`.
-- **TESTS:** Given 3 notifications / When load / Then 3 rows. Given markRead / When click / Then read. Given markAllRead / When click / Then all read. Given empty / When load / Then empty copy. Playwright: markRead→markAllRead, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0145 — Screen: Command page (`/command`) — verify the existing palette and test it
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0021.
+- **WHY:** components.md §8 (CommandPalette); design `docs/design/v3/screens/web/command.html`. Code truth: the palette already exists — `apps/web/components/tempo/CommandPalette.tsx` exports `CommandPanel` (the `/command` page variant: screens and actions, no Convex reads) and `CommandPalette` (the Ctrl K dialog used by `TempoShell`, which adds Recent pages). Rebuilding it would duplicate a shared, working component (CONVENTIONS §9: a ticket that only verifies existing code lists the existing file plus its test).
+- **GOAL:** `/command` opens under the local E2E server and a spec proves its filter, arrow-key selection, Enter navigation, offline notice, RTL and the shared NUMBERS, at both viewports and in both languages.
+- **SCOPE:** `apps/web/app/(tempo)/command/page.tsx` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/command.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/command/page.tsx` (edit: one attribute, `data-testid="command-screen"`, added to the root `<div className="tp-page" data-component="PageLayout">`; nothing else) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/command.spec.ts` (edit: one `test.describe("command screen, local", …)` block appended; the existing `command screen` block stays byte-for-byte unchanged) · route `/command` registered for the dev-only E2E bypass.
+- **STEPS:** 1) Code-map check: read `apps/web/app/(tempo)/command/page.tsx` (27 lines: `<h1>` from `t("cmd.page.title")`, `<CommandPanel />`); in `CommandPalette.tsx` read `CommandBody` (combobox with `aria-label={t("cmd.filter")}` in the page variant, listbox named `t("cmd.list")`, options with `aria-selected`, ArrowUp/ArrowDown wrap via `moveActive`, Enter opens the active row, the offline `<output data-component="StateOffline">` when `useOnline()` is false, the always-present "Search everything" row `a-all`); read `apps/web/lib/i18n-groups/extras.ts` keys `cmd.page.title`, `cmd.filter`, `cmd.list`, `cmd.all`, `cmd.offline` (EN and HE). 2) Add `data-testid="command-screen"` to the root div of `page.tsx`. 3) Named step — register the route: insert `  "/command",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else. 4) Append the describe block with the TESTS cases. 5) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → `20 passed`, `3 skipped` (the existing storage-state cases), 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, typecheck exit code, and `git diff` of `page.tsx` (one attribute) and `e2eWiringRoutes.ts` (one line) in the PR.
+- **DO NOT:** edit `CommandPalette.tsx`, `lib/command-palette.ts`, `lib/i18n*`, `TempoShell` or the existing `command screen` block; add Convex calls to the page; assert the Hebrew strings `cmd.label`, `cmd.offline`, `cmd.recent.empty`, `cmd.j.tasks` (they are gendered today; see notes for ticket sync); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0145 / evidence: <DONE output> / changed: page.tsx, e2eWiringRoutes.ts, command.spec.ts / unknowns / notes for ticket sync: extras.ts cmd.label, cmd.offline, cmd.recent.empty, cmd.j.tasks use gendered Hebrew (CONVENTIONS §12); fix belongs to the i18n ticket TFV2-0020`.
+- **SPEC:** No new UI. The page as it is today:
+  - Root `<div className="tp-page" data-component="PageLayout" data-testid="command-screen">`; `<h1 className="tp-pagehead__title">` = EN "Command" / HE "פקודות" (`cmd.page.title`); sub = EN "Find a screen or an action, then press Enter. Arrow keys move through the list." / HE "מוצאים מסך או פעולה ולוחצים Enter. החצים עוברים ברשימה." (`cmd.page.sub`).
+  - Combobox (role `combobox`) named EN "Filter screens" / HE "סינון מסכים" (`cmd.filter`); listbox named EN "Results" / HE "תוצאות" (`cmd.list`); groups "Jump to" / "מעבר אל" and "Actions" / "פעולות"; the last action "Search everything" / "חיפוש בכל מקום" (`cmd.all`) always matches; the first row of a new query is `aria-selected="true"`; ArrowDown/ArrowUp move and wrap; Enter opens the active row; a row's `alt` is the screen's English title, so typing "search" matches the Search screen in both languages.
+  - Offline: `useOnline()` false → `<output data-component="StateOffline">` with EN "You're offline. Jumping works; search waits until you're back." (`cmd.offline`).
+  - States covered: `default` (empty filter), `filtered` (typed filter), `no-match` (only "Search everything" left), `offline` (Playwright `context.setOffline(true)`, CONVENTIONS §3). The page has no Convex reads, so it has no loading or error state; a failed "New page" shows the existing `cmd.newError` alert (EN "Could not make a new page. Try again." / HE "לא הצלחנו ליצור דף חדש. אפשר לנסות שוב."), not exercised here because it needs a signed-in session.
+  - RTL: `<html dir="rtl">` under `?lang=he`; the list mirrors through tempo.css. Keyboard: the combobox keeps focus while arrows move `aria-activedescendant`.
+- **TESTS:** in the appended block each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `page.goto("/command?lang=" + lang)` (the page reads no `?state=`), and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (5 cases × 4 = 20):
+  - Given `/command` / Then `[data-testid="command-screen"]` has the `<h1>` "Command" (en) / "פקודות" (he), a combobox named "Filter screens" / "סינון מסכים", a listbox named "Results" / "תוצאות" with at least 10 options, and the first option has `aria-selected="true"`; `expectTargetSize` and `expectMotionBudget` on `[data-testid="command-screen"]` pass; `measureVitals(page, "/command?lang=" + lang)` → LCP ≤ 2500, CLS ≤ 0.1.
+  - Given the combobox / When "zzzz" is typed / Then exactly 1 option remains, its text contains "Search everything" (en) / "חיפוש בכל מקום" (he), and it is `aria-selected="true"`.
+  - Given the empty combobox / When ArrowDown is pressed / Then option 2 is `aria-selected="true"`; When ArrowUp is pressed twice / Then the last option is `aria-selected="true"` (wrap).
+  - Given the combobox / When "search" is typed and Enter pressed / Then `new URL(page.url()).pathname` is `/search`.
+  - Given `/command` / When `page.context().setOffline(true)` / Then `[data-component="StateOffline"]` is visible (en: its text is "You're offline. Jumping works; search waits until you're back."); then `setOffline(false)`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none (in-app only).
+- **OPEN:** none.
 
-### TFV2-0147 — Screen: Nags
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0077a, TFV2-0077b, TFV2-0077c, TFV2-0077d, TFV2-0077e, TFV2-0077f, TFV2-0077g, TFV2-0077h, TFV2-0077i, TFV2-0077j, TFV2-0111, TFV2-0113, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** PRD F-60, F-61; screen `web/nags.html`.
-- **GOAL:** Nags screen lists the user's phrases and enforces "no accepted phrase → cannot switch on".
-- **SCOPE:** `apps/web/app/(tempo)/nags/page.tsx` · `apps/web/components/nags/nags-client.tsx` · `tests/e2e/screens/nags.spec.ts`.
-- **MUTATES:** none (wires `nags.list`, `nags.addPhrase`, `nags.setEnabled`).
-- **STEPS:** 1) Graphify code-map of `components/nags`; 2) wire; 3) implement phrase list + add form + switch + five states; 4) copy `web/nags.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/nags.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** add stock copy or emoji; allow enable with no phrase; edit `convex/`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/nags`, layout TempoShell. Data: `nags.list`. Actions: `nags.addPhrase`, `nags.setEnabled` (blocked until ≥1 phrase). Components: Form, Field, Textarea, Switch. States: default, empty, loading, error, offline. One primary: "Add phrase". Key copy: EN "Nags"/HE "נדנודים"; EN "Your nags"/HE "הנדנודים שלך"; empty EN "No nags yet."/HE "עוד אין נדנודים."; empty body EN "On any task or habit, choose 'Nag me about this', then write what you'd like to hear. Tempo uses only your words."/HE "בכל משימה או הרגל, בחרי ״לנדנד לי על זה״, ואז כתבי מה היית רוצה לשמוע. Tempo משתמש רק במילים שלך."; EN "Your words"/HE "המילים שלך"; EN "Add phrase"/HE "הוספת משפט"; error EN "Couldn't load nags."/HE "לא הצלחנו לטעון את הנדנודים." RTL full mirror; phrases `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: phrase add ≤250 ms. Full strings = `web/nags.html`.
-- **TESTS:** Given a nag with 1 phrase / When load / Then phrase shown. Given enable with no phrase / When try / Then switch disabled. Given add phrase / When submit / Then phrase added + switch enabled. Given empty / When load / Then empty copy. Playwright: add phrase→enable, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0146 — Screen: Notifications (`/notifications`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0078a, TFV2-0078b, TFV2-0078c, TFV2-0092, TFV2-0093, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0078a, TFV2-0078b, TFV2-0078c, TFV2-0092, TFV2-0093, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** design `docs/design/v3/screens/web/notifications.html`; in-app only (Q-11 is about delivery beyond in-app and does not block this list); CONVENTIONS §13–§15.
+- **GOAL:** `/notifications` lists in-app notices newest first, split into New and Earlier, lets the person mark one or all as read, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/notifications/page.tsx` · `apps/web/lib/e2e/fixtures/notifications.ts` · test: `tests/e2e/screens/notifications.spec.ts`. (`e2eWiringRoutes.ts` is not in scope: `"/notifications"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/notifications/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/notifications.ts` (new) · `tests/e2e/screens/notifications.spec.ts` (new) · `notifications.readAt` set through the existing `markRead` / `markAllRead` (live use only).
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (renders `NotificationsScreen`), `convex/notifications.ts` (`list` `{ unreadOnly?: boolean }` → `{ _id: Id<"notifications">; title: string; body: string; kind: "system" | "reminder" | "billing"; readAt?: number; createdAt: number }[]` newest first; `markRead` `{ notificationId }` → `null`, throws `"Notification not found"` (missing or deleted) and `"Access denied"` (another user's row); `markAllRead` `{}` → `{ updated: number }`), and `tests/e2e/wiring/settings-account.spec.ts` (needs a visible `data-testid="notifications-page"` on `/notifications` signed out); `grep -n '"/notifications"' apps/web/lib/e2eWiringRoutes.ts` (present). 2) Create fixtures. 3) Replace `page.tsx`. 4) No E2E route step (already registered; say so in the PR). 5) Create the spec. 6) Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line`, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notifications.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries and the typecheck exit code in the PR.
+- **DO NOT:** add push or email delivery (Q-11); edit `NotificationsScreen.tsx`, `lib/i18n-groups/kb-70.ts`, `lib/you/*`, i18n files or `e2eWiringRoutes.ts`; delete notifications; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0146 / evidence: <DONE output> / changed: page.tsx, fixtures/notifications.ts, notifications.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="notifications-page">` (testid kept for the wiring spec) — rendered in every state, including loading and signed-out. Header `.tp-pagehead`: `<h1>` `copy.title`, sub `copy.sub`, actions: `<button type="button" className="tp-btn tp-btn--secondary" data-component="Button" disabled={unread === 0 || busy}>{copy.markAll}</button>` (shown only in ready views).
+  - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `Notice`, `Badge`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/notifications`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Data (live):** `api.users.getProfile` gate; `api.preferences.get` → `timeZone`; `api.notifications.list` `{}`; `api.notifications.markRead`; `api.notifications.markAllRead`.
+  - **View type:**
+    ```ts
+    export type NotificationsState = "default" | "empty" | "all-read" | "loading" | "error" | "offline" | "signed-out";
+    export type NotificationRow = { id: string; title: string; body: string; kind: "system" | "reminder" | "billing"; readAt: number | null; createdAt: number };
+    export type NotificationsView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" }
+      | { status: "ready"; timeZone: string; items: NotificationRow[]; notice: "all-read" | null };
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/notifications.ts` contains only `import type { NotificationsState, NotificationsView } from "@/app/(tempo)/notifications/page";` and `export const FIXTURES: Record<NotificationsState, NotificationsView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", timeZone: "UTC", notice: null, items: [ { id: "n1", title: "Amit replied to “Voice call cut out”.", body: "Open the thread to read it.", kind: "system", readAt: null, createdAt: Date.UTC(2026, 9, 12, 10, 20) }, { id: "n2", title: "Your page for this week is ready.", body: "11–17 Oct", kind: "reminder", readAt: null, createdAt: Date.UTC(2026, 9, 12, 7, 0) }, { id: "n3", title: "Your copy of everything is ready.", body: "We emailed you the download link.", kind: "system", readAt: Date.UTC(2026, 9, 9, 12, 0), createdAt: Date.UTC(2026, 9, 9, 11, 0) } ] }`; `empty` = `{ status: "ready", timeZone: "UTC", notice: null, items: [] }`; `all-read` = the default items with every `readAt` set to `Date.UTC(2026, 9, 12, 11, 0)` and `notice: "all-read"`; `loading`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><NotificationsScreen /></Suspense>`; `NotificationsScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<NotificationsBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <NotificationsBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><NotificationsLive online={liveOnline} /></ScreenBoundary>`; `NotificationsLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; local state `items` copies `view.items` so marks show at once.
+  - **Body blocks:** offline → `notifications-offline` (`StateOffline text={copy.offline}`); `loading` → `notifications-loading` (`StateLoading label={copy.loading}`); `error` → `notifications-error` (`StateError what={copy.error}`); `signed-out` → `notifications-signed-out` (`StateEmpty title={copy.signedOutTitle}` + Sign in link to `/sign-in`); ready with no items → `notifications-empty` (`StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/settings/preferences" className="tp-btn tp-btn--secondary" data-component="Button">{copy.prefs}</Link>}`); ready with items → `<div data-testid="notifications-default">`: when `notice === "all-read"` → `<div data-testid="notifications-all-read"><Notice tone="done" title={copy.allRead} live="status" /></div>`; section `copy.newTitle` with `<List label={copy.newTitle}>` of unread items (omitted when none); section `copy.earlierTitle` with read items (omitted when none). Each row: `<ListRow title={title} meta={<><span dir="auto">{body}</span> · <span>{kindWord}</span> · <span className="tp-num">{time}</span></>} end={unread ? <><Badge label={copy.badgeNew} tone="info" /><button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" aria-label={copy.markOneAria.replace("{title}", title)} onClick={…}>{copy.markOne}</button></> : null} />`. `time` = `Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone })`. Then a closing `<Notice tone="neutral" title={copy.prefsTitle} body={copy.prefsBody} action={<Link href="/settings/preferences">{copy.prefs}</Link>} live="off" />`.
+  - **Actions:** mark one → set its `readAt = Date.now()` locally; live `markRead({ notificationId: id as Id<"notifications"> })`; on error restore and show `<Notice tone="danger" title={…} live="alert" />` with `"Notification not found"` or `"Access denied"` → `copy.gone`, anything else → `copy.markFailed`. Mark all → every unread `readAt = Date.now()`, `notice = "all-read"`; live `markAllRead({})`; error → restore and `copy.markFailed`. Forced mode: local only.
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Notifications | התראות |
+    | sub | Only things worth knowing. Nothing here needs you right away. | רק דברים שכדאי לדעת. שום דבר כאן לא דחוף. |
+    | markAll | Mark all as read | סימון הכל כנקרא |
+    | markOne | Mark as read | סימון כנקרא |
+    | markOneAria | Mark “{title}” as read | סימון „{title}” כנקרא |
+    | badgeNew | New | חדש |
+    | newTitle | New | חדשות |
+    | earlierTitle | Earlier | קודם |
+    | kind_system | Tempo | Tempo |
+    | kind_reminder | Reminder | תזכורת |
+    | kind_billing | Billing | חיוב |
+    | allRead | All caught up. | הכל נקרא. |
+    | gone | This notice is gone. It may have been removed on another device. | ההתראה הזו כבר לא קיימת. ייתכן שהוסרה במכשיר אחר. |
+    | markFailed | Couldn't mark it as read. Try again in a moment. | לא הצלחנו לסמן כנקרא. אפשר לנסות שוב בעוד רגע. |
+    | prefsTitle | Choose what you hear about | לבחור על מה מקבלים התראות |
+    | prefsBody | Turn notices on or off in Preferences. Billing notices always stay on. | אפשר להפעיל או לכבות התראות בהעדפות. התראות חיוב תמיד נשארות פועלות. |
+    | prefs | Open Preferences | פתיחת ההעדפות |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your notifications | טוענים את ההתראות |
+    | error | Couldn't load your notifications. | לא הצלחנו לטעון את ההתראות. |
+    | signedOutTitle | Sign in to see your notifications. | צריך להתחבר כדי לראות את ההתראות. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | Nothing new. Quiet is good. | אין שום דבר חדש. שקט זה טוב. |
+    | emptyBody | When Amit replies, your week is ready, or the coach saves something, it shows up here. | כשעמית עונה, כשהשבוע מוכן או כשהמאמן שומר משהו, זה מופיע כאן. |
+    Notification `title` and `body` are stored text and render as given with `dir="auto"`.
+  - **States:** `default`, `empty`, `all-read`, `loading`, `error`, `offline`, `signed-out`; testid `notifications-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; Tab: Mark all → each row's Mark as read; after marking, focus moves to the next row's button, or to the Mark all button when none is left; no motion added.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/notifications", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (9 cases × 4 = 36).
+  - Given state `default` / Then `notifications-default` shows 2 rows under `newTitle` and 1 under `earlierTitle`, each new row has the `badgeNew` badge and a button `markOneAria`, the root `notifications-page` is visible; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / When the Mark as read button of n1 is clicked / Then `newTitle` has 1 row and `earlierTitle` 2.
+  - Given state `default` / When `markAll` is clicked / Then `notifications-all-read` shows `allRead`, no `newTitle` section exists and `markAll` is disabled.
+  - Given state `all-read` / Then `notifications-all-read` is visible and `markAll` is disabled.
+  - Given state `empty` / Then `notifications-empty` shows `emptyTitle` and a link `prefs` to `/settings/preferences`.
+  - Given state `loading` / Then `notifications-loading` is visible inside `notifications-page`.
+  - Given state `error` / Then `notifications-error` shows `error` and Try again.
+  - Given state `offline` / Then `notifications-offline` and `notifications-default` are visible.
+  - Given state `signed-out` / Then `notifications-signed-out` has a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · at most 100 notifications listed (`notifications.list` cap from TFV2-0078a) · existing wiring spec stays 4 of 4 passing.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
+- **OPEN:** none.
 
-### TFV2-0148 — Screen: Weekly page (with WeekStrip)
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065a, TFV2-0065b, TFV2-0065c, TFV2-0065d, TFV2-0095, TFV2-0124a, TFV2-0124b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after the Depends set.
-- **WHY:** PRD F-07 (weekly view); screen `web/weekly-page.html`.
-- **GOAL:** The weekly page shows intentions and tasks by day, with a WeekStrip to pick the day.
-- **SCOPE:** `apps/web/app/(tempo)/week/[week]/page.tsx` · `apps/web/components/today/weekly-page-client.tsx` · `tests/e2e/screens/weekly-page.spec.ts`.
-- **MUTATES:** none (wires `pages.getWeekly`, `tasks.listForWeek`, `notes.backlinks`).
-- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement WeekStrip + intentions + tasks-by-day + five states; 4) copy `web/weekly-page.html` strings; 5) Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/weekly-page.spec.ts --reporter=line` → pass at 390/1280, EN/HE.
-- **EVIDENCE:** Playwright output + screenshots.
-- **DO NOT:** edit `convex/`; hardcode the week; mix weekly view into Today.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Route `(tempo)/week/[week]` (entry `/week/[isoWeek]`), layout TempoShell. Data: `pages.getWeekly`, `tasks.listForWeek`, `notes.backlinks`. Components: WeekStrip, Section, ListRow. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Week"/HE "שבוע"; EN "Intentions for this week"/HE "כוונות לשבוע הזה"; EN "Tasks by day"/HE "משימות לפי יום"; empty EN "This week is still open."/HE "השבוע הזה עוד פתוח."; empty body EN "Write one intention, or give one day one small task."/HE "אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת."; error EN "Couldn't load your week."/HE "לא הצלחנו לטעון את השבוע שלך." RTL: days run RTL per conflict #10; counts `.tp-num`. Breakpoints 390/768/1024/1280. Motion: day select ≤250 ms. Full strings = `web/weekly-page.html`.
-- **TESTS:** Given a week / When load / Then WeekStrip + intentions + tasks-by-day. Given select Tuesday / When click / Then that day's tasks highlight. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: select day, empty, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+### TFV2-0147a — Screen: Nags (`/settings/nags`) — list, switch, phrases
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0077c, TFV2-0077d, TFV2-0077e, TFV2-0077f, TFV2-0077g, TFV2-0092, TFV2-0097, TFV2-0111, TFV2-0113, TFV2-0116, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0077c, TFV2-0077d, TFV2-0077e, TFV2-0077f, TFV2-0077g, TFV2-0092, TFV2-0097, TFV2-0111, TFV2-0113, TFV2-0116, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-60, F-61 (nags in the person's own words; no accepted phrase → cannot switch on); design `docs/design/v3/screens/web/nags.html`; CONVENTIONS §13–§15. Route decision from code: there is no `/nags` route; the nags screen lives at `/settings/nags` (`apps/web/app/(tempo)/settings/nags/page.tsx`, linked from the Settings nav in `components/tempo/Sidebar.tsx`, already in `E2E_WIRING_ROUTES`), so this ticket owns `/settings/nags`. Q-11 (delivery channel) does not block it: the screen never mentions delivery.
+- **GOAL:** `/settings/nags` lists the person's nags with an on/off switch that stays disabled until a phrase is accepted, shows each nag's phrases with Accept / Reject / Remove, adds phrases and new nags, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/settings/nags/page.tsx` · `apps/web/lib/e2e/fixtures/settings-nags.ts` · test: `tests/e2e/screens/settings-nags.spec.ts`. (`e2eWiringRoutes.ts` is not in scope: `"/settings/nags"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/settings/nags/page.tsx` (edit: whole file replaced; it no longer imports `./NagsScreen`) · `apps/web/lib/e2e/fixtures/settings-nags.ts` (new) · `tests/e2e/screens/settings-nags.spec.ts` (new) · `nags` rows written through the existing `nags.create`, `nags.addPhrase`, `nags.decidePhrase`, `nags.setEnabled` (live use only).
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (11 lines, renders `NagsScreen`), `convex/nags.ts` (`list` `{}` → `{ _id: Id<"nags">; label: string; enabled: boolean; phrases: { id: string; text: string; source: "user" | "derived"; status: "proposed" | "accepted" | "rejected" }[]; createdAt: number; updatedAt: number }[]` newest first; `create` `{ label: string }` → `Id<"nags">`, throws `"Give the nag a name of 1 to 60 characters."`; `addPhrase` `{ nagId, text, source }` → `{ phraseId: string }`, a `user` phrase is stored `accepted`, a `derived` one `proposed`, throws `"Write a phrase first."`, `"Keep the phrase to 140 characters or fewer."`, `"Phrases are plain words, no emoji."`, `"Nag not found"`; `decidePhrase` `{ nagId, phraseId, decision: "accept" | "reject" }` → `{ success: true }`, throws `"Phrase not found"`, `"Nag not found"`, and switches the nag off when no accepted phrase is left; `setEnabled` `{ nagId, enabled }` → `{ success: true }`, throws `"Add a phrase you accept first."`), `convex/lib/nagPhrase.ts` (`NAG_PHRASE_MAX = 140`), and `tests/e2e/wiring/settings-nags-memory.spec.ts` (needs `data-testid="settings-nags"` attached on `/settings/nags`). 2) Create fixtures. 3) Replace `page.tsx`. 4) No E2E route step (already registered; say so in the PR). 5) Create the spec. 6) Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line`, `bun run typecheck`, `bun run lint` (`tests/unit/kb-67.test.tsx` renders `NagsScreen` directly; that file stays, so the browser suite is unaffected).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` → `44 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line` → `2 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries and the typecheck exit code in the PR.
+- **DO NOT:** edit or delete `apps/web/app/(tempo)/settings/nags/NagsScreen.tsx`, `components/nags/nagRules.ts`, `lib/i18n-groups/kb-67.ts` or `e2eWiringRoutes.ts`; let the switch turn on with no accepted phrase; add stock phrases or emoji; call `nags.proposePhrases` (TFV2-0147b); mention a delivery channel; create a `/nags` route; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0147a / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-testid="settings-nags">` in every state; header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`.
+  - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `Notice`; `List`, `ListRow`; `Form` from `@/components/forms/Form`; `TextInput` from `@/components/forms/TextInput`; `Switch` from `@/components/forms/Switch`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/settings-nags`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **View type:**
+    ```ts
+    export type NagsState = "default" | "empty" | "success" | "loading" | "error" | "offline" | "signed-out";
+    export type NagPhrase = { id: string; text: string; source: "user" | "derived"; status: "proposed" | "accepted" | "rejected" };
+    export type NagRow = { id: string; label: string; enabled: boolean; phrases: NagPhrase[] };
+    export type NagsNotice = "nagAdded" | "phraseAdded" | "accepted" | "rejected" | "removed" | "turnedOn" | "turnedOff";
+    export type NagsView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" }
+      | { status: "ready"; nags: NagRow[]; notice: NagsNotice | null };
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/settings-nags.ts` contains only `import type { NagsState, NagsView } from "@/app/(tempo)/settings/nags/page";` and `export const FIXTURES: Record<NagsState, NagsView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", notice: null, nags: [ { id: "nag-slides", label: "Slides for Thursday", enabled: false, phrases: [ { id: "p1", text: "Three slides, not thirty.", source: "derived", status: "proposed" } ] }, { id: "nag-bank", label: "Call the bank", enabled: true, phrases: [ { id: "p2", text: "Bank. Ten minutes. Then it's gone.", source: "user", status: "accepted" }, { id: "p3", text: "BTB. Before the break.", source: "user", status: "accepted" } ] }, { id: "nag-water", label: "Water", enabled: true, phrases: [ { id: "p4", text: "Glass, Maya.", source: "user", status: "accepted" }, { id: "p5", text: "Water before the next tab.", source: "derived", status: "proposed" }, { id: "p6", text: "Drink up.", source: "derived", status: "rejected" } ] } ] }`; `empty` = `{ status: "ready", notice: null, nags: [] }`; `success` = the default nags with `nag-slides` gaining `{ id: "p7", text: "One slide at a time.", source: "user", status: "accepted" }` and `notice: "phraseAdded"`; `loading`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><NagsScreen /></Suspense>`; `NagsScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<NagsBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <NagsBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><NagsLive online={liveOnline} /></ScreenBoundary>`; `NagsLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; local state `nags` copies `view.nags`, every action updates it at once (optimistic), live mode then calls the mutation and restores the previous value on error.
+  - **Body blocks:** offline → `settings-nags-offline` (`StateOffline text={copy.offline}`); `loading` → `settings-nags-loading`; `error` → `settings-nags-error` (`StateError what={copy.error}`); `signed-out` → `settings-nags-signed-out` (`StateEmpty title={copy.signedOutTitle}` + Sign in link to `/sign-in`); ready: one shared `<div data-testid="settings-nags-notice">` holding either the current done notice — `<div data-testid="settings-nags-success"><Notice tone="done" title={copy[notice] with {label} filled} live="status" /></div>` — or an error `<Notice tone="danger" title={…} live="alert" />`; then the **new nag form**; then, with zero nags, `settings-nags-empty` (`StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/today" className="tp-btn tp-btn--secondary" data-component="Button">{copy.emptyAction}</Link>}`), else `<div data-testid="settings-nags-default">` with one section per nag.
+  - **New nag form:** `<Form label={copy.newForm} onSubmit={…} busy={busy} actions={<button type="submit" className="tp-btn tp-btn--secondary" data-component="Button">{copy.addNag}</button>}><TextInput id="nag-new-label" label={copy.newLabel} help={copy.newHelp} value={label} onChange={setLabel} maxLength={60} error={labelError} required /></Form>`. Trimmed empty → `copy.labelEmpty`; longer than 60 → `copy.labelLong`; live `create({ label })` → new nag (off, no phrases) at the top, notice `nagAdded`.
+  - **Nag section:** `<section className="tp-section" data-component="Section" data-testid={"nag-" + id}>` with `<h2 className="tp-section__title">{label}</h2>` (`dir="auto"`); `<Switch id={"nag-" + id + "-on"} label={copy.switchLabel.replace("{label}", label)} checked={enabled} onChange={toggle} disabled={!hasAccepted} help={hasAccepted ? undefined : copy.cantEnable} />` where `hasAccepted = phrases.some(p => p.status === "accepted")`; toggle → `setEnabled({ nagId, enabled })`, notice `turnedOn` / `turnedOff`. Phrases: `<List label={copy.phrasesLabel.replace("{label}", label)}>` with every phrase whose status is not `rejected`: `ListRow title={text}` (`dir="auto"` from ListRow), `meta` = `accepted` + `user` → `copy.metaYours`, `accepted` + `derived` → `copy.metaAccepted`, `proposed` → `copy.metaProposed`; `end` = `proposed` → two buttons `copy.accept` (`aria-label={copy.acceptAria.replace("{text}", text)}`) and `copy.reject` (`aria-label={copy.rejectAria…}`) calling `decidePhrase` with `"accept"` / `"reject"` (notices `accepted` / `rejected`); `accepted` → one button `copy.remove` (`aria-label={copy.removeAria…}`) calling `decidePhrase(…, "reject")` (notice `removed`; when it was the last accepted phrase the switch turns off locally, matching the server). When no phrase is visible the list is omitted. Then the **add phrase form**: `<Form label={copy.addPhraseForm.replace("{label}", label)} …actions={<button type="submit" className="tp-btn tp-btn--primary" data-component="Button">{copy.addPhrase}</button>}><TextInput id={"nag-" + id + "-phrase"} label={copy.phraseLabel} help={copy.phraseHelp} value={draft} onChange={…} maxLength={140} error={phraseError} required /></Form>`. Trimmed empty → `copy.phraseEmpty`; longer than 140 → `copy.phraseLong`; live `addPhrase({ nagId, text, source: "user" })` → appended as `accepted`, notice `phraseAdded`.
+  - **Backend errors → copy (substring match on `error.message`):** `"Write a phrase first."` → `phraseEmpty`; `"Keep the phrase to 140 characters or fewer."` → `phraseLong`; `"Phrases are plain words, no emoji."` → `phraseEmoji`; `"Give the nag a name of 1 to 60 characters."` → `labelLong`; `"Nag not found"` → `nagGone`; `"Phrase not found"` → `phraseGone`; `"Add a phrase you accept first."` → `cantEnable`; anything else → `failed`. Field errors go to the field; the rest to the notice div.
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Nags | תזכורות |
+    | sub | Nudges in your own words. Tempo never writes them for you. A nag needs at least one phrase you've accepted before it can turn on. | תזכורות במילים שלך. Tempo אף פעם לא כותב אותן. תזכורת צריכה לפחות משפט אחד שאושר לפני שאפשר להפעיל אותה. |
+    | newForm | Start a nag | תזכורת חדשה |
+    | newLabel | What would you like a nag for? | על מה להזכיר? |
+    | newHelp | A short name, like the task it's for. | שם קצר, למשל שם המשימה. |
+    | addNag | Add nag | הוספת תזכורת |
+    | labelEmpty | Give it a name first. | קודם נותנים שם. |
+    | labelLong | Keep the name to 60 characters or fewer. | השם יכול להיות עד 60 תווים. |
+    | switchLabel | Turn on: {label} | הפעלה: {label} |
+    | cantEnable | Can't turn on yet. Add a phrase in your own words, or accept a suggestion. | עדיין אי אפשר להפעיל. אפשר להוסיף משפט במילים שלך או לאשר הצעה. |
+    | phrasesLabel | Phrases for {label} | משפטים עבור {label} |
+    | metaYours | Your words | המילים שלך |
+    | metaAccepted | Accepted suggestion | הצעה שאושרה |
+    | metaProposed | Suggested, not used yet | הצעה, עדיין לא בשימוש |
+    | accept | Accept | אישור |
+    | acceptAria | Accept: {text} | אישור: {text} |
+    | reject | Reject | דחייה |
+    | rejectAria | Reject: {text} | דחייה: {text} |
+    | remove | Remove | הסרה |
+    | removeAria | Remove: {text} | הסרה: {text} |
+    | addPhraseForm | Add a phrase for {label} | הוספת משפט עבור {label} |
+    | phraseLabel | Your words | המילים שלך |
+    | phraseHelp | Short works best. Nobody else will see it. | קצר עובד הכי טוב. אף אחד אחר לא יראה את זה. |
+    | addPhrase | Add phrase | הוספת משפט |
+    | phraseEmpty | Write a few words first. | קודם כותבים כמה מילים. |
+    | phraseLong | Keep it to 140 characters or fewer. | עד 140 תווים. |
+    | phraseEmoji | Plain words only, no emoji. | רק מילים, בלי אימוג׳י. |
+    | nagGone | This nag is gone. It may have been removed on another device. | התזכורת הזו כבר לא קיימת. ייתכן שהוסרה במכשיר אחר. |
+    | phraseGone | This phrase is gone. It may have been changed on another device. | המשפט הזה כבר לא קיים. ייתכן שהשתנה במכשיר אחר. |
+    | failed | Something went wrong. Nothing was changed. | משהו השתבש. שום דבר לא השתנה. |
+    | nagAdded | Nag added. Add a phrase so it can turn on. | התזכורת נוספה. אפשר להוסיף משפט כדי להפעיל אותה. |
+    | phraseAdded | Phrase added. | המשפט נוסף. |
+    | accepted | Suggestion accepted. | ההצעה אושרה. |
+    | rejected | Suggestion rejected. | ההצעה נדחתה. |
+    | removed | Phrase removed. | המשפט הוסר. |
+    | turnedOn | {label} is on. | {label}: פועלת. |
+    | turnedOff | {label} is off. | {label}: כבויה. |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your nags | טוענים את התזכורות |
+    | error | Couldn't load your nags. | לא הצלחנו לטעון את התזכורות. |
+    | signedOutTitle | Sign in to see your nags. | צריך להתחבר כדי לראות את התזכורות. |
+    | signIn | Sign in | התחברות |
+    | emptyTitle | No nags yet. | עדיין אין תזכורות. |
+    | emptyBody | Start one above, or ask for one on any task or habit. Tempo only ever uses your words. | אפשר להתחיל אחת למעלה, או לבקש תזכורת בכל משימה או הרגל. Tempo משתמש רק במילים שלך. |
+    | emptyAction | Go to Today | מעבר להיום |
+    Switch renders its own On / פועל · Off / כבוי (TFV2-0116). "פועלת"/"כבויה" in `turnedOn`/`turnedOff` agree with the noun תזכורת, not with the person (CONVENTIONS §12).
+  - **States:** `default`, `empty`, `success`, `loading`, `error`, `offline`, `signed-out`; testid `settings-nags-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`); layout mirrors through the components' logical properties; user text renders `dir="auto"`; no `left`/`right` anywhere. Keyboard and screen reader: native links and buttons plus the components' roles (StateError `role="alert"`, StateOffline `role="status"`, counts in `aria-live="polite"` paragraphs). Breakpoints: 390 px base; `.tp-page` in tempo.css handles 768/1024/1280; no page-specific rules. Motion: none added by the page; component transitions stay ≤ 250 ms and stop under reduced motion; user text (`label`, phrase `text`) renders `dir="auto"`; Tab per nag: switch → each phrase's buttons → phrase field → Add phrase; Enter in a field submits its form; a disabled switch keeps its help text linked by `aria-describedby` (TFV2-0116); no motion added beyond components.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/settings/nags", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (11 cases × 4 = 44).
+  - Given state `default` / Then `settings-nags-default` holds 3 nag sections; the switch of `nag-slides` is disabled with `cantEnable` visible; the switches of `nag-bank` and `nag-water` are enabled and checked; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / Then `nag-water` lists 2 phrases ("Drink up." is not shown) and "Water before the next tab." has buttons `acceptAria` and `rejectAria`.
+  - Given state `default` / When "One slide at a time." is typed in `#nag-nag-slides-phrase` and `addPhrase` clicked / Then that phrase appears with `metaYours`, the `nag-slides` switch becomes enabled, and `settings-nags-notice` shows `phraseAdded`.
+  - Given state `default` / When the field `#nag-nag-bank-phrase` is submitted empty / Then the field error `phraseEmpty` shows and no phrase is added.
+  - Given state `default` / When `acceptAria`("Three slides, not thirty.") is clicked / Then its meta becomes `metaAccepted`, the `nag-slides` switch is enabled, and the notice shows `accepted`.
+  - Given state `default` / When `removeAria`("Glass, Maya.") is clicked / Then `nag-water` lists 1 phrase, its switch is unchecked and disabled, and the notice shows `removed`.
+  - Given state `default` / When the `nag-bank` switch is clicked / Then it is unchecked and the notice shows `turnedOff` with "Call the bank".
+  - Given state `empty` / Then `settings-nags-empty` shows `emptyTitle`; When "Water" is typed in `#nag-new-label` and `addNag` clicked / Then one nag section "Water" exists with a disabled switch and the notice shows `nagAdded`.
+  - Given state `success` / Then `settings-nags-success` shows `phraseAdded`.
+  - Given state `loading` / Then `settings-nags-loading` is visible inside `[data-testid="settings-nags"]`; and state `error` shows `settings-nags-error` with Try again.
+  - Given state `offline` / Then `settings-nags-offline` and `settings-nags-default` are visible; and state `signed-out` shows `settings-nags-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · phrase ≤ 140 characters (`NAG_PHRASE_MAX`), nag name ≤ 60 (`LABEL_MAX` in `convex/nags.ts`) · existing wiring spec stays 2 of 2 passing.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+- **OPEN:** none.
 
-## Chunk 3 — MVP · Coach & memory
+### TFV2-0147b — Screen: Nags — "Suggest from my words" (`/settings/nags`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0147a, TFV2-0077e, TFV2-0077j · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0147a, TFV2-0077e, TFV2-0077j.
+- **WHY:** PRD F-61 (phrases derived from the person's own words, never used until accepted); `convex/nags.ts` `proposePhrases` exists and writes nothing; the screen it served (`NagsScreen.tsx`) is replaced by TFV2-0147a.
+- **GOAL:** Each nag with at least one accepted phrase of the person's own has a "Suggest from my words" button that asks `nags.proposePhrases` and adds each proposal as a suggested (not yet used) phrase.
+- **SCOPE:** `apps/web/app/(tempo)/settings/nags/page.tsx` · `apps/web/lib/e2e/fixtures/settings-nags.ts` · test: `tests/e2e/screens/settings-nags.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/settings/nags/page.tsx` (edit) · `apps/web/lib/e2e/fixtures/settings-nags.ts` (edit: `NagsState` gains `"suggested"`) · `tests/e2e/screens/settings-nags.spec.ts` (edit: cases appended) · `nags.phrases` gain `derived` / `proposed` rows through `nags.addPhrase` (live use only).
+- **STEPS:** 1) Code-map check: `convex/nags.ts` `proposePhrases` (action, args `{ nagId: v.id("nags") }`, returns `{ proposals: string[] }`, returns `[]` when the nag has no accepted `user` phrase; throws `"Sign in to use phrase suggestions."`, `"Nag not found"`, `"Suggestions are not configured here yet. You can still write your own."`, `"Too many requests right now. Pause a moment and try again."`, `"The suggester had a hiccup. Try again in a moment?"`, and the approval-gate error of `requireApprovedForAi`). 2) Add the button, busy state, the add loop and the error mapping per SPEC. 3) Extend the fixtures. 4) Append the TESTS cases. 5) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` → `56 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** Playwright summary and typecheck exit code in the PR.
+- **DO NOT:** auto-accept a proposal; add a proposal as `source: "user"`; call the model from the client; show the button on a nag without an accepted `user` phrase; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0147b / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:**
+  - **Button:** in each nag section, under the phrase list, when `phrases.some(p => p.source === "user" && p.status === "accepted")`: `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" data-component="Button" disabled={suggesting === id} aria-label={copy.suggestAria.replace("{label}", label)}>{suggesting === id ? copy.suggesting : copy.suggest}</button>`.
+  - **Live action:** `const propose = useAction(api.nags.proposePhrases)`; on click `const { proposals } = await propose({ nagId })`; for each proposal in order `await addPhrase({ nagId, text, source: "derived" })` and append `{ id: phraseId, text, source: "derived", status: "proposed" }` locally; notice `suggested` with `{n}` = proposals added, or `noSuggestions` when the list is empty. Errors (substring match): `"Sign in to use phrase suggestions."` → `signInSuggest`; `"Suggestions are not configured here yet."` → `notConfigured`; `"Too many requests right now."` → `tooMany`; `"The suggester had a hiccup."` → `hiccup`; `"Nag not found"` → `nagGone` (from TFV2-0147a); anything else → `failed`. Forced mode makes no Convex call and shows the `noSuggestions` notice.
+  - **View change:** `NagsNotice` gains `"suggested" | "noSuggestions"`; the ready view gains `suggestedCount: number` (used to fill `{n}`); `NagsState` gains `"suggested"`; fixture `suggested` = the default nags with `nag-bank` gaining `{ id: "p8", text: "Ten minutes, then tea.", source: "derived", status: "proposed" }`, `notice: "suggested"`, `suggestedCount: 1`; every other ready fixture gets `suggestedCount: 0`.
+  - **Copy (added keys):**
+    | key | EN | HE |
+    |---|---|---|
+    | suggest | Suggest from my words | הצעות מהמילים שלי |
+    | suggestAria | Suggest phrases for {label} from my words | הצעת משפטים עבור {label} מהמילים שלי |
+    | suggesting | Suggesting… | מכינים הצעות… |
+    | suggested | {n} suggestions added. They're not used until you accept them. | נוספו {n} הצעות. הן לא בשימוש עד שמאשרים אותן. |
+    | noSuggestions | No new suggestions this time. Your own words work best anyway. | הפעם אין הצעות חדשות. המילים שלך עובדות הכי טוב בכל מקרה. |
+    | signInSuggest | Sign in to get suggestions. | צריך להתחבר כדי לקבל הצעות. |
+    | notConfigured | Suggestions aren't set up here yet. You can still write your own. | הצעות עדיין לא זמינות כאן. אפשר לכתוב משפט בעצמך. |
+    | tooMany | Too many requests right now. Try again in a moment. | יותר מדי בקשות כרגע. אפשר לנסות שוב בעוד רגע. |
+    | hiccup | The suggester had a hiccup. Try again in a moment. | משהו השתבש בהצעות. אפשר לנסות שוב בעוד רגע. |
+    ("הצעות מהמילים שלי" is a first-person button label, which carries no gender in Hebrew.)
+  - **States:** TFV2-0147a's states plus `suggested`: when `notice === "suggested"` the done-notice wrapper carries `data-testid="settings-nags-suggested"` instead of `settings-nags-success`.
+- **TESTS:** appended; same loops (3 cases × 4 = 12 more):
+  - Given state `default` / Then `nag-bank` and `nag-water` show a button `suggestAria` and `nag-slides` (only a derived proposal) shows none.
+  - Given state `default` / When `suggestAria`("Call the bank") is clicked / Then `settings-nags-notice` shows `noSuggestions` (forced mode makes no call).
+  - Given state `suggested` / Then `settings-nags-suggested` shows `suggested` with 1, and `nag-bank` lists "Ten minutes, then tea." with `metaProposed` and an Accept button.
+- **NUMBERS:** as TFV2-0147a · proposals are never used before Accept: 0 auto-accepted (exact; PRD F-61).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
 
-### TFV2-0149 — Schema: `memories.embedding` field + 1024-dim vector index
+### TFV2-0148 — Screen: Weekly page (`/week/[week]`, with WeekStrip)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0075b, TFV2-0075c, TFV2-0092, TFV2-0093, TFV2-0095, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0075b, TFV2-0075c, TFV2-0092, TFV2-0093, TFV2-0095, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0142a.
+- **WHY:** PRD F-07 (weekly view); design `docs/design/v3/screens/web/weekly-page.html` (WeekStrip, tasks by day, the week's page); CONVENTIONS §14 (week start from `userPreferences.weekStartsOn`, time zone from `userPreferences.timeZone`). Code truth: the weekly page's own text (intentions) is a note at `/notes/[id]` keyed by the ISO week's Monday (`notes.getPeriodPage` / `notes.ensurePeriodPage`, page type `"weekly"`); today `/week/[week]` only opens that note (`components/today/WeekOpener.tsx`). This screen becomes the week overview and links to (or starts) that note, so the note stays the single home of the week's writing. It does not need Today (TFV2-0124). `tasks.listDueInRange` (`convex/tasks.ts`), `templates.get` and `preferences.get` exist in code with no backend ticket; `notes.getPeriodPage` is TFV2-0075b and `notes.ensurePeriodPage` TFV2-0075c.
+- **GOAL:** `/week/<YYYY-Www>` shows the week's seven days in a WeekStrip ordered by the person's week start, the tasks due on the picked day, and a link to the week's page (or a button that starts it), with previous/next week links, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/week/[week]/page.tsx` · `apps/web/lib/e2e/fixtures/weekly-page.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/weekly-page.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/week/[week]/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/weekly-page.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/weekly-page.spec.ts` (new) · route `/week/(.*)` registered for the dev-only E2E bypass · a weekly `notes` row created through the existing `notes.ensurePeriodPage` when the person presses "Start this week's page" (live use only).
+- **STEPS:** 1) Code-map check: read the current `page.tsx` (8 lines, `WeekOpener weekKey={week}`), `apps/web/app/(tempo)/week/page.tsx` (stays the opener for "this week"; do not touch), `apps/web/lib/period-pages.ts` (`mondayOfWeekKey(key): string | null`, `weekKey(iso): string`, `addDays(iso, days): string`, `periodPageDraft(kind, iso, templateBody, lang): { title: string; body: string }`), `components/today/usePeriodPage.ts` (template id `"starter:weekly-page"`), `convex/notes.ts` (`getPeriodPage` `{ pageType: "daily" | "weekly"; date: string }` → `{ _id: Id<"notes">; title: string } | null`; `ensurePeriodPage` `{ pageType, date, title, body }` → `Id<"notes">`, throws `"Invalid page date"`, `"Page body is too long"`, `"Page meta does not match"`), `convex/templates.ts` `get` `{ templateId: string }` → template with `body` or `null`, `convex/tasks.ts` `listDueInRange` `{ startMs, endMs }`; `grep -n '"/week' apps/web/lib/e2eWiringRoutes.ts` (absent). 2) Create fixtures. 3) Replace `page.tsx`. 4) Named step — register the route: insert `  "/week/(.*)",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts` (only the dynamic child; `/week` itself stays the opener and is not registered); nothing else. 5) Create the spec. 6) Run DONE, typecheck, lint.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/weekly-page.spec.ts --reporter=line` → `40 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, typecheck exit code and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **DO NOT:** edit `WeekOpener.tsx`, `usePeriodPage.ts`, `week/page.tsx`, `lib/period-pages.ts`, `lib/zonedDay.ts` or any `notes` page; render or edit the week page's body here (it lives at `/notes/[id]`); hard-code Monday or the browser time zone; call `pages.getWeekly`, `tasks.listForWeek` or `notes.backlinks` (the first two do not exist; backlinks need a note id this screen does not own); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0148 / evidence: <DONE output> / changed: page.tsx, fixtures/weekly-page.ts, e2eWiringRoutes.ts, weekly-page.spec.ts / unknowns / notes for ticket sync: links that expect /week/<key> to land on the note now land on this overview, one click from it`.
+- **SPEC:**
+  - **Route and layout:** `"use client"`; `const { week } = useParams<{ week: string }>()` (`next/navigation`); `monday = mondayOfWeekKey(week)`. Root `<div className="tp-page" data-component="PageLayout" data-testid="weekly-page-screen">`; header `.tp-pagehead`: `<h1>` = `copy.title` with `{n}` = `Number(week.slice(6))`; sub = `copy.range` with `{start}`/`{end}` = `Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC" })` of the first and last day; actions: `<Link href={"/week/" + weekKey(addDays(monday, -7))} className="tp-btn tp-btn--ghost tp-btn--sm">{copy.prev}</Link>`, `<Link href={"/week/" + weekKey(addDays(monday, 7))} …>{copy.next}</Link>`, `<Link href="/today" className="tp-btn tp-btn--secondary tp-btn--sm">{copy.openToday}</Link>`.
+  - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `useParams`, `useRouter`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `mondayOfWeekKey`, `weekKey`, `addDays`, `periodPageDraft` from `@/lib/period-pages`; `zonedIsoDate`, `zonedMidnightMs`, `addIsoDays`, `weekStartDate` from `@/lib/zonedDay`; `WeekStrip` from `@/components/layout/WeekStrip`; `Badge`; `Notice`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/weekly-page`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><WeeklyScreen /></Suspense>`; `WeeklyScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`; when `forced !== null` it renders `<WeeklyBody view={FIXTURES[key]} online={key !== "offline"} onRetry={() => {}} />` with `key = forced in FIXTURES ? forced : "loading"` and every query gets `"skip"`; otherwise `<ScreenBoundary fallback={(retry) => <WeeklyBody view={{ status: "error" }} online={liveOnline} onRetry={retry} />}><WeeklyLive online={liveOnline} /></ScreenBoundary>`; `WeeklyLive` reads `useConvexAuth()` (`!isLoading && !isAuthenticated` → `signed-out`), runs queries only after `api.users.getProfile` returns a non-null profile, and shows `loading` while any query is `undefined`; when `monday === null` `WeeklyLive` returns `bad-week` without any query; `selected` and `starting` live in local state.
+  - **Data (live):** `const [now] = useState(() => Date.now())`; `api.users.getProfile` gate; `api.preferences.get` → `weekStartsOn`, `timeZone` (`tz`); `first = weekStartDate(monday, weekStartsOn)` (the week that holds the ISO Monday, starting on the person's week-start day); `days = [0..6].map(i => addIsoDays(first, i))`; `api.tasks.listDueInRange` `{ startMs: zonedMidnightMs(first, tz), endMs: zonedMidnightMs(addIsoDays(first, 7), tz) }`; `api.notes.getPeriodPage` `{ pageType: "weekly", date: monday }`; `api.templates.get` `{ templateId: "starter:weekly-page" }` only while `getPeriodPage` returned `null`; `api.notes.ensurePeriodPage` on demand. All `"skip"` when forced, signed out, `monday === null`, or before profile and preferences exist.
+  - **View type:**
+    ```ts
+    export type WeeklyState = "default" | "no-page" | "empty" | "bad-week" | "loading" | "error" | "offline" | "signed-out";
+    export type WeekTask = { id: string; title: string; date: string; time: string | null; done: boolean };
+    export type WeeklyView =
+      | { status: "loading" } | { status: "error" } | { status: "signed-out" } | { status: "bad-week" }
+      | { status: "ready"; weekKey: string; days: string[]; today: string; tasks: WeekTask[]; weeklyPage: { id: string; title: string } | null };
+    ```
+    Mapping: `cancelled` tasks dropped; `date = zonedIsoDate(dueAt, tz)`; `time` = `Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: tz }).format(dueAt)`, or `null` when it is `"00:00"`; `done = status === "done"`; `today = zonedIsoDate(now, tz)`. `ready` with no tasks and `weeklyPage === null` renders the empty block.
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/weekly-page.ts` contains only `import type { WeeklyState, WeeklyView } from "@/app/(tempo)/week/[week]/page";` and `export const FIXTURES: Record<WeeklyState, WeeklyView> = { … };` (one entry per state, nothing else exported). Entries: `default`/`offline` = `{ status: "ready", weekKey: "2026-W42", days: ["2026-10-12","2026-10-13","2026-10-14","2026-10-15","2026-10-16","2026-10-17","2026-10-18"], today: "2026-10-12", weeklyPage: { id: "wk42", title: "Week 42" }, tasks: [ {id:"t1",title:"Draft 3 slides for Thursday",date:"2026-10-12",time:null,done:false}, {id:"t2",title:"Pick up prescription",date:"2026-10-12",time:"18:00",done:false}, {id:"t3",title:"Water the plants",date:"2026-10-12",time:null,done:true}, {id:"t4",title:"Ask Yoni about the van",date:"2026-10-13",time:null,done:false}, {id:"t5",title:"Give the talk",date:"2026-10-15",time:"10:00",done:false} ] }`; `no-page` = the same with `weeklyPage: null`; `empty` = the same days with `tasks: []`, `weeklyPage: null`; `bad-week`, `loading`, `error`, `signed-out` = `{ status: "<name>" }`.
+  - **Body blocks:** offline → `weekly-page-offline` (`StateOffline text={copy.offline}`); `loading` → `weekly-page-loading` (`StateLoading label={copy.loading} rows={4}`); `error` → `weekly-page-error` (`StateError what={copy.error}`); `signed-out` → `weekly-page-signed-out` (`StateEmpty title={copy.signedOutTitle}` + Sign in link to `/sign-in`); `bad-week` → `weekly-page-bad-week` (`StateEmpty title={copy.badTitle} action={<Link href="/week" className="tp-btn tp-btn--secondary" data-component="Button">{copy.thisWeek}</Link>}`) and no prev/next links; `empty` → `weekly-page-empty` (`StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link href="/tasks" …>{copy.openTasks}</Link>}`) followed by the week's-page section; ready otherwise → `<div data-testid="weekly-page-default">` with:
+    1. `<WeekStrip label={copy.stripLabel} days={days.map(date => ({ date, dow: Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(new Date(date + "T00:00:00Z")), n: Number(date.slice(8)), count: open tasks on date, today: date === today }))} selected={selected} onSelect={setSelected} />`; `selected` starts at `today` when it is one of `days`, else `days[0]`.
+    2. Section for the selected day: `<h2 className="tp-section__title">` = `Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })` of the date; tasks of that day (open first, then done) in `<List label={heading}>`: `ListRow title={title} meta={time ? <span className="tp-num">{time}</span> : undefined} end={done ? <Badge label={copy.done} tone="done" /> : undefined} href="/tasks"`; no tasks → `<div data-testid="weekly-page-day-empty"><StateEmpty title={copy.dayEmpty} /></div>`.
+    3. Section `copy.pageTitle`: `weeklyPage` set → `<List label={copy.pageTitle}><ListRow title={weeklyPage.title} meta={copy.pageMeta} href={"/notes/" + weeklyPage.id} /></List>`; `null` → `<div data-testid="weekly-page-no-page">` with `<p>` `copy.noPageBody` and `<button type="button" className="tp-btn tp-btn--primary" data-component="Button" disabled={starting}>{starting ? copy.starting : copy.startPage}</button>`. Live click: `const draft = periodPageDraft("weekly", monday, template?.body ?? "", lang); const id = await ensure({ pageType: "weekly", date: monday, title: draft.title, body: draft.body }); router.push("/notes/" + id)`; any error → `<Notice tone="danger" title={copy.startFailed} live="alert" />`. Forced mode: the button renders but makes no call.
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Week {n} | שבוע {n} |
+    | range | {start} – {end} | {start} – {end} |
+    | prev | Previous week | השבוע הקודם |
+    | next | Next week | השבוע הבא |
+    | openToday | Open Today | פתיחת היום |
+    | stripLabel | Days of this week | ימי השבוע הזה |
+    | done | Done | הושלם |
+    | dayEmpty | Nothing planned. Rest counts too. | שום דבר לא מתוכנן. גם מנוחה נחשבת. |
+    | pageTitle | This week's page | הדף השבועי |
+    | pageMeta | Intentions and notes for the week | כוונות ופתקים לשבוע |
+    | noPageBody | This week has no page yet. Start one to write intentions for the week. | לשבוע הזה עדיין אין דף. אפשר לפתוח דף ולכתוב בו כוונות לשבוע. |
+    | startPage | Start this week's page | לפתוח את הדף השבועי |
+    | starting | Opening… | פותחים… |
+    | startFailed | Couldn't make the weekly page. Try again. | לא הצלחנו ליצור את הדף השבועי. אפשר לנסות שוב. |
+    | badTitle | There's no week with that name. | אין שבוע בשם הזה. |
+    | thisWeek | Go to this week | מעבר לשבוע הנוכחי |
+    | emptyTitle | This week is still open. | השבוע הזה עוד פתוח. |
+    | emptyBody | That's fine. Give one day a single small task, or start this week's page. | זה בסדר. אפשר לתת ליום אחד משימה קטנה אחת, או לפתוח את הדף השבועי. |
+    | openTasks | Open Tasks | פתיחת המשימות |
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your week | טוענים את השבוע |
+    | error | Couldn't load your week. | לא הצלחנו לטעון את השבוע. |
+    | signedOutTitle | Sign in to see your week. | צריך להתחבר כדי לראות את השבוע. |
+    | signIn | Sign in | התחברות |
+    The `{n}` in `title` and the dates in `range` are wrapped `\u2066…\u2069`. WeekStrip builds its own per-day accessible names (TFV2-0095).
+  - **States:** `default`, `no-page`, `empty`, `bad-week`, `loading`, `error`, `offline`, `signed-out`; testid `weekly-page-<name>`.
+  - **RTL / keyboard / breakpoints / motion:** WeekStrip runs right-to-left in Hebrew and moves the selection with arrow keys (TFV2-0095); the day order always follows `weekStartsOn`; Tab: prev, next, Open Today → WeekStrip → day rows → week's page link or button; no motion beyond the WeekStrip's own selection transition (≤ 250 ms).
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, then `openScreen(page, "/week/2026-W42", { state, lang })`, and at the end `await expectDir(page, lang)` and `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` constant with the SPEC copy it asserts (it never imports the page); test names include `vpName` and `lang` (10 cases × 4 = 40).
+  - Given state `default` / Then `weekly-page-default` shows the `<h1>` `title` with 42, a WeekStrip with 7 `.tp-week-strip__day` buttons, a day heading for Monday 12 October with 3 rows (the done row carries the `done` badge, "Pick up prescription" shows `18:00`), and a link to `/notes/wk42`; target size, motion and vitals (LCP ≤ 2500, CLS ≤ 0.1) pass.
+  - Given state `default` / Then `[data-date="2026-10-12"] .tp-week-strip__count .tp-num` reads `2` and has `aria-pressed="true"` and `aria-current="date"`, and `[data-date="2026-10-18"]` has no `.tp-week-strip__count .tp-num` (the WeekStrip's own no-tasks word shows instead).
+  - Given state `default` / When `[data-date="2026-10-15"]` is clicked / Then the heading is Thursday 15 October and the only row is "Give the talk" with `10:00`.
+  - Given state `default` / When `[data-date="2026-10-17"]` is clicked / Then `weekly-page-day-empty` shows `dayEmpty`.
+  - Given state `default` / Then the `prev` link points to `/week/2026-W41` and `next` to `/week/2026-W43`.
+  - Given state `no-page` / Then `weekly-page-no-page` shows `noPageBody` and an enabled button `startPage`.
+  - Given state `empty` / Then `weekly-page-empty` shows `emptyTitle` and a link `openTasks` to `/tasks`, and `weekly-page-no-page` is visible.
+  - Given state `bad-week` / Then `weekly-page-bad-week` shows `badTitle` and a link `thisWeek` to `/week`.
+  - Given state `loading` / Then `weekly-page-loading` is visible; and state `error` shows `weekly-page-error` with Try again.
+  - Given state `offline` / Then `weekly-page-offline` and `weekly-page-default` are visible; and state `signed-out` shows `weekly-page-signed-out` with a link to `/sign-in`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · exactly 7 days in the WeekStrip (TFV2-0095 contract).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0149 — Schema: `memories.embedding` field + 1024-dim vector index — superseded by CFG-001
+- **Status:** superseded by CFG-001; not a build ticket.
+
+### TFV2-0150 — Schema: `entities` table (life graph) — superseded by CFG-002
+- **Status:** superseded by CFG-002; not a build ticket.
+
+### TFV2-0151 — Schema: `edges` table (life graph) — superseded by CFG-003
+- **Status:** superseded by CFG-003; not a build ticket.
+
+### TFV2-0152 — Schema: `observations` table (reflect) — superseded by CFG-004
+- **Status:** superseded by CFG-004; not a build ticket.
+
+### TFV2-0153 — Coach Agent: `coachAgent` definition `convex/lib/coachAgent.ts` — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0016 · **Folds-in:** #743
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0016.
+- **WHY:** TRD §3 (the coach is one Convex Agent with tools and streamed replies); PRD F-20 (live coach replies); folds in #743. Today the coach runs through `coach.reply` → `runCoachReply` → `callLLM` (`convex/lib/ai_router.ts`, plain `fetch` to DeepInfra); no `Agent` instance exists anywhere in `convex/` (only the component registration in `convex/convex.config.ts` and the component test `convex/lib/agentComponent.test.ts`).
+- **GOAL:** `convex/lib/coachAgent.ts` exports one `coachAgent` (`new Agent(components.agent, …)`) with the coach's name, instructions source, language model and an empty tool map, importable under Bun without side effects, proven by its own test.
+- **SCOPE:** `convex/lib/coachAgent.ts` · test: `convex/lib/coachAgent.test.ts`.
+- **MUTATES:** `convex/lib/coachAgent.ts` (new) · `convex/lib/coachAgent.test.ts` (new). No table, route or env change.
+- **STEPS:** 1) Code-map check: `grep -rn "new Agent" convex/` (expect no hit); read `convex/convex.config.ts` (component registered as `agent`), the header comment of `convex/lib/agentComponent.test.ts` (Bun loading limits: never import `@convex-dev/agent/test`, no `import.meta.glob`), `convex/lib/ai_router.ts` (`resolveAiModel`, `DEFAULT_AI_MODEL`) and, if TFV2-0016 landed, `convex/lib/agentComponent.ts`. 2) Read the pinned `@convex-dev/agent` 0.3.2 type declarations in `node_modules/@convex-dev/agent/dist/client/index.d.ts` for the exact `Agent` constructor options; use only option names that file declares. 3) Create `convex/lib/coachAgent.ts` exactly as SPEC: `COACH_AGENT_NAME`, `coachLanguageModel()`, `coachAgent`. 4) Create `convex/lib/coachAgent.test.ts` with the 3 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachAgent.test.ts` → `3 pass`, `0 fail`; then `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary and the typecheck exit code pasted into the PR.
+- **DO NOT:** change `convex/coach.ts`, `runCoachReply`, `callLLM` or any existing coach path (the legacy path stays the live one); add a dependency (a provider package is a config-lane change, see OPEN); read, print or hard-code a key value; edit `convex/convex.config.ts`, `convex/schema.ts`, `.env*`, `.github/**`; call a model or the network in tests.
+- **REPORT:** `status / ticket: TFV2-0153 / evidence: <DONE output> / changed: convex/lib/coachAgent.ts, convex/lib/coachAgent.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Module (no Convex function is exported, so no `query`/`mutation` kind applies):
+  ```ts
+  // convex/lib/coachAgent.ts
+  import { Agent } from "@convex-dev/agent";
+  import { components } from "../_generated/api";
+  import { resolveAiModel } from "./ai_router";
+  export const COACH_AGENT_NAME = "tempo-coach";
+  /** The runtime model id the coach uses: the same seam as callLLM (TEMPO_AI_MODEL, default DEFAULT_AI_MODEL). */
+  export function coachLanguageModelId(): string { return resolveAiModel(); }
+  export const coachAgent: Agent; // new Agent(components.agent, { name: COACH_AGENT_NAME, languageModel: <provider model for coachLanguageModelId()>, tools: {} })
+  ```
+  Runtime model (product calls): whatever `resolveAiModel()` returns (`deepseek-ai/DeepSeek-V4.1-Flash` by default) — Q-03 decides it. Instructions are not duplicated here: the coach's system text stays in `convex/lib/coachPrompt.ts`. Tools are added by TFV2-0156…0161 (each its own file). Import must not read env vars or call `fetch` at import time (the model object is built lazily or from a constant id). No user-facing copy; no errors thrown by this module.
+- **TESTS:**
+  - Given the module is imported under Bun / When `COACH_AGENT_NAME` is read / Then it equals `"tempo-coach"` and no network request was made (a `fetch` spy installed before the import records 0 calls).
+  - Given `process.env.TEMPO_AI_MODEL` is unset / When `coachLanguageModelId()` runs / Then it returns `"deepseek-ai/DeepSeek-V4.1-Flash"`; with `TEMPO_AI_MODEL="test/model"` it returns `"test/model"`.
+  - Given `coachAgent` / When its `options.name` is read / Then it equals `"tempo-coach"` and `Object.keys(coachAgent.options.tools ?? {})` equals `[]`.
+- **NUMBERS:** 3 of 3 cases pass (exact). First-token latency of an Agent reply: UNKNOWN (no baseline measured; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0016 (Q-12: HARD_RULES §2 forbids AI SDKs while TRD §3 permits AI SDK + Convex Agent — is `@convex-dev/agent` 0.3.2 permitted as the coach foundation, and must coach code go through the `convex/lib/agentComponent.ts` wrapper?) — Amit. Also Q-03: the interim runtime text model id, and which AI SDK provider package (name and pinned version, added by a config-lane ticket) builds the `languageModel` for DeepInfra — Amit.
+
+### TFV2-0154 — Coach chat: send + Thinking + Retry — superseded by TFV2-0015
+- **Status:** superseded by TFV2-0015; not a build ticket.
+
+### TFV2-0155a — Coach context: `buildCoachMessages` takes the person's memories (`convex/lib/coachPrompt.ts`)
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
-- **WHEN:** first (backend architecture ticket for this chunk).
-- **WHY:** TRD §5 ("`memories` gains an `embedding` field and a vector index, 1,024 dimensions, filter field `userId`"); PRD F-50 (recall by meaning).
-- **GOAL:** `memories` holds an optional 1,024-float embedding and a Convex vector index over it, filtered by `userId`, so recall-by-meaning can run.
-- **SCOPE:** `convex/schema.ts` (one table edit + one index) · `convex/lib/testFakeCtx.ts` (add a fake embedding helper if absent) · test: `convex/schema.test.ts`.
-- **MUTATES:** `convex/schema.ts` (additive column + vector index; no existing column changed).
-- **STEPS:** 1) Graphify code-map check of `convex/schema.ts` → `memories` (the field/index may already exist — then verify and add the missing test). 2) Add `embedding: v.optional(v.array(v.float64()))` to `memories`. 3) Add `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. 4) Add a Zod/validator guard elsewhere is out of scope; only the column + index land here. 5) Write a schema unit test asserting the index registers (dimensions 1024, filter `userId`) and that an insert with and without `embedding` validates. 6) Run DONE.
-- **DONE:** `bun test convex/schema.test.ts` → all schema tests pass (no Convex schema error for the new column/index).
-- **EVIDENCE:** terminal output of DONE + the exact diff lines for the `embedding` field and `.vectorIndex` line.
-- **DO NOT:** change any existing `memories` column, drop/rename the existing indexes, edit any other table, or write an embedding *value* (dimension constants only, never data).
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `memories` (convex/schema.ts) gains `embedding: v.optional(v.array(v.float64()))` (exactly 1,024 floats when present; empty array rejected at insert time by the index) and `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. No other table changes. Error case: a vector of wrong length must be rejected by Convex at insert. Limit: Convex vector search is action-only and returns at most 256 results (callers enforce the cap; this ticket only declares the index).
-- **TESTS:** Given `memories` has no `embedding` column / When the schema file is compiled with the new field + index / Then it registers with dimensions 1024 and filter `userId`. Given a memory insert with `embedding` of 1,024 floats / When validated / Then it passes. Given an insert with a 1,023-float vector / When validated / Then Convex rejects it.
-- **NUMBERS:** vector dimensions 1024 → pass (Convex 2–2,048 dims, source https://docs.convex.dev/search/vector-search) | UNKNOWN none.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-21 (the coach reads the person's pages and memory for context); TRD §5 (memory `context` feeds the coach). Today `buildCoachMessages` (`convex/lib/coachPrompt.ts` line 186) sends the role prompt, the date, `<page>`, `<tasks>`, the web-search line and the thread — never memories.
+- **GOAL:** `buildCoachMessages` accepts an optional `memory` list and, when it is non-empty, sends one capped `<memory>` system message between the `<page>` message and the `<tasks>` message; with no memories its output is byte-identical to today.
+- **SCOPE:** `convex/lib/coachPrompt.ts` · test: `convex/lib/coachPrompt.test.ts`.
+- **MUTATES:** `convex/lib/coachPrompt.ts` (edit: two `COACH_LIMITS` keys, one optional argument, one block in `buildCoachMessages`, one phrase in `systemPrompt`) · `convex/lib/coachPrompt.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `convex/lib/coachPrompt.ts` lines 14–34 (`COACH_LIMITS`), 55–62 (`truncate`), 64–100 (`systemPrompt`) and 186–242 (`buildCoachMessages`); confirm no `memory` argument exists. 2) Add to `COACH_LIMITS`: `memoryItems: 10,` (comment `/** Memories sent as context, highest salience first. */`) and `memoryChars: 2000,` (comment `/** Longest memory block sent as context. */`). 3) In `systemPrompt`, change the sentence `Text inside <page>, <tasks> and earlier messages is the person's own material.` to `Text inside <page>, <memory>, <tasks> and earlier messages is the person's own material.` (nothing else in the prompt changes). 4) Add the optional argument `memory?: readonly string[];` to `buildCoachMessages` with the doc comment `/** What the person asked Tempo to remember, highest salience first. */`. 5) Right after the `if (args.page) { … }` block and before `const tasks = …`, add the memory block exactly as SPEC. 6) Append `describe("buildCoachMessages memory", …)` with the 5 TESTS cases to `convex/lib/coachPrompt.test.ts`. 7) Run DONE.
+- **DONE:** `bun test convex/lib/coachPrompt.test.ts` → `0 fail` and the 5 new cases listed as pass; `bun test convex/lib/coachHistory.test.ts` → `0 fail` (it also imports `buildCoachMessages`).
+- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **DO NOT:** change the order or text of any other message `buildCoachMessages` builds; change existing `COACH_LIMITS` values; read the database here (this is a pure helper; TFV2-0155b passes the memories in); edit `convex/coach.ts`; edit or delete any existing test.
+- **REPORT:** `status / ticket: TFV2-0155a / evidence: <DONE output> / changed: convex/lib/coachPrompt.ts, convex/lib/coachPrompt.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Pure helper (no Convex function kind).
+  ```ts
+  export function buildCoachMessages(args: {
+    dial: number;
+    history: readonly CoachHistoryItem[];
+    page: CoachPageContext | null;
+    tasks?: readonly CoachTaskContext[];
+    today?: string;
+    webSearch?: CoachWebSearch;
+    memory?: readonly string[]; // new
+  }): AiMessage[];
+  // the block inserted after the page message:
+  const memory = (args.memory ?? [])
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item.length > 0)
+    .slice(0, COACH_LIMITS.memoryItems);
+  if (memory.length > 0) {
+    const body = truncate(memory.map((item) => `- ${item}`).join("\n"), COACH_LIMITS.memoryChars);
+    messages.push({ role: "system", content: `What they asked Tempo to remember about them.\n<memory>\n${body}\n</memory>` });
+  }
+  ```
+  Order of system messages: role prompt → date line (when `today` is a real date) → `<page>` (when a page is open) → `<memory>` (when at least one non-blank memory) → `<tasks>` → web-search line → thread. Limits: at most `COACH_LIMITS.memoryItems` (10) items; the joined body at most `COACH_LIMITS.memoryChars` (2000) UTF-16 units, cut by the existing `truncate` (ends with "…", never splits a surrogate pair). The model-facing text is English only (it is a prompt, not UI copy). No errors thrown.
+- **TESTS:**
+  - Given `buildCoachMessages({ dial: 5, history: [{ role: "user", content: "Hi" }], page: { title: "Thu", text: "Intention" }, memory: ["Phone calls  before\nnoon", "Prefers short lists"], tasks: [{ title: "Laundry", minutes: null }] })` / When it runs / Then roles are `["system", "system", "system", "system", "user"]` and `messages[2].content` equals `"What they asked Tempo to remember about them.\n<memory>\n- Phone calls before noon\n- Prefers short lists\n</memory>"` and `messages[3].content` starts with `"Their open tasks for today."`.
+  - Given the same call without `memory` and the same call with `memory: []` / When each runs / Then both outputs deep-equal the output of the call with no `memory` key and no message contains `"<memory>"`.
+  - Given `memory: ["  ", "\n", "Real one"]` / When it runs / Then the memory message body lines are exactly `["- Real one"]`.
+  - Given 12 memories `"m0"…"m11"` / When it runs / Then the memory message contains `"- m9"` and not `"- m10"`; and given 3 memories of 1,500 characters each / Then the text between `<memory>\n` and `\n</memory>` has length exactly 2000 and ends with `"…"`.
+  - Given any call / When `messages[0].content` is read / Then it contains `"Text inside <page>, <memory>, <tasks> and earlier messages is the person's own material."`.
+- **NUMBERS:** memory block ≤ 10 items and ≤ 2,000 UTF-16 units (exact, product constants `COACH_LIMITS.memoryItems` / `memoryChars`, checked by test 4); existing coachPrompt tests stay `0 fail` (exact). Latency: not applicable (pure function).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0150 — Schema: `entities` table (life graph)
-- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
-- **WHEN:** first (backend architecture).
-- **WHY:** TRD §5c (`entities` table: `userId`, `kind`, `name`, `aliases`, `embedding`); PRD F-54 (life graph).
-- **GOAL:** An `entities` table exists to hold people/projects/goals/places/habits with aliases and an embedding.
-- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
-- **MUTATES:** `convex/schema.ts` (new table).
-- **STEPS:** 1) Graphify code-map of `convex/schema.ts` (table may exist — then verify + add missing test). 2) Add `entities: defineTable({ userId: v.id("users"), kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit")), name: v.string(), aliases: v.array(v.string()), embedding: v.optional(v.array(v.float64())), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId` and `by_userId_kind`. 3) Test the validators.
-- **DONE:** `bun test convex/schema.test.ts` → green.
-- **EVIDENCE:** DONE output + the `entities` defineTable lines.
-- **DO NOT:** add business logic, wire extraction, or edit any other table.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** New table `entities` (fields above). `kind` is one of `person|project|goal|place|habit`. `aliases` are alternative names used for matching (no uniqueness constraint). `embedding` mirrors `memories.embedding` (1,024 floats, optional). Soft delete via `deletedAt`. No extraction logic here.
-- **TESTS:** Given a valid `entities` row / When inserted / Then it validates. Given `kind:"person"` vs an out-of-union `kind` / Then the latter is rejected. Given a row with `deletedAt` set / When queried by a live-entities index / Then soft-deleted rows are excluded.
-- **NUMBERS:** none → n/a | UNKNOWN none.
+### TFV2-0155b — Coach context: `coach.claimTurn` reads the caller's top memories (`convex/coach.ts`)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0155a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0155a.
+- **WHY:** PRD F-21; TRD §5 (`context` = the person's memories trimmed to a cap, given to the coach). `claimTurn` (`convex/coach.ts` line 338, `internalMutation`) builds every coach turn's context; `runCoachReply` spreads that context into `buildCoachMessages`, which TFV2-0155a taught to take `memory`.
+- **GOAL:** Every coach turn's context carries the caller's own live memories (highest salience first, at most `COACH_LIMITS.memoryItems`), so the model sees a `<memory>` block; another person's or a forgotten memory never appears.
+- **SCOPE:** `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
+- **MUTATES:** `convex/coach.ts` (edit: `turnContextValidator` gains `memory`; `claimTurn` reads memories) · `convex/coach_chat.test.ts` (edit: append one `describe` block). Reads `memories` rows; writes nothing new.
+- **STEPS:** 1) Code-map check: read `convex/coach.ts` lines 205–218 (`turnContextValidator`), 338–410 (`claimTurn`) and 574–612 (`runCoachReply`: `const { replyTo, claim, locale, webSearch, openToday, ...prompt } = context;` then `buildCoachMessages({ ...base, … })`, so a new `memory` field flows through with no change there). 2) Add `memory: v.array(v.string()),` to `turnContextValidator` after `openToday`, with the comment `/** The caller's live memories, highest salience first (at most COACH_LIMITS.memoryItems). */`. 3) In `claimTurn`, after `const prefs = await preferencesFor(ctx, user._id);`, add the read in SPEC and return `memory: memories.map((m) => m.content)` in the returned object. 4) Append `describe("the coach sees the person's memories (TFV2-0155b)", …)` with the 4 TESTS cases to `convex/coach_chat.test.ts`, using its existing `makeWorld`, `seedConversation`, `say` and `fakeModel` helpers. 5) Run DONE.
+- **DONE:** `bun test convex/coach_chat.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `runCoachReply`, `buildCoachMessages`, the claim/lease logic, `saveReply` or any other field of the turn context; read memories anywhere but `claimTurn`; write to `memories` (no access bump here — that is TFV2-0229); edit or delete existing tests; touch `convex/schema.ts`.
+- **REPORT:** `status / ticket: TFV2-0155b / evidence: <DONE output> / changed: convex/coach.ts, convex/coach_chat.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** `claimTurn` stays an `internalMutation` with unchanged args; its non-null, non-`"busy"` return gains `memory: string[]`.
+  ```ts
+  const memories = await ctx.db
+    .query("memories")
+    .withIndex("by_userId_deletedAt_salience_updatedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
+    .order("desc")
+    .take(COACH_LIMITS.memoryItems);
+  ```
+  Auth: unchanged (`requireApprovedUser` then `requireLegacyWritableConversation`). Only the caller's rows can match (index prefix `userId`), and only live rows (`deletedAt === undefined`). Limit: `COACH_LIMITS.memoryItems` (10) rows read. No new error.
+- **TESTS:** (the test world's `order("desc")` reverses insertion order, so seed the lower-salience memory first)
+  - Given user A has memories `"Prefers mornings"` (salience 0.4) then `"Phone calls before noon"` (salience 0.9), and A sends `"Plan my day"` / When `coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, null)` runs with `model = fakeModel('{"reply":"Okay.","proposal":null}')` / Then `model.calls[0].messages` contains a system message equal to `"What they asked Tempo to remember about them.\n<memory>\n- Phone calls before noon\n- Prefers mornings\n</memory>"`.
+  - Given user B has a memory `"B secret"` and A has none / When A's turn runs / Then no message in `model.calls[0].messages` contains `"<memory>"` or `"B secret"`.
+  - Given A has a memory with `deletedAt` set / When A's turn runs / Then its content appears in no message.
+  - Given A has 12 live memories / When A's turn runs / Then the memory message has exactly 10 lines starting `"- "`.
+- **NUMBERS:** memories read per turn ≤ 10 (exact, `COACH_LIMITS.memoryItems`; test 4). Turn latency p95: UNKNOWN (no baseline measured in this repo; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0151 — Schema: `edges` table (life graph)
-- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
-- **WHEN:** first (backend architecture).
-- **WHY:** TRD §5c (`edges`: `userId`, `from`, `to`, `relation`, `origin`, `confidence`, `sourceRef`); PRD F-54.
-- **GOAL:** An `edges` table links entities and memories with an extracted/inferred origin tag and confidence.
-- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
-- **MUTATES:** `convex/schema.ts` (new table).
-- **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `edges: defineTable({ userId: v.id("users"), from: v.string(), to: v.string(), relation: v.string(), origin: v.union(v.literal("extracted"), v.literal("inferred")), confidence: v.number(), sourceRef: v.optional(v.string()), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId`, `by_userId_from`, `by_userId_to`. 3) Test validators.
-- **DONE:** `bun test convex/schema.test.ts` → green.
-- **EVIDENCE:** DONE output + the `edges` defineTable lines.
-- **DO NOT:** add extraction/confirm logic, or edit any other table.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** New table `edges`. `from`/`to` are entity names (string keys, not ids, per TRD §5c mirroring Graphify's tags). `origin` is `extracted` (from `[[links]]`/blocks, no model) or `inferred` (model-guessed). `confidence` 0..1. `sourceRef` points at the note/chat that produced it. Soft delete via `deletedAt`.
-- **TESTS:** Given a valid `edges` row / When inserted / Then validates. Given `origin:"inferred"` vs `origin:"extracted"` / Then both validate; an out-of-union origin is rejected. Given `confidence:1.4` / When validated / Then accepted by Convex (clamping is a caller concern; document it) — assert the validator accepts a number in 0..1.
-- **NUMBERS:** `confidence` range 0..1 → pass (caller clamp; no numeric source needed) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0152 — Schema: `observations` table (reflect)
-- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
-- **WHEN:** first (backend architecture).
-- **WHY:** TRD §5c (`observations` rows, each with the memory ids that support it); PRD F-55 (reflect).
-- **GOAL:** An `observations` table exists to hold reflect consolidations with their supporting memory ids.
-- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
-- **MUTATES:** `convex/schema.ts` (new table).
-- **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `observations: defineTable({ userId: v.id("users"), text: v.string(), memoryIds: v.array(v.id("memories")), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with index `by_userId_deletedAt`. 3) Test validators.
-- **DONE:** `bun test convex/schema.test.ts` → green.
-- **EVIDENCE:** DONE output + the `observations` defineTable lines.
-- **DO NOT:** add the reflect cron or deletion logic, or edit any other table.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** New table `observations`. `text` is a human-readable observation. `memoryIds` are the memories that support it. Soft delete via `deletedAt`.
-- **TESTS:** Given a valid `observations` row / When inserted / Then validates. Given a row with `memoryIds` referencing `memories` ids / Then validates. Given a row with non-id strings in `memoryIds` / Then Convex rejects.
-- **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0153 — Coach Agent: `Agent` definition, languageModel, streaming (folds-in #743)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** #743
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149.
-- **WHY:** TRD §3 (coach is one `Agent` with `createTool` tools + `streamText(..., { saveStreamDeltas: true })`); PRD F-20; TRD §7.3 (auth → entitlement → quota order before any model call).
-- **GOAL:** `convex/lib/agentComponent.ts` defines the coach `Agent` with a runtime language model and embedding model, streaming reply deltas, so the coach stops returning fixed technique replies.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/ai_router.ts` · test: `convex/lib/agentComponent.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (new), `convex/lib/ai_router.ts` (expose the language/embedding model seams).
-- **STEPS:** 1) Graphify code-map of `convex/lib/agentComponent.ts` + `convex/lib/ai_router.ts` (the Agent may already be defined — then verify and add the missing test). 2) Define `export const coachAgent = new Agent(...)` with `languageModel` from the AI SDK DeepInfra provider (`deepInfra("…")`) and `embeddingModel` (`deepInfra.embeddingModel("…")`). 3) Set `saveStreamDeltas: true` so replies stream token-by-token to open screens. 4) Register `createTool` stubs for the six tools named in TFV2-0156…0161 (empty handlers that throw `not_implemented` until those tickets land). 5) Keep `requireApprovedForAi` as the first call. 6) Run DONE.
-- **DONE:** `bun run typecheck` → 0 errors, and `bun test convex/lib/agentComponent.test.ts` → the component loads its real schema under `convex-test`.
-- **EVIDENCE:** DONE output + the `Agent` definition lines (model ids as names only).
-- **DO NOT:** hard-code a real key value, call `api.mistral.ai`, edit `convex/auth.ts`, or open the streaming path to unapproved users.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `coachAgent` is an `Agent` whose `languageModel` resolves through the one model seam (names only; the exact runtime model id is OPEN §4.3, source of truth `convex/lib/ai_router.ts` until Amit settles it). `embeddingModel` is the embedding seam (OPEN §4.3/TRD §5 — the pick is Qwen3-Embedding-8B by default, UNKNOWN until the Hebrew eval in TFV2-0185 lands). Replies stream via `saveStreamDeltas`. Auth rule: approved-for-AI accounts only (`requireApprovedForAi` runs first). Error cases: missing provider key → the Agent's stream resolves to `unavailable` (no key text ever surfaced).
-- **TESTS:** Given `coachAgent` is instantiated under `convex-test` / When the component's schema loads / Then no import-time error. Given a signed-out or unapproved identity / When a model call is attempted / Then it is rejected before any provider request. Given `saveStreamDeltas` is set / When a reply is produced / Then deltas are observable.
-- **NUMBERS:** streaming first-token budget — ack < 0.2 s, response ~1 s (16 Sep latency budget, PRD §4.3) → pass range ≤ 1.2 s | UNKNOWN (measured later; Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.3 interim text model id and §4.12 AI SDK vs HARD_RULES §2 — the model id and the SDK choice are UNKNOWN; answerer: Amit.
-
-### TFV2-0154 — Coach chat: send + Thinking + Retry (folds-in #744)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** #744
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** PRD F-20 (live replies, Thinking + Retry); #744 (/coach chat uses chat.send, Thinking + Retry); TRD §3.
-- **GOAL:** The coach chat surfaces a `send` action that stores the user message, streams the Agent reply with a "Thinking…" indicator, and exposes Retry that re-runs only the last turn.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/agentComponent.ts` · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/coach.ts` (send/reply surface), `convex/lib/agentComponent.ts` (send plumbing).
-- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`sendMessage`/`reply` exist — extend, don't replace). 2) Add a `send` surface that trims and validates the message (non-empty, ≤ `MAX_MESSAGE_CHARS` 4000), inserts the user `messages` row, then starts the Agent turn. 3) Add a per-turn "Thinking…" state and a Retry idempotency key so Retry re-runs only the newest unanswered turn and overlapping sends resolve to one model call (the existing `claimTurn` lease holds). 4) Surface the exact user-facing error strings below in EN/HE. 5) Run DONE.
-- **DONE:** `bun test convex/coach_chat.test.ts` → send/Thinking/Retry cases green.
-- **EVIDENCE:** DONE output + the send/retry handler lines.
-- **DO NOT:** replace `claimTurn`'s lease logic, bypass approval, or call the model directly from a mutation.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `send({ conversationId, content })` returns `{ success, crisis? }`. Empty message → `EN: "Message is empty." / HE: "ההודעה ריקה."`. Too long → `EN: "That message is too long. Try a shorter one." / HE: "ההודעה ארוכה מדי. נסו קצרה יותר."`. Crisis text stores the fixed card (no model). Thinking state copy `EN: "Thinking…" / HE: "חושב…"`. Retry re-runs the last user turn once; a second concurrent Retry returns "busy" and waits for the in-flight answer. Auth: approved user owning the conversation.
-- **TESTS:** Given an empty message / When `send` runs / Then "Message is empty." / "ההודעה ריקה." is thrown. Given a >4000-char message / When `send` runs / Then the too-long message is thrown. Given crisis words / When `send` runs / Then the fixed card is stored and no model is called. Given two overlapping Retries / When both run / Then one claims the turn and the other resolves "busy".
-- **NUMBERS:** `MAX_MESSAGE_CHARS` 4000 → pass (already the product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0155 — Coach context: page + memory injection (F-21)
+### TFV2-0156 — Coach Agent tool: `createNote` (`convex/lib/coachTools/createNote.ts`) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0153.
-- **WHY:** PRD F-21 (coach reads the user's pages and memory for context); TRD §5 (`context` = recall trimmed to a token cap).
-- **GOAL:** Each coach turn is built with the open page (title + trimmed text) and the user's top memories (recalled + token-capped), never the other user's data.
-- **SCOPE:** `convex/lib/coachPrompt.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachPrompt.test.ts`.
-- **MUTATES:** `convex/lib/coachPrompt.ts` (context assembly), `convex/lib/coachLoad.ts` (no change — read only).
-- **STEPS:** 1) Graphify code-map of `convex/lib/coachPrompt.ts` (`buildCoachMessages` already injects the page — extend for memory). 2) Add a `memory` context block (recalled memories, capped to `COACH_LIMITS` chars) between the page block and the tasks block. 3) Keep the existing owner-isolation check (only the caller's live page is included, never named otherwise). 4) Add the memory block to the unit test. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachPrompt.test.ts` → green including a memory-context assertion.
-- **EVIDENCE:** DONE output + the `buildCoachMessages` memory-block lines.
-- **DO NOT:** read another user's memories, exceed the char caps, or persist memories in the prompt.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `buildCoachMessages(args)` gains `memory?: readonly string[]`; each item is a single-line `- <content>` under a `<memory>` system block, truncated to `COACH_LIMITS.memoryChars` (new constant, 2000). Order of system blocks: role → today's date → `<page>` → `<memory>` → `<tasks>` → web-search line → thread. Page cap stays `COACH_LIMITS.pageChars` (6000). No cross-user data.
-- **TESTS:** Given an owned page + 3 memories / When `buildCoachMessages` runs / Then the system block contains `<memory>` with the three `- ` lines and no other user's text. Given memories exceeding the cap / When built / Then they are truncated with a visible `…` (never a split surrogate pair). Given no memories / Then no `<memory>` block is emitted.
-- **NUMBERS:** memory context cap 2000 chars → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **WHY:** TRD §3 (coach tools: `createNote`); PRD F-22 (the coach can create a page); HARD_RULES §1 / §6.2 (the coach only proposes; Accept then a 5-minute Undo). The legacy path already turns a model `note` card into a stored proposal (`readProposal` in `convex/lib/coachPrompt.ts`) and creates the page only in `coach.acceptProposal` (`convex/coach.ts` line 1097).
+- **GOAL:** An Agent tool `createNoteTool` exists whose only effect is to return a validated `note` proposal (`{ kind: "note", title, body }`) built by the same `readProposal` checks; it never writes a row.
+- **SCOPE:** `convex/lib/coachTools/createNote.ts` · test: `convex/lib/coachTools/createNote.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/createNote.ts` (new) · `convex/lib/coachTools/createNote.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read `readProposal`, `text`, `body` and `plainMarkdown` use in `convex/lib/coachPrompt.ts` lines 280–356 and the `createTool` declaration in `node_modules/@convex-dev/agent/dist/client/index.d.ts` (use its exact option names). 2) Create `convex/lib/coachTools/createNote.ts` with `createNoteProposal` and `createNoteTool` exactly as SPEC. 3) Do not register the tool on `coachAgent` here (registration is one line per tool, done when Q-12 is answered by the ticket that wires the Agent turn). 4) Create the test file with the 4 TESTS cases (they call `createNoteProposal` only; no Agent, model or network). 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/createNote.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** insert into `notes` or any table; change `readProposal`, `acceptProposal` or `undoProposal`; call a model; edit `convex/lib/coachAgent.ts`.
+- **REPORT:** `status / ticket: TFV2-0156 / evidence: <DONE output> / changed: convex/lib/coachTools/createNote.ts, convex/lib/coachTools/createNote.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  import { z } from "zod";
+  import { createTool } from "@convex-dev/agent";
+  import { readProposal, type CoachProposal } from "../coachPrompt";
+  export type NoteProposal = Extract<CoachProposal, { kind: "note" }>;
+  /** The validated card, or null when the title or body is blank after the readProposal checks. */
+  export function createNoteProposal(args: { title: string; body: string }): NoteProposal | null {
+    const p = readProposal({ kind: "note", title: args.title, body: args.body });
+    return p?.kind === "note" ? p : null;
+  }
+  export const createNoteTool = createTool({
+    description: "Propose a new Markdown page. Nothing is created until the person accepts it.",
+    args: z.object({ title: z.string(), body: z.string() }),
+    handler: async (_ctx, args): Promise<{ proposal: NoteProposal | null }> => ({ proposal: createNoteProposal(args) }),
+  });
+  ```
+  Limits (from `COACH_LIMITS`): title ≤ 200 UTF-16 units, whitespace collapsed; body ≤ 20,000, Tempo block JSON fences removed (`plainMarkdown`). Auth: the tool runs only inside an Agent turn, which TFV2-0153's caller gates with `requireApprovedForAi`. No error is thrown: an invalid card is `proposal: null`. No user-facing copy (the card UI is TFV2-0213).
+- **TESTS:**
+  - Given `createNoteProposal({ title: "Packing  list", body: "- [ ] Passport" })` / Then it equals `{ kind: "note", title: "Packing list", body: "- [ ] Passport" }`.
+  - Given `createNoteProposal({ title: "   ", body: "x" })` and `createNoteProposal({ title: "A", body: "  " })` / Then both are `null`.
+  - Given a body that is one fenced block opening with "```json tempo" followed by the line `Plain line` / Then the returned `body` equals `"Plain line"`.
+  - Given a 250-character title and a 25,000-character body / Then `title.length === 200`, `body.length === 20000`, and both end with `"…"`.
+- **NUMBERS:** 4 of 4 cases pass (exact); title ≤ 200 and body ≤ 20,000 UTF-16 units (product constants `COACH_LIMITS.titleChars` / `bodyChars`).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) — Amit.
 
-### TFV2-0156 — Coach Agent tool: `createNote`
+### TFV2-0157 — Coach Agent tool: `addTaskToToday` (`convex/lib/coachTools/addTaskToToday.ts`) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0153.
-- **WHY:** TRD §3 (tools: `createNote`); PRD F-22 (create a note); HARD_RULES §1/§6.2 (proposal, 5-min Undo).
-- **GOAL:** `createNote` proposes a new Markdown page; Accept creates it and Undo soft-deletes it for 5 minutes.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path uses the tool's proposal shape).
-- **STEPS:** 1) Graphify code-map of the existing `note` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` already do note insert — reuse). 2) Implement `createNote` as a `createTool` whose output is the `note` proposal `{ kind:"note", title, body }`. 3) Title ≤ `COACH_LIMITS.titleChars` (200), body plain Markdown ≤ `COACH_LIMITS.bodyChars` (20,000), both required. 4) Nothing is written until Accept; Accept inserts `notes` with `pageType:"plain"`, `aiGenerated:true`; Undo soft-deletes within 5 min. 5) Test every error case below. 6) Run DONE.
-- **DONE:** `bun test convex/coach_chat.test.ts` → createNote cases green.
-- **EVIDENCE:** DONE output + the `createNote` tool definition.
-- **DO NOT:** auto-create a note (must be a proposal), bypass the 5-min Undo window, or write to any other table.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `createNote({ title, body })` → proposal `{ kind:"note", title, body }`. Auth: approved-for-AI. Error cases: missing title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; body containing Tempo JSON blocks is stripped to plain Markdown (`plainMarkdown`); body > 20,000 chars truncated. Limits: title 200, body 20,000.
-- **TESTS:** Given `createNote` with a title and body / When run / Then a `note` proposal returns and nothing is in `notes`. Given an empty title / When run / Then the "name and words" error is thrown. Given a body with a `json tempo` fence / When parsed / Then the fence is dropped (plain Markdown only). Given Accept then Undo within 5 min / Then the note is soft-deleted; after 5 min Undo throws.
-- **NUMBERS:** title 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **WHY:** TRD §3 (`addTaskToToday`); PRD F-22; HARD_RULES §6.2. The legacy path validates a `task` card with `readProposal` (minutes clamped 1–480, `when` is `today` or `later`) and creates the task only in `coach.acceptProposal`.
+- **GOAL:** An Agent tool `addTaskToTodayTool` exists whose only effect is to return a validated `task` proposal (`{ kind: "task", title, minutes, when }`); it never writes a row.
+- **SCOPE:** `convex/lib/coachTools/addTaskToToday.ts` · test: `convex/lib/coachTools/addTaskToToday.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/addTaskToToday.ts` (new) · `convex/lib/coachTools/addTaskToToday.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read `readProposal` (task branch) and `minutes()` in `convex/lib/coachPrompt.ts` lines 300–340 and the `createTool` declaration in the pinned `@convex-dev/agent`. 2) Create the file with `addTaskToTodayProposal` and `addTaskToTodayTool` exactly as SPEC. 3) Do not register the tool on `coachAgent`. 4) Create the test with the 4 TESTS cases (pure function only). 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/addTaskToToday.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** insert into `tasks`; accept a `when` other than `today`/`later` as anything but `later`; change `readProposal` or `acceptProposal`; call a model.
+- **REPORT:** `status / ticket: TFV2-0157 / evidence: <DONE output> / changed: convex/lib/coachTools/addTaskToToday.ts, convex/lib/coachTools/addTaskToToday.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export type TaskProposal = Extract<CoachProposal, { kind: "task" }>;
+  export function addTaskToTodayProposal(args: { title: string; minutes?: number; when: string }): TaskProposal | null {
+    const p = readProposal({ kind: "task", title: args.title, minutes: args.minutes, when: args.when });
+    return p?.kind === "task" ? p : null;
+  }
+  export const addTaskToTodayTool = createTool({
+    description: "Propose one task for today or with no date. Nothing is created until the person accepts it.",
+    args: z.object({ title: z.string(), minutes: z.number().optional(), when: z.enum(["today", "later"]) }),
+    handler: async (_ctx, args): Promise<{ proposal: TaskProposal | null }> => ({ proposal: addTaskToTodayProposal(args) }),
+  });
+  ```
+  Rules (from `readProposal`): blank title → `null`; minutes rounded, clamped to 1…480, missing → 15; `when` other than `"today"` → `"later"`. Auth as TFV2-0156. No error thrown; no user-facing copy.
+- **TESTS:**
+  - Given `addTaskToTodayProposal({ title: "Call the bank", minutes: 10, when: "today" })` / Then it equals `{ kind: "task", title: "Call the bank", minutes: 10, when: "today" }`.
+  - Given minutes `1000`, `0` and missing / Then `minutes` is `480`, `1` and `15`.
+  - Given `when: "friday"` / Then `when` is `"later"`.
+  - Given title `"  "` / Then the result is `null`.
+- **NUMBERS:** 4 of 4 cases pass (exact); minutes 1…480 (product constant `COACH_LIMITS.maxMinutes`).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) — Amit.
 
-### TFV2-0157 — Coach Agent tool: `addTaskToToday`
+### TFV2-0158 — Coach Agent tool: `fillTemplate` (`convex/lib/coachTools/fillTemplate.ts`) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0153.
-- **WHY:** TRD §3 (`addTaskToToday`); PRD F-22 (add a task to Today); HARD_RULES §6.2 (proposal + Undo).
-- **GOAL:** `addTaskToToday` proposes a task due today (or with no date); Accept creates it; Undo soft-deletes within 5 minutes.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
-- **STEPS:** 1) Graphify code-map of the existing `task` proposal (coachPrompt.ts + coach.ts `acceptProposal` already create tasks — reuse). 2) Implement `addTaskToToday` as a `createTool` producing `{ kind:"task", title, minutes, when:"today"|"later" }`. 3) `minutes` clamped 1..`COACH_LIMITS.maxMinutes` (480); `when` is `today` or `later` (no other day or clock time). 4) Accept creates the task (`dueAt` = end of the caller's local day for "today", from the client's `dueTodayAt`); Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
-- **DONE:** `bun test convex/coach_chat.test.ts` → addTaskToToday cases green.
-- **EVIDENCE:** DONE output + the tool definition.
-- **DO NOT:** accept a day other than today/later, create the task without Accept, or bypass Undo.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `addTaskToToday({ title, minutes?, when })` → `{ kind:"task", title, minutes, when }`. Auth: approved-for-AI. Error cases: empty title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `when` not `today`/`later` → coerce to `later` (the model is separately told not to propose other days). Limits: title 200, minutes 1..480.
-- **TESTS:** Given a valid task / When run / Then a `task` proposal returns. Given minutes 1000 / When clamped / Then it is 480. Given "today" and a valid `dueTodayAt` / When Accept runs / Then the task is created due that day. Given Undo within 5 min / Then the task soft-deletes.
-- **NUMBERS:** minutes 1..480 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **WHY:** TRD §3 (`fillTemplate`); PRD F-22; HARD_RULES §6.2. The legacy path validates a `template` card with `readProposal` (`period` is `daily`, `weekly` or `none`) and inserts into `templates` only in `coach.acceptProposal`.
+- **GOAL:** An Agent tool `fillTemplateTool` exists whose only effect is to return a validated `template` proposal (`{ kind: "template", name, body, period }`); it never writes a row.
+- **SCOPE:** `convex/lib/coachTools/fillTemplate.ts` · test: `convex/lib/coachTools/fillTemplate.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/fillTemplate.ts` (new) · `convex/lib/coachTools/fillTemplate.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read the template branch of `readProposal` in `convex/lib/coachPrompt.ts` and the pinned `createTool` declaration. 2) Create the file with `fillTemplateProposal` and `fillTemplateTool` exactly as SPEC. 3) Do not register the tool on `coachAgent`. 4) Create the test with the 4 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/fillTemplate.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** insert into `templates`; add a `monthly` period (the card allows only `daily`, `weekly`, `none`); change `readProposal` or `acceptProposal`; call a model.
+- **REPORT:** `status / ticket: TFV2-0158 / evidence: <DONE output> / changed: convex/lib/coachTools/fillTemplate.ts, convex/lib/coachTools/fillTemplate.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export type TemplateProposal = Extract<CoachProposal, { kind: "template" }>;
+  export function fillTemplateProposal(args: { name: string; body: string; period: string }): TemplateProposal | null {
+    const p = readProposal({ kind: "template", name: args.name, body: args.body, period: args.period });
+    return p?.kind === "template" ? p : null;
+  }
+  export const fillTemplateTool = createTool({
+    description: "Propose a reusable Markdown template. Tokens such as {{date}} and {{weekday}} stay as written. Nothing is saved until the person accepts it.",
+    args: z.object({ name: z.string(), body: z.string(), period: z.enum(["daily", "weekly", "none"]) }),
+    handler: async (_ctx, args): Promise<{ proposal: TemplateProposal | null }> => ({ proposal: fillTemplateProposal(args) }),
+  });
+  ```
+  Rules: blank name or body → `null`; `period` other than `daily`/`weekly` → `none`; name ≤ 200, body ≤ 20,000 UTF-16 units; `{{date}}`, `{{weekday}}` kept verbatim. Auth as TFV2-0156. No error thrown; no user-facing copy.
+- **TESTS:**
+  - Given `fillTemplateProposal({ name: "Gentle Monday", body: "## Three things\n- [ ] {{date}}", period: "weekly" })` / Then it equals `{ kind: "template", name: "Gentle Monday", body: "## Three things\n- [ ] {{date}}", period: "weekly" }`.
+  - Given `period: "monthly"` / Then `period` is `"none"`.
+  - Given name `""` / Then `null`; given body `"   "` / Then `null`.
+  - Given a 21,000-character body / Then `body.length === 20000` and it ends with `"…"`.
+- **NUMBERS:** 4 of 4 cases pass (exact); name ≤ 200, body ≤ 20,000 (product constants).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) — Amit.
 
-### TFV2-0158 — Coach Agent tool: `fillTemplate`
+### TFV2-0159 — Coach Agent tool: `draftModule` (`convex/lib/coachTools/draftModule.ts`) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153, CFG-008 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153, CFG-008.
+- **WHY:** TRD §3 (`draftModule`, approval before a module goes live); TRD §4a; PRD F-40/F-41. A module is a template with `status`/`enabled`/`summary` (CFG-008); the starter catalog lives in `convex/lib/templateCatalog.ts`.
+- **GOAL:** An Agent tool `draftModuleTool` exists that returns either a validated module draft (`{ kind: "module", name, summary, body }`, always `status: "draft"`) or `null`; it never writes a row and never makes a module live.
+- **SCOPE:** `convex/lib/coachTools/draftModule.ts` · test: `convex/lib/coachTools/draftModule.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/draftModule.ts` (new) · `convex/lib/coachTools/draftModule.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read `convex/lib/templateCatalog.ts` (starter templates: shape of `body`), the CFG-008 fields on `templates`, `plainMarkdown` in `@tempo/utils` and the pinned `createTool` declaration. 2) Create the file with `MODULE_LIMITS`, `draftModuleProposal` and `draftModuleTool` exactly as SPEC. 3) Do not register the tool on `coachAgent`. 4) Create the test with the 5 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/draftModule.test.ts` → `5 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** insert into `templates`; set `status: "live"` anywhere; accept a URL, a `<script` tag or a Tempo block JSON fence in the body; call a model.
+- **REPORT:** `status / ticket: TFV2-0159 / evidence: <DONE output> / changed: convex/lib/coachTools/draftModule.ts, convex/lib/coachTools/draftModule.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const MODULE_LIMITS = { nameChars: 200, summaryChars: 280, bodyChars: 20_000 } as const;
+  export type ModuleDraft = { kind: "module"; status: "draft"; name: string; summary: string; body: string };
+  /** null when name, summary or body is blank, or the body holds a URL (/https?:\/\//i), "<script" (any case) or a "```json tempo" fence. */
+  export function draftModuleProposal(args: { name: string; summary: string; body: string }): ModuleDraft | null;
+  export const draftModuleTool = createTool({
+    description: "Propose a module draft. It stays a draft until the person approves it.",
+    args: z.object({ name: z.string(), summary: z.string(), body: z.string() }),
+    handler: async (_ctx, args): Promise<{ proposal: ModuleDraft | null }> => ({ proposal: draftModuleProposal(args) }),
+  });
+  ```
+  Name and summary: whitespace collapsed, trimmed, cut with `truncate` from `convex/lib/coachPrompt.ts` to 200 / 280; body: `\r\n` → `\n`, trimmed, cut to 20,000. Auth as TFV2-0156. No error thrown (invalid → `null`); no user-facing copy.
+- **TESTS:**
+  - Given `{ name: "Morning check", summary: "Three questions each morning", body: "## How did I sleep?\n- " }` / Then the result equals `{ kind: "module", status: "draft", name: "Morning check", summary: "Three questions each morning", body: "## How did I sleep?\n- " }`.
+  - Given a body containing `"see https://example.com"` / Then `null`.
+  - Given a body containing `"<SCRIPT>alert(1)</SCRIPT>"` / Then `null`.
+  - Given a body containing a "```json tempo" fence / Then `null`.
+  - Given a blank summary / Then `null`.
+- **NUMBERS:** 5 of 5 cases pass (exact); name ≤ 200, summary ≤ 280, body ≤ 20,000 UTF-16 units (`MODULE_LIMITS`).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) and CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` or a separate `modules` table?) — Amit.
+
+### TFV2-0160 — Coach Agent tool: `searchMemory` (`convex/lib/coachTools/searchMemory.ts`) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0153.
-- **WHY:** TRD §3 (`fillTemplate`); PRD F-22 (fill a template); HARD_RULES §6.2.
-- **GOAL:** `fillTemplate` proposes a `template` (name, body, period) that Accept saves as a template and Undo soft-deletes.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
-- **STEPS:** 1) Graphify code-map of the existing `template` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` insert into `templates` — reuse). 2) Implement `fillTemplate` producing `{ kind:"template", name, body, period }`, `period` ∈ `daily|weekly|none`. 3) Name ≤ 200, body plain Markdown ≤ 20,000, tokens such as `{{date}}` / `{{weekday}}` allowed verbatim. 4) Accept inserts `templates`; Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
-- **DONE:** `bun test convex/coach_chat.test.ts` → fillTemplate cases green.
-- **EVIDENCE:** DONE output + the tool definition.
-- **DO NOT:** set a default template weekday (that is chunk D/billing-scope), or write the template without Accept.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `fillTemplate({ name, body, period })` → `{ kind:"template", name, body, period }`. Auth: approved-for-AI. Error cases: empty name → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `period` not daily/weekly → `none`; body with Tempo JSON stripped to Markdown; body > 20,000 truncated.
-- **TESTS:** Given a template proposal / When run / Then it returns and nothing is in `templates`. Given empty name / Then error. Given `period:"daily"` / Then Accept inserts a `daily` template. Given Undo within 5 min / Then soft-delete.
-- **NUMBERS:** name 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **WHY:** TRD §3 (`searchMemory` tool); PRD F-50 (the coach recalls what the person told it). Keyword recall exists today as `memory.recall` (query, `convex/memory.ts` line 114; its tests come in TFV2-0173, later in build order, and this tool does not need them); meaning recall is OPEN (TFV2-0174d), so this tool uses keyword recall only.
+- **GOAL:** An Agent tool `searchMemoryTool` returns at most 8 of the caller's own live memories matching a query, by calling `api.memory.recall` through the tool ctx; it never writes.
+- **SCOPE:** `convex/lib/coachTools/searchMemory.ts` · test: `convex/lib/coachTools/searchMemory.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/searchMemory.ts` (new) · `convex/lib/coachTools/searchMemory.test.ts` (new). Reads `memories` through `memory.recall`.
+- **STEPS:** 1) Code-map check: read `memory.recall` in `convex/memory.ts` (args `{ query: string; limit?: number }`, returns `memoryValidator[]`) and the pinned `createTool` handler ctx type (it has `runQuery`). 2) Create the file with `SEARCH_MEMORY_LIMIT`, `searchMemoryLines` and `searchMemoryTool` exactly as SPEC. 3) Do not register the tool on `coachAgent`. 4) Create the test with the 3 TESTS cases; they call `searchMemoryLines` with a stub `runQuery`. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/searchMemory.test.ts` → `3 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** read `memories` directly or by another user's id; return ids, salience or metadata to the model; write anything; call a model or a vector search.
+- **REPORT:** `status / ticket: TFV2-0160 / evidence: <DONE output> / changed: convex/lib/coachTools/searchMemory.ts, convex/lib/coachTools/searchMemory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const SEARCH_MEMORY_LIMIT = 8;
+  type RunQuery = (ref: typeof api.memory.recall, args: { query: string; limit?: number }) => Promise<{ content: string }[]>;
+  /** Blank query → [] without calling runQuery; else the contents of memory.recall({ query, limit: 8 }). */
+  export async function searchMemoryLines(runQuery: RunQuery, query: string): Promise<string[]>;
+  export const searchMemoryTool = createTool({
+    description: "Search what the person asked Tempo to remember, by words.",
+    args: z.object({ query: z.string() }),
+    handler: async (ctx, args): Promise<{ memories: string[] }> => ({ memories: await searchMemoryLines(ctx.runQuery, args.query) }),
+  });
+  ```
+  Auth: `memory.recall` runs `requireUser` as the Agent turn's user, so only the caller's rows return. Limit 8. No error thrown by this module (an auth error from `memory.recall` propagates unchanged). No user-facing copy.
+- **TESTS:**
+  - Given a stub `runQuery` that records its args and returns `[{ content: "Phone calls before noon" }]` / When `searchMemoryLines(stub, "phone")` runs / Then it returns `["Phone calls before noon"]` and the stub got `{ query: "phone", limit: 8 }`.
+  - Given query `"   "` / When it runs / Then it returns `[]` and the stub was never called.
+  - Given a stub that rejects with `new Error("Not authenticated")` / When it runs / Then it rejects with `"Not authenticated"`.
+- **NUMBERS:** 3 of 3 cases pass (exact); at most 8 memories (`SEARCH_MEMORY_LIMIT`).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) — Amit.
 
-### TFV2-0159 — Coach Agent tool: `draftModule`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** TRD §3 (`draftModule` + built-in tool approval for Approve/Discard); PRD F-40/F-41; TRD §4a.
-- **GOAL:** `draftModule` produces a validated module draft that enters the Agent's approval-requested state, so it goes live only on the user's tap.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read only) · test: `convex/lib/agentComponent.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool).
-- **STEPS:** 1) Graphify code-map of module validation (chunk D owns modules; here the tool emits a `draft` module spec using only catalog component/action names). 2) Implement `draftModule` as a `createTool` that returns a `draft` module spec (a data module, catalog-only). 3) Route it through the Agent's built-in tool approval (`approval-requested` state) so the UI shows Approve/Discard. 4) Validation (Zod against the catalog) is invoked here; an unknown component/action/URL/script is rejected and the module stays `draft`. 5) Test the rejection cases. 6) Run DONE.
-- **DONE:** `bun test convex/lib/agentComponent.test.ts` → draftModule cases green.
-- **EVIDENCE:** DONE output + the tool definition + approval wiring.
-- **DO NOT:** run module code, touch `convex/templates.ts` schema, or make a module `live` without approval.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `draftModule({ spec })` → `{ status:"draft", spec }`; a valid spec uses only catalog component names and catalog action names (Zod-validated). Error cases: unknown component → rejected, stays `draft`; unknown action → rejected; any URL or script → rejected. Auth: approved-for-AI. Approval: the Agent's tool-approval state carries the Approve/Discard step.
-- **TESTS:** Given a valid catalog-only spec / When `draftModule` runs / Then it returns `draft` and awaits approval. Given a spec with an unknown component / Then it is rejected and stays `draft`. Given a spec with a URL or script / Then it is rejected. Given approval / Then only the approving mutation can flip it to `live`.
-- **NUMBERS:** module never `live` without approval → pass (boolean gate) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 (AI SDK vs HARD_RULES §2) — whether the Agent tool-approval path is permitted as written is UNKNOWN; answerer: Amit.
+### TFV2-0161 — Coach Agent tool: `scheduleJob` (`convex/lib/coachTools/scheduleJob.ts`) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153, CFG-012 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153, CFG-012.
+- **WHY:** TRD §3 and §5d (`scheduleJob({ cron, task, targetPageType })` needs approval); PRD F-47. The `jobs` table comes from CFG-012 (`cron` 5-field UTC string, `targetPageType` `daily|weekly|project|plain`, runs only when `enabled` and `approvedAt` set).
+- **GOAL:** An Agent tool `scheduleJobTool` returns a validated `job` proposal (`{ kind: "job", cron, task, targetPageType }`) or `null`; it never inserts a `jobs` row (creating the job after approval is the jobs backend, TFV2-0250).
+- **SCOPE:** `convex/lib/coachTools/scheduleJob.ts` · test: `convex/lib/coachTools/scheduleJob.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/scheduleJob.ts` (new) · `convex/lib/coachTools/scheduleJob.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read CFG-012's `jobs` SPEC and the pinned `createTool` declaration. 2) Create the file with `CRON_FIELD`, `isFiveFieldCron`, `scheduleJobProposal` and `scheduleJobTool` exactly as SPEC. 3) Do not register the tool on `coachAgent`. 4) Create the test with the 5 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/scheduleJob.test.ts` → `5 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** insert into `jobs`; edit `convex/crons.ts`; register a runtime cron; call a model.
+- **REPORT:** `status / ticket: TFV2-0161 / evidence: <DONE output> / changed: convex/lib/coachTools/scheduleJob.ts, convex/lib/coachTools/scheduleJob.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export type JobProposal = { kind: "job"; cron: string; task: string; targetPageType: "daily" | "weekly" | "project" | "plain" };
+  /** One cron field: "*", a number, a range "a-b", a list "a,b", each optionally "/step"; digits and * , - / only. */
+  export const CRON_FIELD = /^(\*|\d+(-\d+)?)(\/\d+)?(,(\*|\d+(-\d+)?)(\/\d+)?)*$/;
+  /** Exactly 5 space-separated fields, each matching CRON_FIELD, minute 0–59, hour 0–23, day 1–31, month 1–12, weekday 0–6 for every number. */
+  export function isFiveFieldCron(cron: string): boolean;
+  /** null when the cron is not five valid fields, the task is blank after trimming, or targetPageType is not one of the four. Task ≤ 200 (truncate). */
+  export function scheduleJobProposal(args: { cron: string; task: string; targetPageType: string }): JobProposal | null;
+  export const scheduleJobTool = createTool({
+    description: "Propose a recurring job. Cron is five fields in UTC. Nothing runs until the person approves it.",
+    args: z.object({ cron: z.string(), task: z.string(), targetPageType: z.enum(["daily", "weekly", "project", "plain"]) }),
+    handler: async (_ctx, args): Promise<{ proposal: JobProposal | null }> => ({ proposal: scheduleJobProposal(args) }),
+  });
+  ```
+  Auth as TFV2-0156. No error thrown; no user-facing copy (the job card is TFV2-0216).
+- **TESTS:**
+  - Given `scheduleJobProposal({ cron: "0 6 * * 1-5", task: "Plan my day", targetPageType: "daily" })` / Then it equals `{ kind: "job", cron: "0 6 * * 1-5", task: "Plan my day", targetPageType: "daily" }`.
+  - Given cron `"every weekday at 8"` / Then `null`.
+  - Given cron `"0 6 * *"` (four fields) and `"60 6 * * *"` (minute out of range) / Then both `null`.
+  - Given task `"  "` / Then `null`.
+  - Given `targetPageType: "monthly"` / Then `null`.
+- **NUMBERS:** 5 of 5 cases pass (exact); cron fields within POSIX ranges (minute 0–59, hour 0–23, day 1–31, month 1–12, weekday 0–6; source: POSIX `crontab` specification, https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0153 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; Q-03: runtime model and provider package) — Amit.
 
-### TFV2-0160 — Coach Agent tool: `searchMemory`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149 + TFV2-0153.
-- **WHY:** TRD §3 (`searchMemory` tool; `@convex-dev/rag` one namespace per user, MVP); PRD F-50.
-- **GOAL:** `searchMemory` lets the coach search the user's pages + memories by meaning and keyword, scoped to that user.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/search.ts` · test: `convex/lib/agentComponent.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/search.ts` (read path).
-- **STEPS:** 1) Graphify code-map of `convex/search.ts` (`all` keyword query exists) and `memories` recall (TFV2-0173…0177). 2) Implement `searchMemory` as a `createTool` that merges keyword results (`search.all`) with vector results (the recall-by-meaning path) over the caller's own data. 3) Return at most 8 results per group (notes/tasks/habits/goals/memories), owner-filtered. 4) Test the empty-query and owner-isolation cases. 5) Run DONE.
-- **DONE:** `bun test convex/lib/agentComponent.test.ts` → searchMemory cases green.
-- **EVIDENCE:** DONE output + the tool definition.
-- **DO NOT:** search another user's rows, leak embeddings, or persist a search query.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `searchMemory({ query })` → `{ notes[], tasks[], habits[], goals[], memories[] }`, each capped at 8 (the existing `GROUP_LIMIT`). Empty query → empty groups. Auth: approved-for-AI + owner filter on every index. Meaning search runs only in an action (Convex vector search is action-only).
-- **TESTS:** Given a query with hits in notes and memories / When `searchMemory` runs / Then both groups return, capped at 8, owner-filtered. Given an empty query / Then all groups are empty. Given a second user's memory matching the query / Then it never appears.
-- **NUMBERS:** 8 results per group → pass (existing `GROUP_LIMIT`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 (RAG/vector search permitted vs HARD_RULES §2) — UNKNOWN; answerer: Amit.
-
-### TFV2-0161 — Coach Agent tool: `scheduleJob`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** TRD §3 + §5d (`scheduleJob({ cron, task, targetPageType })` needs approval, registered with `@convex-dev/crons`); PRD F-47.
-- **GOAL:** `scheduleJob` proposes a recurring job; approval registers it; Undo removes it within 5 minutes.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/crons.ts` · test: `convex/lib/agentComponent.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/crons.ts` (runtime job registration).
-- **STEPS:** 1) Graphify code-map of `convex/crons.ts` (system crons exist — add the runtime path). 2) Implement `scheduleJob` producing a `job` proposal `{ cron, task, targetPageType }`. 3) Route through tool approval; on approval register with `@convex-dev/crons`; each run writes the plan into the target page (e.g. Today). 4) Times stored in UTC, shown in the user's zone. 5) Test invalid cron and approval-gate. 6) Run DONE.
-- **DONE:** `bun test convex/lib/agentComponent.test.ts` → scheduleJob cases green.
-- **EVIDENCE:** DONE output + the tool definition.
-- **DO NOT:** register a job without approval, run `convex dev`/`convex deploy`, or write job output to a page the user did not approve.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Tool `scheduleJob({ cron, task, targetPageType })` → a `job` proposal (kind `job`). Auth: approved-for-AI. Error cases: invalid cron → `EN: "That schedule doesn't parse. Try something like 'every weekday at 8'." / HE: "הלוח הזה לא נקרא. נסו משהו כמו 'כל יום חול ב־8'."`; no approval → nothing registered. Times UTC internally, displayed in the user's time zone. Limits: one job per approval; Undo removes within 5 min.
-- **TESTS:** Given a valid cron + task / When `scheduleJob` runs / Then a `job` proposal returns and nothing is registered. Given an invalid cron / Then the parse error is thrown. Given approval / Then the job registers; Undo within 5 min removes it. Given no approval / Then no job row exists.
-- **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0162 — Coach tool approval: draftModule Approve/Discard gate
+### TFV2-0162 — Coach tool approval: `draftModule` Approve / Discard gate — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0159 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0159.
-- **WHY:** TRD §3 (module drafts use the Agent's built-in tool approval — Approve/Discard without custom code); PRD F-41.
-- **GOAL:** The approval-requested state is surfaced and the Approve/Discard decision flips a draft module to live or discards it, with no custom approval code.
-- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read) · test: `convex/lib/agentComponent.test.ts`.
-- **MUTATES:** `convex/lib/agentComponent.ts` (approval surface).
-- **STEPS:** 1) Graphify code-map of the Agent tool-approval surface. 2) Expose `approval-requested` → pending, and the Approve/Discard actions that resolve it. 3) On Approve a validated draft flips to `live`; on Discard it is dropped (nothing persisted live). 4) A draft that fails validation can never be approved. 5) Test all three. 6) Run DONE.
-- **DONE:** `bun test convex/lib/agentComponent.test.ts` → approval cases green.
-- **EVIDENCE:** DONE output + the approval surface lines.
-- **DO NOT:** approve a draft that failed validation, write a second approval system, or bypass the owner.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Approval states: `approval-requested` (pending) → Approve (`live`) / Discard (dropped). Auth: the approving caller must be the conversation owner. Error cases: approving an invalid draft → rejected; approving twice → `EN: "This draft was already decided." / HE: "הטיוטה הזו כבר הוכרעה."`.
-- **TESTS:** Given a pending valid draft / When approved / Then it flips to `live`. Given a pending invalid draft / When approved / Then rejected. Given Discard / Then nothing live is persisted. Given a second approve / Then "already decided" error.
-- **NUMBERS:** one decision per draft → pass (boolean gate) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 — UNKNOWN; answerer: Amit.
+- **WHY:** TRD §3 (module drafts use the Agent's built-in tool approval, Approve/Discard); PRD F-41.
+- **GOAL:** A pure decision helper `decideModuleDraft` says what an Approve or Discard does to a pending module draft (approve → a `live` module only if the draft still validates; discard → nothing kept; a second decision → refused), so the approval UI and mutation share one tested rule.
+- **SCOPE:** `convex/lib/coachTools/moduleApproval.ts` · test: `convex/lib/coachTools/moduleApproval.test.ts`.
+- **MUTATES:** `convex/lib/coachTools/moduleApproval.ts` (new) · `convex/lib/coachTools/moduleApproval.test.ts` (new). No table written.
+- **STEPS:** 1) Code-map check: read `draftModuleProposal` (TFV2-0159) and the pinned Agent's tool-approval types in `node_modules/@convex-dev/agent/dist/client/index.d.ts` (state names). 2) Create the file with `ModuleDraftState`, `decideModuleDraft` and the two error strings exactly as SPEC. 3) Create the test with the 4 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/lib/coachTools/moduleApproval.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** write a second approval system beside the Agent's; insert or patch `templates`; approve a draft that fails `draftModuleProposal`.
+- **REPORT:** `status / ticket: TFV2-0162 / evidence: <DONE output> / changed: convex/lib/coachTools/moduleApproval.ts, convex/lib/coachTools/moduleApproval.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export type ModuleDraftState = { status: "pending" | "approved" | "discarded"; draft: ModuleDraft };
+  export type ModuleDecision =
+    | { status: "approved"; module: { name: string; summary: string; body: string; status: "live"; enabled: true } }
+    | { status: "discarded" };
+  export const MODULE_ALREADY_DECIDED = "This draft was already decided.";
+  export const MODULE_DRAFT_INVALID = "This draft can't go live as it is.";
+  /** Throws Error(MODULE_ALREADY_DECIDED) unless state.status is "pending"; on approve, throws Error(MODULE_DRAFT_INVALID) when draftModuleProposal(state.draft) is null. */
+  export function decideModuleDraft(state: ModuleDraftState, decision: "approve" | "discard"): ModuleDecision;
+  ```
+  Errors (English, mapped by the UI): `"This draft was already decided."` — trigger: `state.status !== "pending"`; `"This draft can't go live as it is."` — trigger: approve when the draft no longer validates. Auth: the caller (a later mutation) checks the conversation owner; this helper is pure.
+- **TESTS:**
+  - Given a pending valid draft / When `decideModuleDraft(state, "approve")` runs / Then it returns `{ status: "approved", module: { …draft fields, status: "live", enabled: true } }`.
+  - Given a pending draft whose body contains `"https://x.y"` / When approved / Then it throws `"This draft can't go live as it is."`.
+  - Given a pending draft / When discarded / Then it returns `{ status: "discarded" }`.
+  - Given a state with `status: "approved"` / When either decision runs / Then it throws `"This draft was already decided."`.
+- **NUMBERS:** 4 of 4 cases pass (exact); one decision per draft (boolean rule, test 4).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0159 (Q-12: is `@convex-dev/agent` permitted as the coach foundation; CFG-008: module columns on `templates` or a `modules` table?) — Amit.
 
-### TFV2-0163 — Coach history: `listThreads` (paginated, grouped)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** PRD F-20 (Convex Agent provides chat threads); screen coach-history.html `@data threads = coach.listThreads({ paginationOpts })`.
-- **GOAL:** `listThreads` returns the user's conversations newest-first, grouped Today / Last week / Earlier, each with title, last line, and time.
-- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
-- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (re-export/query).
-- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`conversations`/`messages` exist; `coachHistory.ts` is MISSING). 2) Add `listThreads` as a paginated query over `conversations` (owner-filtered, live only), newest-first. 3) Derive `title` (the conversation title), `lastLine` (last message content, clamped to 2 lines / 160 chars), and `time` (updatedAt). 4) Group client-side into Today / Last week / Earlier (the backend returns a flat newest-first list; the grouping constants are documented). 5) Test empty + owner-isolation. 6) Run DONE.
-- **DONE:** `bun test convex/lib/coachHistory.test.ts` → listThreads cases green.
-- **EVIDENCE:** DONE output + the `listThreads` query.
-- **DO NOT:** return another user's conversations, load full thread bodies, or exceed pagination defaults.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `listThreads({ paginationOpts })` → `{ page }` of `{ id, title, lastLine, updatedAt }`. Auth: `requireUser`. Error cases: none beyond owner filter (empty page is valid). Limits: default page size 20, `lastLine` 160 chars.
-- **TESTS:** Given two conversations / When `listThreads` runs / Then newest-first order. Given another user's conversations / Then none appear. Given none / Then empty page. Given a long last line / Then clamped to 160 chars with `…`.
-- **NUMBERS:** page size 20 → pass (product constant) | UNKNOWN none.
+### TFV2-0163 — Coach history: `conversations.listThreads` (bounded, newest first, with last line)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a.
+- **WHY:** PRD F-20 (past coach chats); the coach-history screen (TFV2-0223) lists threads with title, last line and time. Today `conversations.list` (`convex/conversations.ts` line 72) returns every live conversation unbounded (`.collect()` then sort) and no last line. Chats are the `conversations` table (index `by_userId_updatedAt`) and the `messages` table (index `by_conversationId_createdAt`). (`convex/lib/coachHistory.test.ts` is a `coachPrompt` test despite its name, so this ticket does not use a `coachHistory` module.)
+- **GOAL:** `conversations.listThreads` returns one bounded page of the caller's live conversations, newest `updatedAt` first, each with its title, the last message line (≤ 160 characters) and `updatedAt`, plus a cursor for the next page.
+- **SCOPE:** `convex/conversations.ts` · test: `convex/conversations.test.ts`.
+- **MUTATES:** `convex/conversations.ts` (edit: add constants, `threadSummaryValidator`, `lastLineOf`, `newestLine`, `listThreads`) · `convex/conversations.test.ts` (edit: append one `describe` block). Reads `conversations`, `messages`; writes nothing.
+- **STEPS:** 1) Code-map check: read `convex/conversations.ts` (helpers `requireOwnedLiveConversation`, `toPublicConversation`; queries `list`, `get`), the `conversations` and `messages` indexes in `convex/schema.ts` lines 90–135, and `truncate` in `convex/lib/coachPrompt.ts` line 55; confirm `listThreads` does not exist. 2) Add the exported constants, `threadSummaryValidator`, `ThreadSummary`, `lastLineOf` and the private `newestLine` exactly as SPEC. 3) Add `listThreads` exactly as SPEC. 4) Append `describe("conversations.listThreads", …)` with the 6 TESTS cases to `convex/conversations.test.ts`, using `makeFakeCtx`, `makeSignedOutCtx` and `run` from `./lib/testFakeCtx` (not the file's own local fake). 5) Run DONE.
+- **DONE:** `bun test convex/conversations.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `list`, `get`, `create`, `updateTechnique`, `updateTitle`, `remove` or `requireOwnedLiveConversation`; return message bodies beyond the one clipped line; return `agentThreadId` or any other host Agent field; edit existing tests; touch `convex/schema.ts`.
+- **REPORT:** `status / ticket: TFV2-0163 / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  import { truncate } from "./lib/coachPrompt";
+  export const THREAD_PAGE_DEFAULT = 20;
+  export const THREAD_PAGE_MAX = 50;
+  /** Conversation rows read per call (live and deleted), before the live filter. */
+  export const THREAD_SCAN_MAX = 100;
+  export const LAST_LINE_CHARS = 160;
+  export const threadSummaryValidator = v.object({
+    _id: v.id("conversations"),
+    title: v.string(),
+    lastLine: v.union(v.string(), v.null()),
+    updatedAt: v.number(),
+  });
+  export type ThreadSummary = { _id: Id<"conversations">; title: string; lastLine: string | null; updatedAt: number };
+  /** Whitespace collapsed to single spaces, trimmed, cut to LAST_LINE_CHARS with truncate ("…", no split surrogate pair); "" → null. */
+  export function lastLineOf(content: string): string | null;
+  /** Newest live user/assistant message of a conversation, read as:
+   *  ctx.db.query("messages").withIndex("by_conversationId_createdAt", (q) => q.eq("conversationId", id).gte("createdAt", 0)).order("desc").take(5)
+   *  then the first row with deletedAt === undefined and role !== "system"; its lastLineOf(content), or null. */
+  async function newestLine(ctx: QueryCtx, id: Id<"conversations">): Promise<string | null>;
+  export const listThreads = query({
+    args: { beforeUpdatedAt: v.optional(v.number()), limit: v.optional(v.number()) },
+    returns: v.object({ threads: v.array(threadSummaryValidator), nextBefore: v.union(v.number(), v.null()) }),
+    handler: async (ctx: QueryCtx, args: { beforeUpdatedAt?: number; limit?: number }): Promise<{ threads: ThreadSummary[]; nextBefore: number | null }> => { … },
+  });
+  ```
+  Handler: `const user = await requireUser(ctx);` limit = `THREAD_PAGE_DEFAULT` when missing or not finite, else `Math.max(1, Math.min(THREAD_PAGE_MAX, Math.floor(limit)))`; rows = `ctx.db.query("conversations").withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id).lt("updatedAt", args.beforeUpdatedAt ?? Number.MAX_SAFE_INTEGER)).order("desc").take(THREAD_SCAN_MAX)`; keep `deletedAt === undefined`; first `limit` rows → `{ _id, title, lastLine: await newestLine(ctx, _id), updatedAt }`; `nextBefore` = the last thread's `updatedAt` when exactly `limit` threads were returned, else `null`. Paging is by strictly older `updatedAt`, so two conversations with the identical millisecond `updatedAt` on a page edge show only once (accepted: ms timestamps). Auth: `requireUser` — errors `"Not authenticated"`, `"User not found"`, `"This account is not active"`. No other error (an empty page is valid). Grouping into Today / Last week / Earlier is done by the screen, not here.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `listThreads` runs with `{}` / Then it rejects with `"Not authenticated"`.
+  - Given user `users:1` with conversations updated at 100, 300, 200 / When `listThreads({})` runs / Then `threads.map((t) => t.updatedAt)` equals `[300, 200, 100]` and `nextBefore` is `null`.
+  - Given a conversation of `users:2` and a soft-deleted conversation of `users:1` / When `users:1` runs `listThreads({})` / Then neither appears.
+  - Given 3 live conversations (updated 100, 200, 300) / When `listThreads({ limit: 2 })` runs / Then 2 threads (300, 200) and `nextBefore === 200`; and `listThreads({ beforeUpdatedAt: 200, limit: 2 })` returns only the thread at 100 with `nextBefore === null`.
+  - Given a conversation whose messages are a user message (createdAt 1) and an assistant message (createdAt 2) with 300 characters of `"word "` repeated, plus a soft-deleted message at createdAt 3 / When listed / Then `lastLine` has length 160, ends with `"…"`, and contains no double space.
+  - Given a conversation with no messages / When listed / Then its `lastLine` is `null`.
+- **NUMBERS:** page ≤ 50 threads (`THREAD_PAGE_MAX`), default 20; ≤ 100 conversation rows and ≤ 5 messages per thread read (`THREAD_SCAN_MAX`, bounded reads per CONVENTIONS §20); last line ≤ 160 UTF-16 units. p95 latency: UNKNOWN (no baseline measured; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0164 — Coach history: `searchThreads` (meaning + keyword)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0163 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149 + TFV2-0163.
-- **WHY:** PRD F-50 (coach can search the user's past chats — hybrid search across threads); screen coach-history.html `searchThreads({ query, mode })`.
-- **GOAL:** `searchThreads` searches past conversations by meaning (vector) or exact words (keyword), merged, owner-scoped.
-- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/search.ts` · test: `convex/lib/coachHistory.test.ts`.
-- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/search.ts` (read path).
-- **STEPS:** 1) Graphify code-map of `convex/search.ts` and the `conversations`/`messages` indexes. 2) Add `searchThreads({ query, mode })` — `mode:"words"` = full-text/keyword only; `mode:"meaning"` = vector over thread content merged with keyword. 3) Return `{ id, title, lastLine, updatedAt }` matches, owner-filtered, capped at 20. 4) Empty query returns the newest list. 5) Test both modes + owner isolation. 6) Run DONE.
-- **DONE:** `bun test convex/lib/coachHistory.test.ts` → searchThreads cases green.
-- **EVIDENCE:** DONE output + the `searchThreads` action.
-- **DO NOT:** run vector search in a query (action-only), or search another user's threads.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `searchThreads({ query, mode })` → array of `{ id, title, lastLine, updatedAt }` (≤ 20). `mode` ∈ `meaning|words`. Auth: `requireUser`. Error cases: empty query → newest list. Limits: 20 results, vector dims 1024 (from TFV2-0149).
-- **TESTS:** Given `mode:"words"` and a literal term / When run / Then literal matches only. Given `mode:"meaning"` and a paraphrase / Then vector matches surface. Given another user's thread / Then never returned.
-- **NUMBERS:** 20 results max → pass (product constant) | UNKNOWN none.
+### TFV2-0164a — Coach history: `conversations.searchThreads` (words)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0163 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0163.
+- **WHY:** PRD F-50 (search past chats); coach-history screen search box (TFV2-0208 ChatSearch, TFV2-0223). `messages.searchMine` (`convex/messages.ts` line 128) already finds message hits but returns raw hits per message, reads conversations unbounded, and has no thread title or last line. Meaning (vector) search is split off to TFV2-0164b (OPEN); this ticket is exact words only.
+- **GOAL:** `conversations.searchThreads` returns at most 20 of the caller's live conversations whose title or recent messages contain the query (case-insensitive), newest first, each as a `ThreadSummary` plus the matching line.
+- **SCOPE:** `convex/conversations.ts` · test: `convex/conversations.test.ts`.
+- **MUTATES:** `convex/conversations.ts` (edit: add constants, `threadHitValidator`, `searchThreads`) · `convex/conversations.test.ts` (edit: append one `describe` block). Reads `conversations`, `messages`; writes nothing.
+- **STEPS:** 1) Code-map check: read `listThreads`, `lastLineOf`, `newestLine` (TFV2-0163) and `messages.searchMine` for the existing matching rule (trim, cut to 200, lower-case `includes`). 2) Add the constants, `threadHitValidator` and `searchThreads` exactly as SPEC, reusing `lastLineOf` and `newestLine`. 3) Append `describe("conversations.searchThreads", …)` with the 6 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/conversations.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `messages.searchMine` or `listThreads`; store the query; search another user's rows; run a vector search; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0164a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const SEARCH_THREADS_MAX = 20;
+  export const SEARCH_QUERY_CHARS = 200;
+  export const SEARCH_MESSAGES_PER_THREAD = 80;
+  export const threadHitValidator = v.object({
+    _id: v.id("conversations"),
+    title: v.string(),
+    lastLine: v.union(v.string(), v.null()),
+    updatedAt: v.number(),
+    matchedLine: v.string(),
+  });
+  export const searchThreads = query({
+    args: { query: v.string() },
+    returns: v.array(threadHitValidator),
+    handler: async (ctx: QueryCtx, args: { query: string }): Promise<Array<ThreadSummary & { matchedLine: string }>> => { … },
+  });
+  ```
+  Handler: `requireUser`; needle = `args.query.trim().slice(0, SEARCH_QUERY_CHARS).toLowerCase()`; empty → `[]`. Conversations: `withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id).lt("updatedAt", Number.MAX_SAFE_INTEGER)).order("desc").take(THREAD_SCAN_MAX)`, live only, in that order. For each, messages: `withIndex("by_conversationId_createdAt", (q) => q.eq("conversationId", c._id).gte("createdAt", 0)).order("desc").take(SEARCH_MESSAGES_PER_THREAD)`, live and role `user` or `assistant`. `matchedLine` = `lastLineOf` of the newest such message whose lower-cased content includes the needle; if none matches but the lower-cased title does, `matchedLine` = `lastLineOf(title) ?? title`; if neither, skip. Stop at `SEARCH_THREADS_MAX` hits. `lastLine` = `newestLine`. Auth errors as TFV2-0163; no other error.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `searchThreads({ query: "bank" })` runs / Then it rejects with `"Not authenticated"`.
+  - Given query `"   "` / When it runs / Then it returns `[]`.
+  - Given a conversation with a message `"Call the BANK before noon"` / When `searchThreads({ query: "bank" })` runs / Then one hit with `matchedLine === "Call the BANK before noon"`.
+  - Given a conversation titled `"Bank stuff"` whose messages do not contain "bank" / When searched for `"bank"` / Then one hit with `matchedLine === "Bank stuff"`.
+  - Given a matching conversation of `users:2`, a matching soft-deleted conversation of `users:1`, and a matching soft-deleted message / When `users:1` searches / Then none of them is returned.
+  - Given 21 matching live conversations (updated 1…21) / When searched / Then 20 hits, the first with `updatedAt === 21`, and none with `updatedAt === 1`.
+- **NUMBERS:** ≤ 20 hits (`SEARCH_THREADS_MAX`); ≤ 100 conversations × ≤ 80 messages read (bounded reads, CONVENTIONS §20); query ≤ 200 characters. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 — vector search across threads permitted vs HARD_RULES §2 is UNKNOWN; answerer: Amit.
+- **OPEN:** none.
 
-### TFV2-0165a — Coach history: `getThread`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** coach-thread.html `@data thread = coach.getThread({ threadId })`.
-- **GOAL:** `getThread` returns one conversation's messages + proposals live, owner-filtered.
-- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
-- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (re-export/query).
-- **STEPS:** 1) Graphify code-map of `messages` (`storedProposal` already reconstructs proposal cards). 2) Add `getThread({ threadId })` → `{ id, title, messages:[{ role, content, proposal?, status?, streaming? }] }`, owner-filtered, live. 3) Proposals reconstructed via `storedProposal` (kind, status, preview). 4) Test owner isolation + empty. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachHistory.test.ts` → getThread cases green.
-- **EVIDENCE:** DONE output + the `getThread` query.
-- **DO NOT:** return another user's thread; persist model replies as stored text.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `getThread({ threadId })` → thread with messages in ascending order; each assistant message carries `proposal` (kind/status/`preview`) when present and a `streaming` flag. Auth: `requireUser`; owner check on every read. Error cases: wrong owner / missing thread → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."`.
-- **TESTS:** Given an owned thread with a proposal message / When `getThread` runs / Then messages + proposal status return. Given another user's threadId / Then "Conversation not found." is thrown. Given a thread with no messages / Then an empty `messages` array returns.
-- **NUMBERS:** none → n/a | UNKNOWN none.
+### TFV2-0164b — Coach history: search past chats by meaning — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0164a, CFG-001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0164a, CFG-001.
+- **WHY:** PRD F-50 ("hybrid search across threads": meaning plus words); coach-history screen `mode: "meaning"`. No embedding of messages exists in the host schema; the Agent component (`@convex-dev/agent`) keeps its own message embeddings only for Agent threads, and no coach thread is an Agent thread yet.
+- **GOAL:** `conversations.searchThreadsByMeaning` (action) returns at most 20 of the caller's live conversations ranked by meaning similarity to the query, merged with `searchThreads` word hits (word hits first, no duplicate ids).
+- **SCOPE:** `convex/conversations.ts` · test: `convex/conversations.test.ts`.
+- **MUTATES:** `convex/conversations.ts` (edit: add `searchThreadsByMeaning`) · `convex/conversations.test.ts` (edit: append one `describe` block). Reads conversation data and the chosen embedding store; writes nothing.
+- **STEPS:** 1) Code-map check: read `searchThreads` (TFV2-0164a), `requireApprovedForAi` (`convex/lib/aiGate.ts`) and the embedding seam that Amit's answer selects (the memory seam `embedTexts` is TFV2-0174a, which comes later in build order; once the OPEN is answered this ticket is re-sequenced after the seam it uses). 2) Add `searchThreadsByMeaning` as SPEC, using the embedding store Amit picks (OPEN). 3) Append the 4 TESTS cases with a stub embedding seam and a stub vector search. 4) Run DONE.
+- **DONE:** `bun test convex/conversations.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** run a vector search inside a query (actions only); search another user's rows; call a real provider in tests; change `searchThreads`.
+- **REPORT:** `status / ticket: TFV2-0164b / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const searchThreadsByMeaning = action({
+    args: { query: v.string() },
+    returns: v.array(threadHitValidator),
+    handler: async (ctx: ActionCtx, args: { query: string }): Promise<Array<ThreadSummary & { matchedLine: string }>> => { … },
+  });
+  ```
+  Order: `await requireApprovedForAi(ctx)` first (errors `"Not authenticated"` and `PENDING_APPROVAL_MESSAGE` `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`); blank query → `[]` with no embedding call; else word hits (`ctx.runQuery(api.conversations.searchThreads, …)`) then meaning hits, deduped by `_id`, capped at `SEARCH_THREADS_MAX` (20). A provider failure returns the word hits only (never empty because of a provider error).
+- **TESTS:**
+  - Given a signed-out action ctx / When it runs / Then it rejects with `"Not authenticated"` and the embedding stub was not called.
+  - Given a pending account / When it runs / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  - Given a word hit A and meaning hits A, B / When it runs / Then it returns `[A, B]` (A once, first).
+  - Given an embedding stub that throws / When it runs / Then it returns exactly the word hits.
+- **NUMBERS:** ≤ 20 hits (`SEARCH_THREADS_MAX`); vector search returns ≤ 256 results per call (Convex limit, https://docs.convex.dev/search/vector-search). p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-001 (Q-14: which embedding model, and therefore the vector dimension) — Amit. Also Q-12: is vector (RAG) search permitted under HARD_RULES §2 — Amit. And new: does meaning search over past chats embed host `messages` (a new config-lane field + vector index on `messages`) or use the Agent component's message embeddings (requires coach threads to become Agent threads, TFV2-0153)? — Amit.
+
+### TFV2-0165a — Coach history: `conversations.getThread`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a.
+- **WHY:** coach-thread screen (TFV2-0222) shows one conversation's messages with each card's state. Today `messages.list` (`convex/messages.ts` line 100) returns raw rows unbounded (including `toolCalls`, `councilResponse`), and `coach.storedProposal` (`convex/coach.ts` line 185) already reads a card back from `toolCalls`.
+- **GOAL:** `conversations.getThread` returns one live conversation of the caller with its newest 200 live user/assistant messages in ascending time, each with a small card summary (kind, status, title, undo deadline) and its web sources, and nothing else from `toolCalls`.
+- **SCOPE:** `convex/conversations.ts` · test: `convex/conversations.test.ts`.
+- **MUTATES:** `convex/conversations.ts` (edit: add `THREAD_MESSAGES_MAX`, two validators, `cardSummary`, `getThread`) · `convex/conversations.test.ts` (edit: append one `describe` block). Reads `conversations`, `messages`; writes nothing.
+- **STEPS:** 1) Code-map check: read `requireOwnedLiveConversation` (`convex/conversations.ts` line 8), `storedProposal` and `StoredProposal` (`convex/coach.ts` lines 173–208), `CONVERSATION_UNAVAILABLE_MESSAGE` (`convex/messages.ts` line 45) and `messages.sources` in `convex/schema.ts`. 2) Add `THREAD_MESSAGES_MAX`, `cardSummaryValidator`, `threadMessageValidator`, `cardSummary` and `getThread` exactly as SPEC (`import { storedProposal } from "./coach";` — `coach.ts` does not import `conversations.ts`, so there is no cycle). 3) Append `describe("conversations.getThread", …)` with the 6 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/conversations.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** return `toolCalls`, `councilResponse`, `modelUsed`, claim tokens or Agent fields; return `system` messages; change `messages.list`, `storedProposal` or `requireOwnedLiveConversation`; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0165a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const THREAD_MESSAGES_MAX = 200;
+  export const cardSummaryValidator = v.object({
+    kind: v.union(v.literal("task"), v.literal("note"), v.literal("template"), v.literal("decision")),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("rejected"), v.literal("undone")),
+    title: v.string(),
+    undoUntilMs: v.union(v.number(), v.null()),
+  });
+  export const threadMessageValidator = v.object({
+    _id: v.id("messages"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
+    card: v.union(cardSummaryValidator, v.null()),
+    sources: v.array(v.object({ title: v.string(), site: v.string(), url: v.string() })),
+  });
+  /** storedProposal(toolCalls) → { kind, status, title, undoUntilMs ?? null }; title = task/note title, template name, decision title ?? "". null when no card. */
+  export function cardSummary(toolCalls: unknown): { kind: "task" | "note" | "template" | "decision"; status: "pending" | "accepted" | "rejected" | "undone"; title: string; undoUntilMs: number | null } | null;
+  export const getThread = query({
+    args: { conversationId: v.id("conversations") },
+    returns: v.object({ _id: v.id("conversations"), title: v.string(), updatedAt: v.number(), messages: v.array(threadMessageValidator), truncated: v.boolean() }),
+    handler: async (ctx: QueryCtx, args: { conversationId: Id<"conversations"> }) => { … },
+  });
+  ```
+  Handler: `const { conversation } = await requireOwnedLiveConversation(ctx, args.conversationId);` rows = `withIndex("by_conversationId_createdAt", (q) => q.eq("conversationId", args.conversationId).gte("createdAt", 0)).order("desc").take(THREAD_MESSAGES_MAX)`; `truncated` = `rows.length === THREAD_MESSAGES_MAX`; keep `deletedAt === undefined` and role `user`/`assistant`; reverse to ascending; map each to `{ _id, role, content, createdAt, card: m.role === "assistant" ? cardSummary(m.toolCalls) : null, sources: m.sources ?? [] }`. Errors: `"Not authenticated"` (signed out, from `requireUser`); `"Conversation not found or access denied"` (`CONVERSATION_UNAVAILABLE_MESSAGE`) when the conversation is missing, another user's, or soft-deleted.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` and any id / When `getThread` runs / Then it rejects with `"Not authenticated"`.
+  - Given a conversation of `users:2` / When `users:1` runs `getThread` / Then it rejects with `"Conversation not found or access denied"`.
+  - Given a soft-deleted conversation of `users:1` / When `getThread` runs / Then it rejects with `"Conversation not found or access denied"`.
+  - Given messages user (createdAt 1), assistant with `toolCalls: { coachProposal: { kind: "task", title: "Call the bank", minutes: 10, when: "today", status: "accepted", undoUntilMs: 999 } }` (createdAt 2), a `system` message (createdAt 3) and a soft-deleted user message (createdAt 4) / When `getThread` runs / Then `messages` has 2 items in ascending order and `messages[1].card` equals `{ kind: "task", status: "accepted", title: "Call the bank", undoUntilMs: 999 }`, `messages[0].card` is `null`, and no item has a `toolCalls` key.
+  - Given an assistant message with `sources: [{ title: "Hours", site: "bank.example", url: "https://bank.example/hours" }]` / When `getThread` runs / Then that message's `sources` equals that array; a message with no `sources` gets `[]`.
+  - Given a conversation with no messages / When `getThread` runs / Then `messages` is `[]` and `truncated` is `false`.
+- **NUMBERS:** ≤ 200 messages returned (`THREAD_MESSAGES_MAX`, bounded read per CONVENTIONS §20). p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0165b — Coach history: `createThread`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0153.
-- **WHY:** coach-history.html `coach.createThread({})`.
-- **GOAL:** `createThread` opens an empty conversation and returns its id.
-- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
-- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (mutation).
-- **STEPS:** 1) Graphify code-map of `conversations`. 2) Add `createThread({})` → inserts a `conversations` row owned by the caller and returns its id. 3) Test empty-create + ownership. 4) Run DONE.
-- **DONE:** `bun test convex/lib/coachHistory.test.ts` → createThread cases green.
-- **EVIDENCE:** DONE output + the `createThread` mutation.
-- **DO NOT:** create a thread without an owner; return another user's thread.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `createThread({})` → `v.id("conversations")`. Auth: `requireUser`. Error cases: none beyond owner (an empty conversation is always valid).
-- **TESTS:** Given `createThread` / When run / Then a new owned conversation row exists and its id is returned.
-- **NUMBERS:** none → n/a | UNKNOWN none.
+### TFV2-0165b — Coach history: create a thread = `conversations.create` (returns validator + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a.
+- **WHY:** the coach-history screen's "New chat" opens an empty conversation. `conversations.create` (`convex/conversations.ts` line 101, `mutation`) already does this with `requireApprovedUser`, but declares no `returns` validator and its signed-out and pending cases have no test. A second create function would duplicate it.
+- **GOAL:** `conversations.create` declares `returns: v.id("conversations")` and its four behaviours (signed out, pending, default title, given title) are tested.
+- **SCOPE:** `convex/conversations.ts` · test: `convex/conversations.test.ts`.
+- **MUTATES:** `convex/conversations.ts` (edit: one `returns` line on `create`) · `convex/conversations.test.ts` (edit: append one `describe` block). Writes `conversations` rows (existing behaviour).
+- **STEPS:** 1) Code-map check: read `create` in `convex/conversations.ts` lines 100–121 and `requireApprovedUser` / `PENDING_APPROVAL_MESSAGE` in `convex/lib/approval.ts`. 2) Add `returns: v.id("conversations"),` after `args` in `create`; change nothing else. 3) Append `describe("conversations.create (TFV2-0165b)", …)` with the 4 TESTS cases using `makeFakeCtx` / `makeSignedOutCtx` / `run`. 4) Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/conversations.test.ts` → `0 fail` with the 4 new cases passing; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary and the typecheck exit code pasted into the PR.
+- **DO NOT:** change `create`'s args, default title, auth or insert; add a `createThread` function; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0165b / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const create = mutation({
+    args: { title: v.optional(v.string()), technique: v.optional(v.string()) },
+    returns: v.id("conversations"),
+    handler: async (ctx: MutationCtx, args: { title?: string; technique?: string }): Promise<Id<"conversations">> => { … }, // unchanged body
+  });
+  ```
+  Behaviour (unchanged): `requireApprovedUser(ctx)`; inserts `{ userId, title: args.title || "New Conversation", technique: args.technique, createdAt: now, updatedAt: now }`; returns the new id. Errors: `"Not authenticated"` (signed out); `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (`PENDING_APPROVAL_MESSAGE`, account `approvalStatus: "pending"`). "New Conversation" is a stored default, shown by the screen through its own copy, not by this function.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `create({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given `makeFakeCtx("users:1")` after `ctx.db.patch("users:1", { approvalStatus: "pending" })` / When `create({})` runs / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` and no `conversations` row exists.
+  - Given an approved user (`approvalStatus: "approved"`) and `Date.now` spied to `5000` / When `create({})` runs / Then the returned id's row equals `{ userId: "users:1", title: "New Conversation", createdAt: 5000, updatedAt: 5000 }` plus `_id`, `_creationTime`, and `technique` undefined.
+  - Given an approved user / When `create({ title: "Sunday plan" })` runs / Then the row's `title` is `"Sunday plan"`.
+- **NUMBERS:** 4 of 4 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
-### TFV2-0166 — Adaptive coach: dial backend (`getSettings` + `setDial`)
+
+### TFV2-0166a — Adaptive coach: `coach.getSettings` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a.
+- **WHY:** PRD F-25 (adaptive coach: dial 0–10, load, panic); components.md Dial and PanicButton read these settings. `getSettings` exists (`convex/coach.ts` line 1280, `query`) with defaults `DEFAULT_DIAL = 5`, `MIN_LOAD = 2`; it has no test.
+- **GOAL:** `coach.getSettings` is proven to return the caller's live `coachSettings` row, or the defaults when there is none, and never another person's or a deleted row.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged. No data written.
+- **STEPS:** 1) Code-map check: read `loadSettings` (line 1236) and `getSettings` (line 1280) in `convex/coach.ts` and the `coachSettings` table in `convex/schema.ts`. 2) Append `describe("coach.getSettings", …)` with the 5 TESTS cases to `convex/coach.test.ts`, importing `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx` and `* as coach from "./coach"` (the file already imports `isOpenTask` from `./coach`; keep that import). 3) Run DONE. If a case fails because the code differs from SPEC, stop and report `blocked: code differs from SPEC` with the failing case (this ticket does not change `coach.ts`).
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts`; change `DEFAULT_DIAL` or `MIN_LOAD`; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0166a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const getSettings = query({
+    args: {},
+    returns: v.object({ dial: v.number(), taskLoad: v.number(), panicUntil: v.union(v.number(), v.null()), acceptedStreak: v.number() }),
+    handler: async (ctx: QueryCtx): Promise<{ dial: number; taskLoad: number; panicUntil: number | null; acceptedStreak: number }> => { … },
+  });
+  ```
+  Reads the first `coachSettings` row on `by_userId_deletedAt` with `userId = caller` and `deletedAt = undefined`. Missing row → `{ dial: 5, taskLoad: 2, panicUntil: null, acceptedStreak: 0 }`. Auth: `requireUser` (errors `"Not authenticated"`, `"User not found"`, `"This account is not active"`). No other error. Read bound: one row (`.first()`).
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `getSettings({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given `makeFakeCtx("users:1")` and no `coachSettings` row / When it runs / Then it returns `{ dial: 5, taskLoad: 2, panicUntil: null, acceptedStreak: 0 }`.
+  - Given a row `{ userId: "users:1", dial: 8, taskLoad: 3, panicUntil: 9000, acceptedStreak: 1, updatedAt: 1 }` / When it runs / Then it returns `{ dial: 8, taskLoad: 3, panicUntil: 9000, acceptedStreak: 1 }`.
+  - Given only a row for `users:2` with `dial: 9` / When `users:1` runs it / Then `dial` is `5`.
+  - Given only a row for `users:1` with `deletedAt: 10` and `dial: 9` / When it runs / Then `dial` is `5`.
+- **NUMBERS:** 5 of 5 cases pass (exact); dial default 5 and load default 2 (code constants `DEFAULT_DIAL`, `MIN_LOAD`). p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0166b — Adaptive coach: `coach.setDial` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0166a.
+- **WHY:** PRD F-25 (coach dial 0–10 per person); `.cursorrules` "Coach personality setting: a numeric 0–10 dial per user". `setDial` exists (`convex/coach.ts` line 1300, `mutation`); it has no test. TFV2-0166a adds the `coach.getSettings` describe block this ticket's cases read back through.
+- **GOAL:** `coach.setDial` is proven to store a whole number 0–10 on the caller's single settings row (creating it with defaults when missing) and to refuse anything else with its exact message.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged. Writes `coachSettings` rows in the fake ctx only.
+- **STEPS:** 1) Code-map check: read `ensureSettings` (line 1243) and `setDial` (line 1300). 2) Append `describe("coach.setDial", …)` with the 5 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts`; change how the dial reaches the prompt (TFV2-0226); edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0166b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const setDial = mutation({
+    args: { dial: v.number() },
+    returns: v.object({ success: v.literal(true) }),
+    handler: async (ctx: MutationCtx, args: { dial: number }): Promise<{ success: true }> => { … },
+  });
+  ```
+  Order: `requireUser`; then if `!Number.isInteger(dial) || dial < 0 || dial > 10` throw `new Error("The dial is a whole number from 0 to 10.")`; then `ensureSettings` (inserts `{ userId, dial: 5, taskLoad: 2, acceptedStreak: 0, updatedAt: now }` when the caller has no live row) and patches `{ dial, updatedAt: Date.now() }`. Errors: `"Not authenticated"` (signed out); `"The dial is a whole number from 0 to 10."` (non-integer or outside 0–10). Backend errors are English; the dial UI (TFV2-0211) never sends an out-of-range value.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `setDial({ dial: 4 })` runs / Then it rejects with `"Not authenticated"`.
+  - Given `makeFakeCtx("users:1")` / When `setDial({ dial: -1 })`, `setDial({ dial: 3.5 })` and `setDial({ dial: 11 })` each run / Then each rejects with `"The dial is a whole number from 0 to 10."` and no `coachSettings` row exists.
+  - Given no settings row / When `setDial({ dial: 4 })` runs / Then it returns `{ success: true }`, exactly one `coachSettings` row exists for `users:1` with `dial: 4`, `taskLoad: 2`, `acceptedStreak: 0`, and `getSettings({})` returns `dial: 4`.
+  - Given an existing row with `dial: 4` / When `setDial({ dial: 0 })` then `setDial({ dial: 10 })` run / Then there is still exactly one row and its `dial` is `10`.
+  - Given a row for `users:2` with `dial: 9` / When `users:1` runs `setDial({ dial: 2 })` / Then the `users:2` row still has `dial: 9`.
+- **NUMBERS:** dial accepted range exactly the integers 0–10 (product rule, PRD F-25; test 2 and 4); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0167a — Adaptive coach: `coach.pressPanic` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0166b.
+- **WHY:** PRD F-25 (panic button: one 10-second action, no model call); components.md PanicButton. `pressPanic` exists (`convex/coach.ts` line 1314, `mutation`; `PANIC_MS = 30 * 60_000`; action from `pickTenSecondAction(now)` in `convex/lib/coachLoad.ts`); it has no test. Sequenced after TFV2-0166b because both append to `convex/coach.test.ts` and reuse its imports.
+- **GOAL:** `coach.pressPanic` is proven to set the caller's panic window to now + 30 minutes and return the fixed-list 10-second action picked by the clock, with no model call.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `pressPanic` (line 1314), `PANIC_MS` (line 69) and `pickTenSecondAction` / `TEN_SECOND_ACTIONS` in `convex/lib/coachLoad.ts`. 2) Append `describe("coach.pressPanic", …)` with the 4 TESTS cases; spy `Date.now` with `spyOn(Date, "now").mockReturnValue(…)` and restore it in `afterEach`. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts` or `convex/lib/coachLoad.ts`; call a model; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0167a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const pressPanic = mutation({
+    args: {},
+    returns: v.object({ panicUntil: v.number(), action: v.object({ text: v.string() }) }),
+    handler: async (ctx: MutationCtx): Promise<{ panicUntil: number; action: { text: string } }> => { … },
+  });
+  ```
+  `requireUser`; `ensureSettings`; `now = Date.now()`; patch `{ panicUntil: now + 1_800_000, updatedAt: now }`; return `{ panicUntil, action: { text: TEN_SECOND_ACTIONS[Math.abs(Math.floor(now)) % 5] } }` (English; the Hebrew for each line comes from TFV2-0167c). Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `pressPanic({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given `Date.now` = `1_000_000` and no settings row / When it runs / Then it returns `{ panicUntil: 2_800_000, action: { text: "Take one slow breath, then put your hand on the first thing you need." } }` and the new `coachSettings` row has `panicUntil: 2_800_000`.
+  - Given `Date.now` = `1_000_003` / When it runs / Then `action.text` is `"Unclench your jaw and drop your shoulders once."` (index 3).
+  - Given an existing row with `dial: 7` / When it runs / Then the row keeps `dial: 7` and gains the new `panicUntil`.
+- **NUMBERS:** panic window = 1,800,000 ms (30 min, code constant `PANIC_MS`, exact; test 2); 4 of 4 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0167b — Adaptive coach: `coach.clearPanic` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167a.
+- **WHY:** PRD F-25 (the person ends the panic window). `clearPanic` exists (`convex/coach.ts` line 1327, `mutation`); it has no test. Sequenced after TFV2-0167a (same test file).
+- **GOAL:** `coach.clearPanic` is proven to remove the caller's `panicUntil` (creating a default settings row when none exists) and leave other settings and other people untouched.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `clearPanic` (line 1327) and `ensureSettings`. 2) Append `describe("coach.clearPanic", …)` with the 4 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts`; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0167b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const clearPanic = mutation({
+    args: {},
+    returns: v.object({ success: v.literal(true) }),
+    handler: async (ctx: MutationCtx): Promise<{ success: true }> => { … },
+  });
+  ```
+  `requireUser`; `ensureSettings`; patch `{ panicUntil: undefined, updatedAt: Date.now() }`; return `{ success: true }`. Calling it with no panic active is not an error. Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `clearPanic({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given a row with `panicUntil: 9_999_999` and `dial: 6` / When it runs / Then it returns `{ success: true }`, the row's `panicUntil` is `undefined` and `dial` is still `6`, and `getSettings({}).panicUntil` is `null`.
+  - Given no settings row / When it runs / Then one row exists with `dial: 5`, `taskLoad: 2`, `acceptedStreak: 0` and no `panicUntil`.
+  - Given a row for `users:2` with `panicUntil: 9_999_999` / When `users:1` runs it / Then the `users:2` row still has `panicUntil: 9_999_999`.
+- **NUMBERS:** 4 of 4 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0167c — Adaptive coach: Hebrew for the 10-second actions (`convex/lib/coachLoad.ts`)
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** first in adaptive coach.
-- **WHY:** PRD F-25 (adaptive coach dial 0–10); components.md §2.8 Dial 0–10 (`profiles.setCoachDial`).
-- **GOAL:** The 0–10 coach dial is persisted per user and read back, clamped and validated.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
-- **MUTATES:** `convex/coach.ts` (verify existing `getSettings`/`setDial`).
-- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`getSettings`/`setDial` + `coachSettings` exist — verify and add the missing test). 2) Confirm `setDial` validates integer 0..10 and `getSettings` returns defaults when no row exists (dial 5). 3) Add the error string EN/HE below. 4) Test clamp/validation + default. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachLoad.test.ts` → dial cases green.
-- **EVIDENCE:** DONE output + the `setDial` validation lines.
-- **DO NOT:** change the dial's effect on the system prompt here (that is TFV2-0226), or allow out-of-range values.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `setDial({ dial })` → `{ success:true }`; `getSettings({})` → `{ dial, taskLoad, panicUntil, acceptedStreak }`. Default dial 5. Error case (non-integer or <0 or >10): `EN: "The dial is a whole number from 0 to 10." / HE: "החוגה היא מספר שלם מ־0 עד 10."`. Auth: `requireUser`.
-- **TESTS:** Given `setDial(4)` / When run / Then `getSettings().dial === 4`. Given `setDial(11)` / Then the range error. Given `setDial(3.5)` / Then the whole-number error. Given no `coachSettings` row / Then `getSettings().dial === 5`.
-- **NUMBERS:** dial integer 0..10 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0167 — Adaptive coach: panic backend (`pressPanic` + `clearPanic` + 10-second action)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0166.
-- **WHY:** PRD F-25 (panic button, 10-second action); components.md §2.10 PanicButton (`panic`, no model call).
-- **GOAL:** Pressing panic sets a 30-minute panic window, returns one fixed 10-second action, and clearPanic ends the window.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
-- **MUTATES:** `convex/coach.ts` (verify `pressPanic`/`clearPanic`).
-- **STEPS:** 1) Graphify code-map (`pressPanic`/`clearPanic` + `pickTenSecondAction` exist — verify + test). 2) Confirm `pressPanic` sets `panicUntil = now + 30 min` and returns a deterministic action from the fixed list. 3) Add EN/HE for the five actions and the two realism notes (shared with TFV2-0169). 4) Test window + deterministic pick + clear. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachLoad.test.ts` → panic cases green.
-- **EVIDENCE:** DONE output + the panic lines.
-- **DO NOT:** call a model for panic, randomise the action per call (deterministic by seed), or leak the panic reason.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `pressPanic({})` → `{ panicUntil, action:{ text } }`; `clearPanic({})` → `{ success:true }`. `PANIC_MS = 30 min`. The action is `TEN_SECOND_ACTIONS` picked by seed. EN/HE (five actions): 1 `EN: "Take one slow breath, then put your hand on the first thing you need." / HE: "קחי נשימה איטית אחת, ואז הניחי את היד על הדבר הראשון שאת צריכה."` · 2 `EN: "Stand up and drink a sip of water." / HE: "קומי ושתי לגימה של מים."` · 3 `EN: "Open the first task and read just its title." / HE: "פתחי את המשימה הראשונה וקראי רק את הכותרת שלה."` · 4 `EN: "Unclench your jaw and drop your shoulders once." / HE: "שחררי את הלסת והורידי את הכתפיים פעם אחת."` · 5 `EN: "Put one thing you do not need away from your desk." / HE: "הרחיקי דבר אחד שאת לא צריכה מהשולחן."`. Auth: `requireUser`. No model call.
-- **TESTS:** Given `pressPanic` / When run / Then `panicUntil > now` by 30 min and `action.text` is one of the five. Given the same seed / Then the same action returns (deterministic). Given `clearPanic` / Then `panicUntil` is cleared.
-- **NUMBERS:** panic window 30 min → pass (product constant `PANIC_MS`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0168 — Adaptive coach: bad-day detection
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0167.
-- **WHY:** PRD F-25 (bad-day detection); HARD_RULES (no shame — low activity is a quiet stretch, never failure).
-- **GOAL:** `badDay` reports a bad day (panic window, or no completed task in 3 days) and a suggested load of 2.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
-- **MUTATES:** `convex/coach.ts` (verify `badDay`/`computeBadDay`).
-- **STEPS:** 1) Graphify code-map (`computeBadDay`/`badDay` + `effectiveLoad` exist — verify + test). 2) Confirm reasons `panic` (window active) and `low_activity` (no `done` task in 3 days) and `suggestedLoad = MIN_LOAD` (2). 3) Confirm a completed task in-window clears `low_activity`. 4) Test both reasons + clear. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachLoad.test.ts` → bad-day cases green.
-- **EVIDENCE:** DONE output + the `computeBadDay` lines.
-- **DO NOT:** word a bad day as failure/shame in any string, or raise load on a bad day.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `badDay({})` → `{ isBadDay, reason: "panic"|"low_activity"|null, suggestedLoad }`. `LOW_ACTIVITY_DAYS = 3`. A panic window (panicUntil > now) → `{ isBadDay:true, reason:"panic", suggestedLoad:2 }`; else no completed live task in the last 3 days → `{ isBadDay:true, reason:"low_activity", suggestedLoad:2 }`; else `{ isBadDay:false, reason:null, suggestedLoad: effectiveLoad(taskLoad,false) }`. Auth: `requireUser`.
-- **TESTS:** Given an active panic window / Then `reason:"panic"`. Given no done task in 3 days / Then `reason:"low_activity"`. Given a done task within 3 days / Then `isBadDay:false`. Given a bad day / Then `suggestedLoad === 2`.
-- **NUMBERS:** 3-day quiet window → pass (product constant `LOW_ACTIVITY_DAYS`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0169 — Adaptive coach: realism checker
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0168 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0168.
-- **WHY:** PRD F-25 (realism checker); components.md (a plan is checked against available minutes).
-- **GOAL:** `checkRealism` compares planned minutes against available minutes and returns an honest, non-shaming note.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §11 (user-facing strings a backend returns are given in both languages as `{ en, he }`) and §12 (gender-neutral Hebrew). `pressPanic` and `createProposal` return or store one of the five English `TEN_SECOND_ACTIONS` (`convex/lib/coachLoad.ts` lines 58–64); the panic card and proposal card must show it in Hebrew too, and the stored string (`coachProposals.tenSecondAction`, `v.string()`) cannot change shape without a schema ticket.
+- **GOAL:** `convex/lib/coachLoad.ts` exports the Hebrew of each 10-second action and a lookup `tenSecondActionCopy(text)` that returns `{ en, he }` for a stored English action (or `null` for anything else), so screens can show either language.
 - **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
-- **MUTATES:** `convex/lib/coachLoad.ts` (verify `checkRealism`).
-- **STEPS:** 1) Graphify code-map (`checkRealism` exists — verify + test). 2) Confirm it sums `taskMinutes` (default 25) vs `availableMinutes` and returns `ok` + EN/HE note. 3) Add Hebrew to the two notes. 4) Test fits / over / defaults. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachLoad.test.ts` → realism cases green.
-- **EVIDENCE:** DONE output + the `checkRealism` lines.
-- **DO NOT:** shame on an over-full plan, lower the threshold silently, or change `DEFAULT_TASK_MINUTES`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `checkRealism(tasks, availableMinutes)` → `{ ok, totalMinutes, availableMinutes, note }`. `taskMinutes` = rounded estimate/60,000 or `DEFAULT_TASK_MINUTES` (25). `ok = totalMinutes <= availableMinutes`. Notes: fits → `EN: "This fits the time you have. Pick it up when you are ready." / HE: "זה מתאים לזמן שיש לך. קחי את זה כשאת מוכנה."`; over → `EN: "This is more than the time you have today. Do what you can; the rest can wait, and that is fine." / HE: "זה יותר מהזמן שיש לך היום. עשי מה שאפשר; השאר יכול לחכות, וזה בסדר."`. Pure (no ctx).
-- **TESTS:** Given tasks summing 50 min vs 120 available / Then `ok:true` and the fits note. Given 200 min vs 60 available / Then `ok:false` and the over note. Given a task with no estimate / Then it counts as 25 min. Given `availableMinutes: 60` on a bad day (60-min budget) / Then the over note never shames.
-- **NUMBERS:** default task 25 min → pass (product constant) | UNKNOWN none.
+- **MUTATES:** `convex/lib/coachLoad.ts` (edit: add `TEN_SECOND_ACTIONS_HE` and `tenSecondActionCopy`) · `convex/lib/coachLoad.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `convex/lib/coachLoad.ts` (67 lines; `TEN_SECOND_ACTIONS`, `pickTenSecondAction`) and its test (describe "ten second action"). 2) Add `TEN_SECOND_ACTIONS_HE` and `tenSecondActionCopy` exactly as SPEC, after `pickTenSecondAction`. 3) Append `describe("ten second action copy", …)` with the 4 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `TEN_SECOND_ACTIONS`, `pickTenSecondAction` or any other export; change `convex/coach.ts` or the stored action string; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0167c / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Pure helper.
+  ```ts
+  /** Same order as TEN_SECOND_ACTIONS; gender-neutral infinitives (CONVENTIONS §12). */
+  export const TEN_SECOND_ACTIONS_HE: readonly string[] = [
+    "לקחת נשימה איטית אחת, ואז להניח יד על הדבר הראשון שצריך.",
+    "לקום ולשתות לגימה של מים.",
+    "לפתוח את המשימה הראשונה ולקרוא רק את הכותרת שלה.",
+    "לשחרר את הלסת ולהוריד את הכתפיים פעם אחת.",
+    "להרחיק מהשולחן דבר אחד שלא צריך.",
+  ];
+  /** { en, he } for one of the five English actions (exact match), else null. */
+  export function tenSecondActionCopy(text: string): { en: string; he: string } | null;
+  ```
+  EN / HE pairs: 1 EN "Take one slow breath, then put your hand on the first thing you need." / HE "לקחת נשימה איטית אחת, ואז להניח יד על הדבר הראשון שצריך." · 2 EN "Stand up and drink a sip of water." / HE "לקום ולשתות לגימה של מים." · 3 EN "Open the first task and read just its title." / HE "לפתוח את המשימה הראשונה ולקרוא רק את הכותרת שלה." · 4 EN "Unclench your jaw and drop your shoulders once." / HE "לשחרר את הלסת ולהוריד את הכתפיים פעם אחת." · 5 EN "Put one thing you do not need away from your desk." / HE "להרחיק מהשולחן דבר אחד שלא צריך.". No error thrown.
+- **TESTS:**
+  - Given `TEN_SECOND_ACTIONS_HE` / Then its length equals `TEN_SECOND_ACTIONS.length` (5) and every item is non-empty.
+  - Given `tenSecondActionCopy("Stand up and drink a sip of water.")` / Then it equals `{ en: "Stand up and drink a sip of water.", he: "לקום ולשתות לגימה של מים." }`.
+  - Given `tenSecondActionCopy("something else")` / Then `null`.
+  - Given every Hebrew line / Then none contains any of `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"`, `"קחי"`, `"קומי"`, `"פתחי"`, `"שחררי"`, `"הרחיקי"` (no shame words and none of the gendered imperatives the old copy used, CONVENTIONS §12).
+- **NUMBERS:** 4 of 4 cases pass (exact); 5 of 5 actions have Hebrew (exact).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0170 — Adaptive coach: proposal lifecycle (create / current / decide)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0169 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0169.
-- **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract); components.md §3 (`TP.acceptProposal`/`rejectProposal`); HARD_RULES §1 (accept/reject is law).
-- **GOAL:** A code-built proposal (tasks + 10-second action + realism) is created once, and Accept/Reject is the only path that changes tasks and load.
-- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
-- **MUTATES:** `convex/coach.ts` (verify `createProposal`/`currentProposal`/`decideProposal`).
-- **STEPS:** 1) Graphify code-map (the three exist — verify + test). 2) Confirm `createProposal` returns the existing pending proposal id (idempotent), picks open tasks up to `effectiveLoad`, and builds `realism`. 3) Confirm `decideProposal` Accept sets `dueAt: now` on the chosen tasks and raises load after 3 accepts in a row (max 4); Reject resets load to 2 (forgiveness). 4) Test idempotency, accept, reject, load transitions. 5) Run DONE.
-- **DONE:** `bun test convex/lib/coachLoad.test.ts` → proposal lifecycle cases green.
-- **EVIDENCE:** DONE output + the three functions.
-- **DO NOT:** let a rejected proposal change tasks, or accept twice.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `createProposal({})` → `v.id("coachProposals")` (idempotent — returns the existing pending id); `currentProposal({})` → proposal or null; `decideProposal({ proposalId, decision })` → `{ status, taskLoad }`. `afterAccept`: streak ≥ `STREAK_FOR_RAISE` (3) → `min(MAX_LOAD, taskLoad+1)`, streak 0; else streak+1. `afterReject` → `{ taskLoad: MIN_LOAD(2), acceptedStreak:0 }`. Error cases: no open tasks → `EN: "No open tasks to plan yet. Add one and come back." / HE: "אין עדיין משימות פתוחות לתכנון. הוסיפי אחת וחזרי."`; already decided → `EN: "This proposal was already decided." / HE: "ההצעה הזו כבר הוכרעה."`; not found → `EN: "Proposal not found." / HE: "ההצעה לא נמצאה."`. Auth: `requireUser`.
-- **TESTS:** Given a pending proposal / When `createProposal` runs again / Then the same id returns. Given 2 tasks / When `createProposal` runs on load 2 / Then the proposal holds ≤ 2 tasks. Given Accept / Then the tasks get `dueAt: now`. Given 3 accepts in a row / Then `taskLoad` rises by 1 (≤ 4). Given Reject / Then `taskLoad` resets to 2 and no task changes.
-- **NUMBERS:** load 2..4, raise at streak 3 → pass (product constants) | UNKNOWN none.
+### TFV2-0168 — Adaptive coach: `coach.badDay` (bounded read + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167b.
+- **WHY:** PRD F-25 (bad-day detection; a quiet stretch is never failure); CONVENTIONS §16 (every read bounded). `computeBadDay` (`convex/coach.ts` line 1258) reads every done task of the person with `.collect()` to find one completed in the last 3 days; the index `by_userId_deletedAt_completedAt` (`convex/schema.ts`, tasks) answers the same question with one row. `badDay` (line 1338, `query`) has no test. Sequenced after TFV2-0167b (same test file).
+- **GOAL:** `computeBadDay` reads at most one task row, and `coach.badDay` is proven to report `panic`, `low_activity` or not-a-bad-day exactly as SPEC.
+- **SCOPE:** `convex/coach.ts` · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.ts` (edit: the done-task read inside `computeBadDay` only) · `convex/coach.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `computeBadDay` (lines 1258–1278), `LOW_ACTIVITY_DAYS` (line 72), `DAY_MS` (line 70) and the `tasks` index `by_userId_deletedAt_completedAt` (`["userId", "deletedAt", "completedAt"]`; `completedAt` is set only on the transition to done and cleared when a task leaves done, `convex/schema.ts` tasks comment). 2) Replace the block from `const done = await ctx.db` through `const recent = done.some(…);` with the read in SPEC. Nothing else in `computeBadDay` changes. 3) Append `describe("coach.badDay", …)` with the 7 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 7 new cases passing; `bun test convex/coach_chat.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **DO NOT:** change the panic branch, `LOW_ACTIVITY_DAYS`, `MIN_LOAD`, `effectiveLoad`, the return shape, or any other function; word a bad day as failure anywhere; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0168 / evidence: <DONE output> / changed: convex/coach.ts, convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  // inside computeBadDay, replacing the collect():
+  const since = now - LOW_ACTIVITY_DAYS * DAY_MS;
+  const recentDone = await ctx.db
+    .query("tasks")
+    .withIndex("by_userId_deletedAt_completedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined).gte("completedAt", since))
+    .take(1);
+  const recent = recentDone.length > 0;
+
+  export const badDay = query({
+    args: {},
+    returns: v.object({ isBadDay: v.boolean(), reason: v.union(v.literal("panic"), v.literal("low_activity"), v.null()), suggestedLoad: v.number() }),
+    handler: async (ctx: QueryCtx): Promise<{ isBadDay: boolean; reason: "panic" | "low_activity" | null; suggestedLoad: number }> => { … }, // unchanged
+  });
+  ```
+  Rules: live settings with `panicUntil > now` → `{ isBadDay: true, reason: "panic", suggestedLoad: 2 }`; else no live task with `completedAt >= now - 3 days` → `{ isBadDay: true, reason: "low_activity", suggestedLoad: 2 }`; else `{ isBadDay: false, reason: null, suggestedLoad: effectiveLoad(taskLoad, false) }` (taskLoad from settings, default 2, clamped 2–4). Auth: `requireUser` (`"Not authenticated"`). `reason` values are codes; the screen owns their wording.
+- **TESTS:** (`DAY = 86_400_000`; `Date.now` spied to `10 * DAY`)
+  - Given `makeSignedOutCtx()` / When `badDay({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given settings `panicUntil: 10 * DAY + 1000` / When it runs / Then `{ isBadDay: true, reason: "panic", suggestedLoad: 2 }`.
+  - Given settings `panicUntil: 10 * DAY - 1` and no tasks / When it runs / Then `{ isBadDay: true, reason: "low_activity", suggestedLoad: 2 }`.
+  - Given settings `taskLoad: 3` and a done task with `completedAt: 7 * DAY` (exactly 3 days ago) / When it runs / Then `{ isBadDay: false, reason: null, suggestedLoad: 3 }`.
+  - Given a done task with `completedAt: 7 * DAY - 1` only / When it runs / Then `reason` is `"low_activity"`.
+  - Given a done task with `completedAt: 9 * DAY` and `deletedAt: 9 * DAY` only / When it runs / Then `reason` is `"low_activity"`.
+  - Given a done task of `users:2` with `completedAt: 9 * DAY` only / When `users:1` runs it / Then `reason` is `"low_activity"`.
+- **NUMBERS:** quiet window = 3 days (code constant `LOW_ACTIVITY_DAYS`, boundary inclusive; tests 4–5); task rows read ≤ 1 (bounded read, CONVENTIONS §20); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0171 — Memory: `remember`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149.
-- **WHY:** TRD §5 (`remember(userId, text, meta)` → insert into `memories`); PRD F-50.
-- **GOAL:** `remember` inserts a live memory for the caller, trimmed and length-bounded.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `remember`).
-- **STEPS:** 1) Graphify code-map of `convex/memory.ts` (`remember` exists — verify + test). 2) Confirm trim, non-empty, `CONTENT_MAX` 2000, sector default `general`, salience 0.5. 3) Add EN/HE errors. 4) Test empty/too-long/success. 5) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → remember cases green.
-- **EVIDENCE:** DONE output + the `remember` mutation.
-- **DO NOT:** accept empty content, exceed 2000 chars, or store another user's memory.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `remember({ content, sector? })` → `v.id("memories")`. Trims; empty → `EN: "Write something to remember first." / HE: "קודם כתבי משהו לזכור."`; > 2000 → `EN: "Keep a memory to 2000 characters or fewer." / HE: "שמרי זיכרון עד 2000 תווים או פחות."`. Sector ∈ `semantic|episodic|procedural|emotional|general`, default `general`. Auth: `requireUser`.
-- **TESTS:** Given valid content / When `remember` runs / Then a live memory row returns. Given empty / Then the empty error. Given 2001 chars / Then the length error.
-- **NUMBERS:** content ≤ 2000 chars → pass (product constant `CONTENT_MAX`) | UNKNOWN none.
+### TFV2-0169 — Adaptive coach: realism note in Hebrew (`convex/lib/coachLoad.ts`)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167c.
+- **WHY:** PRD F-25 (realism checker: a plan is checked against the time available, never shaming); CONVENTIONS §11 (`{ en, he }` for backend user-facing strings). `checkRealism` (`convex/lib/coachLoad.ts` line 39) stores an English `note` in `coachProposals.realism.note` (`v.string()`); the proposal card needs the Hebrew. Sequenced after TFV2-0167c (same two files).
+- **GOAL:** `convex/lib/coachLoad.ts` exports `realismNoteCopy(ok)` returning the `{ en, he }` pair whose `en` is exactly the note `checkRealism` stores, and `checkRealism` itself is unchanged and fully tested.
+- **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
+- **MUTATES:** `convex/lib/coachLoad.ts` (edit: add `REALISM_NOTES` and `realismNoteCopy`; `checkRealism` reads its English from `REALISM_NOTES`) · `convex/lib/coachLoad.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `checkRealism`, `taskMinutes`, `DEFAULT_TASK_MINUTES` and the existing "realism" describe block. 2) Add `REALISM_NOTES` and `realismNoteCopy` exactly as SPEC above `checkRealism`, and change only the `note:` expression in `checkRealism` to `ok ? REALISM_NOTES.fits.en : REALISM_NOTES.over.en` (the stored strings stay byte-identical). 3) Append `describe("realism note copy", …)` with the 5 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change the English wording, `DEFAULT_TASK_MINUTES`, the `ok` rule or the return shape of `checkRealism`; touch `convex/coach.ts` or the schema; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0169 / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Pure helper.
+  ```ts
+  export const REALISM_NOTES = {
+    fits: { en: "This fits the time you have. Pick it up when you are ready.", he: "זה מתאים לזמן שיש. אפשר להתחיל כשמתאים." },
+    over: { en: "This is more than the time you have today. Do what you can; the rest can wait, and that is fine.", he: "זה יותר מהזמן שיש היום. עושים מה שאפשר; השאר יכול לחכות, וזה בסדר." },
+  } as const;
+  export function realismNoteCopy(ok: boolean): { en: string; he: string } { return ok ? REALISM_NOTES.fits : REALISM_NOTES.over; }
+  export function checkRealism(tasks: { timeEstimate?: number }[], availableMinutes: number): { ok: boolean; totalMinutes: number; availableMinutes: number; note: string }; // unchanged behaviour
+  ```
+  `taskMinutes(t)` = `max(1, round(timeEstimate / 60_000))` when `timeEstimate > 0`, else 25; `ok = totalMinutes <= availableMinutes`. No error thrown.
+- **TESTS:**
+  - Given tasks with `timeEstimate` 1_200_000 and 1_800_000 (20 + 30 min) and 120 available / When `checkRealism` runs / Then `{ ok: true, totalMinutes: 50, availableMinutes: 120, note: "This fits the time you have. Pick it up when you are ready." }`.
+  - Given three tasks with no estimate and 60 available / When `checkRealism` runs / Then `ok: false`, `totalMinutes: 75`, `note` equals `REALISM_NOTES.over.en`.
+  - Given tasks totalling exactly 60 minutes and 60 available / Then `ok: true` (boundary inclusive).
+  - Given `realismNoteCopy(true)` and `realismNoteCopy(false)` / Then their `en` equal the `note` of tests 1 and 2, and their `he` equal `"זה מתאים לזמן שיש. אפשר להתחיל כשמתאים."` and `"זה יותר מהזמן שיש היום. עושים מה שאפשר; השאר יכול לחכות, וזה בסדר."`.
+  - Given both notes in both languages / Then none contains `"failed"`, `"overdue"`, `"lazy"`, `"must"`, `"should have"`, `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"`, `"קחי"` or `"עשי"`.
+- **NUMBERS:** default task = 25 min (code constant `DEFAULT_TASK_MINUTES`); fit boundary inclusive (test 3); 5 of 5 cases pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0172 — Memory: `list`
+### TFV2-0170a — Adaptive coach: `coach.createProposal` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0168, TFV2-0169 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0168, TFV2-0169.
+- **WHY:** PRD F-25 (graduated load 2→4; a plan built by code); HARD_RULES §1 (accept/reject is law). `createProposal` exists (`convex/coach.ts` line 1409, `mutation`) and uses `computeBadDay` (bounded by TFV2-0168) and `checkRealism` (TFV2-0169); it has no test.
+- **GOAL:** `coach.createProposal` is proven to return the existing pending proposal when there is one, otherwise to store a new pending proposal of the caller's open tasks (soonest due first, at most the effective load) with a 10-second action and a realism check, and to refuse when no task is open.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `pendingProposal` (line 1372), `isOpenTask` (line 1368), `createProposal` (lines 1409–1452), `AVAILABLE_MINUTES = 120` / `AVAILABLE_MINUTES_BAD_DAY = 60` (lines 73–74). 2) Append `describe("coach.createProposal", …)` with the 6 TESTS cases (`Date.now` spied to `10 * 86_400_000`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts`; call a model; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0170a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const createProposal = mutation({
+    args: {},
+    returns: v.id("coachProposals"),
+    handler: async (ctx: MutationCtx): Promise<Id<"coachProposals">> => { … },
+  });
+  ```
+  Order: `requireUser`; existing live pending proposal → return its id (no write); `ensureSettings`; `computeBadDay`; `load = effectiveLoad(taskLoad, isBadDay)`; candidates = the caller's `todo` and `in_progress` tasks (`by_userId_status`), live only, sorted by `dueAt` ascending (missing `dueAt` last) then `createdAt` ascending, first `load`; none → throw `new Error("No open tasks to plan yet. Add one and come back.")`; insert `{ userId, status: "pending", taskIds, tenSecondAction: pickTenSecondAction(now), realism: checkRealism(open, isBadDay ? 60 : 120), createdAt: now }`. Errors: `"Not authenticated"`; `"No open tasks to plan yet. Add one and come back."`.
+- **TESTS:** (`DAY = 86_400_000`, now = `10 * DAY`; a "recent done task" is a done task with `completedAt: 9 * DAY`)
+  - Given `makeSignedOutCtx()` / When `createProposal({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given a live pending proposal for `users:1` / When it runs / Then it returns that proposal's id and `coachProposals` still has 1 row.
+  - Given only a done task, a cancelled task, a soft-deleted todo task and a todo task of `users:2` / When `users:1` runs it / Then it rejects with `"No open tasks to plan yet. Add one and come back."` and no proposal row exists.
+  - Given a recent done task and open tasks A (`dueAt: 300`, createdAt 1), B (`dueAt: 100`, createdAt 2), C (no `dueAt`, createdAt 3) and no settings / When it runs / Then the new row has `status: "pending"`, `taskIds: [B, A]`, `realism: { ok: true, totalMinutes: 50, availableMinutes: 120, note: "This fits the time you have. Pick it up when you are ready." }`, `tenSecondAction: pickTenSecondAction(10 * DAY)`.
+  - Given settings `taskLoad: 4`, a recent done task and 5 open tasks / When it runs / Then `taskIds` has 4 items.
+  - Given settings `taskLoad: 4`, no done task in 3 days (bad day) and 5 open tasks / When it runs / Then `taskIds` has 2 items and `realism.availableMinutes` is `60`.
+- **NUMBERS:** load 2–4 tasks per proposal (code constants `MIN_LOAD`, `MAX_LOAD`; tests 4–6); available minutes 120 / 60 on a bad day (code constants); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0170b — Adaptive coach: `coach.currentProposal` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0170a.
+- **WHY:** PRD F-25; the proposal card (TFV2-0213) reads the pending plan. `currentProposal` exists (`convex/coach.ts` line 1381, `query`); it has no test. Sequenced after TFV2-0170a (same test file).
+- **GOAL:** `coach.currentProposal` is proven to return the caller's live pending proposal with only its still-open tasks (title and minutes), or `null`.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `proposalValidator` (line 1358) and `currentProposal` (lines 1381–1406). 2) Append `describe("coach.currentProposal", …)` with the 5 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts`; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0170b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const currentProposal = query({
+    args: {},
+    returns: v.union(v.object({
+      _id: v.id("coachProposals"), status: v.literal("pending"),
+      tasks: v.array(v.object({ taskId: v.id("tasks"), title: v.string(), minutes: v.number() })),
+      tenSecondAction: v.string(),
+      realism: v.object({ ok: v.boolean(), totalMinutes: v.number(), availableMinutes: v.number(), note: v.string() }),
+      createdAt: v.number(),
+    }), v.null()),
+    handler: async (ctx: QueryCtx) => { … },
+  });
+  ```
+  `requireUser`; first live pending proposal (`by_userId_status_deletedAt`) or `null`; `tasks` = each `taskIds` row that is the caller's and open (`isOpenTask`), as `{ taskId, title, minutes: taskMinutes(t) }`. Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `currentProposal({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given no proposal / When it runs / Then `null`.
+  - Given a pending proposal with `taskIds` [A (todo, `timeEstimate: 600_000`), B (done)] / When it runs / Then `tasks` equals `[{ taskId: A, title: <A's title>, minutes: 10 }]`.
+  - Given only an `accepted` proposal / When it runs / Then `null`.
+  - Given a pending proposal of `users:2` / When `users:1` runs it / Then `null`.
+- **NUMBERS:** 5 of 5 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0170c — Adaptive coach: `coach.decideProposal` (verify + tests)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0170b.
+- **WHY:** PRD F-25 (graduated load, forgiveness contract); HARD_RULES §1 (only Accept changes tasks). `decideProposal` exists (`convex/coach.ts` line 1455, `mutation`) with `afterAccept` / `afterReject` from `convex/lib/coachLoad.ts`; it has no test. Sequenced after TFV2-0170b (same test file).
+- **GOAL:** `coach.decideProposal` is proven to make Accept the only path that changes tasks (open tasks get `dueAt = now`), to raise the load after 3 accepts in a row (max 4), to reset load to 2 on Reject, and to refuse missing, foreign, deleted or decided proposals with their exact messages.
+- **SCOPE:** `convex/coach.ts` (read; unchanged) · test: `convex/coach.test.ts`.
+- **MUTATES:** `convex/coach.test.ts` (edit: append one `describe` block). `convex/coach.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `decideProposal` (lines 1455–1494) and `afterAccept` / `afterReject` / `STREAK_FOR_RAISE` / `MAX_LOAD` in `convex/lib/coachLoad.ts`. 2) Append `describe("coach.decideProposal", …)` with the 7 TESTS cases (`Date.now` spied to `5000`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/coach.test.ts` → `0 fail` with the 7 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/coach.ts` or `convex/lib/coachLoad.ts`; edit existing tests.
+- **REPORT:** `status / ticket: TFV2-0170c / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const decideProposal = mutation({
+    args: { proposalId: v.id("coachProposals"), decision: v.union(v.literal("accept"), v.literal("reject")) },
+    returns: v.object({ status: v.union(v.literal("accepted"), v.literal("rejected")), taskLoad: v.number() }),
+    handler: async (ctx: MutationCtx, args: { proposalId: Id<"coachProposals">; decision: "accept" | "reject" }) => { … },
+  });
+  ```
+  Order: `requireUser`; proposal missing, another user's, or `deletedAt` set → `new Error("Proposal not found")` (no full stop, as in the code); `status !== "pending"` → `new Error("This proposal was already decided.")`; `ensureSettings`. Accept: each `taskIds` row that is the caller's and open gets `{ dueAt: now, updatedAt: now }`; settings ← `afterAccept(taskLoad, acceptedStreak)` (streak + 1; at 3 → load + 1 capped at 4 and streak 0); proposal ← `{ status: "accepted", decidedAt: now }`. Reject: no task changes; settings ← `{ taskLoad: 2, acceptedStreak: 0 }`; proposal ← `{ status: "rejected", decidedAt: now }`. Returns `{ status, taskLoad }`. Errors: `"Not authenticated"`, `"Proposal not found"`, `"This proposal was already decided."`.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `decideProposal` runs / Then it rejects with `"Not authenticated"`.
+  - Given a proposal of `users:2`, and separately a proposal of `users:1` with `deletedAt: 1` / When `users:1` decides each / Then each rejects with `"Proposal not found"`.
+  - Given an `accepted` proposal of `users:1` / When it is decided again / Then it rejects with `"This proposal was already decided."`.
+  - Given a pending proposal with an open task A and a done task B and settings `{ taskLoad: 2, acceptedStreak: 0 }` / When accepted / Then it returns `{ status: "accepted", taskLoad: 2 }`, A has `dueAt: 5000`, B is unchanged, settings `acceptedStreak` is `1`, and the proposal has `decidedAt: 5000`.
+  - Given settings `{ taskLoad: 2, acceptedStreak: 2 }` / When a pending proposal is accepted / Then it returns `taskLoad: 3` and settings `acceptedStreak` is `0`.
+  - Given settings `{ taskLoad: 4, acceptedStreak: 2 }` / When accepted / Then `taskLoad` stays `4`.
+  - Given settings `{ taskLoad: 4, acceptedStreak: 1 }` and a pending proposal with open task A (no `dueAt`) / When rejected / Then it returns `{ status: "rejected", taskLoad: 2 }`, settings `acceptedStreak` is `0`, and A still has no `dueAt`.
+- **NUMBERS:** load 2–4, raise after 3 accepts in a row (code constants `MIN_LOAD`, `MAX_LOAD`, `STREAK_FOR_RAISE`; tests 5–7); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0171 — Memory: `memory.remember` (verify + tests; creates `convex/memory.test.ts`)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a.
+- **WHY:** TRD §5 (`remember` inserts into `memories`); PRD F-50. `remember` exists (`convex/memory.ts` line 87, `mutation`, `CONTENT_MAX = 2000`); `convex/memory.test.ts` does not exist (only `convex/memoryUndo.test.ts` and `convex/memoryImport.test.ts`). The old adapter ticket TFV2-0019 is superseded by this one.
+- **GOAL:** `convex/memory.test.ts` exists and proves `memory.remember` trims, bounds and stores a live memory for the caller with the documented defaults.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (new). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: `ls convex/memory.test.ts` (absent); read `remember` (lines 87–112) and the `memories` table (`convex/schema.ts` line 228). 2) Create `convex/memory.test.ts` importing `{ afterEach, describe, expect, spyOn, test } from "bun:test"`, `* as memory from "./memory"` and `{ makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx"`, with `describe("memory.remember", …)` holding the 6 TESTS cases (later memory tickets append their own `describe` blocks). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `6 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts`, `convex/memories.ts`, `convex/memoryUndo.test.ts` or `convex/memoryImport.test.ts`; touch the schema.
+- **REPORT:** `status / ticket: TFV2-0171 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const remember = mutation({
+    args: { content: v.string(), sector: v.optional(v.union(v.literal("semantic"), v.literal("episodic"), v.literal("procedural"), v.literal("emotional"), v.literal("general"))) },
+    returns: v.id("memories"),
+    handler: async (ctx: MutationCtx, args: { content: string; sector?: "semantic" | "episodic" | "procedural" | "emotional" | "general" }): Promise<Id<"memories">> => { … },
+  });
+  ```
+  `requireUser`; `content = args.content.trim()`; empty → `new Error("Write something to remember first.")`; `content.length > 2000` (UTF-16 units) → `new Error("Keep a memory to 2000 characters or fewer.")`; insert `{ userId, content, sector: args.sector ?? "general", salience: 0.5, decayRate: 0.01, lastAccessed: now, accessCount: 0, createdAt: now, updatedAt: now }`. Errors: `"Not authenticated"`, the two above.
+- **TESTS:** (`Date.now` spied to `7000`, restored in `afterEach`)
+  - Given `makeSignedOutCtx()` / When `remember({ content: "x" })` runs / Then it rejects with `"Not authenticated"`.
+  - Given `makeFakeCtx("users:1")` / When `remember({ content: "  \n " })` runs / Then it rejects with `"Write something to remember first."` and no `memories` row exists.
+  - Given content of 2001 `"a"` / When it runs / Then it rejects with `"Keep a memory to 2000 characters or fewer."`.
+  - Given content of exactly 2000 `"a"` / When it runs / Then it returns an id and the row's `content.length` is 2000.
+  - Given `remember({ content: "  Phone calls before noon  " })` / When it runs / Then the stored row equals `{ userId: "users:1", content: "Phone calls before noon", sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 7000, accessCount: 0, createdAt: 7000, updatedAt: 7000 }` plus `_id` and `_creationTime`.
+  - Given `remember({ content: "שיחות טלפון לפני הצהריים", sector: "procedural" })` / When it runs / Then the row's `sector` is `"procedural"` and `content` is the Hebrew text unchanged.
+- **NUMBERS:** content ≤ 2,000 UTF-16 units (code constant `CONTENT_MAX`; tests 3–4); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0172 — Memory: `memory.list` (verify + tests)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
-- **WHY:** PRD F-52 (see memories); memory.html `memory.list({ kind })`.
-- **GOAL:** `list` returns the caller's live memories by salience, optionally filtered by sector, bounded.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `list`).
-- **STEPS:** 1) Graphify code-map (`list` exists — verify + test). 2) Confirm sector filter, salience desc (then updatedAt desc), limit clamp 1..200 (default 50). 3) Test filter/bound/owner. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → list cases green.
-- **EVIDENCE:** DONE output + the `list` query.
-- **DO NOT:** return soft-deleted rows or another user's rows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `list({ sector?, limit? })` → `memoryValidator[]` (`{ _id, content, sector, salience, createdAt, updatedAt, lastAccessed, importedFrom? }`). Live rows only, owner-filtered. Sort salience desc → updatedAt desc. Limit clamp `clampLimit` (1..200, default 50).
-- **TESTS:** Given memories in two sectors / When `list({ sector })` / Then only that sector returns. Given limit 5 / Then ≤ 5 rows. Given a soft-deleted row / Then excluded. Given another user's row / Then excluded.
-- **NUMBERS:** limit 1..200, default 50 → pass (product constants) | UNKNOWN none.
+- **WHY:** PRD F-52 (the person sees their memories); used today by `apps/web/components/memory/MemoryManager.tsx` and `MemoryImportScreen.tsx`. `list` exists (`convex/memory.ts` line 132, `query`); it has no test. TFV2-0171 creates `convex/memory.test.ts`.
+- **GOAL:** `memory.list` is proven to return the caller's live memories, optionally one sector, by salience then recency, capped by the clamped limit, with `importedFrom` when the row came from an import.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `memoryValidator` (line 29), `clampLimit` (line 45), `importSourceOf` (line 53), `toMemory`, `liveMemories`, `bySalience` and `list` (line 132). 2) Append `describe("memory.list", …)` with the 6 TESTS cases (seed rows with `ctx.db.insert("memories", { userId, content, sector, salience, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt, … })`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts`; edit other describe blocks.
+- **REPORT:** `status / ticket: TFV2-0172 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const list = query({
+    args: { sector: v.optional(sectorValidator), limit: v.optional(v.number()) },
+    returns: v.array(memoryValidator), // { _id, content, sector, salience, createdAt, updatedAt, lastAccessed, importedFrom?: "chatgpt" | "claude" | "grok" | "other" }
+    handler: async (ctx: QueryCtx, args: { sector?: Sector; limit?: number }) => { … },
+  });
+  ```
+  `requireUser`; the caller's live rows (`by_userId_deletedAt`, `deletedAt = undefined`); sector filter when given; sort `salience` desc then `updatedAt` desc; slice `clampLimit(limit)` = 50 when missing or not finite, else `floor` clamped to 1–200. `importedFrom` = `metadata.source` when it is `chatgpt`, `claude`, `grok` or `other`. Errors: `"Not authenticated"` only. Known gap (not changed here): the read scans all the caller's live memories before slicing; noted for ticket sync.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `list({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given memories A (salience 0.9, updatedAt 1), B (0.5, updatedAt 5), C (0.5, updatedAt 9) / When `list({})` runs / Then contents are `[A, C, B]`.
+  - Given memories in `episodic` and `general` / When `list({ sector: "episodic" })` runs / Then only the episodic one returns.
+  - Given 3 memories / When `list({ limit: 0 })` runs / Then 1 row returns; and given 51 memories, `list({})` returns 50.
+  - Given a soft-deleted memory of `users:1` and a live memory of `users:2` / When `users:1` runs `list({})` / Then neither appears.
+  - Given a memory with `metadata: { source: "claude" }` and one with `metadata: { source: "mail" }` / When listed / Then the first has `importedFrom: "claude"` and the second has no `importedFrom` key.
+- **NUMBERS:** limit 1–200, default 50 (code constants `MAX_LIMIT`, `DEFAULT_LIMIT`; test 4); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0173 — Memory: `recall` — keyword (search index)
+### TFV2-0173 — Memory: `memory.recall` — keyword (substring) (verify + tests)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
-- **WHY:** TRD §5 (`recall` = keyword via the existing search index, part of the merged recall); PRD F-50.
-- **GOAL:** `recall` finds live memories whose content contains the query, case-insensitive, bounded.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `recall` keyword path).
-- **STEPS:** 1) Graphify code-map (`recall` exists as substring match — verify + test). 2) Confirm lowercase normalize, empty → `[]`, limit clamp. 3) Test case/empty/owner. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → recall-keyword cases green.
-- **EVIDENCE:** DONE output + the `recall` query.
-- **DO NOT:** return another user's rows or soft-deleted rows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recall({ query, limit? })` → `memoryValidator[]`. Normalizes the query to lower-case, substring match on `content`. Empty query → `[]`. Sort salience desc. Limit clamp (default 50). Auth: `requireUser`.
-- **TESTS:** Given a memory "Phone calls before noon" / When `recall({ query:"phone" })` / Then it returns. Given `query:"PHONE"` / Then still returns (case-insensitive). Given empty query / Then `[]`. Given another user's match / Then excluded.
-- **NUMBERS:** limit clamp default 50 → pass (product constant) | UNKNOWN none.
+- **WHY:** TRD §5 (`recall` by keyword is one of the recall paths); PRD F-50. `recall` exists (`convex/memory.ts` line 114, `query`) as a case-insensitive substring match over the caller's live memories (no search index is used); it has no test.
+- **GOAL:** `memory.recall` is proven to return the caller's live memories whose content contains the query (case-insensitive, any script), by salience, capped by the clamped limit; a blank query returns `[]`.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `recall` (lines 114–130). 2) Append `describe("memory.recall", …)` with the 6 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts`; add a search index (schema is config lane); edit other describe blocks.
+- **REPORT:** `status / ticket: TFV2-0173 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const recall = query({
+    args: { query: v.string(), limit: v.optional(v.number()) },
+    returns: v.array(memoryValidator),
+    handler: async (ctx: QueryCtx, args: { query: string; limit?: number }) => { … },
+  });
+  ```
+  `requireUser`; `needle = query.trim().toLowerCase()`; empty → `[]`; caller's live rows whose `content.toLowerCase()` includes `needle`; sort salience desc then updatedAt desc; slice `clampLimit(limit)` (default 50, 1–200). Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `recall({ query: "phone" })` runs / Then it rejects with `"Not authenticated"`.
+  - Given query `"   "` / When it runs / Then `[]`.
+  - Given a memory `"Phone calls before noon"` / When `recall({ query: "PHONE" })` runs / Then it returns that memory.
+  - Given a memory `"שיחות טלפון לפני הצהריים"` / When `recall({ query: "טלפון" })` runs / Then it returns that memory.
+  - Given matching memories with salience 0.2 and 0.8 / When recalled / Then the 0.8 one is first; and with `limit: 1` only it returns.
+  - Given a matching soft-deleted memory of `users:1` and a matching memory of `users:2` / When `users:1` recalls / Then `[]`.
+- **NUMBERS:** limit default 50, 1–200 (code constants); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0174 — Memory: `recall` — vector (meaning)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0183 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149 + TFV2-0183 (embedding action).
-- **WHY:** TRD §5 (`recall` = Convex vector search (meaning)); PRD F-50.
-- **GOAL:** `recallMeaning` returns memories by embedding similarity, action-only, owner-filtered.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (add `recallMeaning` action).
-- **STEPS:** 1) Graphify code-map (no vector recall yet — add it). 2) Add an action that embeds the query (via TFV2-0183's seam), runs Convex vector search over `by_userId_embedding` filtered by `userId`, and returns the top ≤ 256 → capped to `limit` (default 10). 3) Test empty query, owner filter, result cap. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → recall-vector cases green (with a fake embedding seam).
-- **EVIDENCE:** DONE output + the `recallMeaning` action.
-- **DO NOT:** run vector search in a query, or use a real provider key in tests.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recallMeaning({ query, limit? })` (action) → `memoryValidator[]`. Embeds the query (1,024 dims), vector-search over `by_userId_embedding` with filter `userId`, returns ≤ min(256, limit) (default 10). Empty query → `[]`. Auth: `requireApprovedForAi` (embedding is a provider call).
-- **TESTS:** Given a query and a fake embedding seam / When `recallMeaning` runs / Then owner-filtered results return. Given empty query / Then `[]`. Given limit 5 / Then ≤ 5.
-- **NUMBERS:** ≤ 256 results (Convex cap) → pass (https://docs.convex.dev/search/vector-search) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 (vector search permitted) — UNKNOWN; answerer: Amit.
+### TFV2-0174a — Memory: embedding seam `embedTexts` (`convex/lib/ai_router.ts`) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0014, CFG-001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0014, CFG-001.
+- **WHY:** TRD §5 (one embedding model, 1,024 dimensions, behind one seam); `convex/lib/ai_router.ts` is the one place Tempo calls DeepInfra (`callLLM`, key `DEEPINFRA_API_KEY`) and has no embedding call. Meaning recall (TFV2-0174d) and embedding storage (TFV2-0183b, TFV2-0184b) all need it.
+- **GOAL:** `convex/lib/ai_router.ts` exports `embedTexts(texts)` returning one unit-length 1,024-float vector per text from DeepInfra's OpenAI-compatible embeddings endpoint, plus the pure `toUnitPrefix`, with typed errors and no key in any message.
+- **SCOPE:** `convex/lib/ai_router.ts` · test: `convex/lib/ai_router.test.ts`.
+- **MUTATES:** `convex/lib/ai_router.ts` (edit: add constants, `resolveEmbeddingModel`, `toUnitPrefix`, `embedTexts`) · `convex/lib/ai_router.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `convex/lib/ai_router.ts` (`resolveAiModel`, `attemptCall`, `callLLM`, how `DEEPINFRA_API_KEY` is read) and `convex/lib/ai_errors.ts` (`AiAuthError(message)`, `AiUpstreamError(message, status, upstream)`). 2) Add the exports exactly as SPEC below `callLLM`. 3) Append `describe("embedTexts", …)` with the 6 TESTS cases; tests pass a stub `fetchImpl` and set/unset `process.env.DEEPINFRA_API_KEY` to a fake value `"test-key"` (restored after). 4) Run DONE.
+- **DONE:** `bun test convex/lib/ai_router.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `callLLM`, `attemptCall` or `resolveAiModel`; log or put the key, request body or response body in an error message; call the real network in tests; add a dependency.
+- **REPORT:** `status / ticket: TFV2-0174a / evidence: <DONE output> / changed: convex/lib/ai_router.ts, convex/lib/ai_router.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const DEFAULT_EMBEDDING_MODEL = "Qwen/Qwen3-Embedding-8B";
+  export const EMBEDDING_DIMENSIONS = 1024;
+  export const EMBED_BATCH_MAX = 64;
+  export const DEEPINFRA_EMBEDDINGS_URL = "https://api.deepinfra.com/v1/openai/embeddings";
+  /** Convex env TEMPO_EMBEDDING_MODEL (trimmed) or DEFAULT_EMBEDDING_MODEL. */
+  export function resolveEmbeddingModel(): string;
+  /** First `dims` values, divided by their L2 norm. Throws Error("embedding too short") when vector.length < dims, Error("embedding has zero length") when the norm is 0. */
+  export function toUnitPrefix(vector: readonly number[], dims?: number): number[];
+  /** POST { model, input: texts } with Authorization: Bearer <DEEPINFRA_API_KEY>; returns data[i].embedding mapped through toUnitPrefix, in input order. */
+  export async function embedTexts(texts: readonly string[], fetchImpl?: typeof fetch): Promise<number[][]>;
+  ```
+  Rules: `texts.length === 0` → `[]` with no request; `texts.length > 64` → `new Error("Embed at most 64 texts at a time.")`; missing key → `new AiAuthError("DEEPINFRA_API_KEY not set in Convex env")` (same text as `callLLM`); HTTP 401/403 → `new AiAuthError("DeepInfra auth failed")`; any other non-2xx → `new AiUpstreamError("DeepInfra embeddings failed", status, "deepinfra")`; a response whose `data` length differs from `texts.length` → `new AiUpstreamError("DeepInfra embeddings returned the wrong count", 200, "deepinfra")`. Runtime model (product calls): `resolveEmbeddingModel()`; Q-14 decides it. No user-facing copy.
+- **TESTS:**
+  - Given `toUnitPrefix([3, 4, 12], 2)` / Then it equals `[0.6, 0.8]`; and `toUnitPrefix([1], 2)` throws `"embedding too short"`; and `toUnitPrefix([0, 0], 2)` throws `"embedding has zero length"`.
+  - Given `embedTexts([])` with a stub fetch / Then it resolves `[]` and the stub was not called.
+  - Given 65 texts / Then it rejects with `"Embed at most 64 texts at a time."`.
+  - Given `DEEPINFRA_API_KEY` unset / Then it rejects with an `AiAuthError` whose message is `"DEEPINFRA_API_KEY not set in Convex env"`.
+  - Given the key `"test-key"` and a stub returning 200 `{ data: [{ embedding: <4096 floats, first two 3 and 4, rest 0> }] }` / When `embedTexts(["hi"], stub)` runs / Then the result has one vector of length 1024 whose first two values are 0.6 and 0.8, the stub got `DEEPINFRA_EMBEDDINGS_URL`, header `Authorization: "Bearer test-key"` and body `{ model: "Qwen/Qwen3-Embedding-8B", input: ["hi"] }`.
+  - Given a stub returning 500 / Then it rejects with an `AiUpstreamError` with `status: 500`, and its message does not contain `"test-key"`.
+- **NUMBERS:** vector length exactly 1,024 (must equal the `dimensions` of `by_userId_embedding` in CFG-001; Convex vector search, https://docs.convex.dev/search/vector-search); ≤ 64 texts per request (`EMBED_BATCH_MAX`); 6 of 6 cases pass. Provider p95 latency: UNKNOWN (no baseline).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-001 (Q-14: which embedding model, and therefore the vector dimension; proposed `Qwen/Qwen3-Embedding-8B` at 1,024) — Amit. Also Q-12: is vector (RAG) search permitted under HARD_RULES §2 — Amit.
 
-### TFV2-0175 — Memory: `recall` — links (edges)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186b, TFV2-0187 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0186b (entities) + TFV2-0187 (edges).
-- **WHY:** TRD §5c (recall four ways: links via `edges`); PRD F-54.
-- **GOAL:** `recallLinks` returns memories linked to entities whose names/aliases match the query.
+### TFV2-0174b — Memory: `memory.recallScope` (internal query: the caller's user id) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, CFG-001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171, CFG-001.
+- **WHY:** Convex vector search runs only in actions (`ctx.vectorSearch`), and an action has no `ctx.db`; the meaning recall action (TFV2-0174d) needs the caller's `users` id for the `userId` filter of `by_userId_embedding` (CFG-001). `requireUser` works inside an internal query run with the action's identity.
+- **GOAL:** `memory.recallScope` (internalQuery) returns the authenticated caller's `Id<"users">`, with the standard auth errors.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (add `recallLinks`).
-- **STEPS:** 1) Graphify code-map of `edges` (table lands in TFV2-0151). 2) Add `recallLinks` that finds edges (from/to) matching the query or an entity alias, then returns the related memories/entities. 3) Test match-by-alias + owner. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → recall-links cases green.
-- **EVIDENCE:** DONE output + the `recallLinks` query.
-- **DO NOT:** cross user boundaries, or mix user-written vs guessed links without the `origin` tag.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recallLinks({ query, limit? })` → `{ entities[], memories[] }`. Matches `edges.from`/`edges.to` against the query and entity `aliases`; returns the matched entities and the memories referenced. Guessed (`inferred`) links carry `origin` so the UI can mark them. Empty query → empty. Auth: `requireUser`.
-- **TESTS:** Given an edge "Dana → Thursday talk" with alias "manager" / When `recallLinks({ query:"Dana" })` / Then the edge's memories return. Given query "manager" / Then the alias still matches. Given another user's edge / Then excluded.
-- **NUMBERS:** none → n/a | UNKNOWN none.
+- **MUTATES:** `convex/memory.ts` (edit: add `recallScope`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `requireUser` (`convex/lib/requireUser.ts`) and the imports of `convex/memory.ts`. 2) Add `internalQuery` to the `./_generated/server` import and add `recallScope` exactly as SPEC. 3) Append `describe("memory.recallScope", …)` with the 2 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 2 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** export it as a public `query`; return anything but the id; change other functions.
+- **REPORT:** `status / ticket: TFV2-0174b / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const recallScope = internalQuery({
+    args: {},
+    returns: v.id("users"),
+    handler: async (ctx: QueryCtx): Promise<Id<"users">> => (await requireUser(ctx))._id,
+  });
+  ```
+  Errors: `"Not authenticated"`, `"User not found"`, `"This account is not active"` (from `requireUser`).
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `recallScope({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given `makeFakeCtx("users:1")` / When it runs / Then it returns `"users:1"`.
+- **NUMBERS:** 2 of 2 cases pass (exact). p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-001 (Q-14: which embedding model, and therefore the vector dimension) — Amit.
+
+### TFV2-0174c — Memory: `memory.hydrateMemories` (internal query: ids → the caller's live memories) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0174b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0174b.
+- **WHY:** `ctx.vectorSearch` returns only `{ _id, _score }`; the meaning recall action (TFV2-0174d) turns those ids into memories through one internal query that re-checks owner and liveness.
+- **GOAL:** `memory.hydrateMemories` (internalQuery) returns, in input order and without duplicates, the caller's live memories among the given ids (at most 256), shaped as `memoryValidator`.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `HYDRATE_MAX` and `hydrateMemories`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `toMemory` and `memoryValidator`. 2) Add `HYDRATE_MAX` and `hydrateMemories` exactly as SPEC. 3) Append `describe("memory.hydrateMemories", …)` with the 4 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** return another user's or a deleted row; expose `embedding` or `metadata`; make it public.
+- **REPORT:** `status / ticket: TFV2-0174c / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const HYDRATE_MAX = 256;
+  export const hydrateMemories = internalQuery({
+    args: { ids: v.array(v.id("memories")) },
+    returns: v.array(memoryValidator),
+    handler: async (ctx: QueryCtx, args: { ids: Id<"memories">[] }) => { … },
+  });
+  ```
+  `requireUser`; `ids.length > 256` → `new Error("Hydrate at most 256 memories at a time.")`; for each distinct id in order: `ctx.db.get(id)`, keep when `userId === user._id` and `deletedAt === undefined`, map with `toMemory`. Errors: `"Not authenticated"`, `"Hydrate at most 256 memories at a time."`.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When it runs with `{ ids: [] }` / Then it rejects with `"Not authenticated"`.
+  - Given 257 ids / When it runs / Then it rejects with `"Hydrate at most 256 memories at a time."`.
+  - Given ids `[B, A, B]` of two live memories of `users:1` / When it runs / Then contents are `[B, A]`.
+  - Given ids of a deleted memory of `users:1` and a live memory of `users:2` / When `users:1` runs it / Then `[]`.
+- **NUMBERS:** ≤ 256 ids per call (Convex vector search returns at most 256 results, https://docs.convex.dev/search/vector-search); 4 of 4 cases pass. p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0174b (CFG-001, Q-14: which embedding model, and therefore the vector dimension) — Amit.
+
+### TFV2-0174d — Memory: `memory.recallMeaning` (action: vector recall) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0174a, TFV2-0174c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0174a, TFV2-0174c.
+- **WHY:** TRD §5 (`recall` by meaning through Convex vector search); PRD F-50. Pieces: `embedTexts` (TFV2-0174a), `recallScope` (TFV2-0174b), `hydrateMemories` (TFV2-0174c), vector index `by_userId_embedding` (CFG-001).
+- **GOAL:** `memory.recallMeaning` (action) returns the caller's live memories most similar in meaning to the query, best first, at most `limit` (default 10, max 256), after the AI gate.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `MEANING_DEFAULT_LIMIT`, `recallMeaningWith`, `recallMeaning`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `requireApprovedForAi` (`convex/lib/aiGate.ts`), `embedTexts`, `recallScope`, `hydrateMemories`. 2) Add `action` to the server import and `internal` from `./_generated/api`; add `recallMeaningWith` (testable core taking its deps) and `recallMeaning` exactly as SPEC. 3) Append `describe("memory.recallMeaning", …)` with the 5 TESTS cases calling `recallMeaningWith` with stubs. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** run vector search in a query or mutation; call the real provider in tests; return another user's rows; change `recall` (keyword).
+- **REPORT:** `status / ticket: TFV2-0174d / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const MEANING_DEFAULT_LIMIT = 10;
+  type MemoryView = Infer<typeof memoryValidator>; // import type { Infer } from "convex/values"
+  type MeaningDeps = {
+    gate: () => Promise<void>;                                   // requireApprovedForAi(ctx)
+    scope: () => Promise<Id<"users">>;                           // ctx.runQuery(internal.memory.recallScope, {})
+    embed: (texts: string[]) => Promise<number[][]>;              // embedTexts
+    search: (vector: number[], limit: number, userId: Id<"users">) => Promise<{ _id: Id<"memories">; _score: number }[]>; // ctx.vectorSearch("memories", "by_userId_embedding", { vector, limit, filter: (q) => q.eq("userId", userId) })
+    hydrate: (ids: Id<"memories">[]) => Promise<MemoryView[]>;   // ctx.runQuery(internal.memory.hydrateMemories, { ids })
+  };
+  export async function recallMeaningWith(deps: MeaningDeps, args: { query: string; limit?: number }): Promise<MemoryView[]>;
+  export const recallMeaning = action({
+    args: { query: v.string(), limit: v.optional(v.number()) },
+    returns: v.array(memoryValidator),
+    handler: async (ctx: ActionCtx, args: { query: string; limit?: number }) => recallMeaningWith({ … real deps … }, args),
+  });
+  ```
+  Order in `recallMeaningWith`: `await deps.gate()` first; blank query (after trim) → `[]` with no embed/search; `limit` = 10 when missing or not finite, else `floor` clamped 1–256; `userId = await deps.scope()`; `[vector] = await deps.embed([query.trim()])`; hits = `deps.search(vector, limit, userId)`; return `deps.hydrate(hits.map((h) => h._id))` (hydrate keeps search order). Errors: from the gate `"Not authenticated"` and `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`; provider errors from `embedTexts` propagate (typed, no key text).
+- **TESTS:**
+  - Given a gate stub that rejects with `"Not authenticated"` / When it runs / Then it rejects with that message and `embed` was not called.
+  - Given a gate stub that rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` / Then it rejects with that message.
+  - Given query `"  "` / Then `[]` and neither `embed` nor `search` was called.
+  - Given stubs where `search` returns ids `[B, A]` and `hydrate` echoes their memories / When it runs with `{ query: "calls", limit: 5 }` / Then contents are `[B, A]`, `search` got `limit: 5` and `userId: "users:1"`.
+  - Given `limit: 1000` / Then `search` got `limit: 256`; with no limit it got `10`.
+- **NUMBERS:** results ≤ 256 (Convex vector search cap, https://docs.convex.dev/search/vector-search), default 10; 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0174a (CFG-001 Q-14: embedding model and dimension; Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
+
+### TFV2-0175 — Memory: `memory.recallLinks` (memories linked to matching entities)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, CFG-002, CFG-003 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171, CFG-002, CFG-003.
+- **WHY:** TRD §5c (recall four ways; one is links through `edges`); PRD F-54 (life graph). Tables: `entities` (CFG-002: `name`, `aliases`, `kind`, index `by_userId_deletedAt`) and `edges` (CFG-003: `fromEntityId`, `toEntityId`, `relation`, `origin` `extracted|inferred`, `sourceMemoryId?`, indexes `by_userId_fromEntityId`, `by_userId_toEntityId`). It reads those tables directly, so it needs no life-graph function ticket; tests seed rows through the fake ctx.
+- **GOAL:** `memory.recallLinks` returns the caller's entities whose name or an alias contains the query and the caller's live memories that edges touching those entities point to, each memory marked `extracted` or `inferred`, bounded at every step.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add constants, two validators, `recallLinks`) · `convex/memory.test.ts` (edit: append one `describe` block). Reads `entities`, `edges`, `memories`; writes nothing.
+- **STEPS:** 1) Code-map check: confirm CFG-002 and CFG-003 landed (`grep -n "entities: defineTable\|edges: defineTable" convex/schema.ts`; if either is missing report `blocked: missing CFG-002/CFG-003`); read `toMemory`, `clampLimit`, `bySalience` in `convex/memory.ts`. 2) Add the constants, `linkedEntityValidator`, `linkedMemoryValidator` and `recallLinks` exactly as SPEC. 3) Append `describe("memory.recallLinks", …)` with the 7 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 7 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** write to any table; follow edges more than one hop; return another user's rows; drop the `origin` mark; touch the schema.
+- **REPORT:** `status / ticket: TFV2-0175 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const LINK_ENTITY_SCAN = 500;   // entity rows read
+  export const LINK_ENTITY_MAX = 10;     // matching entities used
+  export const LINK_EDGE_MAX = 50;       // edges read per direction per entity
+  const linkedEntityValidator = v.object({
+    _id: v.id("entities"),
+    name: v.string(),
+    kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit")),
+  });
+  const linkedMemoryValidator = v.object({ memory: memoryValidator, origin: v.union(v.literal("extracted"), v.literal("inferred")) });
+  export const recallLinks = query({
+    args: { query: v.string(), limit: v.optional(v.number()) },
+    returns: v.object({ entities: v.array(linkedEntityValidator), memories: v.array(linkedMemoryValidator) }),
+    handler: async (ctx: QueryCtx, args: { query: string; limit?: number }) => { … },
+  });
+  ```
+  Handler: `requireUser`; `needle = query.trim().toLowerCase()`; empty → `{ entities: [], memories: [] }`. Entities: `withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).take(LINK_ENTITY_SCAN)`, keep those where `name.toLowerCase()` or any `alias.toLowerCase()` includes `needle`, first `LINK_ENTITY_MAX`. For each kept entity: edges `by_userId_fromEntityId` (`eq userId`, `eq fromEntityId`) `.take(LINK_EDGE_MAX)` and `by_userId_toEntityId` likewise; keep `deletedAt === undefined` and `sourceMemoryId !== undefined`. Per memory id: origin `extracted` if any kept edge to it is `extracted`, else `inferred`. Load each memory with `ctx.db.get`; keep the caller's live ones; sort by `bySalience`; slice `clampLimit(limit, 10)`. Return `entities` as `{ _id, name, kind }` in scan order. Errors: `"Not authenticated"` only.
+- **TESTS:** (helper inserts: entity `{ userId, kind: "person", name, aliases, createdAt: 1, updatedAt: 1 }`; edge `{ userId, fromEntityId, toEntityId, relation: "about", origin, confidence: 1, sourceMemoryId, createdAt: 1, updatedAt: 1 }`)
+  - Given `makeSignedOutCtx()` / When `recallLinks({ query: "Dana" })` runs / Then it rejects with `"Not authenticated"`.
+  - Given query `" "` / When it runs / Then `{ entities: [], memories: [] }`.
+  - Given entity Dana (aliases `["manager"]`), entity "Thursday talk", and an `extracted` edge Dana → Thursday talk with `sourceMemoryId` M (`"Dana moved the talk to Thursday"`) / When `recallLinks({ query: "dana" })` runs / Then `entities` is `[{ _id: Dana, name: "Dana", kind: "person" }]` and `memories` is `[{ memory: <M>, origin: "extracted" }]`.
+  - Given the same rows / When `recallLinks({ query: "MANAGER" })` runs / Then `memories` holds M (alias match).
+  - Given an `inferred` edge Thursday talk → Dana pointing at memory N / When querying `"dana"` / Then N is returned with `origin: "inferred"` (incoming edges count too).
+  - Given an edge with `deletedAt: 5` pointing at memory P, and an edge pointing at a soft-deleted memory Q / When querying `"dana"` / Then neither P nor Q is returned.
+  - Given an entity "Dana" and edge/memory owned by `users:2` / When `users:1` queries `"dana"` / Then `{ entities: [], memories: [] }`.
+- **NUMBERS:** ≤ 500 entity rows, ≤ 10 matching entities, ≤ 50 edges per direction per entity, ≤ 200 memories returned, default 10 (named constants, bounded reads per CONVENTIONS §20); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0176 — Memory: `recall` — time
+### TFV2-0176 — Memory: `memory.recallByTime`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, CFG-033 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171, CFG-033.
+- **WHY:** TRD §5c (recall by time); PRD F-54. `memories` has no index with `createdAt` today; CFG-033 adds `by_userId_deletedAt_createdAt` so the read is a bounded index range instead of a full scan.
+- **GOAL:** `memory.recallByTime` returns the caller's live memories created in `[fromMs, toMs)`, newest first, at most the clamped limit, through one index range read.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `recallByTime`) · `convex/memory.test.ts` (edit: append one `describe` block). Reads `memories`; writes nothing.
+- **STEPS:** 1) Code-map check: `grep -n "by_userId_deletedAt_createdAt" convex/schema.ts` (from CFG-033; if missing report `blocked: missing CFG-033`); read `clampLimit`, `toMemory`. 2) Add `recallByTime` exactly as SPEC. 3) Append `describe("memory.recallByTime", …)` with the 6 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** scan all memories and filter in code; change other functions; touch the schema.
+- **REPORT:** `status / ticket: TFV2-0176 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const recallByTime = query({
+    args: { fromMs: v.number(), toMs: v.number(), limit: v.optional(v.number()) },
+    returns: v.array(memoryValidator),
+    handler: async (ctx: QueryCtx, args: { fromMs: number; toMs: number; limit?: number }) => {
+      const user = await requireUser(ctx);
+      if (!Number.isFinite(args.fromMs) || !Number.isFinite(args.toMs) || args.toMs <= args.fromMs) return [];
+      const rows = await ctx.db
+        .query("memories")
+        .withIndex("by_userId_deletedAt_createdAt", (q) =>
+          q.eq("userId", user._id).eq("deletedAt", undefined).gte("createdAt", args.fromMs).lt("createdAt", args.toMs))
+        .order("desc")
+        .take(clampLimit(args.limit));
+      return rows.map(toMemory);
+    },
+  });
+  ```
+  Range is start-inclusive, end-exclusive. Limit default 50, 1–200. Errors: `"Not authenticated"` only (an empty or inverted range is `[]`, not an error).
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `recallByTime({ fromMs: 0, toMs: 10 })` runs / Then it rejects with `"Not authenticated"`.
+  - Given memories created at 100, 200, 300 / When `recallByTime({ fromMs: 100, toMs: 300 })` runs / Then `createdAt` values are `[200, 100]` (300 excluded, 100 included).
+  - Given `toMs <= fromMs` (`{ fromMs: 300, toMs: 300 }`) / When it runs / Then `[]`.
+  - Given `fromMs: Number.NaN` / When it runs / Then `[]`.
+  - Given a soft-deleted memory and a memory of `users:2` inside the range / When `users:1` runs it / Then neither is returned.
+  - Given memories at 100, 200, 300 / When `recallByTime({ fromMs: 0, toMs: 1000, limit: 2 })` runs / Then `createdAt` values are `[300, 200]`.
+- **NUMBERS:** ≤ 200 rows read and returned, default 50 (code constants; bounded index read per CONVENTIONS §20); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0177 — Memory: `memory.recallMerged` (action: meaning + keyword + links + time) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0173, TFV2-0174d, TFV2-0175, TFV2-0176 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0173, TFV2-0174d, TFV2-0175, TFV2-0176.
+- **WHY:** TRD §5 (`recall` = meaning plus keyword, merged; links and time as further signals); PRD F-50/F-54. The four paths exist as `memory.recall` (TFV2-0173), `memory.recallMeaning` (TFV2-0174d), `memory.recallLinks` (TFV2-0175), `memory.recallByTime` (TFV2-0176). The name `recall` is taken by the keyword query, so the merged action is `recallMerged`.
+- **GOAL:** `memory.recallMerged` (action) runs the requested recall modes, merges by memory id (first mode wins the position), and returns at most `limit` memories; a meaning failure never empties the keyword results.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `RECALL_MODES`, `recallMergedWith`, `recallMerged`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read the four recall functions and `recallMeaningWith`. 2) Add `RECALL_MODES`, `recallMergedWith` (testable core taking runner stubs) and `recallMerged` exactly as SPEC. 3) Append `describe("memory.recallMerged", …)` with the 5 TESTS cases using stubs. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** surface provider error text; let a meaning failure throw; change the four recall functions.
+- **REPORT:** `status / ticket: TFV2-0177 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const RECALL_MODES = ["keyword", "meaning", "links", "time"] as const;
+  type RecallMode = (typeof RECALL_MODES)[number];
+  type MergeRunners = Record<RecallMode, () => Promise<MemoryView[]>>; // keyword: runQuery(api.memory.recall); meaning: recallMeaningWith; links: runQuery(api.memory.recallLinks) → .memories.map(m => m.memory); time: runQuery(api.memory.recallByTime, { fromMs: now - 7 days, toMs: now + 1 })
+  export async function recallMergedWith(runners: MergeRunners, args: { modes: RecallMode[]; limit: number }): Promise<MemoryView[]>;
+  export const recallMerged = action({
+    args: { query: v.string(), limit: v.optional(v.number()), modes: v.optional(v.array(v.union(v.literal("keyword"), v.literal("meaning"), v.literal("links"), v.literal("time")))) },
+    returns: v.array(memoryValidator),
+    handler: async (ctx: ActionCtx, args) => { … },
+  });
+  ```
+  `requireApprovedForAi(ctx)` first; modes default `["keyword", "meaning"]` (deduped, order kept); limit default 10, clamped 1–200; modes run in the given order; a `meaning` runner that throws is logged as `console.error("recall_meaning_failed")` (no error text) and contributes nothing; results concatenated in mode order, deduped by `_id`, sliced to limit. Errors: `"Not authenticated"`, `PENDING_APPROVAL_MESSAGE`; errors from non-meaning runners propagate.
+- **TESTS:**
+  - Given keyword returns [A, B] and meaning returns [B, C] / When `recallMergedWith(runners, { modes: ["keyword", "meaning"], limit: 10 })` runs / Then contents are `[A, B, C]`.
+  - Given meaning throws `new Error("upstream 500 key=abc")` and keyword returns [A] / Then the result is `[A]` and `console.error` was called with exactly `"recall_meaning_failed"`.
+  - Given `modes: ["keyword"]` / Then only the keyword runner was called.
+  - Given `limit: 2` and keyword returns [A, B, C] / Then `[A, B]`.
+  - Given a gate that rejects with `"Not authenticated"` (through `recallMerged`'s handler with a stub ctx) / Then it rejects with that message and no runner was called.
+- **NUMBERS:** ≤ 200 results, default 10; 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0174d (CFG-001 Q-14: embedding model and dimension; Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
+
+### TFV2-0178 — Memory: `memory.context` (character cap + tests)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
-- **WHY:** TRD §5c (recall by time via `createdAt` index); PRD F-54.
-- **GOAL:** `recallByTime` returns the caller's memories within a time range, newest-first.
+- **WHY:** TRD §5 (`context` = the top memories trimmed to a cap for the coach). `context` exists (`convex/memory.ts` line 146, `query`): top memories by salience (default 10) joined as `- <content>` lines, with no cap on the joined length (10 × 2,000 characters = 20,000).
+- **GOAL:** `memory.context` returns at most 4,000 characters of `- <content>` lines from the caller's top live memories, cut with the shared `truncate` (visible "…", no split surrogate pair), and is fully tested.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (add `recallByTime`).
-- **STEPS:** 1) Graphify code-map of `memories` indexes. 2) Add `recallByTime({ fromMs, toMs, limit? })` reading the `createdAt` range, owner-filtered, live only. 3) Test range + order + owner. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → recall-time cases green.
-- **EVIDENCE:** DONE output + the `recallByTime` query.
-- **DO NOT:** read another user's rows or soft-deleted rows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recallByTime({ fromMs, toMs, limit? })` → `memoryValidator[]` newest-first, live only. `toMs > fromMs`. Limit clamp default 50. Auth: `requireUser`.
-- **TESTS:** Given memories at t1 < t2 / When `recallByTime({ fromMs:t1, toMs:t2 })` / Then both return newest-first. Given `toMs <= fromMs` / Then `[]`. Given another user's row in range / Then excluded.
-- **NUMBERS:** limit default 50 → pass (product constant) | UNKNOWN none.
+- **MUTATES:** `convex/memory.ts` (edit: add `CONTEXT_MAX_CHARS`, import `truncate`, wrap the returned `text`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `context` (lines 146–156) and `truncate` (`convex/lib/coachPrompt.ts` line 55). 2) Add `import { truncate } from "./lib/coachPrompt";` and `export const CONTEXT_MAX_CHARS = 4000;`; change the return to `{ text: truncate(rows.map((m) => \`- ${m.content}\`).join("\n"), CONTEXT_MAX_CHARS), count: rows.length }`. Nothing else changes. 3) Append `describe("memory.context", …)` with the 6 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change the default of 10, the sort, or `count`'s meaning (rows considered); change other functions.
+- **REPORT:** `status / ticket: TFV2-0178 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const CONTEXT_MAX_CHARS = 4000;
+  export const context = query({
+    args: { limit: v.optional(v.number()) },
+    returns: v.object({ text: v.string(), count: v.number() }),
+    handler: async (ctx: QueryCtx, args: { limit?: number }): Promise<{ text: string; count: number }> => { … },
+  });
+  ```
+  `requireUser`; caller's live rows sorted `bySalience`, first `clampLimit(limit, 10)`; `text` = lines `- <content>` joined by `\n`, cut by `truncate(…, 4000)`; `count` = number of rows considered. No memories → `{ text: "", count: 0 }`. Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `context({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given no memories / When it runs / Then `{ text: "", count: 0 }`.
+  - Given memories A (salience 0.9), B (0.5), C (0.1) / When `context({ limit: 2 })` runs / Then `{ text: "- A\n- B", count: 2 }`.
+  - Given 3 memories of 2,000 characters / When `context({})` runs / Then `text.length` is 4000, it ends with `"…"`, and `count` is 3.
+  - Given one memory with content `"x".repeat(3996) + "😀" + "y".repeat(10)` (with the `"- "` prefix the emoji sits at 0-based UTF-16 indices 3998–3999) / When it runs / Then `text` equals `"- " + "x".repeat(3996) + "…"` (length 3999: the surrogate pair is not split).
+  - Given a soft-deleted memory and a memory of `users:2` / When `users:1` runs it / Then `count` is 0.
+- **NUMBERS:** text ≤ 4,000 UTF-16 units (`CONTEXT_MAX_CHARS`, test 4); default 10 memories; 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0177 — Memory: `recall` — merged router (meaning + keyword + links + time)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0173, TFV2-0174, TFV2-0175, TFV2-0176 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0173…0176.
-- **WHY:** TRD §5 (`recall` = vector (meaning) + search index (keyword), merged; links and time as further signals); PRD F-50/F-54.
-- **GOAL:** One `recall` action merges the four recall modes, dedupes by id, and returns a ranked, bounded result.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (unify `recall`).
-- **STEPS:** 1) Graphify code-map of the four recall paths. 2) Add `recall({ query, limit?, modes? })` that merges keyword + vector (+ links + time when requested), dedupes by `_id`, and caps at `limit` (default 10). 3) Preserve the keyword results when the vector seam is unavailable (degrade gracefully). 4) Test merge + dedupe + degrade. 5) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → recall-merged cases green.
-- **EVIDENCE:** DONE output + the merged `recall` action.
-- **DO NOT:** leak provider errors, or let a vector failure empty the keyword results.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recall({ query, limit?, modes? })` (action) → `memoryValidator[]`. `modes` ∈ subset of `keyword|meaning|links|time` (default `keyword|meaning`). Merge by `_id` union, dedupe, cap `limit` (default 10). If meaning fails (no key/provider), return keyword-only (never empty on provider error). Auth: `requireApprovedForAi`.
-- **TESTS:** Given a query matching both keyword and meaning / When `recall` runs / Then one row per memory (deduped). Given meaning fails / Then keyword results still return. Given `modes:["keyword"]` / Then only keyword runs. Given limit 3 / Then ≤ 3.
-- **NUMBERS:** default limit 10 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
-
-### TFV2-0178 — Memory: `context` (token cap)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0177 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0177.
-- **WHY:** TRD §5 (`context(userId, topic)` = recall then trim to a token cap).
-- **GOAL:** `context` returns the top memories as a single trimmed text block for the coach prompt.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify/extend `context`).
-- **STEPS:** 1) Graphify code-map (`context` exists — verify + test). 2) Confirm it sorts by salience, takes ≤ limit (default 10), joins as `- <content>` lines, returns `{ text, count }`. 3) Add a char/token cap constant. 4) Test cap + join + owner. 5) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → context cases green.
-- **EVIDENCE:** DONE output + the `context` query.
-- **DO NOT:** return another user's memories, or exceed the cap.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `context({ limit? })` → `{ text, count }`. Live memories sorted by salience desc, slice ≤ limit (default 10), joined `- <content>\n`. Cap the joined text at 4000 chars (truncate with `…`, never split a surrogate pair). Auth: `requireUser`.
-- **TESTS:** Given 3 memories / When `context({ limit:2 })` / Then `count:2` and text has 2 lines. Given a huge memory set / Then text ≤ 4000 chars. Given another user's row / Then excluded.
-- **NUMBERS:** text cap 4000 chars → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0179 — Memory: `forget` (soft delete — OPEN §4.8)
+### TFV2-0179 — Memory: `memory.forget` (soft delete, verify + tests) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
-- **WHY:** PRD F-52 (forget memories); TRD §5 (`forget(userId, memoryId|all)`; hard vs soft: open, patch C4).
-- **GOAL:** `forget` removes one memory with a 5-minute Undo window.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `forget`).
-- **STEPS:** 1) Graphify code-map (`forget` soft-deletes via `deletedAt` — verify + test). 2) Confirm owner check, "Memory not found" for missing/foreign, and that the row is soft-deleted (not hard-deleted). 3) Test missing/foreign/already-deleted. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → forget cases green.
-- **EVIDENCE:** DONE output + the `forget` mutation.
-- **DO NOT:** hard-delete here (semantics are OPEN §4.8 — soft delete is the current code, kept as-is), or forget another user's row.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `forget({ memoryId })` → `{ success:true }`. Soft delete (`deletedAt = now`). Error cases: missing/foreign/already-deleted → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
-- **TESTS:** Given an owned memory / When `forget` runs / Then `deletedAt` is set (not hard-deleted). Given a foreign memoryId / Then "Memory not found." Given an already-deleted id / Then "Memory not found."
-- **NUMBERS:** 30-day grace (HARD_RULES §9 soft delete) → pass | **UNKNOWN** — whether `forget` must be *complete* (hard) per the memory spec is OPEN §4.8; answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.8 — hard vs soft `forget` semantics: UNKNOWN; answerer: Amit.
+- **WHY:** PRD F-52 (forget a memory); TRD §5 (`forget`, hard vs soft open). `forget` exists (`convex/memory.ts` line 159, `mutation`) as a soft delete (`deletedAt`), restorable for 30 days (`GRACE_MS`, `convex/lib/softDelete.ts`); it has no test in `convex/memory.test.ts`.
+- **GOAL:** `memory.forget` is proven to soft-delete one of the caller's live memories and refuse a missing, foreign or already-forgotten one with `"Memory not found"`.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `forget` (lines 158–172). 2) Append `describe("memory.forget", …)` with the 5 TESTS cases (`Date.now` spied to `9000`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** hard-delete; edit `convex/memory.ts`; edit `convex/memoryUndo.test.ts`.
+- **REPORT:** `status / ticket: TFV2-0179 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const forget = mutation({
+    args: { memoryId: v.id("memories") },
+    returns: v.object({ success: v.literal(true) }),
+    handler: async (ctx: MutationCtx, args: { memoryId: Id<"memories"> }): Promise<{ success: true }> => { … },
+  });
+  ```
+  `requireUser`; row missing, another user's, or already `deletedAt` → `new Error("Memory not found")` (no full stop); else patch `{ deletedAt: now, updatedAt: now }`. Errors: `"Not authenticated"`, `"Memory not found"`.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `forget` runs / Then it rejects with `"Not authenticated"`.
+  - Given a live memory of `users:1` / When it runs / Then it returns `{ success: true }` and the row still exists with `deletedAt: 9000`, `updatedAt: 9000`.
+  - Given a memory of `users:2` / When `users:1` forgets it / Then it rejects with `"Memory not found"` and the row has no `deletedAt`.
+  - Given a memory of `users:1` already forgotten (`deletedAt: 5`) / When forgotten again / Then it rejects with `"Memory not found"` and `deletedAt` stays `5`.
+  - Given a forgotten memory / When `list({})` runs / Then it is not returned.
+- **NUMBERS:** restorable for 30 days after forget (code constant `GRACE_MS`, `convex/lib/softDelete.ts`); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Q-08: `forget` — soft delete with 30-day grace (the code today) or complete hard delete as the memory spec says? — Amit.
 
-### TFV2-0180 — Memory: `restore`
+### TFV2-0180 — Memory: `memory.restore` (verify + tests) — OPEN
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0179 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0179.
-- **WHY:** PRD §5 (Undo within the grace window); memory.html `memory.restore({ id })`.
-- **GOAL:** `restore` brings back a forgotten memory while still inside the grace window.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `restore`).
-- **STEPS:** 1) Graphify code-map (`restore` exists — verify + test). 2) Confirm `isRestorable` grace check and clearing `deletedAt`. 3) Test in-window success / out-of-window false / foreign. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → restore cases green.
-- **EVIDENCE:** DONE output + the `restore` mutation.
-- **DO NOT:** restore after the grace window, or restore another user's row.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `restore({ memoryId })` → `{ success:boolean }`. Clears `deletedAt` only while `isRestorable(deletedAt, now)`. Error: missing/foreign → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
-- **TESTS:** Given a memory forgotten 1 min ago / When `restore` runs / Then `success:true`, `deletedAt` cleared. Given forgotten 31 days ago / Then `success:false`. Given a foreign id / Then "Memory not found."
-- **NUMBERS:** 5-minute Undo + 30-day grace → pass (product constants) | **UNKNOWN** — grace length if `forget` becomes hard-delete (OPEN §4.8); answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.8 — UNKNOWN; answerer: Amit.
+- **WHY:** PRD §5 (Undo for a forget, inside the grace window); used by `apps/web/components/memory/MemoryManager.tsx`. `restore` exists (`convex/memory.ts` line 175, `mutation`, `isRestorable` from `convex/lib/softDelete.ts`).
+- **GOAL:** `memory.restore` is proven to bring back the caller's forgotten memory within 30 days, to return `{ success: false }` after that, to be a no-op success on a live memory, and to refuse a missing or foreign one.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `restore` (lines 174–194) and `isRestorable` / `GRACE_MS`. 2) Append `describe("memory.restore", …)` with the 5 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts` or `convex/memoryUndo.test.ts`.
+- **REPORT:** `status / ticket: TFV2-0180 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const restore = mutation({
+    args: { memoryId: v.id("memories") },
+    returns: v.object({ success: v.boolean() }),
+    handler: async (ctx: MutationCtx, args: { memoryId: Id<"memories"> }): Promise<{ success: boolean }> => { … },
+  });
+  ```
+  `requireUser`; missing or another user's → `new Error("Memory not found")`; not deleted → `{ success: true }` (no write); `now - deletedAt <= 2_592_000_000` (30 days) → patch `{ deletedAt: undefined, updatedAt: now }`, `{ success: true }`; else `{ success: false }`. Errors: `"Not authenticated"`, `"Memory not found"`.
+- **TESTS:** (`DAY = 86_400_000`)
+  - Given `makeSignedOutCtx()` / When `restore` runs / Then it rejects with `"Not authenticated"`.
+  - Given a memory of `users:1` with `deletedAt: 0` and `Date.now` = `60_000` / When it runs / Then `{ success: true }` and the row has no `deletedAt` and `updatedAt: 60_000`.
+  - Given `deletedAt: 0` and `Date.now` = `31 * DAY` / When it runs / Then `{ success: false }` and `deletedAt` stays `0`.
+  - Given a live memory / When it runs / Then `{ success: true }` and `updatedAt` is unchanged.
+  - Given a memory of `users:2` / When `users:1` restores it / Then it rejects with `"Memory not found"`.
+- **NUMBERS:** grace = 30 days, boundary inclusive (code constant `GRACE_MS`; test 3); 5 of 5 cases pass. p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0179 (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
 
-### TFV2-0181 — Memory: `forgetAll` + `restoreAll` (batch)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0180 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0180.
-- **WHY:** memory.html `memory.forgetAll({})` (asks first) + `memory.restoreAll({ batchId })`.
-- **GOAL:** `forgetAll` soft-deletes a batch (or everything) as one `forgottenAt` stamp; `restoreAll` brings that batch back within the grace window.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `forgetAll`/`restoreAll`).
-- **STEPS:** 1) Graphify code-map (both exist — verify + test). 2) Confirm `BATCH_MAX` 300, same `deletedAt` stamp, and `restoreAll({ forgottenAt })` restores only that stamp. 3) Test batch bound, restore, foreign ids. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → forgetAll cases green.
-- **EVIDENCE:** DONE output + the two mutations.
-- **DO NOT:** forget without a batch stamp, exceed 300, or restore a stamp that is another user's.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `forgetAll({ memoryIds? })` → `{ count, forgottenAt }`; without `memoryIds` forgets all live memories. > 300 ids → `EN: "Forget up to 300 memories at a time." / HE: "אפשר לשכוח עד 300 זיכרונות בבת אחת."`. `restoreAll({ forgottenAt })` → `{ restored }` (0 if out of window). Auth: `requireUser`.
-- **TESTS:** Given 3 memories / When `forgetAll` runs / Then all get the same `deletedAt`. Given 301 ids / Then the 300 error. Given `restoreAll({ forgottenAt })` in-window / Then the batch restores. Given out-of-window / Then `restored:0`.
-- **NUMBERS:** batch ≤ 300 → pass (product constant `BATCH_MAX`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.8 (if `forget` becomes hard, batch restore semantics change) — UNKNOWN; answerer: Amit.
+### TFV2-0181a — Memory: `memory.forgetAll` (batch, verify + tests) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0179 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0179.
+- **WHY:** memory screen "Forget everything" and import Undo (`apps/web/components/memory/MemoryManager.tsx`, `MemoryImportScreen.tsx`). `forgetAll` exists (`convex/memory.ts` line 203, `mutation`, `BATCH_MAX = 300`).
+- **GOAL:** `memory.forgetAll` is proven to soft-delete the given ids (or every live memory) of the caller under one shared `deletedAt`, skipping foreign and already-forgotten rows, and to refuse more than 300 ids.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `forgetAll` (lines 196–229). 2) Append `describe("memory.forgetAll", …)` with the 5 TESTS cases (`Date.now` spied to `4000`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts` or `convex/memoryUndo.test.ts`.
+- **REPORT:** `status / ticket: TFV2-0181a / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const forgetAll = mutation({
+    args: { memoryIds: v.optional(v.array(v.id("memories"))) },
+    returns: v.object({ count: v.number(), forgottenAt: v.number() }),
+    handler: async (ctx: MutationCtx, args: { memoryIds?: Id<"memories">[] }) => { … },
+  });
+  ```
+  `requireUser`; `memoryIds.length > 300` → `new Error("Forget up to 300 memories at a time.")`; with ids: distinct ids whose row is the caller's and live; without: every live memory of the caller; each patched `{ deletedAt: now, updatedAt: now }`; returns `{ count, forgottenAt: now }`. Errors: `"Not authenticated"`, `"Forget up to 300 memories at a time."`.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `forgetAll({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given 301 ids / When it runs / Then it rejects with `"Forget up to 300 memories at a time."`.
+  - Given 3 live memories of `users:1` / When `forgetAll({})` runs / Then `{ count: 3, forgottenAt: 4000 }` and all three have `deletedAt: 4000`.
+  - Given ids `[A, A, F]` where A is `users:1`'s and F is `users:2`'s / When it runs / Then `count` is 1 and F has no `deletedAt`.
+  - Given ids of an already-forgotten memory (`deletedAt: 5`) / When it runs / Then `count` is 0 and its `deletedAt` stays `5`.
+- **NUMBERS:** ≤ 300 ids per call (code constant `BATCH_MAX`; test 2); 5 of 5 cases pass. p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0179 (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
 
-### TFV2-0182 — Memory: `export` (Markdown)
+### TFV2-0181b — Memory: `memory.restoreAll` (batch Undo, verify + tests) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0181a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0181a.
+- **WHY:** Undo for "Forget everything" and for an import. `restoreAll` exists (`convex/memory.ts` line 232, `mutation`); it restores the rows whose `deletedAt` equals the batch stamp.
+- **GOAL:** `memory.restoreAll` is proven to bring back exactly the caller's batch forgotten at `forgottenAt` while inside the 30-day grace window, and nothing outside it.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `restoreAll` (lines 231–252). 2) Append `describe("memory.restoreAll", …)` with the 4 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts` or `convex/memoryUndo.test.ts`.
+- **REPORT:** `status / ticket: TFV2-0181b / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const restoreAll = mutation({
+    args: { forgottenAt: v.number() },
+    returns: v.object({ restored: v.number() }),
+    handler: async (ctx: MutationCtx, args: { forgottenAt: number }): Promise<{ restored: number }> => { … },
+  });
+  ```
+  `requireUser`; `now - forgottenAt > 30 days` → `{ restored: 0 }`; else every caller row on `by_userId_deletedAt` with `deletedAt === forgottenAt` is patched `{ deletedAt: undefined, updatedAt: now }`; returns the count. Errors: `"Not authenticated"` only.
+- **TESTS:** (`DAY = 86_400_000`)
+  - Given `makeSignedOutCtx()` / When `restoreAll({ forgottenAt: 1 })` runs / Then it rejects with `"Not authenticated"`.
+  - Given two memories of `users:1` with `deletedAt: 1000`, one with `deletedAt: 2000`, and `Date.now` = `5000` / When `restoreAll({ forgottenAt: 1000 })` runs / Then `{ restored: 2 }`, those two are live, and the third keeps `deletedAt: 2000`.
+  - Given a memory of `users:2` with `deletedAt: 1000` / When `users:1` runs it / Then that row keeps `deletedAt: 1000`.
+  - Given `deletedAt: 0` rows and `Date.now` = `31 * DAY` / When `restoreAll({ forgottenAt: 0 })` runs / Then `{ restored: 0 }` and the rows stay forgotten.
+- **NUMBERS:** grace 30 days (code constant `GRACE_MS`; test 4); 4 of 4 cases pass. p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0181a (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
+
+### TFV2-0182 — Memory: `memory.exportAll` (Markdown, verify + tests)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
-- **WHY:** PRD F-52 (export all memories as markdown); TRD §5 (`export(userId)` → plain markdown).
-- **GOAL:** `exportAll` returns every live memory as one Markdown string, grouped by sector, with source marks.
-- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (verify `exportAll`).
-- **STEPS:** 1) Graphify code-map (`exportAll` exists — verify + test). 2) Confirm sections per sector, imported sources marked, empty → "No memories saved yet.". 3) Test grouping + source marks + empty. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → export cases green.
-- **EVIDENCE:** DONE output + the `exportAll` query.
-- **DO NOT:** remove anything, or export another user's rows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `exportAll({})` → `{ filename, exportedAt, count, markdown }`. `filename` `tempo-memories-<YYYY-MM-DD>.md`. Markdown: `# Tempo memories`, one `## <Sector>` per non-empty sector, bullets `- <content>`; imported rows append `(imported from ChatGPT|Claude|Grok)` or `(imported)`. Empty → a line `EN: "No memories saved yet." / HE: "עוד אין זיכרונות שמורים."`. Auth: `requireUser`.
-- **TESTS:** Given memories in 2 sectors / When `exportAll` runs / Then two `##` sections appear. Given an imported row / Then its bullet ends with `(imported from ChatGPT)`. Given none / Then the empty line and `count:0`.
-- **NUMBERS:** none → n/a | UNKNOWN none.
+- **WHY:** PRD F-52 (export all memories as Markdown); TRD §5 (`export` → plain Markdown); used by `apps/web/components/memory/MemoryManager.tsx` and `memory-export/MemoryExport.tsx`. `exportAll` exists (`convex/memory.ts` line 275, `query`); it has no test in `convex/memory.test.ts`.
+- **GOAL:** `memory.exportAll` is proven to return the caller's live memories as one Markdown document (one section per non-empty sector in fixed order, imported rows marked with their source), with a dated file name.
+- **SCOPE:** `convex/memory.ts` (read; unchanged) · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.test.ts` (edit: append one `describe` block). `convex/memory.ts` unchanged.
+- **STEPS:** 1) Code-map check: read `exportLine`, `SOURCE_NAME`, `isoDate` and `exportAll` (lines 254–309). 2) Append `describe("memory.exportAll", …)` with the 6 TESTS cases (`Date.now` spied to `Date.UTC(2026, 10, 2, 12)`). 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `convex/memory.ts`; translate the document (the export file format is English Markdown in the code today; the screen's own labels are EN/HE in TFV2-0220).
+- **REPORT:** `status / ticket: TFV2-0182 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const exportAll = query({
+    args: {},
+    returns: v.object({ filename: v.string(), exportedAt: v.number(), count: v.number(), markdown: v.string() }),
+    handler: async (ctx: QueryCtx) => { … },
+  });
+  ```
+  `requireUser`; rows = caller's live memories sorted `bySalience`; lines: `"# Tempo memories"`, `""`, then for each sector in order `semantic, episodic, procedural, emotional, general` that has rows: `"## <Sector capitalised>"`, `""`, one `exportLine` per row, `""`; no rows → `"No memories saved yet."`, `""`; joined with `\n`. `exportLine`: content with each newline (and surrounding spaces) replaced by one space, as `- <text>`, plus ` (imported from ChatGPT|Claude|Grok)` or ` (imported)` for source `other`. `filename` = `tempo-memories-<UTC YYYY-MM-DD>.md`. Errors: `"Not authenticated"` only.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `exportAll({})` runs / Then it rejects with `"Not authenticated"`.
+  - Given no memories / When it runs / Then `{ filename: "tempo-memories-2026-11-02.md", exportedAt: Date.UTC(2026, 10, 2, 12), count: 0, markdown: "# Tempo memories\n\nNo memories saved yet.\n" }`.
+  - Given a `general` memory `"G"` and a `semantic` memory `"S"` / When it runs / Then `markdown` equals `"# Tempo memories\n\n## Semantic\n\n- S\n\n## General\n\n- G\n"` and `count` is 2.
+  - Given memories with `metadata: { source: "chatgpt" }` and `metadata: { source: "other" }` / When it runs / Then their lines end with `" (imported from ChatGPT)"` and `" (imported)"`.
+  - Given a memory `"Line one\n  line two"` / When it runs / Then its line is `"- Line one line two"`.
+  - Given a soft-deleted memory and a memory of `users:2` / When `users:1` runs it / Then `count` is 0.
+- **NUMBERS:** 6 of 6 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0183 — Memory: embedding generation action
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0149.
-- **WHY:** TRD §5 (embedding model Qwen3-Embedding-8B, 1,024 dims via Matryoshka truncation); PRD F-50.
-- **GOAL:** `embedMemory` generates and stores a 1,024-float embedding for a memory via the one embedding seam.
-- **SCOPE:** `convex/memory.ts` · `convex/lib/ai_router.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (add `embedMemory` action), `convex/lib/ai_router.ts` (expose `embeddingModel` seam).
-- **STEPS:** 1) Graphify code-map of `convex/lib/ai_router.ts` (add an embedding seam, names only). 2) Add `embedMemory({ memoryId })` that calls the embedding model, keeps the first 1,024 values (re-normalised), and patches `memories.embedding`. 3) Test with a fake embedding seam (no real key). 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → embedding cases green.
-- **EVIDENCE:** DONE output + the `embedMemory` action.
-- **DO NOT:** print a key value, call the provider from a query, or exceed 1,024 dims.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `embedMemory({ memoryId })` (action) → `{ success:true }`. Embedding model id resolved through the seam (names only; default `Qwen/Qwen3-Embedding-8B`, OPEN §4.3). Native 4,096 → keep first 1,024, re-normalise to unit length. Patch `memories.embedding`. Error: missing key → throw internal (never surface key text). Auth: `requireApprovedForAi`.
-- **TESTS:** Given a fake seam returning 4,096 floats / When `embedMemory` runs / Then the stored vector has exactly 1,024 floats and unit norm. Given a missing key seam / Then it throws without surfacing key text. Given a foreign memoryId / Then "Memory not found."
-- **NUMBERS:** 1,024 dims → pass (Convex 2–2,048 dims, https://docs.convex.dev/search/vector-search) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.3 embedding model id (default Qwen3-Embedding-8B, EXTRAPOLATED) — UNKNOWN; answerer: Amit.
-
-### TFV2-0184 — Memory: re-embed backfill action
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0183.
-- **WHY:** TRD §5 ("Changing the model later means re-embedding everything"); PRD F-50.
-- **GOAL:** `reembedAll` re-embeds every live memory missing an embedding (or on model change) in bounded batches.
+### TFV2-0183a — Memory: `memory.saveEmbedding` (internal mutation) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, CFG-001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171, CFG-001.
+- **WHY:** TRD §5 (each memory carries a 1,024-float embedding for meaning recall); CFG-001 adds `memories.embedding`. Actions cannot write the database, so the embedding action (TFV2-0183b) and the backfill (TFV2-0184b) store vectors through one internal mutation that refuses a stale or deleted row.
+- **GOAL:** `memory.saveEmbedding` (internalMutation) stores a 1,024-number finite vector on a live memory whose content still equals the embedded text, and reports whether it stored it.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (add `reembedAll` action).
-- **STEPS:** 1) Graphify code-map. 2) Add `reembedAll({})` that batches live memories without an embedding (≤ 50 per run) and patches each via the seam. 3) Test batch bound + skip-already-embedded. 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → reembed cases green.
-- **EVIDENCE:** DONE output + the `reembedAll` action.
-- **DO NOT:** re-embed rows that already have a current-model embedding, or exceed the batch bound.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `reembedAll({})` (action) → `{ embedded }`. Processes live memories with no `embedding` (or a stale model tag) up to 50 per run. Auth: internal/system only.
-- **TESTS:** Given 3 un-embedded memories / When `reembedAll` runs / Then all 3 get embeddings (≤ 50). Given an already-embedded row / Then it is skipped. Given > 50 un-embedded / Then only 50 are done per run.
-- **NUMBERS:** 50 per run → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** §4.3 (model change re-embed) — UNKNOWN; answerer: Amit.
+- **MUTATES:** `convex/memory.ts` (edit: add `internalMutation` import and `saveEmbedding`) · `convex/memory.test.ts` (edit: append one `describe` block). Writes `memories.embedding`.
+- **STEPS:** 1) Code-map check: confirm `embedding` in `memories` (`grep -n "embedding" convex/schema.ts`; else `blocked: missing CFG-001`); read `EMBEDDING_DIMENSIONS` (TFV2-0174a). 2) Add `saveEmbedding` exactly as SPEC. 3) Append `describe("memory.saveEmbedding", …)` with the 4 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** change `updatedAt` (it orders memories); make it public; write any other field.
+- **REPORT:** `status / ticket: TFV2-0183a / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const saveEmbedding = internalMutation({
+    args: { memoryId: v.id("memories"), content: v.string(), embedding: v.array(v.float64()) },
+    returns: v.boolean(),
+    handler: async (ctx: MutationCtx, args: { memoryId: Id<"memories">; content: string; embedding: number[] }): Promise<boolean> => { … },
+  });
+  ```
+  `embedding.length !== 1024` or any value not finite → `new Error("Embedding must be 1024 finite numbers.")`; row missing, `deletedAt` set, or `content !== args.content` → return `false` (no write); else patch `{ embedding }` and return `true`. Internal only (no `requireUser`: it is called from internal actions without a user identity). Errors: `"Embedding must be 1024 finite numbers."`.
+- **TESTS:**
+  - Given a 1,023-number vector, and separately a 1,024-number vector containing `NaN` / When it runs / Then each rejects with `"Embedding must be 1024 finite numbers."`.
+  - Given a live memory `"A"` / When `saveEmbedding({ memoryId, content: "A", embedding: <1024 × 0.03125> })` runs / Then it returns `true`, the row's `embedding` has length 1024, and `updatedAt` is unchanged.
+  - Given the memory's content is now `"B"` / When saved with `content: "A"` / Then it returns `false` and no `embedding` is stored.
+  - Given a soft-deleted memory / When saved / Then it returns `false`.
+- **NUMBERS:** vector length exactly 1,024 (CFG-001 index dimensions); 4 of 4 cases pass. p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-001 (Q-14: which embedding model, and therefore the vector dimension) — Amit.
+
+### TFV2-0183b — Memory: `memory.embedMemory` (internal action) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0174a, TFV2-0183a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0174a, TFV2-0183a.
+- **WHY:** TRD §5 (embedding through the one seam, `Qwen/Qwen3-Embedding-8B` truncated to 1,024 proposed); PRD F-50.
+- **GOAL:** `memory.embedMemory` (internalAction) embeds one memory's text with `embedTexts` and stores it with `saveEmbedding`, returning whether it was stored.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `embedMemoryWith`, `embedMemory`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read `embedTexts` (TFV2-0174a) and `saveEmbedding` (TFV2-0183a). 2) Add `embedMemoryWith` and `embedMemory` exactly as SPEC. 3) Append `describe("memory.embedMemory", …)` with the 3 TESTS cases using stubs. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 3 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** call the provider from a query or mutation; log the text or the key; call the real network in tests.
+- **REPORT:** `status / ticket: TFV2-0183b / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  type EmbedDeps = { embed: (texts: string[]) => Promise<number[][]>; save: (args: { memoryId: Id<"memories">; content: string; embedding: number[] }) => Promise<boolean> };
+  export async function embedMemoryWith(deps: EmbedDeps, args: { memoryId: Id<"memories">; content: string }): Promise<boolean>;
+  export const embedMemory = internalAction({
+    args: { memoryId: v.id("memories"), content: v.string() },
+    returns: v.boolean(),
+    handler: async (ctx: ActionCtx, args) => embedMemoryWith({ embed: (t) => embedTexts(t), save: (a) => ctx.runMutation(internal.memory.saveEmbedding, a) }, args),
+  });
+  ```
+  `[embedding] = await deps.embed([args.content])`; `return deps.save({ memoryId, content, embedding })`. Errors: provider errors from `embedTexts` (`AiAuthError`, `AiUpstreamError`) propagate unchanged and never contain the key. Internal only.
+- **TESTS:**
+  - Given an embed stub returning one 1,024 vector and a save stub returning `true` / When `embedMemoryWith` runs / Then it returns `true` and save got `{ memoryId, content, embedding }` with that vector.
+  - Given a save stub returning `false` (row changed) / Then it returns `false`.
+  - Given an embed stub that rejects with `new AiAuthError("DEEPINFRA_API_KEY not set in Convex env")` / Then it rejects with that error and save was not called.
+- **NUMBERS:** 3 of 3 cases pass (exact). Provider p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0174a (CFG-001 Q-14: embedding model and dimension; Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
+
+### TFV2-0183c — Memory: `memory.remember` schedules `embedMemory` — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0183b.
+- **WHY:** TRD §5 (every new memory gets an embedding). `remember` (TFV2-0171) inserts the row; nothing embeds it yet.
+- **GOAL:** After inserting a memory, `memory.remember` schedules `internal.memory.embedMemory` once, immediately, with the new id and its stored content.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: two lines in `remember`) · `convex/memory.test.ts` (edit: append one `describe` block). Schedules one internal action per new memory.
+- **STEPS:** 1) Code-map check: read `remember` and the fake ctx `scheduler` recorder (TFV2-0000a). 2) In `remember`, store the insert result in `const memoryId`, then `await ctx.scheduler.runAfter(0, internal.memory.embedMemory, { memoryId, content });` and `return memoryId;`. 3) Append `describe("memory.remember schedules embedding", …)` with the 2 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 2 new cases passing (the TFV2-0171 cases still pass).
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** call the provider inside the mutation; schedule on an error path; change `remember`'s errors or stored fields.
+- **REPORT:** `status / ticket: TFV2-0183c / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** `remember` (mutation, args and returns unchanged) adds after the insert: `await ctx.scheduler.runAfter(0, internal.memory.embedMemory, { memoryId, content })` where `content` is the trimmed stored text. Errors unchanged (`"Not authenticated"`, `"Write something to remember first."`, `"Keep a memory to 2000 characters or fewer."`); none schedules anything.
+- **TESTS:**
+  - Given `remember({ content: "  Phone calls before noon " })` / When it runs / Then `ctx.scheduler.calls` has length 1 with `delayMs: 0` and `args` `{ memoryId: <returned id>, content: "Phone calls before noon" }`.
+  - Given `remember({ content: " " })` / When it rejects with `"Write something to remember first."` / Then `ctx.scheduler.calls` is empty.
+- **NUMBERS:** exactly 1 scheduled embed per new memory (test 1); 2 of 2 cases pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0183b (CFG-001 Q-14: embedding model and dimension; Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
+
+### TFV2-0184a — Memory: `memory.memoriesToEmbed` (internal query) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, CFG-001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171, CFG-001.
+- **WHY:** TRD §5 ("changing the model later means re-embedding everything"); memories saved before embeddings existed have none. The backfill action (TFV2-0184b) needs a bounded list of one person's live memories without an embedding.
+- **GOAL:** `memory.memoriesToEmbed` (internalQuery) returns up to 50 of one user's live memories that have no `embedding`, as `{ _id, content }`.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `REEMBED_SCAN`, `REEMBED_BATCH`, `memoriesToEmbed`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: confirm CFG-001 landed. 2) Add the constants and `memoriesToEmbed` exactly as SPEC. 3) Append `describe("memory.memoriesToEmbed", …)` with the 4 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** make it public; read across users; return embeddings.
+- **REPORT:** `status / ticket: TFV2-0184a / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  export const REEMBED_SCAN = 500;
+  export const REEMBED_BATCH = 50;
+  export const memoriesToEmbed = internalQuery({
+    args: { userId: v.id("users") },
+    returns: v.array(v.object({ _id: v.id("memories"), content: v.string() })),
+    handler: async (ctx: QueryCtx, args: { userId: Id<"users"> }) => { … },
+  });
+  ```
+  Rows = `withIndex("by_userId_deletedAt", (q) => q.eq("userId", args.userId).eq("deletedAt", undefined)).take(REEMBED_SCAN)`; keep `embedding === undefined`; first `REEMBED_BATCH`; map to `{ _id, content }`. Internal only (no `requireUser`). No errors.
+- **TESTS:**
+  - Given 3 live memories of `users:1` without `embedding` / When it runs for `users:1` / Then 3 items return as `{ _id, content }`.
+  - Given a memory that has an `embedding` / Then it is not returned.
+  - Given a soft-deleted memory, and a memory of `users:2` / When it runs for `users:1` / Then neither is returned.
+  - Given 51 memories without embedding / When it runs / Then 50 items return.
+- **NUMBERS:** ≤ 500 rows read, ≤ 50 returned (named constants; bounded reads per CONVENTIONS §20; test 4); 4 of 4 cases pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-001 (Q-14: which embedding model, and therefore the vector dimension) — Amit.
+
+### TFV2-0184b — Memory: `memory.reembedForUser` (internal action, backfill) — OPEN
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0174a, TFV2-0183a, TFV2-0184a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0174a, TFV2-0183a, TFV2-0184a.
+- **WHY:** TRD §5 (re-embedding after a model change; backfilling memories saved before embeddings). Pieces: `memoriesToEmbed` (TFV2-0184a), `embedTexts` (TFV2-0174a, ≤ 64 texts per call), `saveEmbedding` (TFV2-0183a).
+- **GOAL:** `memory.reembedForUser` (internalAction) embeds up to 50 of one user's memories that lack an embedding in one provider call and stores each, returning how many were stored and whether more remain.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (edit: add `reembedForUserWith`, `reembedForUser`) · `convex/memory.test.ts` (edit: append one `describe` block).
+- **STEPS:** 1) Code-map check: read the three pieces. 2) Add `reembedForUserWith` and `reembedForUser` exactly as SPEC. 3) Append `describe("memory.reembedForUser", …)` with the 4 TESTS cases using stubs. 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 4 new cases passing.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** add a cron (a schedule is a separate `convex/crons.ts` ticket); re-embed a memory that already has an embedding; call the real network in tests.
+- **REPORT:** `status / ticket: TFV2-0184b / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:**
+  ```ts
+  type ReembedDeps = {
+    list: (userId: Id<"users">) => Promise<{ _id: Id<"memories">; content: string }[]>; // runQuery(internal.memory.memoriesToEmbed, { userId })
+    embed: (texts: string[]) => Promise<number[][]>;                                    // embedTexts
+    save: (args: { memoryId: Id<"memories">; content: string; embedding: number[] }) => Promise<boolean>; // runMutation(internal.memory.saveEmbedding, …)
+  };
+  export async function reembedForUserWith(deps: ReembedDeps, userId: Id<"users">): Promise<{ embedded: number; remaining: boolean }>;
+  export const reembedForUser = internalAction({
+    args: { userId: v.id("users") },
+    returns: v.object({ embedded: v.number(), remaining: v.boolean() }),
+    handler: async (ctx: ActionCtx, args: { userId: Id<"users"> }) => reembedForUserWith({ … real deps … }, args.userId),
+  });
+  ```
+  `rows = await deps.list(userId)`; none → `{ embedded: 0, remaining: false }` with no embed call; `vectors = await deps.embed(rows.map((r) => r.content))`; for each row in order `save({ memoryId: row._id, content: row.content, embedding: vectors[i] })`; `embedded` = number of `true`; `remaining = rows.length === REEMBED_BATCH`. Errors from `embed` propagate before any save. Internal only.
+- **TESTS:**
+  - Given `list` returns 3 rows and `save` returns `true` each / When it runs / Then `{ embedded: 3, remaining: false }` and `embed` was called once with the 3 contents in order.
+  - Given `list` returns `[]` / Then `{ embedded: 0, remaining: false }` and `embed` was not called.
+  - Given `list` returns 50 rows and one `save` returns `false` / Then `{ embedded: 49, remaining: true }`.
+  - Given `embed` rejects with an `AiUpstreamError` / Then it rejects with it and `save` was never called.
+- **NUMBERS:** ≤ 50 memories per run (`REEMBED_BATCH`), one provider call per run (≤ 64 texts, `EMBED_BATCH_MAX`); 4 of 4 cases pass. Provider p95 latency: UNKNOWN.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0174a (CFG-001 Q-14: embedding model and dimension; Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
 
 ### TFV2-0185 — Memory: Hebrew embedding eval
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183a, TFV2-0183b, TFV2-0183c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0183.
+- **WHEN:** after TFV2-0183a, TFV2-0183b, TFV2-0183c.
 - **WHY:** TRD §5 ("Before locking one, run a check on 20 Hebrew + 20 English questions against about 200 of Amit's own notes. Compare Qwen3-Embedding-8B, bge-m3 and multilingual-e5-large-instruct on top-3 hit rate."); PRD §7.
 - **GOAL:** A scripted eval compares the three candidate embedding models on top-3 hit rate over 20 Hebrew + 20 English questions, and records the result (no model is locked in by this ticket).
 - **SCOPE:** `scripts/` (one eval script) · `convex/lib/ai_router.ts` (read the seam) · test: `scripts/hebrew-embedding-eval.test.ts`.
@@ -11782,9 +13558,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (which embedding model locks in) — UNKNOWN; answerer: Amit.
 ### TFV2-0186a — Life graph: `upsertEntity`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** CFG-002 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0150.
+- **WHEN:** after CFG-002.
 - **WHY:** TRD §5c (`entities` table); PRD F-54.
 - **GOAL:** An entity (person/project/goal/place/habit) can be created or updated with aliases, deduped by name.
 - **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
@@ -11801,9 +13577,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0186b — Life graph: `listEntities`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** CFG-002 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0150.
+- **WHEN:** after CFG-002.
 - **WHY:** TRD §5c (`entities` table); PRD F-54.
 - **GOAL:** List the owner's entities, optionally filtered by kind.
 - **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
@@ -11820,9 +13596,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0186c — Life graph: `forgetEntity`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** CFG-002 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0150.
+- **WHEN:** after CFG-002.
 - **WHY:** TRD §5c (`entities` table); PRD F-54.
 - **GOAL:** An entity can be soft-deleted.
 - **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
@@ -11839,9 +13615,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0187 — Life graph: `edges` extraction (extracted vs inferred)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0151, TFV2-0186a · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** CFG-003, TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0151 + TFV2-0186a.
+- **WHEN:** after CFG-003 + TFV2-0186a.
 - **WHY:** TRD §5c (extract entities and claims into `edges`; `origin: extracted` from `[[links]]`/blocks, no model; `inferred` model-guessed); PRD F-54.
 - **GOAL:** Links the user wrote (`[[links]]`, blocks) become `extracted` edges with no model; a model may add `inferred` edges marked as guesses.
 - **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
@@ -11896,9 +13672,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0190 — Reflect: consolidation cron → `observations`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0152, TFV2-0183 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** CFG-004, TFV2-0183a, TFV2-0183b, TFV2-0183c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0152 + TFV2-0183.
+- **WHEN:** after CFG-004 + TFV2-0183a, TFV2-0183b, TFV2-0183c.
 - **WHY:** TRD §5c (reflect cron consolidates memories into `observations`, each with the memory ids that support it); PRD F-55.
 - **GOAL:** A nightly cron consolidates many memories into observations, each recording its supporting memory ids.
 - **SCOPE:** `convex/crons.ts` · `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
@@ -12086,9 +13862,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** daily turn cap — UNKNOWN; answerer: Amit.
 
 ### TFV2-0200 — UI: `CoachPanel`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0015 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0154.
+- **WHEN:** after TFV2-0015.
 - **WHY:** components.md §1 Stage 1 (`CoachPanel`) + §2.10; coach.html `@component CoachPanel`.
 - **GOAL:** A dockable glass `CoachPanel` shell renders the coach head, thread slot, composer slot, and all states, docked at 1280+ and a sheet below.
 - **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` (verify/extend — EXISTS on `integration`) · `apps/web/components/coach/CoachPanel.css` (or tokens via classes) · test: `tests/e2e/screens/coach-panel.spec.ts`.
@@ -12162,9 +13938,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0204 — UI: `Composer` (coach wiring)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0154, TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0015, TFV2-0200 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0154 + TFV2-0200.
+- **WHEN:** after TFV2-0015 + TFV2-0200.
 - **WHY:** components.md §1 (`Composer`); coach.html `@component Composer`.
 - **GOAL:** The coach composer sends a message, shows the hint, and disables offline.
 - **SCOPE:** `apps/web/components/coach/Composer.tsx` + `apps/web/components/coach/Composer.css` (new, owns `.tp-composer`) + `apps/web/app/e2e/components/composer/page.tsx` (harness) · test: `tests/e2e/screens/composer.spec.ts`.
@@ -12237,9 +14013,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0208 — UI: `ChatSearch`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0164 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0164a, TFV2-0164b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0164.
+- **WHEN:** after TFV2-0164a, TFV2-0164b.
 - **WHY:** components.md §2.10 (`ChatSearch`); coach-history.html `@component ChatSearch` + mode `Segmented`.
 - **GOAL:** A search box + "By meaning / Exact words" toggle drives `coach.searchThreads` with a 250 ms debounce.
 - **SCOPE:** `apps/web/components/coach/ChatSearch.tsx` + `apps/web/components/coach/ChatSearch.css` (new, owns `.tp-search`) + `apps/web/app/e2e/components/chat-search/page.tsx` (harness) · test: `tests/e2e/screens/chat-search.spec.ts`.
@@ -12275,9 +14051,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** per-country resources (PRD F-24 "per-country data MVP") — UNKNOWN beyond Israel; answerer: Amit.
 
 ### TFV2-0210 — UI: `GroundingCard`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0167 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0167a, TFV2-0167b, TFV2-0167c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0167.
+- **WHEN:** after TFV2-0167a, TFV2-0167b, TFV2-0167c.
 - **WHY:** components.md §2.10 (`GroundingCard` — steps every 4 s, each transition ≤ 240 ms; the word carries meaning); PRD F-25.
 - **GOAL:** A grounding card shows a breathing line with words and one 10-second action; no model call.
 - **SCOPE:** `apps/web/components/coach/GroundingCard.tsx` + `apps/web/components/coach/GroundingCard.css` (new, owns `.tp-grounding`) + `apps/web/app/e2e/components/grounding-card/page.tsx` (harness) · test: `tests/e2e/screens/grounding-card.spec.ts`.
@@ -12294,9 +14070,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0211 — UI: `CoachDial` (component)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0166 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0166a, TFV2-0166b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0166.
+- **WHEN:** after TFV2-0166a, TFV2-0166b.
 - **WHY:** components.md §2.8 Dial 0–10 + §2.10 (`CoachDial`); coach-thread.html dial sheet.
 - **GOAL:** A 0–10 slider shows both the number and the word (quiet/steady/push) and debounces `setCoachDial` 400 ms.
 - **SCOPE:** `apps/web/components/coach/CoachDial.tsx` + `apps/web/components/coach/CoachDial.css` (new, owns `.tp-dial`) + `apps/web/app/e2e/components/coach-dial/page.tsx` (harness) · test: `tests/e2e/screens/coach-dial.spec.ts`.
@@ -12313,9 +14089,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0212 — UI: `PanicButton` (component)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0167 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0167a, TFV2-0167b, TFV2-0167c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0167.
+- **WHEN:** after TFV2-0167a, TFV2-0167b, TFV2-0167c.
 - **WHY:** components.md §2.10 (`PanicButton` — no model call); coach-thread.html `@component PanicButton`.
 - **GOAL:** A panic button opens the GroundingCard at once with no model call, and exposes its `aria-controls`.
 - **SCOPE:** `apps/web/components/coach/PanicButton.tsx` + `apps/web/components/coach/PanicButton.css` (new, owns `.tp-panic`) + `apps/web/app/e2e/components/panic-button/page.tsx` (harness) · test: `tests/e2e/screens/panic-button.spec.ts`.
@@ -12406,9 +14182,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** job proposal kind is not in `coach.acceptProposal`'s union (`task|note|template|decision` in `convex/coach.ts`) — is "job" a proposal kind or does the card call `jobs.scheduleJob` (chunk D TFV2-0250)? Amit.
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0170, TFV2-0213 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0170a, TFV2-0170b, TFV2-0170c, TFV2-0213 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0170.
+- **WHEN:** after TFV2-0170a, TFV2-0170b, TFV2-0170c.
 - **WHY:** coachPrompt.ts (`CoachProposal` `kind:"decision"` — an order of steps); PRD F-22 (decision "what order should I do these in?").
 - **GOAL:** The decision variant lists ordered steps (title, minutes, reason) and Accept saves them to Today's page.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/app/e2e/components/proposal-card/page.tsx` (add decision state) · test: `tests/e2e/screens/proposal-card.spec.ts` (add decision cases).
@@ -12577,9 +14353,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0226 — Coach prompt build + dial tone (verify + full test)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166a, TFV2-0166b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0166.
+- **WHEN:** after TFV2-0166a, TFV2-0166b.
 - **WHY:** PRD F-25 (dial changes tone); `convex/lib/coachPrompt.ts` (`systemPrompt(dial)`).
 - **GOAL:** The system prompt carries the dial (0–10) and the never-shame / proposal-only rules, covered by a full unit test.
 - **SCOPE:** `convex/lib/coachPrompt.ts` · test: `convex/lib/coachPrompt.test.ts`.
@@ -12596,9 +14372,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0227 — Coach load rules (verify + full test)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170a, TFV2-0170b, TFV2-0170c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0170.
+- **WHEN:** after TFV2-0170a, TFV2-0170b, TFV2-0170c.
 - **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract); `convex/lib/coachLoad.ts`.
 - **GOAL:** The pure load rules are fully unit-tested (accept/reject/raise/floor/10-second action).
 - **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
@@ -12653,9 +14429,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0230 — Crisis fixed card + Hebrew crisis phrases (verify + test)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0015 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0154.
+- **WHEN:** after TFV2-0015.
 - **WHY:** PRD F-24 (fixed crisis card, never model-written); `convex/lib/crisisWords.ts`, `convex/crisis.ts`.
 - **GOAL:** The fixed crisis word list and card are verified and the Hebrew crisis phrases are added, all model-free.
 - **SCOPE:** `convex/lib/crisisWords.ts` · `convex/crisis.ts` · test: `convex/lib/crisisWords.test.ts`.
