@@ -177,8 +177,9 @@ file set. A ticket never lists a file outside its set; a bigger unit is split in
 already holds the classes of ~90 components, each under a comment `/* @component <Name> | class … */`.
 It is a shared file: **no build ticket edits it.** Every web component ticket says which case applies:
 
-- **Case A — tempo.css has a `@component <Name>` block** (check with
-  `grep -n "@component <Name> " apps/web/app/tempo.css`): the component uses exactly those classes,
+- **Case A — tempo.css already defines the component's classes**, either under a `@component <Name>`
+  block (check with `grep -n "@component <Name> " apps/web/app/tempo.css`) or in the Stage 1 part of the
+  file without such a header (the ticket names the line numbers): the component uses exactly those classes,
   sets `data-component="<Name>"` on its root, and adds **no stylesheet**. The SPEC lists every class and
   `data-*` attribute it uses. The file set is `<Name>.tsx` + harness page + spec.
 - **Case B — no block exists:** the ticket creates one stylesheet,
@@ -232,7 +233,7 @@ Voice:
 - **Gender-neutral, always.** Address the person with an infinitive ("לנסות שוב"), "אפשר ל…"
   ("אפשר לבטל מתי שרוצים"), an impersonal plural present ("רושמים מה שקרה"), or a noun. Never a
   gendered second-person verb, pronoun or adjective (not "תרשמי", "תחזור", "כשתחזרי", "את צריכה",
-  "מוכן/ה"). "שלך" is allowed.
+  "מוכן/ה"), and not the plural imperative ("הקלידו", "נסו") in new copy. "שלך" is allowed.
 - The coach is **"המאמן"** (masculine noun, third person: "המאמן מציע").
 - "Tempo" stays in Latin letters.
 - Numbers, times, dates, durations, cron text and code are wrapped in `.tp-num` or `.tp-mono`
@@ -345,7 +346,7 @@ export function expectDir(page: Page, lang: HarnessLang): Promise<void>;
 export function trackConsoleErrors(page: Page): string[];
 /** Asserts every visible button, link, input and [role=switch|checkbox|radio|tab|option] inside the locator is at least 24×24 CSS px. */
 export function expectTargetSize(page: Page, selector: string): Promise<void>;
-/** Asserts computed transition-duration and animation-duration of every element under the selector are ≤ 0.25 s, and 0 s after page.emulateMedia({ reducedMotion: "reduce" }). */
+/** Asserts computed transition-duration and animation-duration of every element under the selector are ≤ 0.25 s, and ≤ 0.001 s after page.emulateMedia({ reducedMotion: "reduce" }) (tempo.css sets 0.01ms under reduced motion). */
 export function expectMotionBudget(page: Page, selector: string): Promise<void>;
 /** Navigates twice (warm-up, then measured) and returns LCP (ms) and CLS from PerformanceObserver. */
 export function measureVitals(page: Page, url: string): Promise<{ lcpMs: number; cls: number }>;
@@ -524,7 +525,7 @@ A ticket-specific question not in the register is written in full on the ticket.
 | Non-text contrast (borders of controls, focus ring) | ≥ 3:1 | WCAG 2.2 SC 1.4.11 | tokens `--tp-line-control`, `--tp-accent` only |
 | Target size | ≥ 24 × 24 CSS px | WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum | `expectTargetSize` |
 | Focus visible | outline ≥ 2 px (`--tp-focus-w`) on `:focus-visible` | WCAG 2.2 SC 2.4.7 | Playwright: Tab to each control, computed `outline-width` ≥ `2px` |
-| Motion | each transition ≤ 250 ms; 0 ms with reduced motion | DESIGN.md motion rule; §5 | `expectMotionBudget` |
+| Motion | each transition ≤ 250 ms; ≤ 1 ms with reduced motion (tempo.css uses `0.01ms`) | DESIGN.md motion rule; §5 | `expectMotionBudget` |
 | LCP (screens) | ≤ 2,500 ms | web.dev Core Web Vitals, https://web.dev/articles/vitals | `measureVitals` |
 | CLS (screens) | ≤ 0.1 | web.dev Core Web Vitals | `measureVitals` |
 | INP (screens) | ≤ 200 ms | web.dev Core Web Vitals | UNKNOWN in the local dev server — measured on preview, not a ticket gate |
