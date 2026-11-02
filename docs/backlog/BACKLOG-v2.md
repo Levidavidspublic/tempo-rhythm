@@ -44,6 +44,20 @@ Ranges are rewritten by sub-agents in `docs/backlog/work/` and spliced in here o
 The ticket count and the split map are listed below and updated after each range.
 
 <!-- rewrite-status:start -->
+**STATUS counts (fix round 1, 2 Nov 2026; Amit's rule, CONVENTIONS §19):** every build ticket carries exactly one STATUS line.
+
+| STATUS | TFV2 | CFG | Total |
+|---|---|---|---|
+| `approved-unsent` (meets the bar; not yet sent as an issue) | 492 | 22 | **514** |
+| `open` (not buildable until Amit answers its question) | 232 | 37 | **269** |
+| Build tickets | 724 | 59 | **783** |
+| Superseded stubs (no STATUS line) | 25 | 0 | 25 |
+| Entries in this file | 749 | 59 | 808 |
+
+Fix round 1 commits (one per range): groundwork 7df25de7, e38c6dfc, 1cfe79ac (STATUS rule) · TFV2-0138–0184b 9c72b031 (with the lead's named fixes in 0282/0283/0290b/0309b/0309c/0312/0324/0325/0329/0346) · TFV2-0232–0266b de84aa43 · TFV2-0185–0231 03861641 · TFV2-0001–0045 + TFV2-0000b e966cb07 · TFV2-0091–0137b ffac4ef1 · TFV2-0046–0090 + Groundwork STATUS d11f7e80 · TFV2-0361a–0456 cc11cb24 · TFV2-0267–0360d: the commit that adds this table. Since the Opus rewrite: TFV2-0005 became a stub (superseded by CFG-059, new); CFG-059 added; no other ids added, split or removed.
+
+The table below is the pre-round-1 record of the Opus rewrite.
+
 **All ranges rewritten and merged (2 Nov 2026).** Counts after the rewrite:
 
 | What | Count |
@@ -20963,6 +20977,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0166b; not a build ticket.
 
 ### TFV2-0268 — Ask the founder: `askFounder.submit` (`convex/askFounder.ts`) — OPEN
+- **STATUS:** open — inherits CFG-017 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?); new: Is a 4,000-character message cap with no per-user rate limit right?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-017 · **Folds-in:** #475
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-017.
@@ -20976,7 +20991,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/askFounder.test.ts` with the 9 TESTS cases (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`).
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test convex/askFounder.test.ts` → `9 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/askFounder.test.ts`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** read or attach any `notes`, `tasks`, `messages`, `conversations` or `memories` data; send email or call `fetch` (delivery is TFV2-0269c); schedule anything; log the subject or body; edit `convex/schema.ts`, `convex/crons.ts` or `convex/_generated/*`; touch `apps/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0268 / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -21016,14 +21031,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a signed-in user / When `subject: "   "` / Then it rejects with `"Subject is required"` and `ctx.db.query("askFounderQueue").collect()` resolves `[]`.
   5. Given a signed-in user / When `subject` is `"א".repeat(121)` / Then it rejects with `"Subject is too long"`; and with `"א".repeat(120)` it resolves an id (boundary).
   6. Given a signed-in user / When `body: ""` / Then it rejects with `"Message is required"`.
-  7. Given a signed-in user / When `body` is `"x".repeat(4001)` / Then it rejects with `"Message is too long"`.
+  7. Given a signed-in user / When `body` is `"x".repeat(4001)` / Then it rejects with `"Message is too long"`; and with `"x".repeat(4000)` it resolves an id (boundary).
   8. Given a signed-in user / When `priority: "urgent"` / Then it rejects with `"Invalid priority"`.
   9. Given a signed-in user (with `name`) who owns a `notes` row `{ userId: "users:1", title: "Private" }` / When a valid submit runs / Then `Object.keys(row).sort()` equals `["_creationTime", "_id", "body", "createdAt", "email", "name", "priority", "subject", "updatedAt", "userId"]` — nothing from other tables is attached.
 - **NUMBERS:** subject ≤ 120 code points (ask-founder.html `maxlength="120"`; test 5) · body ≤ 4,000 code points (proposed, OPEN; test 7) · 9 of 9 tests pass · p95 latency UNKNOWN (no baseline in this repo; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-017 (Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit. Own question: is a 4,000-character message cap with no per-user rate limit right? — Amit.
+- **OPEN:** inherits CFG-017 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?); new: Is a 4,000-character message cap with no per-user rate limit right? — Amit.
 
 ### TFV2-0269a — Ask the founder: `askFounder.listUnnotified` (internal query) (`convex/askFounder.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0268 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0268.
@@ -21037,7 +21053,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append the 3 TESTS cases to `convex/askFounder.test.ts` (the 9 cases of TFV2-0268 stay unchanged).
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test convex/askFounder.test.ts` → `12 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `bun test convex/askFounder.test.ts`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** return `body`; export it as a public `query`; change `submit`; edit `convex/schema.ts`; touch `apps/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269a / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
 - **SPEC:**
@@ -21056,13 +21072,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Rules: `rows = await ctx.db.query("askFounderQueue").withIndex("by_notifiedAt", (q) => q.eq("notifiedAt", undefined)).take(NOTIFY_BATCH * 2)`; drop rows with `deletedAt !== undefined`; sort by `createdAt` ascending; keep the first `NOTIFY_BATCH`; map to `{ id: r._id, email: r.email, name: r.name ?? null, subject: r.subject, priority: r.priority, createdAt: r.createdAt }`. Auth: internal only (not callable from clients), no `requireUser`. Errors: none.
 - **TESTS:**
   1. Given rows A (`createdAt: 2`, no `notifiedAt`), B (`createdAt: 1`, no `notifiedAt`), C (`createdAt: 0`, `notifiedAt: 5`) / When `run(listUnnotified, ctx, {})` / Then it returns exactly two items with ids `[B, A]` in that order and no item has a `body` key.
-  2. Given 21 un-notified rows / When it runs / Then it returns 20 items (bounded read).
+  2. Given 21 un-notified rows / When it runs / Then it returns 20 items (bounded read); and given exactly 20 un-notified rows it returns all 20.
   3. Given an un-notified row with `deletedAt: 3` / When it runs / Then that row is not returned.
 - **NUMBERS:** batch ≤ `NOTIFY_BATCH` = 20 (code constant; test 2) · 12 of 12 tests pass · p95 latency UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+- **OPEN:** inherits TFV2-0268 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?) — Amit.
 
 ### TFV2-0269b — Ask the founder: `askFounder.markNotified` (internal mutation) (`convex/askFounder.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0269a (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0269a · **Folds-in:** #475
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0269a.
@@ -21076,7 +21093,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append the 3 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test convex/askFounder.test.ts` → `15 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `bun test convex/askFounder.test.ts`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** delete or change any other field; make it public; touch `apps/**`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269b / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
 - **SPEC:**
@@ -21094,9 +21111,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the id `"askFounderQueue:999"` that does not exist / When it runs / Then it rejects with `"Message not found"`.
 - **NUMBERS:** 15 of 15 tests pass · p95 latency UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0269a, which inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+- **OPEN:** inherits TFV2-0269a (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?) — Amit.
 
 ### TFV2-0269c — Ask the founder: `askFounder.notifyQueued` (internal action) + cron line (`convex/askFounder.ts`, `convex/crons.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0269b (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?); new: Is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0269b · **Folds-in:** #475
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0269b.
@@ -21111,7 +21129,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Append the 5 TESTS cases; tests replace `globalThis.fetch` with a recorder and restore it in `afterEach`, and set/restore the three env names with placeholder test strings (`"test-key"`, `"founder@example.com"`).
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test convex/askFounder.test.ts` → `20 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes; `git diff convex/crons.ts` showing exactly one added line.
+- **EVIDENCE:** the summary of `bun test convex/askFounder.test.ts`, plus typecheck and lint exit codes; `git diff convex/crons.ts` showing exactly one added line, pasted into the PR.
 - **DO NOT:** put the message body, any page/task/chat text or a key into the email, a log or an error; print or log env values; read the Resend error body; retry inside one run (the next tick retries); add a second cron line or change the existing one; edit `convex/lib/signInEmail.ts`, `convex/schema.ts`, `convex/http.ts`; touch `apps/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269c / evidence: <DONE output> / changed: convex/askFounder.ts, convex/crons.ts, convex/askFounder.test.ts / unknowns: UNKNOWN: real Resend delivery (tests stub fetch) / notes for ticket sync`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -21143,12 +21161,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `BETA_FOUNDER_EMAIL` unset / When it runs / Then `runQuery` and `fetch` were never called and it returns `{ sent: 0, failed: 0, skipped: true }`.
 - **NUMBERS:** ≤ 20 emails per 5-minute run (`NOTIFY_BATCH`; cron interval 5 min, the same interval as the existing job) · notice reaches Resend ≤ 5 min after submit (delivery time after Resend UNKNOWN; not a gate) · 20 of 20 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0269b, which inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback`, and is this shape right?) — Amit. Own question: is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)? — Amit.
+- **OPEN:** inherits TFV2-0269b (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?); new: Is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)? — Amit.
 
 ### TFV2-0270 — Built-in module catalog (starter templates → built-in modules) — superseded by TFV2-0248a
 - **Status:** superseded by TFV2-0248a; not a build ticket.
 
 ### TFV2-0271 — Component: ModuleCard (`apps/web/components/modules/ModuleCard.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093.
@@ -21164,7 +21183,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the CONVENTIONS §22 spec skeleton (`openHarness(page, "module-card", { lang })`) and the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-card.spec.ts --reporter=line` → `24 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/module-card.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `fetch` or any hook other than `useLocale`; render a delete, remove or "…" menu control; add a link on the name (live modules have no detail page); show on/off by colour alone (the word is always rendered); add a stylesheet or edit `tempo.css`, `ModulesScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0271 / evidence: <DONE output> / changed: apps/web/components/modules/ModuleCard.tsx, apps/web/app/e2e/components/module-card/page.tsx, tests/e2e/screens/module-card.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -21208,6 +21227,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0272 — Component: ModuleSummary (`apps/web/components/modules/ModuleSummary.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21223,7 +21243,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 skeleton (`openHarness(page, "module-summary", { lang })`) and the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-summary.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/module-summary.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** render the module `body` or any JSON; show pass/fail by colour alone; add buttons (Approve/Discard belong to the screen); add a stylesheet; edit `tempo.css` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0272 / evidence: <DONE output> / changed: apps/web/components/modules/ModuleSummary.tsx, apps/web/app/e2e/components/module-summary/page.tsx, tests/e2e/screens/module-summary.spec.ts / unknowns / notes for ticket sync: modules.getDraft returns one summary sentence, not the design's Page types/Adds/Changes/Runs rows`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -21262,6 +21282,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0273 — Component: PlainModeBanner (`apps/web/components/modules/PlainModeBanner.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21277,7 +21298,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "plain-mode-banner", { lang })`) with the 3 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plain-mode-banner.spec.ts --reporter=line` → `12 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/plain-mode-banner.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** set `document.documentElement` attributes or any global state; render a switch (the Plain mode switch belongs to the screen); hide built-in content; add a stylesheet; touch `convex/**`, i18n files, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0273 / evidence: <DONE output> / changed: apps/web/components/modules/PlainModeBanner.tsx, apps/web/app/e2e/components/plain-mode-banner/page.tsx, tests/e2e/screens/plain-mode-banner.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -21303,6 +21324,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0274a — Pure helper: cron schedule in words (`apps/web/lib/cronText.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -21316,7 +21338,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `apps/web/lib/cronText.test.ts` (`bun:test`) with the 9 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test apps/web/lib/cronText.test.ts` → `9 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/cronText.test.ts`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** add a cron library (no dependency change); read the browser clock or zone (the caller passes `nowMs` and `timeZone`); import React or Convex; touch other files.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0274a / evidence: <DONE output> / changed: apps/web/lib/cronText.ts, apps/web/lib/cronText.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
 - **SPEC:**
@@ -21340,10 +21362,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. `describeCron("0 5 * * *", "Asia/Jerusalem", "en", NOW)` → `"Every day 08:00"`; with `"he"` → `"כל יום 08:00"`.
   2. `describeCron("0 5 * * 1-5", "Asia/Jerusalem", "en", NOW)` → `"Mon–Fri 08:00"`; with `"he"` → `"ב׳–ו׳ 08:00"`.
   3. `describeCron("30 22 * * 0", "Asia/Jerusalem", "en", NOW)` → `"Mon 01:30"` (crosses local midnight).
-  4. `describeCron("0 15 * * 0,3", "UTC", "en", NOW)` → `"Sun, Wed 15:00"`.
-  5. `describeCron("0 6 1 * *", "UTC", "en", NOW)` → `"Day 1 of the month 06:00"`; with `"he"` → `"ב־1 בחודש 06:00"`.
+  4. `describeCron("0 15 * * 0,3", "UTC", "en", NOW)` → `"Sun, Wed 15:00"`; and `"0 15 * * 1-3"` → `"Mon–Wed 15:00"`, `"0 15 * * 1-2"` → `"Mon, Tue 15:00"` (both `"UTC"`, `"en"`).
+  5. `describeCron("0 6 1 * *", "UTC", "en", NOW)` → `"Day 1 of the month 06:00"`; with `"he"` → `"ב־1 בחודש 06:00"`; and `"0 6 28 * *"` → `"Day 28 of the month 06:00"`, `"0 6 29 * *"` → `"0 6 29 * * UTC"` (both `"UTC"`, `"en"`).
   6. `describeCron("0 22 1 * *", "Asia/Jerusalem", "en", NOW)` → `"0 22 1 * * UTC"` (monthly that crosses midnight falls back).
-  7. `describeCron("*/15 * * * *", "UTC", "en", NOW)` → `"*/15 * * * * UTC"`, and `describeCron("bad", "UTC", "en", NOW)` → `"bad UTC"`.
+  7. `describeCron("*/15 * * * *", "UTC", "en", NOW)` → `"*/15 * * * * UTC"`, and `describeCron("bad", "UTC", "en", NOW)` → `"bad UTC"`; and with `"UTC"`, `"en"`: `"59 23 * * *"` → `"Every day 23:59"`, `"60 5 * * *"` → `"60 5 * * * UTC"`, `"0 24 * * *"` → `"0 24 * * * UTC"`.
   8. `describeCron("0 5 * * 0-6", "Asia/Jerusalem", "en", NOW)` → `"Every day 08:00"`.
   9. `describeCron("0 9 * * 1-5", "America/New_York", "en", NOW)` → `"Mon–Fri 05:00"`, and `describeCron("0 9 * * 1-5", "Not/AZone", "en", NOW)` → `"0 9 * * 1-5 UTC"`.
 - **NUMBERS:** 9 of 9 tests pass (exact) · output covers every cron `jobs.scheduleJob` accepts as daily/weekday/weekly/monthly; others show the raw cron (no silent wrong time) · no performance number applies to a pure formatter (UNKNOWN, not a gate).
@@ -21351,6 +21373,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0274b — Component: ScheduledJobRow (`apps/web/components/modules/ScheduledJobRow.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21366,7 +21389,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "scheduled-job-row", { lang })`) with the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/scheduled-job-row.spec.ts --reporter=line` → `24 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/scheduled-job-row.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** show the raw cron unless `scheduleText` already is it; show JSON, error codes or the word "failed"; add a delete control; call Convex or read the browser clock (`nowMs` is a prop); add a stylesheet; touch `convex/**`, i18n files, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0274b / evidence: <DONE output> / changed: apps/web/components/modules/ScheduledJobRow.tsx, apps/web/app/e2e/components/scheduled-job-row/page.tsx, tests/e2e/screens/scheduled-job-row.spec.ts / unknowns / notes for ticket sync: jobs.list has no page title, so "wrote into …" is not shown`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -21412,6 +21435,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0275a — View: ModulesView (`apps/web/components/modules/ModulesView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0271, TFV2-0273, TFV2-0274b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0271, TFV2-0273, TFV2-0274b.
@@ -21428,7 +21452,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create the spec with the CONVENTIONS §22 skeleton (`openHarness(page, "modules-view", { lang })`) and the 11 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/modules-view.spec.ts --reporter=line`, plus `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useShellSlots` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; render JSON or cron text the route did not format; show user modules while `plainMode` is true (range-6 `modules.list` omits them); render a delete control anywhere; write to `document`; add a stylesheet or edit `tempo.css`, `you.css`, `ModulesScreen.tsx`, `UndoToast.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0275a / evidence: <DONE output> / changed: apps/web/components/modules/ModulesView.tsx, apps/web/app/e2e/components/modules-view/page.tsx, tests/e2e/screens/modules-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -21524,6 +21548,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0275b — Route: /modules — OPEN
+- **STATUS:** open — inherits TFV2-0247a (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0247b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248a (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248b (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0275a, TFV2-0274a, TFV2-0000b, TFV2-0000c, TFV2-0247a, TFV2-0247b, TFV2-0248a, TFV2-0248b, TFV2-0252a, TFV2-0252b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0275a, TFV2-0274a, TFV2-0000b, TFV2-0000c, TFV2-0247a, TFV2-0247b, TFV2-0248a, TFV2-0248b, TFV2-0252a, TFV2-0252b.
@@ -21539,7 +21564,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/modules.spec.ts` (§22 route skeleton: `openScreen`, console filter) with the 9 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules.spec.ts --reporter=line` → `36 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/modules.spec.ts --reporter=line`, plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line, pasted into the PR.
 - **DO NOT:** edit `ModulesView.tsx`, `ModulesScreen.tsx` (it stays, unimported — notes for ticket sync), `cronText.ts`, `convex/**`; contact Convex when `?state=` is forced; compute the zone from the browser; add any other wiring line; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0275b / evidence: <DONE output> / changed: apps/web/app/(tempo)/modules/page.tsx, apps/web/lib/e2e/fixtures/modules.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/modules.spec.ts / unknowns / notes for ticket sync: ModulesScreen.tsx is no longer imported; delete it in a cleanup ticket`.
 - **SPEC:**
@@ -21553,12 +21578,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.modules.setPlainMode// mutation { on: boolean } → null                                                                                 (TFV2-0247b)
   api.jobs.setEnabled     // mutation { jobId: Id<"jobs">; enabled: boolean } → null                                                       (TFV2-0252b)
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="modules-route"><Suspense fallback={null}><ModulesRoute /></Suspense></div>`. `ModulesRoute`: `forced = useE2EState()`, `online = useOnline()`; an error boundary class `ModulesBoundary` (same pattern as TFV2-0132b `HabitsBoundary`: a thrown query error renders `<ModulesView state="error" … onRetry={retry} />`, retry remounts the children with a new key); inside it `<ProfileReady fallback={<ModulesView state="loading" … />}><ModulesLive forced={forced} online={online} /></ProfileReady>`.
+  **page.tsx:** `"use client"`; default export `<div data-testid="modules-route"><Suspense fallback={null}><ModulesRoute /></Suspense></div>`. `ModulesRoute`: `forced = useE2EState()`, `online = useOnline()`; an error boundary class `ModulesBoundary` (`getDerivedStateFromError` → `failed`: a thrown query error renders `<ModulesView state="error" online={online} plainMode={false} modules={[]} jobs={[]} nowMs={0} timeZone="UTC" canToggleBuiltIns={false} saveError={false} onSetPlainMode={() => {}} onToggleModule={async () => {}} onToggleJob={() => {}} onRetry={retry} />`, retry remounts the children with a new key); inside it `<ProfileReady fallback={<ModulesView state="loading" online={online} plainMode={false} modules={[]} jobs={[]} nowMs={0} timeZone="UTC" canToggleBuiltIns={false} saveError={false} onSetPlainMode={() => {}} onToggleModule={async () => {}} onToggleJob={() => {}} onRetry={() => {}} />}><ModulesLive forced={forced} online={online} /></ProfileReady>`.
   `ModulesLive`: `nowMs` = `Date.now()` refreshed every 60 000 ms; `prefs = useQuery(api.preferences.get, forced ? "skip" : {})`, `modules = useQuery(api.modules.list, forced ? "skip" : {})`, `plain = useQuery(api.modules.getPlainMode, forced ? "skip" : {})`, `jobs = useQuery(api.jobs.list, forced ? "skip" : {})`; mutations `setEnabled`, `setPlainMode`, `setJobEnabled`; `saveError` state. **Forced:** `fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error`; render `<ModulesView {...fixture} online={forced === "offline" ? false : online} onSetPlainMode={(on) => setForcedPlain(on)} onToggleModule={async () => {}} onToggleJob={() => {}} onRetry={() => {}} />` where `plainMode` comes from a local copy of the fixture so the switch flips locally; no Convex call. **Live:** `state` = `"loading"` while any query is `undefined`, else `"default"`; `jobsView = jobs.map((j) => ({ jobId: j.jobId, task: j.task, scheduleText: describeCron(j.cron, prefs.timeZone, lang, nowMs), enabled: j.enabled, lastRunAt: j.lastRunAt, lastRunResult: j.lastRunResult }))` (`lang` from `useLocale()`); `onToggleModule(change)` → `setSaveError(false); try { await setEnabled(change) } catch (e) { setSaveError(true); throw e }`; `onSetPlainMode(on)` → `setPlainMode({ on }).catch(() => setSaveError(true))`; `onToggleJob({ jobId, enabled })` → `setJobEnabled({ jobId: jobId as Id<"jobs">, enabled }).catch(() => setSaveError(true))`; `onAskCoach` = `shell?.coachAvailable ? shell.openCoach : undefined` (`useShellSlots()` from `@/components/tempo/ShellSlots`); `canToggleBuiltIns: true` (TFV2-0248b writes built-in switches); `timeZone: prefs.timeZone`.
-  **Fixtures** (`apps/web/lib/e2e/fixtures/modules.ts`; `import type { ModulesViewProps } from "@/components/modules/ModulesView";` local `type ModulesFixture = Omit<ModulesViewProps, "onAskCoach" | "onSetPlainMode" | "onToggleModule" | "onToggleJob" | "onRetry">`): `export const FIXTURES: Record<"default" | "plain" | "empty" | "loading" | "error" | "offline" | "save-error", ModulesFixture>` with the same modules, jobs, `nowMs` and `timeZone` as the TFV2-0275a harness, copied verbatim; `loading`/`error` have empty arrays.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/modules.ts`; `import type { ModulesViewProps } from "@/components/modules/ModulesView";` local `type ModulesFixture = Omit<ModulesViewProps, "onAskCoach" | "onSetPlainMode" | "onToggleModule" | "onToggleJob" | "onRetry">`): `export const FIXTURES: Record<"default" | "plain" | "empty" | "loading" | "error" | "offline" | "save-error", ModulesFixture>` with `BUILT_INS = [{ moduleId: "starter:daily-page", name: "Daily page", does: "A short outline for one day.", builtIn: true, madeByCoach: false, on: true }, { moduleId: "starter:weekly-page", name: "Weekly page", does: "A few outcomes and a place for each day.", builtIn: true, madeByCoach: false, on: true }, { moduleId: "starter:journal", name: "Journal", does: "What happened, what you noticed, what you want next.", builtIn: true, madeByCoach: false, on: true }]`; every entry has `state: "default"`, `online: true`, `plainMode: false`, `modules: [{ moduleId: "m-water", name: "Water", does: "Adds a water tracker to Today, goal 6 glasses. No reminders.", builtIn: false, madeByCoach: true, on: true }, { moduleId: "m-wind", name: "Evening wind-down", does: "Adds a short wind-down checklist to the bottom of daily pages.", builtIn: false, madeByCoach: false, on: false }].concat(BUILT_INS)`, `jobs: [{ jobId: "j-plan", task: "Morning plan", scheduleText: "Mon–Fri 08:00", enabled: true, lastRunAt: Date.UTC(2026, 9, 12, 5, 0), lastRunResult: "ok" }, { jobId: "j-week", task: "Sunday week look-back", scheduleText: "Sun 18:00", enabled: true, lastRunAt: Date.UTC(2026, 9, 11, 15, 0), lastRunResult: "ok" }]`, `nowMs: Date.UTC(2026, 9, 12, 9, 0)`, `timeZone: "Asia/Jerusalem"`, `canToggleBuiltIns: true`, `saveError: false`, except: `plain` (`plainMode: true`, `modules: BUILT_INS`), `empty` (`modules: BUILT_INS`, `jobs: []`), `loading` (`state: "loading"`, `modules: []`, `jobs: []`), `error` (`state: "error"`, `modules: []`, `jobs: []`), `offline` (`online: false`), `save-error` (`saveError: true`); `loading`/`error` have empty arrays.
   **Wiring line** (§17): `  "/modules",`.
   States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0275a); this ticket adds no visible string.
-- **TESTS:** (route spec; both viewports × both languages; `openScreen(page, "/modules", { state, lang })`; each asserts `page.getByTestId("modules-route")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 9 × 4 = 36)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/modules", { state, lang })`; each asserts `page.getByTestId("modules-route")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 9 × 4 = 36)
   1. Given `?state=default` / Then the `h1` reads "Modules" (HE "מודולים") and 2 user ModuleCards and 2 ScheduledJobRows render.
   2. Given `?state=plain` / Then the PlainModeBanner is visible and no `#md-yours-title` exists.
   3. Given `?state=default` / When the Plain mode switch is clicked / Then it has `aria-checked="true"` and the banner appears (local forced effect; no Convex request).
@@ -21570,9 +21595,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="modules-route"]')` pass, and `measureVitals(page, \`/modules?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 9) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · INP ≤ 200 ms UNKNOWN locally (measured on preview, not a gate) · 36 of 36 pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0247a and TFV2-0248a (CFG-008 / CFG-011 / CFG-037: where module `enabled` and `plainMode` are stored, and whether built-ins can be switched off) — Amit.
+- **OPEN:** inherits TFV2-0247a (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0247b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248a (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248b (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0276a — View: ModulePreviewView (`apps/web/components/modules/ModulePreviewView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0272 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0272.
@@ -21588,7 +21614,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "module-preview-view", { lang })`) with the 10 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/module-preview-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `fetch` or `useShellSlots`; let Approve call `onApprove` when `validation.ok` is false or `online` is false; render JSON; change anything on Discard before the confirmation; use a second `.tp-btn--primary`; add a stylesheet or edit `ModulePreviewScreen.tsx`, `UndoToast.tsx`, `tempo.css`, `you.css` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0276a / evidence: <DONE output> / changed: apps/web/components/modules/ModulePreviewView.tsx, apps/web/app/e2e/components/module-preview-view/page.tsx, tests/e2e/screens/module-preview-view.spec.ts / unknowns / notes for ticket sync: no creation time in modules.getDraft; preview shows the body as text, not rendered blocks`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -21669,6 +21695,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0276b — Route: /modules/preview/[draftId] — OPEN
+- **STATUS:** open — inherits TFV2-0275b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?; new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?); inherits TFV2-0246a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0246b (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0246c (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248b (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0276a, TFV2-0275b, TFV2-0000b, TFV2-0000c, TFV2-0246a, TFV2-0246b, TFV2-0246c, TFV2-0248b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0276a, TFV2-0275b, TFV2-0000b, TFV2-0000c, TFV2-0246a, TFV2-0246b, TFV2-0246c, TFV2-0248b.
@@ -21684,7 +21711,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview.spec.ts --reporter=line` → `32 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/module-preview.spec.ts --reporter=line`, plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line, pasted into the PR.
 - **DO NOT:** edit `ModulePreviewView.tsx` or `ModulePreviewScreen.tsx` (stays, unimported); contact Convex when forced; approve on page load; add another wiring line; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0276b / evidence: <DONE output> / changed: apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx, apps/web/lib/e2e/fixtures/module-preview.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/module-preview.spec.ts / unknowns / notes for ticket sync: ModulePreviewScreen.tsx is no longer imported`.
 - **SPEC:**
@@ -21694,11 +21721,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.modules.discardDraft // mutation { templateId: Id<"templates"> } → null   (TFV2-0246c)
   api.modules.setEnabled   // mutation { moduleId: string; on: boolean } → null (TFV2-0248b; Undo after Approve = on: false)
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="module-preview-route"><Suspense fallback={null}><PreviewRoute /></Suspense></div>`. `PreviewRoute`: `forced = useE2EState()`, `online = useOnline()`, `draftId = useParams<{ draftId: string }>().draftId`; a boundary class `PreviewBoundary` that maps a thrown error whose message is `"Module not found"` to `<ModulePreviewView state="empty" draft={null} … />` and any other error to `state="error"` with a retry that remounts; inside `<ProfileReady fallback={<ModulePreviewView state="loading" … />}><PreviewLive … /></ProfileReady>`. `PreviewLive`: `draft = useQuery(api.modules.getDraft, forced ? "skip" : { templateId: draftId as Id<"templates"> })`; `state` = `draft === undefined ? "loading" : "default"`; handlers: `onApprove(id)` → `setSaveError(false); try { await approve({ templateId: id as Id<"templates"> }) } catch (e) { setSaveError(true); throw e }`; `onUndoApprove(id)` → `setEnabled({ moduleId: id, on: false })` with the same error handling; `onDiscard(id)` → `discardDraft({ templateId: id as Id<"templates"> })` with the same error handling; `onAskCoachToFix` = `shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks resolve without Convex (`async () => {}`), `online` forced `false` for `offline`.
-  **Fixtures:** `export const FIXTURES: Record<"default" | "invalid" | "offline" | "save-error" | "empty" | "loading" | "error", Omit<ModulePreviewViewProps, "onApprove" | "onUndoApprove" | "onDiscard" | "onAskCoachToFix" | "onRetry">>`, data copied verbatim from the TFV2-0276a harness.
+  **page.tsx:** `"use client"`; default export `<div data-testid="module-preview-route"><Suspense fallback={null}><PreviewRoute /></Suspense></div>`. `PreviewRoute`: `forced = useE2EState()`, `online = useOnline()`, `draftId = useParams<{ draftId: string }>().draftId`; a boundary class `PreviewBoundary` that maps a thrown error whose message is `"Module not found"` to `<ModulePreviewView state="empty" draft={null} online={online} saveError={false} onApprove={async () => {}} onUndoApprove={async () => {}} onDiscard={async () => {}} onRetry={() => {}} />` and any other error to `state="error"` with a retry that remounts; inside `<ProfileReady fallback={<ModulePreviewView state="loading" draft={null} online={online} saveError={false} onApprove={async () => {}} onUndoApprove={async () => {}} onDiscard={async () => {}} onRetry={() => {}} />}><PreviewLive forced={forced} online={online} draftId={draftId} /></ProfileReady>`. `PreviewLive`: `draft = useQuery(api.modules.getDraft, forced ? "skip" : { templateId: draftId as Id<"templates"> })`; `state` = `draft === undefined ? "loading" : "default"`; handlers: `onApprove(id)` → `setSaveError(false); try { await approve({ templateId: id as Id<"templates"> }) } catch (e) { setSaveError(true); throw e }`; `onUndoApprove(id)` → `setEnabled({ moduleId: id, on: false })` with the same error handling; `onDiscard(id)` → `discardDraft({ templateId: id as Id<"templates"> })` with the same error handling; `onAskCoachToFix` = `shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks resolve without Convex (`async () => {}`), `online` forced `false` for `offline`.
+  **Fixtures:** `export const FIXTURES: Record<"default" | "invalid" | "offline" | "save-error" | "empty" | "loading" | "error", Omit<ModulePreviewViewProps, "onApprove" | "onUndoApprove" | "onDiscard" | "onAskCoachToFix" | "onRetry">>`, with `DRAFT = { templateId: "templates:7", name: "Evening wind-down", summary: "Adds a short wind-down checklist to the bottom of daily pages. Runs nothing.", body: "## Wind down\n- [ ] Phone on the charger in the kitchen\n- [ ] Write tomorrow's one thing\n- [ ] Lights low, ten pages of a book", validation: { ok: true, problems: [] } }`; every entry has `state: "default"`, `draft: DRAFT`, `online: true`, `saveError: false`, except: `invalid` (`draft: { templateId: "templates:7", name: "Evening wind-down", summary: "Adds a short wind-down checklist to the bottom of daily pages. Runs nothing.", body: "## Wind down\n- [ ] Phone on the charger in the kitchen\n- [ ] Write tomorrow's one thing\n- [ ] Lights low, ten pages of a book", validation: { ok: false, problems: ["view"] } }`), `offline` (`online: false`), `save-error` (`saveError: true`), `empty` (`state: "empty"`, `draft: null`), `loading` (`state: "loading"`, `draft: null`), `error` (`state: "error"`, `draft: null`).
   **Wiring line:** `  "/modules/(.*)",`.
   States, copy and behaviour are the View's (TFV2-0276a); no new visible string.
-- **TESTS:** (route spec; `openScreen(page, "/modules/preview/templates:7", { state, lang })`; console filter as in TFV2-0275b; 8 × 4 = 32)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/modules/preview/templates:7", { state, lang })`; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 8 × 4 = 32)
   1. Given `?state=default` / Then the `h1` reads "Evening wind-down" and an Approve button (HE "אישור") is enabled.
   2. Given `?state=default` / When Approve is clicked / Then "Evening wind-down is live." (HE "Evening wind-down פעיל.") shows (forced handler, no Convex request).
   3. Given `?state=invalid` / Then Approve has `aria-disabled="true"` and "Can't approve: this module didn't pass its check." (HE "אי אפשר לאשר: המודול לא עבר את הבדיקה.") shows.
@@ -21709,9 +21736,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/modules/preview/templates:7?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0246a (CFG-008 / CFG-038: where a module's draft `status` and `summary` are stored) — Amit.
+- **OPEN:** inherits TFV2-0275b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?; new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?); inherits TFV2-0246a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0246b (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0246c (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); inherits TFV2-0248b (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0277 — Component: CoachArtifact (`apps/web/components/blocks/CoachArtifact.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21727,7 +21755,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/coach-artifact.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "coach-artifact", { lang })`) and the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-artifact.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-artifact.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** import Flashcard, Quiz, Checklist or Tracker; parse or render artifact JSON; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; add a stylesheet or edit `apps/web/app/tempo.css`; edit `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0277 / evidence: <DONE output> / changed: apps/web/components/blocks/CoachArtifact.tsx, apps/web/app/e2e/components/coach-artifact/page.tsx, tests/e2e/screens/coach-artifact.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -21765,6 +21793,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0278 — Component: Flashcard (`apps/web/components/blocks/Flashcard.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21781,7 +21810,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/flashcard.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "flashcard", { lang })`) and the 7 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/flashcard.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/flashcard.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** flip on hover or on a click on the card face; persist anything, keep a score or streak, or call `studyCards.review`; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0278 / evidence: <DONE output> / changed: apps/web/components/blocks/Flashcard.tsx, apps/web/app/e2e/components/flashcard/page.tsx, tests/e2e/screens/flashcard.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -21830,6 +21859,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0279 — Component: Quiz (`apps/web/components/blocks/Quiz.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21846,7 +21876,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/quiz.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "quiz", { lang })`) and the 7 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quiz.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/quiz.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** show the result by colour alone (always icon + words); allow a second answer after Check; reveal which option is correct before Check; keep a score; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact` or `apps/web/components/forms/Radio.tsx`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0279 / evidence: <DONE output> / changed: apps/web/components/blocks/Quiz.tsx, apps/web/app/e2e/components/quiz/page.tsx, tests/e2e/screens/quiz.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -21890,6 +21920,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0280 — Component: Checklist (`apps/web/components/blocks/Checklist.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21905,7 +21936,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/checklist.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "checklist", { lang })`) and the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/checklist.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/checklist.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** keep its own copy of the items or persist them locally (`localStorage`, state that ignores new props); show a streak, percentage or praise; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact` or `apps/web/components/forms/Checkbox.tsx`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0280 / evidence: <DONE output> / changed: apps/web/components/blocks/Checklist.tsx, apps/web/app/e2e/components/checklist/page.tsx, tests/e2e/screens/checklist.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -21943,6 +21974,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0281 — Component: Tracker (`apps/web/components/blocks/Tracker.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -21958,7 +21990,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/tracker.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "tracker", { lang })`) and the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tracker.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/tracker.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** go below 0; cap the value at the goal or disable One more at the goal; show colour alone, a streak, a percentage or praise; keep the value in its own state; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0281 / evidence: <DONE output> / changed: apps/web/components/blocks/Tracker.tsx, apps/web/app/e2e/components/tracker/page.tsx, tests/e2e/screens/tracker.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -22002,6 +22034,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0282 — Component: TierCard (`apps/web/components/billing/TierCard.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093.
@@ -22017,7 +22050,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/tier-card.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "tier-card", { lang })`) and the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tier-card.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/tier-card.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** write any price, trial price or yearly discount number in the component (prices come only from `tier`); import `apps/web/lib/settings/billing.ts` or `PlanCard.tsx`; render the `.tp-tiers` grid (the caller does); hide, collapse or reorder a tier; call `billing.checkout`, `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0282 / evidence: <DONE output> / changed: apps/web/components/billing/TierCard.tsx, apps/web/app/e2e/components/tier-card/page.tsx, tests/e2e/screens/tier-card.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -22076,6 +22109,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0283 — Component: BillingNotice (`apps/web/components/billing/BillingNotice.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -22091,7 +22125,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/billing-notice.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "billing-notice", { lang })`) and the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-notice.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/billing-notice.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** invent or compute a date (only `endsAtMs` from props); use colour alone (every kind has an icon and a title in words); write a price; edit `BillingPlan.tsx` or i18n files; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; import `apps/web/components/layout/Notice.tsx` (its root is a live `role="status"` div, not the named region this banner must be); add a stylesheet or edit `apps/web/app/tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0283 / evidence: <DONE output> / changed: apps/web/components/billing/BillingNotice.tsx, apps/web/app/e2e/components/billing-notice/page.tsx, tests/e2e/screens/billing-notice.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -22143,6 +22177,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0284a — View: BillingView (`apps/web/components/billing/BillingView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0098, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0282, TFV2-0283 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0098, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0282, TFV2-0283.
@@ -22159,7 +22194,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/billing-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "billing-view", { lang })`) and the 10 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/billing-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** write a price or discount number (prices come only from `tiers`); hide, collapse or reorder a tier; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*` / `@/lib/settings/billing`; import or edit `BillingPlan.tsx`, `PlanCard.tsx`, `SettingsScreen.tsx`; use `ConfirmDialog` or `SettingRow` components (TFV2-0311 / TFV2-0307 come later; this View uses their tempo.css classes directly); store or show card numbers; add a stylesheet or edit `apps/web/app/tempo.css` / `apps/web/app/v3/settings.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0284a / evidence: <DONE output> / changed: apps/web/components/billing/BillingView.tsx, apps/web/app/e2e/components/billing-view/page.tsx, tests/e2e/screens/billing-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -22246,6 +22281,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0284b — Route: /billing (`apps/web/app/(tempo)/billing/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); inherits TFV2-0262 (Q-02: Prices and billing tiers (values shown to users).; new: Which Polar product ids (and env var names; proposed `POLAR_PRODUCT_<TIER>_<INTERVAL>`) map to each tier and interval, and does the web checkout move from the Polar sandbox to production?); inherits TFV2-0263a (new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0284a, TFV2-0261a, TFV2-0262, TFV2-0263a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0284a, TFV2-0261a, TFV2-0262, TFV2-0263a.
@@ -22261,7 +22297,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/billing.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen` and the console-error filter) and the 8 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing.spec.ts --reporter=line` → `32 passed`; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both Playwright summary lines and the typecheck / lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/billing.spec.ts --reporter=line`, the summary of `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the typecheck / lint exit codes in the PR.
 - **DO NOT:** hard-code a price (only `billing.listTiers`); import `BillingPlan`, `PlanCard`, `SettingsScreen` or `TIERS` / `tierPrice` / `formatUsd` from `apps/web/lib/settings/billing.ts`; edit `BillingView.tsx`, `BillingPlan.tsx`, `apps/web/lib/e2eWiringRoutes.ts` or i18n files; contact Convex when `?state=` is forced; store or print card numbers; open checkout in a new tab; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0284b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/billing/page.tsx, apps/web/lib/e2e/fixtures/billing.ts, tests/e2e/screens/billing.spec.ts / unknowns / notes for ticket sync: BillingPlan.tsx and PlanCard.tsx are no longer imported by any route; delete them in a cleanup ticket`.
 - **SPEC:**
@@ -22281,7 +22317,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `function BillingLive({ online })`: `plan = useQuery(api.users.getMyPlan, {})`, `prefs = useQuery(api.preferences.get, {})`, `tiers = useQuery(api.billing.listTiers, {})`, `convex = useConvex()`, `cancel = useMutation(api.billing.cancel)`; state `choosing: PaidTierId | null`, `chooseError: boolean`, `cancelState: BillingCancelState` (`"idle"`). Any of `plan`, `prefs`, `tiers` `undefined`, or `plan === null` → `<BillingView {...LOADING} online={online} />`. Else: `early = isEarlyAccess(plan)`; `live = plan.status === "active" || plan.status === "grace"`; `notice: BillingNoticeProps` = early → `{ kind: "early" }`; else `plan.plan !== "none" && plan.status === "grace"` → `{ kind: "grace" }`; else `plan.plan !== "none" && plan.status === "cancelled"` → `{ kind: "cancelled", endsAtMs: null, timeZone: prefs.timeZone }`; else `live && plan.plan === "trial"` → `{ kind: "trial", endsAtMs: null, timeZone: prefs.timeZone }`; else `live && plan.plan !== "none"` → `{ kind: "plan", tier: plan.plan }`; else `{ kind: "none" }` (`endsAtMs` stays `null` until a function returns the CFG-013 dates). Render `<BillingView state="default" online={online} notice={notice} tiers={tiers} currentTierId={currentTier(plan)} canCancel={!early && live && plan.plan !== "none"} choosing={choosing} chooseError={chooseError} cancelState={cancelState} onChoose={choose} onCancel={doCancel} onRetry={() => {}} />`.
   - `choose({ tier, interval }: { tier: PaidTierId; interval: BillingInterval })`: `setChooseError(false); setChoosing(tier); try { const { url } = await convex.query(api.billing.checkout, { tier, interval }); window.location.assign(url); } catch { setChooseError(true); setChoosing(null); }` (same tab, per the design note).
   - `doCancel()`: `setCancelState("busy"); try { await cancel({}); setCancelState("done"); } catch { setCancelState("error"); }` (`"No active plan"` and any other error both show `cancelError`).
-  **Fixtures** (`apps/web/lib/e2e/fixtures/billing.ts`; `import type { BillingViewProps } from "@/components/billing/BillingView";` and a local non-exported `type BillingFixture = Omit<BillingViewProps, "onChoose" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "plan" | "loading" | "error" | "offline" | "choosing" | "choose-error" | "cancelled" | "cancel-error", BillingFixture>` with the same nine entries and the same `TIERS` as the harness `apps/web/app/e2e/components/billing-view/page.tsx` (TFV2-0284a), copied verbatim (`loading` and `error` carry `notice: { kind: "none" }`, `tiers: []`, `currentTierId: null`, `canCancel: false`, `choosing: null`, `chooseError: false`, `cancelState: "idle"`, `online: true`).
+  **Fixtures** (`apps/web/lib/e2e/fixtures/billing.ts`; `import type { BillingViewProps } from "@/components/billing/BillingView";` and a local non-exported `type BillingFixture = Omit<BillingViewProps, "onChoose" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "plan" | "loading" | "error" | "offline" | "choosing" | "choose-error" | "cancelled" | "cancel-error", BillingFixture>` with `TIERS = [{ id: "trial", liveMinutesPerDay: 0, monthlyPriceUsd: 1, annualPriceUsd: null }, { id: "basic", liveMinutesPerDay: 0, monthlyPriceUsd: 10, annualPriceUsd: 100 }, { id: "pro", liveMinutesPerDay: 90, monthlyPriceUsd: 20, annualPriceUsd: 200 }, { id: "max", liveMinutesPerDay: 180, monthlyPriceUsd: 40, annualPriceUsd: 400 }]` (harness data, not product prices); every entry has `state: "default"`, `online: true`, `notice: { kind: "early" }`, `tiers: TIERS`, `currentTierId: "max"`, `canCancel: false`, `choosing: null`, `chooseError: false`, `cancelState: "idle"`, except: `plan` (`notice: { kind: "plan", tier: "basic" }`, `currentTierId: "basic"`, `canCancel: true`), `loading` (`state: "loading"`, `notice: { kind: "none" }`, `tiers: []`, `currentTierId: null`), `error` (`state: "error"`, `notice: { kind: "none" }`, `tiers: []`, `currentTierId: null`), `offline` (`online: false`), `choosing` (`notice: { kind: "plan", tier: "basic" }`, `currentTierId: "basic"`, `canCancel: true`, `choosing: "pro"`), `choose-error` (`notice: { kind: "plan", tier: "basic" }`, `currentTierId: "basic"`, `canCancel: true`, `chooseError: true`), `cancelled` (`notice: { kind: "cancelled", endsAtMs: null, timeZone: "UTC" }`, `currentTierId: "basic"`, `canCancel: true`, `cancelState: "done"`), `cancel-error` (`notice: { kind: "plan", tier: "basic" }`, `currentTierId: "basic"`, `canCancel: true`, `cancelState: "error"`) (`loading` and `error` carry `notice: { kind: "none" }`, `tiers: []`, `currentTierId: null`, `canCancel: false`, `choosing: null`, `chooseError: false`, `cancelState: "idle"`, `online: true`).
   States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0284a); this ticket adds no visible string.
 - **TESTS:** (route spec; CONVENTIONS §22 skeleton; each case at both viewports and both languages; forced cases use `openScreen(page, "/billing", { state, lang })`; every case asserts `page.getByTestId("billing-page")` is visible and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 8 × 4 = 32)
   1. Given `?state=default` / Then the `h1` reads "Plan and billing" (HE "מסלול ותשלום") and 4 `article[data-component="TierCard"]` are visible, the max one with `data-current="true"`.
@@ -22294,9 +22330,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="billing-page"]')` pass, and `measureVitals(page, \`/billing?state=default&lang=${lang}\`)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 8) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price values: from `billing.listTiers` only (Q-02 open) · 32 of 32 route cases and 4 of 4 wiring cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0261a (Q-02: prices and billing tiers shown to users), TFV2-0262 (Q-02: Polar product ids for checkout) and TFV2-0263a (new Q: must `billing.cancel` also cancel at Polar / RevenueCat, or only mark the row cancelled?) — Amit.
+- **OPEN:** inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); inherits TFV2-0262 (Q-02: Prices and billing tiers (values shown to users).; new: Which Polar product ids (and env var names; proposed `POLAR_PRODUCT_<TIER>_<INTERVAL>`) map to each tier and interval, and does the web checkout move from the Polar sandbox to production?); inherits TFV2-0263a (new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key?) — Amit.
 
 ### TFV2-0285a — View: TrialEndView (`apps/web/components/billing/TrialEndView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0052, TFV2-0056, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0052, TFV2-0056, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123.
@@ -22313,7 +22350,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/trial-end-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "trial-end-view", { lang })`) and the 10 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/trial-end-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/trial-end-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** write a price or a trial length number other than the copy below ("three weeks"); compute "today" / "tomorrow" (the route passes `endsIn`); charge or call anything (only the callbacks); add guilt copy ("are you sure you want to lose…"); make more than one primary button; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*` / `@/lib/settings/billing`; import or edit `TrialEnd.tsx` or `SettingsScreen.tsx`; use `ConfirmDialog` (TFV2-0311 comes later); add a stylesheet or edit `apps/web/app/tempo.css` / `apps/web/app/v3/settings.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0285a / evidence: <DONE output> / changed: apps/web/components/billing/TrialEndView.tsx, apps/web/app/e2e/components/trial-end-view/page.tsx, tests/e2e/screens/trial-end-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -22411,6 +22448,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0285b — Route: /billing/trial-end (`apps/web/app/(bare)/billing/trial-end/page.tsx`) — OPEN
+- **STATUS:** open — inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); inherits TFV2-0263a (new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key?); inherits TFV2-0263b (new: Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag?); new: Which query returns `trialEndsAt` to the client (no planned billing function returns it; `billing.getMine` has no date)?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0285a, CFG-013, TFV2-0261a, TFV2-0263a, TFV2-0263b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0285a, CFG-013, TFV2-0261a, TFV2-0263a, TFV2-0263b.
@@ -22426,7 +22464,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/billing-trial-end.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen` and the console-error filter) and the 8 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-trial-end.spec.ts --reporter=line` → `32 passed`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary line, the one-line `git diff apps/web/lib/e2eWiringRoutes.ts`, and the typecheck / lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/billing-trial-end.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the one-line `git diff apps/web/lib/e2eWiringRoutes.ts`, and the typecheck / lint exit codes in the PR.
 - **DO NOT:** hard-code a price or the trial end (only `billing.listTiers` and the backend `trialEndsAt`); compute "today" from the browser zone instead of `preferences.timeZone`; charge or convert anything on page load; import `TrialEnd`, `BareScreen` or `TIERS` / `formatUsd` from `apps/web/lib/settings/billing.ts`; edit `TrialEndView.tsx`, `TrialEnd.tsx` or i18n files; add any other line to `e2eWiringRoutes.ts`; contact Convex when `?state=` is forced; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0285b / evidence: <DONE output> / changed: apps/web/app/(bare)/billing/trial-end/page.tsx, apps/web/lib/e2e/fixtures/billing-trial-end.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/billing-trial-end.spec.ts / unknowns / notes for ticket sync: TrialEnd.tsx is no longer imported by any route; delete it in a cleanup ticket`.
 - **SPEC:**
@@ -22439,7 +22477,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.billing.cancel                // mutation args {} → null; throws "No active plan"   (TFV2-0263a)
   <trialEndsAt source>              // the query named in the answer to this ticket's OPEN question → trialEndsAt: number | null (CFG-013 field)
   ```
-  **page.tsx** (`"use client"`): `export default function Page()` → `<main id="main" tabIndex={-1} data-testid="trial-end-route"><TpIconSprite /><Suspense fallback={null}><TrialEndRoute /></Suspense></main>` (`TpIconSprite` from `@/components/tempo/TpIcon`: the bare layout has no shell, so the page mounts the icon sprite). Same boundary pattern as TFV2-0284b: `class TrialEndBoundary` (failed → `<TrialEndView {...FIXTURES.error} online={this.props.online} {...NOOP} onRetry={this.retry} />`), `NOOP = { onContinue: () => {}, onCancel: () => {}, onRetry: () => {} }`, `LOADING = { ...FIXTURES.loading, ...NOOP }`.
+  **page.tsx** (`"use client"`): `export default function Page()` → `<main id="main" tabIndex={-1} data-testid="trial-end-route"><TpIconSprite /><Suspense fallback={null}><TrialEndRoute /></Suspense></main>` (`TpIconSprite` from `@/components/tempo/TpIcon`: the bare layout has no shell, so the page mounts the icon sprite). Error boundary: `class TrialEndBoundary` (failed → `<TrialEndView {...FIXTURES.error} online={this.props.online} {...NOOP} onRetry={this.retry} />`), `NOOP = { onContinue: () => {}, onCancel: () => {}, onRetry: () => {} }`, `LOADING = { ...FIXTURES.loading, ...NOOP }`.
   - `function TrialEndRoute()`: `const forced = useE2EState(); const online = useOnline();` forced → `<TrialEndView {...(FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error)} {...NOOP} />` (no query runs); else `<TrialEndBoundary online={online}><ProfileReady fallback={<TrialEndView {...LOADING} online={online} />}><TrialEndLive online={online} /></ProfileReady></TrialEndBoundary>`.
   - `function TrialEndLive({ online })`: `plan = useQuery(api.users.getMyPlan, {})`, `prefs = useQuery(api.preferences.get, {})`, `tiers = useQuery(api.billing.listTiers, {})`, `trialEndsAt` from the answering query, `ack = useMutation(api.billing.acknowledgeConversion)`, `cancel = useMutation(api.billing.cancel)`, `nowMs` = `Date.now()` refreshed every 60 000 ms; state `outcome: TrialEndOutcome | null`, `busy: "continue" | "cancel" | null`, `actionError: boolean`. Any query `undefined` or `plan === null` → `<TrialEndView {...LOADING} online={online} />`. `!isOnTrial(plan)` → `state: "not-trial"`, `facts: null`. On the trial with `trialEndsAt === null` → `state: "error"` (the end is unknown, so nothing is shown that could be wrong). Else `todayKey = localDateIn(prefs.timeZone, nowMs)`, `endKey = localDateIn(prefs.timeZone, trialEndsAt)` (`localDateIn` = `new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)`), `endsIn = endKey === todayKey ? "today" : endKey === addLocalDays(todayKey, 1) ? "tomorrow" : "later"`; `facts = { endsAtMs: trialEndsAt, endsIn, timeZone: prefs.timeZone, trialPriceUsd: tiers.find((t) => t.id === "trial")?.monthlyPriceUsd ?? null, basicMonthlyUsd: tiers.find((t) => t.id === "basic")?.monthlyPriceUsd ?? null }`.
   - `onContinue`: `setActionError(false); setBusy("continue"); try { await ack({}); setOutcome("continued"); } catch { setActionError(true); } finally { setBusy(null); }`. `onCancel`: the same with `cancel({})` and `"cancelled"`. Any error message (including `"No active plan"`) shows `actionError`.
@@ -22447,7 +22485,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
     "/billing/trial-end",
   ```
-  **Fixtures** (`apps/web/lib/e2e/fixtures/billing-trial-end.ts`; `import type { TrialEndViewProps } from "@/components/billing/TrialEndView";` and a local non-exported `type TrialEndFixture = Omit<TrialEndViewProps, "onContinue" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "today" | "no-price" | "offline" | "busy" | "action-error" | "continued" | "cancelled" | "not-trial" | "loading" | "error", TrialEndFixture>` with the same eleven entries and `FACTS` as the harness `apps/web/app/e2e/components/trial-end-view/page.tsx` (TFV2-0285a), copied verbatim.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/billing-trial-end.ts`; `import type { TrialEndViewProps } from "@/components/billing/TrialEndView";` and a local non-exported `type TrialEndFixture = Omit<TrialEndViewProps, "onContinue" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "today" | "no-price" | "offline" | "busy" | "action-error" | "continued" | "cancelled" | "not-trial" | "loading" | "error", TrialEndFixture>` with `FACTS = { endsAtMs: Date.UTC(2026, 9, 13, 6, 0), endsIn: "tomorrow", timeZone: "Asia/Jerusalem", trialPriceUsd: 1, basicMonthlyUsd: 10 }` (harness data, not product prices); every entry has `state: "default"`, `online: true`, `facts: FACTS`, `outcome: null`, `busy: null`, `actionError: false`, except: `today` (`facts: { endsAtMs: Date.UTC(2026, 9, 13, 6, 0), endsIn: "today", timeZone: "Asia/Jerusalem", trialPriceUsd: 1, basicMonthlyUsd: 10 }`), `no-price` (`facts: { endsAtMs: Date.UTC(2026, 9, 13, 6, 0), endsIn: "later", timeZone: "Asia/Jerusalem", trialPriceUsd: null, basicMonthlyUsd: null }`), `offline` (`online: false`), `busy` (`busy: "continue"`), `action-error` (`actionError: true`), `continued` (`outcome: "continued"`), `cancelled` (`outcome: "cancelled"`), `not-trial` (`state: "not-trial"`, `facts: null`), `loading` (`state: "loading"`, `facts: null`), `error` (`state: "error"`, `facts: null`).
   States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0285a); this ticket adds no visible string.
 - **TESTS:** (route spec; CONVENTIONS §22 skeleton; each case at both viewports and both languages; forced cases use `openScreen(page, "/billing/trial-end", { state, lang })`; every case asserts `page.getByTestId("trial-end-route")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 8 × 4 = 32)
   1. Given `?state=default` / Then the `h1` reads "Your trial ends tomorrow" (HE "הניסיון שלך מסתיים מחר") and the button "Continue with Basic" (HE "להמשיך עם Basic") is visible.
@@ -22460,9 +22498,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="trial-end-route"] .te-actions')` pass, and `measureVitals(page, \`/billing/trial-end?state=default&lang=${lang}\`)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 8) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price after the trial: from `billing.listTiers` only (Q-02 open) · 32 of 32 route cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-013 (Add `renewsAt` and `trialEndsAt` to `subscriptionStates`, or drop them from the billing contract?), TFV2-0261a (Q-02: prices and billing tiers shown to users), TFV2-0263a (new Q: must `billing.cancel` also cancel at Polar / RevenueCat?) and TFV2-0263b (CFG-014: is conversion consent stored on `subscriptionStates` or as a `users` flag?); plus new: which query returns `trialEndsAt` to the client (no planned billing function returns it; `billing.getMine` has no date) — Amit.
+- **OPEN:** inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); inherits TFV2-0263a (new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key?); inherits TFV2-0263b (new: Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag?); new: Which query returns `trialEndsAt` to the client (no planned billing function returns it; `billing.getMine` has no date)? — Amit.
 
 ### TFV2-0286a — Component: TemplateCard gains Duplicate (`apps/web/components/templates-library/TemplateCard.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -22476,7 +22515,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. In the test file, add `onDuplicate() {}` to the props in `render`, and append the 2 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test apps/web/components/templates-library/TemplateCard.test.tsx` → `9 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (7 pass) and after (9 pass), plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `bun test apps/web/components/templates-library/TemplateCard.test.tsx` before (7 pass) and after (9 pass), plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** change any existing `t("tpl.*")` key, label, class or order of the existing actions; edit `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; call Convex; edit `TemplatesLibrary.tsx` or its test; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0286a / evidence: <DONE output> / changed: apps/web/components/templates-library/TemplateCard.tsx, apps/web/components/templates-library/TemplateCard.test.tsx / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
 - **SPEC:**
@@ -22506,6 +22545,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0286b — View: TemplatesView (`apps/web/components/templates-library/TemplatesView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0286a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0286a.
@@ -22521,7 +22561,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "templates-view", { lang })`) with the 11 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/templates-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `useShellSlots` or `fetch`; render a delete control on built-in cards (TemplateCard already omits it); show a "Made with the coach" badge; edit `TemplateCard.tsx`, `TemplatesLibrary.tsx`, `UndoToast.tsx`, `template-pages.ts`, `globals.css`, `tempo.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0286b / evidence: <DONE output> / changed: apps/web/components/templates-library/TemplatesView.tsx, apps/web/app/e2e/components/templates-view/page.tsx, tests/e2e/screens/templates-view.spec.ts / unknowns / notes for ticket sync: "Made with the coach" badge waits for CFG-038`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -22573,7 +22613,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   | loading | Loading templates | התבניות בטעינה |
   | error | Couldn't load your templates. | לא הצלחנו לטעון את התבניות. |
   The card's own strings stay the existing `tpl.*` keys and TFV2-0286a's Duplicate copy; StateError / StateOffline / Notice / UndoToast keep theirs.
-  **States** (harness order): `default` (templates: `starter:daily-page` "Daily page" daily, sections `["Intention", "Schedule"]`; `starter:weekly-page` "Weekly page" weekly; user `{ templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", sections: ["Boxes", "Keys"] }`; user `{ templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", sections: [] }`; `onAskCoach` present), `empty` (the two starters only), `loading`, `error`, `offline` (default data, `online: false`), `save-error` (default data, `saveError: true`), `no-coach` (default data, no `onAskCoach`).
+  **States** (harness order): `default` (templates: `starter:daily-page` "Daily page" daily, sections `["Intention", "Schedule"]`; `starter:weekly-page` "Weekly page" weekly, sections `["This week", "Focus", "Days"]`; user `{ templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", sections: ["Boxes", "Keys"] }`; user `{ templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", sections: [] }`; `onAskCoach` present), `empty` (the two starters only), `loading`, `error`, `offline` (default data, `online: false`), `save-error` (default data, `saveError: true`), `no-coach` (default data, no `onAskCoach`).
   **RTL:** logical flex/grid; the radiogroup's horizontal arrows mirror in RTL; user text `dir="auto"` inside the card. **Keyboard / screen reader:** Tab order = New template → Ask the coach → search → the checked scope radio (one tab stop) → each card's actions; the status line announces duplicates politely; the save error is `role="alert"`. **Breakpoints:** `.tp-cards` auto-fill (280 px minimum) — one column at 390, two at 768, three from 1024 in `.tp-page--wide`. **Motion:** tempo.css button transitions only.
 - **TESTS:** (§22 skeleton; 11 × 4 = 44)
   1. Given `templates-view-default` / Then the `h1` reads `title`, a link to `/templates/builder` reads `newTemplate`, one `.tp-btn--primary` reads `ask`, `#tpl-builtin-h`'s section holds 2 cards and `#tpl-mine-h`'s holds 2, and each count reads "2".
@@ -22592,6 +22632,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0286c — Route: /templates
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0286b, TFV2-0000b, TFV2-0000c, TFV2-0236, TFV2-0237 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0286b, TFV2-0000b, TFV2-0000c, TFV2-0236, TFV2-0237.
@@ -22606,7 +22647,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` → `32 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplatesView.tsx`, `TemplatesLibrary.tsx` (stays, unimported) or its tests, `e2eWiringRoutes.ts`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0286c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/page.tsx, apps/web/lib/e2e/fixtures/templates.ts, tests/e2e/screens/templates.spec.ts / unknowns / notes for ticket sync: TemplatesLibrary.tsx is no longer imported`.
 - **SPEC:**
@@ -22616,10 +22657,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.templates.restore   // mutation { templateId: Id<"templates"> } → null   (TFV2-0236)
   api.templates.duplicate // mutation { templateId: string } → Id<"templates">  (TFV2-0237)
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="templates-library-route"><Suspense fallback={null}><TemplatesRoute /></Suspense></div>`. `TemplatesRoute`: `forced = useE2EState()`, `online = useOnline()`, `shell = useShellSlots()`; boundary class (pattern of TFV2-0132b) → `state="error"` with remount retry; `<ProfileReady fallback={<TemplatesView state="loading" … />}><TemplatesLive … /></ProfileReady>`. `TemplatesLive`: `list = useQuery(api.templates.list, forced ? "skip" : { scope: "all" })`; `state = list === undefined ? "loading" : "default"`; `templates = list.map(({ templateId, source, name, description, periodType, sections }) => ({ templateId, source, name, description, periodType, sections }))`; handlers each `setSaveError(false)`, call the mutation (`remove({ templateId: id as Id<"templates"> })`, `restore({ templateId: id as Id<"templates"> })`, `duplicate({ templateId: id })`), and on rejection `setSaveError(true)` and rethrow; `onAskCoach = shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks `async () => {}`, `online` false for `offline`, no Convex call.
-  **Fixtures:** `export const FIXTURES: Record<"default" | "empty" | "loading" | "error" | "offline" | "save-error", Omit<TemplatesViewProps, "onAskCoach" | "onDelete" | "onRestore" | "onDuplicate" | "onRetry">>`, templates copied verbatim from the TFV2-0286b harness.
+  **page.tsx:** `"use client"`; default export `<div data-testid="templates-library-route"><Suspense fallback={null}><TemplatesRoute /></Suspense></div>`. `TemplatesRoute`: `forced = useE2EState()`, `online = useOnline()`, `shell = useShellSlots()`; boundary class (`getDerivedStateFromError` → `failed`) → `state="error"` with remount retry; `<ProfileReady fallback={<TemplatesView state="loading" online={online} saveError={false} templates={[]} onDelete={async () => {}} onRestore={async () => {}} onDuplicate={async () => {}} onRetry={() => {}} />}><TemplatesLive online={online} forced={forced} onAskCoach={onAskCoach} /></ProfileReady>` (`TemplatesLive` props `{ online: boolean; forced: string | null; onAskCoach: (() => void) | undefined }`; it renders `<TemplatesView state={state} online={online} saveError={saveError} templates={templates} onAskCoach={onAskCoach} onDelete={onDelete} onRestore={onRestore} onDuplicate={onDuplicate} onRetry={() => {}} />`, where `onDelete`, `onRestore`, `onDuplicate` are the three handlers below and `saveError` is local `useState(false)`; a thrown query error reaches the boundary, whose retry remounts). `TemplatesLive`: `list = useQuery(api.templates.list, forced ? "skip" : { scope: "all" })`; `state = list === undefined ? "loading" : "default"`; `templates = list.map(({ templateId, source, name, description, periodType, sections }) => ({ templateId, source, name, description, periodType, sections }))`; handlers each `setSaveError(false)`, call the mutation (`remove({ templateId: id as Id<"templates"> })`, `restore({ templateId: id as Id<"templates"> })`, `duplicate({ templateId: id })`), and on rejection `setSaveError(true)` and rethrow; `onAskCoach = shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks `async () => {}`, `online` false for `offline`, no Convex call.
+  **Fixtures:** `export const FIXTURES: Record<"default" | "empty" | "loading" | "error" | "offline" | "save-error", Omit<TemplatesViewProps, "onAskCoach" | "onDelete" | "onRestore" | "onDuplicate" | "onRetry">>`; every entry has `state: "default"`, `online: true`, `saveError: false`, `templates: [{ templateId: "starter:daily-page", source: "starter", name: "Daily page", periodType: "daily", sections: ["Intention", "Schedule"] }, { templateId: "starter:weekly-page", source: "starter", name: "Weekly page", periodType: "weekly", sections: ["This week", "Focus", "Days"] }, { templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", sections: ["Boxes", "Keys"] }, { templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", sections: [] }]`, except: `empty` (`templates: [{ templateId: "starter:daily-page", source: "starter", name: "Daily page", periodType: "daily", sections: ["Intention", "Schedule"] }, { templateId: "starter:weekly-page", source: "starter", name: "Weekly page", periodType: "weekly", sections: ["This week", "Focus", "Days"] }]`), `loading` (`state: "loading"`), `error` (`state: "error"`), `offline` (`online: false`), `save-error` (`saveError: true`).
   No new visible string; states and copy are the View's.
-- **TESTS:** (route spec; `openScreen(page, "/templates", { state, lang })`; each asserts `templates-library-route` is attached; console filter as TFV2-0275b; 8 × 4 = 32)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates", { state, lang })`; each asserts `templates-library-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 8 × 4 = 32)
   1. Given `?state=default` / Then the `h1` reads "Templates" (HE "תבניות") and 4 `.tpl-card` render.
   2. Given `?state=default` / When "moving" is typed in `#tpl-q` / Then one card is visible.
   3. Given `?state=empty` / Then "No templates of your own yet." (HE "עוד אין כאן תבניות משלך.") is visible.
@@ -22633,6 +22674,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0287a — View: TemplateBuilderView (`apps/web/components/template-builder/TemplateBuilderView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
@@ -22648,7 +22690,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "template-builder-view", { lang })`) with the 11 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-builder-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `useRouter`, `useTheme`, `useOnline` or `fetch`; import `TemplateBuilder.tsx` (it stays, unimported once TFV2-0287b lands); edit `TemplateBodyEditor.tsx`, `ReadView.tsx`, `TemplateBuilder.tsx`, `TemplateBuilder.test.tsx`, `template-pages.ts`, `markdown-model.ts`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; render block handles or JSON; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0287a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateBuilderView.tsx, apps/web/app/e2e/components/template-builder-view/page.tsx, tests/e2e/screens/template-builder-view.spec.ts / unknowns / notes for ticket sync: TemplateBodyEditor's own slash-menu strings (t("slash.*")) are unchanged`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -22736,10 +22778,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0287b — Route: /templates/builder
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0287a, TFV2-0000b, TFV2-0000c, TFV2-0235b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0287a, TFV2-0000b, TFV2-0000c, TFV2-0235b.
-- **WHY:** PRD F-06/F-23; design `docs/design/v3/screens/web/template-builder.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(bare)/templates/builder/page.tsx` is a server page rendering `<div data-testid="template-builder-route"><ProfileReady><TemplateBuilderScreen fromId editId outline /></ProfileReady></div>` from `?from=`, `?id=`, `?outline=`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-builder-route` on `/templates/builder` and `/templates/builder?from=starter-1`. `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (`apps/web/lib/e2eWiringRoutes.ts` line 21), so no wiring edit. `templates.get` and `templates.create` exist in `convex/templates.ts` (`create` args `{ name, description?, periodType, body }`, unchanged by this ticket; TFV2-0235a, OPEN, only adds an optional `draft` arg this route never sends); `templates.update` is verified by TFV2-0235b. The mode rules are exactly `TemplateBuilderScreen`'s: `?id=` of the person's own template edits it; `?id=` of a starter or any `?from=` starts a copy; `?outline=` starts from `parseSketch(outline)` (`apps/web/lib/template-sketch.ts`, pure); otherwise blank. "Today" for the preview comes from `preferences.timeZone` (CONVENTIONS §22).
+- **WHY:** PRD F-06/F-23; design `docs/design/v3/screens/web/template-builder.html`; CONVENTIONS §14, §22 (route pattern: an error boundary around `ProfileReady`, written out in SPEC "page.tsx"). Code truth: `apps/web/app/(bare)/templates/builder/page.tsx` is a server page rendering `<div data-testid="template-builder-route"><ProfileReady><TemplateBuilderScreen fromId editId outline /></ProfileReady></div>` from `?from=`, `?id=`, `?outline=`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-builder-route` on `/templates/builder` and `/templates/builder?from=starter-1`. `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (`apps/web/lib/e2eWiringRoutes.ts` line 21), so no wiring edit. `templates.get` and `templates.create` exist in `convex/templates.ts` (`create` args `{ name, description?, periodType, body }`, unchanged by this ticket; TFV2-0235a, OPEN, only adds an optional `draft` arg this route never sends); `templates.update` is verified by TFV2-0235b. The mode rules are exactly `TemplateBuilderScreen`'s: `?id=` of the person's own template edits it; `?id=` of a starter or any `?from=` starts a copy; `?outline=` starts from `parseSketch(outline)` (`apps/web/lib/template-sketch.ts`, pure); otherwise blank. "Today" for the preview comes from `preferences.timeZone` (CONVENTIONS §22).
 - **GOAL:** `/templates/builder` reads `templates.get` and `preferences.get` in `page.tsx`, renders `TemplateBuilderView` in the right mode, saves through `templates.update` (edit) or `templates.create` (create, then goes to `/templates`), and renders a typed fixture for every forced `?state=`, keeping the `template-builder-route` test id.
 - **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` · `apps/web/lib/e2e/fixtures/template-builder.ts` · test: `tests/e2e/screens/template-builder.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
 - **MUTATES:** `apps/web/app/(bare)/templates/builder/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-builder.ts` (new) · `tests/e2e/screens/template-builder.spec.ts` (new) · runtime writes through `templates.update` (patch one `templates` row) and `templates.create` (insert one row).
@@ -22750,7 +22793,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder.spec.ts --reporter=line` → `32 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-builder.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateBuilderView.tsx`, `TemplateBuilder.tsx` (stays, unimported) or `TemplateBuilder.test.tsx`, `template-sketch.ts`, `e2eWiringRoutes.ts`; call `templates.insertBlock`/`moveBlock`/`duplicateBlock`/`removeBlock`/`publish` (TFV2-0240a–e, OPEN, not used); send `draft` to `templates.create`; contact Convex when forced; compute "today" from the browser zone; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0287b / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/builder/page.tsx, apps/web/lib/e2e/fixtures/template-builder.ts, tests/e2e/screens/template-builder.spec.ts / unknowns / notes for ticket sync: TemplateBuilderScreen (TemplateBuilder.tsx) is no longer imported by a route; its bun test still runs`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -22760,14 +22803,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.templates.update    // mutation { templateId: Id<"templates">; name?: string; description?: string; periodType?: …; body?: string } → Id<"templates">   (TFV2-0235b; throws "Name is required", "Starter templates cannot be changed", "Template not found", "Access denied")
   api.preferences.get     // query    {} → { …; timeZone: string; … }
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="template-builder-route"><Suspense fallback={null}><BuilderRoute /></Suspense></div>`. Module helpers: `EMPTY: BuilderDraft = { name: "", description: "", periodType: "none", body: "" }`; `localDateIn(timeZone, ms)` = `new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)` (as TFV2-0132b); `NOOP = { onSave: async () => {}, onRetry: () => {} }`. `BuilderRoute`: `forced = useE2EState()`, `online = useOnline()`, `{ resolvedTheme, setTheme } = useTheme()` (`@/components/providers/ThemeProvider`), `dark = resolvedTheme === "dark"`, `onToggleTheme = () => setTheme(dark ? "light" : "dark")`; a `BuilderBoundary` class (pattern of TFV2-0132b: `getDerivedStateFromError` → `failed`; render failed → `<TemplateBuilderView state="error" {...FIXTURES.error} online={online} dark={dark} onToggleTheme={onToggleTheme} onSave={NOOP.onSave} onRetry={retry} />`, retry remounts children with a new `key`); inside it `<ProfileReady fallback={<TemplateBuilderView {...FIXTURES.loading} online={online} dark={dark} onToggleTheme={onToggleTheme} {...NOOP} />}><BuilderLive forced={forced} online={online} dark={dark} onToggleTheme={onToggleTheme} /></ProfileReady>`.
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-builder-route"><Suspense fallback={null}><BuilderRoute /></Suspense></div>`. Module helpers: `EMPTY: BuilderDraft = { name: "", description: "", periodType: "none", body: "" }`; `localDateIn(timeZone, ms)` = `new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)`; `NOOP = { onSave: async () => {}, onRetry: () => {} }`. `BuilderRoute`: `forced = useE2EState()`, `online = useOnline()`, `{ resolvedTheme, setTheme } = useTheme()` (`@/components/providers/ThemeProvider`), `dark = resolvedTheme === "dark"`, `onToggleTheme = () => setTheme(dark ? "light" : "dark")`; a `BuilderBoundary` class (`getDerivedStateFromError` → `failed`; render failed → `<TemplateBuilderView state="error" {...FIXTURES.error} online={online} dark={dark} onToggleTheme={onToggleTheme} onSave={NOOP.onSave} onRetry={retry} />`, retry remounts children with a new `key`); inside it `<ProfileReady fallback={<TemplateBuilderView {...FIXTURES.loading} online={online} dark={dark} onToggleTheme={onToggleTheme} {...NOOP} />}><BuilderLive forced={forced} online={online} dark={dark} onToggleTheme={onToggleTheme} /></ProfileReady>`.
   `BuilderLive`: `params = useSearchParams()`; `first = (k) => params.get(k) || undefined`; `editId = first("id")`, `fromId = first("from")`, `outline = first("outline")`, `sourceId = editId ?? fromId`; `template = useQuery(api.templates.get, forced || !sourceId ? "skip" : { templateId: sourceId })`; `prefs = useQuery(api.preferences.get, forced ? "skip" : {})`; `exampleIso = prefs ? localDateIn(prefs.timeZone, Date.now()) : null`; `router = useRouter()`; `create = useMutation(api.templates.create)`; `update = useMutation(api.templates.update)`.
   **Live resolution** (in order): `sourceId && template === undefined` → `state: "loading"`; `sourceId && template === null` → `state: "missing"`; `template && editId !== undefined && template.source === "user"` → `mode: "edit"`, `note: "none"`, `key = "edit:" + template.templateId`; `template` (any other case) → `mode: "create"`, `note: "copy"`, `copyOfName: template.name`, `key = "copy:" + template.templateId`; else `sketch = outline ? parseSketch(outline) : null` → when not null `mode: "create"`, `note: "sketch"`, `initial: { ...EMPTY, name: sketch.name, body: sketch.body }`, `key = "sketch"`; else `mode: "create"`, `note: "none"`, `initial: EMPTY`, `key = "blank"`. A template's `initial` = `{ name, description: description ?? "", periodType, body }`. Render `<TemplateBuilderView key={key} state={…} online={online} mode={…} note={…} copyOfName={… ?? ""} initial={…} exampleIso={exampleIso} dark={dark} onToggleTheme={onToggleTheme} onSave={save} onRetry={() => {}} />`.
   `save(draft)`: edit → `await update({ templateId: template.templateId as Id<"templates">, name: draft.name, description: draft.description, periodType: draft.periodType, body: draft.body })`; create → `await create({ name: draft.name, periodType: draft.periodType, body: draft.body, ...(draft.description ? { description: draft.description } : {}) })` then `router.push("/templates")`. A rejection propagates to the View (which shows its save error).
   **Forced** (`forced !== null`): `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateBuilderView key={forced} {...fixture} online={forced === "offline" ? false : fixture.online} dark={dark} onToggleTheme={onToggleTheme} onSave={forced === "save-error" ? async () => { throw new Error("forced"); } : async () => {}} onRetry={() => {}} />`; no Convex call and no navigation.
-  **Fixtures** (`apps/web/lib/e2e/fixtures/template-builder.ts`, `import type { TemplateBuilderViewProps } from "@/components/template-builder/TemplateBuilderView";` only): `export const FIXTURES: Record<"default" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateBuilderViewProps, "dark" | "onToggleTheme" | "onSave" | "onRetry">>` with the data of the TFV2-0287a harness states of the same names, copied verbatim (`exampleIso: "2026-10-15"`; `loading`/`missing`/`error` use `mode: "create"`, `note: "none"`, `copyOfName: ""`, the `empty` `initial`).
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-builder.ts`, `import type { TemplateBuilderViewProps } from "@/components/template-builder/TemplateBuilderView";` only): `export const FIXTURES: Record<"default" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateBuilderViewProps, "dark" | "onToggleTheme" | "onSave" | "onRetry">>`; every entry has `state: "default"`, `online: true`, `mode: "create"`, `note: "none"`, `copyOfName: ""`, `initial: { name: "", description: "", periodType: "none", body: "" }`, `exampleIso: "2026-10-15"`, except: `default` (`mode: "edit"`, `initial: { name: "Talk prep", description: "The day before a talk", periodType: "none", body: "# Talk prep\n\n## The one thing\n\n## Before the talk\n- [ ] Finish the slides\n" }`), `loading` (`state: "loading"`), `missing` (`state: "missing"`), `error` (`state: "error"`), `offline` (`mode: "edit"`, `initial: { name: "Talk prep", description: "The day before a talk", periodType: "none", body: "# Talk prep\n\n## The one thing\n\n## Before the talk\n- [ ] Finish the slides\n" }`, `online: false`), `save-error` (`initial: { name: "Reading log", description: "", periodType: "none", body: "" }`).
   No new visible string; states and copy are the View's.
-- **TESTS:** (route spec; `openScreen(page, "/templates/builder", { state, lang })`; each asserts `template-builder-route` is attached; console filter `/example\.convex\.cloud|WebSocket/i` as TFV2-0132b; 8 × 4 = 32)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/builder", { state, lang })`; each asserts `template-builder-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 8 × 4 = 32)
   1. Given `?state=default` / Then the sr-only `h1` reads "Template builder" (HE "בניית תבנית"), `#template-name` has "Talk prep" and one `.tp-btn--primary` reads "Save template" (HE "שמירת התבנית").
   2. Given `?state=default` / When "Talk prep 2" is filled into `#template-name` and Save is clicked / Then "Template saved. It shows in Templates." (HE "התבנית נשמרה. היא מופיעה בתבניות.") is visible and the URL still ends with `?state=default&lang=<lang>`.
   3. Given `?state=empty` / Then "A blank template." (HE "תבנית ריקה.") is visible.
@@ -22781,6 +22824,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0288a — View: TemplateRunView (`apps/web/components/template-run/TemplateRunView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
@@ -22796,7 +22840,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "template-run-view", { lang })`) with the 11 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-run-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `useRouter` or `fetch`; judge or require any answer; import `TemplateRun.tsx`, `ProposalBanner.tsx` or anything under `convex/`; edit `TemplateRun.tsx`, `TemplateRun.test.tsx`, `UndoToast.tsx`, `tempo.css`, `globals.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0288a / evidence: <DONE output> / changed: apps/web/components/template-run/TemplateRunView.tsx, apps/web/app/e2e/components/template-run-view/page.tsx, tests/e2e/screens/template-run-view.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -22885,10 +22929,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0288b — Route: /templates/run/[id]
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0288a, TFV2-0000b, TFV2-0000c, TFV2-0239c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0288a, TFV2-0000b, TFV2-0000c, TFV2-0239c.
-- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-run.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(bare)/templates/run/[id]/page.tsx` is a server page rendering `<div data-testid="template-run-route"><ProfileReady><TemplateRun templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-run-route` on `/templates/run/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `routeParam` (`apps/web/lib/route-param.ts`) decodes a percent-encoded segment (`starter%3Adaily-page`). `templates.get` exists; `templates.apply` comes from TFV2-0239c (not OPEN); `notes.remove` exists (`convex/notes.ts` line 508, soft delete, `{ noteId: Id<"notes"> }` → `{ success: true; undoUntilMs: number }`, throws `"Note not found"`). Answers live in component state only here; the autosaved run draft is TFV2-0288c (OPEN).
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-run.html`; CONVENTIONS §14, §22 (route pattern: an error boundary around `ProfileReady`, written out in SPEC "page.tsx"). Code truth: `apps/web/app/(bare)/templates/run/[id]/page.tsx` is a server page rendering `<div data-testid="template-run-route"><ProfileReady><TemplateRun templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-run-route` on `/templates/run/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `routeParam` (`apps/web/lib/route-param.ts`) decodes a percent-encoded segment (`starter%3Adaily-page`). `templates.get` exists; `templates.apply` comes from TFV2-0239c (not OPEN); `notes.remove` exists (`convex/notes.ts` line 508, soft delete, `{ noteId: Id<"notes"> }` → `{ success: true; undoUntilMs: number }`, throws `"Note not found"`). Answers live in component state only here; the autosaved run draft is TFV2-0288c (OPEN).
 - **GOAL:** `/templates/run/[id]` reads `templates.get` in `page.tsx`, renders `TemplateRunView`, makes the page with `templates.apply`, takes it back with `notes.remove`, and renders a typed fixture for every forced `?state=`, keeping the `template-run-route` test id.
 - **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/template-run.ts` · test: `tests/e2e/screens/template-run.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
 - **MUTATES:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-run.ts` (new) · `tests/e2e/screens/template-run.spec.ts` (new) · runtime writes through `templates.apply` (insert one `notes` row) and `notes.remove` (soft-delete that row on Undo).
@@ -22899,7 +22944,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → `28 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateRunView.tsx`, `TemplateRun.tsx` (stays, unimported), `TemplateRun.test.tsx`, `ProposalBanner.tsx`, `e2eWiringRoutes.ts`; call `templates.getRunDraft`/`saveRunDraft` (TFV2-0288c, OPEN) or `notes.create`; pass `onAnswer`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0288b / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/run/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-run.ts, tests/e2e/screens/template-run.spec.ts / unknowns / notes for ticket sync: TemplateRun.tsx and ProposalBanner.tsx are no longer imported by a route; their bun test still runs`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -22908,12 +22953,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.templates.apply  // mutation { templateId: string; answers: Record<string, string>; title?: string } → Id<"notes">   (TFV2-0239c; throws "Template not found", "Access denied", "Step not found", "Answer is too long", "Page body is too long")
   api.notes.remove     // mutation { noteId: Id<"notes"> } → { success: true; undoUntilMs: number }   (existing; throws "Note not found")
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="template-run-route"><Suspense fallback={null}><RunRoute /></Suspense></div>`. `RunRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)` (`useParams` from `next/navigation`); `NOOP = { onMake: async () => "", onUndoMake: async () => {}, onRetry: () => {} }`; a `RunBoundary` class (pattern of TFV2-0132b) whose failed render is `<TemplateRunView state="error" online={online} template={null} initialAnswers={{}} {...NOOP} onRetry={retry} />` and which remounts its children with a new `key` on retry; inside it `<ProfileReady fallback={<TemplateRunView state="loading" online={online} template={null} initialAnswers={{}} {...NOOP} />}><RunLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-run-route"><Suspense fallback={null}><RunRoute /></Suspense></div>`. `RunRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)` (`useParams` from `next/navigation`); `NOOP = { onMake: async () => "", onUndoMake: async () => {}, onRetry: () => {} }`; a `RunBoundary` class (`getDerivedStateFromError` → `failed`) whose failed render is `<TemplateRunView state="error" online={online} template={null} initialAnswers={{}} {...NOOP} onRetry={retry} />` and which remounts its children with a new `key` on retry; inside it `<ProfileReady fallback={<TemplateRunView state="loading" online={online} template={null} initialAnswers={{}} {...NOOP} />}><RunLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
   `RunLive`: `template = useQuery(api.templates.get, forced ? "skip" : { templateId })`; `apply = useMutation(api.templates.apply)`; `remove = useMutation(api.notes.remove)`; `state = template === undefined ? "loading" : template === null ? "missing" : "default"`; render `<TemplateRunView key={template?.templateId ?? "none"} state={state} online={online} template={template ? { templateId: template.templateId, name: template.name, description: template.description, sections: template.sections } : null} initialAnswers={{}} onMake={async (answers, title) => String(await apply({ templateId, answers, ...(title ? { title } : {}) }))} onUndoMake={async (noteId) => { await remove({ noteId: noteId as Id<"notes"> }); }} onRetry={() => {}} />`. Rejections propagate to the View.
   **Forced:** `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateRunView {...fixture} online={forced === "offline" ? false : fixture.online} onMake={forced === "make-error" ? async () => { throw new Error("forced"); } : async () => "notes:forced"} onUndoMake={async () => {}} onRetry={() => {}} />`; no Convex call.
-  **Fixtures** (`apps/web/lib/e2e/fixtures/template-run.ts`, `import type { TemplateRunViewProps } from "@/components/template-run/TemplateRunView";` only): `export const FIXTURES: Record<"default" | "no-questions" | "loading" | "missing" | "error" | "offline" | "make-error", Omit<TemplateRunViewProps, "onAnswer" | "onMake" | "onUndoMake" | "onRetry">>` with the data of the TFV2-0288a harness states of the same names, copied verbatim (`initialAnswers: {}` everywhere; `make-error` uses the `default` template).
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-run.ts`, `import type { TemplateRunViewProps } from "@/components/template-run/TemplateRunView";` only): `export const FIXTURES: Record<"default" | "no-questions" | "loading" | "missing" | "error" | "offline" | "make-error", Omit<TemplateRunViewProps, "onAnswer" | "onMake" | "onUndoMake" | "onRetry">>`; every entry has `state: "default"`, `online: true`, `template: { templateId: "starter:weekly-page", name: "Weekly page", description: "A week in outcomes.", sections: ["Week", "Outcomes", "Days", "Outcomes"] }`, `initialAnswers: {}`, except: `no-questions` (`template: { templateId: "templates:5", name: "Blank", sections: [] }`), `loading` (`state: "loading"`, `template: null`), `missing` (`state: "missing"`, `template: null`), `error` (`state: "error"`, `template: null`), `offline` (`online: false`).
   No new visible string; states and copy are the View's.
-- **TESTS:** (route spec; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 7 × 4 = 28)
   1. Given `?state=default` / Then the `h1` reads "Weekly page" and "Step 1 of 4" (HE "שלב 1 מתוך 4") is visible.
   2. Given `?state=default` / When Next is clicked four times / Then "Your page Weekly page is ready." (HE "הדף Weekly page מוכן.") is visible and a link to `/notes/notes%3Aforced` reads "Open the page" (HE "לפתוח את הדף").
   3. Given `?state=no-questions` / Then "No questions in this one." (HE "אין שאלות בתבנית הזו.") is visible.
@@ -22926,6 +22971,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0288c — Route: /templates/run/[id] keeps a run draft (`apps/web/app/(bare)/templates/run/[id]/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0239a (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?); inherits TFV2-0239b (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0288b, TFV2-0239a, TFV2-0239b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0288b, TFV2-0239a, TFV2-0239b.
@@ -22940,7 +22986,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 3 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run-draft.spec.ts --reporter=line` → `12 passed`; and `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → `28 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-run-draft.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateRunView.tsx`; save the page-name step (it is not a heading; `saveRunDraft` would throw `"Step not found"`); block the walk on a failed draft save; change the TFV2-0288b fixtures' existing entries; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0288c / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/run/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-run.ts, tests/e2e/screens/template-run-draft.spec.ts / unknowns / notes for ticket sync`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -22951,15 +22997,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   In `RunLive`: `draft = useQuery(api.templates.getRunDraft, forced ? "skip" : { templateId })`; `saveDraft = useMutation(api.templates.saveRunDraft)`; `state` becomes `template === undefined || (template !== null && draft === undefined) ? "loading" : template === null ? "missing" : "default"`; the View gets `key={(template?.templateId ?? "none") + ":" + (draft?.updatedAt ?? 0)}` only on first load (keep the first non-undefined `draft` in a `useRef` so later `updatedAt` changes do not remount), `initialAnswers={firstDraft?.answers ?? {}}` and `onAnswer={(step, answer) => { void saveDraft({ templateId, step, answer }).catch(() => {}); }}`. Forced: `onAnswer={() => {}}`.
   **Fixture added:** `draft`: the `default` entry with `initialAnswers: { Outcomes: "Finish the talk" }`.
   No new visible string (the draft line is the View's `draftNote`).
-- **TESTS:** (route spec; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; console filter as TFV2-0132b; 3 × 4 = 12)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 3 × 4 = 12)
   1. Given `?state=draft` / Then "Your draft saves as you go. Leaving is safe." (HE "הטיוטה נשמרת תוך כדי. אפשר לצאת בלי לאבד כלום.") is visible.
   2. Given `?state=draft` / When Next is clicked twice / Then `#step-q` reads "Outcomes" and `#run-answer` has "Finish the talk".
   3. Given `?state=default` / Then the draft line is still visible (forced mode passes `onAnswer`) and Next ×4 still reaches "Open the page" (HE "לפתוח את הדף").
 - **NUMBERS:** 12 of 12 draft cases and 28 of 28 TFV2-0288b cases pass · one `saveRunDraft` call per step left with Next or Skip.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0239a → CFG-009 (are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
+- **OPEN:** inherits TFV2-0239a (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?); inherits TFV2-0239b (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
 
 ### TFV2-0289a — View: TemplateEditorView (`apps/web/components/template-builder/TemplateEditorView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
@@ -22975,7 +23022,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "template-editor-view", { lang })`) with the 11 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-editor-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `useRouter`, `useOnline` or `fetch`; import `TemplateEditor.tsx` or `TemplateBuilder.tsx`; change the words under a heading (only heading lines move, rename or go); lose typed values when the name is empty; add Tags or an "Offer on new empty pages" switch; edit `template-sections.ts`, `UndoToast.tsx`, `TemplateEditor.tsx`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0289a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateEditorView.tsx, apps/web/app/e2e/components/template-editor-view/page.tsx, tests/e2e/screens/template-editor-view.spec.ts / unknowns / notes for ticket sync: Tags and "Offer on new empty pages" (design) have no backend field`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -23067,10 +23114,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0289b — Route: /templates/editor/[id]
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0289a, TFV2-0000b, TFV2-0000c, TFV2-0235b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0289a, TFV2-0000b, TFV2-0000c, TFV2-0235b.
-- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-editor.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` is a server page rendering `<div data-testid="template-editor-route"><ProfileReady><TemplateEditorScreen templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-editor-route` on `/templates/editor/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.get` exists; `templates.update` is verified by TFV2-0235b.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-editor.html`; CONVENTIONS §14, §22 (route pattern: an error boundary around `ProfileReady`, written out in SPEC "page.tsx"). Code truth: `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` is a server page rendering `<div data-testid="template-editor-route"><ProfileReady><TemplateEditorScreen templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-editor-route` on `/templates/editor/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.get` exists; `templates.update` is verified by TFV2-0235b.
 - **GOAL:** `/templates/editor/[id]` reads `templates.get` in `page.tsx`, renders `TemplateEditorView`, saves through `templates.update`, and renders a typed fixture for every forced `?state=`, keeping the `template-editor-route` test id.
 - **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/template-editor.ts` · test: `tests/e2e/screens/template-editor.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
 - **MUTATES:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-editor.ts` (new) · `tests/e2e/screens/template-editor.spec.ts` (new) · runtime writes through `templates.update` (patch one `templates` row).
@@ -23081,7 +23129,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor.spec.ts --reporter=line` → `28 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-editor.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateEditorView.tsx`, `TemplateEditor.tsx` (stays, unimported) or `e2eWiringRoutes.ts`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0289b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/editor/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-editor.ts, tests/e2e/screens/template-editor.spec.ts / unknowns / notes for ticket sync: TemplateEditor.tsx is no longer imported by a route`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -23089,12 +23137,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   api.templates.get     // query    { templateId: string } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[]; body: string; updatedAt?: number } | null
   api.templates.update  // mutation { templateId: Id<"templates">; name?: string; description?: string; periodType?: …; body?: string } → Id<"templates">   (TFV2-0235b; throws "Name is required", "Starter templates cannot be changed", "Template not found", "Access denied")
   ```
-  **page.tsx:** `"use client"`; default export `<div data-testid="template-editor-route"><Suspense fallback={null}><EditorRoute /></Suspense></div>`. `EditorRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)`; `NOOP = { onSave: async () => {}, onRetry: () => {} }`; an `EditorBoundary` class (pattern of TFV2-0132b) whose failed render is `<TemplateEditorView state="error" online={online} template={null} {...NOOP} onRetry={retry} />` and which remounts its children on retry; inside it `<ProfileReady fallback={<TemplateEditorView state="loading" online={online} template={null} {...NOOP} />}><EditorLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-editor-route"><Suspense fallback={null}><EditorRoute /></Suspense></div>`. `EditorRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)`; `NOOP = { onSave: async () => {}, onRetry: () => {} }`; an `EditorBoundary` class (`getDerivedStateFromError` → `failed`) whose failed render is `<TemplateEditorView state="error" online={online} template={null} {...NOOP} onRetry={retry} />` and which remounts its children on retry; inside it `<ProfileReady fallback={<TemplateEditorView state="loading" online={online} template={null} {...NOOP} />}><EditorLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
   `EditorLive`: `template = useQuery(api.templates.get, forced ? "skip" : { templateId })`; `update = useMutation(api.templates.update)`; `state = template === undefined ? "loading" : template === null ? "missing" : "default"`; render `<TemplateEditorView key={template?.templateId ?? "none"} state={state} online={online} template={template ? { templateId: template.templateId, source: template.source, name: template.name, description: template.description, periodType: template.periodType, body: template.body } : null} onSave={async (draft) => { await update({ templateId: template!.templateId as Id<"templates">, name: draft.name, description: draft.description, periodType: draft.periodType, body: draft.body }); }} onRetry={() => {}} />`. A rejection propagates to the View.
   **Forced:** `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateEditorView key={forced} {...fixture} online={forced === "offline" ? false : fixture.online} onSave={forced === "save-error" ? async () => { throw new Error("forced"); } : async () => {}} onRetry={() => {}} />`; no Convex call.
-  **Fixtures** (`apps/web/lib/e2e/fixtures/template-editor.ts`, `import type { TemplateEditorViewProps } from "@/components/template-builder/TemplateEditorView";` only): `export const FIXTURES: Record<"default" | "starter" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateEditorViewProps, "onSave" | "onRetry">>` with the data of the TFV2-0289a harness states of the same names, copied verbatim.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-editor.ts`, `import type { TemplateEditorViewProps } from "@/components/template-builder/TemplateEditorView";` only): `export const FIXTURES: Record<"default" | "starter" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateEditorViewProps, "onSave" | "onRetry">>`; every entry has `state: "default"`, `online: true`, `template: { templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", body: "# Moving week\n\n## Boxes\n- [ ] Kitchen\n\n## Keys\nWho has which key.\n" }`, except: `starter` (`template: { templateId: "starter:daily-page", source: "starter", name: "Daily page", description: "A short outline for one day.", periodType: "daily", body: "# Today\n\n## Intention\n" }`), `empty` (`template: { templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", body: "" }`), `loading` (`state: "loading"`, `template: null`), `missing` (`state: "missing"`, `template: null`), `error` (`state: "error"`, `template: null`), `offline` (`online: false`).
   No new visible string; states and copy are the View's.
-- **TESTS:** (route spec; `openScreen(page, "/templates/editor/templates%3A1", { state, lang })`; each asserts `template-editor-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/editor/templates%3A1", { state, lang })`; each asserts `template-editor-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 7 × 4 = 28)
   1. Given `?state=default` / Then the `h1` reads "Edit template" (HE "עריכת תבנית") and 3 `#ed-sections li` render.
   2. Given `?state=default` / When `#ed-name` is cleared and "Save changes" (HE "שמירת השינויים") is clicked / Then "One thing to fix before saving" (HE "דבר אחד לתקן לפני השמירה") is visible and focused.
   3. Given `?state=starter` / Then "Make my own copy" (HE "ליצור עותק משלי") is visible; Given `?state=empty` / Then "No sections yet." (HE "עדיין אין קטעים.") is visible.
@@ -23107,6 +23155,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0290a — View: TemplateSketchView (`apps/web/components/template-builder/TemplateSketchView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122.
@@ -23122,7 +23171,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec (§22 skeleton, `openHarness(page, "template-sketch-view", { lang })`) with the 11 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-sketch-view.spec.ts --reporter=line`, plus typecheck/lint exit codes, pasted into the PR.
 - **DO NOT:** call Convex, `useAction`, `useMutation` or `fetch`; save anything before Accept; draft the template in code (`parseSketch` is not used here); import `TemplateSketch.tsx` or anything under `convex/`; run `expectMotionBudget` on a section showing the typing dots; edit `TemplateSketch.tsx`, `template-sketch.ts`, `template-sections.ts`, `UndoToast.tsx`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0290a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateSketchView.tsx, apps/web/app/e2e/components/template-sketch-view/page.tsx, tests/e2e/screens/template-sketch-view.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
 - **SPEC:**
@@ -23220,10 +23269,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0290b — Route: /templates/sketch
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0290a, TFV2-0000b, TFV2-0000c, TFV2-0241c, TFV2-0241d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0290a, TFV2-0000b, TFV2-0000c, TFV2-0241c, TFV2-0241d.
-- **WHY:** PRD F-23; design `docs/design/v3/screens/web/template-sketch.html`; HARD_RULES §1 (nothing saves until Accept; Undo 5:00); CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(tempo)/templates/sketch/page.tsx` is a server page rendering `<div data-testid="template-sketch-route"><ProfileReady><TemplateSketch /></ProfileReady></div>`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.proposeTemplate` (action, TFV2-0241c) and `templates.createFromProposal` (TFV2-0241d) are not OPEN; `templates.remove` exists (`{ templateId: Id<"templates"> }` → `null`, soft delete). The outline lives in component state only here; outline autosave is TFV2-0290c (OPEN). e2e never calls the model: forced states use fixture callbacks and no Convex call.
+- **WHY:** PRD F-23; design `docs/design/v3/screens/web/template-sketch.html`; HARD_RULES §1 (nothing saves until Accept; Undo 5:00); CONVENTIONS §14, §22 (route pattern: an error boundary around `ProfileReady`, written out in SPEC "page.tsx"). Code truth: `apps/web/app/(tempo)/templates/sketch/page.tsx` is a server page rendering `<div data-testid="template-sketch-route"><ProfileReady><TemplateSketch /></ProfileReady></div>`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.proposeTemplate` (action, TFV2-0241c) and `templates.createFromProposal` (TFV2-0241d) are not OPEN; `templates.remove` exists (`{ templateId: Id<"templates"> }` → `null`, soft delete). The outline lives in component state only here; outline autosave is TFV2-0290c (OPEN). e2e never calls the model: forced states use fixture callbacks and no Convex call.
 - **GOAL:** `/templates/sketch` wires `TemplateSketchView` to `templates.proposeTemplate`, `templates.createFromProposal` and `templates.remove` (Undo), and renders a typed fixture for every forced `?state=`, keeping the `template-sketch-route` test id.
 - **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` · `apps/web/lib/e2e/fixtures/template-sketch.ts` · test: `tests/e2e/screens/template-sketch.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
 - **MUTATES:** `apps/web/app/(tempo)/templates/sketch/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-sketch.ts` (new) · `tests/e2e/screens/template-sketch.spec.ts` (new) · runtime: one model call per proposal through `proposeTemplate`; `createFromProposal` inserts one `templates` row on Accept; `templates.remove` soft-deletes it on Undo.
@@ -23234,7 +23284,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateSketchView.tsx`, `TemplateSketch.tsx` (stays, unimported) or `e2eWiringRoutes.ts`; call `templates.create`, `templates.getSketch` or `templates.saveSketch` (TFV2-0290c, OPEN); call a model or Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0290b / evidence: <DONE output> / changed: apps/web/app/(tempo)/templates/sketch/page.tsx, apps/web/lib/e2e/fixtures/template-sketch.ts, tests/e2e/screens/template-sketch.spec.ts / unknowns / notes for ticket sync: TemplateSketch.tsx is no longer imported by a route`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -23248,7 +23298,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   **Forced** (`function SketchForced({ forced }: { forced: string }): React.JSX.Element`, no Convex hook, rendered only by `SketchRoute`): `const f = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.default;` render `<TemplateSketchView state={f.state} online={forced === "offline" ? false : true} initialOutline={f.initialOutline} onPropose={f.propose === "fail" ? async () => { throw new Error("forced"); } : f.propose === "wait" ? () => new Promise<never>(() => {}) : async () => f.proposal} onAccept={f.acceptFails ? async () => { throw new Error("forced"); } : async () => "templates:forced"} onUndoAccept={async () => {}} />`; no Convex call.
   **Fixtures** (`apps/web/lib/e2e/fixtures/template-sketch.ts`, `import type { SketchProposal, TemplateSketchViewProps } from "@/components/template-builder/TemplateSketchView";` only): `export const FIXTURES: Record<"default" | "prefilled" | "thinking" | "propose-error" | "no-proposal" | "save-error" | "loading" | "offline", { state: TemplateSketchViewProps["state"]; initialOutline: string; propose: "ok" | "wait" | "fail"; proposal: SketchProposal | null; acceptFails: boolean }>`; every entry has `state: "default"`, `initialOutline: ""`, `propose: "ok"`, `proposal: { name: "Morning check", body: "# Morning check\n\n## Sleep\n\n## Mood\n", period: "daily" }`, `acceptFails: false`, except: `prefilled` (`initialOutline: "Morning check\nSleep\nMood"`), `thinking` (`propose: "wait"`), `propose-error` (`propose: "fail"`), `no-proposal` (`proposal: null`), `save-error` (`acceptFails: true`), `loading` (`state: "loading"`).
   No new visible string; states and copy are the View's.
-- **TESTS:** (route spec; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 7 × 4 = 28)
   1. Given `?state=default` / Then the `h1` reads "Sketch a template" (HE "שרטוט תבנית") and "Nothing sketched yet." (HE "עדיין לא שורטט כלום.") is visible.
   2. Given `?state=prefilled` / When "Turn into a template" (HE "להפוך לתבנית") is clicked / Then the proposal card's title reads "Morning check"; When "Accept" (HE "אישור") is clicked / Then "Saved to Templates." (HE "נשמרה בתבניות.") is visible in the card and in a toast.
   3. Given `?state=thinking` / When an outline is typed and "Turn into a template" is clicked / Then "Coach is writing" (HE "המאמן כותב") is visible.
@@ -23261,6 +23311,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0290c — Route: /templates/sketch autosaves the outline (`apps/web/app/(tempo)/templates/sketch/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0241a (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?); inherits TFV2-0241b (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0290b, TFV2-0241a, TFV2-0241b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0290b, TFV2-0241a, TFV2-0241b.
@@ -23275,7 +23326,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create the spec (§22 route skeleton) with the 3 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch-draft.spec.ts --reporter=line` → `12 passed`; and `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → `28 passed`.
-- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/template-sketch-draft.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplateSketchView.tsx`; save on every keystroke; save before the saved outline has loaded; save a proposal or a template here; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0290c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/sketch/page.tsx, apps/web/lib/e2e/fixtures/template-sketch.ts, tests/e2e/screens/template-sketch-draft.spec.ts / unknowns / notes for ticket sync`; STEPS 1–5 with evidence.
 - **SPEC:**
@@ -23285,15 +23336,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```
   In `SketchLive`: `const SKETCH_SAVE_DEBOUNCE_MS = 800;` (module level, not exported); `sketch = useQuery(api.templates.getSketch, forced ? "skip" : {})`; `saveSketch = useMutation(api.templates.saveSketch)`; `draftStatus` state (`"saving" | "saved" | undefined`); a timer ref. `state = sketch === undefined ? "loading" : "default"`; `initialOutline = sketch?.text ?? ""` with `key={sketch === undefined ? "loading" : "loaded"}` so the View mounts once with the loaded text. `onOutlineChange(text)`: clear the timer; `setDraftStatus("saving")`; start a `SKETCH_SAVE_DEBOUNCE_MS` timer that calls `saveSketch({ text })` and then `setDraftStatus("saved")`, or on rejection `setDraftStatus(undefined)`; the timer is cleared on unmount. Pass `draftStatus` and `onOutlineChange` to the View; the TFV2-0290b callbacks stay as they are.
   No new visible string ("Saving…" / "Saved" are the View's `draftSaving` / `draftSaved`).
-- **TESTS:** (route spec; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; console filter as TFV2-0132b; 3 × 4 = 12)
+- **TESTS:** (the §22 spec skeleton, route form: `const errors = trackConsoleErrors(page)` first; both viewports × both languages; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; errors filtered with `/example\.convex\.cloud|WebSocket/i`, then `expect(…).toEqual([])`; 3 × 4 = 12)
   1. Given `?state=prefilled` / Then `#sk-outline` has "Morning check⏎Sleep⏎Mood" (⏎ = a line break) and `[data-draft-status]` reads "Saved" (HE "נשמר").
   2. Given `?state=default` / Then no `[data-draft-status]` is present.
   3. Given no `?state` (signed out under the bypass) / Then `[data-component="StateLoading"]` is attached (the `getSketch` query never resolves against the placeholder Convex URL) and the URL does not match `/sign-in/`.
 - **NUMBERS:** one `saveSketch` call per 800 ms pause in typing (`SKETCH_SAVE_DEBOUNCE_MS`) · sketch ≤ 2,000 characters server-side (`SKETCH_TEXT_MAX`); the View's 1,000-character `maxLength` stays inside it · 12 of 12 draft cases and 28 of 28 TFV2-0290b cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0241a → CFG-010 (is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
+- **OPEN:** inherits TFV2-0241a (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?); inherits TFV2-0241b (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
 
 ### TFV2-0306 — Component: SettingsSection (`apps/web/components/settings/SettingsSection.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23309,7 +23361,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/settings-section.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "settings-section", { lang })`) and the 3 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-section.spec.ts --reporter=line` → `12 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-section.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** render rows itself (callers pass `SettingRow`s, TFV2-0307, as `children`); set colours, padding or borders inline; add a stylesheet or edit `apps/web/app/tempo.css`; edit the existing inline sections in `PrivacySettings.tsx`, `PreferencesForm.tsx` or `ask-founder/page.tsx`; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0306 / evidence: <DONE output> / changed: apps/web/components/settings/SettingsSection.tsx, apps/web/app/e2e/components/settings-section/page.tsx, tests/e2e/screens/settings-section.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23344,6 +23396,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0307 — Component: SettingRow (`apps/web/components/settings/SettingRow.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23359,7 +23412,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/setting-row.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "setting-row", { lang })`) and the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/setting-row.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/setting-row.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** render a control of its own (switches, selects and buttons come through `control`); show danger by colour alone (the caller's button carries a word and an icon; the row only tints the label); add a stylesheet or edit `tempo.css`; edit `apps/web/components/settings/controls.tsx` or any existing settings file; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0307 / evidence: <DONE output> / changed: apps/web/components/settings/SettingRow.tsx, apps/web/app/e2e/components/setting-row/page.tsx, tests/e2e/screens/setting-row.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23400,6 +23453,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0311 — Component: ConfirmDialog (`apps/web/components/settings/ConfirmDialog.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23415,7 +23469,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/confirm-dialog.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "confirm-dialog", { lang })`) and the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/confirm-dialog.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/confirm-dialog.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** make the destructive Confirm the accent (`tp-btn--primary` is for the neutral tone only); close on a scrim click or Escape while `busy`; use the native `disabled` attribute for a blocked Confirm (it must stay focusable and say why, via `aria-disabled` + `aria-describedby`); add a stylesheet or edit `tempo.css`; edit `DeleteAccountCard.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0311 / evidence: <DONE output> / changed: apps/web/components/settings/ConfirmDialog.tsx, apps/web/app/e2e/components/confirm-dialog/page.tsx, tests/e2e/screens/confirm-dialog.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23468,6 +23522,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0291a — View: AskFounderView (`apps/web/components/ask-founder/AskFounderView.tsx`) — OPEN
+- **STATUS:** open — new: Are the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"), and in particular is priority part of the message?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0111, TFV2-0113, TFV2-0114, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306 · **Folds-in:** #475 (T-SCR-25)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0111, TFV2-0113, TFV2-0114, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306.
@@ -23484,7 +23539,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/ask-founder-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "ask-founder-view", { lang })`) and the 11 TESTS bullets; the spec keeps its own `EXPECT` copy table (it never imports the View).
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/ask-founder-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; attach page, task or chat content; send email from the UI or render a `mailto:` link; set `required` on the fields (native validation would block the error summary); add a stylesheet or edit `tempo.css`, `apps/web/app/v3/*.css`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0291a / evidence: <DONE output> / changed: apps/web/components/ask-founder/AskFounderView.tsx, apps/web/app/e2e/components/ask-founder-view/page.tsx, tests/e2e/screens/ask-founder-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -23567,9 +23622,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="ask-founder-view-default"]')` and `expectMotionBudget(page, '[data-testid="ask-founder-view-default"]')` pass.
 - **NUMBERS:** subject ≤ 120 characters (design `maxlength="120"`; `ASK_FOUNDER_SUBJECT_MAX`; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 and control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only, `bun run scan:design-tokens` passes) · error identification in text (WCAG 2.2 SC 3.3.1; bullets 2–3) · focus visible ≥ 2 px (SC 2.4.7; global `:focus-visible`) · motion ≤ 250 ms (DESIGN.md; bullet 11) · 44 of 44 pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) follow the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"); confirm that shape (in particular that priority is part of the message) before this View is built — Amit.
+- **OPEN:** new: Are the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"), and in particular is priority part of the message? — Amit.
 
 ### TFV2-0291b — Route: /ask-founder — OPEN
+- **STATUS:** open — inherits TFV2-0291a (new: Are the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"), and in particular is priority part of the message?); inherits TFV2-0268 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0291a, TFV2-0000b, TFV2-0000c, TFV2-0266a, TFV2-0268 · **Folds-in:** #475 (T-SCR-25)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0291a, TFV2-0000b, TFV2-0000c, TFV2-0266a, TFV2-0268.
@@ -23585,7 +23641,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/ask-founder.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen(page, "/ask-founder", { state, lang })` plus the console-error filter) and the 8 TESTS bullets.
   6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line` (the existing wiring specs stay green), `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both Playwright summaries (screen spec and `tests/e2e/wiring`) and the typecheck / lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/ask-founder.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the typecheck / lint exit codes, pasted into the PR.
 - **DO NOT:** contact Convex when `?state=` is forced; keep or add a `mailto:` link; attach page, task or chat content to the message; edit `AskFounderView.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*` (the `set.founder.*` keys stay, unused by this route); change any other line of `e2eWiringRoutes.ts`; edit `proxy.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0291b / evidence: <DONE output> / changed: apps/web/app/(tempo)/ask-founder/page.tsx, apps/web/lib/e2e/fixtures/ask-founder.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/ask-founder.spec.ts / unknowns / notes for ticket sync: the set.founder.mail / set.founder.mailHelp i18n keys are no longer used`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23644,9 +23700,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `?state=failed` / Then a `role="alert"` element contains "Couldn't send your message." (HE "לא הצלחנו לשלוח את ההודעה.") and the "Send to Amit" button is enabled; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="ask-founder-page"]')` and `expectMotionBudget(page, '[data-testid="ask-founder-page"]')` pass.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 1) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview; not a ticket gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · subject ≤ 120 characters (from the View) · backend p95 latency of `askFounder.submit`: UNKNOWN (no baseline; not a gate) · 32 of 32 pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+- **OPEN:** inherits TFV2-0291a (new: Are the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"), and in particular is priority part of the message?); inherits TFV2-0268 (new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?; new: Is a 4,000-character message cap with no per-user rate limit right?) — Amit.
 
 ### TFV2-0292 — Component: Container (`apps/web/components/marketing/Container.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23662,7 +23719,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/container.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/container.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** add a stylesheet or inline style; set colours, fonts or a background (layout only); import another component; edit `MarketingChrome.tsx`, `LandingPage.tsx` or the marketing pages; touch `apps/web/app/tempo.css`, `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0292 / evidence: <DONE output> / changed: apps/web/components/marketing/Container.tsx, apps/web/app/e2e/components/container/page.tsx, tests/e2e/screens/container.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23692,6 +23749,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0293 — Component: SiteHeader (`apps/web/components/marketing/SiteHeader.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23707,7 +23765,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-header.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/site-header.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** use `.tp-glass` or any translucent surface; add a theme toggle, a brand image or a "Sign up" link (not in the v3 design); import `LanguageSwitch` or any other component (the switch arrives through the slot); call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; edit `MarketingChrome.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0293 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteHeader.tsx, apps/web/app/e2e/components/site-header/page.tsx, tests/e2e/screens/site-header.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23762,6 +23820,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0294 — Component: Hero (`apps/web/components/marketing/Hero.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23777,7 +23836,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/hero.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/hero.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** add metrics, counters, badges or "facts" rows; render more than one `.tp-btn--primary`; use glass; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; edit the marketing pages; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0294 / evidence: <DONE output> / changed: apps/web/components/marketing/Hero.tsx, apps/web/app/e2e/components/hero/page.tsx, tests/e2e/screens/hero.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23828,6 +23887,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0295 — Component: FeatureRow (`apps/web/components/marketing/FeatureRow.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23843,7 +23903,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/feature-row.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/feature-row.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** render images, screenshots or stock art; import any figure or other component (figures come through `figure`); make the figure focusable or interactive; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0295 / evidence: <DONE output> / changed: apps/web/components/marketing/FeatureRow.tsx, apps/web/app/e2e/components/feature-row/page.tsx, tests/e2e/screens/feature-row.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23889,6 +23949,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0296 — Component: HowItWorks (`apps/web/components/marketing/HowItWorks.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23904,7 +23965,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/how-it-works.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/how-it-works.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** add steps, icons or progress indicators; let screen readers read the number twice (the `ol` already numbers); add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0296 / evidence: <DONE output> / changed: apps/web/components/marketing/HowItWorks.tsx, apps/web/app/e2e/components/how-it-works/page.tsx, tests/e2e/screens/how-it-works.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23931,6 +23992,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0297 — Component: Quote (`apps/web/components/marketing/Quote.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -23946,7 +24008,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 3 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quote.spec.ts --reporter=line` → `12 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/quote.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** write a testimonial, a real or invented person's name, a rating or a metric anywhere (component or harness); place the Quote on any screen; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0297 / evidence: <DONE output> / changed: apps/web/components/marketing/Quote.tsx, apps/web/app/e2e/components/quote/page.tsx, tests/e2e/screens/quote.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -23968,6 +24030,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0298 — Component: Pricing (`apps/web/components/marketing/Pricing.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0282 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0282.
@@ -23983,7 +24046,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pricing.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/pricing.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** write a price, a currency amount or a minutes number in `Pricing.tsx`; hide, collapse or reorder a tier; pass `onChoose` or `current={true}` to TierCard (the teaser has no choose buttons); edit `TierCard.tsx`; show the yearly note when the rule in SPEC is false; call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0298 / evidence: <DONE output> / changed: apps/web/components/marketing/Pricing.tsx, apps/web/app/e2e/components/pricing/page.tsx, tests/e2e/screens/pricing.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24032,6 +24095,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0299 — Component: FAQ (`apps/web/components/marketing/FAQ.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -24047,7 +24111,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/faq.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/faq.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** add `onClick`, `onToggle`, `useState` or any script; use an accordion library or ARIA accordion roles; open an item by default; add built-in copy; call Convex or `fetch`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0299 / evidence: <DONE output> / changed: apps/web/components/marketing/FAQ.tsx, apps/web/app/e2e/components/faq/page.tsx, tests/e2e/screens/faq.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24076,6 +24140,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0300 — Component: SiteFooter (`apps/web/components/marketing/SiteFooter.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0293 · **Folds-in:** #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0293.
@@ -24091,7 +24156,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets; the spec keeps its own `EXPECT` copy table.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-footer.spec.ts --reporter=line` → `16 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/site-footer.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** omit or reword the "coach, not a therapist" line; add a licence line, an e-mail address, social links or a status line (not in the v3 design); import `LanguageSwitch` or any component (the switch arrives through the slot); call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; edit `MarketingChrome.tsx` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0300 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteFooter.tsx, apps/web/app/e2e/components/site-footer/page.tsx, tests/e2e/screens/site-footer.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24142,6 +24207,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0301 — Component: LanguageSwitch (`apps/web/components/marketing/LanguageSwitch.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -24157,7 +24223,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/language-switch.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/language-switch.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** call `setLang`, write `localStorage` or navigate inside the component (the screen decides through `onChoose`); use a `<select>` or a menu that hides Hebrew; translate the language names; edit or delete `MarketingChrome.tsx`; call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0301 / evidence: <DONE output> / changed: apps/web/components/marketing/LanguageSwitch.tsx, apps/web/app/e2e/components/language-switch/page.tsx, tests/e2e/screens/language-switch.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24201,6 +24267,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0303b; not a build ticket.
 
 ### TFV2-0303a — Component: LandingFigures (`apps/web/components/marketing/LandingFigures.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -24216,7 +24283,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/landing-figures.spec.ts --reporter=line` → `20 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/landing-figures.spec.ts --reporter=line`, plus the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** import TaskRow, ListRow, ProposalCard, VoiceCall or any other component except `TpIcon`; add `onClick` or any behaviour; call Convex, `fetch` or any hook other than `useLocale` / `useId`; add images or screenshots; add a stylesheet; edit `LandingPage.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0303a / evidence: <DONE output> / changed: apps/web/components/marketing/LandingFigures.tsx, apps/web/app/e2e/components/landing-figures/page.tsx, tests/e2e/screens/landing-figures.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24274,6 +24341,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0303b — Screen: Landing (`/`, `apps/web/app/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); Q-01: Voice stage: is live voice Gen 1 or later?; new: The landing is public and signed out, but `billing.listTiers` as TFV2-0261a specifies it starts with `await requireUser(ctx)` and throws "Not authenticated" for visitors: should `listTiers` answer signed-out callers (drop `requireUser`), or should the landing read the tiers from a static, non-Convex constant shared with `BILLING_TIERS` (and in which file)?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0261a, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300, TFV2-0301, TFV2-0303a · **Folds-in:** #751, #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0261a, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300, TFV2-0301, TFV2-0303a.
@@ -24290,7 +24358,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create the spec with the 7 TESTS bullets.
   7. Run DONE, then `bun test apps/web/lib/landing-copy.test.ts` (unchanged file, must stay green), `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/landing.spec.ts --reporter=line` → `28 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `landing-copy.test.ts` result and the typecheck/lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/landing.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the `landing-copy.test.ts` result and the typecheck/lint exit codes in the PR.
 - **DO NOT:** delete or edit `LandingPage.tsx`, `MarketingChrome.tsx`, `apps/web/lib/landing-copy.ts`, `ThemeToggle.tsx` or `tests/unit/kb-73.test.tsx`; edit `apps/web/lib/e2eWiringRoutes.ts`, `apps/web/lib/rootEntry.ts` or `apps/web/proxy.ts`; hard-code any price, trial length in a component, metric, user count or testimonial; add a Quote; add a second `.tp-btn--primary`; add a stylesheet or new classes; fetch anything other than `billing.listTiers`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0303b / evidence: <DONE output> / changed: apps/web/app/page.tsx, apps/web/components/marketing/LandingScreen.tsx, apps/web/lib/e2e/fixtures/landing.ts, tests/e2e/screens/landing.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -24430,9 +24498,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given state `default` / When the header `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` is the other language, `<html dir>` is its direction, and the `h1` text is the other language's `heroTitle`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; `expectMotionBudget`) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components; `bun run scan:design-tokens` passes) · one primary action (components.md §2.16; bullet 1) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price values: UNKNOWN until Q-02 (none in the screen; fixture numbers are test data).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0261a (Q-02: prices and billing tiers shown to users, including the 3-week trial and the 3-day / 1-day / 1-hour reminders the pricing lede promises) — Amit. Q-01: Voice stage — is live voice Gen 1 or later? (the "Live voice" section, `a3` and the voice figure promise live voice on the public page; if it is later, the section and those words come out) — Amit. New: the landing is public and signed out, but `billing.listTiers` as TFV2-0261a specifies it starts with `await requireUser(ctx)` and throws "Not authenticated" for visitors — should `listTiers` answer signed-out callers (drop `requireUser`), or should the landing read the tiers from a static, non-Convex constant shared with `BILLING_TIERS` (and in which file)? — Amit.
+- **OPEN:** inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); Q-01: Voice stage: is live voice Gen 1 or later?; new: The landing is public and signed out, but `billing.listTiers` as TFV2-0261a specifies it starts with `await requireUser(ctx)` and throws "Not authenticated" for visitors: should `listTiers` answer signed-out callers (drop `requireUser`), or should the landing read the tiers from a static, non-Convex constant shared with `BILLING_TIERS` (and in which file)? — Amit.
 
 ### TFV2-0304 — Screen: About (`/about`, `apps/web/app/about/page.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301.
@@ -24448,7 +24517,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/about.spec.ts --reporter=line` → `24 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/about.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
 - **DO NOT:** add `"/about"` to `PUBLIC_ROUTE_PATTERNS` or edit `rootEntry.ts` / `proxy.ts`; delete or edit `MarketingChrome.tsx` or `apps/web/lib/i18n*`; add a founding story, a founder quote, a team list, numbers or testimonials beyond the SPEC copy; add a second `.tp-btn--primary`; add a stylesheet or new classes; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0304 / evidence: <DONE output> / changed: apps/web/app/about/page.tsx, apps/web/lib/e2e/fixtures/about.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/about.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24531,6 +24600,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0305 — Screen: Changelog (`/changelog`, `apps/web/app/changelog/page.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0093, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0093, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301.
@@ -24546,7 +24616,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create the spec with the 7 TESTS bullets.
   6. Run DONE, then `bun test apps/web/lib/changelog.test.ts` (unchanged, must stay green), `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/changelog.spec.ts --reporter=line` → `28 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `changelog.test.ts` result, the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/changelog.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the `changelog.test.ts` result, the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
 - **DO NOT:** add, edit or reorder entries in `apps/web/lib/changelog.ts` or the `cl.*` keys; copy the design file's sample versions 0.2–0.4 (they describe work that is not in the app); show ticket or PR numbers; mark a change by colour alone; edit `rootEntry.ts`, `proxy.ts`, `MarketingChrome.tsx` or i18n files; add a second `.tp-btn--primary`; add a stylesheet; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0305 / evidence: <DONE output> / changed: apps/web/app/changelog/page.tsx, apps/web/lib/e2e/fixtures/changelog.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/changelog.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24635,6 +24705,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0308a — View: ProfileView (`apps/web/components/settings/ProfileView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0111, TFV2-0113, TFV2-0115, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0111, TFV2-0113, TFV2-0115, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307.
@@ -24651,7 +24722,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/profile-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "profile-view", { lang })`) and the 13 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/profile-view.spec.ts --reporter=line` → `52 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/profile-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useAuthActions` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; make the email editable or offer a password; show a placeholder name such as "User"; edit `ProfileForm.tsx`, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `apps/web/app/v3/settings.css`; set `required` on the inputs (native validation would block the error summary); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0308a / evidence: <DONE output> / changed: apps/web/components/settings/ProfileView.tsx, apps/web/app/e2e/components/profile-view/page.tsx, tests/e2e/screens/profile-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -24720,7 +24791,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | error | Couldn't load your profile. | לא הצלחנו לטעון את הפרופיל. |
     | signedOutTitle | Sign in to see your profile. | צריך להתחבר כדי לראות את הפרופיל. |
     | signIn | Sign in | התחברות |
-    Language option labels are the language's own name in both locales: "English" and "עברית". Strings owned by composed components: StateOffline / StateError / TextInput "(optional)" as in TFV2-0120…0123 / 0113.
+    Language option labels are the language's own name in both locales: "English" and "עברית". Strings owned by composed components: StateOffline / StateError (their own copy, created by TFV2-0120–TFV2-0123) and TextInput "(optional)" (created by TFV2-0113).
   - **States (harness order; `PROFILE = { email: "maya.ronen@example.com", fullName: "Maya Ronen", callMe: "Maya", address: "fem", lang: "en" }` unless noted; `save: "idle"`, `signOut: "idle"`, `online: true`):** `default`, `loading` (`state: "loading"`), `error` (`state: "error"`), `signed-out` (`state: "signed-out"`), `offline` (`online: false`), `saving` (`save: "saving"`), `saved` (`save: "saved"`), `save-failed` (`save: "failed"`), `sign-out-failed` (`signOut: "failed"`). Each in `<section data-testid="profile-view-<state>">`; callbacks write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="profile-view-log">`. Disabled: Save while not dirty or saving; Sign out while signing out; the email field always.
   - **RTL:** `dir` from `LocaleProvider`; logical classes only; names `dir="auto"` (TextInput type text); the email input `dir="ltr"` (TextInput rule). **Keyboard / screen reader:** Tab order = Full name → call-me → the address radios → Language → Save → Undo my edits → Sign out (the disabled email is skipped); errors via the summary (`role="alert"`, focused) and `aria-invalid` + `aria-describedby` on the fields; the radio group is named by its legend and described by its hint. **Breakpoints:** one column at 390 / 768; `.tp-page--narrow` caps at 760 px at 1024 / 1280. **Motion:** none of its own.
 - **TESTS:** (CONVENTIONS §22 skeleton; 13 × 4 = 52; EN/HE from SPEC Copy)
@@ -24742,6 +24813,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0308b — Route: /settings/profile
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0308a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0266a, TFV2-0266b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0308a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0266a, TFV2-0266b.
@@ -24757,7 +24829,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/settings-profile.spec.ts` with the CONVENTIONS §22 spec skeleton (route form) and the 9 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-profile.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both Playwright summaries and the typecheck / lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-profile.spec.ts --reporter=line`, the summary of `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the typecheck / lint exit codes, pasted into the PR.
 - **DO NOT:** edit `apps/web/lib/e2eWiringRoutes.ts`, `ProfileView.tsx`, `apps/web/components/account/ProfileForm.tsx` or its test, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; import `ProfileForm` or `SettingsScreen`; call `users.updateMyProfile`; contact Convex when `?state=` is forced; change the email; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0308b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/settings/profile/page.tsx, apps/web/lib/e2e/fixtures/settings-profile.ts, tests/e2e/screens/settings-profile.spec.ts / unknowns / notes for ticket sync: components/account/ProfileForm.tsx is no longer imported by any route (its unit test still runs); delete it in a cleanup ticket`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -24823,6 +24895,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0309c — Test fixture: kb-59 `next/navigation` mock gains `useSearchParams` (`tests/unit/kb-59.test.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md` (test-only prerequisite of TFV2-0309b; precedent: TFV2-0136c, a prerequisite test edit).
 - **WHEN:** first.
@@ -24853,6 +24926,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0309a — View: PreferencesView (`apps/web/components/settings/PreferencesView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307.
@@ -24869,7 +24943,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/preferences-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "preferences-view", { lang })`) and the 10 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/preferences-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/preferences-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useTheme` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; apply the theme, language, text size or font itself (the route does); add a Save button; make billing notices switchable; render switches for the weekly page or founder replies (no backend field); edit `controls.tsx`, `PreferencesForm.tsx`, `SettingsScreen.tsx`, `CoachWebSearchSetting.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `settings.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0309a / evidence: <DONE output> / changed: apps/web/components/settings/PreferencesView.tsx, apps/web/app/e2e/components/preferences-view/page.tsx, tests/e2e/screens/preferences-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -24954,7 +25028,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | error | Couldn't load your preferences. | לא הצלחנו לטעון את ההעדפות. |
     | signedOutTitle | Sign in to see your preferences. | צריך להתחבר כדי לראות את ההעדפות. |
     | signIn | Sign in | התחברות |
-    Language option labels are "English" and "עברית" in both locales. Strings owned by composed components: `SettingsSwitch` On / Off (`set.on`, `set.off`); `Dial` "Quiet / Steady / Push", "of 10", value text (TFV2-0119); `Badge` none; State components as in TFV2-0120…0123. Time zone option labels are IANA names, shown as given.
+    Language option labels are "English" and "עברית" in both locales. Strings owned by composed components: `SettingsSwitch` On / Off (`set.on`, `set.off`); `Dial` "Quiet / Steady / Push", "of 10", value text (TFV2-0119); `Badge` none; State components (their own copy, created by TFV2-0120–TFV2-0123). Time zone option labels are IANA names, shown as given.
   - **States (harness order; `DATA = { theme: "light", lang: "en", textSize: "m", readingFont: false, dial: 4, weekStartsOn: 1, timeZone: "Asia/Jerusalem", timeZones: ["Asia/Jerusalem", "Europe/London", "UTC"], emailReminders: true, inAppNotifications: true }`, `online: true`, `status: ""`, `saveError: false`, `extra = <div data-testid="preferences-view-extra">Coach web search</div>` unless noted):** `default`, `loading` (`state: "loading"`), `error` (`state: "error"`), `signed-out` (`state: "signed-out"`), `offline` (`online: false`), `saved` (`status: "Saved."`), `save-error` (`saveError: true`). Each in `<section data-testid="preferences-view-<state>">`; `onChange`, `onDial`, `onRetry` write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="preferences-view-log">`. Disabled: the billing switch (`aria-disabled="true"`, always on).
   - **RTL:** `dir` from `LocaleProvider`; rows put text at the inline start; Segmented arrows follow `dir` (controls.tsx); the Dial range runs right-to-left in Hebrew (TFV2-0119). **Keyboard / screen reader:** each Segmented is one tab stop with arrow keys; switches are buttons with `role="switch"`; selects are native; every control is named by its row label (`aria-labelledby`) and described by its help; the status `output` is a polite live region; the save error is `role="alert"`. **Breakpoints:** one column at 390 / 768; stacked rows put the control under the text; `.tp-page--narrow` caps at 760 px at 1024 / 1280. **Motion:** switch thumb and button transitions from tempo.css (`--tp-dur-fast`); instant under reduced motion.
 - **TESTS:** (CONVENTIONS §22 skeleton; 10 × 4 = 40; EN/HE from SPEC Copy; every locator scoped to its section)
@@ -24973,6 +25047,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0309b — Route: /settings/preferences
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0309c, TFV2-0309a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0166a, TFV2-0166b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0309c, TFV2-0309a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0166a, TFV2-0166b.
@@ -25074,6 +25149,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0310a — View: PrivacyView (`apps/web/components/settings/PrivacyView.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307, TFV2-0311 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307, TFV2-0311.
@@ -25090,7 +25166,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Create `tests/e2e/screens/privacy-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "privacy-view", { lang })`) and the 11 TESTS bullets.
   7. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/privacy-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/privacy-view.spec.ts --reporter=line`, plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useAuthActions` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; offer an export button, a pending-deletion notice or a Restore button (no backend); promise a 30-day grace that keeps the data; turn usage data on by default; make the delete button the accent; edit `PrivacySettings.tsx`, `DeleteAccountCard.tsx`, `accountDeleted.ts`, `controls.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `settings.css`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0310a / evidence: <DONE output> / changed: apps/web/components/settings/PrivacyView.tsx, apps/web/app/e2e/components/privacy-view/page.tsx, tests/e2e/screens/privacy-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
@@ -25159,7 +25235,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | error | Couldn't load your privacy settings. | לא הצלחנו לטעון את הגדרות הפרטיות. |
     | signedOutTitle | Sign in to see your privacy settings. | צריך להתחבר כדי לראות את הגדרות הפרטיות. |
     | signIn | Sign in | התחברות |
-    Strings owned by composed components: `SettingsSwitch` On / Off; `ConfirmDialog` Close (`סגירה`); Notice tone words; State components as in TFV2-0120…0123.
+    Strings owned by composed components: `SettingsSwitch` On / Off; `ConfirmDialog` Close (`סגירה`); Notice tone words; State components (their own copy, created by TFV2-0120–TFV2-0123).
   - **States (harness order; base props `{ state: "default", online: true, analyticsOptIn: false, analyticsNotice: null, deletion: "idle" }`):** `default`; `analytics-on` (`analyticsOptIn: true`, `analyticsNotice: "on"`); `analytics-error` (`analyticsNotice: "failed"`); `deleting` (starts `deletion: "idle"`; its `onDelete` writes the log and sets the section's `deletion` to `"deleting"`); `delete-failed` (same, sets `"failed"`); `signed-out-failed` (`deletion: "signed-out-failed"`); `loading`; `error`; `signed-out`; `offline` (`online: false`); `analytics-off` (`analyticsOptIn: false`, `analyticsNotice: "off"`). Each in `<section data-testid="privacy-view-<state>">`; callbacks write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="privacy-view-log">`. Disabled: Delete (blocked) until the tick; Delete and Keep while deleting.
   - **RTL:** `dir` from `LocaleProvider`; rows text at the inline start; the policy chevron flips (`flip`); the dialog follows ConfirmDialog. **Keyboard / screen reader:** the switch is `role="switch"` named by its label and described by its help; the usage line is `role="status"` (or `role="alert"` on failure); the delete opener has `aria-controls` / `aria-expanded`; the dialog moves focus to the tick box, whose hint describes the blocked Delete; Escape or Keep closes and focus returns to the opener. **Breakpoints:** one column at 390 / 768; `.tp-page--narrow` at 1024 / 1280; the dialog is a bottom sheet on phones and a centred card from 768. **Motion:** only the dialog's 240 ms rise and the switch's 120 ms transition; instant under reduced motion.
 - **TESTS:** (CONVENTIONS §22 skeleton; 11 × 4 = 44; EN/HE from SPEC Copy; every locator scoped to its section)
@@ -25179,6 +25255,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0310b — Route: /settings/privacy
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0310a, TFV2-0000b, TFV2-0000c, TFV2-0265b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0310a, TFV2-0000b, TFV2-0000c, TFV2-0265b.
@@ -25194,7 +25271,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/settings-privacy.spec.ts` with the CONVENTIONS §22 spec skeleton (route form) and the 8 TESTS bullets.
   6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line`, `bun test apps/web/components/settings/accountDeleted.test.ts` (unchanged, stays green), `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-privacy.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summaries (screen spec and `tests/e2e/wiring`), the `accountDeleted.test.ts` summary and the typecheck / lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-privacy.spec.ts --reporter=line` and the summary of `bun run typecheck`, plus the `accountDeleted.test.ts` summary and the typecheck / lint exit codes, pasted into the PR.
 - **DO NOT:** call any `dsr.*` function or invent one; edit `PrivacyView.tsx`, `PrivacySettings.tsx`, `DeleteAccountCard.tsx`, `accountDeleted.ts`, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; import `PrivacySettings` or `SettingsScreen`; contact Convex or sign out when `?state=` is forced; change any other line of `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0310b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/settings/privacy/page.tsx, apps/web/lib/e2e/fixtures/settings-privacy.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/settings-privacy.spec.ts / unknowns / notes for ticket sync: PrivacySettings.tsx and DeleteAccountCard.tsx are no longer imported by any route; delete them in a cleanup ticket`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -25259,6 +25336,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0312 — PWA: web app manifest + icons (`apps/web/app/manifest.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -25273,7 +25351,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `tests/e2e/screens/pwa-manifest.spec.ts`: imports `{ test, expect }` from `@playwright/test`; first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; the 3 TESTS bullets, each run **once** (no viewport / language loop: nothing visual is asserted).
   5. Run DONE, then `bun run scan:design-tokens`, `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pwa-manifest.spec.ts --reporter=line` → `3 passed`, 0 failed; `bun run scan:design-tokens` → exit 0.
-- **EVIDENCE:** the Playwright summary, the scan output and the typecheck / lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/pwa-manifest.spec.ts --reporter=line` and the summary of `bun run scan:design-tokens`, plus the scan output and the typecheck / lint exit codes, pasted into the PR.
 - **DO NOT:** add a dependency (`next-pwa`, `workbox-*`, …) or touch `package.json`, `bun.lock`, `next.config.ts`; edit `apps/web/app/layout.tsx` (Next injects the link itself; theme-colour meta is TFV2-0314's); reference an icon on a CDN or a live URL; write hex colours in `manifest.ts`; add a service worker (TFV2-0313a); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0312 / evidence: <DONE output> / changed: apps/web/app/manifest.ts, apps/web/public/icons/icon.svg, apps/web/public/icons/icon-maskable.svg, tests/e2e/screens/pwa-manifest.spec.ts / unknowns: installability in Chrome is not checked locally (Playwright contexts are incognito; Chrome reports "in-incognito") / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -25318,6 +25396,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0313a — PWA: service worker with an offline fallback (`apps/web/public/sw.js`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -25331,7 +25410,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `apps/web/lib/pwa/serviceWorker.test.ts` with the 6 TESTS cases using the loader in SPEC.
   4. Run DONE, then `bun run lint` (if Biome reports `sw.js`, fix the reported formatting only; the logic stays as SPEC).
 - **DONE:** `bun test apps/web/lib/pwa/serviceWorker.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary and the lint exit code, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/pwa/serviceWorker.test.ts`, plus the lint exit code, pasted into the PR.
 - **DO NOT:** cache any request other than `/offline.html` (no `cache.put`, no runtime caching of `/_next/*`, pages, `/api/*` or Convex URLs); call `clients.claim()`; intercept non-navigation requests; register the worker anywhere (TFV2-0313c); create `offline.html` (TFV2-0313b); add `next-pwa`, `workbox-*` or any dependency; edit `next.config.ts` or `proxy.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313a / evidence: <DONE output> / changed: apps/web/public/sw.js, apps/web/lib/pwa/serviceWorker.test.ts / unknowns / notes for ticket sync: the old "shell cache size budget" OPEN is moot (one cached file)`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -25376,6 +25455,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0313b — PWA: static offline page (`apps/web/public/offline.html`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0313a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0313a.
@@ -25389,7 +25469,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/screens/offline-page.spec.ts` with the CONVENTIONS §22 spec skeleton but opening the page with `page.goto("/offline.html?lang=" + lang)` (it is not a harness or a screen route), the 4 looped TESTS bullets and the 2 "once" bullets.
   4. Run DONE, then `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/offline-page.spec.ts --reporter=line` → `18 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary and the lint exit code, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/offline-page.spec.ts --reporter=line`, plus the lint exit code, pasted into the PR.
 - **DO NOT:** load any external file (no stylesheet, script, font or image URL; everything inline); include user data or account details; use colours other than the inline `--tp-*` values listed; auto-reload on a timer (only on `online` or the button); create a Next route `/offline`; edit `sw.js`, `proxy.ts` or `layout.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313b / evidence: <DONE output> / changed: apps/web/public/offline.html, tests/e2e/screens/offline-page.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:** the whole file, exactly:
@@ -25454,6 +25534,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0313c — PWA: register the service worker in production (`apps/web/lib/pwa/registerServiceWorker.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0313a, TFV2-0313b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0313a, TFV2-0313b.
@@ -25469,7 +25550,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `registerServiceWorker.test.ts` with the 5 TESTS cases.
   6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line` (dev mode registers nothing, the wiring specs stay green), `bun run lint`.
 - **DONE:** `bun test apps/web/lib/pwa/registerServiceWorker.test.ts` → `5 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary, the wiring Playwright summary, and the typecheck / lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/pwa/registerServiceWorker.test.ts` and the summary of `bun run typecheck`, plus the wiring Playwright summary, and the typecheck / lint exit codes, pasted into the PR.
 - **DO NOT:** register in development or behind a query flag; register any path other than `/sw.js` or a scope other than `/`; unregister existing workers; add `theme-color` / `apple-mobile-web-app-*` meta or an install prompt (TFV2-0314); change any other line of `layout.tsx`; edit `sw.js` or `offline.html`; touch `package.json`, `next.config.ts`, `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313c / evidence: <DONE output> / changed: apps/web/lib/pwa/registerServiceWorker.ts, apps/web/components/pwa/ServiceWorkerRegister.tsx, apps/web/app/layout.tsx, apps/web/lib/pwa/registerServiceWorker.test.ts / unknowns: production registration is checked on preview, not locally / notes for ticket sync: TFV2-0314 must keep the ServiceWorkerRegister line in layout.tsx`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -25525,6 +25606,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0314a — PWA meta: `appleWebApp` + `applicationName` in the root layout (`apps/web/app/layout.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0313c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0313c.
@@ -25538,7 +25620,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/screens/pwa-meta.spec.ts` with the 2 TESTS cases (each runs once: the head does not depend on viewport or language).
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pwa-meta.spec.ts --reporter=line` → `2 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/pwa-meta.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** change `viewport`, `title`, `description`, the fonts, the providers or the theme script; add a `<head>` tag by hand (use only the Next `metadata` API); add a manifest (TFV2-0312 owns it); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0314a / evidence / changed: apps/web/app/layout.tsx, tests/e2e/screens/pwa-meta.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -25566,6 +25648,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0314b — PWA install store `createInstallPromptStore` (`apps/web/lib/pwa/installPrompt.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lib lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -25579,7 +25662,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `installPrompt.test.ts` (`import { describe, expect, test } from "bun:test";`) with exactly the 11 TESTS cases, using `new EventTarget()` and the fake storage and fake event in SPEC.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test apps/web/lib/pwa/installPrompt.test.ts` → `11 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/pwa/installPrompt.test.ts`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** call `event.prompt()` anywhere except inside `prompt()`; show anything (no DOM); read or write any storage key other than `tempo-install-dismissed`; add a dependency; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0314b / evidence / changed: apps/web/lib/pwa/installPrompt.ts, apps/web/lib/pwa/installPrompt.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -25629,6 +25712,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0314c — InstallPrompt component (`apps/web/components/pwa/InstallPrompt.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -25644,7 +25728,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/install-prompt.spec.ts` with exactly the TESTS cases, using the CONVENTIONS §22 spec skeleton.
   6. Run DONE, then `bun run lint`, `bun run typecheck`, `bun run scan:design-tokens`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/install-prompt.spec.ts --reporter=line` → `17 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck/scan exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/install-prompt.spec.ts --reporter=line`, plus lint/typecheck/scan exit codes, pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation`, `fetch` or the install store (TFV2-0314b; the mount TFV2-0314d wires it); open the browser prompt on mount; add a timer or auto-dismiss; edit `tempo.css` or `globals.css`; add a dependency; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0314c / evidence / changed: <the 4 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -25691,6 +25775,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0314d — Mount the install offer in the root layout (`apps/web/components/pwa/InstallPromptMount.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0312, TFV2-0314a, TFV2-0314b, TFV2-0314c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0312, TFV2-0314a, TFV2-0314b, TFV2-0314c.
@@ -25705,7 +25790,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `tests/e2e/screens/install-prompt-mount.spec.ts` with exactly the TESTS cases.
   5. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/install-prompt-mount.spec.ts --reporter=line` → `16 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/install-prompt-mount.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** call `event.prompt()` without a click on Install; show the notice when the store is not `available`/`prompting`; add a manifest or service worker (TFV2-0312/TFV2-0313); edit `InstallPrompt.tsx`, `InstallPrompt.css` or `installPrompt.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0314d / evidence / changed: apps/web/components/pwa/InstallPromptMount.tsx, apps/web/app/layout.tsx, tests/e2e/screens/install-prompt-mount.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -25735,7 +25820,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   }
   ```
   - Placement: `InstallPrompt` default `placement="floating"` (fixed; below 768 px above the mobile tab bar, from 768 px a 400 px card in the inline-end bottom corner — TFV2-0314c SPEC).
-  - States: hidden (`unavailable`, `installed`, `dismissed`), shown (`available`), shown busy (`prompting`). Copy: none new (TFV2-0314c's `COPY`). RTL, keyboard, screen reader, motion: as TFV2-0314c.
+  - States: hidden (`unavailable`, `installed`, `dismissed`), shown (`available`), shown busy (`prompting`). Copy: none new; every visible string is `InstallPrompt`'s own `COPY` (created by TFV2-0314c, in Depends). RTL, keyboard, screen reader, motion: this component renders only `<InstallPrompt />` (props above) or `null`, so all four come from `InstallPrompt` (TFV2-0314c).
   - Synthetic event the spec dispatches (after `await page.waitForLoadState("networkidle")`): `await page.evaluate((outcome) => { const w = window as unknown as { __promptCalls: number }; w.__promptCalls = 0; const e = new Event("beforeinstallprompt", { cancelable: true }); Object.assign(e, { prompt: async () => { w.__promptCalls += 1; }, userChoice: Promise.resolve({ outcome, platform: "web" }) }); window.dispatchEvent(e); }, outcome)`.
 - **TESTS:** (spec starts `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; every case runs at both `VIEWPORTS` × `["en", "he"]` after `await page.goto(\`/?lang=${lang}\`)`, = 16; console errors are collected with `trackConsoleErrors`, messages matching `/example\.convex\.cloud|WebSocket/i` dropped, then asserted `[]`)
   1. Given `/` loaded / Then `[data-component="InstallPrompt"]` has count 0; When the synthetic event (`"accepted"`) is dispatched / Then it is visible with `data-placement="floating"`, computed `position` `fixed`, and the title "Install Tempo" (en) or "התקנת Tempo" (he).
@@ -25747,6 +25832,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0315 — Empty states gallery: route spec + e2e registration (`apps/web/app/(tempo)/empty-states/page.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b.
@@ -25760,7 +25846,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/screens/empty-states.spec.ts` with exactly the TESTS cases, using the CONVENTIONS §22 skeleton with `openScreen(page, "/empty-states", { state: "default", lang })` (the page reads no `?state=`; offline is forced with `page.context().setOffline(true)`, which fires the real `offline` event `useOnline()` follows).
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/empty-states.spec.ts --reporter=line` → `17 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/empty-states.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** edit `page.tsx`, its copy, `extras.ts`, `extras.css` or `tempo.css`; link the page from product navigation; add `?state=` forcing to the page; add any other line to `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0315 / evidence / changed: apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/empty-states.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -25780,6 +25866,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0316a — ChangelogEntry component (`apps/web/components/marketing/ChangelogEntry.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -25795,7 +25882,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Create `tests/e2e/screens/changelog-entry.spec.ts` with exactly the TESTS cases (CONVENTIONS §22 skeleton).
   6. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/changelog-entry.spec.ts --reporter=line` → `9 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/changelog-entry.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** edit `apps/web/app/changelog/page.tsx`, `apps/web/lib/changelog.ts`, `extras.css` or `tempo.css`; use colour alone to mark a kind; show ticket or PR numbers; read `CHANGELOG` inside the component (data comes through props); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0316a / evidence / changed: <the 3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
@@ -25839,6 +25926,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by CFG-041; not a build ticket.
 
 ### TFV2-0318 — Mobile shell: `MobileTopBar` + `CaptureFab` harness spec (`apps/mobile/components/v3/Shell.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -25852,7 +25940,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/mobile/mobile-shell.spec.ts` with exactly the TESTS cases.
   4. Run DONE, then `bun run lint`, `bun run typecheck` and `bun test tests/unit/mobile_v3_screens.test.ts` (raw-colour guard still green).
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/mobile-shell.spec.ts --reporter=line` → `20 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck and the `mobile_v3_screens` summary, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/mobile-shell.spec.ts --reporter=line`, plus lint/typecheck and the `mobile_v3_screens` summary, pasted into the PR.
 - **DO NOT:** edit `Shell.tsx`, `primitives.tsx`, `prefs.tsx`, `strings.ts` or any screen; add a blur or animation dependency; import `convex/react` in the harness; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0318 / evidence / changed: apps/mobile/app/e2e/mobile-shell.tsx, tests/e2e/mobile/mobile-shell.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -25868,7 +25956,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Tokens (existing code): bar surface `--tp-glass-solid` (`colors.glassSolid`), border `--tp-line` (`colors.line`), radius `--tp-radius-lg` (`RADIUS.lg` 14), title `--tp-ink` (`colors.ink`) at the `sm` size; FAB border `--tp-line-control` (`colors.lineControl`), radius `--tp-radius-md` (`RADIUS.md` 10).
   - States: `default`, `back`, `icon`, `fab` (harness sections). `loading`, `empty`, `error`, `offline`: n/a (shell chrome has no data; screens own those states).
   - RTL: `Row` uses `usePrefs().row`, so in `he` the start control sits to the right of the title. Keyboard: every control is a focusable button; Enter activates. Screen reader: header role on the title, labels on every icon button. Breakpoints: identical at 390 and 1280 (a phone layout). Motion: none (no `Animated` in `MobileTopBar` or `CaptureFab`).
-- **TESTS:** (mobile spec skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each case runs at both `VIEWPORTS` × `["en", "he"]` after `page.setViewportSize(vp)` and `page.goto(\`/e2e/mobile-shell?lang=${lang}\`)` = 20; console errors via `trackConsoleErrors`, messages matching `/example\.convex\.cloud|WebSocket/i` dropped, then `[]`)
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each case runs at both `VIEWPORTS` × `["en", "he"]` after `page.setViewportSize(vp)` and `page.goto(\`/e2e/mobile-shell?lang=${lang}\`)` = 20; console errors via `trackConsoleErrors`, messages matching `/example\.convex\.cloud|WebSocket/i` dropped, then `[]`)
   1. Given the harness / Then in `mobile-shell-default` `getByRole("heading", { name: FIX.title[lang] })` is visible, a button named `translate(lang, "today", "more.settings")` is visible, and no button named `translate(lang, "today", "top.back")` exists in that section.
   2. Given the harness / When the button named `translate(lang, "today", "top.back")` in `mobile-shell-back` is clicked / Then the URL path becomes `/today` (no history, so `router.replace("/today")`).
   3. Given the harness / When the button named "Search" (en) or "חיפוש" (he) in `mobile-shell-icon` is clicked / Then `mobile-shell-log` reads `start.onPress:null`; When the button named "Capture a thought" (en) or "לרשום מחשבה" (he) in `mobile-shell-fab` is clicked / Then the log reads `onPress:null`.
@@ -25879,6 +25967,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0319 — Mobile tab bar + More sheet: route spec (`apps/mobile/components/v3/TabBar.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -25891,7 +25980,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `tests/e2e/mobile/tab-bar.spec.ts` with exactly the TESTS cases. Language: before `page.goto`, `await page.addInitScript((l) => localStorage.setItem("tempo.v3.lang", l), lang);` (signed out, `PrefsProvider` reads AsyncStorage key `tempo.v3.lang`, which is `localStorage` on Expo web).
   3. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tab-bar.spec.ts --reporter=line` → `24 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tab-bar.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** edit `TabBar.tsx`, `(tabs)/_layout.tsx`, `Shell.tsx`, `primitives.tsx` or `strings.ts`; add or remove a tab; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0319 / evidence / changed: tests/e2e/mobile/tab-bar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:**
@@ -25900,7 +25989,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Tokens (existing code): bar `--tp-glass-solid` (`colors.glassSolid`) on `--tp-ground`, border `--tp-line`, radius `--tp-radius-xl` (`RADIUS.xl`); current tab `--tp-ink` on `--tp-hover`, others `--tp-ink-muted`; tab min height 52 px.
   - States: tab selected per route; More closed / open. `loading`, `empty`, `error`, `offline`: n/a (navigation chrome; the Today body behind it shows its own loading state signed out).
   - RTL: the bar row uses `usePrefs().row`, so in `he` Today is the right-most tab. Keyboard: tabs and More are focusable; Enter activates. Screen reader: `tablist`/`tab`/`aria-selected`; More announces expanded. Breakpoints: phone layout at 390 and 1280. Motion: the More sheet uses RN `Modal` `animationType="slide"` (`"none"` with reduced motion) — the platform Modal duration is not set by this code.
-- **TESTS:** (mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after the language init script and `page.goto("/today")` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`; `const k = (key) => translate(lang, "today", key)`)
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after the language init script and `page.goto("/today")` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`; `const k = (key) => translate(lang, "today", key)`)
   1. Given `/today` / Then `getByRole("tablist", { name: k("tab.label") })` contains exactly 4 `tab`s whose names are, in DOM order, `k("tab.today")`, `k("tab.tasks")`, `k("tab.coach")`, `k("tab.notes")`, followed by a button named `k("tab.more")`.
   2. Given `/today` / Then the Today tab has `aria-selected="true"` and the other three `aria-selected="false"`.
   3. Given `/today` / When the tab `k("tab.tasks")` is clicked / Then the URL path becomes `/tasks` and that tab has `aria-selected="true"`.
@@ -25912,6 +26001,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0320 — Mobile sheet (`Sheet`): harness spec for open, close, focus and alert (`apps/mobile/components/v3/Shell.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0318 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0318.
@@ -25925,11 +26015,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/mobile/mobile-sheet.spec.ts` with exactly the TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`. If case 3 or 4 fails because react-native-web does not trap or return focus, stop and report `blocked: Sheet focus — <observed behaviour>`; do not edit `Shell.tsx` in this ticket.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/mobile-sheet.spec.ts --reporter=line` → `24 passed`.
-- **EVIDENCE:** the Playwright summary plus lint/typecheck exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/mobile-sheet.spec.ts --reporter=line`, plus lint/typecheck exit codes, pasted into the PR.
 - **DO NOT:** edit `Shell.tsx`, `primitives.tsx` or `prefs.tsx`; put routing inside the sheet; add a dependency; import `convex/react` in the harness; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0320 / evidence / changed: apps/mobile/app/e2e/mobile-sheet.tsx, tests/e2e/mobile/mobile-sheet.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
-  - Harness route `apps/mobile/app/e2e/mobile-sheet.tsx` (default export `MobileSheetHarness`): `null` unless `process.env.EXPO_PUBLIC_TEMPO_E2E === "1"`; sets the language from `?lang=` with `usePrefs().setLang` as in TFV2-0318; imports only React (`useEffect`, `useState`), `View`/`Text`/`ScrollView` from `react-native`, `useLocalSearchParams` from `expo-router`, `usePrefs` from `@/components/v3/prefs`, `Button` from `@/components/v3/primitives` and `Sheet` from `@/components/v3/Shell`. Two stacked sections:
+  - Harness route `apps/mobile/app/e2e/mobile-sheet.tsx` (default export `MobileSheetHarness`): `null` unless `process.env.EXPO_PUBLIC_TEMPO_E2E === "1"`; reads `const { lang } = useLocalSearchParams<{ lang?: string }>()` and, in a `useEffect`, calls `usePrefs().setLang(lang)` when `lang` is `"en"` or `"he"`; imports only React (`useEffect`, `useState`), `View`/`Text`/`ScrollView` from `react-native`, `useLocalSearchParams` from `expo-router`, `usePrefs` from `@/components/v3/prefs`, `Button` from `@/components/v3/primitives` and `Sheet` from `@/components/v3/Shell`. Two stacked sections:
     - `<View testID="mobile-sheet-plain">`: `<Button label={FIX.open[lang]} onPress={() => setPlain(true)} testID="mobile-sheet-open-plain" />` and `<Sheet visible={plain} title={FIX.title[lang]} closeLabel={FIX.close[lang]} onClose={() => { setPlain(false); setLog("onClose:null"); }} footer={<Button label={FIX.done[lang]} variant="primary" onPress={() => setPlain(false)} />}>` containing `<Button label={FIX.first[lang]} />` and `<Button label={FIX.second[lang]} />`.
     - `<View testID="mobile-sheet-alert">`: `<Button label={FIX.openAlert[lang]} onPress={() => setAlertOpen(true)} testID="mobile-sheet-open-alert" />` and `<Sheet alert visible={alertOpen} title={FIX.alertTitle[lang]} closeLabel={FIX.close[lang]} onClose={() => setAlertOpen(false)}>` containing `<Text>{FIX.alertBody[lang]}</Text>`.
     - then `<Text testID="mobile-sheet-log">{log}</Text>`.
@@ -25938,7 +26028,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Tokens (existing code): panel `--tp-glass-solid`, border `--tp-line`, top radius `--tp-radius-xl` (`RADIUS.xl` 20), grabber `--tp-line-strong`, scrim `--tp-ink` at 28 % (light) / `--tp-sunken` at 48 % (dark) via `withAlpha`.
   - States: `closed`, `open` (plain), `open` (alert). `loading`, `empty`, `error`, `offline`: n/a (the caller's content owns them).
   - Copy: none owned by `Sheet` (title, close label and content come from the caller). RTL: the header row follows `usePrefs().row` (X at the inline end). Keyboard: Escape closes; Tab cycles inside. Screen reader: dialog role, header role on the title, labelled close controls. Breakpoints: bottom sheet at 390 and 1280 (the code has no centred-dialog variant at ≥ 768; the old ticket's "centres at ≥ 768" is not built here). Motion: `animationType="slide"`, `"none"` under reduced motion.
-- **TESTS:** (mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after `page.goto(\`/e2e/mobile-sheet?lang=${lang}\`)` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`)
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after `page.goto(\`/e2e/mobile-sheet?lang=${lang}\`)` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`)
   1. Given the harness / When `mobile-sheet-open-plain` is clicked / Then `getByRole("dialog")` is visible and contains `getByRole("heading", { name: FIX.title[lang] })`, the buttons "First"/"Second" (en) or "ראשון"/"שני" (he), and 2 buttons named `FIX.close[lang]`.
   2. Given the plain sheet open / When `page.keyboard.press("Escape")` / Then the dialog has count 0 and `mobile-sheet-log` reads `onClose:null`.
   3. Given the plain sheet open / When Tab is pressed 8 times / Then after every press `document.querySelector('[role="dialog"]')?.contains(document.activeElement)` is `true`.
@@ -25950,6 +26040,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0321 — Mobile Hebrew voice + glossary sweep of `apps/mobile/lib/v3/strings.ts` — OPEN
+- **STATUS:** open — new: The replacement Hebrew wording for each key STEP 1 lists (about 30 values in `apps/mobile/lib/v3/strings.ts`, including the speaker label "את" used for "You" in coach, voice call and settings) — machine-written Hebrew is not final (OVERNIGHT-RUN.md), so who approves the wording, and is "המידע שלך שמור." / "המאמן" approved for `state.safe` / `tab.coach`?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0020a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0020a.
@@ -25964,7 +26055,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Append to `tests/unit/mobile_v3_i18n.test.ts`, inside `describe("mobile v3 strings", …)`, the test in SPEC, importing `findGenderedHebrew` from `../../apps/web/lib/heVoice`.
   5. Run DONE, then `bun run lint` and `bun run typecheck`.
 - **DONE:** `bun test tests/unit/mobile_v3_i18n.test.ts` → `0 fail`, including the new test.
-- **EVIDENCE:** the STEP 1 list, the approved wording table (key → old HE → new HE), and the `bun test` summary, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test tests/unit/mobile_v3_i18n.test.ts`; also the STEP 1 list, the approved wording table (key → old HE → new HE), and the `bun test` summary, pasted into the PR.
 - **DO NOT:** invent Hebrew wording that was not approved; change any English value, key, placeholder or `NEEDS_NATIVE_REVIEW`; edit `apps/web/lib/heVoice.ts`, `i18n.ts`, any screen or component; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0321 / evidence / changed: apps/mobile/lib/v3/strings.ts, tests/unit/mobile_v3_i18n.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -25991,6 +26082,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: The replacement Hebrew wording for each key STEP 1 lists (about 30 values in `apps/mobile/lib/v3/strings.ts`, including the speaker label "את" used for "You" in coach, voice call and settings) — machine-written Hebrew is not final (OVERNIGHT-RUN.md), so who approves the wording, and is "המידע שלך שמור." / "המאמן" approved for `state.safe` / `tab.coach`? — Amit.
 
 ### TFV2-0322 — Mobile screen: Today — forceable states + route spec (`apps/mobile/app/(tempo)/(tabs)/today.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26003,9 +26095,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `apps/mobile/lib/e2e/fixtures/today.ts` exactly as SPEC (type imports only).
   3. Edit `today.tsx` exactly as SPEC "Edit": import `useE2EMobile` from `@/lib/e2e/useE2EMobile` and `FIXTURES`, `type TodayView` from `@/lib/e2e/fixtures/today`; change only the lines named there.
   4. Create `tests/e2e/mobile/today.spec.ts` with exactly the TESTS cases.
-  5. Run DONE, then `bun run lint`, `bun run typecheck`, `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts`, and `git diff --stat` (3 files).
+  5. Run DONE, then `bun run lint`, `bun run typecheck`, `bun test tests/unit/mobile_v3_screens.test.ts`, `bun test tests/unit/mobile_route_smoke.test.ts`, and `git diff --stat` (3 files).
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/today.spec.ts --reporter=line` → `24 passed`.
-- **EVIDENCE:** the Playwright summary, lint/typecheck exit codes and the two unit summaries, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/today.spec.ts --reporter=line`, plus lint/typecheck exit codes and the two unit summaries, pasted into the PR.
 - **DO NOT:** change copy, `strings.ts`, layout, any component, `lib/v3/*` or a mutation; let a forced state call Convex; throw to reach the error state; add `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0322 / evidence / changed: <the 3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -26044,7 +26136,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - States (from the existing rendering): `default` — Next up, energy check, Tasks section with "Call the dentist" (open) and "Water the plants" (done); `empty` — `StateEmpty` with `empty.title`, `empty.body` and two buttons; `loading` — `StateLoading` (`role="progressbar"`, `aria-label` `load.label`); `error` — `StateError` (`err.title`, `state.safe` + `err.body`, Retry); `offline` — caution `OfflineNotice` (`offline.title`, `offline.body`) above the default content.
   - Copy asserted (existing `STRINGS.today` / `common`, unchanged; the spec reads each with `translate(lang, "today", key)` from `../../../apps/mobile/lib/v3/i18n`): `top.title` EN: "Today" / HE: "היום"; `top.search` EN: "Search" / HE: "חיפוש"; `h.tasks` EN: "Tasks" / HE: "משימות"; `next.eyebrow` EN: "Next up" / HE: "הבא בתור"; `empty.title` EN: "A clear day so far." / HE: "יום פנוי, בינתיים."; `empty.capture` EN: "Capture a thought" / HE: "לרשום מחשבה"; `empty.coach` EN: "Plan with the coach" / HE: "לתכנן עם המאמן"; `load.label` EN: "Loading Today" / HE: "טוען את היום"; `err.title` EN: "Couldn't load Today." / HE: "לא הצלחנו לטעון את היום."; `state.retry` EN: "Try again" / HE: "לנסות שוב"; `offline.title` EN: "You're offline." / HE: "אין חיבור כרגע.". Every other visible string is the existing `STRINGS.today` entry, unchanged; this ticket adds no copy. Hebrew voice of this namespace is unchanged here (TFV2-0321 owns the sweep). Fixture task titles are data, asserted literally.
   - Tokens, RTL, breakpoints, motion: unchanged existing rendering (palette `colors.*` = `--tp-*`; `Row` follows `usePrefs().row`; one phone layout at 390 and 1280); the edit adds no `Animated`.
-- **TESTS:** (mobile spec skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each case at both `VIEWPORTS` × `["en", "he"]` after `await page.addInitScript((l) => localStorage.setItem("tempo.v3.lang", l), lang)` and `page.goto("/today?state=<state>")` = 24; console errors via `trackConsoleErrors`, messages matching `/example\.convex\.cloud|WebSocket/i` dropped, then `[]`; `const k = (key) => translate(lang, "today", key)`)
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each case at both `VIEWPORTS` × `["en", "he"]` after `await page.addInitScript((l) => localStorage.setItem("tempo.v3.lang", l), lang)` and `page.goto("/today?state=<state>")` = 24; console errors via `trackConsoleErrors`, messages matching `/example\.convex\.cloud|WebSocket/i` dropped, then `[]`; `const k = (key) => translate(lang, "today", key)`)
   1. Given `state=default` / Then "Call the dentist" and "Water the plants" are visible, and the texts `k("h.tasks")` and `k("next.eyebrow")` are visible.
   2. Given `state=empty` / Then the heading `k("empty.title")` and the buttons `k("empty.capture")` and `k("empty.coach")` are visible, and "Call the dentist" has count 0.
   3. Given `state=loading` / Then `getByRole("progressbar", { name: k("load.label") })` is visible.
@@ -26056,6 +26148,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0323 — Mobile screen: Capture — forceable states + route spec (`apps/mobile/app/(tempo)/capture.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26070,7 +26163,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `tests/e2e/mobile/capture.spec.ts` with exactly the TESTS cases.
   5. Run DONE, then `bun run lint`, `bun run typecheck`, `bun test tests/unit/mobile_v3_screens.test.ts`, and `git diff --stat` (3 files).
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/capture.spec.ts --reporter=line` → `24 passed`.
-- **EVIDENCE:** the Playwright summary, lint/typecheck exit codes and the unit summary, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/capture.spec.ts --reporter=line`, plus lint/typecheck exit codes and the unit summary, pasted into the PR.
 - **DO NOT:** change copy, layout, the save/undo logic or the draft storage; press Save or Retry in the spec (both call Convex); add `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0323 / evidence / changed: <the 3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -26088,7 +26181,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - States: `default` (= the code's `empty`: box empty, Save disabled); `filled` (box holds "Buy stamps", Save enabled); `error` (caution notice `err.title` + `err.body` with a Retry button, the words in the box); `offline` (`OfflineNotice` `offline.title` + `capture.offline.body`, the form stays). `loading`: n/a (no query; the code's `load.label` is used by voice capture, which is unavailable on the phone).
   - Copy asserted (existing `STRINGS.capture` / `common`, read in the spec with `translate(lang, "capture", key)`): `cap.title` EN: "Capture" / HE: "לכידה"; `cap.label` EN: "What's on your mind?" / HE: "מה עובר לך בראש?"; `save.today` EN: "Add to Today" / HE: "הוספה להיום"; `save.inbox` EN: "Add to Inbox" / HE: "הוספה לתיבה"; `dest.inbox` EN: "Inbox" / HE: "תיבת הדואר הנכנס"; `dest.help.inbox` EN: "It waits in your Inbox. Sort it whenever you like." / HE: "זה מחכה בתיבה. אפשר למיין מתי שנוח לך."; `err.title` EN: "Couldn't save that." / HE: "לא הצלחנו לשמור את זה."; `state.retry` EN: "Try again" / HE: "לנסות שוב"; `offline.title` EN: "You're offline." / HE: "אין חיבור כרגע."; `cap.close` EN: "Close" / HE: "סגירה". Every other string is the existing entry, unchanged (`ptt.hold`, `ptt.help`, `ptt.release` are gendered and are rewritten by TFV2-0321; the spec does not assert them).
   - Tokens, RTL, breakpoints, motion: unchanged existing rendering; the edit adds no `Animated`.
-- **TESTS:** (mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after the `tempo.v3.lang` init script and `page.goto("/capture?state=<state>")` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`; `const k = (key) => translate(lang, "capture", key)`)
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton; each case at both `VIEWPORTS` × `["en", "he"]` after the `tempo.v3.lang` init script and `page.goto("/capture?state=<state>")` = 24; console errors filtered `/example\.convex\.cloud|WebSocket/i`, then `[]`; `const k = (key) => translate(lang, "capture", key)`)
   1. Given `state=default` / Then the heading `k("cap.title")` is visible, the text box labelled `k("cap.label")` is empty, and the button `k("save.today")` has `aria-disabled="true"`.
   2. Given `state=default` / When "Buy milk" is typed into the box / Then the button `k("save.today")` is enabled (no `aria-disabled="true"`).
   3. Given `state=filled` / When the destination option `k("dest.inbox")` is pressed / Then the button `k("save.inbox")` is visible and enabled and the text `k("dest.help.inbox")` is visible.
@@ -26100,6 +26193,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0324 — Mobile screen: Coach — forceable states + route spec (`apps/mobile/app/(tempo)/(tabs)/coach.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26114,7 +26208,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `tests/e2e/mobile/coach.spec.ts` with exactly the TESTS cases.
   5. Run DONE, then `bun run lint`, `bun run typecheck`, `bun test tests/unit/mobile_v3_screens.test.ts`, and `git diff --stat` (3 files).
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/coach.spec.ts --reporter=line` → `28 passed`.
-- **EVIDENCE:** the Playwright summary, lint/typecheck exit codes and the unit summary, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/coach.spec.ts --reporter=line`, plus lint/typecheck exit codes and the unit summary, pasted into the PR.
 - **DO NOT:** change copy, the send/reply/proposal logic or layout; render `Proposal` in a forced state (it queries Convex); press Send or a suggestion in the spec (both call Convex); add a voice query; add `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0324 / evidence / changed: <the 3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -26165,6 +26259,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0325 — Mobile screen: Voice call (honest not-connected layout) — offline forcing + route spec (`apps/mobile/app/(tempo)/voice-call.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26178,7 +26273,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/e2e/mobile/voice-call.spec.ts` with exactly the TESTS cases.
   4. Run DONE, then `bun run lint`, `bun run typecheck`, `bun test tests/unit/mobile_v3_screens.test.ts`, and `git diff --stat` (2 files).
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line` → `24 passed`.
-- **EVIDENCE:** the Playwright summary, lint/typecheck exit codes and the unit summary, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line`, plus lint/typecheck exit codes and the unit summary, pasted into the PR.
 - **DO NOT:** enable the mic, hold-to-talk or Interrupt; add a provider, key, recording, minutes or a Convex call; change copy or layout; add `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0325 / evidence / changed: apps/mobile/app/(tempo)/voice-call.tsx, tests/e2e/mobile/voice-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -26199,6 +26294,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0326 — Mobile screen: Tasks — force every state for a Playwright spec (`apps/mobile/app/(tempo)/(tabs)/tasks.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26210,11 +26306,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else report `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/(tabs)/tasks.tsx` (169 lines: `TasksScreen` lines 25–56, `TasksBody` lines 58–169), `apps/mobile/lib/v3/tasks.ts` (`TaskLike`, `groupTasks`), `apps/mobile/components/v3/states.tsx` and the `tasks` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/tasks.ts` exactly as SPEC "Fixtures" (type-only imports).
   3. Edit `tasks.tsx` exactly as SPEC "Edit" (five changes, nothing else).
-  4. Create `tests/e2e/mobile/tasks.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
+  4. Create `tests/e2e/mobile/tasks.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/(tabs)/tasks.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tasks.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tasks.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tasks.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/v3/strings.ts`, `TaskRow.tsx`, `states.tsx`, `primitives.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; add copy; call `toggleCompletion`/`update` in a spec; throw an error to reach the error state; add `Animated` or any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0326 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/(tabs)/tasks.tsx, apps/mobile/lib/e2e/fixtures/tasks.ts, tests/e2e/mobile/tasks.spec.ts / unknowns / notes for ticket sync` (AGENTS.md format); list STEPS 1–6 with their evidence.
 - **SPEC:**
@@ -26310,6 +26406,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0327 — Mobile screen: Notes — force every state for a Playwright spec (`apps/mobile/app/(tempo)/(tabs)/notes.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26321,11 +26418,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/(tabs)/notes.tsx` (199 lines: `NotesScreen` lines 26–51, `NotesBody` lines 63–199), `noteKind`/`editedWhen` in `apps/mobile/lib/v3/display.ts`, and the `notes` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/notes.ts` exactly as SPEC "Fixtures".
   3. Edit `notes.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/notes.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
+  4. Create `tests/e2e/mobile/notes.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/(tabs)/notes.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/notes.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/notes.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/notes.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/v3/strings.ts`, `display.ts`, `markdown.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; add copy; open `/page/[id]` from a spec; throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0327 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/(tabs)/notes.tsx, apps/mobile/lib/e2e/fixtures/notes.ts, tests/e2e/mobile/notes.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26419,6 +26516,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0328 — Mobile screen: Journal — force every state for a Playwright spec (`apps/mobile/app/(tempo)/journal.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26430,11 +26528,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/journal.tsx` (269 lines: `JournalScreen` lines 63–83, `JournalBody` lines 85–269), `apps/mobile/lib/v3/journal.ts` (`readJournal`, labels), `PeriodPageRow` in `convex/notes.ts` line 270, and the `journal` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/journal.ts` exactly as SPEC "Fixtures".
   3. Edit `journal.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/journal.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
+  4. Create `tests/e2e/mobile/journal.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/journal.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/journal.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/journal.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/journal.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/v3/journal.ts`, `daily-page.ts`, `strings.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; add copy; press "Save entry" in a spec (it calls `notes.update` / `notes.ensurePeriodPage`); throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0328 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/journal.tsx, apps/mobile/lib/e2e/fixtures/journal.ts, tests/e2e/mobile/journal.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26534,6 +26632,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0329 — Mobile screen: Habits — force every state for a Playwright spec (`apps/mobile/app/(tempo)/habits.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26545,11 +26644,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Contract of `Screen` (`apps/mobile/components/v3/Shell.tsx` line 31): it accepts `testID?: string` and passes it to its root `SafeAreaView` (`<SafeAreaView testID={testID} …>`), so `[data-testid="habits-screen"]` is the whole screen on web; check with `grep -n "testID?: string\|SafeAreaView testID={testID}" apps/mobile/components/v3/Shell.tsx` → two lines (else `blocked: PATH_DRIFT — Screen testID`). Read `apps/mobile/app/(tempo)/habits.tsx` (312 lines: `HabitsScreen` 30–50, local `Habit` type 52, `HabitsBody` 54–194, `HabitCard` 197–312), `apps/mobile/lib/v3/habits.ts` (`lastSevenDays`, `needsWelcomeBack`) and the `habits` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/habits.ts` exactly as SPEC "Fixtures".
   3. Edit `habits.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/habits.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
+  4. Create `tests/e2e/mobile/habits.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/habits.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/habits.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/habits.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/habits.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/v3/habits.ts`, `strings.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, `Toast.tsx`, any `_layout.tsx` or `convex/**`; add copy or a streak counter; press "Log today" or "Add habit" with a valid name in a spec (both call mutations); throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0329 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/habits.tsx, apps/mobile/lib/e2e/fixtures/habits.ts, tests/e2e/mobile/habits.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26674,6 +26773,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0330a — Mobile screen: Calendar — force every state for a Playwright spec (`apps/mobile/app/(tempo)/calendar.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26685,11 +26785,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/calendar.tsx` (304 lines: `CalendarScreen` 37–57, `CalendarBody` 59–303), `apps/mobile/lib/v3/dates.ts` and the `calendar` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/calendar.ts` exactly as SPEC "Fixtures".
   3. Edit `calendar.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/calendar.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
+  4. Create `tests/e2e/mobile/calendar.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/calendar.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** change the week start or import `api.preferences` (TFV2-0330b does); edit `apps/mobile/lib/v3/dates.ts`, `display.ts`, `strings.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; add copy; submit a valid event in a spec (it calls `calendar_events.create`); throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0330a / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/calendar.tsx, apps/mobile/lib/e2e/fixtures/calendar.ts, tests/e2e/mobile/calendar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26787,6 +26887,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0330b — Mobile screen: Calendar — week starts on the person's `weekStartsOn` (`apps/mobile/app/(tempo)/calendar.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0330a, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0330a, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26801,8 +26902,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Append the 3 TESTS bullets to `tests/e2e/mobile/calendar.spec.ts` with the same loops, setup and console-error ending as its existing tests; change nothing else in the file.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/calendar.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line` → `48 passed` (36 from TFV2-0330a + 12 new); `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line` → `48 passed` (36 from TFV2-0330a + 12 new); `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/calendar.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** change `PREFERENCE_DEFAULTS` or any default (Q-10); call `preferences.update`; edit `apps/mobile/lib/v3/dates.ts` (the week-start function stays local to the route), `prefs.tsx`, `strings.ts`, `convex/**` or any `_layout.tsx`; change or delete an existing calendar spec test; add copy or animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0330b / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/calendar.tsx, apps/mobile/lib/e2e/fixtures/calendar.ts, tests/e2e/mobile/calendar.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26853,7 +26954,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
      };
      ```
   6. The events query becomes `useQuery(api.calendar_events.listInRange, fixture || !ready || prefs === undefined ? "skip" : range)` (no range is read before the week start is known), and the loading guard `if (!events) {` becomes `if (!events || !prefs) {`.
-  Behaviour: `weekStartsOn: 1` gives exactly today's Monday-first strip; `0` starts on Sunday; `6` starts on Saturday; Previous / Next week move by 7 days from that start. No new copy: the strip still shows `dow.*` words (`STRINGS.calendar`, EN "Mon"…"Sun" / HE "ב׳"…"א׳"; Hebrew voice of this namespace: unchanged here, TFV2-0321 owns the sweep). States, RTL, keyboard, breakpoints and motion are as TFV2-0330a; the new state `prefs-loading` shows the `loading` view (`load.label` EN "Loading your calendar" / HE "טוענים את לוח השנה שלך").
+  Behaviour: `weekStartsOn: 1` gives exactly today's Monday-first strip; `0` starts on Sunday; `6` starts on Saturday; Previous / Next week move by 7 days from that start. No new copy: the strip still shows `dow.*` words (`STRINGS.calendar`, EN "Mon"…"Sun" / HE "ב׳"…"א׳"; Hebrew voice of this namespace: unchanged here, TFV2-0321 owns the sweep). States, RTL, keyboard, breakpoints and motion: this ticket does not change them; the new state `prefs-loading` shows the `loading` view (`load.label` EN "Loading your calendar" / HE "טוענים את לוח השנה שלך").
   **Spec additions:** same skeleton as the existing tests (`days = screen.locator('[role="button"][aria-selected]')`, `translate` from `../../../apps/mobile/lib/v3/i18n`).
 - **TESTS:** (3 new bullets × 2 viewports × 2 languages = 12; with TFV2-0330a's 36, the file reports 48)
   - `week starts sunday` — Given `?state=week-sunday` / Then `days.first()` contains `translate(lang, "calendar", "dow.sun")`, `days.nth(6)` contains `translate(lang, "calendar", "dow.sat")`, and `days.nth(new Date().getDay())` has `aria-selected="true"`.
@@ -26864,6 +26965,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0331 — Mobile screen: Routines — force every state for a Playwright spec (`apps/mobile/app/(tempo)/routines.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26875,11 +26977,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/routines.tsx` (311 lines: `RoutinesScreen` 32–98, `List` 100–197, `Guide` 200–311), `apps/mobile/lib/v3/routine-run.ts` (`RoutineRun`, `isResumable`), the `guidedMovementRoutines` entries in `apps/mobile/lib/movement-routines.ts` (ids `morning-reset`, `desk-unlock`, `shutdown-stretch`, four steps each) and the `routines` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/routines.ts` exactly as SPEC "Fixtures".
   3. Edit `routines.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/routines.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
+  4. Create `tests/e2e/mobile/routines.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/routines.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/routines.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/routines.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/routines.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/movement-routines.ts`, `routine-run.ts`, `BreathworkTimer.tsx`, `strings.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; read `routines`/`routineRuns` tables (none is wired yet); add an error state, copy or animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0331 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/routines.tsx, apps/mobile/lib/e2e/fixtures/routines.ts, tests/e2e/mobile/routines.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -26951,6 +27053,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0332 — Mobile screen: Templates — force every state for a Playwright spec (`apps/mobile/app/(tempo)/templates.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -26962,11 +27065,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/templates.tsx` (197 lines: `TemplatesScreen` 27–65, local `Template` type 67–75, `TemplateList` 77–124, `Group`, `TemplateCard`), `templateValidator` in `convex/templates.ts` and the `templates` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/templates.ts` exactly as SPEC "Fixtures".
   3. Edit `templates.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/templates.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
+  4. Create `tests/e2e/mobile/templates.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/templates.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/templates.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/templates.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/templates.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/lib/v3/strings.ts`, `primitives.tsx`, `states.tsx`, `Shell.tsx`, `Toast.tsx`, any `_layout.tsx` or `convex/**`; add copy; press "Use" in a spec (it calls `templates.applyToNote`) or "Ask the coach for a template" (navigates away); throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0332 / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/templates.tsx, apps/mobile/lib/e2e/fixtures/templates.ts, tests/e2e/mobile/templates.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -27059,6 +27162,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0333a — Mobile component: SwitchControl — 24 px web target (`apps/mobile/components/v3/primitives.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27073,7 +27177,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `tests/e2e/mobile/switch-control.spec.ts` with the skeleton in SPEC "Spec" and the 4 TESTS bullets.
   5. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/switch-control.spec.ts --reporter=line` → `16 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/switch-control.spec.ts --reporter=line` and the summary of `bun test tests/unit/mobile_v3_screens.test.ts` pasted into the PR.
 - **DO NOT:** change any other primitive, `SwitchControl`'s props, colours or the On / Off word; give the switch a size on iOS or Android; import Convex or another component into the harness; add a dependency; touch `apps/mobile/lib/v3/strings.ts`, `convex/**`, `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0333a / evidence: <DONE outputs> / changed: apps/mobile/components/v3/primitives.tsx, apps/mobile/app/e2e/switch-control.tsx, tests/e2e/mobile/switch-control.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -27106,6 +27210,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0333b — Mobile screen: Settings — force every state for a Playwright spec (`apps/mobile/app/(tempo)/settings.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0333a, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0333a, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27117,11 +27222,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `grep -n "WEB_SWITCH_SIZE" apps/mobile/components/v3/primitives.tsx` prints lines (else `blocked: missing TFV2-0333a`); `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(tempo)/settings.tsx` (321 lines: `SettingsScreen` 42–65, `Section` 67–84, `SettingsBody` 86–321), `useTempoSession` in `apps/mobile/components/v3/session.ts`, `initials` in `apps/mobile/lib/v3/display.ts`, and the `settings` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Create `apps/mobile/lib/e2e/fixtures/settings.ts` exactly as SPEC "Fixtures".
   3. Edit `settings.tsx` exactly as SPEC "Edit".
-  4. Create `tests/e2e/mobile/settings.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
+  4. Create `tests/e2e/mobile/settings.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 9 TESTS bullets.
   5. Motion check: `git diff -U0 -- "apps/mobile/app/(tempo)/settings.tsx" | grep -c "Animated"` prints `0`.
   6. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/settings.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 5 output, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/settings.spec.ts --reporter=line` → `36 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun test tests/unit/mobile_route_smoke.test.ts` → `0 fail`.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/settings.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun test tests/unit/mobile_route_smoke.test.ts`, plus the STEP 5 output, pasted into the PR.
 - **DO NOT:** edit `prefs.tsx`, `session.ts`, `primitives.tsx`, `Dial.tsx`, `strings.ts`, `states.tsx`, `Shell.tsx`, any `_layout.tsx` or `convex/**`; add a BYOK, analytics or export section or any copy; press the dial buttons, Sign out, Delete my account or blur the name field after typing in a spec (each calls a mutation or Convex Auth); throw to reach the error state; add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0333b / evidence: <DONE outputs> / changed: apps/mobile/app/(tempo)/settings.tsx, apps/mobile/lib/e2e/fixtures/settings.ts, tests/e2e/mobile/settings.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -27212,6 +27317,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0334 — Mobile screen: Onboarding — force every state for a Playwright spec (`apps/mobile/app/(auth)/onboarding.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032, CFG-042 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032, CFG-042.
@@ -27222,11 +27328,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map check: `grep -n "EXPO_PUBLIC_TEMPO_E2E" "apps/mobile/app/(auth)/_layout.tsx"` prints a line (else `blocked: missing CFG-042`); `test -e apps/mobile/lib/e2e/useE2EMobile.ts` (else `blocked: missing TFV2-0000d`); `test -e tests/e2e/helpers/harness.ts` (else `blocked: missing TFV2-0000b`); `test -e playwright.mobile.config.ts` (else `blocked: missing CFG-031`); `grep -n "tempoGate" "apps/mobile/app/(tempo)/_layout.tsx"` prints a line (else `blocked: missing CFG-032`). Read `apps/mobile/app/(auth)/onboarding.tsx` (301 lines: `OnboardingScreen` 63–290; `offline` line 69; `failed` state line 76; loading guard lines 86–92; main `SafeAreaView` line 145; `next` lines 99–137, which at step 1 calls no mutation) and the `onboarding` + `common` namespaces of `apps/mobile/lib/v3/strings.ts`.
   2. Edit `onboarding.tsx` exactly as SPEC "Edit".
-  3. Create `tests/e2e/mobile/onboarding.spec.ts` with the mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
+  3. Create `tests/e2e/mobile/onboarding.spec.ts` with the CONVENTIONS §15 mobile spec skeleton in SPEC "Spec" and the 8 TESTS bullets.
   4. Motion check: `git diff -U0 -- "apps/mobile/app/(auth)/onboarding.tsx" | grep -c "Animated"` prints `0`.
   5. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/onboarding.spec.ts --reporter=line` → `32 passed`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`.
-- **EVIDENCE:** both summary lines and the STEP 4 output, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/onboarding.spec.ts --reporter=line` and the summary of `bun test tests/unit/mobile_v3_screens.test.ts`, plus the STEP 4 output, pasted into the PR.
 - **DO NOT:** edit `apps/mobile/app/(auth)/_layout.tsx` (CFG-042 does), `sign-in.tsx`, `Dial.tsx`, `primitives.tsx`, `strings.ts`, `prefs.tsx` or `convex/**`; add copy or a fixtures file; press Continue on steps 2–5 or "Start using Tempo" in a spec (they call `users.updateMyProfile`, `coach.setDial`, `notes.create`/`notes.update`, `users.completeOnboarding`); add any animation; touch `.github/**`, `.env*`, `package.json`.
 - **REPORT:** `status / ticket: TFV2-0334 / evidence: <DONE outputs> / changed: apps/mobile/app/(auth)/onboarding.tsx, tests/e2e/mobile/onboarding.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -27264,6 +27370,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0335 — Study track: SM-2 scheduling helper `scheduleSm2` (`convex/lib/sm2.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -27277,7 +27384,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/lib/sm2.test.ts` (`import { describe, expect, test } from "bun:test";`) with the 8 TESTS cases inside `describe("scheduleSm2 (TFV2-0335)", …)`; compare `easeFactor` with `toBeCloseTo(value, 10)`.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/sm2.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/sm2.test.ts` and the summary of `bun run typecheck`, plus the typecheck exit code pasted into the PR.
 - **DO NOT:** read or write the database; import anything; round `easeFactor`; change the formulas to another algorithm (SM-5, FSRS); touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0335 / evidence: <DONE output> / changed: convex/lib/sm2.ts, convex/lib/sm2.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27316,6 +27423,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by CFG-018; not a build ticket.
 
 ### TFV2-0337a — Study track: `study.createCard` (creates `convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-018, TFV2-0335, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-018, TFV2-0335, TFV2-0000a.
@@ -27329,7 +27437,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/study.test.ts` (`bun:test`; `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`; `import * as study from "./study";`) with the 8 TESTS cases inside `describe("createCard (TFV2-0337a)", …)`.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` and the summary of `bun run typecheck`, plus the typecheck exit code pasted into the PR.
 - **DO NOT:** call a model or `requireApprovedForAi` (no AI here); dedupe cards; write `notes`; add any other export; touch `convex/schema.ts`, `convex/lib/sm2.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0337a / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27352,7 +27460,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `front: "   "` / Then it rejects with `"Card front is required"` and no `studyCards` row exists.
   4. Given a 2,001-character front (`"a".repeat(2001)`) / Then it rejects with `"Card front is too long"`; and a 2,000-character front is saved.
   5. Given `back: ""` / Then it rejects with `"Card back is required"`.
-  6. Given a 2,001-character back / Then it rejects with `"Card back is too long"`.
+  6. Given a 2,001-character back / Then it rejects with `"Card back is too long"`; and a 2,000-character back is saved.
   7. Given a note of `users:2` (`makeFakeCtx("users:1", ["users:2"])`), and separately a note of `users:1` with `deletedAt: 1` / When `createCard` runs with each as `sourceNoteId` / Then both reject with `"Note not found"`.
   8. Given `makeSignedOutCtx()` / When `createCard({ front: "Q", back: "A" })` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** front and back ≤ 2,000 characters each (`STUDY_FIELD_MAX`, tested at 2,000 and 2,001); starting E-Factor 2.5 (`SM2_INITIAL_EASE`, SM-2 https://super-memory.com/english/ol/sm2.htm); 8 of 8 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
@@ -27360,6 +27468,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0337b — Study track: `study.listDue` (cards due now, oldest first) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337a.
@@ -27373,7 +27482,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("listDue (TFV2-0337b)", …)` with the 6 TESTS cases; seed cards with `ctx.db.insert("studyCards", { userId, front, back, repetitions: 0, easeFactor: 2.5, intervalDays: 0, dueAtMs, status: "new", createdAt: 1, updatedAt: 1 })` (plus `sourceNoteId` / `deletedAt` where a case needs them).
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `14 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** call `Date.now()` in the query; use `.collect()`; return `userId`, `createdAt`, `updatedAt` or `deletedAt`; change `createCard`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0337b / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27415,13 +27524,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given due cards in deck A (`sourceNoteId` = note A), deck B and without a note / When it runs with `sourceNoteId: noteA`, then with `sourceNoteId: null` / Then the first returns only deck A's cards and the second only the cards without a note.
   3. Given a due card of `users:1` with `deletedAt: 5` and a due card of `users:2` / When `users:1` runs it / Then neither is returned.
   4. Given 120 due cards / When it runs with no `limit`, with `limit: 500`, with `limit: 0` and with `limit: 2.7` / Then it returns 50, 100, 1 and 2 cards.
-  5. Given 500 due cards without a note (`dueAtMs` 1…500) and one deck-A card with `dueAtMs` 501, `nowMs: 1000` / When it runs with `sourceNoteId: noteA` / Then it returns `[]` (the read stops at `LIST_DUE_SCAN_MAX` = 500 rows).
+  5. Given 500 due cards without a note (`dueAtMs` 1…500) and one deck-A card with `dueAtMs` 501, `nowMs: 1000` / When it runs with `sourceNoteId: noteA` / Then it returns `[]` (the read stops at `LIST_DUE_SCAN_MAX` = 500 rows); and with only 499 note-less cards (deck-A card at `dueAtMs` 500) it returns that one deck-A card.
   6. Given `makeSignedOutCtx()` / When `listDue({ nowMs: 1 })` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 100 cards returned (`LIST_DUE_MAX`, tested with 120 and `limit: 500`), default 50 (`LIST_DUE_DEFAULT`); at most 500 rows read (`LIST_DUE_SCAN_MAX`, tested with 501); 14 of 14 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337c — Study track: `study.reviewCard` (apply SM-2 to one answer) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337b.
@@ -27435,7 +27545,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("reviewCard (TFV2-0337c)", …)` with the 7 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `21 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** let `scheduleSm2`'s `RangeError` reach the caller for a bad quality (check first); review a deleted card; change `listDue` or `createCard`; touch `convex/lib/sm2.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0337c / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27469,6 +27579,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0337d — Study track: `study.listDecks` (cards grouped by source note, with counts) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337c.
@@ -27482,7 +27593,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("listDecks (TFV2-0337d)", …)` with the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `27 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** call `Date.now()` in the query; use `.collect()`; return a percentage or any count the rows do not contain; return a deleted or other user's note title; change earlier functions; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0337d / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27518,6 +27629,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0337e — Study track: `study.listDeckCards` (all live cards of one deck) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337d.
@@ -27531,7 +27643,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("listDeckCards (TFV2-0337e)", …)` with the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `33 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** shuffle or sample cards (the screen's order must be deterministic); use `.collect()`; change earlier functions; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0337e / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27549,13 +27661,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the same cards / When it runs with `sourceNoteId: null` / Then it returns only N1.
   3. Given the same cards / When it runs with `{}` / Then it returns A1, N1, A2.
   4. Given a deck-A card of `users:1` with `deletedAt: 5` and a deck-A card of `users:2` / When `users:1` runs it with `sourceNoteId: noteA` / Then neither is returned.
-  5. Given 201 live cards in deck A / Then it returns 200 cards, the first 200 inserted.
+  5. Given 201 live cards in deck A / Then it returns 200 cards, the first 200 inserted; and with exactly 200 cards it returns all 200.
   6. Given `makeSignedOutCtx()` / When `listDeckCards({})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 200 cards returned (`DECK_CARDS_MAX`, tested with 201); at most 1,000 rows read (`DECK_SCAN_MAX`); 33 of 33 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0338a — Study track: note text helpers `cardsFromMarkdown` + `notePassages` (`convex/lib/studyText.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -27569,7 +27682,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/lib/studyText.test.ts` (`bun:test`) with the 9 TESTS cases inside `describe("studyText (TFV2-0338a)", …)`.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/studyText.test.ts` → `9 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/studyText.test.ts` and the summary of `bun run typecheck`, plus the typecheck exit code pasted into the PR.
 - **DO NOT:** call a model or `fetch`; parse JSON inside blocks; strip Markdown emphasis or links from the text; import Convex server code; edit `convex/lib/blocks.ts` or `packages/utils/**`.
 - **REPORT:** `status / ticket: TFV2-0338a / evidence: <DONE output> / changed: convex/lib/studyText.ts, convex/lib/studyText.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27598,15 +27711,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `"- Q: Capital of France?\n- A: Paris\n* q: 2 + 2?\n\n* a: 4"` / Then it returns `[{ front: "Capital of France?", back: "Paris" }, { front: "2 + 2?", back: "4" }]`.
   4. Given `"- Q: Lonely question\nplain text\n## Empty\n## Next\nBody"` / Then it returns only `[{ front: "Next", back: "Body" }]` (the Q has no A; `Empty` has no paragraph).
   5. Given ``"## Term\n```json tempo\n{}\n```\nDefinition."`` / Then it returns `[{ front: "Term", back: "Definition." }]`; and given ``"## Code\n```js\nconst a = 1;\n```"`` / Then it returns `[]`.
-  6. Given a heading of 250 `"h"` characters followed by a paragraph of 600 `"p"` characters / Then the card's `front.length` is 200, `back.length` is 500, and both end with `"…"`.
-  7. Given 150 `- Q:` / `- A:` pairs / Then it returns 100 cards, the first being the first pair.
+  6. Given a heading of 250 `"h"` characters followed by a paragraph of 600 `"p"` characters / Then the card's `front.length` is 200, `back.length` is 500, and both end with `"…"`; and a 200-character heading with a 500-character paragraph gives a card with both unchanged (no `"…"`).
+  7. Given 150 `- Q:` / `- A:` pairs / Then it returns 100 cards, the first being the first pair; and exactly 100 pairs return 100 cards.
   8. Given `""` / Then `cardsFromMarkdown("")` and `notePassages("")` both return `[]`.
-  9. Given ``"Para one.\n\nPara two\nline two.\n\n\n```json tempo\n{}\n```"`` / When `notePassages` runs / Then it returns `["Para one.", "Para two\nline two."]`; and a single 600-character paragraph returns one passage of length 500 ending `"…"`.
+  9. Given ``"Para one.\n\nPara two\nline two.\n\n\n```json tempo\n{}\n```"`` / When `notePassages` runs / Then it returns `["Para one.", "Para two\nline two."]`; and a single 600-character paragraph returns one passage of length 500 ending `"…"`, a 500-character paragraph is returned unchanged; and 201 one-word paragraphs return 200 passages while exactly 200 return 200.
 - **NUMBERS:** at most 100 card suggestions (`NOTE_CARDS_MAX`, tested with 150), front ≤ 200 and back ≤ 500 characters (tested at 250 / 600), at most 200 passages of ≤ 500 characters; all well under `STUDY_FIELD_MAX` 2,000 (TFV2-0337a); 9 of 9 cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0338b — Study track: `study.cardsFromNote` (card suggestions from one note, nothing saved) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337e, TFV2-0338a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337e, TFV2-0338a.
@@ -27620,7 +27734,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("cardsFromNote (TFV2-0338b)", …)` with the 5 TESTS cases; seed notes with `ctx.db.insert("notes", { userId, title, body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1 })`.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `38 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** insert `studyCards`, `pageProposals` or `coachProposals` rows; call a model; make it a mutation; change `convex/lib/studyText.ts` or earlier functions; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0338b / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27651,6 +27765,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0339 — Study track: `study.retrieveContext` (keyword passages from a deck's notes only) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0338b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0338b.
@@ -27664,7 +27779,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("retrieveContext (TFV2-0339)", …)` with the 7 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `45 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** embed text, call a model, `fetch` or `ctx.vectorSearch`; read notes outside `sourceNoteIds`; return another user's or a deleted note's text; write any row; edit `convex/search.ts` or `convex/lib/studyText.ts`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0339 / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27685,18 +27800,19 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Steps: `const user = await requireUser(ctx);` → `args.sourceNoteIds.length > RETRIEVE_NOTES_MAX` → `throw new Error("Too many notes")` → `terms` = `args.query.trim().toLowerCase().split(/\s+/)`, keep words of length ≥ 2, drop repeats (first occurrence wins), keep the first 8 → `terms.length === 0` → return `[]` → `limit` = `RETRIEVE_DEFAULT` when missing or not finite, else `Math.min(RETRIEVE_MAX, Math.max(1, Math.floor(args.limit)))` → for each distinct id in input order: `note = await ctx.db.get(id)`; skip it unless `note.userId === user._id && note.deletedAt === undefined` (no error: a foreign or deleted id is simply left out) → for each passage of `notePassages(note.body)`: `score` = how many `terms` the lowercased passage contains as a substring; keep `score > 0` → sort by `score` descending, then note input order, then passage order → `slice(0, limit)`.
   Errors (exact → trigger): `"Not authenticated"` → signed out (from `requireUser`; also `"User not found"`, `"This account is not active"`); `"Too many notes"` → more than 20 ids. No user-facing copy.
 - **TESTS:**
-  1. Given note A of `users:1` with body `"Cells divide by mitosis.\n\nMitosis has four phases in cells."` / When `retrieveContext({ sourceNoteIds: [noteA], query: "mitosis cells phases" })` runs / Then it returns `[{ noteId: noteA, passage: "Mitosis has four phases in cells.", score: 3 }, { noteId: noteA, passage: "Cells divide by mitosis.", score: 2 }]`.
+  1. Given note A of `users:1` with body `"Cells divide by mitosis.\n\nMitosis has four phases in cells."` / When `retrieveContext({ sourceNoteIds: [noteA], query: "mitosis cells phases" })` runs / Then it returns `[{ noteId: noteA, passage: "Mitosis has four phases in cells.", score: 3 }, { noteId: noteA, passage: "Cells divide by mitosis.", score: 2 }]`; and `query: "aa bb cc dd ee ff gg mitosis"` (8 words) returns both passages with `score: 1`, while `query: "aa bb cc dd ee ff gg hh mitosis"` (9 words) returns `[]`.
   2. Given note A (body `"alpha"`) and note B (body `"alpha beta"`) of `users:1` / When it runs with `sourceNoteIds: [noteA]` and `query: "alpha beta"` / Then only note A's passage is returned.
   3. Given a matching note of `users:2` and a matching note of `users:1` with `deletedAt: 5` / When `users:1` runs it with both ids / Then it returns `[]`.
   4. Given `query: "   "` and then `query: "a"` / Then both return `[]`.
   5. Given one note with 30 paragraphs that each contain `"term"` / When it runs with no `limit`, then `limit: 50` / Then it returns 5, then 20 passages.
-  6. Given 21 note ids / Then it rejects with `"Too many notes"`.
+  6. Given 21 note ids / Then it rejects with `"Too many notes"`; and given exactly 20 ids it resolves without error.
   7. Given `makeSignedOutCtx()` / When it runs with `{ sourceNoteIds: [], query: "x" }` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 20 notes per call (`RETRIEVE_NOTES_MAX`, tested with 21), at most 20 passages returned (default 5; tested with 30 matches), at most 8 query words; passages ≤ 500 characters (`PASSAGE_MAX`, TFV2-0338a); 45 of 45 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0340 — Study track: `study.exportAnki` (Anki plain-text export) (`convex/study.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0339 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0339.
@@ -27710,7 +27826,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("exportAnki (TFV2-0340)", …)` with the 7 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/study.test.ts` → `52 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/study.test.ts` pasted into the PR.
 - **DO NOT:** add a dependency or build an `.apkg`; write a file or storage blob; export scheduling fields (Anki keeps its own schedule); use `.collect()`; change earlier functions; touch `convex/schema.ts`, `package.json`, `bun.lock`.
 - **REPORT:** `status / ticket: TFV2-0340 / evidence: <DONE output> / changed: convex/study.ts, convex/study.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -27734,13 +27850,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a deck-A card (`"QA"`, `"AA"`) and a card without a note (`"QN"`, `"AN"`) / When it runs with `sourceNoteId: noteA`, then with `sourceNoteId: null` / Then the first text holds only the `QA` line and the second only the `QN` line, each with `count: 1`.
   4. Given a card of `users:1` with `deletedAt: 5` and a card of `users:2` / When `users:1` runs it / Then it returns `{ text: "", count: 0, truncated: false }`.
   5. Given no cards / Then it returns `{ text: "", count: 0, truncated: false }`.
-  6. Given 1,001 live cards / Then `count` is 1000 and `truncated` is `true`.
+  6. Given 1,001 live cards / Then `count` is 1000 and `truncated` is `true`; and with exactly 1,000 cards `count` is 1000 and `truncated` is `false`.
   7. Given `makeSignedOutCtx()` / When `exportAnki({})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 1,000 cards per export (`ANKI_EXPORT_MAX`, tested with 1,001; Convex per-function read limits, https://docs.convex.dev/production/state/limits); Anki text format with tab separator and `#html:false` header (https://docs.ankiweb.net/importing/text-files.html); 52 of 52 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0341 — Study track: mobile `Flashcard` component (tap to show the answer)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27752,11 +27869,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: `ls apps/mobile/components/v3/Flashcard.tsx apps/mobile/app/e2e` → both missing; `grep -n "^export function T\|^export function Card\|^export function Row" apps/mobile/components/v3/primitives.tsx` → three lines; `grep -n "reducedMotion\|setLang" apps/mobile/components/v3/prefs.tsx` (fields exist); `ls playwright.mobile.config.ts tests/e2e/helpers/harness.ts` (else `blocked: missing CFG-031` / `blocked: missing TFV2-0000b`).
   2. Create `Flashcard.tsx` exactly as SPEC "Component", with the SPEC `COPY`.
   3. Create the harness route `apps/mobile/app/e2e/flashcard.tsx` exactly as SPEC "Harness".
-  4. Create `tests/e2e/mobile/flashcard.spec.ts` per the mobile spec skeleton (SPEC "Spec") with the 6 TESTS cases.
+  4. Create `tests/e2e/mobile/flashcard.spec.ts` per the CONVENTIONS §15 mobile spec skeleton (SPEC "Spec") with the 6 TESTS cases.
   5. Motion and colour check: `grep -c "Animated" apps/mobile/components/v3/Flashcard.tsx` → `0`; `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(" apps/mobile/components/v3/Flashcard.tsx apps/mobile/app/e2e/flashcard.tsx` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/flashcard.spec.ts --reporter=line` → `24 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the two STEP 5 outputs and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/flashcard.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the two STEP 5 outputs and the typecheck exit code pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation` or `fetch`; keep the side in component state (the parent owns it); animate the flip (no `Animated`, no `LayoutAnimation`); add keys to `apps/mobile/lib/v3/strings.ts`; use a raw colour or a stylesheet file; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0341 / evidence: <DONE output> / changed: apps/mobile/components/v3/Flashcard.tsx, apps/mobile/app/e2e/flashcard.tsx, tests/e2e/mobile/flashcard.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -27807,6 +27924,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0342 — Study track: mobile `Quiz` component (one multiple-choice question)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27822,7 +27940,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Motion and colour check: `grep -c "Animated" apps/mobile/components/v3/Quiz.tsx` → `0`; `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(" apps/mobile/components/v3/Quiz.tsx apps/mobile/app/e2e/quiz.tsx` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/quiz.spec.ts --reporter=line` → `28 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the two STEP 5 outputs and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/quiz.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the two STEP 5 outputs and the typecheck exit code pasted into the PR.
 - **DO NOT:** call `useQuery`, `useMutation` or `fetch`; decide correctness from anything but `correctId`; keep selection or checked state inside the component; use the danger tone or the words "wrong"/"failed"; animate (no `Animated`); add keys to `apps/mobile/lib/v3/strings.ts`; use a raw colour; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0342 / evidence: <DONE output> / changed: apps/mobile/components/v3/Quiz.tsx, apps/mobile/app/e2e/quiz.tsx, tests/e2e/mobile/quiz.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -27885,6 +28003,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0343 — Study track: mobile screen `/study` (decks with due counts)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337d, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337d, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27900,7 +28019,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Colour and motion check: `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(|Animated" "apps/mobile/app/(tempo)/study/index.tsx" apps/mobile/lib/e2e/fixtures/study.ts` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study.spec.ts --reporter=line` → `44 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
 - **DO NOT:** add the screen to the tab bar, the More sheet or Today; edit `apps/mobile/app/(tempo)/_layout.tsx` or `apps/mobile/lib/v3/strings.ts`; call any mutation; call Convex when `?state=` is forced; compute percentages; use a raw colour or `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0343 / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/study/index.tsx, apps/mobile/lib/e2e/fixtures/study.ts, tests/e2e/mobile/study.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -27965,6 +28084,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0344 — Study track: mobile screen `/study/review` (flashcard review with SM-2 answers)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337c, TFV2-0341, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337c, TFV2-0341, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -27980,7 +28100,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Colour and motion check: `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(|Animated" "apps/mobile/app/(tempo)/study/review.tsx" apps/mobile/lib/e2e/fixtures/study-review.ts` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-review.spec.ts --reporter=line` → `52 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-review.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
 - **DO NOT:** advance to the next card without an answer; call `reviewCard` when `?state=` is forced or twice for one card; call `Date.now()` per render for the query (use the session start); add language code to the screen (the language comes from `PrefsProvider`); edit `Flashcard.tsx`, `study/index.tsx`, `(tempo)/_layout.tsx` or `apps/mobile/lib/v3/strings.ts`; use a raw colour or `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0344 / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/study/review.tsx, apps/mobile/lib/e2e/fixtures/study-review.ts, tests/e2e/mobile/study-review.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -28048,6 +28168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0345a — Study track: recall-quiz builder `buildQuiz` (`apps/mobile/lib/v3/studyQuiz.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -28061,7 +28182,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `tests/unit/mobile_study_quiz.test.ts` (`bun:test`, importing only `../../apps/mobile/lib/v3/studyQuiz`) with the 6 TESTS cases inside `describe("buildQuiz (TFV2-0345a)", …)`.
   4. Run DONE.
 - **DONE:** `bun test tests/unit/mobile_study_quiz.test.ts` → `6 pass`, `0 fail`; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `bun test tests/unit/mobile_study_quiz.test.ts`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the typecheck exit code pasted into the PR.
 - **DO NOT:** use `Math.random` or the clock (output must be deterministic); import React, React Native, Expo or Convex; add keys to `apps/mobile/lib/v3/strings.ts`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0345a / evidence: <DONE output> / changed: apps/mobile/lib/v3/studyQuiz.ts, tests/unit/mobile_study_quiz.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -28093,6 +28214,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0345b — Study track: mobile screen `/study/test` (recall quiz with a score)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0345a, TFV2-0337e, TFV2-0342, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0345a, TFV2-0337e, TFV2-0342, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -28108,7 +28230,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Colour and motion check: `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(|Animated" "apps/mobile/app/(tempo)/study/test.tsx" apps/mobile/lib/e2e/fixtures/study-test.ts` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-test.spec.ts --reporter=line` → `48 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-test.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
 - **DO NOT:** call `reviewCard` or any mutation; shuffle with `Math.random`; save the score; add language code to the screen; edit `Quiz.tsx`, `studyQuiz.ts`, `study/index.tsx`, `(tempo)/_layout.tsx` or `apps/mobile/lib/v3/strings.ts`; call Convex when `?state=` is forced; use a raw colour or `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0345b / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/study/test.tsx, apps/mobile/lib/e2e/fixtures/study-test.ts, tests/e2e/mobile/study-test.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -28164,6 +28286,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0346 — Study track: mobile screen `/study/stats` (progress by SM-2 stage)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337d, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0337d, TFV2-0343, TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -28179,7 +28302,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Colour and motion check: `grep -nE "#[0-9a-fA-F]{3,8}|rgba?\(|Animated" "apps/mobile/app/(tempo)/study/stats.tsx" apps/mobile/lib/e2e/fixtures/study-stats.ts` → no output.
   6. Run DONE.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-stats.spec.ts --reporter=line` → `40 passed`, no failures; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/study-stats.spec.ts --reporter=line`, the summary of `bun test tests/unit/mobile_v3_screens.test.ts` and the summary of `bun run typecheck`, plus the `bun test` summary, the STEP 5 output and the typecheck exit code pasted into the PR.
 - **DO NOT:** show percentages, streaks, accuracy or any number `listDecks` does not return; draw a chart library or add a dependency; call any mutation; call Convex when `?state=` is forced; add language code to the screen; edit `study/index.tsx`, `(tempo)/_layout.tsx` or `apps/mobile/lib/v3/strings.ts`; use a raw colour or `Animated`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0346 / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/study/stats.tsx, apps/mobile/lib/e2e/fixtures/study-stats.ts, tests/e2e/mobile/study-stats.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -28243,6 +28366,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0347a — Connectors: `connections.startExecutorConnect` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** #748
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -28255,7 +28379,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("startExecutorConnect (TFV2-0347a)", …)` at the end of `convex/connections.test.ts` with exactly the 4 TESTS cases, using `makeWorld()`, `fakeExecutor()` and the file's helpers. Add no import.
   3. Run DONE. If a case fails because the code differs from SPEC, stop and report `blocked: code differs from SPEC` with the failing case (this ticket does not change `convex/connections.ts`).
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0347a"` → `4 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0347a"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts`, `convex/lib/connections/*` or any existing test; change `CONNECT_ATTEMPTS_PER_HOUR` or `HOUR_MS`; use the real `fetch` (the file replaces it with a trap); print or assert any real secret; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0347a / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns: real Executor compatibility (TRD §6) / notes for ticket sync` (AGENTS.md format); list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28289,6 +28413,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0347b — Connectors: `handleExecutorCallback` input guards (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347a · **Folds-in:** #748
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0347a.
@@ -28301,7 +28426,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("handleExecutorCallback guards (TFV2-0347b)", …)` with exactly the 4 TESTS cases.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0347b"` → `4 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0347b"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts`, `convex/connectionsHttp.ts` or any existing test; change the 512 / 4096 limits; log or assert a real secret; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0347b / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns: real Executor compatibility (TRD §6) / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28321,13 +28446,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `startConnect(world, executor)` / When `callback(world, executor, { code: SECRETS.code, state: "s".repeat(513), iss: FAKE.issuer })` runs / Then `Location` is `` `${SITE}/settings/integrations?executor=expired` ``, the `oauthPending` row has no `usedAt` and no `deletedAt`, and no call went to `FAKE.token`.
   2. Given a started connect with its `state` / When `callback(world, executor, { state, iss: FAKE.issuer })` (no `code`) runs / Then `Location` ends `?executor=error`, the `oauthPending` row has a numeric `usedAt` and `deletedAt` and no `codeVerifierCipher`, and no call went to `FAKE.token`.
-  3. Given a started connect with its `state` / When `callback(world, executor, { code: "c".repeat(4097), state, iss: FAKE.issuer })` runs / Then `Location` ends `?executor=error`, no call went to `FAKE.token`, and `world.rows("connections")` has length 0.
+  3. Given a started connect with its `state` / When `callback(world, executor, { code: "c".repeat(4097), state, iss: FAKE.issuer })` runs / Then `Location` ends `?executor=error`, no call went to `FAKE.token`, and `world.rows("connections")` has length 0; and for a second started connect, `code: "c".repeat(4096)` passes the guard (one call goes to `FAKE.token`).
   4. Given a started connect whose `oauthClients` row is then patched with `deletedAt: Date.now()` / When `callback(world, executor, { code: SECRETS.code, state, iss: FAKE.issuer })` runs / Then `Location` ends `?executor=error`, no call went to `FAKE.token`, and the `oauthPending` row has a numeric `usedAt`.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). `state` ≤ 512 characters and `code` ≤ 4,096 characters (code literals in `handleExecutorCallback`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0347c — Connectors: `connections.confirmExecutorConnect` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347b · **Folds-in:** #748
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0347b.
@@ -28340,7 +28466,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("confirmExecutorConnect (TFV2-0347c)", …)` with exactly the 3 TESTS cases. A local helper `stage(world, executor)` may be written inside the block (start + callback, returns the nonce), the same as the one in the "M2" block.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0347c"` → `3 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0347c"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; change `CONFIRM_TTL_MS`; log or assert a real secret; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0347c / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns: real Executor compatibility (TRD §6) / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28362,6 +28488,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0348a — Connectors: `searchExecutorFor` read adapter (verify + direct tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0347c.
@@ -28374,7 +28501,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("searchExecutorFor (TFV2-0348a)", …)` with exactly the 4 TESTS cases. Call it as `connections.searchExecutorFor(world.actionAs(A), A as Id<"users">, "my calendar", deps(executor, env))` after `connectFully(world, executor)`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0348a"` → `4 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0348a"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts`, `convex/lib/connections/*` or any existing test; add a `listExecutorFor` (TFV2-0348b, OPEN); let any tool other than `search` run; change `CALLS_PER_HOUR`; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0348a / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns: Executor's real search schema and answer shape (TRD §6; the fake's `SEARCH_RESULT` is a guess) / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28400,6 +28527,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0348b — Connectors: `listExecutorFor` (list items from a connected app) — OPEN
+- **STATUS:** open — new: Which Executor MCP tool(s) list a connected app's items (tasks, notes, events), with what input schema and answer shape, and may the coach run them without an approval card (today `policy.ts` classes every tool except `search`/`describe`/`integrations` as `card`; Executor's call shape is UNKNOWN per TRD §6)?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0348a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0348a.
@@ -28411,16 +28539,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: read `searchExecutorFor`, `runSearch`, `reserveCall`, `recordCall` in `convex/connections.ts` and `policy.ts`.
   2. Blocked until Amit answers the OPEN question: the Executor tool name(s), their input schema and their answer shape decide the function body, the policy entry and the fake's answer. Report `blocked: question — <OPEN text>` if picked up.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0348b"` → `0 fail` (case count fixed once the OPEN question is answered).
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0348b"` pasted into the PR.
 - **DO NOT:** run `call`, `execute`, `skills` or any write tool; return raw Executor results to a model (M1: only a summary leaves the adapter); persist inputs or results (digest only); touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0348b / evidence: <DONE output> / changed: convex/connections.ts, convex/connections.test.ts / unknowns / notes for ticket sync`.
 - **SPEC:** Intended contract, to be fixed by the answer: `export async function listExecutorFor(ctx: Pick<ActionCtx, "runQuery" | "runMutation">, userId: Id<"users">, args: { kind: "tasks" | "notes" | "events"; limit?: number }, deps: ConnectionDeps): Promise<{ status: "ok"; items: { id: string; title: string; app: string }[]; callId: Id<"connectionCalls"> | null } | { status: "not_connected" | "needs_reauth" | "unavailable" | "rate_limited" | "busy" }>`; same order as `searchExecutorFor` (switch → connection → URL → `reserveCall` → refresh → one MCP session → audit). Limits: `CALLS_PER_HOUR` = 30; items ≤ a named exported constant. Errors: none thrown; outcomes as listed.
 - **TESTS:** Fixed once answered; at least: ok → normalized items and one `tool_call` audit row `outcome: "ok"`; no connection → `not_connected` and no audit row; window full → `rate_limited` and no MCP call; Executor timeout → `unavailable` with audit `outcome: "timeout"`.
 - **NUMBERS:** 30 calls per person per hour (`CALLS_PER_HOUR`); item cap UNKNOWN until answered. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Which Executor MCP tool(s) list a connected app's items (tasks, notes, events), with what input schema and answer shape, and may the coach run them without an approval card (today `policy.ts` classes every tool except `search`/`describe`/`integrations` as `card`)? Executor's call shape is UNKNOWN per TRD §6 — Amit.
+- **OPEN:** new: Which Executor MCP tool(s) list a connected app's items (tasks, notes, events), with what input schema and answer shape, and may the coach run them without an approval card (today `policy.ts` classes every tool except `search`/`describe`/`integrations` as `card`; Executor's call shape is UNKNOWN per TRD §6)? — Amit.
 
 ### TFV2-0349 — Connectors: Executor light writes (hard-refuse heavy writes) — OPEN
+- **STATUS:** open — new: Which Executor tools (names, input schemas, answer shapes) are the permitted "light writes" (create/update a task or event), and how does Tempo tell a light write from a heavy one when Executor exposes writes through the generic `call`/`invoke` tools (Executor's call shape is UNKNOWN per TRD §6)?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0348a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0348a.
@@ -28432,16 +28561,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: read `policy.ts` (`classifyExecutorTool`, `coachMayRun`, `B07_RUNNABLE_TOOLS`) and `searchExecutorFor`.
   2. Blocked until Amit answers the OPEN question. Report `blocked: question — <OPEN text>` if picked up.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0349"` → `0 fail`; `bun test convex/lib/connections/policy.test.ts` → `0 fail` (counts fixed once answered).
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0349"` and the summary of `bun test convex/lib/connections/policy.test.ts` pasted into the PR.
 - **DO NOT:** permit `execute`, `skills`, any delete, bulk, move or account tool, or any unknown tool; call Executor before the refusal check; record a token or raw input; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0349 / evidence: <DONE output> / changed: <files> / unknowns / notes for ticket sync`.
 - **SPEC:** Intended contract, fixed by the answer: `export async function executorWriteFor(ctx: Pick<ActionCtx, "runQuery" | "runMutation">, userId: Id<"users">, args: { tool: string; arguments: Record<string, unknown> }, deps: ConnectionDeps): Promise<{ status: "ok"; callId: Id<"connectionCalls"> | null } | { status: "blocked" | "not_connected" | "needs_reauth" | "unavailable" | "rate_limited" | "busy" }>`. A tool outside the light-write allow list → audit `{ decision: "blocked", outcome: "error" }` and `blocked`, with no MCP request. Allowed writes go through `reserveCall` (30 per hour, shared with reads) and are audited with `decision: "approved"` (never `"auto"`: every external write is confirmed, TFV2-0350).
 - **TESTS:** Fixed once answered; at least: an allow-listed light write → `ok` and an `approved`/`ok` audit row; a delete-like tool → `blocked`, audit `decision: "blocked"`, zero MCP requests; an unknown tool → `blocked`; no connection → `not_connected`.
 - **NUMBERS:** shares the 30 calls per person per hour cap (`CALLS_PER_HOUR`); light-write allow-list size UNKNOWN until answered. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Which Executor tools (names, input schemas, answer shapes) are the permitted "light writes" (create/update a task or event), and how does Tempo tell a light write from a heavy one when Executor exposes writes through the generic `call`/`invoke` tools? Executor's call shape is UNKNOWN per TRD §6 — Amit.
+- **OPEN:** new: Which Executor tools (names, input schemas, answer shapes) are the permitted "light writes" (create/update a task or event), and how does Tempo tell a light write from a heavy one when Executor exposes writes through the generic `call`/`invoke` tools (Executor's call shape is UNKNOWN per TRD §6)? — Amit.
 
 ### TFV2-0350 — Connectors: external write confirmation (every write confirmed) — OPEN
+- **STATUS:** open — inherits TFV2-0349 (new: Which Executor tools (names, input schemas, answer shapes) are the permitted "light writes" (create/update a task or event), and how does Tempo tell a light write from a heavy one when Executor exposes writes through the generic `call`/`invoke` tools (Executor's call shape is UNKNOWN per TRD §6)?); new: Where does an external-write proposal live (a new table through a CFG ticket, or the existing coach proposal flow in `convex/coach.ts`), and does a confirmed Executor write offer an Undo?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0349 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0349.
@@ -28453,16 +28583,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Code-map check: read `executorWriteFor` (TFV2-0349).
   2. Blocked until TFV2-0349 is answered and built, and the proposal store is decided. Report `blocked: question — <OPEN text>` if picked up.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0350"` → `0 fail` (count fixed once answered).
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0350"` pasted into the PR.
 - **DO NOT:** auto-apply an external write; let a confirmed proposal run twice; touch `convex/schema.ts` (a proposal table, if needed, is a CFG ticket), `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0350 / evidence: <DONE output> / changed: <files> / unknowns / notes for ticket sync`.
 - **SPEC:** Intended: `executorWriteFor(ctx, userId, { tool, arguments, proposalId }, deps)`; the proposal must belong to `userId`, be confirmed, match `tool` and the SHA-256 of `arguments`, and be unused; otherwise `{ status: "blocked" }` with audit `{ decision: "rejected", outcome: "approval_required" }` and no MCP request. Undo: Executor writes cannot be undone by Tempo unless a compensating light write exists; whether an Undo is offered follows the TFV2-0349 answer.
 - **TESTS:** Fixed once answered; at least: no `proposalId` → refused, zero MCP requests; another person's proposal → refused; an unconfirmed proposal → refused; a confirmed proposal → the write runs once and a second call with it is refused.
 - **NUMBERS:** confirmation required for 100% of external writes (PRD F-100). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0349 (new: Which Executor tools are the permitted light writes, with what call shape? TRD §6) — Amit. Also new: where does an external-write proposal live (a new table through a CFG ticket, or the existing coach proposal flow in `convex/coach.ts`), and does a confirmed Executor write offer an Undo? — Amit.
+- **OPEN:** inherits TFV2-0349 (new: Which Executor tools (names, input schemas, answer shapes) are the permitted "light writes" (create/update a task or event), and how does Tempo tell a light write from a heavy one when Executor exposes writes through the generic `call`/`invoke` tools (Executor's call shape is UNKNOWN per TRD §6)?); new: Where does an external-write proposal live (a new table through a CFG ticket, or the existing coach proposal flow in `convex/coach.ts`), and does a confirmed Executor write offer an Undo? — Amit.
 
 ### TFV2-0351a — Connectors: `connections.recordCall` audit row (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0348a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0348a.
@@ -28475,7 +28606,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("recordCall (TFV2-0351a)", …)` with exactly the 4 TESTS cases; call it as `run(connections.recordCall, world.as(null), args)`; get a connection with `connectFully(world, executor)` and `liveConnectionRow(world)`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0351a"` → `4 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0351a"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; store any input, query or result text in an audit row; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0351a / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28505,6 +28636,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0351b — Connectors: `connections.reserveCall` hourly limit (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0351a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0351a.
@@ -28517,7 +28649,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("reserveCall (TFV2-0351b)", …)` with exactly the 4 TESTS cases; call it as `run(connections.reserveCall, world.as(null), { connectionId })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0351b"` → `4 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0351b"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; change `CALLS_PER_HOUR` or `HOUR_MS`; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0351b / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28539,6 +28671,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0351c — Connectors: `connections.markStatus` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0351b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0351b.
@@ -28551,7 +28684,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("markStatus (TFV2-0351c)", …)` with exactly the 3 TESTS cases; call it as `run(connections.markStatus, world.as(null), { connectionId, status })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0351c"` → `3 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0351c"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; hard-delete any row; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0351c / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28572,6 +28705,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0352a — Connectors: `connections.disconnect` retires staged connects too (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0351c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0351c.
@@ -28584,7 +28718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("disconnect staged tokens (TFV2-0352a)", …)` with exactly the 2 TESTS cases.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0352a"` → `2 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0352a"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; hard-delete secrets rows (scrub to `undefined` + `deletedAt` only); log or assert a real secret; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0352a / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28605,6 +28739,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0352b — Connectors: `connections.sweep` batch and grace guards (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0352a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0352a.
@@ -28617,7 +28752,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("sweep batches (TFV2-0352b)", …)` with exactly the 3 TESTS cases; call it as `run(connections.sweep, world.as(null), {})`. Seed attempts with `world.db.insert("oauthPending", { userId: A, provider: "executor", stateHash: "h" + i, codeVerifierCipher: "v1.fake", keyVersion: 1, issuer: FAKE.issuer, resource: FAKE.mcpUrl, redirectUri: REDIRECT_URI, clientRowId: "oauthClients:none", returnTo: "settings", expiresAt: Date.now() - 1, createdAt: 1, updatedAt: 1 })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/connections.test.ts -t "TFV2-0352b"` → `3 pass`, `0 fail`; then `bun test convex/connections.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/connections.test.ts -t "TFV2-0352b"` and the summary of `bun test convex/connections.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/connections.ts` or any existing test; add a cron; change `SWEEP_BATCH`, `CONFIRM_TTL_MS` or `REVOKE_GRACE_MS`; touch `convex/schema.ts`, `convex/crons.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0352b / evidence: <DONE output> / changed: convex/connections.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28638,6 +28773,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0353 — MCP: tool catalog `MCP_TOOLS` + `findTool` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -28651,7 +28787,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("MCP_TOOLS catalog (TFV2-0353)", …)` with exactly the 6 TESTS cases. Declare inside it `const KINDS: Record<string, "query" | "mutation" | "action">` and `const MINIMAL: Record<string, Record<string, unknown>>` exactly as in SPEC (TFV2-0354c adds one entry to each).
   4. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/lib/mcp/mcp.test.ts -t "TFV2-0353"` → `6 pass`, `0 fail`; then `bun test convex/lib/mcp/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/mcp/mcp.test.ts -t "TFV2-0353"` and the summary of `bun test convex/lib/mcp/mcp.test.ts` pasted into the PR.
 - **DO NOT:** add, rename or remove a tool (`today_plan_set` is TFV2-0354b/TFV2-0354c); change any schema, description or `validateAgainstSchema`; edit existing tests other than the import line; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0353 / evidence: <DONE output> / changed: convex/lib/mcp/mcp.test.ts / unknowns / notes for ticket sync` (note: `brain_dump` allows `text` up to 20,000 characters but `planBrainDump` refuses more than 12,000 (`BRAIN_DUMP_MAX_RAW_CHARS`); not changed here); list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -28679,12 +28815,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given every tool / When its `inputSchema` is read / Then `type` is `"object"`, `additionalProperties` is `false`, and every name in `required ?? []` is a key of `properties`.
   4. Given `MINIMAL` / When `Object.keys(MINIMAL).sort()` is compared with the sorted tool names, and `validateAgainstSchema(tool.inputSchema, MINIMAL[tool.name])` runs for every tool / Then the names are equal and every result is `[]`.
   5. Given every tool with a `required` list / When each required field is removed from a copy of its `MINIMAL` input / Then the result contains `` `arguments.${field} is required` `` (10 removals in total).
-  6. Given `brain_dump` with `text: "a".repeat(20001)` and `tasks_list` with `limit: 201` / When validated / Then the results equal `["arguments.text must be at most 20000 characters"]` and `["arguments.limit must be <= 200"]`.
+  6. Given `brain_dump` with `text: "a".repeat(20001)` and `tasks_list` with `limit: 201` / When validated / Then the results equal `["arguments.text must be at most 20000 characters"]` and `["arguments.limit must be <= 200"]`; and `text: "a".repeat(20000)` and `limit: 200` each validate to `[]`.
 - **NUMBERS:** 6 of 6 new cases pass; whole file `0 fail` (exact). Catalog = 11 tools (code truth today; `expect(MCP_TOOLS).toHaveLength(11)` in the existing test). Limits checked: `text` ≤ 20,000 characters, `limit` ≤ 200 (schema literals in `tools.ts`). Backend p95 latency: not applicable (pure module, no I/O).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354a — Day plans: shared writer `upsertDayPlanForUser` (`convex/dayPlans.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0070c · **Folds-in:** #747
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0070c.
@@ -28699,7 +28836,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Append `describe("TFV2-0354a upsertDayPlanForUser", …)` with exactly the 5 TESTS cases, calling `dayPlans.upsertDayPlanForUser(ctx, USER, args)` directly on the file's `makeFakeCtx(USER)`.
   5. Run DONE.
 - **DONE:** `bun test convex/dayPlans.test.ts -t "TFV2-0354a"` → `5 pass`, `0 fail`; then `bun test convex/dayPlans.test.ts` → `0 fail` (the TFV2-0070b `upsert` block still passes); then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** the three summaries and the diff of `convex/dayPlans.ts` pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/dayPlans.test.ts -t "TFV2-0354a"`, the summary of `bun test convex/dayPlans.test.ts` and the summary of `bun test convex/mcp.test.ts`; also the three summaries and the diff of `convex/dayPlans.ts` pasted into the PR.
 - **DO NOT:** change `upsert`'s args or returns validators, its error messages, `MAX_TOP_TASKS`, `commit`, `getForDate`, `listCarryOver` or `moveTaskToDay`; add a `reflection` write; add auth to the helper (callers own it); edit earlier blocks in the test file; touch `convex/schema.ts`, `convex/_generated/*`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0354a / evidence: <DONE output> / changed: convex/dayPlans.ts, convex/dayPlans.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -28741,12 +28878,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given that plan / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-10-05", energy: "high" })` runs / Then it returns the same id, the row has `energy: "high"` and `intention: "Rest"`, and exactly one `dayPlans` row exists.
   3. Given a USER task / When `upsertDayPlanForUser(ctx, "users:b", { localDate: "2026-10-05", topTaskIds: [it] })` runs / Then it rejects with `"Task not found"` and no `dayPlans` row exists.
   4. Given `makeFakeCtx(USER)` / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-02-30" })` runs / Then it rejects with `"localDate must be YYYY-MM-DD"`.
-  5. Given four USER tasks / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-10-05", topTaskIds: [all four] })` runs / Then it rejects with `"A day plan can have at most 3 top tasks"` and no `dayPlans` row exists.
+  5. Given four USER tasks / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-10-05", topTaskIds: [all four] })` runs / Then it rejects with `"A day plan can have at most 3 top tasks"` and no `dayPlans` row exists; and with the first three it resolves and the row's `topTaskIds` has length 3.
 - **NUMBERS:** 5 of 5 new cases pass; whole file and `convex/mcp.test.ts` `0 fail` (exact). Top tasks ≤ 3 (`MAX_TOP_TASKS`, case 5 seeds 4). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354b — MCP: `today_plan_set` in `mcpTools.runWriteTool`
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0354a · **Folds-in:** #747
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0354a.
@@ -28761,7 +28899,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. In `convex/mcp.test.ts` change the first line to `import { afterEach, describe, expect, spyOn, test } from "bun:test";` and append `describe("today_plan_set (TFV2-0354b)", …)` with exactly the 7 TESTS cases, using `ctxFor(A, [B])` and `run(mcpTools.runWriteTool, ctx, { userId, name: "today_plan_set", args })`; restore any `Date.now` spy in an `afterEach` inside the block.
   5. Run DONE.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0354b"` → `7 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both summaries and the diff of `convex/mcpTools.ts` pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0354b"` and the summary of `bun test convex/mcp.test.ts`, plus the diff of `convex/mcpTools.ts` pasted into the PR.
 - **DO NOT:** write `dayPlans` any other way than `upsertDayPlanForUser`; add a `reflection` field or commit the plan; add the catalog entry (TFV2-0354c); change other cases; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0354b / evidence: <DONE output> / changed: convex/mcpTools.ts, convex/mcp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -28808,7 +28946,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-06T22:30:00Z"))` / When `today_plan_set({ timezone: "Asia/Jerusalem", intention: "x" })` runs (no date) / Then `plan.date` is `"2026-10-07"`.
   3. Given A / When `today_plan_set({ timezone: "Mars/Base" })` runs / Then it rejects with `"Unknown timezone: Mars/Base"` and no `dayPlans` row exists.
   4. Given A / When `today_plan_set({ date: "2026-13-01" })` runs / Then it rejects with `"localDate must be YYYY-MM-DD"`.
-  5. Given four A tasks / When `today_plan_set({ date: "2026-10-06", topTaskIds: [all four] })` runs / Then it rejects with `"A day plan can have at most 3 top tasks"`.
+  5. Given four A tasks / When `today_plan_set({ date: "2026-10-06", topTaskIds: [all four] })` runs / Then it rejects with `"A day plan can have at most 3 top tasks"`; and with the first three it returns `plan.topTaskIds` of length 3.
   6. Given a task created by B / When A runs `today_plan_set({ date: "2026-10-06", topTaskIds: [it] })`, and separately `topTaskIds: ["garbage"]` / Then both reject with `"Task not found"` and no `dayPlans` row exists.
   7. Given A's plan from case 1's call shape for `"2026-10-06"` / When `today_plan_set({ date: "2026-10-06", timezone: "Asia/Jerusalem", energy: "high" })` runs / Then `plan.id` is the same id, `plan.energy` is `"high"`, `plan.intention` is still `"Ship"`, and exactly one `dayPlans` row exists.
 - **NUMBERS:** 7 of 7 new cases pass; whole file `0 fail` (exact). Top tasks ≤ 3 (`MAX_TOP_TASKS` in `convex/dayPlans.ts`; the old ticket's 10 is wrong). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
@@ -28816,6 +28954,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0354c — MCP: `today_plan_set` catalog entry + array schemas (`convex/lib/mcp/tools.ts`, `schema.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353, TFV2-0354b · **Folds-in:** #747
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0353, TFV2-0354b.
@@ -28831,7 +28970,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Append `describe("today_plan_set schema (TFV2-0354c)", …)` with exactly the 6 TESTS cases.
   6. Run DONE.
 - **DONE:** `bun test convex/lib/mcp/mcp.test.ts -t "TFV2-0354c"` → `6 pass`, `0 fail`; then `bun test convex/lib/mcp/mcp.test.ts` → `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** the three summaries and the diff of `tools.ts` and `schema.ts` pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/mcp/mcp.test.ts -t "TFV2-0354c"`, the summary of `bun test convex/lib/mcp/mcp.test.ts` and the summary of `bun test convex/mcp.test.ts`; also the three summaries and the diff of `tools.ts` and `schema.ts` pasted into the PR.
 - **DO NOT:** change any other tool's schema or description; remove the "none that delete" assertion; add other JSON Schema keywords; touch `convex/mcpTools.ts`, `convex/mcpHttp.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0354c / evidence: <DONE output> / changed: convex/lib/mcp/tools.ts, convex/lib/mcp/schema.ts, convex/lib/mcp/mcp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -28874,7 +29013,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Pure modules, no auth. Problem strings: `` `${path} must be array` `` (wrong type, from the existing type check), `` `${path} must have at most ${n} items` ``, item problems with the path `arguments.topTaskIds[<i>]`. The descriptions are English tool metadata for MCP clients, not app copy (no HE needed; CONVENTIONS §11 covers UI strings). `intention` ≤ 2,000 characters is the old TFV2-0354 limit.
 - **TESTS:**
   1. Given the catalog / When `findTool("today_plan_set")` runs / Then it returns a tool with `kind: "mutation"`, and `MCP_TOOLS` has length 12.
-  2. Given `{ date: "2026-10-06", timezone: "Asia/Jerusalem", intention: "Ship", energy: "low", topTaskIds: ["a", "b", "c"] }` / When validated against `today_plan_set` / Then the result is `[]`.
+  2. Given `{ date: "2026-10-06", timezone: "Asia/Jerusalem", intention: "a".repeat(2000), energy: "low", topTaskIds: ["a", "b", "c"] }` / When validated against `today_plan_set` / Then the result is `[]`.
   3. Given `topTaskIds: ["a", "b", "c", "d"]` / When validated / Then the result equals `["arguments.topTaskIds must have at most 3 items"]`.
   4. Given `topTaskIds: "a"` and, separately, `topTaskIds: [""]` / When validated / Then the results equal `["arguments.topTaskIds must be array"]` and `["arguments.topTaskIds[0] must be at least 1 characters"]`.
   5. Given `intention: "a".repeat(2001)` and, separately, `energy: "max"` / When validated / Then the results equal `["arguments.intention must be at most 2000 characters"]` and `["arguments.energy must be one of low, medium, high"]`.
@@ -28884,6 +29023,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0355 — MCP: read tools `mcpTools.runReadTool` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0354b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0354b.
@@ -28896,7 +29036,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("runReadTool (TFV2-0355)", …)` with exactly the 5 TESTS cases using `ctxFor(A, [B])` and `run(mcpTools.runReadTool, ctx, { userId, name, args })`. Seed tasks with `ctx.db.insert("tasks", { userId: A, title: "t" + i, status: "todo", priority: "medium", createdAt: i, updatedAt: i, ...over })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0355"` → `5 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0355"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcpTools.ts`, `convex/tasks.ts`, `convex/notes.ts`, `convex/calendar_events.ts` or any existing test; change a view shape; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0355 / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync` (note: `listTasksForUser` and `listNotesForUser` read with `.collect()` before the MCP slice; bounding them belongs to their own modules); list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28909,7 +29049,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Internal: `userId` is the token owner resolved by `mcp.authorizeCall`; every read is scoped to it. Results: `tasks_list` → `{ tasks: TaskView[] }` (status `open` = `todo`|`in_progress`, `done`, `all`; at most `limit ?? 50`); `notes_list` → `{ notes: NoteView[] }`; `calendar_list` → `{ events: { id, title, startsAtMs }[] }`; `today_plan_get` → `{ date, timezone, plan: { status, intention, energy, reflection } | null, topTasks: TaskView[], tasksDue: TaskView[] }` where `topTasks` keeps only ids whose task exists, has `userId === userId` and no `deletedAt`. Errors (plain `Error`): `"Calendar range must end after it starts."` — `toMs <= fromMs` (existing test "notes and calendar round trip"); `"Calendar range is too large."` — `toMs - fromMs > maxCalendarRangeMs` (new case 3); `` `Unknown timezone: ${timezone}` `` (existing test "today_plan_get returns the plan and tasks due that day"); `` `Unknown read tool: ${name}` `` (new case 5). No user-facing copy.
 - **TESTS:**
   1. Given 51 A tasks / When `tasks_list({})` runs for A / Then `tasks` has length 50; and with `{ limit: 5 }` it has length 5.
-  2. Given A tasks with `dueAt` 100, 200 and none / When `tasks_list({ status: "all", dueFrom: 150 })` and `tasks_list({ status: "all", dueTo: 200 })` run / Then the first returns only the `dueAt: 200` task and the second only the `dueAt: 100` task.
+  2. Given A tasks with `dueAt` 100, 200 and none / When `tasks_list({ status: "all", dueFrom: 200 })` and `tasks_list({ status: "all", dueTo: 200 })` run / Then the first returns only the `dueAt: 200` task and the second only the `dueAt: 100` task.
   3. Given A / When `calendar_list({ fromMs: 0, toMs: 2_764_800_001 })` runs / Then it rejects with `"Calendar range is too large."`; and `calendar_list({ fromMs: 0, toMs: 2_764_800_000 })` returns `{ events: [] }`.
   4. Given A's plan `{ userId: A, localDate: "2026-10-06", status: "committed", committedAt: 1, intention: "Rest", energy: "low", topTaskIds: [live A task, A task with deletedAt: 5, B task], createdAt: 1, updatedAt: 1 }` / When `today_plan_get({ date: "2026-10-06", timezone: "UTC" })` runs for A / Then `plan` equals `{ status: "committed", intention: "Rest", energy: "low", reflection: null }` and `topTasks` holds only the live A task.
   5. Given A / When `runReadTool({ userId: A, name: "nope", args: {} })` runs / Then it rejects with `"Unknown read tool: nope"`.
@@ -28918,6 +29058,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0356 — MCP: write tools `mcpTools.runWriteTool` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0355 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0355.
@@ -28930,7 +29071,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("runWriteTool (TFV2-0356)", …)` with exactly the 5 TESTS cases using `ctxFor(A)` and `run(mcpTools.runWriteTool, ctx, { userId: A, name, args })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0356"` → `5 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0356"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcpTools.ts`, `convex/tasks.ts`, `convex/notes.ts`, `convex/calendar_events.ts` or any existing test; add a delete tool; re-test `today_plan_set` (TFV2-0354b); touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0356 / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28952,6 +29093,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0357 — MCP: `brain_dump` action `mcpTools.runBrainDump` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0356 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0356.
@@ -28964,7 +29106,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("runBrainDump (TFV2-0357)", …)` containing: a `beforeEach` that saves `globalThis.fetch`, `process.env.DEEPINFRA_API_KEY` and `process.env.TEMPO_AI_MODEL`, sets `process.env.DEEPINFRA_API_KEY = "test-key-not-real"` and deletes `process.env.TEMPO_AI_MODEL`; an `afterEach` that restores all three (deleting a variable that was undefined); a helper `stubModel(content: string)` that replaces `globalThis.fetch` with a function recording each call's URL and answering `new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200 })`, returning the calls array; and a helper `actionCtx()` returning `ctxFor(A)` with `runMutation: (ref, args) => { if (getFunctionName(ref) !== "mcpTools:acceptBrainDump") throw new Error("unexpected " + getFunctionName(ref)); return run(mcpTools.acceptBrainDump, ctx, args); }`. Then exactly the 6 TESTS cases.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0357"` → `6 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0357"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** call the real DeepInfra API or read a real key (the key is the literal `"test-key-not-real"` and `fetch` is stubbed in every case); edit `convex/mcpTools.ts`, `convex/brain_dump.ts`, `convex/lib/*` or any existing test; remove the unreachable `priorities.length === 0` branch (out of scope); touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0357 / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns: the runtime model's real output (stubbed) / notes for ticket sync` (notes: the `brain_dump` schema allows 20,000 characters but the planner refuses over 12,000; the `created: 0` branch is unreachable because `parsePlanFromModelContent` throws on zero items); list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -28983,7 +29125,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `stubModel(JSON.stringify({ summary: "Start with the call.", priorities: [{ title: "Call the bank", reason: "Money", urgency: "now" }, { title: "Book dentist", reason: "Health", urgency: "later" }] }))` / When `runBrainDump({ userId: A, text: "bank, dentist" })` runs / Then it returns `{ plan: { summary: "Start with the call.", priorities: [2 items] }, accepted: false }`, the stub saw exactly one call to `DEEPINFRA_CHAT_COMPLETIONS_URL`, and A has no `tasks` row.
   2. Given the same stub / When `runBrainDump({ userId: A, text: "bank, dentist", accept: true })` runs / Then it returns `accepted: true`, `created: 2` and two `taskIds`, and the two `tasks` rows have `userId: A`, `status: "todo"`, titles `"Call the bank"` / `"Book dentist"` and priorities `"high"` / `"low"`.
   3. Given a stub / When `runBrainDump({ userId: A, text: "   " })` runs / Then it rejects with `"Paste something first — even a rough list is enough."` and the stub saw 0 calls.
-  4. Given a stub / When `runBrainDump({ userId: A, text: "a".repeat(12001) })` runs / Then it rejects with `"That is a lot at once (12001 characters). Try the first chunk under 12000 characters, then run again on the rest."` and the stub saw 0 calls.
+  4. Given a stub / When `runBrainDump({ userId: A, text: "a".repeat(12001) })` runs / Then it rejects with `"That is a lot at once (12001 characters). Try the first chunk under 12000 characters, then run again on the rest."` and the stub saw 0 calls; and with `stubModel` answering one `now` item, `text: "a".repeat(12000)` resolves with `accepted: false` and the stub saw 1 call.
   5. Given `stubModel(JSON.stringify({ summary: "Nothing", priorities: [] }))` / When `runBrainDump({ userId: A, text: "hmm", accept: true })` runs / Then it rejects with `"No clear items came back. Try a slightly longer list or run again?"` and A has no `tasks` row.
   6. Given a stub / When `runBrainDump({ userId: A, text: "I want to die" })` runs (no `accept`) / Then it returns the crisis object with `resources: crisisCardText(CRISIS_CARD)` and the stub saw 0 calls.
 - **NUMBERS:** 6 of 6 new cases pass; whole file `0 fail` (exact). Planner input ≤ 12,000 characters (`BRAIN_DUMP_MAX_RAW_CHARS`, case 4 sends 12,001); at most 6 items (`ACCEPT_MAX_ITEMS`); model calls for crisis text: 0. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
@@ -28991,6 +29133,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0358a — MCP: `mcpPost` origin, token, version and account guards (tests; creates `convex/mcpHttp.test.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -29003,7 +29146,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/mcpHttp.test.ts` with the harness in SPEC and a `describe("mcpPost guards (TFV2-0358a)", …)` holding exactly the 6 TESTS cases. `beforeEach` saves `process.env.TEMPO_MCP_ALLOWED_ORIGINS` and sets it to `"https://app.tempo.test"`; `afterEach` restores it (deleting it when it was undefined).
   3. Run DONE.
 - **DONE:** `bun test convex/mcpHttp.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcpHttp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcpHttp.ts`, `convex/mcp.ts`, `convex/http.ts` or `convex/lib/mcp/*`; use a real token or network; print a token; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0358a / evidence: <DONE output> / changed: convex/mcpHttp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29063,6 +29206,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0358b — MCP: `mcpPost` body limit in UTF-8 bytes, parsing and tool routing
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0358a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0358a.
@@ -29076,7 +29220,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("mcpPost body (TFV2-0358b)", …)` to `convex/mcpHttp.test.ts` with exactly the 7 TESTS cases, reusing the TFV2-0358a harness (`seedToken`, `post`, `send`, `PING`).
   4. Run DONE. Case 2 fails before STEP 2 and passes after it (paste both runs).
 - **DONE:** `bun test convex/mcpHttp.test.ts -t "TFV2-0358b"` → `7 pass`, `0 fail`; then `bun test convex/mcpHttp.test.ts` → `0 fail`.
-- **EVIDENCE:** case 2 failing before STEP 2 and passing after, both summaries, and the 2-line diff of `convex/mcpHttp.ts`.
+- **EVIDENCE:** the summary of `bun test convex/mcpHttp.test.ts -t "TFV2-0358b"` and the summary of `bun test convex/mcpHttp.test.ts`; also case 2 failing before STEP 2 and passing after, both summaries, and the 2-line diff of `convex/mcpHttp.ts`, pasted into the PR.
 - **DO NOT:** change the limit value, the guard order, any status or message, `mcpNotAllowed` or `mcpOptions`; add batch support or a GET stream; touch `convex/mcp.ts`, `convex/mcpTools.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0358b / evidence: <DONE output> / changed: convex/mcpHttp.ts, convex/mcpHttp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -29090,7 +29234,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```
   Body answers after the guards of TFV2-0358a (error bodies `{ jsonrpc: "2.0", id: null, error: { code, message } }`): over 262,144 bytes → 413, `-32600`, `"Request too large"`; not JSON → 400, `-32700`, `"Parse error"`; a JSON array → 400, `-32600`, `"JSON-RPC batches are not supported"`; not a request (`parseRequest` → null) → 400, `-32600`, `"Invalid request"`; a notification (no `id`) → 202, empty body, no `Content-Type`; a request → 200 with the `handleRpc` response. `tools/call` routing: kind `query` → `runQuery(internal.mcpTools.runReadTool, { userId, name, args })`; `mutation` → `runMutation(internal.mcpTools.runWriteTool, …)`; `action` → `runAction(internal.mcpTools.runBrainDump, { userId, text, accept })`; `userId` is the token owner from `authorizeCall`. No user-facing copy.
 - **TESTS:**
-  1. Given a seeded token / When `post("x".repeat(262145))` is sent / Then the status is 413 and the message is `"Request too large"`.
+  1. Given a seeded token / When `post("x".repeat(262145))` is sent / Then the status is 413 and the message is `"Request too large"`; and `post("x".repeat(262144))` is 400 with `"Parse error"` (not 413).
   2. Given a seeded token / When `post(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping", params: { p: "é".repeat(131073) } }))` is sent / Then the status is 413 (its `.length` is under 262,144 but its UTF-8 size is over).
   3. Given a seeded token / When `post("not json")`, `post("[" + PING + "]")` and `post(JSON.stringify({ jsonrpc: "2.0", result: 1 }))` are sent / Then each is 400 with, in order, `{ code: -32700, message: "Parse error" }`, `{ code: -32600, message: "JSON-RPC batches are not supported" }`, `{ code: -32600, message: "Invalid request" }`.
   4. Given a seeded token / When `post(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }))` is sent / Then the status is 202, `await response.text()` is `""` and there is no `Content-Type` header.
@@ -29102,6 +29246,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0358c — MCP: `mcpOptions` CORS preflight (tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0358b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0358b.
@@ -29114,7 +29259,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("mcpOptions (TFV2-0358c)", …)` with exactly the 3 TESTS cases; call `(mcpHttp.mcpOptions as unknown as { _handler: (c: unknown, r: Request) => Promise<Response> })._handler({}, new Request("https://tempo.test/mcp", { method: "OPTIONS", headers }))`; the TFV2-0358a `beforeEach` sets `TEMPO_MCP_ALLOWED_ORIGINS` to `"https://app.tempo.test"`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcpHttp.test.ts -t "TFV2-0358c"` → `3 pass`, `0 fail`; then `bun test convex/mcpHttp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcpHttp.test.ts -t "TFV2-0358c"` and the summary of `bun test convex/mcpHttp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcpHttp.ts`; add `*` as an allowed origin; touch `convex/http.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0358c / evidence: <DONE output> / changed: convex/mcpHttp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29131,6 +29276,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0358d — MCP: `mcpNotAllowed` (GET/DELETE 405) (tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0358c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0358c.
@@ -29140,10 +29286,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/mcpHttp.test.ts` (edit: one `describe` block). `convex/mcpHttp.ts` unchanged.
 - **STEPS:**
   1. Code-map check: read `mcpNotAllowed` in `convex/mcpHttp.ts` and the `/mcp` routes in `convex/http.ts`.
-  2. Append `describe("mcpNotAllowed (TFV2-0358d)", …)` with exactly the 1 TESTS case, calling `_handler({}, request)` as in TFV2-0358c.
+  2. Append `describe("mcpNotAllowed (TFV2-0358d)", …)` with exactly the 1 TESTS case, calling `_handler({}, request)` (the exported `httpAction`'s handler, invoked directly with an empty ctx).
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcpHttp.test.ts -t "TFV2-0358d"` → `1 pass`, `0 fail`; then `bun test convex/mcpHttp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcpHttp.test.ts -t "TFV2-0358d"` and the summary of `bun test convex/mcpHttp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcpHttp.ts` or `convex/http.ts`; add a server-initiated stream or sessions; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0358d / evidence: <DONE output> / changed: convex/mcpHttp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29159,6 +29305,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0359 — MCP: CLI client `tempo-mcp` (`packages/mcp-cli/src/index.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-043 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `packages` (new workspace package `@tempo/mcp-cli`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-043.
@@ -29173,7 +29320,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Create `packages/mcp-cli/src/index.test.ts` with exactly the 8 TESTS cases; `io.fetch` is a stub that records `{ url, init }` and returns scripted `Response`s; `out`/`err` push into arrays. No network.
   5. Run DONE, then `bun run lint`.
 - **DONE:** `bun test packages/mcp-cli/src/index.test.ts` → `8 pass`, `0 fail`; then `bun run typecheck` → exit 0; then `bun run lint` → exit 0.
-- **EVIDENCE:** the three outputs pasted into the PR.
+- **EVIDENCE:** the summary of `bun test packages/mcp-cli/src/index.test.ts`, the summary of `bun run typecheck` and the summary of `bun run lint`; also the three outputs pasted into the PR.
 - **DO NOT:** print, log or embed a token value (only the variable name `TEMPO_MCP_TOKEN`); add a dependency or edit `package.json`/`bun.lock`/`tsconfig.json`/`biome.json` (config lane); write a config file to the home directory; add a `bin` entry; use axios, ky, got or any fetch wrapper (TRD §9); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0359 / evidence: <DONE output> / changed: packages/mcp-cli/src/index.ts, packages/mcp-cli/src/cli.ts, packages/mcp-cli/src/index.test.ts / unknowns: the deployment's real `/mcp` URL (supplied by the user in `TEMPO_MCP_URL`) / notes for ticket sync` (note: the old ticket's `init <url>` command is dropped; the URL comes from `TEMPO_MCP_URL`); list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -29206,7 +29353,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `env = { TEMPO_MCP_URL: "https://tempo.test/mcp", TEMPO_MCP_TOKEN: "tmcp_" + "A".repeat(43) }` and a stub answering 200 `{ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "tasks_list", description: "List tasks" }, { name: "task_create", description: "Create a task." }] } }` / When `runCli(["tools"], env, io)` runs / Then it returns 0 and `out` lines equal `["tasks_list\tList tasks", "task_create\tCreate a task."]`.
   2. Given the same env and a stub answering 200 `{ jsonrpc: "2.0", id: 1, result: { content: [], structuredContent: { tasks: [] } } }` / When `runCli(["call", "tasks_list", "{\"status\":\"all\"}"], env, io)` runs / Then it returns 0, the recorded body parses to `{ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "tasks_list", arguments: { status: "all" } } }`, the headers include `Authorization: "Bearer " + token` and `MCP-Protocol-Version: "2025-06-18"`, and `out` received `JSON.stringify({ tasks: [] }, null, 2)`.
   3. Given env without `TEMPO_MCP_TOKEN` / When `runCli(["tools"], env, io)` runs / Then it returns 1, `err` received `"Missing TEMPO_MCP_TOKEN"`, and the stub was not called; and without `TEMPO_MCP_URL` (token set) it returns 1 with `"Missing TEMPO_MCP_URL"`.
-  4. Given `[]`, `["call"]`, `["nope"]` and `["tools", "x"]` / When each runs / Then each returns 2 with `err` = `USAGE` and no request.
+  4. Given `[]`, `["call"]`, `["nope"]`, `["tools", "x"]` and `["call", "tasks_list", "{}", "x"]` / When each runs / Then each returns 2 with `err` = `USAGE` and no request.
   5. Given `["call", "tasks_list", "[1]"]` and `["call", "tasks_list", "{bad"]` / When each runs / Then each returns 2 with `"Arguments must be a JSON object"` and no request.
   6. Given a stub answering 401 `{ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Missing or invalid token" } }` / When `runCli(["tools"], env, io)` runs / Then it returns 1 and `err` received `"Request failed (401): Missing or invalid token"`; and a stub answering 503 with body `"down"` gives `"Request failed (503)"`.
   7. Given a stub answering 200 `{ jsonrpc: "2.0", id: 1, result: { isError: true, content: [{ type: "text", text: "Task not found" }] } }` / When `runCli(["call", "task_update", "{\"taskId\":\"x\"}"], env, io)` runs / Then it returns 1 and `err` received `"Tool error: Task not found"`; and a stub answering 200 `{ jsonrpc: "2.0", id: 1, error: { code: -32602, message: "Unknown tool: nope" } }` for `["call", "nope"]` gives `"Error -32602: Unknown tool: nope"`.
@@ -29216,6 +29363,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0360a — MCP: `mcp.createToken` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0357 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, TFV2-0357.
@@ -29229,7 +29377,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Append `describe("createToken (TFV2-0360a)", …)` with exactly the 4 TESTS cases, using the file's `ctxFor(A)`.
   4. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0360a"` → `4 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0360a"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcp.ts` or `convex/lib/mcp/token.ts`; store or return the plaintext anywhere but the one return value; raise `MAX_ACTIVE_TOKENS_PER_USER`; edit existing tests other than the import line; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0360a / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync` (note: `createToken` reads the caller's token rows with `.collect()`, revoked ones included; bounding it is a separate change); list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -29244,13 +29392,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `makeSignedOutCtx()` / When `run(mcp.createToken, ctx, { name: "x" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given `ctxFor(A)` / When `createToken({ name: "   " })` runs / Then it rejects with `"Give the token a name first."` and no `mcpTokens` row exists.
-  3. Given `ctxFor(A)` / When `createToken({ name: "  Work laptop  " })` and `createToken({ name: "n".repeat(100) })` run / Then the stored names are `"Work laptop"` and `"n".repeat(80)`.
+  3. Given `ctxFor(A)` / When `createToken({ name: "  Work laptop  " })` , `createToken({ name: "n".repeat(81) })` and `createToken({ name: "m".repeat(80) })` run / Then the stored names are `"Work laptop"`, `"n".repeat(80)` and `"m".repeat(80)`.
   4. Given `ctxFor(A)` / When `createToken({ name: "CLI" })` runs / Then `prefix` equals `token.slice(0, 8)`, starts with `"tmcp_"`, the stored row's `prefix` equals it, and the stored row has no `token` key.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). Name ≤ 80 characters (code literal); prefix 8 characters (`TOKEN_DISPLAY_PREFIX_LENGTH`); at most 10 active tokens (`MAX_ACTIVE_TOKENS_PER_USER`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360b — MCP: `mcp.listTokens` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0360a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0360a.
@@ -29263,7 +29412,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("listTokens (TFV2-0360b)", …)` with exactly the 3 TESTS cases; seed rows with `ctx.db.insert("mcpTokens", { userId, name, tokenHash: "h" + n, prefix: "tmcp_abc", createdAt: n, ...extra })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0360b"` → `3 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0360b"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcp.ts`; return `tokenHash`, `windowStartMs`, `windowCount` or `userId`; edit existing tests; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0360b / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync` (note: the read is `.collect()`; bounding it is a separate change); list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29284,6 +29433,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0360c — MCP: `mcp.revokeToken` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0360b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0360b.
@@ -29296,7 +29446,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("revokeToken (TFV2-0360c)", …)` with exactly the 3 TESTS cases.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0360c"` → `3 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0360c"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcp.ts`; hard-delete a token row; edit existing tests; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0360c / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29317,6 +29467,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0360d — MCP: `mcp.authorizeCall` account, touch and window (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0360c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0360c.
@@ -29329,7 +29480,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("authorizeCall (TFV2-0360d)", …)` with exactly the 3 TESTS cases; use `seedToken` and `run(mcp.authorizeCall, ctx, { tokenHash })`.
   3. Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/mcp.test.ts -t "TFV2-0360d"` → `3 pass`, `0 fail`; then `bun test convex/mcp.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/mcp.test.ts -t "TFV2-0360d"` and the summary of `bun test convex/mcp.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/mcp.ts`; change `RATE_LIMIT_MAX_CALLS`, `RATE_LIMIT_WINDOW_MS` or `TOUCH_INTERVAL_MS`; edit existing tests; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0360d / evidence: <DONE output> / changed: convex/mcp.test.ts / unknowns / notes for ticket sync` (note: `touchToken` is exported but no code calls it; `authorizeCall` does the touch itself); list STEPS 1–3 with evidence.
 - **SPEC:**
@@ -29348,8 +29499,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Internal (called by `mcpPost` with the SHA-256 of the bearer token). `unauthorized`: no row on `by_tokenHash`, `revokedAt` set, user missing, or user inactive. `pending`: user not approved. Window: `windowStartMs` kept while `now - windowStartMs < RATE_LIMIT_WINDOW_MS` (60,000 ms), else reset to `now`; `rate_limited` when the window already holds `RATE_LIMIT_MAX_CALLS` (120); else `windowCount + 1`. `lastUsedAt` written only when unset or at least `TOUCH_INTERVAL_MS` (60,000 ms) old. No thrown errors; no user-facing copy.
 - **TESTS:**
   1. Given A's token and `ctx.db.patch(A, { isActive: false })`, and separately the hash `"0".repeat(64)` with no row / When `authorizeCall` runs for each / Then both return `{ status: "unauthorized" }` and A's token row has no `windowCount`.
-  2. Given A's token seeded with `{ windowStartMs: Date.now() - 10_000, windowCount: 3 }` / When `authorizeCall` runs / Then it returns `{ status: "ok", userId: A }`, the row has `windowCount: 4` and the same `windowStartMs`.
-  3. Given A's token seeded with `{ lastUsedAt: Date.now() - 30_000 }` / When `authorizeCall` runs / Then `lastUsedAt` is unchanged; Given the row patched to `lastUsedAt: Date.now() - 61_000` / When it runs again / Then `lastUsedAt` is at least the `Date.now()` read before that call.
+  2. Given A's token seeded with `{ windowStartMs: Date.now() - 59_000, windowCount: 3 }` / When `authorizeCall` runs / Then it returns `{ status: "ok", userId: A }`, the row has `windowCount: 4` and the same `windowStartMs`.
+  3. Given A's token seeded with `{ lastUsedAt: Date.now() - 59_000 }` / When `authorizeCall` runs / Then `lastUsedAt` is unchanged; Given the row patched to `lastUsedAt: Date.now() - 60_000` / When it runs again / Then `lastUsedAt` is at least the `Date.now()` read before that call.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). 120 calls per token per 60,000 ms (`RATE_LIMIT_MAX_CALLS`, `RATE_LIMIT_WINDOW_MS`); one `lastUsedAt` write per 60,000 ms (`TOUCH_INTERVAL_MS`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
