@@ -1,4 +1,4 @@
-# Backlog conventions (shared) — Phase 1, 2 Nov 2026
+# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026
 
 One source of truth for every ticket in [`BACKLOG-v2.md`](./BACKLOG-v2.md). Decided once here so no
 ticket re-decides it. Verified against this repo at branch `docs/source-2026-11-01`
@@ -140,3 +140,402 @@ behaviour, not echo the implementation). Exact strings match real framework outp
   already uses them, or for a new file. Every error is tested.
 - **"Bytes"** is UTF-8 length, not JSON string length.
 - **One function per ticket** — `save` and `patchBlock` are two tickets, not one.
+
+---
+
+# Part 2 — decided once for the Opus rewrite (2 Nov 2026)
+
+Everything below is fixed here so no ticket re-decides it. A ticket that needs something this part
+does not cover is `OPEN` with the exact question for Amit (§19), never a silent choice.
+
+## 9. One unit per ticket — the file sets
+
+At most **3 files + 1 test file** per ticket (TICKET-STANDARD "Sizing"). Each ticket kind has a fixed
+file set. A ticket never lists a file outside its set; a bigger unit is split into `a`/`b`/`c` tickets.
+
+| Kind | Files (max 3) | Test (1) | DONE command |
+|---|---|---|---|
+| Backend function (one exported Convex function) | `convex/<module>.ts` (+ at most one `convex/lib/<helper>.ts` it alone needs) | `convex/<module>.test.ts` | `bun test convex/<module>.test.ts` |
+| Pure helper | `convex/lib/<name>.ts` or `packages/<pkg>/src/<name>.ts` | next to it, `<name>.test.ts` | `bun test <that test path>` |
+| Web component | `apps/web/components/<area>/<Name>.tsx` · `apps/web/components/<area>/<Name>.css` (Case B of §10 only) · `apps/web/app/e2e/components/<kebab-name>/page.tsx` | `tests/e2e/screens/<kebab-name>.spec.ts` | `CI=1 bunx playwright test tests/e2e/screens/<kebab-name>.spec.ts --reporter=line` |
+| Web screen (route) | `apps/web/app/(tempo)/<route>/page.tsx` · `apps/web/lib/e2e/fixtures/<route-kebab>.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one exact line, §17) | `tests/e2e/screens/<route-kebab>.spec.ts` | same Playwright form |
+| Mobile component | `apps/mobile/components/v3/<Name>.tsx` · `apps/mobile/app/e2e/<kebab-name>.tsx` (harness route) | `tests/e2e/mobile/<kebab-name>.spec.ts` | `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/<kebab-name>.spec.ts --reporter=line` (needs TFV2-0000d, CFG-031, CFG-032) |
+| Mobile screen | `apps/mobile/app/(tempo)/<path>.tsx` · `apps/mobile/lib/e2e/fixtures/<screen>.ts` | `tests/e2e/mobile/<screen>.spec.ts` | same mobile form |
+| Config lane (schema, deps, CI, test config) | named exactly in the CFG ticket (§18) | named in the ticket | named in the ticket |
+
+- Marketing routes outside `(tempo)` (`apps/web/app/page.tsx`, `about`, `changelog`, …) use the
+  screen set with their real route path.
+- A ticket that only **verifies** existing code and adds missing tests lists the existing file
+  (unchanged unless a STEP names the exact change) plus its one test file.
+- `SCOPE` lists the files and the test. `MUTATES` lists every SCOPE file again with `(new)` or
+  `(edit)` plus any data or system it changes (table rows written, a route registered). Scope guard
+  accepts only files in SCOPE ∪ MUTATES.
+
+## 10. Stylesheet rule (web)
+
+`apps/web/app/tempo.css` (imported by `globals.css`, copied verbatim from `docs/design/v3/tempo.css`)
+already holds the classes of ~90 components, each under a comment `/* @component <Name> | class … */`.
+It is a shared file: **no build ticket edits it.** Every web component ticket says which case applies:
+
+- **Case A — tempo.css has a `@component <Name>` block** (check with
+  `grep -n "@component <Name> " apps/web/app/tempo.css`): the component uses exactly those classes,
+  sets `data-component="<Name>"` on its root, and adds **no stylesheet**. The SPEC lists every class and
+  `data-*` attribute it uses. The file set is `<Name>.tsx` + harness page + spec.
+- **Case B — no block exists:** the ticket creates one stylesheet,
+  `apps/web/components/<area>/<Name>.css`, imported once as the first local import of `<Name>.tsx`
+  (`import "./<Name>.css";`). The SPEC lists every rule (selector, properties, token values). Rules:
+  - every class starts with `tp-<kebab-name>` (BEM: `tp-job-row`, `tp-job-row__schedule`,
+    `tp-job-row--off`); no top-level element selectors, no `html`/`body`, no other component's classes;
+  - values only from the `--tp-*` tokens in §5 — no hex/rgb/hsl/named colours (`scan:design-tokens`
+    fails on raw hex), no raw px for spacing, radius, type size or duration (`1px` borders and `0` allowed);
+  - logical properties only (`margin-inline-start`, `padding-inline`, `inset-inline-end`,
+    `text-align: start`), never `left`/`right`;
+  - `transition`/`animation` use `var(--tp-dur-*)` and `var(--tp-ease-*)` only, and the file ends with
+    `@media (prefers-reduced-motion: reduce) { .tp-<kebab-name>, .tp-<kebab-name> * { transition: none; animation: none; } }`;
+  - breakpoints: base (no query) = 390 px layout, then `@media (min-width: 768px)`,
+    `(min-width: 1024px)`, `(min-width: 1280px)`.
+- Screens never get a stylesheet: a screen composes components and uses only their classes plus the
+  existing shell classes (`TempoShell`, `.tp-page`, `.tp-pagehead`, `.tp-section`).
+- Mobile uses NativeWind `className` strings in the component file; no separate stylesheet.
+
+## 11. Copy and locale rule
+
+- **New** components and screens keep their copy in their own `.tsx` file, in one constant at the top:
+
+  ```ts
+  type CopyKey = "title" | "retry" | "count";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { title: "Modules", retry: "Try again", count: "{n} modules" },
+    he: { title: "מודולים", retry: "לנסות שוב", count: "{n} מודולים" },
+  };
+  ```
+
+  `Lang` is imported from `@/lib/i18n` (web) or `apps/mobile/lib/v3/i18n.ts` (mobile). The file reads
+  `const { lang } = useLocale(); const copy = COPY[lang];` (web, `useLocale` from
+  `@/components/providers/LocaleProvider`) or `const { lang } = usePrefs();` (mobile, from
+  `apps/mobile/components/v3/prefs.tsx`). Placeholders are `{name}` and are filled with
+  `copy.count.replace("{n}", String(n))`. The ticket SPEC gives every key with its exact EN and HE value.
+- A ticket that **changes an existing** component which already reads `t("<key>")` keeps those keys and
+  adds any new string to a `COPY` constant in the same file. It never edits `apps/web/lib/i18n.ts` or
+  `apps/web/lib/i18n-groups/*` unless the ticket is about those files.
+- Backend error messages are English only (the UI maps them; §16). User-facing strings a backend
+  returns (fixed prompts, card text) are given in both languages in the SPEC and returned as
+  `{ en: string; he: string }`.
+- Every visible string, `aria-label`, `aria-description`, screen-reader-only text (class `tp-sr-only`),
+  toast, button, placeholder, `title` and `alt` is listed in the SPEC as `EN: "…" / HE: "…"`. No
+  "see the HTML", no "e.g.", no "similar copy". Copy that is Amit's to choose (quotes, testimonials,
+  prices, legal text) makes the ticket `OPEN` (§19).
+
+## 12. Hebrew glossary and voice (one form everywhere)
+
+Voice:
+- **Gender-neutral, always.** Address the person with an infinitive ("לנסות שוב"), "אפשר ל…"
+  ("אפשר לבטל מתי שרוצים"), an impersonal plural present ("רושמים מה שקרה"), or a noun. Never a
+  gendered second-person verb, pronoun or adjective (not "תרשמי", "תחזור", "כשתחזרי", "את צריכה",
+  "מוכן/ה"). "שלך" is allowed.
+- The coach is **"המאמן"** (masculine noun, third person: "המאמן מציע").
+- "Tempo" stays in Latin letters.
+- Numbers, times, dates, durations, cron text and code are wrapped in `.tp-num` or `.tp-mono`
+  (LTR isolate) inside Hebrew text. A prefix before a number or Latin word takes a maqaf: "ב־5", "ל־Tempo".
+- Abbreviations use geresh: "דק׳". Ellipsis is the single character "…".
+- Never the shaming words in `convex/lib/shameWords.ts` (EN "failed", "overdue", "lazy", "must",
+  "should have", "streak lost", "you never"; HE "נכשל", "איחרת", "עצלן", "חייב", "היית צריך").
+
+Glossary (use exactly these; a term not listed uses the existing repo string if one exists, else a
+noun for a one-word button and an infinitive for a phrase):
+
+| EN | HE | EN | HE |
+|---|---|---|---|
+| Today | היום | Page / Pages | דף / דפים |
+| Daily note | הדף היומי | Weekly page | הדף השבועי |
+| Note / Notes | פתק / פתקים | Task / Tasks | משימה / משימות |
+| Habit / Habits | הרגל / הרגלים | Routine / Routines | שגרה / שגרות |
+| Goal / Goals | מטרה / מטרות | Project / Projects | פרויקט / פרויקטים |
+| Template / Templates | תבנית / תבניות | Module / Modules | מודול / מודולים |
+| Built in | מובנים | Plain mode | מצב פשוט |
+| Scheduled job / jobs | פעולה מתוזמנת / פעולות מתוזמנות | Coach | המאמן |
+| Chat / Thread | שיחה | Memory / Memories | זיכרון / זיכרונות |
+| Journal | יומן | Brain dump | פריקת מחשבות |
+| Plan (nav, planning) | תכנון | Plan (billing) | מסלול |
+| Trial | ניסיון | Calendar | לוח שנה |
+| Event | אירוע | Focus | מיקוד |
+| Time block | בלוק זמן | Energy | אנרגיה |
+| Reminder (nag) | תזכורת | Notification | התראה |
+| Insights | תובנות | Activity | פעילות |
+| Search | חיפוש | Settings | הגדרות |
+| Profile | פרופיל | Preferences | העדפות |
+| Privacy | פרטיות | Proposal | הצעה |
+| Week / Month / Day | שבוע / חודש / יום | Daily / Weekly / Monthly | יומי / שבועי / חודשי |
+| Now / Soon / Later | עכשיו / בקרוב / אחר כך | On / Off | פועל / כבוי |
+| Save | שמירה | Cancel | ביטול |
+| Undo | ביטול | Delete | מחיקה |
+| Edit | עריכה | Add | הוספה |
+| Remove | הסרה | Close / Dismiss | סגירה |
+| Back | חזרה | Continue | המשך |
+| Open | פתיחה | Send | שליחה |
+| Copy | העתקה | Export / Import | ייצוא / ייבוא |
+| Accept / Approve | אישור | Reject / Discard | דחייה |
+| Not now | לא עכשיו | Try again / Retry | לנסות שוב |
+| Start | להתחיל | Resume | להמשיך |
+| Pause | השהיה | Forget | לשכוח |
+| Show more | להציג עוד | Clear | ניקוי |
+| Sign in / Sign out | התחברות / התנתקות | Loading… | בטעינה… |
+| Untitled | ללא כותרת | Ask the coach | לשאול את המאמן |
+| You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. | Your data is safe. | המידע שלך שמור. |
+
+## 13. Component harness data rule (web and mobile)
+
+- The harness page (`apps/web/app/e2e/components/<id>/page.tsx`, `"use client"`) imports **only** the
+  component under test, React, and types. It never imports `convex/react`, `@/convex/_generated/*`,
+  `fetch`, a provider other than what the TFV2-0023a frame gives, or another component's harness.
+- Fixture data is written inline in the page as typed constants that satisfy the component's props
+  type (`const JOB_ON: ScheduledJobRowProps["job"] = {…}`), one per state.
+- The page renders **every state stacked**, each inside `<section data-testid="<id>-<state>">`, in
+  the order the SPEC lists them. State names are the SPEC's exact names (`default`, `loading`,
+  `empty`, `error`, `offline`, `success`, `disabled`, plus any the component has).
+- Callback props get a harness handler that writes the call into one shared element:
+  `<output data-testid="<id>-log">` whose text becomes `<propName>:<JSON of the first argument>`
+  (for example `onToggle:{"id":"job-1","on":false}`). Specs assert this text; nothing else records calls.
+- Components take **all** data and every action through props. A component never calls `useQuery`,
+  `useMutation`, `useAction` or `fetch`; only a screen does (§14).
+- Mobile harness routes live at `apps/mobile/app/e2e/<id>.tsx` and follow the same rules. The route
+  renders `null` unless `process.env.EXPO_PUBLIC_TEMPO_E2E === "1"`, and on mount calls
+  `usePrefs().setLang(lang)` when `useLocalSearchParams().lang` is `"en"` or `"he"`. Mobile screens force
+  states with `useE2EMobile()` (§15) and fixtures from `apps/mobile/lib/e2e/fixtures/<screen>.ts`, the
+  same way as §14.
+
+## 14. Screen data rule (web)
+
+- A screen's `page.tsx` is the only place that calls Convex. It reads data with `useQuery`, writes with
+  `useMutation`/`useAction`, and passes plain props down to components.
+- State forcing: `const forced = useE2EState();` (TFV2-0000c, `apps/web/lib/e2e/useE2EState.ts`). When `forced !== null` the page calls
+  every query with `"skip"` (`useQuery(api.modules.list, forced ? "skip" : {})`) and renders
+  `FIXTURES[forced]` from `apps/web/lib/e2e/fixtures/<route-kebab>.ts`; it never contacts Convex.
+- The fixtures file exports `export const FIXTURES: Record<"<state>" | …, <ScreenView>>` (one entry per
+  SPEC state, typed with the screen's view type) and nothing else. It imports types only.
+- `offline` is real behaviour too: the page reads `useOnline()` (`apps/web/lib/useOnline.ts`); the
+  forced state `offline` makes the page behave as if `useOnline()` returned `false`.
+- Every screen ticket registers its route in `E2E_WIRING_ROUTES` as its own named STEP with the exact
+  line (§17), and `apps/web/lib/e2eWiringRoutes.ts` is in SCOPE and MUTATES.
+- Week start is never hard-coded: screens read `userPreferences.weekStartsOn` (`0 | 1 | 6`) through
+  `api.preferences.get` and pass `weekStartsOn` to components as a prop. Time zone likewise comes from
+  `userPreferences.timeZone` via `api.preferences.get`. (Code truth: `convex/preferences.ts`
+  `PREFERENCE_DEFAULTS` = `weekStartsOn: 1`, `timeZone: "UTC"`.)
+- Typeface: components use `--tp-font-serif`, `--tp-font-sans`, `--tp-font-mono` only. Q-05 (§19)
+  decides the token values and blocks no component or screen ticket.
+
+## 15. E2E helpers (built by the groundwork tickets; use exactly these)
+
+`tests/e2e/helpers/harness.ts` (TFV2-0000b):
+
+```ts
+import type { Page } from "@playwright/test";
+export const VIEWPORTS = {
+  mobile: { width: 390, height: 844 },
+  desktop: { width: 1280, height: 800 },
+} as const;
+export type HarnessLang = "en" | "he";
+/** Opens /e2e/components/<id>?lang=<lang>&theme=<theme> and waits for [data-testid="<id>-default"] or the first state section. */
+export function openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>;
+/** Opens <route>?state=<state>&lang=<lang> and waits for network idle. */
+export function openScreen(page: Page, route: string, opts: { state: string; lang?: HarnessLang }): Promise<void>;
+/** Asserts <html dir> and <html lang>. */
+export function expectDir(page: Page, lang: HarnessLang): Promise<void>;
+/** Collects console errors from now on; the spec asserts the array is empty at the end. */
+export function trackConsoleErrors(page: Page): string[];
+/** Asserts every visible button, link, input and [role=switch|checkbox|radio|tab|option] inside the locator is at least 24×24 CSS px. */
+export function expectTargetSize(page: Page, selector: string): Promise<void>;
+/** Asserts computed transition-duration and animation-duration of every element under the selector are ≤ 0.25 s, and 0 s after page.emulateMedia({ reducedMotion: "reduce" }). */
+export function expectMotionBudget(page: Page, selector: string): Promise<void>;
+/** Navigates twice (warm-up, then measured) and returns LCP (ms) and CLS from PerformanceObserver. */
+export function measureVitals(page: Page, url: string): Promise<{ lcpMs: number; cls: number }>;
+```
+
+Every spec starts with `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");` and runs
+each case at both `VIEWPORTS` and both languages with `for` loops over
+`[["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]]` and `["en", "he"]`.
+
+`apps/web/lib/e2e/e2eState.ts` + `apps/web/lib/e2e/useE2EState.ts` (TFV2-0000c):
+
+```ts
+// e2eState.ts — pure, no React or Next imports
+export const E2E_STATE_PATTERN = /^[a-z][a-z-]{0,23}$/;
+/** Returns raw when bypass is true and raw matches E2E_STATE_PATTERN, else null. */
+export function parseE2EState(raw: string | null, bypass: boolean): string | null;
+/** True only when NODE_ENV !== "production" and NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1". */
+export function isE2EBypass(env: { NODE_ENV?: string; NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS?: string }): boolean;
+
+// useE2EState.ts — "use client"
+/** parseE2EState(useSearchParams().get("state"), isE2EBypass(process.env)). Call inside <Suspense>. */
+export function useE2EState(): string | null;
+```
+
+`apps/mobile/lib/e2e/e2eState.ts` + `apps/mobile/lib/e2e/useE2EMobile.ts` (TFV2-0000d):
+
+```ts
+// e2eState.ts — pure, no React Native or Expo imports (so bun can test it)
+export function parseE2EMobileState(raw: string | null, enabled: boolean): string | null; // same rule as parseE2EState
+export type TempoGate = "sign-in" | "onboarding" | "render";
+/** e2e true → "render"; else !isLoading && !isAuthenticated → "sign-in"; else hasProfile && onboardedAt === undefined → "onboarding"; else "render". */
+export function tempoGate(input: { isLoading: boolean; isAuthenticated: boolean; hasProfile: boolean; onboardedAt: number | undefined; e2e: boolean }): TempoGate;
+
+// useE2EMobile.ts
+/** parseE2EMobileState((useLocalSearchParams().state as string | undefined) ?? null, process.env.EXPO_PUBLIC_TEMPO_E2E === "1"). */
+export function useE2EMobile(): string | null;
+```
+
+Mobile specs live in `tests/e2e/mobile/` and run under `playwright.mobile.config.ts` (CFG-031: Expo web
+on `http://localhost:8081`, env `EXPO_PUBLIC_TEMPO_E2E=1`,
+`EXPO_PUBLIC_CONVEX_URL=https://example.convex.cloud`). CFG-032 makes `(tempo)` routes render signed
+out only when `__DEV__ && process.env.EXPO_PUBLIC_TEMPO_E2E === "1"`. Every mobile UI ticket depends on
+CFG-031, CFG-032 and TFV2-0000d.
+
+## 16. Backend function rules
+
+- **Kind is always named:** `query`, `mutation`, `action`, `internalQuery`, `internalMutation`,
+  `internalAction`, or `httpAction`, imported from `./_generated/server`.
+- **Signature is always given in full**, as the ticket's SPEC code block:
+
+  ```ts
+  export const setEnabled = mutation({
+    args: { jobId: v.id("jobs"), enabled: v.boolean() },
+    returns: v.null(),
+    handler: async (ctx: MutationCtx, args: { jobId: Id<"jobs">; enabled: boolean }): Promise<null> => { … },
+  });
+  ```
+
+  `args` and `returns` validators are both written. Ids are `v.id("<table>")` / `Id<"<table>">`
+  wherever the field is a Convex id; plain `v.string()` only where the code already uses strings
+  (for example `starter:*` template ids, `tasks.projectId`).
+- **Auth:** every public function starts with `const user = await requireUser(ctx);`
+  (`convex/lib/requireUser.ts`), which throws `"Not authenticated"`, `"User not found"` or
+  `"This account is not active"`. AI paths use the gate the module already uses
+  (`requireApprovedForAi` in `convex/lib/aiGate.ts`).
+- **Ownership:** a row whose `userId !== user._id`, or that does not exist, or whose `deletedAt` is set
+  (unless the function is a restore) throws `new Error("<Thing> not found")` with the module's existing
+  noun (`"Task not found"`, `"Habit not found"`, `"Template not found"`, `"Job not found"` for new
+  tables). A module that already uses `"Access denied"` for foreign rows keeps it; the ticket says which.
+- **Error mechanism:** follow the file. Existing modules throw `new Error("<exact message>")`; new
+  modules do the same. `ConvexError` codes only where the file already uses them. Every error the SPEC
+  lists has: the exact message, the exact trigger, and exactly one TESTS case. TESTS always include
+  the signed-out case (`"Not authenticated"`) and, for any function that takes a row id, the
+  other-user case.
+- **Limits:** every list read is bounded (`.take(n)` with `n` a named exported constant, or
+  `boundedQuery` from TFV2-0001). "Bytes" is UTF-8 (§7 H).
+- **Tests** use `bun:test`, `makeFakeCtx`, `makeSignedOutCtx` and `run` from
+  `convex/lib/testFakeCtx.ts` (TFV2-0000a adds `makeSignedOutCtx`, `db.delete`, `db.replace`,
+  `.unique()` and a `scheduler.runAfter` recorder). Seed rows with `await ctx.db.insert("<table>", {…})`
+  before calling `run(fn, ctx, args)`. A test asserts a returned value or a stored row, never only
+  that "no error was thrown".
+- **Schema:** a build ticket never edits `convex/schema.ts`. A table or field it needs comes from a
+  `CFG-…` ticket (§18) that it lists in `Depends`.
+
+## 17. Shared files — one exact line each
+
+A shared file is edited by many tickets. A ticket may add exactly the line(s) named here and nothing
+else; the SPEC quotes the exact line(s); the file counts toward the 3-file limit.
+
+| File | Exact addition |
+|---|---|
+| `apps/web/lib/e2eWiringRoutes.ts` | one line `  "/<route>",` inserted as the last entry before `] as const;` (a route with children adds a second line `  "/<route>/(.*)",`) |
+| `packages/ui/src/primitives/index.ts` | one line `export { <Name>, type <Name>Props } from "./<Name>";` in alphabetical order |
+| `packages/ui/src/index.ts` | no edits (it already re-exports `./primitives`) |
+| `convex/crons.ts` | one line `crons.<interval\|daily\|cron>("<name>", <schedule>, internal.<module>.<fn>, {});` before `export default crons;` |
+| `convex/http.ts` | one line `http.route({ path: "<path>", method: "<METHOD>", handler: <handler> });` plus its one import line |
+| `apps/web/lib/i18n.ts` | only tickets about i18n itself (TFV2-0020) |
+
+## 18. Config lane — the CFG ticket format
+
+- Any change to `convex/schema.ts`, `convex/auth*`, `convex/convex.config.ts`, `package.json`,
+  `bun.lock`, `playwright.config.ts`, `.github/**` or `**/.env*` is a **CFG** ticket, titled
+  `CFG-NNN — <what> — config lane: Amit`. Amit (or a `convex-arch`-labelled run) builds it; the factory
+  lanes never do.
+- CFG tickets live in the "Groundwork" section at the top of `BACKLOG-v2.md`, before Chunk 1. A build
+  ticket that needs one lists its id in `Depends` and `WHEN`.
+- One CFG ticket = one table, or the new fields of one existing table, or one config file change.
+- **Every field added to an existing table is `v.optional(…)`** (the deployment is populated; see the
+  `TF-OSS-01` comment in `convex/schema.ts`). New tables follow the repo shape: `userId: v.id("users")`,
+  `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`, index
+  `by_userId_deletedAt` on `["userId", "deletedAt"]`.
+- SPEC gives the exact `defineTable({…})` code (or the exact lines added to an existing table), every
+  index with its exact name and field list, and the reading/writing tickets.
+- Test file: `convex/schema_<cfg id, lower case, no dash>_<table>.test.ts`, e.g. `convex/schema_cfg012_jobs.test.ts` (one per CFG ticket, so CFG tickets never share a file),
+  using only public schema API:
+
+  ```ts
+  import { describe, expect, test } from "bun:test";
+  import schema from "./schema";
+  const table = schema.tables.<table>;
+  test("fields", () => {
+    expect(Object.keys(table.validator.fields).sort()).toEqual([/* exact sorted names */]);
+    expect(table.validator.fields.<field>.isOptional).toBe("optional");
+  });
+  test("indexes", () => {
+    expect(table[" indexes"]()).toContainEqual({ indexDescriptor: "<name>", fields: [/* … */] });
+  });
+  ```
+
+  (A vector index is read with `(table as unknown as { vectorIndexes: { indexDescriptor: string; vectorField: string; dimensions: number; filterFields: string[] }[] }).vectorIndexes`.)
+- DONE: `bun test convex/schema_<cfgid>_<table>.test.ts` → `0 fail`, then `bun run typecheck` → exit 0.
+- A CFG ticket whose shape is Amit's product choice is `OPEN` with that question; every ticket that
+  depends on it is `OPEN` by inheritance (§19).
+
+## 19. Dependencies, OPEN and the open-question register
+
+- `Depends` lists only ids that exist in `BACKLOG-v2.md` (TFV2-…, CFG-…), each earlier in the file.
+  The Groundwork section at the top (TFV2-0000a…d, then CFG-001…) comes before Chunk 1. No legacy ids (TRW-, TM-, TEMPO-, #issue) in `Depends`;
+  those go in `Folds-in` or `WHY`. No cycles.
+- `WHEN` is exactly `first` when `Depends` is `none`, otherwise `after <the same ids, same order>`.
+- A ticket that depends on an `OPEN` ticket is `OPEN` and says
+  `OPEN: inherits <id> (<Q-nn>: <question>) — Amit.` A ticket with its own question writes
+  `OPEN: <Q-nn or new>: <exact question> — Amit.`
+- `OPEN: none.` is written only when nothing is left to decide. On an `OPEN` ticket,
+  `GATES: n/a — OPEN (not buildable until Amit answers).` and nothing else. Its title ends `— OPEN`.
+- A ticket replaced by another is a stub: title `— superseded by <id>`, one line
+  `- **Status:** superseded by <id>; not a build ticket.`, nothing else. No ticket depends on a stub.
+
+Open-question register (cite by number; Amit answers every one):
+
+| Q | Question | Note |
+|---|---|---|
+| Q-01 | Voice stage: is live voice Gen 1 or later? | REWRITE-PLAN-v2 §4.1 |
+| Q-02 | Prices and billing tiers (values shown to users). | §4.2 |
+| Q-03 | Interim text model id (runtime model). | §4.3; `convex/lib/ai_router.ts` is truth until answered |
+| Q-04 | Sign-up policy: cap 30 vs unlimited-with-approval; where Amit approves. | §4.4 |
+| Q-05 | Body typeface values for `--tp-font-*`. | §4.5; blocks no component ticket (§14) |
+| Q-06 | AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo. | §4.6 |
+| Q-07 | Block model authority (`notes.body` single authority vs typed tables). | §4.7 |
+| Q-08 | `forget`: soft delete with 30-day grace vs complete hard delete. | §4.8 |
+| Q-09 | Confidence auto-apply threshold: where it lives, user-tunable or not. | §4.9 |
+| Q-10 | Default week start for new users (code default today: Monday, `weekStartsOn: 1`). | §4.10; only a ticket that changes `PREFERENCE_DEFAULTS` is blocked |
+| Q-11 | Nag delivery channel beyond in-app. | §4.11 |
+| Q-12 | HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted? | §4.12 |
+| Q-13 | Time zone storage — answered by code: `userPreferences.timeZone`. | closed; cite only if a ticket wants another store |
+| Q-14 | Embedding model and vector dimension. | proposed 1024 |
+| Q-15 | Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval. | PRD F-24 |
+
+A ticket-specific question not in the register is written in full on the ticket.
+
+## 20. NUMBERS catalogue (pass range · source · how the test checks it)
+
+| Number | Pass range | Source | Check |
+|---|---|---|---|
+| Text contrast | ≥ 4.5:1 (≥ 3:1 for text ≥ 24 px or ≥ 18.66 px bold) | WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum | colours only from §5 tokens; `bun run scan:design-tokens` passes |
+| Non-text contrast (borders of controls, focus ring) | ≥ 3:1 | WCAG 2.2 SC 1.4.11 | tokens `--tp-line-control`, `--tp-accent` only |
+| Target size | ≥ 24 × 24 CSS px | WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum | `expectTargetSize` |
+| Focus visible | outline ≥ 2 px (`--tp-focus-w`) on `:focus-visible` | WCAG 2.2 SC 2.4.7 | Playwright: Tab to each control, computed `outline-width` ≥ `2px` |
+| Motion | each transition ≤ 250 ms; 0 ms with reduced motion | DESIGN.md motion rule; §5 | `expectMotionBudget` |
+| LCP (screens) | ≤ 2,500 ms | web.dev Core Web Vitals, https://web.dev/articles/vitals | `measureVitals` |
+| CLS (screens) | ≤ 0.1 | web.dev Core Web Vitals | `measureVitals` |
+| INP (screens) | ≤ 200 ms | web.dev Core Web Vitals | UNKNOWN in the local dev server — measured on preview, not a ticket gate |
+| Backend p95 latency | UNKNOWN unless the ticket cites a measured baseline | no baseline measured in this repo (Amit) | not a ticket gate while UNKNOWN |
+| Bounded reads | ≤ the ticket's named constant | the code constant | a test seeds constant + 1 rows and asserts the cap |
+
+## 21. GATES text
+
+Build tickets copy this line exactly:
+
+`1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.`
+
+CFG tickets add `· 11 config lane: built by Amit or a convex-arch run only.` `OPEN` tickets write only
+`n/a — OPEN (not buildable until Amit answers).`

@@ -32,6 +32,1350 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 
 
 
+## Opus rewrite (2 Nov 2026) — status
+
+Amit decided on 2 Nov 2026 that Opus 5.5 rewrites every ticket to the bar in
+[`TICKET-STANDARD.md`](./TICKET-STANDARD.md) and [`CONVENTIONS.md`](./CONVENTIONS.md) Part 2 (§9–§21).
+Ranges are rewritten by sub-agents in `docs/backlog/work/` and spliced in here one range per commit.
+The ticket count and the split map are listed below and updated after each range.
+
+<!-- rewrite-status:start -->
+| Range | Status |
+|---|---|
+| Groundwork (TFV2-0000a…d, CFG-001…CFG-032) | done |
+| TFV2-0001 … TFV2-0456 | being rewritten |
+<!-- rewrite-status:end -->
+
+## Groundwork — test infrastructure and config lane (comes before Chunk 1)
+
+These tickets come first in build order. TFV2-0000a…d are ordinary factory tickets. CFG tickets are
+**config lane: Amit** (CONVENTIONS §18): schema, test config and CI changes that factory lanes may not
+make. A build ticket that needs a CFG ticket lists it in `Depends`.
+
+### TFV2-0000a — Convex test fake: signed-out ctx, `delete`, `replace`, `unique`, scheduler recorder
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §16 (every backend ticket tests the signed-out case and seeds rows through the fake ctx); TICKET-STANDARD "Backend tickets include unit tests for every error case". Today `makeFakeCtx` always returns an identity and has no `delete`, `replace`, `unique()` or `scheduler`, so those tests cannot be written.
+- **GOAL:** `convex/lib/testFakeCtx.ts` also exports `makeSignedOutCtx`, and every fake ctx supports `db.delete`, `db.replace`, `.unique()` and a recording `scheduler.runAfter`, proven by its own test file.
+- **SCOPE:** `convex/lib/testFakeCtx.ts` · test: `convex/lib/testFakeCtx.test.ts`.
+- **MUTATES:** `convex/lib/testFakeCtx.ts` (edit, additive only) · `convex/lib/testFakeCtx.test.ts` (new).
+- **STEPS:** 1) Code-map check: read `convex/lib/testFakeCtx.ts` (74 lines today: `makeFakeCtx(userId, extraUsers)` and `run`); confirm none of `makeSignedOutCtx`, `delete`, `replace`, `unique`, `scheduler` exists. 2) In `makeFakeCtx`, add to `db`: `delete: async (id: string) => { table(id.split(":")[0]).delete(id); }` and `replace: async (id: string, doc: Row) => { const t = table(id.split(":")[0]); const old = t.get(id); if (!old) throw new Error(\`replace on missing row ${id}\`); t.set(id, { _id: id, _creationTime: old._creationTime, ...doc }); }`. 3) In `builder`, add `unique: async () => { const out = sorted(); if (out.length > 1) throw new Error("unique() found more than one row"); return out[0] ?? null; }`. 4) Add to the returned object `scheduler: { calls, runAfter: async (delayMs: number, fn: unknown, args: unknown) => { calls.push({ delayMs, fn, args }); return \`scheduled:${calls.length}\`; } }` where `const calls: { delayMs: number; fn: unknown; args: unknown }[] = [];` is declared inside `makeFakeCtx`. 5) Export `export function makeSignedOutCtx() { return { ...makeFakeCtx("users:signed-out"), auth: { getUserIdentity: async () => null } } as any; }`. 6) Create `convex/lib/testFakeCtx.test.ts` with the 7 TESTS cases. 7) Run DONE, then `bun run test:unit` to show no existing test broke.
+- **DONE:** `bun test convex/lib/testFakeCtx.test.ts` → `7 pass`, `0 fail`; `bun run test:unit` → `0 fail`.
+- **EVIDENCE:** both summaries pasted into the PR.
+- **DO NOT:** change the signature or behaviour of `makeFakeCtx`, `run`, `withIndex`, `order`, `collect`, `take`, `first`, `get`, `insert`, `patch`, `query` or `normalizeId`; edit any other test; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0000a / evidence: <DONE output> / changed: convex/lib/testFakeCtx.ts, convex/lib/testFakeCtx.test.ts / unknowns / notes for ticket sync`.
+- **SPEC:** Test-only module (never imported by app code). New and changed exports:
+  ```ts
+  export function makeFakeCtx(userId: string, extraUsers?: string[]): any; // unchanged signature; db gains delete/replace, builder gains unique, ctx gains scheduler
+  export function makeSignedOutCtx(): any; // auth.getUserIdentity() resolves null; db works as in makeFakeCtx
+  export const run: (fn: unknown, ctx: unknown, args: unknown) => unknown; // unchanged
+  ```
+  Errors thrown by the fake: `replace` on a missing id → `"replace on missing row <id>"`; `unique()` with more than one row → `"unique() found more than one row"`. No user-facing copy.
+- **TESTS:**
+  - Given `makeSignedOutCtx()` / When `ctx.auth.getUserIdentity()` runs / Then it resolves `null`.
+  - Given `makeFakeCtx("users:1")` and an inserted `tasks` row / When `ctx.db.delete(id)` runs / Then `ctx.db.get(id)` resolves `null`.
+  - Given an inserted row `{ title: "A", n: 1 }` / When `ctx.db.replace(id, { title: "B" })` runs / Then `ctx.db.get(id)` equals `{ _id: id, _creationTime: 0, title: "B" }` (field `n` is gone).
+  - Given no row with id `"tasks:999"` / When `ctx.db.replace("tasks:999", {})` runs / Then it rejects with `"replace on missing row tasks:999"`.
+  - Given exactly one `tasks` row with `userId: "users:1"` / When `ctx.db.query("tasks").withIndex("by_userId", (q) => q.eq("userId", "users:1")).unique()` runs / Then it resolves that row; and with zero matching rows it resolves `null`.
+  - Given two matching rows / When `.unique()` runs / Then it rejects with `"unique() found more than one row"`.
+  - Given `makeFakeCtx("users:1")` / When `ctx.scheduler.runAfter(0, "fnRef", { a: 1 })` runs twice / Then `ctx.scheduler.calls` has length 2, `calls[0]` equals `{ delayMs: 0, fn: "fnRef", args: { a: 1 } }`, and the second call resolves `"scheduled:2"`.
+- **NUMBERS:** 7 of 7 test cases pass; existing unit suite stays at `0 fail` (exact). No latency number applies to a test fake.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0000b — Playwright helpers `tests/e2e/helpers/harness.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §15 and §20 (every UI spec opens its harness or screen, checks RTL, target size, motion and vitals the same way); TICKET-STANDARD NUMBERS ("each number becomes a pass/fail check").
+- **GOAL:** One helper module gives every UI spec the same viewports, URL builders, direction check, console-error tracker, target-size check, motion check and LCP/CLS measurement.
+- **SCOPE:** `tests/e2e/helpers/harness.ts` · test: `tests/e2e/helpers.spec.ts`.
+- **MUTATES:** `tests/e2e/helpers/harness.ts` (new) · `tests/e2e/helpers.spec.ts` (new).
+- **STEPS:** 1) Code-map check: `ls tests/e2e` (no `helpers/` folder today). 2) Create `tests/e2e/helpers/harness.ts` exporting exactly the SPEC API. 3) Implement `harnessUrl`/`screenUrl` as pure string builders (query keys in the order `state`, `lang`, `theme`; omit keys whose value is undefined). 4) Implement `openHarness` as `page.goto(harnessUrl(id, opts))` then wait for `page.locator(\`[data-testid^="${id}-"]\`).first()` to be visible; `openScreen` as `page.goto(screenUrl(route, opts))` then `page.waitForLoadState("domcontentloaded")`. 5) Implement `expectDir`, `trackConsoleErrors` (records `console` messages of type `error` and every `pageerror` message), `expectTargetSize`, `expectMotionBudget` (parses comma lists of `s`/`ms`; after the reduced-motion pass calls `page.emulateMedia({ reducedMotion: null })`) and `measureVitals` (two `page.goto(url)` calls, then reads `largest-contentful-paint` and `layout-shift` entries with `buffered: true` PerformanceObservers inside `page.evaluate`, resolving after 1,000 ms). 6) Create `tests/e2e/helpers.spec.ts` with the 7 TESTS cases; cases 3–7 use `page.setContent(…)` so they need no route. 7) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/helpers.spec.ts --reporter=line` → `7 passed`, no failures.
+- **EVIDENCE:** the Playwright summary pasted into the PR.
+- **DO NOT:** edit `playwright.config.ts` or any existing spec; add a dependency; call Convex; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0000b / evidence: <DONE output> / changed: tests/e2e/helpers/harness.ts, tests/e2e/helpers.spec.ts / unknowns / notes for ticket sync`.
+- **SPEC:** Test-only module. Exact API:
+  ```ts
+  import type { Page } from "@playwright/test";
+  export const VIEWPORTS: { readonly mobile: { readonly width: 390; readonly height: 844 }; readonly desktop: { readonly width: 1280; readonly height: 800 } };
+  export type HarnessLang = "en" | "he";
+  export function harnessUrl(id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): string; // "/e2e/components/<id>?lang=…&theme=…"
+  export function screenUrl(route: string, opts: { state: string; lang?: HarnessLang }): string;     // "<route>?state=…&lang=…"
+  export function openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>;
+  export function openScreen(page: Page, route: string, opts: { state: string; lang?: HarnessLang }): Promise<void>;
+  export function expectDir(page: Page, lang: HarnessLang): Promise<void>;        // <html dir="rtl" lang="he"> or <html dir="ltr" lang="en">
+  export function trackConsoleErrors(page: Page): string[];
+  export function expectTargetSize(page: Page, selector: string): Promise<void>; // every visible button, a[href], input, select, textarea, [role=switch|checkbox|radio|tab|option|button] under selector ≥ 24×24
+  export function expectMotionBudget(page: Page, selector: string): Promise<void>; // max transition/animation duration ≤ 0.25 s; 0 s under reduced motion
+  export function measureVitals(page: Page, url: string): Promise<{ lcpMs: number; cls: number }>;
+  ```
+  Failure messages (Playwright `expect` with a message): target size → `"target smaller than 24x24: <tag>#<index> <w>x<h>"`; motion → `"motion over 250ms: <tag> <duration>s"`; reduced motion → `"motion not removed under reduced motion: <tag>"`. No user-facing copy.
+- **TESTS:**
+  - Given `harnessUrl("scheduled-job-row", { lang: "he", theme: "dark" })` / Then it equals `"/e2e/components/scheduled-job-row?lang=he&theme=dark"`; and `harnessUrl("x")` equals `"/e2e/components/x"`.
+  - Given `screenUrl("/modules", { state: "empty", lang: "en" })` / Then it equals `"/modules?state=empty&lang=en"`.
+  - Given `page.setContent('<html dir="rtl" lang="he"><body></body></html>')` / When `expectDir(page, "he")` runs / Then it passes; and `expectDir(page, "en")` throws.
+  - Given content with a `<button style="width:40px;height:40px">` / When `expectTargetSize(page, "body")` runs / Then it passes; given a `<button style="width:20px;height:20px;padding:0;border:0">` it throws with a message starting `"target smaller than 24x24"`.
+  - Given a `<div style="transition: opacity 120ms">` / When `expectMotionBudget(page, "body")` runs / Then it passes; given `transition: opacity 400ms` it throws with a message starting `"motion over 250ms"`.
+  - Given `trackConsoleErrors(page)` then `page.evaluate(() => console.error("boom"))` / Then the returned array equals `["boom"]`.
+  - Given `page.setContent("<h1>Hi</h1>")` served through `page.route("http://helpers.test/", …)` / When `measureVitals(page, "http://helpers.test/")` runs / Then `lcpMs` is a finite number ≥ 0 and `cls` is a number ≥ 0.
+- **NUMBERS:** 7 of 7 cases pass. The helper thresholds are the catalogue numbers: target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum); motion ≤ 250 ms (DESIGN.md motion rule; CONVENTIONS §5).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0000c — Web state forcing `apps/web/lib/e2e/e2eState.ts` + `useE2EState`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §3 ("every state must be forceable"), §14 (screens render fixtures for `?state=` and never contact Convex in e2e).
+- **GOAL:** Every web screen can read a forced `?state=` value that exists only in a non-production build with the E2E bypass on.
+- **SCOPE:** `apps/web/lib/e2e/e2eState.ts` · `apps/web/lib/e2e/useE2EState.ts` · test: `apps/web/lib/e2e/e2eState.test.ts`.
+- **MUTATES:** `apps/web/lib/e2e/e2eState.ts` (new) · `apps/web/lib/e2e/useE2EState.ts` (new) · `apps/web/lib/e2e/e2eState.test.ts` (new).
+- **STEPS:** 1) Code-map check: `ls apps/web/lib/e2e` (absent today, or holds only `HarnessFrame.tsx` from TFV2-0023a; do not touch that file). 2) Create `e2eState.ts` with `E2E_STATE_PATTERN`, `parseE2EState`, `isE2EBypass` exactly as in SPEC (no React or Next imports). 3) Create `useE2EState.ts` starting with `"use client";`, importing `useSearchParams` from `next/navigation` and the two functions, exporting `useE2EState()`. 4) Create `e2eState.test.ts` with the 6 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test apps/web/lib/e2e/e2eState.test.ts` → `6 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** read `?state=` anywhere in production code paths without `isE2EBypass`; edit `proxy.ts`, `e2eWiringRoutes.ts` or any screen; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0000c / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`.
+- **SPEC:**
+  ```ts
+  // apps/web/lib/e2e/e2eState.ts
+  export const E2E_STATE_PATTERN = /^[a-z][a-z-]{0,23}$/;
+  export function parseE2EState(raw: string | null, bypass: boolean): string | null {
+    return bypass && raw !== null && E2E_STATE_PATTERN.test(raw) ? raw : null;
+  }
+  export function isE2EBypass(env: { NODE_ENV?: string; NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS?: string }): boolean {
+    return env.NODE_ENV !== "production" && env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1";
+  }
+  // apps/web/lib/e2e/useE2EState.ts ("use client")
+  export function useE2EState(): string | null {
+    return parseE2EState(useSearchParams().get("state"), isE2EBypass({ NODE_ENV: process.env.NODE_ENV, NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS }));
+  }
+  ```
+  No user-facing copy, no errors thrown.
+- **TESTS:**
+  - Given `parseE2EState("empty", true)` / Then `"empty"`.
+  - Given `parseE2EState("empty", false)` / Then `null`.
+  - Given `parseE2EState(null, true)` / Then `null`.
+  - Given `parseE2EState("Empty", true)`, `parseE2EState("<script>", true)` and a 25-character `"a".repeat(25)` / Then each is `null`.
+  - Given `isE2EBypass({ NODE_ENV: "development", NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1" })` / Then `true`.
+  - Given `isE2EBypass({ NODE_ENV: "production", NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1" })` and `isE2EBypass({ NODE_ENV: "development" })` / Then both `false`.
+- **NUMBERS:** 6 of 6 cases pass (exact). No latency or UI number applies.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0000d — Mobile state forcing + signed-out gate logic `apps/mobile/lib/e2e/`
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** CONVENTIONS §13–§15 (mobile screens force states like web screens; the `(tempo)` gate needs a testable decision function for CFG-032).
+- **GOAL:** Mobile code can read a forced `?state=` and decide the `(tempo)` gate through pure functions bun can test.
+- **SCOPE:** `apps/mobile/lib/e2e/e2eState.ts` · `apps/mobile/lib/e2e/useE2EMobile.ts` · test: `tests/unit/mobile_e2e_state.test.ts`.
+- **MUTATES:** the three files above (all new).
+- **STEPS:** 1) Code-map check: `ls apps/mobile/lib` (no `e2e/` folder today); read `apps/mobile/app/(tempo)/_layout.tsx` lines 13–25 for the current redirect order (do not edit it). 2) Create `e2eState.ts` with `parseE2EMobileState`, `TempoGate` and `tempoGate` exactly as in SPEC, importing nothing from `react-native`, `expo-*` or `react`. 3) Create `useE2EMobile.ts` importing `useLocalSearchParams` from `expo-router` and exporting `useE2EMobile()`. 4) Create `tests/unit/mobile_e2e_state.test.ts` (mobile tests live in `tests/unit/mobile_*.test.ts`, the folder the unit suite runs) importing only `e2eState.ts`, with the 6 TESTS cases. 5) Run DONE.
+- **DONE:** `bun test tests/unit/mobile_e2e_state.test.ts` → `6 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** edit `apps/mobile/app/(tempo)/_layout.tsx` (CFG-032 does); import Expo or React Native into `e2eState.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0000d / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`.
+- **SPEC:**
+  ```ts
+  // apps/mobile/lib/e2e/e2eState.ts
+  const STATE_PATTERN = /^[a-z][a-z-]{0,23}$/;
+  export function parseE2EMobileState(raw: string | null, enabled: boolean): string | null {
+    return enabled && raw !== null && STATE_PATTERN.test(raw) ? raw : null;
+  }
+  export type TempoGate = "sign-in" | "onboarding" | "render";
+  export function tempoGate(input: { isLoading: boolean; isAuthenticated: boolean; hasProfile: boolean; onboardedAt: number | undefined; e2e: boolean }): TempoGate {
+    if (input.e2e) return "render";
+    if (!input.isLoading && !input.isAuthenticated) return "sign-in";
+    if (input.hasProfile && input.onboardedAt === undefined) return "onboarding";
+    return "render";
+  }
+  // apps/mobile/lib/e2e/useE2EMobile.ts
+  export function useE2EMobile(): string | null {
+    const { state } = useLocalSearchParams<{ state?: string }>();
+    return parseE2EMobileState(state ?? null, process.env.EXPO_PUBLIC_TEMPO_E2E === "1");
+  }
+  ```
+  No user-facing copy.
+- **TESTS:**
+  - Given `parseE2EMobileState("offline", true)` / Then `"offline"`; and `parseE2EMobileState("offline", false)` / Then `null`.
+  - Given `parseE2EMobileState("Bad!", true)` / Then `null`.
+  - Given `tempoGate({ isLoading: false, isAuthenticated: false, hasProfile: false, onboardedAt: undefined, e2e: false })` / Then `"sign-in"`.
+  - Given the same input with `e2e: true` / Then `"render"`.
+  - Given `{ isLoading: false, isAuthenticated: true, hasProfile: true, onboardedAt: undefined, e2e: false }` / Then `"onboarding"`.
+  - Given `{ isLoading: true, isAuthenticated: false, hasProfile: false, onboardedAt: undefined, e2e: false }` / Then `"render"` (matches today's layout: no redirect while loading).
+- **NUMBERS:** 6 of 6 cases pass (exact). No UI number applies (no visible UI).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### CFG-001 — Schema: `memories.embedding` + vector index — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** PRD memory spec (meaning recall); old TFV2-0149. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `memories` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg001_memories.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `memories`) · `convex/schema_cfg001_memories.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "memories" convex/schema.ts` — confirm `memories` exists and none of `["embedding"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `memories` and append the index line(s). 3) Create `convex/schema_cfg001_memories.test.ts` with the 3 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg001_memories.test.ts` (expect `3 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg001_memories.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-001 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg001_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside memories: defineTable({ … }), after the last existing field:
+    embedding: v.optional(v.array(v.float64())),
+```
+  appended after the table's last existing index:
+```ts
+    .vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0174, TFV2-0177, TFV2-0183, TFV2-0184, TFV2-0185. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.memories.validator.fields)` is read / Then it contains every one of `["embedding"]`.
+  - Given the schema / When each of `["embedding"]` is read from `schema.tables.memories.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When the table's `vectorIndexes` is read (cast per CONVENTIONS §18) / Then it contains `{ indexDescriptor: "by_userId_embedding", vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] }`.
+- **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Q-14: which embedding model, and therefore the vector dimension (proposed 1024) — Amit.
+
+### CFG-002 — Schema: `entities` table (life graph) — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Life graph (PRD memory spec); old TFV2-0150. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `entities` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg002_entities.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `entities`) · `convex/schema_cfg002_entities.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "entities" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg002_entities.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg002_entities.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg002_entities.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-002 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg002_entities.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  entities: defineTable({
+    userId: v.id("users"),
+    kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit")),
+    name: v.string(),
+    aliases: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_kind", ["userId", "kind"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0186a, TFV2-0186b, TFV2-0186c, TFV2-0187, TFV2-0189. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.entities.validator.fields).sort()` is read / Then it equals `["aliases", "createdAt", "deletedAt", "kind", "name", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.entities.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "kind", "name", "aliases", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_kind", fields: ["userId", "kind"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-003 — Schema: `edges` table (life graph) — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-002 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-002.
+- **WHY:** Life graph; old TFV2-0151. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `edges` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg003_edges.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `edges`) · `convex/schema_cfg003_edges.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "edges" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg003_edges.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg003_edges.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg003_edges.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-003 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg003_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  edges: defineTable({
+    userId: v.id("users"),
+    fromEntityId: v.id("entities"),
+    toEntityId: v.id("entities"),
+    relation: v.string(),
+    origin: v.union(v.literal("extracted"), v.literal("inferred")),
+    confidence: v.number(),
+    sourceMemoryId: v.optional(v.id("memories")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_fromEntityId", ["userId", "fromEntityId"])
+    .index("by_userId_toEntityId", ["userId", "toEntityId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0187, TFV2-0188, TFV2-0189, TFV2-0175. `confidence` is a number in [0, 1]; writers validate it. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.edges.validator.fields).sort()` is read / Then it equals `["confidence", "createdAt", "deletedAt", "fromEntityId", "origin", "relation", "sourceMemoryId", "toEntityId", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["sourceMemoryId", "deletedAt"]` is read from `schema.tables.edges.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "fromEntityId", "toEntityId", "relation", "origin", "confidence", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_fromEntityId", fields: ["userId", "fromEntityId"] }`.
+  - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_toEntityId", fields: ["userId", "toEntityId"] }`.
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-004 — Schema: `observations` table (reflect) — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Reflect consolidation; old TFV2-0152. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `observations` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg004_observations.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `observations`) · `convex/schema_cfg004_observations.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "observations" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg004_observations.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg004_observations.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg004_observations.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-004 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg004_observations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  observations: defineTable({
+    userId: v.id("users"),
+    text: v.string(),
+    memoryIds: v.array(v.id("memories")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0190, TFV2-0191. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.observations.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "memoryIds", "text", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.observations.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "text", "memoryIds", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.observations[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-005 — Schema: `calendarEvents.endsAtMs` — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Calendar events with an end time (TFV2-0066). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `calendarEvents` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg005_calendarEvents.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `calendarEvents`) · `convex/schema_cfg005_calendarEvents.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "calendarEvents" convex/schema.ts` — confirm `calendarEvents` exists and none of `["endsAtMs"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `calendarEvents`. 3) Create `convex/schema_cfg005_calendarEvents.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg005_calendarEvents.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg005_calendarEvents.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-005 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg005_calendarEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside calendarEvents: defineTable({ … }), after the last existing field:
+    endsAtMs: v.optional(v.number()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0066, TFV2-0131. Missing `endsAtMs` means the event has no end time (shown as a point in time). Writers enforce `endsAtMs > startsAtMs`. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.calendarEvents.validator.fields)` is read / Then it contains every one of `["endsAtMs"]`.
+  - Given the schema / When each of `["endsAtMs"]` is read from `schema.tables.calendarEvents.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-006 — Schema: `tasks.goalId` (task → goal link) — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Goals progress needs linked tasks (TFV2-0069b). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `tasks` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg006_tasks.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `tasks`) · `convex/schema_cfg006_tasks.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "tasks" convex/schema.ts` — confirm `tasks` exists and none of `["goalId"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `tasks` and append the index line(s). 3) Create `convex/schema_cfg006_tasks.test.ts` with the 3 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg006_tasks.test.ts` (expect `3 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg006_tasks.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-006 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg006_tasks.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside tasks: defineTable({ … }), after the last existing field:
+    goalId: v.optional(v.id("goals")),
+```
+  appended after the table's last existing index:
+```ts
+    .index("by_userId_goalId", ["userId", "goalId"])
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0069b, TFV2-0069c, TFV2-0136, TFV2-0137. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.tasks.validator.fields)` is read / Then it contains every one of `["goalId"]`.
+  - Given the schema / When each of `["goalId"]` is read from `schema.tables.tasks.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When `schema.tables.tasks[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_goalId", fields: ["userId", "goalId"] }`.
+- **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** How does a task link to a goal: this `tasks.goalId` field, or another model? — Amit.
+
+### CFG-007 — Schema: `projects` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Projects screens (TFV2-0136…0141); today a project is only `tasks.projectId` (string). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `projects` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg007_projects.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `projects`) · `convex/schema_cfg007_projects.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "projects" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg007_projects.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg007_projects.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg007_projects.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-007 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg007_projects.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  projects: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    goalId: v.optional(v.id("goals")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_goalId", ["userId", "goalId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0136, TFV2-0137, TFV2-0139, TFV2-0140, TFV2-0141. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.projects.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "goalId", "name", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["goalId", "deletedAt"]` is read from `schema.tables.projects.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "name", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_goalId", fields: ["userId", "goalId"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings? — Amit.
+
+### CFG-008 — Schema: `templates` module fields (`status`, `enabled`, `summary`) — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Modules are templates with a lifecycle (TFV2-0233). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `templates` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg008_templates.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `templates`) · `convex/schema_cfg008_templates.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "templates" convex/schema.ts` — confirm `templates` exists and none of `["status", "enabled", "summary"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `templates`. 3) Create `convex/schema_cfg008_templates.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg008_templates.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg008_templates.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-008 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg008_templates.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside templates: defineTable({ … }), after the last existing field:
+    status: v.optional(v.union(v.literal("draft"), v.literal("live"))),
+    enabled: v.optional(v.boolean()),
+    summary: v.optional(v.string()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0233, TFV2-0234, TFV2-0235, TFV2-0240e, TFV2-0241d, TFV2-0246, TFV2-0248a, TFV2-0248b. Missing `status` reads as `"live"`; missing `enabled` reads as `true`. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.templates.validator.fields)` is read / Then it contains every one of `["status", "enabled", "summary"]`.
+  - Given the schema / When each of `["status", "enabled", "summary"]` is read from `schema.tables.templates.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table? — Amit.
+
+### CFG-009 — Schema: `templateRunDrafts` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Template run drafts (TFV2-0239a). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `templateRunDrafts` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg009_templateRunDrafts.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `templateRunDrafts`) · `convex/schema_cfg009_templateRunDrafts.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "templateRunDrafts" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg009_templateRunDrafts.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg009_templateRunDrafts.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg009_templateRunDrafts.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-009 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg009_templateRunDrafts.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  templateRunDrafts: defineTable({
+    userId: v.id("users"),
+    templateId: v.string(),
+    answers: v.record(v.string(), v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_templateId", ["userId", "templateId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0239a, TFV2-0239b, TFV2-0239c. `templateId` is a string because starter templates use `starter:*` ids. `answers` maps a step key to the typed answer. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.templateRunDrafts.validator.fields).sort()` is read / Then it equals `["answers", "createdAt", "deletedAt", "templateId", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateRunDrafts.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "templateId", "answers", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_templateId", fields: ["userId", "templateId"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`? — Amit.
+
+### CFG-010 — Schema: `templateSketches` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Template sketch drafts (TFV2-0241a). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `templateSketches` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg010_templateSketches.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `templateSketches`) · `convex/schema_cfg010_templateSketches.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "templateSketches" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg010_templateSketches.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg010_templateSketches.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg010_templateSketches.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-010 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg010_templateSketches.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  templateSketches: defineTable({
+    userId: v.id("users"),
+    text: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0241a, TFV2-0241b, TFV2-0241c. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.templateSketches.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "text", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateSketches.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "text", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.templateSketches[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere? — Amit.
+
+### CFG-011 — Schema: `userPreferences.plainMode` — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Plain mode (TFV2-0247). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `userPreferences` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg011_userPreferences.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `userPreferences`) · `convex/schema_cfg011_userPreferences.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "userPreferences" convex/schema.ts` — confirm `userPreferences` exists and none of `["plainMode"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `userPreferences`. 3) Create `convex/schema_cfg011_userPreferences.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg011_userPreferences.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg011_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-011 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg011_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside userPreferences: defineTable({ … }), after the last existing field:
+    plainMode: v.optional(v.boolean()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0247, TFV2-0248a, TFV2-0273, TFV2-0275. Missing means `false`. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["plainMode"]`.
+  - Given the schema / When each of `["plainMode"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Is `plainMode` stored on `userPreferences` (this shape) or on `users`? — Amit.
+
+### CFG-012 — Schema: `jobs` table (scheduled jobs) — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Scheduled jobs (TFV2-0250…0252). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `jobs` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg012_jobs.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `jobs`) · `convex/schema_cfg012_jobs.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "jobs" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg012_jobs.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg012_jobs.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg012_jobs.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-012 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg012_jobs.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  jobs: defineTable({
+    userId: v.id("users"),
+    cron: v.string(),
+    timeZone: v.string(),
+    task: v.string(),
+    targetPageType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("project"), v.literal("plain")),
+    enabled: v.boolean(),
+    approvedAt: v.optional(v.number()),
+    lastRunAt: v.optional(v.number()),
+    lastRunResult: v.optional(v.union(v.literal("ok"), v.literal("didnt_finish"))),
+    lastRunNoteId: v.optional(v.id("notes")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_enabled", ["enabled"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0250, TFV2-0251, TFV2-0252a, TFV2-0252b, TFV2-0274, TFV2-0275. `cron` is a 5-field cron string in UTC; `timeZone` is the IANA zone used to show it (TFV2-0250 STEP 3). A job runs only when `enabled === true` and `approvedAt` is set. `targetPageType` uses the `notes.pageType` values a job may write to. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.jobs.validator.fields).sort()` is read / Then it equals `["approvedAt", "createdAt", "cron", "deletedAt", "enabled", "lastRunAt", "lastRunNoteId", "lastRunResult", "targetPageType", "task", "timeZone", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["approvedAt", "lastRunAt", "lastRunResult", "lastRunNoteId", "deletedAt"]` is read from `schema.tables.jobs.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "cron", "timeZone", "task", "targetPageType", "enabled", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_enabled", fields: ["enabled"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-013 — Schema: `subscriptionStates.renewsAt` + `trialEndsAt` — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Billing getMine and trial notices (TFV2-0261b, TFV2-0264). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `subscriptionStates` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg013_subscriptionStates.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `subscriptionStates`) · `convex/schema_cfg013_subscriptionStates.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "subscriptionStates" convex/schema.ts` — confirm `subscriptionStates` exists and none of `["renewsAt", "trialEndsAt"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `subscriptionStates`. 3) Create `convex/schema_cfg013_subscriptionStates.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg013_subscriptionStates.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg013_subscriptionStates.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-013 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg013_subscriptionStates.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside subscriptionStates: defineTable({ … }), after the last existing field:
+    renewsAt: v.optional(v.number()),
+    trialEndsAt: v.optional(v.number()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0261b, TFV2-0264, TFV2-0285. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.subscriptionStates.validator.fields)` is read / Then it contains every one of `["renewsAt", "trialEndsAt"]`.
+  - Given the schema / When each of `["renewsAt", "trialEndsAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract? — Amit.
+
+### CFG-014 — Schema: `subscriptionStates.conversionAcknowledgedAt` — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Trial conversion consent (TFV2-0263b). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `subscriptionStates` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg014_subscriptionStates.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `subscriptionStates`) · `convex/schema_cfg014_subscriptionStates.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "subscriptionStates" convex/schema.ts` — confirm `subscriptionStates` exists and none of `["conversionAcknowledgedAt"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `subscriptionStates`. 3) Create `convex/schema_cfg014_subscriptionStates.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg014_subscriptionStates.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg014_subscriptionStates.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-014 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg014_subscriptionStates.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside subscriptionStates: defineTable({ … }), after the last existing field:
+    conversionAcknowledgedAt: v.optional(v.number()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0263b, TFV2-0285. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.subscriptionStates.validator.fields)` is read / Then it contains every one of `["conversionAcknowledgedAt"]`.
+  - Given the schema / When each of `["conversionAcknowledgedAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag? — Amit.
+
+### CFG-015 — Schema: `userPreferences.analyticsOptIn` — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Analytics opt-in (TFV2-0265). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `userPreferences` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg015_userPreferences.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `userPreferences`) · `convex/schema_cfg015_userPreferences.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "userPreferences" convex/schema.ts` — confirm `userPreferences` exists and none of `["analyticsOptIn"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `userPreferences`. 3) Create `convex/schema_cfg015_userPreferences.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg015_userPreferences.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg015_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-015 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg015_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside userPreferences: defineTable({ … }), after the last existing field:
+    analyticsOptIn: v.optional(v.boolean()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0265, TFV2-0310. Missing means `false` (opted out). No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["analyticsOptIn"]`.
+  - Given the schema / When each of `["analyticsOptIn"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-016 — Schema: `users.callMe` + `users.address` — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Settings profile (TFV2-0266a/b). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `users` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg016_users.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `users`) · `convex/schema_cfg016_users.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "users" convex/schema.ts` — confirm `users` exists and none of `["callMe", "address"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `users`. 3) Create `convex/schema_cfg016_users.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg016_users.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg016_users.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-016 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg016_users.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside users: defineTable({ … }), after the last existing field:
+    callMe: v.optional(v.string()),
+    address: v.optional(v.union(v.literal("fem"), v.literal("masc"))),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0266a, TFV2-0266b, TFV2-0308. The profile language is the existing `userPreferences.locale`; no `users.lang` column is added. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.users.validator.fields)` is read / Then it contains every one of `["callMe", "address"]`.
+  - Given the schema / When each of `["callMe", "address"]` is read from `schema.tables.users.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-017 — Schema: `askFounderQueue` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Ask the founder (TFV2-0268). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `askFounderQueue` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg017_askFounderQueue.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `askFounderQueue`) · `convex/schema_cfg017_askFounderQueue.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "askFounderQueue" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg017_askFounderQueue.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg017_askFounderQueue.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg017_askFounderQueue.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-017 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg017_askFounderQueue.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  askFounderQueue: defineTable({
+    userId: v.id("users"),
+    email: v.string(),
+    name: v.optional(v.string()),
+    subject: v.string(),
+    body: v.string(),
+    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    notifiedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_notifiedAt", ["notifiedAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0268, TFV2-0269, TFV2-0291. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.askFounderQueue.validator.fields).sort()` is read / Then it equals `["body", "createdAt", "deletedAt", "email", "name", "notifiedAt", "priority", "subject", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["name", "notifiedAt", "deletedAt"]` is read from `schema.tables.askFounderQueue.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "email", "subject", "body", "priority", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_notifiedAt", fields: ["notifiedAt"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right? — Amit.
+
+### CFG-018 — Schema: `studyCards` table — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Study track; old TFV2-0336. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `studyCards` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg018_studyCards.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `studyCards`) · `convex/schema_cfg018_studyCards.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "studyCards" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg018_studyCards.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg018_studyCards.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg018_studyCards.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-018 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg018_studyCards.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  studyCards: defineTable({
+    userId: v.id("users"),
+    front: v.string(),
+    back: v.string(),
+    sourceNoteId: v.optional(v.id("notes")),
+    repetitions: v.number(),
+    easeFactor: v.number(),
+    intervalDays: v.number(),
+    dueAtMs: v.number(),
+    status: v.union(v.literal("new"), v.literal("learning"), v.literal("reviewing")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_dueAtMs", ["userId", "dueAtMs"])
+    .index("by_sourceNoteId", ["sourceNoteId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0337, TFV2-0338, TFV2-0340, TFV2-0343, TFV2-0344. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.studyCards.validator.fields).sort()` is read / Then it equals `["back", "createdAt", "deletedAt", "dueAtMs", "easeFactor", "front", "intervalDays", "repetitions", "sourceNoteId", "status", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["sourceNoteId", "deletedAt"]` is read from `schema.tables.studyCards.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "front", "back", "repetitions", "easeFactor", "intervalDays", "dueAtMs", "status", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_dueAtMs", fields: ["userId", "dueAtMs"] }`.
+  - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_sourceNoteId", fields: ["sourceNoteId"] }`.
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-019 — Schema: `byokKeys` table — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** BYOK key vault (TFV2-0361). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `byokKeys` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg019_byokKeys.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `byokKeys`) · `convex/schema_cfg019_byokKeys.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "byokKeys" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg019_byokKeys.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg019_byokKeys.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg019_byokKeys.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-019 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg019_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  byokKeys: defineTable({
+    userId: v.id("users"),
+    provider: v.literal("openai_compatible"),
+    label: v.string(),
+    keyCipher: v.string(),
+    endpointUrl: v.string(),
+    keyVersion: v.number(),
+    lastCheckedAt: v.optional(v.number()),
+    lastCheckOk: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0361, TFV2-0362, TFV2-0363, TFV2-0364. `keyCipher` holds only ciphertext from `byokCrypto.encrypt`; the plaintext key is never stored. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.byokKeys.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "endpointUrl", "keyCipher", "keyVersion", "label", "lastCheckOk", "lastCheckedAt", "provider", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["lastCheckedAt", "lastCheckOk", "deletedAt"]` is read from `schema.tables.byokKeys.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "provider", "label", "keyCipher", "endpointUrl", "keyVersion", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.byokKeys[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-020 — Schema: `userPreferences` voice fields — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Voice call preferences (TFV2-0390). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `userPreferences` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg020_userPreferences.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `userPreferences`) · `convex/schema_cfg020_userPreferences.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "userPreferences" convex/schema.ts` — confirm `userPreferences` exists and none of `["voicePushToTalk", "voiceLanguage"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `userPreferences`. 3) Create `convex/schema_cfg020_userPreferences.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg020_userPreferences.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg020_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-020 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg020_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside userPreferences: defineTable({ … }), after the last existing field:
+    voicePushToTalk: v.optional(v.boolean()),
+    voiceLanguage: v.optional(v.union(v.literal("en"), v.literal("he"))),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0390. Missing `voicePushToTalk` means `false`; missing `voiceLanguage` means the `locale` value. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["voicePushToTalk", "voiceLanguage"]`.
+  - Given the schema / When each of `["voicePushToTalk", "voiceLanguage"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-021 — Schema: `marketplaceListings` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Marketplace; old TFV2-0406. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `marketplaceListings` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg021_marketplaceListings.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `marketplaceListings`) · `convex/schema_cfg021_marketplaceListings.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "marketplaceListings" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg021_marketplaceListings.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg021_marketplaceListings.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg021_marketplaceListings.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-021 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg021_marketplaceListings.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  marketplaceListings: defineTable({
+    authorId: v.id("users"),
+    slug: v.string(),
+    manifest: v.any(),
+    currentVersion: v.string(),
+    status: v.union(v.literal("draft"), v.literal("under_review"), v.literal("published"), v.literal("rejected")),
+    category: v.union(v.literal("planning"), v.literal("coach"), v.literal("learning"), v.literal("habits"), v.literal("wellbeing"), v.literal("other")),
+    installCount: v.number(),
+    ratingAverage: v.optional(v.number()),
+    ratingCount: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_authorId", ["authorId"])
+    .index("by_status_category", ["status", "category"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0407, TFV2-0408, TFV2-0412, TFV2-0413. Unique `slug` is enforced in code. A listing has no `userId`; only the author (and admins) may change it. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.marketplaceListings.validator.fields).sort()` is read / Then it equals `["authorId", "category", "createdAt", "currentVersion", "deletedAt", "installCount", "manifest", "ratingAverage", "ratingCount", "slug", "status", "updatedAt"]`.
+  - Given the schema / When each of `["ratingAverage", "ratingCount", "deletedAt"]` is read from `schema.tables.marketplaceListings.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["authorId", "slug", "manifest", "currentVersion", "status", "category", "installCount", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.marketplaceListings[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_slug", fields: ["slug"] }`.
+  - Given the schema / When `schema.tables.marketplaceListings[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_authorId", fields: ["authorId"] }`.
+  - Given the schema / When `schema.tables.marketplaceListings[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_status_category", fields: ["status", "category"] }`.
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** The category list (planning, coach, learning, habits, wellbeing, other) and the moderation workflow behind `status` — Amit.
+
+### CFG-022 — Schema: `plugins` table (installed plugins) — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-021.
+- **WHY:** Plugins (Gen 2); old TFV2-0400. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `plugins` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg022_plugins.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `plugins`) · `convex/schema_cfg022_plugins.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "plugins" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg022_plugins.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg022_plugins.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg022_plugins.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-022 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg022_plugins.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  plugins: defineTable({
+    userId: v.id("users"),
+    pluginId: v.string(),
+    manifest: v.any(),
+    version: v.string(),
+    source: v.union(v.literal("marketplace"), v.literal("file")),
+    listingId: v.optional(v.id("marketplaceListings")),
+    enabled: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_pluginId", ["userId", "pluginId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0401, TFV2-0402, TFV2-0414. `manifest` is the validated manifest object from `packages/types/src/plugins.ts`, stored whole. One row per `pluginId` per user is enforced in code. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.plugins.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "enabled", "listingId", "manifest", "pluginId", "source", "updatedAt", "userId", "version"]`.
+  - Given the schema / When each of `["listingId", "deletedAt"]` is read from `schema.tables.plugins.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "pluginId", "manifest", "version", "source", "enabled", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_pluginId", fields: ["userId", "pluginId"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type? — Amit. Also inherits CFG-021 (category list and moderation) — Amit.
+
+### CFG-023 — Schema: `marketplaceReviews` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-021.
+- **WHY:** Marketplace reviews (TFV2-0412). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `marketplaceReviews` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg023_marketplaceReviews.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `marketplaceReviews`) · `convex/schema_cfg023_marketplaceReviews.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "marketplaceReviews" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg023_marketplaceReviews.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg023_marketplaceReviews.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg023_marketplaceReviews.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-023 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg023_marketplaceReviews.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  marketplaceReviews: defineTable({
+    userId: v.id("users"),
+    listingId: v.id("marketplaceListings"),
+    stars: v.number(),
+    text: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_listingId_userId", ["listingId", "userId"])
+    .index("by_listingId_createdAt", ["listingId", "createdAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0412. `stars` is an integer 1–5 and `text` ≤ 1,000 characters, enforced by the writer. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.marketplaceReviews.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "listingId", "stars", "text", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["text", "deletedAt"]` is read from `schema.tables.marketplaceReviews.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "listingId", "stars", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_listingId_userId", fields: ["listingId", "userId"] }`.
+  - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_listingId_createdAt", fields: ["listingId", "createdAt"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-021 (category list and moderation) — Amit.
+
+### CFG-024 — Schema: `deviceTokens` table (push) — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Push tokens (TFV2-0426). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `deviceTokens` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg024_deviceTokens.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `deviceTokens`) · `convex/schema_cfg024_deviceTokens.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "deviceTokens" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg024_deviceTokens.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg024_deviceTokens.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg024_deviceTokens.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-024 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg024_deviceTokens.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  deviceTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    platform: v.union(v.literal("ios"), v.literal("android")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_token", ["token"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0426, TFV2-0427. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.deviceTokens.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "platform", "token", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.deviceTokens.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "token", "platform", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_token", fields: ["token"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Is the push token stored as plain text (this shape) or encrypted at rest? — Amit.
+
+### CFG-025 — Schema: `userPreferences` notification toggles — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Mobile notification preferences (TFV2-0429). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the new `userPreferences` field(s) exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg025_userPreferences.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: additive optional fields on `userPreferences`) · `convex/schema_cfg025_userPreferences.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "userPreferences" convex/schema.ts` — confirm `userPreferences` exists and none of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]` is in it yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the field line(s) exactly as in SPEC inside `userPreferences`. 3) Create `convex/schema_cfg025_userPreferences.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg025_userPreferences.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg025_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-025 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg025_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
+
+```ts
+  // inside userPreferences: defineTable({ … }), after the last existing field:
+    notifyReminders: v.optional(v.boolean()),
+    notifyCalendar: v.optional(v.boolean()),
+    notifyCoach: v.optional(v.boolean()),
+    pushEnabled: v.optional(v.boolean()),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0429. Missing means `true` for the three `notify*` fields and `false` for `pushEnabled`. No data migration: every added field is optional, so existing rows stay valid.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]`.
+  - Given the schema / When each of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Are notification preferences typed columns on `userPreferences` (this shape) or one loose object? — Amit.
+
+### CFG-026 — Schema: `familyGroups` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Family plans (TFV2-0452). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `familyGroups` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg026_familyGroups.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `familyGroups`) · `convex/schema_cfg026_familyGroups.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "familyGroups" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg026_familyGroups.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg026_familyGroups.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg026_familyGroups.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-026 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg026_familyGroups.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  familyGroups: defineTable({
+    ownerId: v.id("users"),
+    name: v.string(),
+    memberLimit: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_ownerId", ["ownerId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0452, TFV2-0453. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.familyGroups.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "memberLimit", "name", "ownerId", "updatedAt"]`.
+  - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.familyGroups.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["ownerId", "name", "memberLimit", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.familyGroups[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_ownerId", fields: ["ownerId"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Member limit (proposed default 5), family price, and whether children get full or limited features — Amit.
+
+### CFG-027 — Schema: `familyMembers` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-026 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-026.
+- **WHY:** Family plans (TFV2-0452). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `familyMembers` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg027_familyMembers.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `familyMembers`) · `convex/schema_cfg027_familyMembers.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "familyMembers" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg027_familyMembers.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg027_familyMembers.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg027_familyMembers.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-027 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg027_familyMembers.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  familyMembers: defineTable({
+    groupId: v.id("familyGroups"),
+    userId: v.optional(v.id("users")),
+    inviteEmail: v.string(),
+    role: v.union(v.literal("owner"), v.literal("member")),
+    status: v.union(v.literal("invited"), v.literal("active")),
+    joinedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_groupId", ["groupId"])
+    .index("by_userId", ["userId"])
+    .index("by_inviteEmail", ["inviteEmail"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0452, TFV2-0453. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.familyMembers.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "groupId", "inviteEmail", "joinedAt", "role", "status", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["userId", "joinedAt", "deletedAt"]` is read from `schema.tables.familyMembers.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["groupId", "inviteEmail", "role", "status", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.familyMembers[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_groupId", fields: ["groupId"] }`.
+  - Given the schema / When `schema.tables.familyMembers[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
+  - Given the schema / When `schema.tables.familyMembers[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_inviteEmail", fields: ["inviteEmail"] }`.
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-026 (member limit, price, children's features) — Amit.
+
+### CFG-028 — Schema: `auditEvents` table (SOC 2) — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** SOC 2 audit log (TFV2-0454). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `auditEvents` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg028_auditEvents.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `auditEvents`) · `convex/schema_cfg028_auditEvents.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "auditEvents" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg028_auditEvents.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg028_auditEvents.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg028_auditEvents.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-028 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg028_auditEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  auditEvents: defineTable({
+    userId: v.id("users"),
+    event: v.union(v.literal("sign_in"), v.literal("export"), v.literal("delete_account"), v.literal("permission_change"), v.literal("connection_connect")),
+    target: v.optional(v.string()),
+    metadata: v.record(v.string(), v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_userId_createdAt", ["userId", "createdAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0454, TFV2-0455. Append-only: no `updatedAt`/`deletedAt`. `metadata` never holds a secret value. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.auditEvents.validator.fields).sort()` is read / Then it equals `["createdAt", "event", "metadata", "target", "userId"]`.
+  - Given the schema / When each of `["target"]` is read from `schema.tables.auditEvents.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "event", "metadata", "createdAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.auditEvents[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_createdAt", fields: ["userId", "createdAt"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** The exact event list and the retention window — Amit.
+
+### CFG-029 — Schema: `routines` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** Routines backend (TFV2-0076). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `routines` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg029_routines.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `routines`) · `convex/schema_cfg029_routines.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "routines" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg029_routines.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg029_routines.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg029_routines.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-029 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg029_routines.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  routines: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    steps: v.array(v.string()),
+    windowStartHour: v.optional(v.number()),
+    windowEndHour: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0076, TFV2-0134, TFV2-0135. `steps` ≤ 20 items, each ≤ 200 characters (writer-enforced). The window hours are integers 0–23 in the user's `userPreferences.timeZone`. No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.routines.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "steps", "title", "updatedAt", "userId", "windowEndHour", "windowStartHour"]`.
+  - Given the schema / When each of `["windowStartHour", "windowEndHour", "deletedAt"]` is read from `schema.tables.routines.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "title", "steps", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.routines[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Q-07: are routines their own table (this shape) or `notes` pages (code today: `notes.listRoutines`)? — Amit.
+
+### CFG-030 — Schema: `routineRuns` table — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-029 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-029.
+- **WHY:** Routines backend (TFV2-0076). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
+- **GOAL:** `convex/schema.ts` has the `routineRuns` table exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg030_routineRuns.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `routineRuns`) · `convex/schema_cfg030_routineRuns.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "routineRuns" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg030_routineRuns.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg030_routineRuns.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg030_routineRuns.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-030 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg030_routineRuns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Adds a new table to `convex/schema.ts`.
+
+```ts
+  routineRuns: defineTable({
+    userId: v.id("users"),
+    routineId: v.id("routines"),
+    cursor: v.number(),
+    completedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_routineId", ["userId", "routineId"]),
+```
+
+  Readers/writers (tickets that depend on this one): TFV2-0076, TFV2-0135. `cursor` is the index of the next step to do (0-based). No data migration: the table starts empty.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.routineRuns.validator.fields).sort()` is read / Then it equals `["completedAt", "createdAt", "cursor", "deletedAt", "routineId", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["completedAt", "deletedAt"]` is read from `schema.tables.routineRuns.validator.fields` / Then its `isOptional` is `"optional"`.
+  - Given the schema / When each of `["userId", "routineId", "cursor", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_routineId", fields: ["userId", "routineId"] }`.
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-029 (Q-07 routine storage) — Amit.
+
+### CFG-031 — Playwright mobile config (Expo web) + CI step — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (test config and `.github/**`). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** TICKET-STANDARD ("UI tickets include a Playwright end-to-end test"); CONVENTIONS §9, §15. Today `playwright.config.ts` starts only the web app, so no mobile screen can be clicked through. `apps/mobile` already depends on `react-native-web` and `react-dom`.
+- **GOAL:** `bunx playwright test --config playwright.mobile.config.ts` starts Expo web on port 8081 and runs `tests/e2e/mobile/**`, the main config ignores that folder, and CI runs both.
+- **SCOPE:** `playwright.mobile.config.ts` (new) · `playwright.config.ts` (edit: one `testIgnore` entry) · `.github/workflows/ci.yml` (edit: one step) · test: `tests/e2e/mobile/smoke.spec.ts`.
+- **MUTATES:** the four files above · CI E2E job (one added step).
+- **STEPS:** 1) Code-map check: read `playwright.config.ts` and the `E2E (Playwright)` job in `.github/workflows/ci.yml` (last step `bunx playwright test`). 2) Create `playwright.mobile.config.ts` exactly as in SPEC. 3) In `playwright.config.ts`, make the local (non-preview) run ignore mobile specs: `testIgnore: previewBaseURL ? [<existing three entries>, "**/mobile/**"] : ["**/mobile/**"]`. 4) In `ci.yml`, after the step `Run Playwright e2e tests`, add the step `- name: Run Playwright mobile e2e tests` / `run: bunx playwright test --config playwright.mobile.config.ts`. 5) Create `tests/e2e/mobile/smoke.spec.ts` with the 2 TESTS cases. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/smoke.spec.ts --reporter=line` → `2 passed`; `CI=1 bunx playwright test --list | grep -c "mobile/"` → `0`.
+- **EVIDENCE:** both outputs and the CI run link of the PR.
+- **DO NOT:** change any existing test, timeout, retry, browser or the web `webServer`; add a dependency; run Expo against a real Convex deployment; touch `convex/**` or `.env*`.
+- **REPORT:** `status / ticket: CFG-031 / evidence: <DONE output> / changed: <4 files> / unknowns / notes for ticket sync`.
+- **SPEC:**
+  ```ts
+  // playwright.mobile.config.ts
+  import { defineConfig, devices } from "@playwright/test";
+  export default defineConfig({
+    testDir: "tests/e2e/mobile",
+    timeout: 60_000,
+    expect: { timeout: 10_000 },
+    use: { baseURL: "http://localhost:8081", trace: "retain-on-failure", screenshot: "only-on-failure" },
+    webServer: {
+      command: "bunx expo start --web --port 8081",
+      cwd: "apps/mobile",
+      env: { CI: "1", EXPO_PUBLIC_CONVEX_URL: "https://example.convex.cloud", EXPO_PUBLIC_TEMPO_E2E: "1" },
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      url: "http://localhost:8081",
+    },
+    projects: [{ name: "mobile-web", use: { ...devices["Pixel 7"] } }],
+  });
+  ```
+- **TESTS:**
+  - Given the mobile config / When `page.goto("/")` runs / Then the response status is below 400 and `page.locator("body")` is visible.
+  - Given the mobile config / When `page.goto("/e2e-missing-route")` runs / Then `page.getByText("המסך הזה לא קיים.")` (the existing text in `apps/mobile/app/+not-found.tsx`) is visible.
+- **NUMBERS:** 2 of 2 smoke cases pass; Expo web ready within the 180,000 ms `webServer.timeout` (config value; no industry number applies).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-032 — Mobile `(tempo)` gate: E2E signed-out render — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** TFV2-0000d, CFG-031 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (auth-gate change, like the web bypass in `apps/web/proxy.ts`). Factory lanes never build this.
+- **WHEN:** after TFV2-0000d, CFG-031.
+- **WHY:** CONVENTIONS §15. `apps/mobile/app/(tempo)/_layout.tsx` redirects every signed-out visitor to `/(auth)/sign-in`, so mobile screen specs cannot open a screen. The web app solves this with a dev-only bypass; mobile needs the same, dev-only.
+- **GOAL:** In a dev build with `EXPO_PUBLIC_TEMPO_E2E=1`, `(tempo)` routes render signed out; in every other build the gate behaves exactly as today.
+- **SCOPE:** `apps/mobile/app/(tempo)/_layout.tsx` (edit) · test: `tests/e2e/mobile/tempo-gate.spec.ts`.
+- **MUTATES:** `apps/mobile/app/(tempo)/_layout.tsx` (edit) · `tests/e2e/mobile/tempo-gate.spec.ts` (new) · mobile auth gate (dev + flag only).
+- **STEPS:** 1) Code-map check: read `apps/mobile/app/(tempo)/_layout.tsx` lines 13–25 (two `<Redirect>` branches). 2) Import `tempoGate` from `@/lib/e2e/e2eState` (TFV2-0000d) — use the import alias the file already uses for `lib`. 3) Replace the two `if` branches with `const gate = tempoGate({ isLoading, isAuthenticated, hasProfile: profile !== undefined && profile !== null, onboardedAt: profile?.onboardedAt, e2e: __DEV__ && process.env.EXPO_PUBLIC_TEMPO_E2E === "1" }); if (gate === "sign-in") return <Redirect href="/(auth)/sign-in" />; if (gate === "onboarding") return <Redirect href="/(auth)/onboarding" />;`. 4) Create `tests/e2e/mobile/tempo-gate.spec.ts` with the 1 TESTS case. 5) Run DONE and `bun test tests/unit/mobile_e2e_state.test.ts`.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tempo-gate.spec.ts --reporter=line` → `1 passed`; `bun test tests/unit/mobile_e2e_state.test.ts` → `0 fail`.
+- **EVIDENCE:** both outputs pasted into the PR.
+- **DO NOT:** change the sign-in or onboarding routes; read the flag without `__DEV__`; touch `convex/auth*`, `apps/web/proxy.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: CFG-032 / evidence: <DONE output> / changed: <2 files> / unknowns / notes for ticket sync`.
+- **SPEC:** Behaviour table (from `tempoGate`, TFV2-0000d): e2e flag on in a dev build → render; otherwise signed out and not loading → `/(auth)/sign-in`; profile without `onboardedAt` → `/(auth)/onboarding`; else render. No new copy.
+- **TESTS:**
+  - Given the mobile config (flag on, dev server, signed out) / When `page.goto("/habits")` runs / Then the URL stays `/habits` (does not become `/sign-in`) and `page.locator("body")` is visible.
+- **NUMBERS:** 1 of 1 case passes; production behaviour unchanged (asserted by the `tempoGate` unit cases in TFV2-0000d).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+
 ## Chunk 1 — MVP · Core (chat-first)
 
 ### TFV2-0001 — Bounded query helper `convex/lib/bounded.ts`
