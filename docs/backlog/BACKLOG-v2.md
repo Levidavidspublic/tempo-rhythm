@@ -4121,10 +4121,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0154.
 - **WHY:** components.md §1 Stage 1 (`CoachPanel`) + §2.10; coach.html `@component CoachPanel`.
 - **GOAL:** A dockable glass `CoachPanel` shell renders the coach head, thread slot, composer slot, and all states, docked at 1280+ and a sheet below.
-- **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` · `apps/web/components/coach/CoachPanel.css` (or tokens via classes) · test: `apps/web/components/coach/CoachPanel.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/CoachPanel.tsx` (new).
-- **STEPS:** 1) Graphify code-map of `apps/web` coach folder. 2) Build the component per the markup below. 3) Wire `data-component="CoachPanel"`, `role`/`aria` per the catalogue. 4) Add the Playwright click-through. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "CoachPanel"` → all states asserted at 390 and 1280, EN and HE.
+- **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` (verify/extend — EXISTS on `integration`) · `apps/web/components/coach/CoachPanel.css` (or tokens via classes) · test: `tests/e2e/screens/coach-panel.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/CoachPanel.tsx` (verify/extend existing).
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach` (EXISTS: `CoachPanel.tsx`). 2) Verify the component matches the markup below, editing only inside SCOPE. 3) Wire `data-component="CoachPanel"`, `role`/`aria` per the catalogue. 4) Add the Playwright spec `tests/e2e/screens/coach-panel.spec.ts` (opens the coach route with the e2e auth bypass and `?state=` / `?lang=` for error/offline/locale, asserting each state at 390 and 1280, EN and HE). 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-panel.spec.ts --reporter=line` → all states asserted at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + a screenshot of the default state.
 - **DO NOT:** edit `convex/`, invent copy, or dock the panel as a modal on mobile.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
