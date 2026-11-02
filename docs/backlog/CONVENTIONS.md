@@ -559,6 +559,7 @@ else; the SPEC quotes the exact line(s); the file counts toward the 3-file limit
 
 ## 19. Dependencies, OPEN and the open-question register
 
+- **STATUS (Amit, 2 Nov 2026):** every non-stub ticket has exactly one line `- **STATUS:** approved-unsent` (meets the bar, not yet sent as an issue; not rewritten again) or `- **STATUS:** open — <its OPEN question>` directly under its heading; stubs have none.
 - `Depends` lists only ids that exist in `BACKLOG-v2.md` (TFV2-…, CFG-…), each earlier in the file.
   The Groundwork section at the top (TFV2-0000a…d, then CFG-001…) comes before Chunk 1. No legacy ids (TRW-, TM-, TEMPO-, #issue) in `Depends`;
   those go in `Folds-in` or `WHY`. No cycles.
