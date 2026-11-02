@@ -4135,15 +4135,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0201 — UI: `CoachMessage`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0200, TFV2-0206 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0200.
 - **WHY:** components.md §1 (`CoachMessage`); coach.html `@component CoachMessage`.
 - **GOAL:** A coach message bubble shows the who-label, `dir="auto"` text, a Read-aloud action, and a streaming variant.
-- **SCOPE:** `apps/web/components/coach/CoachMessage.tsx` · test: `apps/web/components/coach/CoachMessage.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/CoachMessage.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build per markup. 3) Support `streaming` (aria-busy) and read-aloud. 4) Playwright states. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "CoachMessage"` → states at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/CoachMessage.tsx` + `apps/web/components/coach/CoachMessage.css` (new, owns `.tp-msg`) + `apps/web/app/e2e/components/coach-message/page.tsx` (harness) · test: `tests/e2e/screens/coach-message.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/CoachMessage.tsx` (new), `apps/web/components/coach/CoachMessage.css` (new), `apps/web/app/e2e/components/coach-message/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (CoachMessage MISSING). 2) Build `.tp-msg` (`__who`, `__text[dir=auto]`, `__actions`) per markup; classes in `CoachMessage.css`. 3) Support `streaming` (`aria-busy="true"` + `TypingIndicator`, TFV2-0205) and read-aloud (`ReadAloudButton`, TFV2-0206). 4) Create `apps/web/app/e2e/components/coach-message/page.tsx` (client) rendering each state under `data-testid="coach-message-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/coach-message.spec.ts` navigating `/e2e/components/coach-message` and `?lang=he`, asserting every state + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-message.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** invent copy, or read aloud automatically.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4154,15 +4154,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0202 — UI: `UserMessage`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0200 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0200.
 - **WHY:** components.md §1 (`UserMessage`); coach.html `@component UserMessage`.
 - **GOAL:** A user message bubble shows the "You" label and `dir="auto"` text.
-- **SCOPE:** `apps/web/components/coach/UserMessage.tsx` · test: `apps/web/components/coach/UserMessage.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/UserMessage.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-msg.tp-msg--user` with `__who` and `__text`. 3) Playwright. 4) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "UserMessage"` → states at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/UserMessage.tsx` + `apps/web/components/coach/UserMessage.css` (new, owns `.tp-msg--user`) + `apps/web/app/e2e/components/user-message/page.tsx` (harness) · test: `tests/e2e/screens/user-message.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/UserMessage.tsx` (new), `apps/web/components/coach/UserMessage.css` (new), `apps/web/app/e2e/components/user-message/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (UserMessage MISSING). 2) Build `.tp-msg.tp-msg--user` (`__who`, `__text[dir=auto]`) per markup; classes in `UserMessage.css`. 3) No read-aloud/actions on user messages. 4) Create `apps/web/app/e2e/components/user-message/page.tsx` (client) rendering each state under `data-testid="user-message-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/user-message.spec.ts` navigating `/e2e/components/user-message` and `?lang=he`, asserting every state + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/user-message.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** add actions to a user message.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4173,15 +4173,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0203 — UI: `CoachButton`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0200 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0200.
 - **WHY:** components.md §1 (`CoachButton`); coach.html `@component CoachButton` (Ctrl J).
 - **GOAL:** A floating glass button opens the coach panel (Ctrl J) with the correct label and aria.
-- **SCOPE:** `apps/web/components/coach/CoachButton.tsx` · test: `apps/web/components/coach/CoachButton.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/CoachButton.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-coach-fab.tp-glass` with `data-action="open-coach"`, `aria-expanded`, `aria-controls="coach"`. 3) Keyboard Ctrl J. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "CoachButton"` → open at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/CoachButton.tsx` + `apps/web/components/coach/CoachButton.css` (new, owns `.tp-coach-fab`) + `apps/web/app/e2e/components/coach-button/page.tsx` (harness) · test: `tests/e2e/screens/coach-button.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/CoachButton.tsx` (new), `apps/web/components/coach/CoachButton.css` (new), `apps/web/app/e2e/components/coach-button/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (CoachButton MISSING). 2) Build `.tp-coach-fab.tp-glass` with `data-action="open-coach"`, `aria-expanded`, `aria-controls="coach"`; classes in `CoachButton.css`. 3) Keyboard Ctrl J opens. 4) Create `apps/web/app/e2e/components/coach-button/page.tsx` (client) rendering each state under `data-testid="coach-button-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/coach-button.spec.ts` navigating `/e2e/components/coach-button` and `?lang=he`, asserting open/closed + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-button.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** open the panel on hover, or drop the Ctrl J shortcut.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4192,15 +4192,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0204 — UI: `Composer` (coach wiring)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154, TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0154, TFV2-0200 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0154 + TFV2-0200.
 - **WHY:** components.md §1 (`Composer`); coach.html `@component Composer`.
 - **GOAL:** The coach composer sends a message, shows the hint, and disables offline.
-- **SCOPE:** `apps/web/components/coach/Composer.tsx` · test: `apps/web/components/coach/Composer.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/Composer.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-composer` with textarea, attach, send. 3) Wire `onSend → coach.send`. 4) Playwright: type + send, empty disabled, offline hidden. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "Composer"` → send + offline at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/Composer.tsx` + `apps/web/components/coach/Composer.css` (new, owns `.tp-composer`) + `apps/web/app/e2e/components/composer/page.tsx` (harness) · test: `tests/e2e/screens/composer.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/Composer.tsx` (new), `apps/web/components/coach/Composer.css` (new), `apps/web/app/e2e/components/composer/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Composer MISSING). 2) Build `.tp-composer` (`__box`, textarea `dir="auto"`, attach, send) per markup; classes in `Composer.css`. 3) Wire `onSend → coach.sendMessage` (the existing mutation, TFV2-0154); empty → send disabled; offline hides form (`data-state-hide="offline"`). 4) Create `apps/web/app/e2e/components/composer/page.tsx` (client) rendering each state under `data-testid="composer-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/composer.spec.ts` navigating `/e2e/components/composer` and `?lang=he` plus `?state=offline`, asserting send/empty/offline + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/composer.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** send an empty message, or allow send while offline.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4211,15 +4211,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0205 — UI: `TypingIndicator`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0200 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0200.
 - **WHY:** components.md §2.10 (`TypingIndicator` — text carries meaning, dots pulse only without reduced motion).
 - **GOAL:** A status indicator shows a label with pulsing dots that stop under reduced motion.
-- **SCOPE:** `apps/web/components/coach/TypingIndicator.tsx` · test: `apps/web/components/coach/TypingIndicator.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/TypingIndicator.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-typing[role=status]` with `__dots` and a label. 3) Respect `prefers-reduced-motion`. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "TypingIndicator"` → label + reduced-motion at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/TypingIndicator.tsx` + `apps/web/components/coach/TypingIndicator.css` (new, owns `.tp-typing`) + `apps/web/app/e2e/components/typing-indicator/page.tsx` (harness) · test: `tests/e2e/screens/typing-indicator.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/TypingIndicator.tsx` (new), `apps/web/components/coach/TypingIndicator.css` (new), `apps/web/app/e2e/components/typing-indicator/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (TypingIndicator MISSING). 2) Build `.tp-typing[role=status]` (`__dots`, label) per markup; classes in `TypingIndicator.css`. 3) Respect `prefers-reduced-motion` (dots static). 4) Create `apps/web/app/e2e/components/typing-indicator/page.tsx` (client) rendering each state under `data-testid="typing-indicator-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/typing-indicator.spec.ts` navigating `/e2e/components/typing-indicator` and `?lang=he`, asserting label + reduced-motion + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/typing-indicator.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** animate under reduced motion, or use dots without a text label.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4229,15 +4229,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 ### TFV2-0206 — UI: `ReadAloudButton`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0201 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0201 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0201.
 - **WHY:** components.md §2.10 (`ReadAloudButton` → `voice.speak`); coach.html `@component ReadAloudButton`.
 - **GOAL:** A ghost toggle reads a message aloud and swaps volume/pause icon and label.
-- **SCOPE:** `apps/web/components/coach/ReadAloudButton.tsx` · test: `apps/web/components/coach/ReadAloudButton.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ReadAloudButton.tsx` (new).
-- **STEPS:** 1) Graphify code-map of the voice speak surface (chunk E owns voice; here the button calls the `voice.speak` stub). 2) Build `.tp-btn.tp-btn--ghost.tp-btn--sm.tp-readaloud[aria-pressed]` with `[data-label]`. 3) Toggle label/icon. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ReadAloudButton"` → toggle at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ReadAloudButton.tsx` + `apps/web/components/coach/ReadAloudButton.css` (new, owns `.tp-readaloud`) + `apps/web/app/e2e/components/read-aloud-button/page.tsx` (harness) · test: `tests/e2e/screens/read-aloud-button.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/ReadAloudButton.tsx` (new), `apps/web/components/coach/ReadAloudButton.css` (new), `apps/web/app/e2e/components/read-aloud-button/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ReadAloudButton MISSING; chunk E owns the real voice surface — here the button calls a `voice.speak` stub). 2) Build `.tp-btn.tp-btn--ghost.tp-btn--sm.tp-readaloud[aria-pressed]` with `[data-label]`; classes in `ReadAloudButton.css`. 3) Toggle label/icon (`#i-volume` ↔ `#i-pause`). 4) Create `apps/web/app/e2e/components/read-aloud-button/page.tsx` (client) rendering each state under `data-testid="read-aloud-button-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/read-aloud-button.spec.ts` navigating `/e2e/components/read-aloud-button` and `?lang=he`, asserting the toggle + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/read-aloud-button.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** ship a real voice call here (chunk E), or keep the label fixed on toggle.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4248,15 +4248,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0207 — UI: `ChatHistoryList`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0163 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0163 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0163.
 - **WHY:** components.md §2.10 (`ChatHistoryList`); coach-history.html `@component ChatHistoryList`.
 - **GOAL:** A grouped list (Today / Last week / Earlier) renders conversation rows with title, time, and a 2-line clamped last line.
-- **SCOPE:** `apps/web/components/coach/ChatHistoryList.tsx` · test: `apps/web/components/coach/ChatHistoryList.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ChatHistoryList.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-chat-list`/`.tp-chat-group`/`.tp-chat-row[aria-current]` with `__title`, `__time`, `__last`. 3) Group headers `g.today`/`g.week`/`g.earlier`. 4) Clamp last line to 2 lines, time in `.tp-num`. 5) Playwright. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ChatHistoryList"` → rows + groups at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ChatHistoryList.tsx` + `apps/web/components/coach/ChatHistoryList.css` (new, owns `.tp-chat-list`) + `apps/web/app/e2e/components/chat-history-list/page.tsx` (harness) · test: `tests/e2e/screens/chat-history-list.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/ChatHistoryList.tsx` (new), `apps/web/components/coach/ChatHistoryList.css` (new), `apps/web/app/e2e/components/chat-history-list/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ChatHistoryList MISSING). 2) Build `.tp-chat-list`/`.tp-chat-group`/`.tp-chat-row[aria-current]` (`__title`, `__time`, `__last`) per markup; classes in `ChatHistoryList.css`. 3) Group headers `g.today`/`g.week`/`g.earlier`; clamp last line to 2; time `.tp-num`. 4) Create `apps/web/app/e2e/components/chat-history-list/page.tsx` (client) rendering each state under `data-testid="chat-history-list-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/chat-history-list.spec.ts` navigating `/e2e/components/chat-history-list` and `?lang=he`, asserting groups + clamping + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chat-history-list.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** render more than 2 lines of the last line, or invent group names.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4267,15 +4267,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0208 — UI: `ChatSearch`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0164 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0164 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0164.
 - **WHY:** components.md §2.10 (`ChatSearch`); coach-history.html `@component ChatSearch` + mode `Segmented`.
 - **GOAL:** A search box + "By meaning / Exact words" toggle drives `coach.searchThreads` with a 250 ms debounce.
-- **SCOPE:** `apps/web/components/coach/ChatSearch.tsx` · test: `apps/web/components/coach/ChatSearch.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ChatSearch.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-search` input + `.tp-segmented` meaning/words. 3) Debounce 250 ms, then `coach.searchThreads({ query, mode })`. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ChatSearch"` → debounce + mode at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ChatSearch.tsx` + `apps/web/components/coach/ChatSearch.css` (new, owns `.tp-search`) + `apps/web/app/e2e/components/chat-search/page.tsx` (harness) · test: `tests/e2e/screens/chat-search.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/ChatSearch.tsx` (new), `apps/web/components/coach/ChatSearch.css` (new), `apps/web/app/e2e/components/chat-search/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ChatSearch MISSING). 2) Build `.tp-search` input + `.tp-segmented` meaning/words per markup; classes in `ChatSearch.css`. 3) Debounce 250 ms, then `coach.searchThreads({ query, mode })`. 4) Create `apps/web/app/e2e/components/chat-search/page.tsx` (client) rendering each state under `data-testid="chat-search-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/chat-search.spec.ts` navigating `/e2e/components/chat-search` and `?lang=he`, asserting debounce + mode + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chat-search.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** search on every keystroke without debounce, or drop the mode toggle.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4286,15 +4286,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0209 — UI: `CrisisCard`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0230 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0230 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0230 (fixed-card content).
 - **WHY:** components.md §2.10 (`CrisisCard` — fixed text written by people; coaching stops; no animation); PRD F-24.
 - **GOAL:** A fixed crisis card renders real resources with `tel:` links; coaching pauses; no animation.
-- **SCOPE:** `apps/web/components/coach/CrisisCard.tsx` · test: `apps/web/components/coach/CrisisCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/CrisisCard.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-crisis` with `__title`, `__body`, `__list`, `__item`, `__item-text`, `__name`, `__detail`, `__note`. 3) `tel:` links. 4) Playwright crisis view. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "CrisisCard"` → crisis view at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/CrisisCard.tsx` + `apps/web/components/coach/CrisisCard.css` (new, owns `.tp-crisis`) + `apps/web/app/e2e/components/crisis-card/page.tsx` (harness) · test: `tests/e2e/screens/crisis-card.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/CrisisCard.tsx` (new), `apps/web/components/coach/CrisisCard.css` (new), `apps/web/app/e2e/components/crisis-card/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (CrisisCard MISSING; `CrisisResourcesCard` EXISTS in `coach-crisis/` — reuse its fixed copy via `convex/lib/crisisWords.ts` `CRISIS_CARD` / `crisisCardText`, TFV2-0230). 2) Build `.tp-crisis` (`__title`, `__body`, `__list`, `__item`, `__item-text`, `__name`, `__detail`, `__note`) per markup; classes in `CrisisCard.css`. 3) `tel:` links; no animation. 4) Create `apps/web/app/e2e/components/crisis-card/page.tsx` (client) rendering each state under `data-testid="crisis-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/crisis-card.spec.ts` navigating `/e2e/components/crisis-card` and `?lang=he`, asserting the card + `tel:` links + paused notice + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/crisis-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** write any card text from a model, or animate the card.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4305,15 +4305,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** per-country resources (PRD F-24 "per-country data MVP") — UNKNOWN beyond Israel; answerer: Amit.
 
 ### TFV2-0210 — UI: `GroundingCard`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0167 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0167.
 - **WHY:** components.md §2.10 (`GroundingCard` — steps every 4 s, each transition ≤ 240 ms; the word carries meaning); PRD F-25.
 - **GOAL:** A grounding card shows a breathing line with words and one 10-second action; no model call.
-- **SCOPE:** `apps/web/components/coach/GroundingCard.tsx` · test: `apps/web/components/coach/GroundingCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/GroundingCard.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-grounding` with `__title`, `__body`, `.tp-breath[data-phase]`, `__track`, `__line`, `__label`, `__action`, `[data-grounding-done]`. 3) Phase cycle in/out every 4 s, transition ≤ 240 ms; the word ("Breathe in"/"Hold"/"Breathe out") carries meaning. 4) Done button reveals the after-line. 5) Playwright. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "GroundingCard"` → phases + done at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/GroundingCard.tsx` + `apps/web/components/coach/GroundingCard.css` (new, owns `.tp-grounding`) + `apps/web/app/e2e/components/grounding-card/page.tsx` (harness) · test: `tests/e2e/screens/grounding-card.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/GroundingCard.tsx` (new), `apps/web/components/coach/GroundingCard.css` (new), `apps/web/app/e2e/components/grounding-card/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (GroundingCard MISSING). 2) Build `.tp-grounding` (`__title`, `__body`, `.tp-breath[data-phase]`, `__track`, `__line`, `__label`, `__action`, `[data-grounding-done]`) per markup; classes in `GroundingCard.css`. 3) Phase cycle every 4 s, transition ≤ 240 ms; reduced motion → static line; the word carries meaning. 4) Create `apps/web/app/e2e/components/grounding-card/page.tsx` (client) rendering each state under `data-testid="grounding-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/grounding-card.spec.ts` navigating `/e2e/components/grounding-card` and `?lang=he`, asserting phases + done + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/grounding-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** call a model, or animate under reduced motion.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4324,15 +4324,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0211 — UI: `CoachDial` (component)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0166 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0166.
 - **WHY:** components.md §2.8 Dial 0–10 + §2.10 (`CoachDial`); coach-thread.html dial sheet.
 - **GOAL:** A 0–10 slider shows both the number and the word (quiet/steady/push) and debounces `setCoachDial` 400 ms.
-- **SCOPE:** `apps/web/components/coach/CoachDial.tsx` · test: `apps/web/components/coach/CoachDial.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/CoachDial.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-dial` with `__head`, `__value`, `__num[data-dial-num]`, `__of`, `__word[data-dial-word]`, `__scale`, `input.tp-slider`. 3) Words: quiet 0–3, steady 4–7, push 8–10. 4) Debounce 400 ms → `coach.setDial`. 5) Playwright. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "CoachDial"` → value + word at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/CoachDial.tsx` + `apps/web/components/coach/CoachDial.css` (new, owns `.tp-dial`) + `apps/web/app/e2e/components/coach-dial/page.tsx` (harness) · test: `tests/e2e/screens/coach-dial.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/CoachDial.tsx` (new), `apps/web/components/coach/CoachDial.css` (new), `apps/web/app/e2e/components/coach-dial/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (CoachDial MISSING; the persisted dial mutation is `coach.setDial({ dial })` in `convex/coach.ts`, TFV2-0166). 2) Build `.tp-dial` (`__head`, `__value`, `__num[data-dial-num]`, `__of`, `__word[data-dial-word]`, `__scale`, `input.tp-slider`) per markup; classes in `CoachDial.css`. 3) Words quiet 0–3 / steady 4–7 / push 8–10; debounce 400 ms → `coach.setDial`. 4) Create `apps/web/app/e2e/components/coach-dial/page.tsx` (client) rendering each state under `data-testid="coach-dial-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/coach-dial.spec.ts` navigating `/e2e/components/coach-dial` and `?lang=he`, asserting value + word + debounce + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-dial.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** set the dial on every pixel without debounce, or show a number without the word.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4343,15 +4343,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0212 — UI: `PanicButton` (component)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0167 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0167.
 - **WHY:** components.md §2.10 (`PanicButton` — no model call); coach-thread.html `@component PanicButton`.
 - **GOAL:** A panic button opens the GroundingCard at once with no model call, and exposes its `aria-controls`.
-- **SCOPE:** `apps/web/components/coach/PanicButton.tsx` · test: `apps/web/components/coach/PanicButton.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/PanicButton.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-panic` with `data-action="panic"`, `aria-controls="grounding"`, `aria-expanded`. 3) On press call `coach.pressPanic` (no model) and open the GroundingCard. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "PanicButton"` → open at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/PanicButton.tsx` + `apps/web/components/coach/PanicButton.css` (new, owns `.tp-panic`) + `apps/web/app/e2e/components/panic-button/page.tsx` (harness) · test: `tests/e2e/screens/panic-button.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/PanicButton.tsx` (new), `apps/web/components/coach/PanicButton.css` (new), `apps/web/app/e2e/components/panic-button/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (PanicButton MISSING; `coach.pressPanic` EXISTS in `convex/coach.ts`). 2) Build `.tp-panic` with `data-action="panic"`, `aria-controls="grounding"`, `aria-expanded`; classes in `PanicButton.css`. 3) On press call `coach.pressPanic` (no model) and open the GroundingCard (TFV2-0210). 4) Create `apps/web/app/e2e/components/panic-button/page.tsx` (client) rendering each state under `data-testid="panic-button-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/panic-button.spec.ts` navigating `/e2e/components/panic-button` and `?lang=he`, asserting open + `aria-expanded` + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/panic-button.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** call a model, or open the card without setting `aria-expanded`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4362,15 +4362,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0213 — UI: `ProposalCard` base + task variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0157 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0157 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0157.
 - **WHY:** components.md §1/§2.10 (`ProposalCard`, `data-kind`); coach.html `@component ProposalCard`.
 - **GOAL:** The shared proposal card shell (header, changes, Accept/Edit/Reject, note) with the task variant (kind label, title, minutes, before-time).
-- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-proposal` shell + task variant per markup. 3) Wire Accept/Edit/Reject → `coach.acceptProposal`/`editProposal`/`rejectProposal`; Undo toast on Accept. 4) Playwright accept/reject/edit/undo. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → task accept/edit/reject/undo at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/components/coach/ProposalCard.css` (new, owns `.tp-proposal`) + `apps/web/app/e2e/components/proposal-card/page.tsx` (harness) · test: `tests/e2e/screens/proposal-card.spec.ts`.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (new v3 shell), `apps/web/components/coach/ProposalCard.css` (new), `apps/web/app/e2e/components/proposal-card/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (`ProposalCard` MISSING; the legacy `coach-proposal/CoachProposalCard.tsx` EXISTS and is superseded by this v3 shell — note in REPORT, do not edit it here). 2) Build `.tp-proposal` shell + task variant (`data-kind="task"`) per markup; classes in `ProposalCard.css`. 3) Wire Accept/Edit/Reject → `coach.acceptProposal` (with `edit` arg) / `coach.rejectProposal`; Undo → `coach.undoProposal`; the accept kinds are `task|note|template|decision` (code truth in `convex/coach.ts`). 4) Create `apps/web/app/e2e/components/proposal-card/page.tsx` (client) rendering each state under `data-testid="proposal-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/proposal-card.spec.ts` navigating `/e2e/components/proposal-card` and `?lang=he`, asserting accept/edit/reject/undo + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** apply the change before Accept, or offer Undo after 5 minutes.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4381,15 +4381,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0214 — UI: `ProposalCard` template variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0158 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0158, TFV2-0213 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0158.
 - **WHY:** components.md §2.10 (`ProposalCard` `data-kind="template"`); coach-thread.html turn 2.
 - **GOAL:** The template variant shows name, adds, changes (`dl` of `.tp-what-row`) and the Accept/Edit/Reject actions.
-- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (template variant).
-- **STEPS:** 1) Graphify code-map. 2) Add the template variant markup (`data-kind="template"`, `__what` dl). 3) Wire Accept → `fillTemplate` apply. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → template variant at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/app/e2e/components/proposal-card/page.tsx` (add template state) · test: `tests/e2e/screens/proposal-card.spec.ts` (add template cases).
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (template variant `data-kind="template"`).
+- **STEPS:** 1) Graphify code-map. 2) Add the template variant (`data-kind="template"`, `__what` dl) to the TFV2-0213 shell; classes already in `ProposalCard.css`. 3) Wire Accept → `coach.acceptProposal` (`kind:"template"`). 4) Extend the TFV2-0213 harness page with the `proposal-card-template` state and the spec with the template cases, asserting both EN/HE at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** apply before Accept, or invent the "what it does" summary.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4400,15 +4400,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0215 — UI: `ProposalCard` module variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0159 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0159, TFV2-0213 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0159.
 - **WHY:** components.md §2.10 (`ProposalCard` `data-kind="module"`); coach-thread.html turn 3.
 - **GOAL:** The module variant shows name, adds, changes and the Approve/Discard-style Accept/Edit/Reject actions.
-- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (module variant).
-- **STEPS:** 1) Graphify code-map. 2) Add the module variant (`data-kind="module"`). 3) Wire Accept → `draftModule` approval. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → module variant at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/app/e2e/components/proposal-card/page.tsx` (add module state) · test: `tests/e2e/screens/proposal-card.spec.ts` (add module cases).
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (module variant `data-kind="module"`).
+- **STEPS:** 1) Graphify code-map. 2) Add the module variant (`data-kind="module"`) to the TFV2-0213 shell. 3) Wire Accept → `coach.acceptProposal` (`kind:"module"`). 4) Extend the TFV2-0213 harness page with the `proposal-card-module` state and the spec with the module cases at BOTH viewports EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** install a module before approval, or invent module behaviour.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4419,15 +4419,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** §4.12 (module approval path) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0216 — UI: `ProposalCard` job variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0161 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0161, TFV2-0213 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0161.
 - **WHY:** components.md §2.10 (`ProposalCard` `data-kind="job"`); coach-thread.html turn 4.
 - **GOAL:** The job variant shows name, when, does, stop-it rows and the Accept/Edit/Reject actions.
-- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (job variant).
-- **STEPS:** 1) Graphify code-map. 2) Add the job variant (`data-kind="job"`). 3) Wire Accept → `scheduleJob` approval. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → job variant at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/app/e2e/components/proposal-card/page.tsx` (add job state) · test: `tests/e2e/screens/proposal-card.spec.ts` (add job cases).
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (job variant `data-kind="job"`).
+- **STEPS:** 1) Graphify code-map. 2) Add the job variant (`data-kind="job"`) to the TFV2-0213 shell. 3) Wire Accept → `coach.acceptProposal` (`kind:"job"`). 4) Extend the TFV2-0213 harness page with the `proposal-card-job` state and the spec with the job cases at BOTH viewports EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** register the job before approval, or omit the stop-it row.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4435,18 +4435,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** Given a job proposal / When rendered / Then the four rows show (When in LTR mono). Given Accept / Then it registers and Undo shows. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0217 — UI: `ProposalCard` decision variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170 · **Folds-in:** none
+- **OPEN:** job proposal kind is not in `coach.acceptProposal`'s union (`task|note|template|decision` in `convex/coach.ts`) — is "job" a proposal kind or does the card call `jobs.scheduleJob` (chunk D TFV2-0250)? Amit.
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0170, TFV2-0213 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0170.
 - **WHY:** coachPrompt.ts (`CoachProposal` `kind:"decision"` — an order of steps); PRD F-22 (decision "what order should I do these in?").
 - **GOAL:** The decision variant lists ordered steps (title, minutes, reason) and Accept saves them to Today's page.
-- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (decision variant).
-- **STEPS:** 1) Graphify code-map. 2) Add the decision variant (ordered list of steps). 3) Wire Accept → `acceptProposal` (saves steps to Today). 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → decision variant at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` + `apps/web/app/e2e/components/proposal-card/page.tsx` (add decision state) · test: `tests/e2e/screens/proposal-card.spec.ts` (add decision cases).
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (decision variant `data-kind="decision"`).
+- **STEPS:** 1) Graphify code-map. 2) Add the decision variant (ordered list of steps) to the TFV2-0213 shell. 3) Wire Accept → `coach.acceptProposal` (`kind:"decision"`, saves steps to Today). 4) Extend the TFV2-0213 harness page with the `proposal-card-decision` state and the spec with the decision cases at BOTH viewports EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** save the order before Accept, or drop a step's reason.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4457,15 +4455,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0218 — UI: `MemoryItem`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0179 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0179 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0179.
 - **WHY:** components.md §2.12 (`MemoryItem` — forget → `memory.forget` + Undo); memory.html `@component MemoryItem`.
 - **GOAL:** A memory row shows fact, source, when, and a Forget button with Undo; guessed links add a "Guess" badge and confirm.
-- **SCOPE:** `apps/web/components/memory/MemoryItem.tsx` · test: `apps/web/components/memory/MemoryItem.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/memory/MemoryItem.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-memory-list`/`.tp-memory-row` with `__fact`, `__source`, `__action`. 3) Forget (`.tp-btn--danger-ghost`) → `memory.forget` + Undo; guess rows add a caution `Badge` and "That's right" confirm → `lifeGraph.confirmGuess`. 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "MemoryItem"` → forget + confirm at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/memory/MemoryItem.tsx` + `apps/web/components/memory/MemoryItem.css` (new, owns `.tp-memory-row`) + `apps/web/app/e2e/components/memory-item/page.tsx` (harness) · test: `tests/e2e/screens/memory-item.spec.ts`.
+- **MUTATES:** `apps/web/components/memory/MemoryItem.tsx` (new), `apps/web/components/memory/MemoryItem.css` (new), `apps/web/app/e2e/components/memory-item/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (MemoryItem MISSING; `memory.forget`/`memory.restore` EXIST in `convex/memory.ts`; `lifeGraph.confirmGuess` does NOT exist — see OPEN). 2) Build `.tp-memory-list`/`.tp-memory-row` (`__fact`, `__source`, `__action`) per markup; classes in `MemoryItem.css`. 3) Forget (`.tp-btn--danger-ghost`) → `memory.forget` + Undo (`memory.restore`); guess rows show a caution `Badge`. 4) Create `apps/web/app/e2e/components/memory-item/page.tsx` (client) rendering each state under `data-testid="memory-item-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/memory-item.spec.ts` navigating `/e2e/components/memory-item` and `?lang=he`, asserting forget/undo + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/memory-item.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** hard-delete, or show "Guess" for a confirmed link.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4476,15 +4474,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** §4.8 (forget semantics) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0219 — UI: `ImportReview`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0192 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0192 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0192.
 - **WHY:** components.md §2.12 (`ImportReview` — keep/edit/drop, nothing saved until Save); memory-import.html.
 - **GOAL:** A review list gives each candidate item Keep/Edit/Drop (role=radio), with a running count and nothing saved until Save.
-- **SCOPE:** `apps/web/components/memory/ImportReview.tsx` · test: `apps/web/components/memory/ImportReview.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/memory/ImportReview.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-import-list`/`.tp-import-row[data-choice]` with `__text`, `__bar`, `__note`, and a per-row `Segmented` keep/edit/drop. 3) Edit makes text contenteditable; Drop strikes through and says "Will be left out"; count updates. 4) Save → `memory.importCommit`. 5) Playwright. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ImportReview"` → keep/edit/drop + save at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/memory/ImportReview.tsx` + `apps/web/components/memory/ImportReview.css` (new, owns `.tp-import-list`) + `apps/web/app/e2e/components/import-review/page.tsx` (harness) · test: `tests/e2e/screens/import-review.spec.ts`.
+- **MUTATES:** `apps/web/components/memory/ImportReview.tsx` (new), `apps/web/components/memory/ImportReview.css` (new), `apps/web/app/e2e/components/import-review/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ImportReview MISSING; import parse helpers `parseMemoryExport`/`cleanImportItem` EXIST in `convex/lib/memoryImport.ts`; the commit mutation is TFV2-0225's backend — see OPEN). 2) Build `.tp-import-list`/`.tp-import-row[data-choice]` (`__text`, `__bar`, `__note`) + per-row `Segmented` keep/edit/drop per markup; classes in `ImportReview.css`. 3) Edit contenteditable; Drop strikes through; count updates; Save → `memory.importCommit` (the mutation TFV2-0225 owns). 4) Create `apps/web/app/e2e/components/import-review/page.tsx` (client) rendering each state under `data-testid="import-review-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/import-review.spec.ts` navigating `/e2e/components/import-review` and `?lang=he`, asserting keep/edit/drop + save + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/import-review.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** save before Save, or let a dropped item be committed.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4495,15 +4493,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0220 — UI: `ExportArea`
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0182 · **Folds-in:** none
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0182 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0182.
 - **WHY:** components.md §2.12 (`ExportArea` → `memory.exportMarkdown`); memory.html.
 - **GOAL:** An export card triggers the Markdown download and shows a status note; nothing is removed.
-- **SCOPE:** `apps/web/components/memory/ExportArea.tsx` · test: `apps/web/components/memory/ExportArea.test.tsx` + Playwright.
-- **MUTATES:** `apps/web/components/memory/ExportArea.tsx` (new).
-- **STEPS:** 1) Graphify code-map. 2) Build `.tp-export` with `__text`, `__title`, `__note`, and a button. 3) Button → `memory.exportMarkdown` → download `memories.md`; note shows "Making your file…" then "Your file is ready…". 4) Playwright. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "ExportArea"` → download + note at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/components/memory/ExportArea.tsx` + `apps/web/components/memory/ExportArea.css` (new, owns `.tp-export`) + `apps/web/app/e2e/components/export-area/page.tsx` (harness) · test: `tests/e2e/screens/export-area.spec.ts`.
+- **MUTATES:** `apps/web/components/memory/ExportArea.tsx` (new), `apps/web/components/memory/ExportArea.css` (new), `apps/web/app/e2e/components/export-area/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ExportArea MISSING; the export query is `memory.exportAll` in `convex/memory.ts` — realign from the old `exportMarkdown` name). 2) Build `.tp-export` (`__text`, `__title`, `__note`, button) per markup; classes in `ExportArea.css`. 3) Button → `memory.exportAll` → download `memories.md`; note "Making your file…" then "Your file is ready…". 4) Create `apps/web/app/e2e/components/export-area/page.tsx` (client) rendering each state under `data-testid="export-area-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/export-area.spec.ts` navigating `/e2e/components/export-area` and `?lang=he`, asserting download + note + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/export-area.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** remove any memory, or download before the file is ready.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4519,10 +4517,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0200 + TFV2-0204 + TFV2-0213.
 - **WHY:** REWRITE-PLAN §5.1 ("Coach (panel over Today)" — `components/coach/CoachPanel` opened in `(tempo)/today`); coach.html.
 - **GOAL:** The coach opens as a panel beside Today, with the accept/edit/reject/undo flow and the "moved to tomorrow" note working.
-- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/coach/CoachPanel.tsx` (wiring) · test: Playwright spec.
+- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/coach/CoachPanel.tsx` (wiring) · test: `tests/e2e/screens/coach-panel.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/today/page.tsx` (open the panel + wiring).
 - **STEPS:** 1) Graphify code-map of Today's route. 2) Mount `CoachPanel` beside Today, docked at 1280+, sheet below. 3) Wire Accept → apply + Undo toast; Edit inline; Reject no-op. 4) Show the `moved.note` line on a move change. 5) Playwright click-through of every state at 390 and 1280, EN and HE. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "coach-panel"` → every state asserted at 390 and 1280, EN and HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-panel.spec.ts --reporter=line` → every state asserted at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** edit `convex/`, or render JSON anywhere.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4538,10 +4536,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0165 + the ProposalCard variants + CrisisCard + GroundingCard.
 - **WHY:** REWRITE-PLAN §5.1 ("Coach thread" — `(tempo)/coach/[threadId]`); coach-thread.html.
 - **GOAL:** The full conversation screen shows all proposal kinds, streaming, the dial sheet, panic/grounding, crisis view, and all states.
-- **SCOPE:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` · `apps/web/components/coach/CoachThread.tsx` (or inline) · test: Playwright spec.
+- **SCOPE:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` · `apps/web/components/coach/CoachThread.tsx` (or inline) · `apps/web/lib/e2eWiringRoutes.ts` (one exact line) · test: `tests/e2e/screens/coach-thread.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map of coach-thread.html. 2) Build the thread with newest turn at bottom, composer under it, and the four proposal kinds + decision + streaming turn. 3) Dial sheet (CoachDial), PanicButton → GroundingCard, CrisisCard on `?view=crisis`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "coach-thread"` → every state at 390 and 1280, EN and HE.
+- **STEPS:** 1) Graphify code-map of coach-thread.html. 2) Build the thread with newest turn at bottom, composer under it, and the four proposal kinds + decision + streaming turn. 3) Dial sheet (CoachDial), PanicButton → GroundingCard, CrisisCard on `?view=crisis`. 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/coach/[threadId]`). 5) Playwright every state at 390/1280, EN/HE. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` → every state at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** edit `convex/`, show JSON, or auto-apply proposals.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4557,10 +4555,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0207 + TFV2-0208.
 - **WHY:** REWRITE-PLAN §5.1 ("Coach history" — `(tempo)/history`); coach-history.html.
 - **GOAL:** The history screen lists grouped conversations, searches by meaning/words, and handles empty/no-results/loading/error/offline.
-- **SCOPE:** `apps/web/app/(tempo)/history/page.tsx` · `apps/web/components/coach/ChatHistoryList.tsx` (wiring) · test: Playwright spec.
+- **SCOPE:** `apps/web/app/(tempo)/history/page.tsx` · `apps/web/components/coach/ChatHistoryList.tsx` (wiring) · `apps/web/lib/e2eWiringRoutes.ts` (one exact line) · test: `tests/e2e/screens/coach-history.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/history/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map of coach-history.html. 2) Build the screen per markup. 3) Wire `listThreads`, `searchThreads`, `createThread`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "coach-history"` → every state at 390 and 1280, EN and HE.
+- **STEPS:** 1) Graphify code-map of coach-history.html. 2) Build the screen per markup. 3) Wire `listThreads`, `searchThreads`, `createThread`. 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/history`). 5) Playwright every state at 390/1280, EN/HE. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-history.spec.ts --reporter=line` → every state at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** edit `convex/`, or run vector search from the client.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4576,10 +4574,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0218 + TFV2-0220.
 - **WHY:** REWRITE-PLAN §5.1 ("Memory" — `(tempo)/settings/memory`); memory.html.
 - **GOAL:** The memory screen lists/filters memories, shows life-graph guesses, exports, and forgets everything with a confirm sheet.
-- **SCOPE:** `apps/web/app/(tempo)/settings/memory/page.tsx` · `apps/web/components/memory/MemoryItem.tsx` (wiring) · test: Playwright spec.
+- **SCOPE:** `apps/web/app/(tempo)/settings/memory/page.tsx` · `apps/web/components/memory/MemoryItem.tsx` (wiring) · `apps/web/lib/e2eWiringRoutes.ts` (one exact line) · test: `tests/e2e/screens/memory-screen.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map of memory.html. 2) Build per markup. 3) Wire `memory.list`, `memory.forget`, `memory.forgetAll`, `memory.exportMarkdown`, `lifeGraph.confirmGuess`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "memory-screen"` → every state at 390 and 1280, EN and HE.
+- **STEPS:** 1) Graphify code-map of memory.html. 2) Build per markup. 3) Wire `memory.list`, `memory.forget`, `memory.forgetAll`, `memory.exportMarkdown`, `lifeGraph.confirmGuess`. 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/settings/memory`). 5) Playwright every state at 390/1280, EN/HE. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/memory-screen.spec.ts --reporter=line` → every state at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** edit `convex/`, or forget without the confirm sheet.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4595,10 +4593,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0219.
 - **WHY:** REWRITE-PLAN §5.1 ("Memory import" — `(tempo)/settings/memory/import`); memory-import.html.
 - **GOAL:** The import screen runs the paste/upload → review → save flow, with nothing saved until Save and a 5-minute Undo.
-- **SCOPE:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` · `apps/web/components/memory/ImportReview.tsx` (wiring) · test: Playwright spec.
+- **SCOPE:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` · `apps/web/components/memory/ImportReview.tsx` (wiring) · `apps/web/lib/e2eWiringRoutes.ts` (one exact line) · test: `tests/e2e/screens/memory-import.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map of memory-import.html. 2) Build the 3-step flow (paste/upload → review → saved). 3) Wire `importPreview`/`importCommit`/`undoImport`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test -- --grep "memory-import"` → every state at 390 and 1280, EN and HE.
+- **STEPS:** 1) Graphify code-map of memory-import.html. 2) Build the 3-step flow (paste/upload → review → saved). 3) Wire `importPreview`/`importCommit`/`undoImport`. 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/settings/memory/import`). 5) Playwright every state at 390/1280, EN/HE. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/memory-import.spec.ts --reporter=line` → every state at 390 and 1280, EN and HE.
 - **EVIDENCE:** Playwright output + screenshot.
 - **DO NOT:** save before Save, or persist the raw text.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4617,11 +4615,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachPrompt.ts` · test: `convex/lib/coachPrompt.test.ts`.
 - **MUTATES:** `convex/lib/coachPrompt.ts` (verify existing).
 - **STEPS:** 1) Graphify code-map (`systemPrompt(dial)` + `buildCoachMessages` exist — verify). 2) Confirm the dial is injected and tone rules are present. 3) Fill any missing unit-test coverage (dial range, page/memory/task block order, no-shame line). 4) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachPrompt"` → full coverage green.
+- **DONE:** `bun test convex/lib/coachPrompt.test.ts` → full coverage green.
 - **EVIDENCE:** DONE output + the prompt lines.
 - **DO NOT:** change the proposal JSON shape, or remove the never-shame rule.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `systemPrompt(dial)` includes "Current accountability dial: N / 10" and the never-shame line. `buildCoachMessages` emits role → today → page → memory → tasks → web → thread. Coverage: every `COACH_LIMITS` truncation, JSON parse, `withoutAcceptPromise`.
+- **SPEC:** `systemPrompt(dial)` is a private helper (not exported) invoked by `buildCoachMessages({ dial, history, page })`; it injects the exact line `Current accountability dial: ${dial} / 10. Match tone accordingly.` and the never-shame line. `buildCoachMessages` emits role → today → page → memory → tasks → web → thread. Coverage: every `COACH_LIMITS` truncation, JSON parse, `withoutAcceptPromise`.
 - **TESTS:** Given dial 0 and 10 / Then each injects its number and the tone line. Given a page + memory + tasks / Then blocks appear in the documented order. Given a reply promising a card with no proposal / Then `withoutAcceptPromise` strips it.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4636,11 +4634,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
 - **MUTATES:** `convex/lib/coachLoad.ts` (verify existing).
 - **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `afterAccept`, `afterReject`, `effectiveLoad`, `taskMinutes`, `checkRealism`, `pickTenSecondAction`. 3) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → full coverage green.
+- **DONE:** `bun test convex/lib/coachLoad.test.ts` → full coverage green.
 - **EVIDENCE:** DONE output + coverage report.
 - **DO NOT:** change the constants, or lower a threshold.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `MIN_LOAD=2`, `MAX_LOAD=4`, `STREAK_FOR_RAISE=3`, `DEFAULT_TASK_MINUTES=25`, `PANIC_MS=30 min`. Tests cover every branch.
+- **SPEC:** `MIN_LOAD=2`, `MAX_LOAD=4`, `STREAK_FOR_RAISE=3`, `DEFAULT_TASK_MINUTES=25`, `MS_PER_MINUTE=60_000`, `TEN_SECOND_ACTIONS`. Tests cover every branch.
 - **TESTS:** Given streak 3 / Then load rises ≤ 4 and streak resets. Given reject / Then load 2, streak 0. Given bad day / Then effective load 2. Given a task with no estimate / Then 25 min.
 - **NUMBERS:** load 2..4 → pass (product constants) | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4655,11 +4653,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/coachProposalGuard.ts` · test: `convex/lib/coachProposalGuard.test.ts`.
 - **MUTATES:** `convex/lib/coachProposalGuard.ts` (verify existing).
 - **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `duplicateOfOpenTask`, `cardTitle`, and the `ALREADY_ON_TODAY_NOTE` EN/HE. 3) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coachProposalGuard"` → green.
+- **DONE:** `bun test convex/lib/coachProposalGuard.test.ts` → green.
 - **EVIDENCE:** DONE output + coverage.
 - **DO NOT:** change the note copy, or let a duplicate task card pass.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `duplicateOfOpenTask(proposal, openToday)` returns the matching open task title or null; `cardTitle` normalises title for comparison. Note EN/HE kept as-is.
+- **SPEC:** `normalizeTitle(title)` and `cardTitle(title)` normalise titles; `duplicateOfOpenTask(proposal, openToday)` returns the matching open task title or null; `ALREADY_ON_TODAY_NOTE` (EN/HE) and `MAX_OPEN_TASKS_CHECKED=200` are exported. Note EN/HE kept as-is.
 - **TESTS:** Given a proposal for an already-open task / Then it is dropped and the note appended. Given a genuinely new task / Then the card stays.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4674,7 +4672,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (add a touch step).
 - **STEPS:** 1) Graphify code-map. 2) Add an internal `touchMemories(ids)` mutation that sets `lastAccessed = now`, `accessCount += 1`, and nudges `salience` up (capped 1.0). 3) Call it after recall returns. 4) Test bump/cap/owner. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memory"` → access-bump cases green.
+- **DONE:** `bun test convex/memory.test.ts` → access-bump cases green.
 - **EVIDENCE:** DONE output + the touch step.
 - **DO NOT:** touch another user's rows, or exceed salience 1.0.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -4693,11 +4691,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/crisisWords.ts` · `convex/crisis.ts` · test: `convex/lib/crisisWords.test.ts`.
 - **MUTATES:** `convex/lib/crisisWords.ts` (add Hebrew phrases), `convex/crisis.ts` (verify).
 - **STEPS:** 1) Graphify code-map (exists — verify). 2) Add Hebrew crisis phrases (`להתאבד`, `רוצה למות`, `פגיעה עצמית`, `לפגוע בעצמי`, etc.) to a parallel list; `isCrisisText` matches either language. 3) Confirm `resourcesCard` is fixed content and no model is called. 4) Test EN + HE detection. 5) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="crisisWords"` → EN + HE cases green.
+- **DONE:** `bun test convex/lib/crisisWords.test.ts` → EN + HE cases green.
 - **EVIDENCE:** DONE output + the phrase lists.
 - **DO NOT:** write card text from a model, or remove an existing English phrase.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `isCrisisText(text)` normalises and substring-matches the EN `CRISIS_PHRASES` plus the new HE `CRISIS_PHRASES_HE`. The card stays fixed. Per-country resources: UNKNOWN (PRD F-24 "per-country data MVP").
+- **SPEC:** `isCrisisText(text)` normalises and substring-matches the EN `CRISIS_PHRASES` plus the new HE `CRISIS_PHRASES_HE` (both in `convex/lib/crisisWords.ts`); the fixed card copy lives in `CRISIS_CARD`/`crisisCardText` (crisisWords.ts) and is returned by the `resourcesCard` query in `convex/crisis.ts`. The card stays fixed; no model call. Per-country resources: UNKNOWN (PRD F-24 "per-country data MVP").
 - **TESTS:** Given "I want to die" / Then crisis true. Given "אני רוצה למות" / Then crisis true. Given a non-crisis message / Then false. Given crisis / Then `resourcesCard` returns the fixed text and no model call.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4712,11 +4710,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/memory.ts` · `convex/lib/memoryImport.ts` · test: `convex/lib/memoryImport.test.ts`.
 - **MUTATES:** `convex/memory.ts` (verify), `convex/lib/memoryImport.ts` (verify).
 - **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `importSourceOf`, `SOURCE_NAME`, `exportLine` source marks, `parseMemoryExport` shapes. 3) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → source-handling cases green.
+- **DONE:** `bun test convex/lib/memoryImport.test.ts` → source-handling cases green.
 - **EVIDENCE:** DONE output + coverage.
 - **DO NOT:** change the source labels, or mislabel an imported source.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `importSourceOf(metadata)` reads `metadata.source` ∈ `chatgpt|claude|grok|other`; `SOURCE_NAME` maps to `ChatGPT|Claude|Grok`; `exportLine` appends `(imported from X)` or `(imported)`.
+- **SPEC:** `importSourceOf(metadata)` (in `convex/memory.ts`) reads `metadata.source` ∈ `chatgpt|claude|grok|other`; the import parse helpers `parseMemoryExport(text, source)` and `cleanImportItem(value)` (in `convex/lib/memoryImport.ts`) extract and normalise items; `utf8ByteLength(text)` is UTF-8 length. Export source marks are derived from `importSourceOf` at render, not a separate `exportLine`.
 - **TESTS:** Given `metadata:{ source:"chatgpt" }` / Then `importSourceOf` → `chatgpt` and export appends `(imported from ChatGPT)`. Given `other` / Then `(imported)`. Given no source / Then no mark.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4731,11 +4729,11 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/coach_memory_smoke.test.ts` (new) · test only.
 - **MUTATES:** `convex/coach_memory_smoke.test.ts` (new test).
 - **STEPS:** 1) Graphify code-map. 2) Write a `convex-test` scenario (mock model seam) that: sends a message → gets a task proposal → accepts → asserts the task exists → recalls a related memory → asserts the coach context includes it. 3) Run DONE.
-- **DONE:** `bun run test -- --test-name-pattern="coach_memory_smoke"` → the full round trip passes.
+- **DONE:** `bun test convex/coach_memory_smoke.test.ts` → the full round trip passes.
 - **EVIDENCE:** DONE output + the scenario.
 - **DO NOT:** call a real provider, or assert UI outside Playwright (covered by TFV2-0222/0224).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Uses the mock model seam; asserts: (1) user message stored; (2) a `task` proposal returned; (3) Accept creates the task; (4) `recall` finds a memory; (5) `context`/coach messages include it. No network, no key.
+- **SPEC:** Uses `bun:test` + `makeFakeCtx`/`run` from `convex/lib/testFakeCtx.ts` with the mock model seam (not legacy `convex-test`); asserts: (1) user message stored; (2) a `task` proposal returned; (3) Accept creates the task; (4) `recall` finds a memory; (5) `context`/coach messages include it. No network, no key.
 - **TESTS:** Given the scenario / When each step runs in order / Then all five assertions hold.
 - **NUMBERS:** none → n/a | UNKNOWN none.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -4743,24 +4741,24 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 
 ## Chunk 4 — MVP · Modules, jobs, billing, language, polish
 
-### TFV2-0233 — Template module data fields (origin / status / enabled / summary)
+### TFV2-0233 — Template module data fields (source / status / enabled / summary)
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** PRD F-41/F-42/F-43; TRD §4a; BACKEND-SCHEMA `templates`.
 - **GOAL:** A template carries the four module fields so it can be validated, approved and switched off.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
-- **MUTATES:** `templates` docs (new optional fields `origin`, `status`, `enabled`, `summary`), `template.data` block.
-- **STEPS:** 1) Graphify code-map check of `convex/templates.ts` (the unit already EXISTS — verify and extend); 2) add `origin: "builtin"|"user"`, `status: "draft"|"live"`, `enabled: boolean`, `summary: string` to the template doc validator and the `template.data` envelope; 3) default `origin:"user"`, `status:"live"`, `enabled:true`, `summary:""` on existing rows; 4) run DONE.
+- **MUTATES:** `templates` docs (new optional columns `status`, `enabled`, `summary` — added to `convex/schema.ts` by config lane: Amit, never by these STEPS). `source` already exists on the view; do not rename it.
+- **STEPS:** 1) Graphify code-map check of `convex/templates.ts` (EXISTS — verify `source: "starter"|"user"` in `templateValidator`; do not rename it); 2) once config lane: Amit has added `status`/`enabled`/`summary` to the `templates` table, add them to `templateValidator` and the `TemplateView`; 3) default `status:"live"`, `enabled:true`, `summary:""` on existing rows; 4) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output + diff; `REPORT` lists every STEP.
-- **DO NOT:** touch `convex/schema.ts` (fields are inside `template.data`, not new columns); do not change starter template bodies.
+- **DO NOT:** edit `convex/schema.ts` (config lane: Amit); do not rename `source`; do not change starter template bodies.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `templateValidator` gains four optional fields. `origin` is `builtin` only for `starter:*` ids and is never writable by the client; `status` moves `draft → live` only via the approve mutation (TFV2-0246); `enabled` defaults true; `summary` is the plain-language "what this module does" text generated by code from validated content, never by the model (TRD §4a). Auth: `requireUser`; owner-only for `user` docs. Error cases: missing user → unauthenticated; a `starter:*` id carrying `origin:"user"` → rejected.
-- **TESTS:** Given a user template · When `create` is called · Then the doc has `origin:"user"`, `status:"live"`, `enabled:true`, `summary:""`. Given a starter id · When read through `get` · Then `origin:"builtin"` and `status:"live"`. Given a client that passes `origin:"builtin"` on `create` · Then it is ignored/overridden to `"user"`.
+- **SPEC:** Backend. `templateValidator` gains three optional fields (`status`, `enabled`, `summary`); it already carries `source: "starter"|"user"`. `source` is `"starter"` only for `starter:*` ids and is never writable by the client; `status` moves `draft → live` only via the approve mutation (TFV2-0246); `enabled` defaults true; `summary` is the plain-language "what this module does" text generated by code from validated content, never by the model (TRD §4a). Auth: `requireUser`; owner-only for `user` docs. Error cases: missing user → `Not authenticated`; a `starter:*` id carrying `source:"user"` → rejected.
+- **TESTS:** Given a user template · When `create` is called · Then the doc has `source:"user"`, `status:"live"`, `enabled:true`, `summary:""`. Given a starter id · When read through `get` · Then `source:"starter"` and `status:"live"`. Given a client that passes `source:"starter"` on `create` · Then it is ignored/overridden to `"user"`.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** where `status`/`enabled`/`summary` are stored — new `templates` columns vs a separate `modules` table — Amit (either needs `convex/schema.ts` → config lane: Amit).
 
 ### TFV2-0234 — Templates list / get return module fields
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
@@ -4770,16 +4768,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** `templates.list` and `templates.get` return the module fields so the Modules screen can render built-in and user modules.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
 - **MUTATES:** none (read path).
-- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) include `origin`, `status`, `enabled`, `summary` in `templateValidator`/`TemplateView`; 3) `list({scope})` returns starters + live mine, marking each `builtIn = origin==="builtin"`; 4) `get({templateId})` returns null for a soft-deleted or foreign doc; 5) run DONE.
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) include `source`, `status`, `enabled`, `summary` in `templateValidator`/`TemplateView`; 3) `list({scope})` returns starters + live mine, marking each `builtIn = source==="starter"`; 4) `get({templateId})` returns null for a soft-deleted or foreign doc; 5) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** return raw `body` to unauthenticated callers; do not expose other users' templates.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `list(scope: "all"|"starter"|"mine")` → `TemplateView[]`; `get(templateId: string)` → `TemplateView|null`. Auth: `requireUser`; owner-only. Error cases: unauthenticated → error; foreign/soft-deleted doc → `null`; unknown starter id → `null`. Limits: starters are static (9 entries); user rows paginated by the existing `by_userId` index.
-- **TESTS:** Given a user with 2 live and 1 soft-deleted template · When `list({scope:"mine"})` · Then only the 2 live return. Given a `starter:daily-page` id · When `get` · Then `builtIn:true` and `origin:"builtin"`. Given another user's template id · When `get` by this user · Then `null`. Given no auth · When `list` · Then unauthenticated error.
+- **SPEC:** Backend. `list(scope: "all"|"starter"|"mine")` → `TemplateView[]`; `get(templateId: string)` → `TemplateView|null`. `TemplateView` carries `{templateId, source, name, description?, periodType, sections, body, updatedAt?, status?, enabled?, summary?}` (the last three only after TFV2-0233's config-lane columns exist). Auth: `requireUser`; owner-only. Error cases: `Not authenticated` → error; foreign/soft-deleted doc → `null`; unknown starter id → `null`. Limits: starters are static (9 entries); user rows paginated by the existing `by_userId` index.
+- **TESTS:** Given a user with 2 live and 1 soft-deleted template · When `list({scope:"mine"})` · Then only the 2 live return. Given a `starter:daily-page` id · When `get` · Then `builtIn:true` and `source:"starter"`. Given another user's template id · When `get` by this user · Then `null`. Given no auth · When `list` · Then `Not authenticated` error.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** depends on TFV2-0233 (OPEN: where `status`/`enabled`/`summary` are stored). The `source`/`builtIn` return is buildable today; the three module fields wait on 0233.
 
 ### TFV2-0235 — Templates create / update for user modules
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
@@ -4789,32 +4787,32 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A user can create and update their own template modules; built-ins stay read-only.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
 - **MUTATES:** `templates` docs.
-- **STEPS:** 1) Graphify code-map check (EXISTS — `create`/`update` present, verify); 2) `create({name,description,periodType,body})` sets `origin:"user"`, `status:"live"`, `enabled:true`; 3) `update` refuses `starter:*` ids with "Starter templates cannot be changed"; 4) trim-empty name → error; 5) run DONE.
+- **STEPS:** 1) Graphify code-map check (EXISTS — `create`/`update` present, verify); 2) verify `create({name,description,periodType,body})` inserts a `templates` row (the view reads `source:"user"`; `status`/`enabled` default live/true only after 0233's columns exist); 3) verify `update` refuses `starter:*` ids with "Starter templates cannot be changed"; 4) trim-empty name → error; 5) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** allow editing built-ins; do not let `update` change `origin`/`status`.
+- **DO NOT:** allow editing built-ins; do not let `update` change `source`/`status`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `create({name: string, description?: string, periodType, body: string})` → `Id<"templates">`; `update({templateId: Id<"templates">, name?, description?, periodType?, body?})` → `Id<"templates">`. Auth: `requireUser` + `ownedTemplate` owner check. Error cases: empty name → `"Name is required"`; starter id → `"Starter templates cannot be changed"`; missing/foreign/soft-deleted doc → `"Template not found"`/`"Access denied"`. `status` is never set by `create`/`update` (only the approval flow in TFV2-0246).
-- **TESTS:** Given valid input · When `create` · Then doc has `origin:"user"`, `enabled:true`. Given empty name · When `create`/`update` · Then `"Name is required"`. Given a `starter:*` id · When `update` · Then `"Starter templates cannot be changed"`. Given another user's id · When `update` · Then `"Access denied"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. `create({name: string, description?: string, periodType: "daily"|"weekly"|"monthly"|"none", body: string})` → `Id<"templates">`; `update({templateId: Id<"templates">, name?, description?, periodType?, body?})` → `Id<"templates">`. Auth: `requireUser` + `ownedTemplate` owner check. Error cases: empty name → `"Name is required"`; starter id → `"Starter templates cannot be changed"`; missing/foreign/soft-deleted doc → `"Template not found"`/`"Access denied"`. `source` is never set by the client; `status` is never set by `create`/`update` (only the approval flow in TFV2-0246).
+- **TESTS:** Given valid input · When `create` · Then doc has `source:"user"`, `enabled:true`. Given empty name · When `create`/`update` · Then `"Name is required"`. Given a `starter:*` id · When `update` · Then `"Starter templates cannot be changed"`. Given another user's id · When `update` · Then `"Access denied"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** depends on TFV2-0233 (OPEN: where `status`/`enabled`/`summary` are stored). `create`/`update` are buildable today against the existing `templates` table.
 
-### TFV2-0236 — Templates remove (soft delete) + restore
+### TFV2-0236 — Templates restore (undo soft delete)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0235.
 - **WHY:** PRD F-131 (soft delete 30-day grace); TRD §7.5.
-- **GOAL:** Deleting a template hides it at once and can be undone for 5 minutes.
+- **GOAL:** A soft-deleted template can be restored; `remove` (already in code) hides it.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
 - **MUTATES:** `templates.deletedAt`, `templates.updatedAt`.
-- **STEPS:** 1) Graphify code-map check (`remove` EXISTS — verify); 2) `remove` sets `deletedAt` (no hard delete); 3) add `restore({templateId})` clearing `deletedAt`; 4) both refuse `starter:*`; 5) run DONE.
+- **STEPS:** 1) Graphify code-map check (`remove` EXISTS — verify it sets `deletedAt` with no hard delete); 2) add `restore({templateId})` clearing `deletedAt`; 3) `restore` refuses `starter:*`; 4) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** hard-delete rows; do not touch `convex/pageCleanup.ts`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `remove({templateId: Id<"templates">})` → `null`; `restore({templateId: Id<"templates">})` → `null`. Auth: `requireUser` + owner. Error cases: starter id → `"Starter templates cannot be removed"`; foreign/soft-deleted/missing → `"Template not found"`/`"Access denied"`; no auth → unauthenticated. Undo window is 5 minutes at the UI layer; the 30-day grace is `deletedAt`.
-- **TESTS:** Given a user template · When `remove` · Then `deletedAt` set and `list` omits it. Given `restore` on the same id · Then `deletedAt` cleared and `list` includes it. Given a starter id · When `remove`/`restore` · Then error. Given another user's id · Then `"Access denied"`.
+- **SPEC:** Backend. `restore({templateId: Id<"templates">})` → `null`. Auth: `requireUser` + owner. Error cases: starter id → `"Starter templates cannot be removed"`; foreign/missing → `"Template not found"`/`"Access denied"`; no auth → `Not authenticated`. `remove` (existing) sets `deletedAt` and is unchanged; the 30-day grace is `deletedAt`.
+- **TESTS:** Given a soft-deleted user template · When `restore` · Then `deletedAt` cleared and `list` includes it. Given a starter id · When `restore` · Then `"Starter templates cannot be removed"`. Given another user's id · Then `"Access denied"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** soft-delete grace 30 days (repo convention; PRD F-131) · `UNKNOWN` (exact sweep job is chunk A).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -4827,13 +4825,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** "Duplicate" copies a template (body and sections) as a new user template.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
 - **MUTATES:** `templates` docs (insert one copy).
-- **STEPS:** 1) Graphify code-map check (`duplicate` MISSING — add); 2) `duplicate({templateId})` reads a starter or owned user template, inserts a copy named `<name> (2)` with `origin:"user"`, `status:"live"`, `enabled:true`; 3) return the new id; 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (`duplicate` MISSING — add); 2) `duplicate({templateId})` reads a starter or owned user template, inserts a copy named `<name> (2)` (same `periodType`/`body`; `source` is view-derived as `"user"`); 3) return the new id; 4) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** mutate the source; do not copy `deletedAt`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `duplicate({templateId: string})` → `Id<"templates">`. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown/soft-deleted id → `"Template not found"`; foreign id → `"Access denied"`. Starter ids may be duplicated (copy becomes `origin:"user"`).
-- **TESTS:** Given a starter id · When `duplicate` · Then a new user template with the same `body` and name suffix ` (2)` exists. Given an owned template · When `duplicate` · Then `origin:"user"` and independent id. Given unknown id · Then `"Template not found"`.
+- **SPEC:** Backend. `duplicate({templateId: string})` → `Id<"templates">`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; unknown/soft-deleted id → `"Template not found"`; foreign id → `"Access denied"`. Starter ids may be duplicated (copy becomes `source:"user"`).
+- **TESTS:** Given a starter id · When `duplicate` · Then a new user template with the same `body` and name suffix ` (2)` exists. Given an owned template · When `duplicate` · Then `source:"user"` and independent id. Given unknown id · Then `"Template not found"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -4851,68 +4849,230 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** change the proposal reason copy; do not write JSON into `notes.body` beyond the existing block envelope.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `proposeForPage({periodType, title?})` → `{templateId,name,reason}|null`; `applyToNote({templateId, title?})` → `Id<"notes">`. Auth: `requireUser`. Error cases: `none` period → `null` proposal; unknown template id → `"Template not found"`; no auth → unauthenticated.
+- **SPEC:** Backend. `proposeForPage({periodType, title?})` → `{templateId,name,reason}|null`; `applyToNote({templateId, title?})` → `Id<"notes">`. Auth: `requireUser`. Error cases: `none` period → `null` proposal; unknown template id → `"Template not found"`; no auth → `Not authenticated`.
 - **TESTS:** Given `periodType:"daily"` · When `proposeForPage` · Then `starter:daily-page` returned with a reason. Given `periodType:"none"` · Then `null`. Given a valid template id · When `applyToNote` · Then a `notes` row with that `body` and `periodType`. Given an unknown id · Then `"Template not found"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0239 — Template run draft (saveRunDraft / getRunDraft / apply)
+### TFV2-0239a — Template run draft: saveRunDraft
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0234.
-- **WHY:** template-run screen (`@data templates.getRunDraft`; `@actions saveRunDraft`/`apply`).
-- **GOAL:** A half-finished template run is saved per user and resumed later; applying makes the page.
+- **WHY:** template-run screen (`@actions templates.saveRunDraft`).
+- **GOAL:** One answer for one step of a template run is upserted per user+template.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
-- **MUTATES:** a `templateRunDrafts` row per user+template (via `templates` body or a side doc — see OPEN).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getRunDraft({templateId})` → `{answers: Record<step,string>}|null`; 3) `saveRunDraft({templateId, step, answer})` upserts; 4) `apply({templateId, answers})` resolves the template, substitutes question answers into the body, inserts a `notes` page, returns `pageId`; 5) run DONE.
+- **MUTATES:** the run-draft row (storage decided by config lane — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `saveRunDraft({templateId, step, answer})` upserts one answer into the user's run draft for that template; 3) blank answers are allowed (leave the heading empty); 4) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** charge a model call; do not persist raw answers outside this user's row.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `getRunDraft({templateId: string})`, `saveRunDraft({templateId: string, step: string, answer: string})`, `apply({templateId: string, answers: Record<string,string>})` → `Id<"notes">`. Auth: `requireUser`, owner. Error cases: no auth → unauthenticated; unknown template → `"Template not found"`; foreign → `"Access denied"`. Blank answers are allowed (leave the heading empty).
-- **TESTS:** Given a template with 2 question blocks · When `saveRunDraft` twice then `getRunDraft` · Then both answers persist. Given `apply` with answers · Then a page whose body contains the substituted answers. Given an unknown template · Then `"Template not found"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. `saveRunDraft({templateId: string, step: string, answer: string})` → `null`. Auth: `requireUser`, owner. Error cases: no auth → `Not authenticated`; unknown template → `"Template not found"`; foreign → `"Access denied"`.
+- **TESTS:** Given a template with 2 question blocks · When `saveRunDraft` is called twice with different steps · Then both answers persist. Given an unknown template · Then `"Template not found"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** where run drafts are stored (a dedicated `templateRunDrafts` table vs a field on `templates`) — Amit. This ticket may need `convex/schema.ts`; if so, stop and report `blocked: scope overflow`.
+- **OPEN:** where run drafts are stored (a dedicated `templateRunDrafts` table vs a field on `templates`) — Amit; needs `convex/schema.ts` (config lane: Amit).
+### TFV2-0239b — Template run draft: getRunDraft
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0234.
+- **WHY:** template-run screen (`@data templates.getRunDraft`).
+- **GOAL:** The saved answers for one template run are readable per user.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** none (read path).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getRunDraft({templateId})` → `{answers: Record<step,string>}|null`; 3) return `null` when no draft exists; 4) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** return raw answers to another user; do not call a model.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `getRunDraft({templateId: string})` → `{answers: Record<string,string>} | null`. Auth: `requireUser`, owner. Error cases: no auth → `Not authenticated`; unknown template → `"Template not found"`; foreign → `"Access denied"`; no saved draft → `null`.
+- **TESTS:** Given a saved draft · When `getRunDraft` · Then the answers return. Given no saved draft · Then `null`. Given an unknown template · Then `"Template not found"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** where run drafts are stored (a dedicated `templateRunDrafts` table vs a field on `templates`) — Amit; needs `convex/schema.ts` (config lane: Amit).
+### TFV2-0239c — Template run: apply answers into a page
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0234.
+- **WHY:** template-run screen (`@actions templates.apply`).
+- **GOAL:** Applying substitutes the answers into the template body and inserts a notes page.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `notes` (insert one page).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `apply({templateId, answers})` resolves the template, substitutes question answers into the body, inserts a `notes` page, returns `pageId`; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** charge a model call; do not write JSON into `notes.body` beyond the existing block envelope.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `apply({templateId: string, answers: Record<string,string>})` → `Id<"notes">`. Auth: `requireUser`, owner. Error cases: no auth → `Not authenticated`; unknown template → `"Template not found"`; foreign → `"Access denied"`. Blank answers are allowed (leave the heading empty).
+- **TESTS:** Given a template and answers · When `apply` · Then a page whose body contains the substituted answers. Given an unknown template · Then `"Template not found"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none
 
-### TFV2-0240 — Template builder blocks (insert/move/duplicate/remove/publish)
+### TFV2-0240a — Template builder: insertBlock
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0235.
-- **WHY:** template-builder screen (`@actions templates.insertBlock/moveBlock/duplicateBlock/removeBlock/publish`).
-- **GOAL:** The builder edits a template's blocks and publishes it so it appears in Templates.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-builder screen (`@actions templates.insertBlock`).
+- **GOAL:** A new block is inserted after a given block in a template body.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
-- **MUTATES:** `templates.body` (block list), `templates.status`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `insertBlock({id, afterId, type})`, `moveBlock({id, blockId, toIndex})`, `duplicateBlock({id, blockId})`, `removeBlock({id, blockId})` operate on the fenced-JSON blocks inside `body`; 3) `publish({id})` sets `status:"live"`; 4) run DONE.
+- **MUTATES:** `templates.body` (insert one block).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `insertBlock({id, afterId, type})` inserts a block after `afterId`; 3) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. All five mutations auth via `requireUser` + owner. Block list edits must keep valid `json tempo` fences; an invalid edit is rejected. Error cases: no auth → unauthenticated; unknown id → `"Template not found"`; foreign → `"Access denied"`; `blockId` not found → `"Block not found"`; starter id → `"Starter templates cannot be changed"`.
-- **TESTS:** Given a template body with 2 blocks · When `insertBlock` after block 1 · Then 3 blocks. When `removeBlock` block 2 · Then 2 blocks. When `moveBlock` block 2 to index 0 · Then order swaps. Given a bad `blockId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
+- **SPEC:** Backend. `insertBlock({id: Id<"templates">, afterId: string, type: string})` → `null`. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown id → `"Template not found"`; foreign → `"Access denied"`; starter id → `"Starter templates cannot be changed"`; `afterId` not found → `"Block not found"`.
+- **TESTS:** Given a body with 2 blocks · When `insertBlock` after block 1 · Then 3 blocks in order. Given a bad `afterId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0241 — Template sketch (saveSketch / getSketch / proposeTemplate / createFromProposal)
+- **OPEN:** how template builder blocks are modeled in `templates.body` (markdown `##` sections vs json-tempo fenced blocks) — Amit; code stores markdown today, so these block mutations have no block model to operate on yet.
+### TFV2-0240b — Template builder: moveBlock
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0235.
-- **WHY:** template-sketch screen (`@actions templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`).
-- **GOAL:** A rough outline autosaves; the coach turns it into a proposal; Accept creates the template.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-builder screen (`@actions templates.moveBlock`).
+- **GOAL:** A block is moved to a new index in a template body.
 - **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
-- **MUTATES:** sketch draft row; `templates` (on create).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getSketch({})` → `{text}|null`; `saveSketch({text})` upserts; 3) `proposeTemplate({outline})` calls the coach (action) and returns a proposal card payload, saving nothing; 4) `createFromProposal({proposalId})` validates and inserts the template; 5) run DONE.
+- **MUTATES:** `templates.body` (reorder blocks).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `moveBlock({id, blockId, toIndex})` moves the block to `toIndex`; 3) run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** persist a proposal as a live template before Accept; do not call the model in unit tests (mock the seam).
+- **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; empty outline → `"Outline is required"`; invalid proposal → `"Proposal is invalid"` (stays a draft); missing proposal id → `"Proposal not found"`. `proposeTemplate` runs in an action and returns a JSON-render-spec proposal, validated before return.
-- **TESTS:** Given text · When `saveSketch` then `getSketch` · Then text round-trips. Given an empty outline · When `proposeTemplate` · Then `"Outline is required"`. Given a valid proposal · When `createFromProposal` · Then a `live` template exists. Given an invalid proposal · Then `"Proposal is invalid"`.
+- **SPEC:** Backend. `moveBlock({id: Id<"templates">, blockId: string, toIndex: number})` → `null`. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown id → `"Template not found"`; foreign → `"Access denied"`; starter id → `"Starter templates cannot be changed"`; `blockId` not found → `"Block not found"`; `toIndex` out of range → `"Invalid index"`.
+- **TESTS:** Given 3 blocks · When `moveBlock` block 3 to index 0 · Then order swaps to the new position. Given a bad `blockId` · Then `"Block not found"`. Given `toIndex` out of range · Then `"Invalid index"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** how template builder blocks are modeled in `templates.body` (markdown `##` sections vs json-tempo fenced blocks) — Amit; code stores markdown today, so these block mutations have no block model to operate on yet.
+### TFV2-0240c — Template builder: duplicateBlock
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-builder screen (`@actions templates.duplicateBlock`).
+- **GOAL:** A block is duplicated in place in a template body.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates.body` (insert one copy).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `duplicateBlock({id, blockId})` copies the block right after itself; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `duplicateBlock({id: Id<"templates">, blockId: string})` → `null`. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown id → `"Template not found"`; foreign → `"Access denied"`; starter id → `"Starter templates cannot be changed"`; `blockId` not found → `"Block not found"`.
+- **TESTS:** Given 2 blocks · When `duplicateBlock` block 1 · Then 3 blocks with block 1's copy after it. Given a bad `blockId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** how template builder blocks are modeled in `templates.body` (markdown `##` sections vs json-tempo fenced blocks) — Amit; code stores markdown today, so these block mutations have no block model to operate on yet.
+### TFV2-0240d — Template builder: removeBlock
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-builder screen (`@actions templates.removeBlock`).
+- **GOAL:** A block is removed from a template body.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates.body` (remove one block).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `removeBlock({id, blockId})` removes the block; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `removeBlock({id: Id<"templates">, blockId: string})` → `null`. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown id → `"Template not found"`; foreign → `"Access denied"`; starter id → `"Starter templates cannot be changed"`; `blockId` not found → `"Block not found"`.
+- **TESTS:** Given 2 blocks · When `removeBlock` block 2 · Then 1 block. Given a bad `blockId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** how template builder blocks are modeled in `templates.body` (markdown `##` sections vs json-tempo fenced blocks) — Amit; code stores markdown today, so these block mutations have no block model to operate on yet.
+### TFV2-0240e — Template builder: publish
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-builder screen (`@actions templates.publish`).
+- **GOAL:** Publishing moves a draft template to live so it appears in Templates.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates.status` (set to `"live"`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `publish({id})` sets `status:"live"`; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `publish({id: Id<"templates">})` → `null`. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown id → `"Template not found"`; foreign → `"Access denied"`; starter id → `"Starter templates cannot be changed"`.
+- **TESTS:** Given a draft template · When `publish` · Then `status:"live"`. Given a starter id · Then `"Starter templates cannot be changed"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** depends on TFV2-0233 (OPEN: where `status` is stored — `templates` column vs `modules` table; needs `convex/schema.ts` → config lane: Amit).
+
+### TFV2-0241a — Template sketch: saveSketch
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-sketch screen (`@actions templates.saveSketch`).
+- **GOAL:** The sketch text autosaves per user.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** the sketch draft row (storage decided by config lane — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `saveSketch({text})` upserts the user's sketch text; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist a proposal as a live template; do not call the model.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `saveSketch({text: string})` → `null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`.
+- **TESTS:** Given text · When `saveSketch` · Then the text round-trips via `getSketch`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** where the sketch draft is stored (a dedicated row/table vs a field) — Amit; needs `convex/schema.ts` (config lane: Amit).
+### TFV2-0241b — Template sketch: getSketch
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235
+- **WHY:** template-sketch screen (`@data templates.getSketch`).
+- **GOAL:** The saved sketch text is readable per user.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** none (read path).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getSketch({})` → `{text}|null`; 3) return `null` when no sketch exists; 4) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** return another user's sketch; do not call the model.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `getSketch({})` → `{text: string} | null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; no saved sketch → `null`.
+- **TESTS:** Given a saved sketch · When `getSketch` · Then the text returns. Given none · Then `null`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** where the sketch draft is stored (a dedicated row/table vs a field) — Amit; needs `convex/schema.ts` (config lane: Amit).
+### TFV2-0241c — Template sketch: proposeTemplate (coach action)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242
+- **WHY:** template-sketch screen + coach (`coach.proposeTemplate`).
+- **GOAL:** The coach turns an outline into a proposal card payload, saving nothing.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** none (returns a proposal payload).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `proposeTemplate({outline})` runs in an action and returns a JSON-render-spec proposal, validated before return; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist a proposal before Accept; do not call the model in unit tests (mock the seam).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend action. `proposeTemplate({outline: string})` → a validated JSON-render-spec proposal. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; empty outline → `"Outline is required"`.
+- **TESTS:** Given an empty outline · When `proposeTemplate` · Then `"Outline is required"`. Given a valid outline · Then a proposal payload returns. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** the proposal JSON-render-spec format is validated against the catalog (TFV2-0242, OPEN: exact component/action names) — Amit.
+### TFV2-0241d — Template sketch: createFromProposal
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0241c
+- **WHY:** template-sketch screen (`@actions templates.createFromProposal`).
+- **GOAL:** Accepting a proposal validates it and inserts the template.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates` (insert one on accept).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `createFromProposal({proposalId})` validates and inserts the template; 3) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist a proposal as live before Accept; do not call the model.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `createFromProposal({proposalId: string})` → `Id<"templates">`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; missing proposal id → `"Proposal not found"`; invalid proposal → `"Proposal is invalid"` (stays a draft).
+- **TESTS:** Given a valid proposal · When `createFromProposal` · Then a live template exists. Given an invalid proposal · Then `"Proposal is invalid"`. Given a missing proposal id · Then `"Proposal not found"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** depends on TFV2-0241c (OPEN: proposal JSON-render-spec format) and TFV2-0233 (OPEN: `status` storage).
 
 ### TFV2-0242 — View module: `view` block schema + Zod validation
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
@@ -4953,23 +5113,23 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** priority/ordering of multiple view modules per type — Amit.
 
 ### TFV2-0244 — Code module: sandboxed iframe widget (postMessage)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0242 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0242.
 - **WHY:** PRD F-46; TRD §1 (Sandboxed code [MVP]).
 - **GOAL:** A page code block renders as a widget inside a sandboxed iframe that talks only via `postMessage` with catalog actions.
-- **SCOPE:** `apps/web/components/modules/CodeWidget.tsx` + `apps/web/components/modules/CodeWidget.test.tsx`.
-- **MUTATES:** none (render surface).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `<iframe sandbox="allow-scripts" srcDoc=…>` without `allow-same-origin`; 3) accept only whitelisted catalog-action `postMessage` from the frame; 4) no env/keys are ever passed in; 5) run DONE.
-- **DONE:** `bun run test -- apps/web/components/modules/CodeWidget.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/modules/CodeWidget.tsx` + `apps/web/components/modules/CodeWidget.css` (new, owns `.tp-code-widget` + `.tp-code-widget__broken`) + `apps/web/app/e2e/components/code-widget/page.tsx` (harness) · test: `tests/e2e/screens/code-widget.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/CodeWidget.tsx` (new), `apps/web/components/modules/CodeWidget.css` (new), `apps/web/app/e2e/components/code-widget/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map check (MISSING — add). 2) Render `<iframe sandbox="allow-scripts" srcDoc=…>` without `allow-same-origin`; accept only whitelisted catalog-action `postMessage` `{type:"tempo-action", action, payload}` (unknown/foreign ignored); never pass env/keys in. 3) Create `apps/web/app/e2e/components/code-widget/page.tsx` (client) rendering each state under `data-testid="code-widget-<state>"` inside the TFV2-0023a frame; `?state=default|loading|error|offline` forces each state. 4) Add `tests/e2e/screens/code-widget.spec.ts` navigating `/e2e/components/code-widget` and `?lang=he`, asserting the iframe sandbox attribute and every state at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/code-widget.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** add `allow-same-origin`; do not forward user keys into the iframe; do not run code in the app process.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. `CodeWidget({spec, onAction})`. Sandbox flags: `sandbox="allow-scripts"` only. `postMessage` protocol `{type:"tempo-action", action, payload}`; unknown actions ignored. States: default (widget drawn), error (frame refuses → quiet `BrokenBlock` copy), offline (widget unavailable). Copy EN/HE: `EN:"This part has a problem." / HE:"יש בעיה בחלק הזה."`
-- **TESTS:** Given a spec · When rendered · Then an iframe with `sandbox="allow-scripts"` and no `allow-same-origin`. Given a foreign message · Then `onAction` is not called. Given an unknown action · Then ignored.
-- **NUMBERS:** none applicable · `UNKNOWN`.
+- **SPEC:** UI component. `CodeWidget({spec, onAction})`. Container `.tp-code-widget` wraps an `<iframe sandbox="allow-scripts" srcDoc={spec}>` (no `allow-same-origin`), height auto, tokens `--tp-radius-md`, `--tp-line` border, `--tp-paper` bg. `postMessage` protocol `{type:"tempo-action", action, payload}`; only actions in the TFV2-0242 catalog call `onAction`, everything else is ignored. States: default (iframe drawn), loading (`.tp-code-widget__loading` skeleton, `aria-busy`), error (frame refuses → `.tp-code-widget__broken` with the copy below), offline (widget unavailable → same broken copy). Copy EN/HE: `EN:"This part has a problem." / HE:"יש בעיה בחלק הזה."` RTL: logical properties only. Screen reader: iframe `title="Code widget"`, broken state is a live region. Breakpoints: full-width at 390, max `--tp-paper-max` at 1280. Motion: none (no animation).
+- **TESTS:** Playwright at 390 and 1280, EN and HE: given `?state=default`, assert the iframe has `sandbox="allow-scripts"` and no `allow-same-origin`; dispatch a foreign `postMessage` and a non-catalog action, assert `onAction` is not called; given `?state=error`/`?state=offline`, assert `.tp-code-widget__broken` shows the exact EN/HE copy; given `?state=loading`, assert `aria-busy`.
+- **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 2.5.8) · text ≥ 13 px (DESIGN.md §3) · contrast ≥ 4.5:1 (WCAG 2.2 1.4.3) · motion ≤ 250 ms (DESIGN.md §7, none here).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** depends on TFV2-0242 (OPEN: the exact catalog action-name list) — the whitelist cannot be fixed until 0242's catalog constants are decided by Amit.
 
 ### TFV2-0245 — Code module: Vercel Sandbox script micro-VM
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
@@ -5003,8 +5163,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** let `approve` succeed on a failed validation; do not change any page on `discard`.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser` + owner. Error cases: no auth → unauthenticated; unknown draft → `"Draft not found"`; validation failed → `"Validation failed"` (approve refuses); foreign → `"Access denied"`. `summary` is generated by code from the validated content, never by the model.
-- **TESTS:** Given a valid draft · When `approve` · Then `status:"live"`. Given an invalid draft · When `approve` · Then `"Validation failed"` and status stays `draft`. Given `discard` · Then draft gone and no page changed. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser` + owner. Error cases: no auth → `Not authenticated`; unknown draft → `"Draft not found"`; validation failed → `"Validation failed"` (approve refuses); foreign → `"Access denied"`. `summary` is generated by code from the validated content, never by the model.
+- **TESTS:** Given a valid draft · When `approve` · Then `status:"live"`. Given an invalid draft · When `approve` · Then `"Validation failed"` and status stays `draft`. Given `discard` · Then draft gone and no page changed. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether `getDraft` lives in `modules.ts` vs `templates.ts` (module registry split) — Amit.
@@ -5014,7 +5174,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0246.
 - **WHY:** PRD F-43 ("Plain mode turns every user module off"); TRD §4a.
-- **GOAL:** One flag pauses every `origin:"user"` module; built-ins keep working.
+- **GOAL:** One flag pauses every `source:"user"` module; built-ins keep working.
 - **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
 - **MUTATES:** per-user `plainMode` flag.
 - **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getPlainMode({})` → boolean; `setPlainMode({on})` toggles; 3) `modules.list` omits user modules when plain mode is on (built-ins remain); 4) run DONE.
@@ -5022,30 +5182,49 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** disable built-ins under plain mode; do not delete anything.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated. `setPlainMode({on: boolean})` → `null`. Plain mode affects only `origin:"user"` modules.
-- **TESTS:** Given plain mode off · When `list` · Then user modules present. Given `setPlainMode({on:true})` · When `list` · Then user modules omitted, built-ins present. Given `setPlainMode({on:false})` · Then user modules return. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`. `setPlainMode({on: boolean})` → `null`. Plain mode affects only `source:"user"` modules.
+- **TESTS:** Given plain mode off · When `list` · Then user modules present. Given `setPlainMode({on:true})` · When `list` · Then user modules omitted, built-ins present. Given `setPlainMode({on:false})` · Then user modules return. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** where `plainMode` is stored (`users` vs `preferences`) — Amit (see REWRITE-PLAN §4 conflict 13).
 
-### TFV2-0248 — Modules list + setEnabled + built-in catalog
+### TFV2-0248a — Modules list (built-in + user)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0247 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0247.
-- **WHY:** PRD F-43; modules screen (`@data modules.list`, `@actions modules.setEnabled`).
-- **GOAL:** `modules.list` returns built-in + user modules with on/off state; `setEnabled` toggles one (built-ins can be turned off, never deleted).
+- **WHY:** PRD F-43; modules screen (`@data modules.list`).
+- **GOAL:** `modules.list` returns built-in + user modules with their on/off state.
 - **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
 - **MUTATES:** module `enabled` flags.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,does,kind,builtIn,madeByCoach,on}[]`; 3) `setEnabled({moduleId, on})` toggles; built-ins cannot be deleted (no remove path); 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,does,kind,builtIn,madeByCoach,on}[]`; built-ins cannot be deleted (no remove path); 3) run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** expose a delete path for built-ins; do not let plain mode flip `enabled` on disk.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown module id → `"Module not found"`; foreign → `"Access denied"`. Built-ins map from `STARTER_TEMPLATES` (`Daily page`, `Weekly page`, `Project page`, `Habits on Today`).
-- **TESTS:** Given 2 built-ins + 1 user module · When `list` · Then built-ins have `builtIn:true`, user has `madeByCoach`/`madeByYou`. When `setEnabled({on:false})` on a built-in · Then it is off but still listed. Given an unknown id · Then `"Module not found"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`. Built-ins map from `STARTER_TEMPLATES` (9 entries: `Daily page`, `Weekly page`, `Monthly page`, `Meeting notes`, `Project brief`, `Reading notes`, `Journal`, `Task review`, `Project review`). `builtIn` derives from `source === "starter"`; `on` reads the `enabled` column added by TFV2-0233's config lane.
+- **TESTS:** Given 2 built-ins + 1 user module · When `list` · Then built-ins have `builtIn:true`, user has `madeByCoach`/`madeByYou`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** depends on TFV2-0233 (OPEN: `enabled` column storage) and TFV2-0247 (OPEN: `plainMode` storage).
+
+### TFV2-0248b — Modules setEnabled
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0248a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0248a.
+- **WHY:** PRD F-43; modules screen (`@actions modules.setEnabled`).
+- **GOAL:** `setEnabled` toggles one module on/off; built-ins can be turned off, never deleted.
+- **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
+- **MUTATES:** module `enabled` flag.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `setEnabled({moduleId, on})` toggles; built-ins cannot be deleted (no remove path); 3) run DONE.
+- **DONE:** `bun test convex/modules.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** expose a delete path for built-ins; do not let plain mode flip `enabled` on disk.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `setEnabled({moduleId: string, on: boolean})` → `null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; unknown module id → `"Module not found"`; foreign → `"Access denied"`.
+- **TESTS:** Given a built-in · When `setEnabled({on:false})` · Then it is off but still listed. Given an unknown id · Then `"Module not found"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** depends on TFV2-0233 (OPEN: `enabled` column storage).
 
 ### TFV2-0249 — Scheduled jobs: @convex-dev/crons component install + config
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -5053,8 +5232,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** PRD F-47; TRD §1 + §5d (runtime-registered per-user jobs).
 - **GOAL:** The `@convex-dev/crons` component is installed and configured so jobs can be registered at runtime per user.
-- **SCOPE:** `convex/convex.config.ts` + `package.json` + `convex/jobs.ts`.
-- **MUTATES:** Convex component config (new component).
+- **SCOPE:** `convex/convex.config.ts` + `package.json` + `bun.lock` (pinned `@convex-dev/crons` version) + `convex/jobs.ts`.
+- **MUTATES:** Convex component config (new component) — config lane: Amit.
 - **STEPS:** 1) Graphify code-map check (`crons.ts` EXISTS — only the static 5-min cleanup; component MISSING); 2) add `@convex-dev/crons` to `convex.config.ts`; 3) create `convex/jobs.ts` exporting the component; 4) `bun install`; 5) run DONE.
 - **DONE:** `bun run typecheck` → no errors (component registers).
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
@@ -5064,7 +5243,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **TESTS:** none beyond typecheck (component install). Given the component · When `typecheck` · Then it resolves.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether `convex/convex.config.ts` edit is allowed by scope-guard for a non-`convex-arch` ticket — Amit (if refused, report `blocked: config guard`).
+- **OPEN:** config lane: Amit — this ticket edits `convex/convex.config.ts` and adds a dependency (`package.json` + `bun.lock`). A non-`convex-arch` scope-guard refuses it; Amit runs this ticket.
 
 ### TFV2-0250 — Scheduled jobs: scheduleJob mutation + approval
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0249 · **Folds-in:** none
@@ -5073,14 +5252,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** PRD F-47; TRD §5d (`scheduleJob({cron, task, targetPageType})` needs approval).
 - **GOAL:** The coach registers a recurring job only after the user approves it; times are stored in UTC.
 - **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
-- **MUTATES:** job docs (schedule, task, target page type, enabled).
+- **MUTATES:** job docs (schedule, task, target page type, enabled) — the `jobs` table is added to `convex/schema.ts` by config lane: Amit, never by these STEPS.
 - **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `scheduleJob({cron, task, targetPageType})` inserts a job with `enabled:true` only after approval; 3) store the cron in UTC and the user's time zone separately; 4) run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** register without approval; do not run a model in unit tests.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; invalid cron → `"Invalid schedule"`; empty task → `"Task is required"`; invalid target page type → `"Invalid target page type"`.
-- **TESTS:** Given a valid cron/task · When `scheduleJob` · Then a job doc with `enabled:true`. Given invalid cron · Then `"Invalid schedule"`. Given empty task · Then `"Task is required"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; invalid cron → `"Invalid schedule"`; empty task → `"Task is required"`; invalid target page type → `"Invalid target page type"`.
+- **TESTS:** Given a valid cron/task · When `scheduleJob` · Then a job doc with `enabled:true`. Given invalid cron · Then `"Invalid schedule"`. Given empty task · Then `"Task is required"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -5103,21 +5282,40 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **NUMBERS:** agent step cap 20 (AI SDK 6 default; TRD §1) · `UNKNOWN` (product confirm).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
-### TFV2-0252 — Scheduled jobs: jobs.list + setEnabled
+### TFV2-0252a — Scheduled jobs: jobs.list
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0250.
-- **WHY:** PRD F-47; modules screen (`@data jobs.list`, `@actions jobs.setEnabled`).
-- **GOAL:** Jobs appear in the Modules list with name, schedule, last run and an on/off switch.
+- **WHY:** PRD F-47; modules screen (`@data jobs.list`).
+- **GOAL:** Jobs appear in the Modules list with name, schedule, last run and on/off state.
 - **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
 - **MUTATES:** job `enabled` flag.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,scheduleText,lastRun{at,result,pageTitle},on}[]`; 3) `setEnabled({jobId,on})` toggles; 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,scheduleText,lastRun{at,result,pageTitle},on}[]`; 3) run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** delete jobs here; do not expose cron internals as JSON.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. `scheduleText` is rendered in the user's time zone but stored in UTC (TRD §5d). Error cases: no auth → unauthenticated; unknown job → `"Job not found"`; foreign → `"Access denied"`.
-- **TESTS:** Given 2 jobs · When `list` · Then both return with `scheduleText` and `lastRun`. When `setEnabled({on:false})` · Then `on:false`. Given unknown job · Then `"Job not found"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. `scheduleText` is rendered in the user's time zone but stored in UTC (TRD §5d). Error cases: no auth → `Not authenticated`; unknown job → `"Job not found"`; foreign → `"Access denied"`.
+- **TESTS:** Given 2 jobs · When `list` · Then both return with `scheduleText` and `lastRun`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0252b — Scheduled jobs: setEnabled
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0252a.
+- **WHY:** PRD F-47; modules screen (`@actions jobs.setEnabled`).
+- **GOAL:** `setEnabled` toggles one job's on/off switch.
+- **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
+- **MUTATES:** job `enabled` flag.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `setEnabled({jobId,on})` toggles; 3) run DONE.
+- **DONE:** `bun test convex/jobs.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** delete jobs here; do not expose cron internals as JSON.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `setEnabled({jobId: Id<"jobs">, on: boolean})` → `null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; unknown job → `"Job not found"`; foreign → `"Access denied"`.
+- **TESTS:** Given a job · When `setEnabled({on:false})` · Then `on:false`. Given unknown job · Then `"Job not found"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -5274,27 +5472,46 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0261 — Billing backend: billing.listTiers + getMine
+### TFV2-0261a — Billing backend: billing.listTiers
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0258 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0258.
-- **WHY:** PRD F-110; billing screen (`@data plan = billing.getMine`, `@data tiers = billing.listTiers`).
-- **GOAL:** The price table and the user's current plan are queryable.
+- **WHY:** PRD F-110; billing screen (`@data tiers = billing.listTiers`).
+- **GOAL:** The price table (four tiers) is queryable.
 - **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
 - **MUTATES:** none (read path).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `listTiers({})` → fixed tier table; 3) `getMine({})` → `{tier, source, interval, renewsAt?, trialEndsAt?, liveVoiceMinutesPerDay}`; 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `listTiers({})` → fixed tier table; 3) run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** hard-code a price that contradicts the OPEN (use the config constant that Amit sets); do not return card numbers (never stored).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `listTiers` returns Trial/Basic/Pro/Max with interval prices and live-voice minutes (Pro 90, Max 180/day — repo PRD F-35). Auth: `requireUser`. Error cases: no auth → unauthenticated.
-- **TESTS:** Given a user on Max early access · When `getMine` · Then `tier:"max"`, `source:"earlyAccess"`. Given `listTiers` · Then four tiers in order with `liveVoiceMinutesPerDay` 90 for Pro and 180 for Max. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. `listTiers({})` → `{id, name, monthlyPrice?, annualPrice?, liveVoiceMinutesPerDay}[]` (Trial/Basic/Pro/Max in order; Pro 90, Max 180 live-voice min/day — PRD F-35). Auth: `requireUser`. Error cases: no auth → `Not authenticated`. Prices come from a config constant Amit sets, never hard-coded.
+- **TESTS:** Given `listTiers` · Then four tiers in order with `liveVoiceMinutesPerDay` 90 for Pro and 180 for Max. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** price values ($1/3w, $10, $20, $40, annual = 10× monthly) · `UNKNOWN` (Amit — REWRITE-PLAN §4 conflict 2: a later note says "$20 and $50").
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** final prices/billing tiers — Amit.
+- **OPEN:** final prices/billing tiers — Amit (REWRITE-PLAN §4 conflict 2).
+
+### TFV2-0261b — Billing backend: billing.getMine
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0261a.
+- **WHY:** PRD F-110; billing screen (`@data plan = billing.getMine`).
+- **GOAL:** The user's current plan is queryable.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** none (read path).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getMine({})` → `{tier, source, interval, liveVoiceMinutesPerDay}` from `users.entitlementTier` + `subscriptionStates` (`plan`, `billingCycle`, `source`); 3) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** return card numbers (never stored); do not invent `renewsAt`/`trialEndsAt` (those columns do not exist — see OPEN).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `getMine({})` → `{tier, source, interval, liveVoiceMinutesPerDay}`. `tier` from `users.entitlementTier`; `interval` from `subscriptionStates.billingCycle`; `source` from `subscriptionStates.source`; `liveVoiceMinutesPerDay` from `convex/lib/voicePolicy.ts` (Basic 30, Pro 90, Max 180). Auth: `requireUser`. Error cases: no auth → `Not authenticated`.
+- **TESTS:** Given a user on Max early access · When `getMine` · Then `tier:"max"`, `source:"earlyAccess"`. Given no subscription row · Then defaults (`tier` from entitlement, interval `"none"`). Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** `renewsAt`/`trialEndsAt` columns do not exist in `subscriptionStates` — Amit (add them to `convex/schema.ts` via config lane, or drop from the contract).
 
 ### TFV2-0262 — Billing backend: billing.checkout (Polar)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0261.
 - **WHY:** PRD F-110 ("Polar on web"); billing screen (`@actions billing.checkout({tier, interval})`).
@@ -5306,33 +5523,52 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use Stripe; do not print the Polar key (names only: `POLAR_API_KEY`/`POLAR_WEBHOOK_SECRET`); do not mock a real charge.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend action. Auth: `requireUser` + `assertClientMaySetUserType` (mock gated). Error cases: unknown tier → `"Unknown tier"`; unknown interval → `"Unknown interval"`; no auth → unauthenticated; Polar unavailable → `UNKNOWN` (report, do not fake a URL).
+- **SPEC:** Backend action. Auth: `requireUser` + `assertClientMaySetUserType` (mock gated). Error cases: unknown tier → `"Unknown tier"`; unknown interval → `"Unknown interval"`; no auth → `Not authenticated`; Polar unavailable → `UNKNOWN` (report, do not fake a URL).
 - **TESTS:** Given a valid tier+interval · When `checkout` (mocked Polar) · Then a URL is returned. Given unknown tier · Then `"Unknown tier"`. Given unknown interval · Then `"Unknown interval"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Polar env var names — Amit (names only in this ticket).
 
-### TFV2-0263 — Billing backend: billing.cancel + acknowledgeConversion
+### TFV2-0263a — Billing backend: billing.cancel
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0262 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0262.
-- **WHY:** PRD F-110; trial-end screen (`@actions billing.acknowledgeConversion`, `billing.cancel`).
-- **GOAL:** Cancelling or acknowledging conversion is explicit, asks first, and access stays until period end.
+- **WHY:** PRD F-110; trial-end screen (`@actions billing.cancel`).
+- **GOAL:** Cancelling is explicit; access stays until the period end.
 - **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
 - **MUTATES:** subscription state (cancel/ack flags).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `cancel({})` sets a cancel flag (access until `trialEndsAt`/period end); 3) `acknowledgeConversion({})` records consent with no immediate charge; 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `cancel({})` sets `subscriptionStates.status` to `"cancelled"` (access until period end); 3) run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** charge now; do not hard-delete subscription rows.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; no active trial/plan → `"No active plan"`. Cancel is idempotent.
-- **TESTS:** Given an active trial · When `cancel` · Then cancelled with `trialEndsAt` retained. When `cancel` again · Then no error (idempotent). Given `acknowledgeConversion` · Then consent recorded, no charge. Given no active plan · Then `"No active plan"`.
+- **SPEC:** Backend. `cancel({})` → `null`. Sets `subscriptionStates.status:"cancelled"` (the `cancelled` status already exists in `convex/schema.ts`). Auth: `requireUser`. Error cases: no auth → `Not authenticated`; no active trial/plan → `"No active plan"`. Cancel is idempotent.
+- **TESTS:** Given an active trial · When `cancel` · Then `status:"cancelled"`. When `cancel` again · Then no error (idempotent). Given no active plan · Then `"No active plan"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
+### TFV2-0263b — Billing backend: billing.acknowledgeConversion
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0263a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0263a.
+- **WHY:** PRD F-110; trial-end screen (`@actions billing.acknowledgeConversion`).
+- **GOAL:** Acknowledging conversion records consent with no immediate charge.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** subscription conversion consent flag.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `acknowledgeConversion({})` records consent with no immediate charge; 3) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** charge now; do not hard-delete subscription rows.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `acknowledgeConversion({})` → `null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; no active trial/plan → `"No active plan"`.
+- **TESTS:** Given an active trial · When `acknowledgeConversion` · Then consent recorded, no charge. Given no active plan · Then `"No active plan"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** where conversion consent is stored (`subscriptionStates` column vs `users` flag) — Amit; either needs `convex/schema.ts` (config lane: Amit).
+
 ### TFV2-0264 — Billing backend: trial conversion notices (F-110)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0263 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0263b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0263.
 - **WHY:** PRD F-110 ("notices at 3 days, 1 day and 1 hour before conversion"); billing screen "Before any charge".
@@ -5361,51 +5597,70 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) verify `get`/`update`/`preferencesFor` and defaults (`theme:"system"`, `locale:"en"`, `weekStartsOn:1`, `timeZone:"UTC"`, `emailReminders:true`, `inAppNotifications:true`, `coachWebSearch:false`); 3) add `analyticsOptIn:boolean` default `false`; 4) add missing tests; 5) run DONE.
 - **DONE:** `bun test convex/preferences.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** touch `convex/schema.ts` (field is on the existing row shape via the validator); do not change defaults without Amit.
+- **DO NOT:** change defaults without Amit. (`analyticsOptIn` is a typed column on `userPreferences`, so `convex/schema.ts` must add it — config lane: Amit, never by these STEPS.)
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. `get({})` → `Preferences`; `update({...optional})` → `null` (upserts, clears `deletedAt`). Error cases: no auth → unauthenticated; empty timeZone → `"Time zone is required"`.
-- **TESTS:** Given no row · When `get` · Then defaults incl. `analyticsOptIn:false`. Given `update({analyticsOptIn:true})` · Then persisted. Given `update({timeZone:""})` · Then `"Time zone is required"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. `get({})` → `Preferences`; `update({...optional})` → `null` (upserts, clears `deletedAt`). Error cases: no auth → `Not authenticated`; empty timeZone → `"Time zone is required"`.
+- **TESTS:** Given no row · When `get` · Then defaults incl. `analyticsOptIn:false`. Given `update({analyticsOptIn:true})` · Then persisted. Given `update({timeZone:""})` · Then `"Time zone is required"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** where the user's IANA time zone is stored (`users` vs `preferences`) — Amit (REWRITE-PLAN §4 conflict 13).
+- **OPEN:** where the user's IANA time zone is stored (`users` vs `preferences`) — Amit (REWRITE-PLAN §4 conflict 13). `analyticsOptIn` column is config lane: Amit (needs `convex/schema.ts`).
 
-### TFV2-0266 — Profiles backend: profiles.getMine + update
+### TFV2-0266a — Profiles backend: profiles.getMine
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0265 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0265.
-- **WHY:** settings-profile screen (`@data profiles.getMine`, `@actions profiles.update`).
-- **GOAL:** The profile (full name, call-me, Hebrew address, language) is readable and editable.
+- **WHY:** settings-profile screen (`@data profiles.getMine`).
+- **GOAL:** The profile (full name, call-me, Hebrew address, language) is readable.
 - **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
-- **MUTATES:** `users` profile fields.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getMine({})` → `{fullName, callMe, address:"fem"|"masc", email, lang}`; 3) `update({fullName?, callMe?, address?, lang?})` → `null`; 4) run DONE.
+- **MUTATES:** none (read path). `callMe`/`address`/`lang` columns on `users` are added by config lane: Amit (see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getMine({})` → `{fullName, callMe, address:"fem"|"masc", email, lang}`; 3) run DONE.
 - **DONE:** `bun test convex/profiles.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** store a placeholder name "User"; do not let email change here (email change is `auth.requestEmailChange`).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank fullName → `"Name is required"`; blank callMe → `"Name is required"`; invalid address → `"Invalid address"`. `lang` accepts `en|he`.
-- **TESTS:** Given a user · When `getMine` · Then returns email and profile. When `update({fullName:"Maya"})` · Then persisted. Given blank fullName · Then `"Name is required"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. `getMine({})` → `{fullName, callMe, address:"fem"|"masc", email, lang}`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`.
+- **TESTS:** Given a user · When `getMine` · Then returns email and profile. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** `callMe`/`address`/`lang` columns on `users` do not exist — config lane: Amit (add to `convex/schema.ts`).
+
+### TFV2-0266b — Profiles backend: profiles.update
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0266a.
+- **WHY:** settings-profile screen (`@actions profiles.update`).
+- **GOAL:** The profile (full name, call-me, Hebrew address, language) is editable.
+- **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
+- **MUTATES:** `users` profile fields.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `update({fullName?, callMe?, address?, lang?})` → `null`; 3) run DONE.
+- **DONE:** `bun test convex/profiles.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** store a placeholder name "User"; do not let email change here (email change is `auth.requestEmailChange`).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `update({fullName?, callMe?, address?, lang?})` → `null`. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; blank fullName → `"Name is required"`; blank callMe → `"Name is required"`; invalid address → `"Invalid address"`. `lang` accepts `en|he`.
+- **TESTS:** Given a user · When `update({fullName:"Maya"})` · Then persisted. Given blank fullName · Then `"Name is required"`. Given no auth · Then `Not authenticated`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** `callMe`/`address`/`lang` columns on `users` do not exist — config lane: Amit (add to `convex/schema.ts`).
 
 ### TFV2-0267 — Profiles backend: profiles.setCoachDial
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0266.
 - **WHY:** PRD F-25; settings-prefs screen (`@actions profiles.setCoachDial`, debounced 400 ms).
 - **GOAL:** The coach dial (0–10) persists and injects into the coach system prompt.
 - **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
-- **MUTATES:** coach dial value.
+- **MUTATES:** coach dial value — a `users` column added by config lane: Amit (see OPEN).
 - **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `setCoachDial({value: 0..10})` validates range and persists; 3) default for new users is 4; 4) run DONE.
 - **DONE:** `bun test convex/profiles.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** change the prompt itself (chunk C owns the coach prompt); do not accept fractional values.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; value < 0 or > 10 → `"Dial must be 0 to 10"`; non-integer → `"Dial must be a whole number"`.
-- **TESTS:** Given value 7 · When `setCoachDial` · Then persisted. Given value 11 · Then `"Dial must be 0 to 10"`. Given -1 · Then error. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; value < 0 or > 10 → `"Dial must be 0 to 10"`; non-integer → `"Dial must be a whole number"`.
+- **TESTS:** Given value 7 · When `setCoachDial` · Then persisted. Given value 11 · Then `"Dial must be 0 to 10"`. Given -1 · Then error. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** dial range 0–10 (PRD F-25; quiet 0–3, steady 4–7, push 8–10) · pass = exact.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** where the coach dial value is stored (`users` column vs `preferences`) — Amit; either needs `convex/schema.ts` (config lane: Amit).
 
 ### TFV2-0268 — Ask founder backend: askFounder.submit + queue
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #475
@@ -5414,17 +5669,17 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** PRD F-110 (founder contact); ask-founder screen (`@actions askFounder.submit({subject, body, priority})`).
 - **GOAL:** A message to the founder is validated and queued with the user's name/email only.
 - **SCOPE:** `convex/askFounder.ts` + `convex/askFounder.test.ts`.
-- **MUTATES:** a founder-message queue row.
+- **MUTATES:** a founder-message queue row — the `feedback`/`askFounderQueue` table is added to `convex/schema.ts` by config lane: Amit (BACKEND-SCHEMA §7: `askFounderQueue` vs `feedback` name is UNKNOWN).
 - **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `submit({subject, body, priority:"low"|"medium"|"high"})` validates and inserts; 3) attach only name + email (nothing from pages/tasks/chats); 4) run DONE.
 - **DONE:** `bun test convex/askFounder.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** attach page/task/chat content; do not send email in the mutation (defer to TFV2-0269).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank subject → `"Subject is required"`; blank body → `"Message is required"`; invalid priority → `"Invalid priority"`. `subject` max 120 chars.
-- **TESTS:** Given valid fields · When `submit` · Then a queue row with subject/body/priority/email. Given blank subject · Then `"Subject is required"`. Given blank body · Then `"Message is required"`. Given invalid priority · Then `"Invalid priority"`. Given no auth · Then unauthenticated.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; blank subject → `"Subject is required"`; blank body → `"Message is required"`; invalid priority → `"Invalid priority"`. `subject` max 120 chars.
+- **TESTS:** Given valid fields · When `submit` · Then a queue row with subject/body/priority/email. Given blank subject · Then `"Subject is required"`. Given blank body · Then `"Message is required"`. Given invalid priority · Then `"Invalid priority"`. Given no auth · Then `Not authenticated`.
 - **NUMBERS:** subject max length 120 chars (ask-founder screen `maxlength="120"`) · pass = exact.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** the queue table name (`askFounderQueue` vs `feedback`, BACKEND-SCHEMA §7) and its schema — Amit; config lane: Amit (needs `convex/schema.ts`).
 
 ### TFV2-0269 — Ask founder backend: notify Amit (http action webhook)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
@@ -5453,26 +5708,26 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The built-in templates are listed as built-in modules with a lock badge and no delete path.
 - **SCOPE:** `convex/lib/templateCatalog.ts` + `convex/lib/templateCatalog.test.ts`.
 - **MUTATES:** none (catalog read).
-- **STEPS:** 1) Graphify code-map check (`STARTER_TEMPLATES` EXISTS — verify); 2) map each starter to a built-in module view `{id,name,does,kind,builtIn:true,on}`; 3) expose the "Habits on Today" built-in (turned off by default); 4) run DONE.
+- **STEPS:** 1) Graphify code-map check (`STARTER_TEMPLATES` EXISTS — verify); 2) map each of the 9 starters to a built-in module view `{id,name,does,kind,builtIn:true,on}`; 3) run DONE.
 - **DONE:** `bun test convex/lib/templateCatalog.test.ts` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** change starter bodies/copy; do not add a delete path.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend library. `builtInModules()` returns Daily page, Weekly page, Project page, Habits on Today. Each has a `does` string and `builtIn:true`. Copy EN/HE: `EN:"Daily page" / HE:"דף יומי"`; `EN:"Built-in" / HE:"מובנה"`.
-- **TESTS:** Given the catalog · When `builtInModules` · Then four entries, all `builtIn:true`, Habits off by default. Given a starter id · When mapped · Then no `delete` flag present.
+- **SPEC:** Backend library. `builtInModules()` maps the 9 `STARTER_TEMPLATES` entries to `{id, name, does, kind, builtIn:true, on}`: Daily page, Weekly page, Monthly page, Meeting notes, Project brief, Reading notes, Journal, Task review, Project review. Each has a `does` string and `builtIn:true`. Copy EN/HE: `EN:"Daily page" / HE:"דף יומי"`; `EN:"Built-in" / HE:"מובנה"`.
+- **TESTS:** Given the catalog · When `builtInModules` · Then nine entries, all `builtIn:true`. Given a starter id · When mapped · Then no `delete` flag present.
 - **NUMBERS:** none applicable · `UNKNOWN`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether "Habits on Today" is its own built-in module or a page-type flag — Amit.
+- **OPEN:** "Habits on Today" is not in `STARTER_TEMPLATES` — whether it is its own built-in module or a page-type flag — Amit.
 ### TFV2-0271 — ModuleCard
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0248 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0248a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0248.
 - **WHY:** components.md §2.13 (`ModuleCard`); modules screen.
 - **GOAL:** A card shows one module (icon, name, one-line "does", badges, on/off switch) with the word always present.
-- **SCOPE:** `apps/web/components/modules/ModuleCard.tsx` + `apps/web/components/modules/ModuleCard.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-module-card` with `data-on`/`data-builtin`; 3) switch calls `modules.setEnabled`; built-in shows a lock badge and no delete; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/modules/ModuleCard.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/modules/ModuleCard.tsx` + `apps/web/components/modules/ModuleCard.css` (new, owns `.tp-module-card`) + `apps/web/app/e2e/components/module-card/page.tsx` (harness) · test: `tests/e2e/screens/module-card.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModuleCard.tsx` (new), `apps/web/components/modules/ModuleCard.css` (new), `apps/web/app/e2e/components/module-card/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ModuleCard MISSING; `ModulesScreen.tsx` EXISTS in `components/modules/` — realign to `modules.setEnabled`/`modules.list` per TFV2-0248). 2) Render `.tp-module-card` with `data-on`/`data-builtin`; classes in `ModuleCard.css`. 3) Switch calls `modules.setEnabled`; built-in shows a lock badge and no delete. 4) Create `apps/web/app/e2e/components/module-card/page.tsx` (client) rendering each state under `data-testid="module-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/module-card.spec.ts` navigating `/e2e/components/module-card` and `?lang=he`, asserting on/off/built-in + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** add a delete button for built-ins; do not use colour alone (badge + word).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5483,15 +5738,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0272 — ModuleSummary
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0271 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0271 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0271.
 - **WHY:** components.md §2.13 (`ModuleSummary`); module-preview screen.
 - **GOAL:** A "What this module does" card lists page types, adds, changes, runs, and the validation check.
-- **SCOPE:** `apps/web/components/modules/ModuleSummary.tsx` + `apps/web/components/modules/ModuleSummary.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-module-what` with a `<dl>` of `.tp-what-row`; 3) show check passed/failed with word + icon; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/modules/ModuleSummary.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/modules/ModuleSummary.tsx` + `apps/web/components/modules/ModuleSummary.css` (new, owns `.tp-module-what`) + `apps/web/app/e2e/components/module-summary/page.tsx` (harness) · test: `tests/e2e/screens/module-summary.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModuleSummary.tsx` (new), `apps/web/components/modules/ModuleSummary.css` (new), `apps/web/app/e2e/components/module-summary/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ModuleSummary MISSING). 2) Render `.tp-module-what` with a `<dl>` of `.tp-what-row`; classes in `ModuleSummary.css`. 3) Show check passed/failed with word + icon (no colour alone). 4) Create `apps/web/app/e2e/components/module-summary/page.tsx` (client) rendering each state under `data-testid="module-summary-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/module-summary.spec.ts` navigating `/e2e/components/module-summary` and `?lang=he`, asserting rows + check-failed + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-summary.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use colour alone for pass/fail; do not show raw JSON.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5502,15 +5757,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0273 — PlainModeBanner
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0247 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0247 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0247.
 - **WHY:** components.md §2.13 (`PlainModeBanner`); modules screen.
 - **GOAL:** A banner says Plain mode is on, sets `html[data-plain]`, and explains built-ins still work.
-- **SCOPE:** `apps/web/components/modules/PlainModeBanner.tsx` + `apps/web/components/modules/PlainModeBanner.test.tsx`.
-- **MUTATES:** none (sets `html[data-plain]`).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-notice[data-tone=info].tp-plain-banner`; 3) set `document.documentElement.dataset.plain` when on; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/modules/PlainModeBanner.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/modules/PlainModeBanner.tsx` + `apps/web/components/modules/PlainModeBanner.css` (new, owns `.tp-plain-banner`) + `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (harness) · test: `tests/e2e/screens/plain-mode-banner.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/PlainModeBanner.tsx` (new), `apps/web/components/modules/PlainModeBanner.css` (new), `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (PlainModeBanner MISSING). 2) Render `.tp-notice[data-tone=info].tp-plain-banner`; classes in `PlainModeBanner.css`. 3) Set `document.documentElement.dataset.plain` when on. 4) Create `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (client) rendering each state under `data-testid="plain-mode-banner-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/plain-mode-banner.spec.ts` navigating `/e2e/components/plain-mode-banner` and `?lang=he`, asserting shown/hidden + `html[data-plain]` + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plain-mode-banner.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** disable built-in switches; do not hide content.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5521,19 +5776,19 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0274 — ScheduledJobRow
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0252 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0252.
 - **WHY:** components.md §2.13 (`ScheduledJobRow`); modules screen.
 - **GOAL:** A row shows a job's name, schedule (mono, LTR), last run and an on/off switch.
-- **SCOPE:** `apps/web/components/modules/ScheduledJobRow.tsx` + `apps/web/components/modules/ScheduledJobRow.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-job-row` with `.tp-job-row__schedule` in `.tp-num`; 3) switch → `jobs.setEnabled`; a failed last run says plainly nothing changed; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/modules/ScheduledJobRow.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/modules/ScheduledJobRow.tsx` + `apps/web/components/modules/ScheduledJobRow.css` (new, owns `.tp-job-row`) + `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (harness) · test: `tests/e2e/screens/scheduled-job-row.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ScheduledJobRow.tsx` (new), `apps/web/components/modules/ScheduledJobRow.css` (new), `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (ScheduledJobRow MISSING). 2) Render `.tp-job-row` with `.tp-job-row__schedule` in `.tp-num`; classes in `ScheduledJobRow.css`. 3) Switch → `jobs.setEnabled`; a failed last run says plainly nothing changed. 4) Create `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (client) rendering each state under `data-testid="scheduled-job-row-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/scheduled-job-row.spec.ts` navigating `/e2e/components/scheduled-job-row` and `?lang=he`, asserting name/schedule/last-run/on-off + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/scheduled-job-row.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** show cron internals; do not allow deleting a job here.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{job:{id,name,scheduleText,lastRun{at,result,pageTitle},on}}`. Copy EN/HE: `EN:"Last ran today at" / HE:"רצה לאחרונה היום ב־"`; `EN:"didn't finish. Nothing was changed." / HE:"לא הסתיימה. שום דבר לא השתנה."`; `EN:"On" / HE:"פועل"`; `EN:"Off" / HE:"כבוי"`. Schedule uses `.tp-num`/`.tp-mono` (LTR isolate). States: default, on, off, failed-last-run.
+- **SPEC:** UI component. Props `{job:{id,name,scheduleText,lastRun{at,result,pageTitle},on}}`. Copy EN/HE: `EN:"Last ran today at" / HE:"רצה לאחרונה היום ב־"`; `EN:"didn't finish. Nothing was changed." / HE:"לא הסתיימה. שום דבר לא השתנה."`; `EN:"On" / HE:"פועל"`; `EN:"Off" / HE:"כבוי"`. Schedule uses `.tp-num`/`.tp-mono` (LTR isolate). States: default, on, off, failed-last-run.
 - **TESTS:** Playwright: assert name/schedule/last-run render in EN and HE at 390/1280; toggle switch → `data-on` flips; given a failed last run → the plain "didn't finish" copy, not JSON.
 - **NUMBERS:** target ≥ 24×24 px · schedule text LTR isolate · contrast 4.5:1.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -5545,10 +5800,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0271 … TFV2-0274.
 - **WHY:** modules.html; PRD F-43; components.md §2.13.
 - **GOAL:** The Modules screen lists plain mode, your modules, scheduled jobs and built-ins with every state working.
-- **SCOPE:** `apps/web/app/(tempo)/modules/page.tsx` + `apps/web/e2e/modules.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/modules/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/modules.spec.ts`.
 - **MUTATES:** route `(tempo)/modules`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build the screen from ModuleCard/PlainModeBanner/ScheduledJobRow/Section/SettingsSection; 3) wire `modules.list`, `modules.getPlainMode`, `jobs.list`, `modules.setEnabled`, `modules.setPlainMode`, `jobs.setEnabled`; 4) add the Playwright spec; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/modules.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build the screen from ModuleCard/PlainModeBanner/ScheduledJobRow/Section/SettingsSection; 3) wire `modules.list`, `modules.getPlainMode`, `jobs.list`, `modules.setEnabled`, `modules.setPlainMode`, `jobs.setEnabled`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/modules`); 5) add the Playwright spec; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** edit `convex/`; do not render JSON; one `.tp-btn--primary` ("Ask the coach for a module").
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5564,10 +5819,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0272.
 - **WHY:** module-preview.html; PRD F-41/F-42.
 - **GOAL:** A draft module is previewed on a real page; Approve goes live, Discard asks first, invalid never goes live.
-- **SCOPE:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` + `apps/web/e2e/module-preview.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/module-preview.spec.ts`.
 - **MUTATES:** route `(tempo)/modules/preview/[draftId]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/Card/CoachArtifact/ModuleSummary/Notice/MobileSheet; 3) wire `modules.getDraft`, `modules.approve`, `modules.discardDraft`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/module-preview.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/Card/CoachArtifact/ModuleSummary/Notice/MobileSheet; 3) wire `modules.getDraft`, `modules.approve`, `modules.discardDraft`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/modules/preview/[draftId]`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** let Approve work when validation failed; do not change pages on Discard.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5578,15 +5833,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0277 — CoachArtifact (wrapper)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0253 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0253.
 - **WHY:** components.md §2.2 (`CoachArtifact`); PRD F-28.
 - **GOAL:** A wrapper card for the four artifacts, drawn as a page block; the user never sees JSON.
-- **SCOPE:** `apps/web/components/blocks/CoachArtifact.tsx` + `apps/web/components/blocks/CoachArtifact.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-artifact` with `__head/__kind/__title/__by/__body/__foot`; 3) dispatch by `kind` to Flashcard/Quiz/Checklist/Tracker; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/blocks/CoachArtifact.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/blocks/CoachArtifact.tsx` + `apps/web/components/blocks/CoachArtifact.css` (new, owns `.tp-artifact`) + `apps/web/app/e2e/components/coach-artifact/page.tsx` (harness) · test: `tests/e2e/screens/coach-artifact.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/CoachArtifact.tsx` (new), `apps/web/components/blocks/CoachArtifact.css` (new), `apps/web/app/e2e/components/coach-artifact/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (CoachArtifact MISSING). 2) Render `.tp-artifact` (`__head/__kind/__title/__by/__body/__foot`); classes in `CoachArtifact.css`. 3) Dispatch by `kind` to Flashcard/Quiz/Checklist/Tracker (TFV2-0278…0281). 4) Create `apps/web/app/e2e/components/coach-artifact/page.tsx` (client) rendering each state under `data-testid="coach-artifact-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/coach-artifact.spec.ts` navigating `/e2e/components/coach-artifact` and `?lang=he`, asserting each kind + unknown-kind fallback + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-artifact.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** render raw JSON; do not invent a kind.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5597,15 +5852,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0278 — Flashcard component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0277 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0277.
 - **WHY:** components.md §2.2 (`Flashcard`); PRD F-28.
 - **GOAL:** Flashcards flip by button (never hover) and step with a counter, announcing each face.
-- **SCOPE:** `apps/web/components/blocks/Flashcard.tsx` + `apps/web/components/blocks/Flashcard.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-flashcard[data-side]` with `__face/__side/__text/__count`; 3) `card-flip` button + `card-step` with `data-dir`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/blocks/Flashcard.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/blocks/Flashcard.tsx` + `apps/web/components/blocks/Flashcard.css` (new, owns `.tp-flashcard`) + `apps/web/app/e2e/components/flashcard/page.tsx` (harness) · test: `tests/e2e/screens/flashcard.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Flashcard.tsx` (new), `apps/web/components/blocks/Flashcard.css` (new), `apps/web/app/e2e/components/flashcard/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Flashcard MISSING). 2) Render `.tp-flashcard[data-side]` (`__face/__side/__text/__count`); classes in `Flashcard.css`. 3) `card-flip` button + `card-step` with `data-dir`; no hover flip. 4) Create `apps/web/app/e2e/components/flashcard/page.tsx` (client) rendering each state under `data-testid="flashcard-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/flashcard.spec.ts` navigating `/e2e/components/flashcard` and `?lang=he`, asserting flip/step/clamp + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/flashcard.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** flip on hover; do not persist a streak.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5616,15 +5871,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0279 — Quiz component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0277 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0277.
 - **WHY:** components.md §2.2 (`Quiz`); PRD F-28.
 - **GOAL:** A quiz shows one question, scores an answer and shows feedback with a word and icon.
-- **SCOPE:** `apps/web/components/blocks/Quiz.tsx` + `apps/web/components/blocks/Quiz.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-quiz` (fieldset/legend) with `.tp-choice` options; 3) `quiz-check` → `quizzes.answer`, feedback `data-result`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/blocks/Quiz.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/blocks/Quiz.tsx` + `apps/web/components/blocks/Quiz.css` (new, owns `.tp-quiz`) + `apps/web/app/e2e/components/quiz/page.tsx` (harness) · test: `tests/e2e/screens/quiz.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Quiz.tsx` (new), `apps/web/components/blocks/Quiz.css` (new), `apps/web/app/e2e/components/quiz/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Quiz MISSING). 2) Render `.tp-quiz` (fieldset/legend) with `.tp-choice`; classes in `Quiz.css`. 3) `quiz-check` → `quizzes.answer`, feedback `data-result`; no re-answer after check. 4) Create `apps/web/app/e2e/components/quiz/page.tsx` (client) rendering each state under `data-testid="quiz-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/quiz.spec.ts` navigating `/e2e/components/quiz` and `?lang=he`, asserting right/wrong/disabled + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quiz.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use colour alone (icon + word); do not allow re-answer after check.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5635,15 +5890,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0280 — Checklist component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0277 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0277.
 - **WHY:** components.md §2.2 (`Checklist`); PRD F-28.
 - **GOAL:** A checklist toggles items and shows "2 of 5 done".
-- **SCOPE:** `apps/web/components/blocks/Checklist.tsx` + `apps/web/components/blocks/Checklist.test.tsx`.
-- **MUTATES:** none (calls `pages.updateBlock`).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-checklist` with `.tp-checkbox` items; 3) change → `pages.updateBlock`, update `.tp-checklist__count`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/blocks/Checklist.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/blocks/Checklist.tsx` + `apps/web/components/blocks/Checklist.css` (new, owns `.tp-checklist`) + `apps/web/app/e2e/components/checklist/page.tsx` (harness) · test: `tests/e2e/screens/checklist.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Checklist.tsx` (new), `apps/web/components/blocks/Checklist.css` (new), `apps/web/app/e2e/components/checklist/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Checklist MISSING). 2) Render `.tp-checklist` with `.tp-checkbox` items; classes in `Checklist.css`. 3) change → `pages.updateBlock`, update `.tp-checklist__count`. 4) Create `apps/web/app/e2e/components/checklist/page.tsx` (client) rendering each state under `data-testid="checklist-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/checklist.spec.ts` navigating `/e2e/components/checklist` and `?lang=he`, asserting toggle + count + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/checklist.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** persist locally; do not show a streak.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5654,15 +5909,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0281 — Tracker component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0277 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0277.
 - **WHY:** components.md §2.2 (`Tracker`); PRD F-28.
 - **GOAL:** A tracker increments/decrements a value toward a goal and announces the new value.
-- **SCOPE:** `apps/web/components/blocks/Tracker.tsx` + `apps/web/components/blocks/Tracker.test.tsx`.
-- **MUTATES:** none (calls `trackers.log`).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-tracker` with `__value`; 3) `tracker` + `data-dir="inc/dec"` → `trackers.log`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/blocks/Tracker.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/blocks/Tracker.tsx` + `apps/web/components/blocks/Tracker.css` (new, owns `.tp-tracker`) + `apps/web/app/e2e/components/tracker/page.tsx` (harness) · test: `tests/e2e/screens/tracker.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Tracker.tsx` (new), `apps/web/components/blocks/Tracker.css` (new), `apps/web/app/e2e/components/tracker/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Tracker MISSING). 2) Render `.tp-tracker` (`__value`); classes in `Tracker.css`. 3) `tracker` + `data-dir="inc/dec"` → `trackers.log`. 4) Create `apps/web/app/e2e/components/tracker/page.tsx` (client) rendering each state under `data-testid="tracker-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/tracker.spec.ts` navigating `/e2e/components/tracker` and `?lang=he`, asserting inc/dec/at-goal/at-zero + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tracker.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** go below 0; do not use colour alone.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5673,15 +5928,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0282 — TierCard
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0261a, TFV2-0261b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0261.
 - **WHY:** components.md §2.14 (`TierCard`); PRD F-110.
 - **GOAL:** A tier card shows name, price, features and a choose action; the current plan is marked.
-- **SCOPE:** `apps/web/components/billing/TierCard.tsx` + `apps/web/components/billing/TierCard.test.tsx`.
-- **MUTATES:** none (calls `billing.checkout`).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-tier[data-current]`; 3) choose → `billing.checkout({tier, interval})`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/billing/TierCard.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/billing/TierCard.tsx` + `apps/web/components/billing/TierCard.css` (new, owns `.tp-tier`) + `apps/web/app/e2e/components/tier-card/page.tsx` (harness) · test: `tests/e2e/screens/tier-card.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/TierCard.tsx` (new), `apps/web/components/billing/TierCard.css` (new), `apps/web/app/e2e/components/tier-card/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (TierCard MISSING; `billing-plan/PlanCard.tsx` EXISTS — reuse or supersede, note in REPORT). 2) Render `.tp-tier[data-current]`; classes in `TierCard.css`. 3) choose → `billing.checkout({tier, interval})`. 4) Create `apps/web/app/e2e/components/tier-card/page.tsx` (client) rendering each state under `data-testid="tier-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/tier-card.spec.ts` navigating `/e2e/components/tier-card` and `?lang=he`, asserting current/choose + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tier-card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** hide or collapse a tier; do not show a price that contradicts the OPEN (use the config value).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5692,15 +5947,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** price values — Amit (REWRITE-PLAN §4 conflict 2).
 
 ### TFV2-0283 — BillingNotice
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0282 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0282.
 - **WHY:** components.md §2.14 (`BillingNotice`); billing screen.
 - **GOAL:** A notice shows trial/conversion dates with a word and icon, never colour alone.
-- **SCOPE:** `apps/web/components/billing/BillingNotice.tsx` + `apps/web/components/billing/BillingNotice.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-notice` with tone/text; 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/billing/BillingNotice.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/billing/BillingNotice.tsx` + `apps/web/components/billing/BillingNotice.css` (new, owns `.tp-notice`) + `apps/web/app/e2e/components/billing-notice/page.tsx` (harness) · test: `tests/e2e/screens/billing-notice.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/BillingNotice.tsx` (new), `apps/web/components/billing/BillingNotice.css` (new), `apps/web/app/e2e/components/billing-notice/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (BillingNotice MISSING). 2) Render `.tp-notice` with tone/text; classes in `BillingNotice.css`. 3) Create `apps/web/app/e2e/components/billing-notice/page.tsx` (client) rendering each tone under `data-testid="billing-notice-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/billing-notice.spec.ts` navigating `/e2e/components/billing-notice` and `?lang=he`, asserting tones + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-notice.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** invent dates; do not use colour alone.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5716,10 +5971,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0282, TFV2-0283.
 - **WHY:** billing.html; PRD F-110 ("Billing visible, never hidden").
 - **GOAL:** The Plan and billing screen shows the full price table, monthly/yearly switch and "before any charge" notices.
-- **SCOPE:** `apps/web/app/(tempo)/settings/billing/page.tsx` + `apps/web/e2e/billing.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/settings/billing/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/billing.spec.ts`.
 - **MUTATES:** route `(tempo)/settings/billing`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from TierCard/BillingNotice/Segmented/SettingRow; 3) wire `billing.getMine`, `billing.listTiers`, `billing.checkout`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/billing.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from TierCard/BillingNotice/Segmented/SettingRow; 3) wire `billing.getMine`, `billing.listTiers`, `billing.checkout`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/settings/billing`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** hide any tier; do not store/print card numbers; do not hard-code a price (use config; values UNKNOWN).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5735,10 +5990,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0284.
 - **WHY:** trial-end.html; PRD F-110.
 - **GOAL:** The trial-end screen says plainly what happens at conversion with three calm choices and a confirmation.
-- **SCOPE:** `apps/web/app/(bare)/billing/trial-end/page.tsx` + `apps/web/e2e/trial-end.spec.ts`.
+- **SCOPE:** `apps/web/app/(bare)/billing/trial-end/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/trial-end.spec.ts`.
 - **MUTATES:** route `(bare)/billing/trial-end`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from AuthCard/Notice/StatusPanel; 3) wire `billing.getMine`, `billing.acknowledgeConversion`, `billing.cancel`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/trial-end.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from AuthCard/Notice/StatusPanel; 3) wire `billing.getMine`, `billing.acknowledgeConversion`, `billing.cancel`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/billing/trial-end`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/trial-end.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** charge now; do not guilt-trip ("are you sure you want to lose…"); no guilt copy.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5754,10 +6009,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0234, TFV2-0270.
 - **WHY:** templates.html; PRD F-04/F-06.
 - **GOAL:** The Templates screen lists built-ins and the user's templates with search, filter, use/edit/duplicate/delete.
-- **SCOPE:** `apps/web/app/(tempo)/templates/page.tsx` + `apps/web/e2e/templates.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/templates/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/templates.spec.ts`.
 - **MUTATES:** route `(tempo)/templates`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Card/CardGrid/Badge/SortMenu/SearchInput/Segmented; 3) wire `templates.list`, `templates.remove`, `templates.restore`, `templates.duplicate`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/templates.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Card/CardGrid/Badge/SortMenu/SearchInput/Segmented; 3) wire `templates.list`, `templates.remove`, `templates.restore`, `templates.duplicate`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** edit `convex/`; do not delete built-ins (no delete control).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5768,15 +6023,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0287 — Template builder screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240a, TFV2-0240b, TFV2-0240c, TFV2-0240d, TFV2-0240e · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0240.
 - **WHY:** template-builder.html; PRD F-06/F-23.
 - **GOAL:** The builder edits a template as blocks with a live preview and a slash menu.
-- **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` + `apps/web/e2e/template-builder.spec.ts`.
+- **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-builder.spec.ts`.
 - **MUTATES:** route `(bare)/templates/builder`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from PageEditor/Split/SlashMenu/BlockHandle/TemplatePreview; 3) wire `templates.get`, `templates.update`, `templates.insertBlock/moveBlock/duplicateBlock/removeBlock`, `templates.publish`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-builder.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from PageEditor/Split/SlashMenu/BlockHandle/TemplatePreview; 3) wire `templates.get`, `templates.update`, `templates.insertBlock/moveBlock/duplicateBlock/removeBlock`, `templates.publish`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/builder`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** edit `convex/`; do not render JSON; block handles are buttons (never drag-only).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5787,15 +6042,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0288 — Template run screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239a, TFV2-0239b, TFV2-0239c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0239.
 - **WHY:** template-run.html; PRD F-06.
 - **GOAL:** Using a template walks one question at a time, autosaves, and "Make the page" applies it with Undo.
-- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` + `apps/web/e2e/template-run.spec.ts`.
+- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-run.spec.ts`.
 - **MUTATES:** route `(bare)/templates/run/[id]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/TemplateRunStep/RunSteps/Card/StatusPanel; 3) wire `templates.get`, `templates.getRunDraft`, `templates.saveRunDraft`, `templates.apply`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-run.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/TemplateRunStep/RunSteps/Card/StatusPanel; 3) wire `templates.get`, `templates.getRunDraft`, `templates.saveRunDraft`, `templates.apply`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/run/[id]`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** judge answers; do not require an answer (all optional).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5811,10 +6066,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0235.
 - **WHY:** template-editor.html (legacy form alternative).
 - **GOAL:** The form view edits a template's name, type, tags and sections with a summary on validation failure.
-- **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` + `apps/web/e2e/template-editor.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-editor.spec.ts`.
 - **MUTATES:** route `(tempo)/templates/editor/[id]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Field/Select/Section/TemplateSectionRow/FormErrorSummary/Switch; 3) wire `templates.get`, `templates.update`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-editor.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Field/Select/Section/TemplateSectionRow/FormErrorSummary/Switch; 3) wire `templates.get`, `templates.update`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/editor/[id]`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** edit `convex/`; do not lose edits on validation failure.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5825,15 +6080,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0290 — Template sketch screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241 · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241a, TFV2-0241b, TFV2-0241c, TFV2-0241d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0241.
 - **WHY:** template-sketch.html; PRD F-23.
 - **GOAL:** A rough outline becomes a coach proposal the user can accept, edit or reject; nothing saves until Accept.
-- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` + `apps/web/e2e/template-sketch.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-sketch.spec.ts`.
 - **MUTATES:** route `(tempo)/templates/sketch`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Textarea/ProposalCard/TypingIndicator/Notice; 3) wire `templates.getSketch`, `templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`, `coach.rejectProposal`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-sketch.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Textarea/ProposalCard/TypingIndicator/Notice; 3) wire `templates.getSketch`, `templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`, `coach.rejectProposal`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/sketch`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** save before Accept; do not call a real model in e2e (mock the seam).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5849,10 +6104,10 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0268.
 - **WHY:** ask-founder.html; PRD F-110; #475 (T-SCR-25).
 - **GOAL:** A form sends a message to Amit with only name/email attached, with field validation and a calm confirmation.
-- **SCOPE:** `apps/web/app/(tempo)/ask-founder/page.tsx` + `apps/web/e2e/ask-founder.spec.ts`.
+- **SCOPE:** `apps/web/app/(tempo)/ask-founder/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/ask-founder.spec.ts`.
 - **MUTATES:** route `(tempo)/ask-founder`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/Form/Field/Textarea/Radio/FormErrorSummary/Notice/StatusPanel; 3) wire `profiles.getMine`, `askFounder.submit`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/ask-founder.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/Form/Field/Textarea/Radio/FormErrorSummary/Notice/StatusPanel; 3) wire `profiles.getMine`, `askFounder.submit`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/ask-founder`); 5) add Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** attach page/task/chat content; do not email in the UI.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5863,15 +6118,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0292 — Container (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** components.md §2.16 (`Container`, 1120 max).
 - **GOAL:** The marketing layout container caps content width at 1120 px.
-- **SCOPE:** `apps/web/components/marketing/Container.tsx` + `apps/web/components/marketing/Container.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-container` (max-width 1120, centered, logical padding); 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/Container.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/Container.tsx` + `apps/web/components/marketing/Container.css` (new, owns `.tp-container`) + `apps/web/app/e2e/components/container/page.tsx` (harness) · test: `tests/e2e/screens/container.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Container.tsx` (new), `apps/web/components/marketing/Container.css` (new), `apps/web/app/e2e/components/container/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Container MISSING). 2) Render `.tp-container` (max-width 1120, centered, logical padding); classes in `Container.css`. 3) Create `apps/web/app/e2e/components/container/page.tsx` (client) rendering content inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/container.spec.ts` asserting max-width 1120 at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/container.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** set colours/fonts here (layout only).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5882,15 +6137,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** body typeface value (Source Sans 3 vs Inter) — Amit (REWRITE-PLAN §4 conflict 5); use `--tp-*` tokens, not a named font.
 
 ### TFV2-0293 — SiteHeader (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292, TFV2-0301 · **Folds-in:** #752
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292, TFV2-0301 · **Folds-in:** #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292, TFV2-0301.
 - **WHY:** components.md §2.16 (`SiteHeader`); landing.html.
 - **GOAL:** The site header shows brand, section links, "Sign in" and the language switch; solid, not glass.
-- **SCOPE:** `apps/web/components/marketing/SiteHeader.tsx` + `apps/web/components/marketing/SiteHeader.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-site-header` with `.tp-site-nav` + `LanguageSwitch`; 3) `aria-current` on the active link; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/SiteHeader.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/SiteHeader.tsx` + `apps/web/components/marketing/SiteHeader.css` (new, owns `.tp-site-header`) + `apps/web/app/e2e/components/site-header/page.tsx` (harness) · test: `tests/e2e/screens/site-header.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/SiteHeader.tsx` (new), `apps/web/components/marketing/SiteHeader.css` (new), `apps/web/app/e2e/components/site-header/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (SiteHeader MISSING). 2) Render `.tp-site-header` with `.tp-site-nav` + `LanguageSwitch` (TFV2-0301); classes in `SiteHeader.css`. 3) `aria-current` on the active link. 4) Create `apps/web/app/e2e/components/site-header/page.tsx` (client) rendering each state under `data-testid="site-header-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/site-header.spec.ts` navigating `/e2e/components/site-header` and `?lang=he`, asserting links + language switch + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-header.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use glass; do not copy Claude.ai wording.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5900,15 +6155,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body typeface — Amit (conflict 5).
 ### TFV2-0294 — Hero (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0293 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0293.
 - **WHY:** components.md §2.16 (`Hero`); landing.html.
 - **GOAL:** The hero states the product in one line with one primary action ("Ask to join").
-- **SCOPE:** `apps/web/components/marketing/Hero.tsx` + `apps/web/components/marketing/Hero.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-hero` with eyebrow/title/lede/actions/note; 3) one primary only; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/Hero.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/Hero.tsx` + `apps/web/components/marketing/Hero.css` (new, owns `.tp-hero`) + `apps/web/app/e2e/components/hero/page.tsx` (harness) · test: `tests/e2e/screens/hero.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Hero.tsx` (new), `apps/web/components/marketing/Hero.css` (new), `apps/web/app/e2e/components/hero/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Hero MISSING). 2) Render `.tp-hero` (eyebrow/title/lede/actions/note); classes in `Hero.css`. 3) One primary only (`Ask to join`). 4) Create `apps/web/app/e2e/components/hero/page.tsx` (client) rendering each state under `data-testid="hero-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/hero.spec.ts` navigating `/e2e/components/hero` and `?lang=he`, asserting one primary + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/hero.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** invent metrics; do not use glass.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5919,15 +6174,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** body/display typeface — Amit (conflict 5).
 
 ### TFV2-0295 — FeatureRow (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292.
 - **WHY:** components.md §2.16 (`FeatureRow`); landing.html.
 - **GOAL:** A feature row pairs text with a figure built from real Tempo components; supports flip.
-- **SCOPE:** `apps/web/components/marketing/FeatureRow.tsx` + `apps/web/components/marketing/FeatureRow.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-feature` (with `--flip`) with `__text` and `__figure`; 3) figure uses real components (inert); 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/FeatureRow.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/FeatureRow.tsx` + `apps/web/components/marketing/FeatureRow.css` (new, owns `.tp-feature`) + `apps/web/app/e2e/components/feature-row/page.tsx` (harness) · test: `tests/e2e/screens/feature-row.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/FeatureRow.tsx` (new), `apps/web/components/marketing/FeatureRow.css` (new), `apps/web/app/e2e/components/feature-row/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (FeatureRow MISSING). 2) Render `.tp-feature` (with `--flip`) with `__text` and `__figure`; classes in `FeatureRow.css`. 3) Figure uses real Tempo components (inert). 4) Create `apps/web/app/e2e/components/feature-row/page.tsx` (client) rendering each state under `data-testid="feature-row-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/feature-row.spec.ts` navigating `/e2e/components/feature-row` and `?lang=he`, asserting flip + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/feature-row.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use stock screenshots; figures must be real Tempo components.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5938,15 +6193,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0296 — HowItWorks (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292.
 - **WHY:** components.md §2.16 (`HowItWorks`); landing.html.
 - **GOAL:** An ordered list of three steps ("Write. Talk. Say yes.") with numbers and copy.
-- **SCOPE:** `apps/web/components/marketing/HowItWorks.tsx` + `apps/web/components/marketing/HowItWorks.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `ol.tp-steps` with `.tp-step__num/__title/__body`; 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/HowItWorks.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/HowItWorks.tsx` + `apps/web/components/marketing/HowItWorks.css` (new, owns `.tp-steps`) + `apps/web/app/e2e/components/how-it-works/page.tsx` (harness) · test: `tests/e2e/screens/how-it-works.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/HowItWorks.tsx` (new), `apps/web/components/marketing/HowItWorks.css` (new), `apps/web/app/e2e/components/how-it-works/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (HowItWorks MISSING). 2) Render `ol.tp-steps` (`.tp-step__num/__title/__body`); classes in `HowItWorks.css`. 3) Create `apps/web/app/e2e/components/how-it-works/page.tsx` (client) rendering each step under `data-testid="how-it-works-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/how-it-works.spec.ts` navigating `/e2e/components/how-it-works` and `?lang=he`, asserting 3 ordered steps + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/how-it-works.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** invent steps beyond the landing copy.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5957,15 +6212,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0297 — Quote (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292.
 - **WHY:** components.md §2.16 (`Quote`, fictional people only).
 - **GOAL:** A quote block renders a blockquote with a fictional byline.
-- **SCOPE:** `apps/web/components/marketing/Quote.tsx` + `apps/web/components/marketing/Quote.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `figure.tp-quote` with `blockquote` + `figcaption`; 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/Quote.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/Quote.tsx` + `apps/web/components/marketing/Quote.css` (new, owns `.tp-quote`) + `apps/web/app/e2e/components/quote/page.tsx` (harness) · test: `tests/e2e/screens/quote.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Quote.tsx` (new), `apps/web/components/marketing/Quote.css` (new), `apps/web/app/e2e/components/quote/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Quote MISSING). 2) Render `figure.tp-quote` with `blockquote` + `figcaption`; classes in `Quote.css`. 3) Fictional people only. 4) Create `apps/web/app/e2e/components/quote/page.tsx` (client) rendering each state under `data-testid="quote-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/quote.spec.ts` navigating `/e2e/components/quote` and `?lang=he`, asserting blockquote + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quote.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** use real people; no invented testimonials.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5976,15 +6231,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0298 — Pricing (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0282 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0282.
 - **WHY:** components.md §2.16 (`Pricing`, "same as billing"); landing.html pricing teaser.
 - **GOAL:** The landing pricing teaser reuses TierCard with always-visible prices and a join link.
-- **SCOPE:** `apps/web/components/marketing/Pricing.tsx` + `apps/web/components/marketing/Pricing.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) reuse `TierCard`; 3) link to `/sign-up`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/Pricing.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/Pricing.tsx` + `apps/web/components/marketing/Pricing.css` (new, owns `.tp-pricing`) + `apps/web/app/e2e/components/pricing/page.tsx` (harness) · test: `tests/e2e/screens/pricing.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Pricing.tsx` (new), `apps/web/components/marketing/Pricing.css` (new), `apps/web/app/e2e/components/pricing/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (Pricing MISSING). 2) Reuse `TierCard` (TFV2-0282); classes in `Pricing.css`. 3) Link to `/sign-up`. 4) Create `apps/web/app/e2e/components/pricing/page.tsx` (client) rendering each state under `data-testid="pricing-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/pricing.spec.ts` navigating `/e2e/components/pricing` and `?lang=he`, asserting 4 tier cards + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pricing.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** hide a tier; do not hard-code prices (config value; UNKNOWN).
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -5995,15 +6250,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** price values — Amit.
 
 ### TFV2-0299 — FAQ (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292 · **Folds-in:** #751
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292.
 - **WHY:** components.md §2.16 (`FAQ`, native `details`, no JS).
 - **GOAL:** FAQ items use native `<details>` disclosure, no script.
-- **SCOPE:** `apps/web/components/marketing/FAQ.tsx` + `apps/web/components/marketing/FAQ.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-faq > details > summary` + `.tp-faq__answer`; 3) no JS; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/FAQ.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/FAQ.tsx` + `apps/web/components/marketing/FAQ.css` (new, owns `.tp-faq`) + `apps/web/app/e2e/components/faq/page.tsx` (harness) · test: `tests/e2e/screens/faq.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/FAQ.tsx` (new), `apps/web/components/marketing/FAQ.css` (new), `apps/web/app/e2e/components/faq/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (FAQ MISSING). 2) Render `.tp-faq > details > summary` + `.tp-faq__answer`; no JS; classes in `FAQ.css`. 3) Create `apps/web/app/e2e/components/faq/page.tsx` (client) rendering each item under `data-testid="faq-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/faq.spec.ts` navigating `/e2e/components/faq` and `?lang=he`, asserting 6 `details` + native toggle + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/faq.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** add JS or an accordion library.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
@@ -6014,15 +6269,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0300 — SiteFooter (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292, TFV2-0301 · **Folds-in:** #752
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0292, TFV2-0301 · **Folds-in:** #752
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0292, TFV2-0301.
 - **WHY:** components.md §2.16 (`SiteFooter`); landing.html.
 - **GOAL:** The footer holds Terms/Privacy/Contact/Changelog links, the language switch and the disclaimer.
-- **SCOPE:** `apps/web/components/marketing/SiteFooter.tsx` + `apps/web/components/marketing/SiteFooter.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-site-footer` with links + `LanguageSwitch`; 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/SiteFooter.test.tsx` → all pass.
+- **SCOPE:** `apps/web/components/marketing/SiteFooter.tsx` + `apps/web/components/marketing/SiteFooter.css` (new, owns `.tp-site-footer`) + `apps/web/app/e2e/components/site-footer/page.tsx` (harness) · test: `tests/e2e/screens/site-footer.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/SiteFooter.tsx` (new), `apps/web/components/marketing/SiteFooter.css` (new), `apps/web/app/e2e/components/site-footer/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map (SiteFooter MISSING). 2) Render `.tp-site-footer` with links + `LanguageSwitch` (TFV2-0301); classes in `SiteFooter.css`. 3) Include the disclaimer. 4) Create `apps/web/app/e2e/components/site-footer/page.tsx` (client) rendering each state under `data-testid="site-footer-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/site-footer.spec.ts` navigating `/e2e/components/site-footer` and `?lang=he`, asserting links + language switch + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-footer.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** DONE output; `REPORT` lists every STEP.
 - **DO NOT:** omit the disclaimer.
 - **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
