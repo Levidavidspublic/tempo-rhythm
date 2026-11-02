@@ -42,7 +42,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A reusable query-wrapper that reads every list the way a coach tool would — with a hard row and byte budget and an explicit `truncated` flag, so no query can ever run unbounded.
 - **SCOPE:** `convex/lib/bounded.ts` (+ `convex/lib/bounded.test.ts`).
 - **MUTATES:** none (adds a pure helper module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (the unit is MISSING today — confirmed no `bounded*` file); 2) write `convex/lib/bounded.ts` exporting `boundedQuery<T>(rows: readonly T[], opts: { maxRows: number; maxBytes: number }): { rows: T[]; truncated: boolean }`; 3) count rows first, then bytes by `JSON.stringify` length, stopping at the first budget exceeded and setting `truncated: true`; 4) handle `maxRows=0` (empty, not truncated) and `maxBytes=0` (empty, truncated if rows present); 5) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (the unit is MISSING today — confirmed no `bounded*` file); 2) write `convex/lib/bounded.ts` exporting `boundedQuery<T>(rows: readonly T[], opts: { maxRows: number; maxBytes: number }): { rows: T[]; truncated: boolean }`; 3) count rows first, then bytes by `JSON.stringify` length, stopping at the first budget exceeded and setting `truncated: true`; 4) handle `maxRows=0` (empty result; `truncated: true` only if the input had rows) and `maxBytes=0` (keeps only zero-byte rows; `truncated: true` if any row was dropped); 5) add the unit test file.
 - **DONE:** `bun test convex/lib/bounded.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count) into the PR.
 - **DO NOT:** do not change any existing query's call site; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, any `.env` or workflow.
@@ -56,9 +56,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `maxRows=0` with empty rows / Then `truncated===false`.
   - Given a negative `maxBytes` / Then a `ConvexError` is thrown.
   - Given 5 rows all under budget / Then `rows.length===5` and `truncated===false`.
-- **NUMBERS:** `maxRows` and `maxBytes` are caller-set (UNKNOWN defaults until a caller fixes them — Amit). No industry number applies; correctness is byte-count exactness (deterministic, no range).
+- **NUMBERS:** No industry number applies; correctness is byte-count exactness (deterministic, no range). `maxRows` and `maxBytes` are caller-set (this module holds no defaults).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** default budgets for the coach-tool calls (UNKNOWN — Amit).
+- **OPEN:** none.
 
 ### TFV2-0002 — Mock language model `convex/lib/mockModel.ts`
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1349
@@ -68,18 +68,18 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A deterministic in-process stand-in for the runtime model that returns scripted replies and lets coach/chat tests assert exact behaviour without network, keys or spend.
 - **SCOPE:** `convex/lib/mockModel.ts` (+ `convex/lib/mockModel.test.ts`).
 - **MUTATES:** none (pure module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING — confirmed no `mockModel*` file); 2) write `mockModel.ts` exporting `mockModel({ queue }: { queue: readonly string[] }): (input: { messages: readonly { role: "system"|"user"|"assistant"; content: string }[] }) => Promise<{ text: string }>`; 3) replies consume `queue` in order; on empty queue return a fixed final reply `"Done."`; 4) record every received `messages` array on the returned callable (expose a `.calls` property) so tests assert the prompt; 5) no network, no `process.env`, no key reads; 6) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING — confirmed no `mockModel*` file); 2) write `mockModel.ts` exporting `mockModel({ queue }: { queue: readonly string[] }): (input: { messages: readonly { role: "system"|"user"|"assistant"; content: string }[] }) => Promise<{ content: string }>`; 3) replies consume `queue` in order; on empty queue return a fixed final reply `"Done."`; 4) record every received `messages` array on the returned callable (expose a `.calls` property) so tests assert the prompt; 5) no network, no `process.env`, no key reads; 6) add the unit test file.
 - **DONE:** `bun test convex/lib/mockModel.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not call any real model, `fetch`, or `ai_router`; do not read or log secrets; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The returned callable is the only API; it is async and always resolves (never rejects). `messages` is validated to be an array of objects with `role` in the allowed set and `content: string`; an invalid `messages` argument throws a `ConvexError` with `EN: "Bad messages for the mock model." / HE: "הודעות לא תקינות למודל המדומה."`. Reply shape mirrors `ai_router.AiResult` minimal (`{ text }`) so callers can substitute it without changes.
+- **SPEC:** The returned callable is the only API; it is async and always resolves (never rejects). `messages` is validated to be an array of objects with `role` in the allowed set and `content: string`; an invalid `messages` argument throws a `ConvexError` with `EN: "Bad messages for the mock model." / HE: "הודעות לא תקינות למודל המדומה."`. Reply shape mirrors `ai_router.AiResult`'s `content` field (the field the coach reads via `parseCoachReply(result.content)`): the callable returns `{ content: string }` so callers substitute it without changes.
 - **TESTS:**
-  - Given `queue=["First","Second"]` / When called twice / Then replies are `"First"` then `"Second"`.
-  - Given empty `queue` / When called / Then returns `"Done."` and records the call.
+  - Given `queue=["First","Second"]` / When called twice / Then `reply.content` is `"First"` then `"Second"`.
+  - Given empty `queue` / When called / Then returns `{ content: "Done." }` and records the call.
   - Given a call / Then `.calls[0]` equals the exact `messages` array passed (deep equal).
   - Given `messages` missing `content` / Then a `ConvexError` is thrown.
-  - Given 3 queued replies and 4 calls / Then the 4th returns `"Done."`.
+  - Given 3 queued replies and 4 calls / Then the 4th returns `{ content: "Done." }`.
 - **NUMBERS:** reply determinism is exact (no range); no latency or score target applies (UNKNOWN — none needed; Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -92,12 +92,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A word/pattern list plus a pure checker that flags shaming language in any coach or app copy before it reaches the user, so generated text can be rejected or rewritten.
 - **SCOPE:** `convex/lib/shameWords.ts` (+ `convex/lib/shameWords.test.ts`).
 - **MUTATES:** none (pure module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING today — `crisisWords.ts` exists but `shameWords.ts` does not); 2) write `shameWords.ts` exporting `SHAME_PATTERNS: readonly RegExp[]` (source strings only, no secrets) and `containsShame(text: string): { found: boolean; matches: string[] }`; 3) cover EN and HE shaming terms (e.g. EN "failed", "overdue", "lazy", "must", "should have", "streak lost", "you never"; HE "נכשל", "איחרת", "עצלן", "חייב", "היית צריך"); 4) match whole words case-insensitively (EN) and plain substrings (HE, no case); 5) return the list of matched raw terms, not the text; 6) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING today — `crisisWords.ts` exists but `shameWords.ts` does not); 2) write `shameWords.ts` exporting `SHAME_PATTERNS: readonly RegExp[]` (compiled patterns only, no secrets) and `containsShame(text: string): { found: boolean; matches: string[] }`; 3) cover EN and HE shaming terms (e.g. EN "failed", "overdue", "lazy", "must", "should have", "streak lost", "you never"; HE "נכשל", "איחרת", "עצלן", "חייב", "היית צריך"); 4) match whole words case-insensitively (EN) and plain substrings (HE, no case); 5) return the list of matched raw terms, not the text; 6) add the unit test file.
 - **DONE:** `bun test convex/lib/shameWords.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not invent or hard-code user data; do not read/write any table; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not log secrets.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `SHAME_PATTERNS` is a frozen array of compiled RegExps (source strings kept readable for review). `containsShame` accepts a string, never mutates it, and returns `{found, matches}` where `matches` is the array of matched source terms (deduplicated). Matching is conservative (no shaming word may slip through): the checker is allowed to over-flag borderline terms for a human/reviewer pass, but never to under-flag the canonical list.
+- **SPEC:** `SHAME_PATTERNS` is a frozen array of compiled RegExps. `containsShame` accepts a string, never mutates it, and returns `{found, matches}` where `matches` is the array of matched source terms (deduplicated). Matching is conservative (no shaming word may slip through): the checker is allowed to over-flag borderline terms for a human/reviewer pass, but never to under-flag the canonical list.
 - **TESTS:**
   - Given `"You failed to finish it."` / Then `found===true` and `matches` contains `"failed"`.
   - Given `"The task is overdue by a day."` / Then `found===true` and `matches` contains `"overdue"`.
@@ -118,7 +118,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The entitlement decision (tier, user type, beta access, subscription grant) is one reviewed module whose tests prove every approved sign-up lands on the granted tier.
 - **SCOPE:** `convex/lib/entitlements.ts` (+ `convex/lib/entitlements.test.ts`).
 - **MUTATES:** none (reads `users` fields; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/entitlements.ts` (EXISTS: `EntitlementTier`, `GRANTED_ENTITLEMENT_TIER`, `newUserFields`, `buildReturningUserPatch`, `shouldGrantSubscription`, and a test file exist); 2) verify each exported symbol against `convex/schema.ts` `users` fields (`entitlementTier`, `userType`, `betaAccess`); 3) confirm `GRANTED_ENTITLEMENT_TIER === "max"` and `GRANTED_USER_TYPE === "paid"` (premium-for-all, PRD F-01a); 4) read the existing test file and add any missing error/boundary cases listed below; 5) do not rename or re-sign exported symbols (other modules import them).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/entitlements.ts` (EXISTS: `EntitlementTier`, `UserType`, `BetaAccess`, `GRANTED_ENTITLEMENT_TIER`, `GRANTED_USER_TYPE`, `GRANTED_BETA_ACCESS`, `GRANTED_SUBSCRIPTION`, `newUserFields`, `buildReturningUserPatch`, `shouldGrantSubscription`, and a test file exist); 2) verify each exported symbol against `convex/schema.ts` `users` fields (`entitlementTier`, `userType`, `betaAccess`); 3) confirm `GRANTED_ENTITLEMENT_TIER === "max"`, `GRANTED_USER_TYPE === "paid"` and `GRANTED_BETA_ACCESS === "tester"` (premium-for-all, PRD F-01a); 4) read the existing test file and add any missing error/boundary cases listed below; 5) do not rename or re-sign exported symbols (other modules import them).
 - **DONE:** `bun test convex/lib/entitlements.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change `GRANTED_*` values (they encode the premium-for-all ruling); do not edit `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not call RevenueCat or Polar (that is chunk D).
@@ -134,14 +134,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0005 — Lighthouse budget in CI
+### TFV2-0005 — Lighthouse budget in CI — config lane: Amit
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1342
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** PRD §4.8 F-80 (polished look); TICKET-STANDARD.md NUMBERS (Core Web Vitals); REWRITE-PLAN-v2 §6 chunk 1 "smoke + a11y + perf budget"; #1342 (TEMPO-BL-0004 — Lighthouse budget in CI).
 - **GOAL:** CI runs a Lighthouse check against the preview build and fails the loop when performance, accessibility, best-practices or SEO fall under a fixed budget.
 - **SCOPE:** `.github/workflows/ci.yml` (+ `scripts/lighthouse-budget.mjs`, new).
-- **MUTATES:** CI workflow (config). This is the chunk's single config ticket (allowed by the config-guard gate).
+- **MUTATES:** CI workflow (config). This is the chunk's single config ticket (allowed by the config-guard gate). Touches `.github/**` → config lane: Amit.
 - **STEPS:** 1) Graphify code-map check of `.github/workflows/` (no Lighthouse job exists today — confirmed no `lighthouse` reference in any workflow); 2) add `scripts/lighthouse-budget.mjs` that runs `lighthouse-ci` (or the `lighthouse` package) against the local preview server, collects `performance`, `accessibility`, `best-practices`, `seo`, `largest-contentful-paint`, `cumulative-layout-shift`, `total-blocking-time`; 3) add one CI step that starts the dev server and runs the script, failing on any metric below budget; 4) keep the check non-blocking only for the font/network `UNKNOWN` case documented in AGENTS.md (report `UNKNOWN: lighthouse (Google Fonts blocked)`, do not hard-fail); 5) never weaken a threshold to pass.
 - **DONE:** `bun scripts/lighthouse-budget.mjs` → prints each metric with pass/fail and exits 0 only when all are in budget.
 - **EVIDENCE:** paste the CI step log line showing all four scores and the exit code.
@@ -161,12 +161,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The single block codec — Zod schemas, `parseTempoBlocks` and `serializeTempoBlocks` — is verified against its limits and every error/broken-block case is tested.
 - **SCOPE:** `packages/utils/src/blocks.ts` (+ `packages/utils/src/blocks.test.ts`).
 - **MUTATES:** none (shared pure module; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `packages/utils/src/blocks.ts` (EXISTS: `BLOCK_CODEC_LIMITS`, `pageMetaDataSchema`, `taskDataSchema`, `templateDataSchema`, `tempoBlockSchema`, `parseTempoBlocks`, `serializeTempoBlocks`, and `blocks.test.ts`); 2) verify `BLOCK_CODEC_LIMITS` against `convex/schema.ts` `noteBlocks` union (page-meta/task/template/broken, `v:1`); 3) confirm the block model: `notes.body` is the page-content authority and `noteBlocks` is a disposable derived index (mark the authority claim OPEN per §4 conflict 7); 4) read the existing test file and add the missing broken-block/limit cases below; 5) do not rename exported symbols or change limit values (other modules depend on them).
+- **STEPS:** 1) Graphify code-map check of `packages/utils/src/blocks.ts` (EXISTS: `BLOCK_CODEC_LIMITS`, `pageMetaDataSchema`, `taskDataSchema`, `templateDataSchema`, `tempoBlockSchema`, `parseTempoBlocks`, `serializeTempoBlocks`, `BlockErrorCode`, `BlockSegment`, and `blocks.test.ts`); 2) verify `BLOCK_CODEC_LIMITS` against `convex/schema.ts` `noteBlocks` union (page-meta/task/template/broken, `v:1`); 3) confirm the block model as implemented: `notes.body` is the page-content authority and `noteBlocks` is a disposable derived index (already encoded by the code and schema); 4) read the existing test file and add the missing broken-block/limit cases below; 5) do not rename exported symbols or change limit values (other modules depend on them).
 - **DONE:** `bun test packages/utils/src/blocks.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change `BLOCK_CODEC_LIMITS` values or relax a Zod schema; do not surface JSON to the UI; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `parseTempoBlocks(body)` returns `BlockSegment[]` where each segment is `markdown`, `valid` (a parsed Tempo block) or `broken` (an `errorCode` + the offending source span). `serializeTempoBlocks(segments)` is the byte-exact inverse for valid segments. A block over `maxBodyChars`, `maxBlockChars`, `maxBlocks`, `maxJsonDepth`, `maxShortStringChars`, `maxTextChars` or `maxArrayItems` produces a `broken` segment with the matching `errorCode`, never a throw and never silent data loss. Broken-block `errorCode` values match the `noteBlocks` `broken` union in `convex/schema.ts` (`body_too_large`, `too_many_blocks`, `block_too_large`, …). No JSON is ever emitted to the UI.
+- **SPEC:** `parseTempoBlocks(body)` returns `BlockSegment[]` where each segment is `markdown`, `valid` (a parsed Tempo block) or `broken` (an `errorCode` + the offending source span). `serializeTempoBlocks(segments)` is the byte-exact inverse for valid segments. A block over `maxBodyChars`, `maxBlockChars`, `maxBlocks`, `maxJsonDepth`, `maxShortStringChars`, `maxTextChars` or `maxArrayItems` produces a `broken` segment with the matching `errorCode`, never a throw and never silent data loss. Broken-block `errorCode` values match the `noteBlocks` `broken` union in `convex/schema.ts` (`body_too_large`, `too_many_blocks`, `block_too_large`, `unclosed_fence`, `malformed_json`, `invalid_envelope`, `unsupported_type`, `unsupported_version`, `invalid_data`, `duplicate_id`, `duplicate_page_meta`, `nesting_too_deep`). No JSON is ever emitted to the UI.
 - **TESTS:**
   - Given a body with one valid task block / When `parseTempoBlocks` runs / Then exactly one `valid` segment with `type==="task"`.
   - Given `serializeTempoBlocks(parseTempoBlocks(body))` / Then output equals input (round-trip) for valid bodies.
@@ -178,7 +178,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given plain markdown with no block fences / Then all segments are `markdown`.
 - **NUMBERS:** limits are `BLOCK_CODEC_LIMITS` (repo code truth): `maxBodyChars 1_048_576`, `maxBlockChars 65_536`, `maxBlocks 256`, `maxJsonDepth 16`, `maxShortStringChars 200`, `maxTextChars 500`, `maxArrayItems 100`. Round-trip fidelity = byte-exact for valid segments (no range).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** block-model authority — `notes.body` as the single page-content authority with typed tables migrating into blocks and retiring (REWRITE-PLAN-v2 §4 conflict 7; UNKNOWN — Amit). The 12 Oct contracts are the newest and lean toward `notes.body`.
+- **OPEN:** none.
 
 ### TFV2-0007 — `notes.save` / `notes.patchBlock` (notes.body authority)
 - **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
@@ -187,13 +187,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** PRD §4.1 F-02/F-03 (every page one markdown document; blocks drawn as elements); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (notes.body authority, save/patchBlock)"; REWRITE-PLAN-v2 §4 conflict 7.
 - **GOAL:** `convex/notes.ts` gains a block-aware `save` (whole-body, revision-advancing) and `patchBlock` (one block by id), both writing `notes.body`, advancing `revision`, and leaving an operation receipt for Undo.
 - **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
-- **MUTATES:** `notes` table writes (body, revision, updatedAt); adds mutations `save`, `patchBlock`.
+- **MUTATES:** `notes` table writes (body, revision, updatedAt) and `pageOperations`/`pageOperationPayloads` receipt writes via `convex/lib/pageLedger.ts`; adds mutations `save`, `patchBlock`.
 - **STEPS:** 1) Graphify code-map check of `convex/notes.ts` (EXISTS `get`, `getSafe`, `create`, `update`, `remove`, `restore`, `togglePin`, `backlinks`; `save`/`patchBlock` are MISSING); 2) add `save({ id, body, expectedRevision? })` that validates `body` via `parseTempoBlocks`, rejects over-budget bodies, writes `body`, advances `revision` by exactly one, sets `updatedAt`, and writes the operation receipt through `convex/lib/pageLedger.ts`; 3) add `patchBlock({ id, blockId, patch })` that reads `notes.body`, re-serializes only the addressed block (byte-exact elsewhere), and routes through the same save path; 4) keep `update` working for legacy callers or mark it internal; 5) every body-changing write is owner-scoped (`userId` must equal the caller); 6) add the unit test file covering every error case below.
 - **DONE:** `bun test convex/notes.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not write `noteBlocks` directly here (that is TFV2-0008); do not bypass `parseTempoBlocks`; do not change `notes.body` schema; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not surface JSON.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Mutations run in `convex/notes.ts` under the user's own `userId` (auth via `lib/requireUser.ts`). `save` args: `{ id: Id<"notes">, body: string, expectedRevision?: number }`; returns `{ ok: true, revision: number }`. `patchBlock` args: `{ id, blockId, patch: TempoBlock }`; returns `{ ok: true, revision: number }`. On `expectedRevision` mismatch return a `ConvexError` with code `REVISION_CONFLICT`. Over-budget body returns code `BODY_TOO_LARGE`. A missing page or non-owner returns code `NOT_FOUND`. Error copy (EN/HE): `EN: "Someone else changed this page. Reload and try again." / HE: "מישהו אחר שינה את הדף. טענו מחדש ונסו שוב."` (conflict); `EN: "This page is too large to save." / HE: "הדף הזה גדול מדי לשמירה."` (too large).
+- **SPEC:** Mutations run in `convex/notes.ts` under the user's own `userId` (auth via `lib/requireUser.ts`). `save` args: `{ id: Id<"notes">, body: string, expectedRevision?: number }`; returns `{ ok: true, revision: number }`. `patchBlock` args: `{ id: Id<"notes">, blockId: string, patch: TempoBlock }`; returns `{ ok: true, revision: number }`. On `expectedRevision` mismatch throw a `ConvexError` with code `REVISION_CONFLICT`. Over-budget body throws code `BODY_TOO_LARGE`. A missing page or non-owner throws code `NOT_FOUND`. Error copy (EN/HE): `EN: "Someone else changed this page. Reload and try again." / HE: "מישהו אחר שינה את הדף. טענו מחדש ונסו שוב."` (conflict); `EN: "This page is too large to save." / HE: "הדף הזה גדול מדי לשמירה."` (too large).
 - **TESTS:**
   - Given an owner calls `save` with a valid body / Then `body` updates, `revision` advances by 1, `updatedAt` increases, a page operation receipt exists.
   - Given `expectedRevision` stale / Then `REVISION_CONFLICT` and `body` unchanged.
@@ -204,7 +204,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given two sequential `save` calls / Then `revision` is 1 then 2.
 - **NUMBERS:** `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars` = 1,048,576 chars (repo code). Save round-trip of untouched blocks = byte-exact (no range).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit). `expectedRevision` opt-in vs mandatory (UNKNOWN — Amit).
+- **OPEN:** none.
 
 ### TFV2-0008 — `noteBlocks` derived index
 - **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
@@ -228,32 +228,32 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given index rebuild from the same body / Then the rows are identical (idempotent).
 - **NUMBERS:** row count bound = `BLOCK_CODEC_LIMITS.maxBlocks` = 256 per page (repo code). Index/body consistency = exact on every save (no range).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit).
+- **OPEN:** none.
 
-### TFV2-0009 — `noteLinks` / backlinks derived index
-- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+### TFV2-0009 — `noteLinks` / backlinks (live bounded scan) — OPEN
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0007.
-- **WHY:** PRD §4.1 (pages), §4.5 F-54 (user-written `[[links]]`); DESIGN.md §9 (Wikilink → "Linked here"); REWRITE-PLAN-v2 §6 chunk 1 "noteLinks/backlinks derived index".
-- **GOAL:** `[[page]]` links inside `notes.body` are indexed on every save so the editor's "Linked here" list and any backlink query return correct, current links without re-scanning pages.
-- **SCOPE:** `convex/notes_links.ts` (+ `convex/notes_links.test.ts`).
-- **MUTATES:** link-derived index writes (rows keyed by target page id); adds nothing to the `notes` schema itself.
-- **STEPS:** 1) Graphify code-map check of `convex/notes_links.ts` and `convex/notes.ts` `backlinks` query (EXISTS; `notes.ts` `backlinks` is the reader); 2) confirm `notes.save`/`patchBlock` (TFV2-0007) invokes the link-index writer; if not wired, wire it in `notes_links.ts`; 3) index each `[[target]]` occurrence with source page, target page and a snippet; 4) de-duplicate and remove stale links on save; 5) add the unit test file for every error case below.
+- **WHEN:** first.
+- **WHY:** PRD §4.1 (pages), §4.5 F-54 (user-written `[[links]]`); DESIGN.md §9 (Wikilink → "Linked here"); REWRITE-PLAN-v2 §6 chunk 1 "noteLinks/backlinks"; REWRITE-PLAN-v2 §4 conflict 7 (block model).
+- **GOAL:** The editor's "Linked here" list and `[[page]]` picker — `notes.backlinks` and `notes.searchTitles` — are verified as bounded live scans over `notes.body`, so links resolve from the body itself (bodies are the only truth) without a derived link table.
+- **SCOPE:** `convex/notes.ts` (+ `convex/notes_links.test.ts`).
+- **MUTATES:** none (verifies existing queries; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/notes.ts` (EXISTS: `backlinks`, `searchTitles`, `LINK_SCAN_LIMIT` (500), `LINK_SCAN_BYTES` (12 MiB), `noteSizeBound`, `recentNotesForLinks`; there is NO `convex/notes_links.ts` and NO `noteLinks` table — the index writer does not exist, and the reader is `notes.backlinks`); 2) verify `backlinks` computes links live from the owner's recent `notes.body` via `backlinksFor` (from `@tempo/utils` wiki-links), owner-scoped and bounded; 3) verify `searchTitles` resolves `[[Title]]` with exact-then-prefix-then-contains ordering; 4) read the existing `convex/notes_links.test.ts` (it imports `./notes`) and add the missing cases below; 5) do not rename exported queries.
 - **DONE:** `bun test convex/notes_links.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
-- **DO NOT:** do not change the `notes` or `noteBlocks` schema; do not write links from the UI directly; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not create a `convex/notes_links.ts` writer or a `noteLinks` table (that is a schema change — see OPEN); do not change the `notes` or `noteBlocks` schema; do not write links from the UI directly; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** A `[[target]]` match uses the same wikilink tokenizer as `packages/utils/src/wiki-links.ts` (EXISTS) so the editor and the index agree. Each indexed link records `sourceId`, `targetId`, a short context snippet and `updatedAt`. The `backlinks({ pageId })` query returns links whose target is `pageId`, ordered newest first, with the source title and snippet. User-facing header copy (EN/HE): `EN: "Linked here" / HE: "מקושר לכאן"`; empty state `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`.
+- **SPEC:** `backlinks({ noteId: string })` returns links whose `[[title]]` matches the target page's title, ordered newest first, with the linking line as plain context (computed from bodies; no body leaves the server; capped at 50). `searchTitles({ query: string, limit?: number })` returns metadata-only `PageTitle` rows (exact titles first, then prefix, then contains; limit clamped 1–20). Both walk `recentNotesForLinks`, bounded by `LINK_SCAN_LIMIT` (500) and `LINK_SCAN_BYTES` (12 MiB), owner-scoped and soft-delete aware. User-facing header copy (EN/HE): `EN: "Linked here" / HE: "מקושר לכאן"`; empty state `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`.
 - **TESTS:**
-  - Given a page body with `[[Target]]` / When saved / Then one link row exists targeting `Target`.
-  - Given two pages both linking `[[Target]]` / When `backlinks({ pageId: Target })` runs / Then two links return, newest first.
-  - Given a save removes `[[Target]]` / Then its link row is gone.
-  - Given `[[Target]]` appears twice / Then one de-duplicated row.
-  - Given a non-owner calls `backlinks` for another user's page / Then it returns only the caller's own links (isolation).
-  - Given a `[[Target]]` where no page exists / Then the index records the raw text target without a resolved id (unresolved), and the query tolerates it.
-- **NUMBERS:** link scan bound = `LINK_SCAN_LIMIT` (500) and `LINK_SCAN_BYTES` (12 KiB) already in `convex/notes.ts` (repo code). Index correctness = exact after every save (no range).
+  - Given a page body with `[[Target]]` / When `backlinks({ noteId: Target })` runs / Then one link returns for the source page.
+  - Given two pages both linking `[[Target]]` / Then two links return, newest first.
+  - Given `[[Target]]` appears twice in one body / Then one link row returns (de-duplicated).
+  - Given a non-owner's page links a title / Then `backlinks` never surfaces another user's body (isolation).
+  - Given `searchTitles({ query: "Tar" })` / Then exact title matches sort before prefix matches before contains.
+  - Given a soft-deleted page / Then `backlinks` excludes it.
+- **NUMBERS:** `LINK_SCAN_LIMIT` = 500 and `LINK_SCAN_BYTES` = 12 MiB (repo code). Index correctness = exact after every body change (no range) — links are derived from the body, so there is no index to drift.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** block-model authority affects what "a link" is stored as (UNKNOWN — Amit).
+- **OPEN:** whether to add a derived `noteLinks` table (schema change) instead of the current live `notes.body` scan — REWRITE-PLAN-v2 §4 conflict 7 (block model authority). UNKNOWN — Amit. Code truth today: live bounded scan, no link table.
 
 ### TFV2-0010 — Operation ledger + 5-min Undo `convex/lib/pageLedger.ts`
 - **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
@@ -263,7 +263,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The existing page-operation ledger and its 5-minute Undo path are verified end-to-end, with every error and conflict case under test.
 - **SCOPE:** `convex/lib/pageLedger.ts` (+ `convex/lib/pageLedger.test.ts`).
 - **MUTATES:** none (pure ledger helpers; the write path lives in `notes.save`, TFV2-0007).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/pageLedger.ts` (EXISTS: `PAGE_LEDGER_LIMITS`, `PAGE_LEDGER_TIMING`, `validatePageOperationFacts`, `applyPageSplices`, `invertPageSplices`, `diffToSingleSplice`, `checkExpectedRevision`, `digestBody`, `sha256Hex`, and a test file); 2) verify `PAGE_LEDGER_TIMING` encodes the 5-minute Undo window; 3) confirm `notes.save` (TFV2-0007) writes a receipt with the body digest and previous revision; 4) read the existing test file and add the missing error/boundary cases below; 5) do not rename exported symbols.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pageLedger.ts` (EXISTS: `PAGE_LEDGER_LIMITS`, `PAGE_LEDGER_TIMING`, `validatePageOperationFacts`, `applyPageSplices`, `invertPageSplices`, `diffToSingleSplice`, `checkExpectedRevision`, `digestBody`, `sha256Hex`, `isValidSha256Hex`, and a test file); 2) verify `PAGE_LEDGER_TIMING` encodes the 5-minute Undo window (`undoWindowMs: 300_000`); 3) confirm `notes.save` (TFV2-0007) writes a receipt with the body digest and previous revision; 4) read the existing test file and add the missing error/boundary cases below; 5) do not rename exported symbols.
 - **DONE:** `bun test convex/lib/pageLedger.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change the Undo window duration (5 minutes is a product rule); do not weaken `checkExpectedRevision`; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
@@ -278,75 +278,98 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a receipt older than 5 minutes / Then it is not undoable (window enforced).
   - Given an invalid sha256 hex / Then `isValidSha256Hex` rejects it.
   - Given `digestBody` on the same body twice / Then equal digests (determinism).
-- **NUMBERS:** Undo window = 5 minutes (`PAGE_LEDGER_TIMING`, repo code + PRD F-131). Digest determinism = exact (no range).
+- **NUMBERS:** Undo window = 5 minutes (`PAGE_LEDGER_TIMING.undoWindowMs = 300_000`, repo code + PRD F-131). Digest determinism = exact (no range).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** accept-reject vs auto-apply (REWRITE-PLAN-v2 §4 conflict 6): whether every AI mutation goes through `proposals.ts` confirm/edit/reject or `confidence ≥ 0.8` auto-applies with this 5-min Undo (UNKNOWN — Amit). The ledger supports both; the caller policy is not decided here.
+- **OPEN:** none.
 
-### TFV2-0011 — `pagePrivacy` + resource quotas (4 MiB/file · 50 MiB · 100 files)
+### TFV2-0011a — `pagePrivacy` owner-scoped access checks
 - **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0006.
 - **WHY:** PRD §4.11 F-130 (per-user isolation); REWRITE-PLAN-v2 §6 chunk 1 "bounded queries + resource quotas".
-- **GOAL:** Every page read and block read goes through owner-scoped access checks, and per-user storage quotas (4 MiB per file, 50 MiB total, 100 files) are enforced at write time.
+- **GOAL:** Every page read and block read goes through owner-scoped access checks, verified against every denial case.
 - **SCOPE:** `convex/lib/pagePrivacy.ts` (+ `convex/lib/pagePrivacy.test.ts`).
-- **MUTATES:** none for existing helpers; adds quota constants and a `checkStorageQuota` helper (reads `notes`/file metadata only).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/pagePrivacy.ts` (EXISTS: `requireActiveOwner`, `requireLivePage`, `readLivePageBlocks`, `requireUndoAccess`, `requireLiveProposal`; quota constants 4 MiB/50 MiB/100 files are MISSING); 2) add `RESOURCE_QUOTA = { maxFileBytes: 4 * 1024 * 1024, maxTotalBytes: 50 * 1024 * 1024, maxFiles: 100 }`; 3) add `checkStorageQuota(ctx, userId, incomingBytes)` that sums the user's current stored bytes/file count and rejects when the incoming write would exceed a quota; 4) keep owner isolation (a `userId` can only ever read/write its own rows); 5) add the unit test file for every error case below.
+- **MUTATES:** none (verifies existing helpers; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pagePrivacy.ts` (EXISTS: `requireActiveOwner`, `requireLivePage`, `readLivePageBlocks`, `requireUndoAccess`, `requireLiveProposal`, `PagePrivacyDenial`); 2) verify each helper denies a non-owner, a soft-deleted page and an inactive account; 3) read the existing test file (if any) and add the missing cases below; 4) do not rename exported symbols.
+- **DONE:** `bun test convex/lib/pagePrivacy.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change `convex/schema.ts`; do not add a quota helper here (that is TFV2-0011b); do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `requireActiveOwner(ctx, userId)` and `requireLivePage(ctx, userId, noteId)` return the live row on success and return a `PagePrivacyDenial` on failure (never the row to a non-owner). `readLivePageBlocks` reads only the owner's live page. `requireUndoAccess` scopes Undo to the owner; `requireLiveProposal` scopes proposals. No helper reads another user's rows.
+- **TESTS:**
+  - Given an owner reading its own live page / When `requireLivePage` runs / Then success.
+  - Given a non-owner / Then a denial result, never the row.
+  - Given a soft-deleted page / Then `requireLivePage` denies it (30-day grace honoured).
+  - Given an inactive (tombstoned) account / Then `requireActiveOwner` denies.
+  - Given `readLivePageBlocks` / Then it returns blocks only for the owner's live page.
+  - Given a non-owner calls `requireUndoAccess` / Then denial.
+- **NUMBERS:** no industry number; correctness is owner isolation (100% of reads scoped). No numeric range.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0011b — resource quotas (4 MiB/file · 50 MiB · 100 files) — OPEN
+- **Stage:** A · **Pass:** 1 · **Depends:** 0011a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0011a.
+- **WHY:** PRD §4.11 F-130 (per-user isolation); REWRITE-PLAN-v2 §6 chunk 1 "bounded queries + resource quotas".
+- **GOAL:** Per-user storage quotas (4 MiB per file, 50 MiB total, 100 files) are enforced at write time by a reviewed helper.
+- **SCOPE:** `convex/lib/pagePrivacy.ts` (+ `convex/lib/pagePrivacy.test.ts`).
+- **MUTATES:** none for existing helpers; adds quota constants and a `checkStorageQuota` helper.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pagePrivacy.ts` and `convex/schema.ts` (quota constants 4 MiB/50 MiB/100 files are MISSING; NOTE: there is no `files`/blob table in `convex/schema.ts` — the only page-like store is `notes`); 2) add `RESOURCE_QUOTA = { maxFileBytes: 4 * 1024 * 1024, maxTotalBytes: 50 * 1024 * 1024, maxFiles: 100 }`; 3) add `checkStorageQuota(ctx, userId, incomingBytes)` that sums the user's current stored bytes/file count and rejects when the incoming write would exceed a quota; 4) keep owner isolation; 5) add the unit test file for every error case below.
 - **DONE:** `bun test convex/lib/pagePrivacy.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change `convex/schema.ts`; do not add a new table for quota (compute from existing rows); do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
 - **SPEC:** `checkStorageQuota` is called before any file/blob write and before page-attachment writes. A single file over `maxFileBytes` is rejected with code `FILE_TOO_LARGE`; exceeding `maxTotalBytes` → `STORAGE_FULL`; exceeding `maxFiles` → `FILE_COUNT_EXCEEDED`. Quota user-facing copy (EN/HE): `EN: "This file is larger than the 4 MB limit." / HE: "הקובץ גדול מהמגבלה של 4 מגה־בייט."`; `EN: "You've reached your 50 MB storage limit." / HE: "הגעת למגבלת האחסון של 50 מגה־בייט."`; `EN: "You've reached the 100-file limit." / HE: "הגעת למגבלה של 100 קבצים."`.
 - **TESTS:**
-  - Given an owner reading its own live page / When `requireLivePage` runs / Then success.
-  - Given a non-owner / Then a denial result, never the row.
   - Given a file of 5 MiB / When `checkStorageQuota` runs / Then `FILE_TOO_LARGE`.
   - Given a user already at 50 MiB / Then any added byte → `STORAGE_FULL`.
   - Given a user at 100 files / Then another file → `FILE_COUNT_EXCEEDED`.
   - Given a user under all quotas / Then success.
-  - Given a soft-deleted page / Then `requireLivePage` denies it (30-day grace honoured).
+  - Given a single zero-byte file / Then success (boundary: no byte overrun).
 - **NUMBERS:** 4 MiB per file, 50 MiB total, 100 files (product decision in REWRITE-PLAN-v2 §6 chunk 1; not an industry standard — UNKNOWN source beyond the plan; Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether the 50 MiB / 100 files quotas are per-user storage on Convex or a provider-side cap (UNKNOWN — Amit).
+- **OPEN:** where per-user file/blob storage lives and what `checkStorageQuota` sums — there is no `files` table in `convex/schema.ts`, so "current stored bytes/file count" has no data source. UNKNOWN — Amit: name the storage system (Convex rows vs a provider-side cap) before this is buildable.
 
-### TFV2-0012 — Approval-gated sign-up (`convex/auth.ts` + `convex/lib/approval.ts`)
+### TFV2-0012 — Approval-gated sign-up (`convex/auth.ts` + `convex/lib/approval.ts`) — config lane: Amit
 - **Stage:** A · **Pass:** 1 · **Depends:** 0004 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0004.
 - **WHY:** PRD §4.1 F-01a (approval-gated sign-up; unapproved email can never sign in; every approved user gets the premium tier); REWRITE-PLAN-v2 §6 chunk 1 "approval-gated sign-up"; REWRITE-PLAN-v2 §4 conflict 4.
 - **GOAL:** The approval gate is verified: a pending email cannot sign in or receive a magic link, and an approved email gets the granted premium tier through `entitlements`.
 - **SCOPE:** `convex/auth.ts` + `convex/lib/approval.ts` (+ `convex/lib/approval.test.ts`).
-- **MUTATES:** none (reads approval state; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `convexAuth`, `convex/lib/approval.ts` `ApprovalStatus`, `PENDING_APPROVAL_ERROR`, `isAdminUser`, `initialApprovalStatus`, `approvalStatusOf`, `isApproved`, `releaseApprovalDecision`, plus `approval.test.ts`); 2) verify the sign-in path refuses a `pending`/absent email before any magic link is sent; 3) verify an approved email proceeds to `entitlements.newUserFields` (TFV2-0004) and lands on `entitlementTier==="max"`; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
+- **MUTATES:** none (reads approval state; adds no table, route or env). Touches `convex/auth.ts` (`convex/auth*`) → config lane: Amit.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `convexAuth`, `convex/lib/approval.ts` `ApprovalStatus`, `APPROVAL_GATE_EPOCH_MS`, `PENDING_APPROVAL_ERROR`, `PENDING_APPROVAL_MESSAGE`, `normalizeEmail`, `parseEmailList`, `adminEmails`, `isAdminUser`, `initialApprovalStatus`, `approvalStatusOf`, `isApproved`, `releaseApprovalDecision`, `requireApprovedUser`, `requireAdmin`, plus `approval.test.ts`); 2) verify the sign-in path refuses a `pending`/absent email before any magic link is sent; 3) verify an approved email proceeds to `entitlements.newUserFields` (TFV2-0004) and lands on `entitlementTier==="max"`; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
 - **DONE:** `bun test convex/lib/approval.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change the premium-for-all grant; do not invent an approval UI here (that is TFV2-0060); do not touch `.github/**`, `.env` or workflows; do not read or log the admin email list values.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `approvalStatusOf(email)` returns `pending` | `approved` | `revoked`. `isApproved` gates the magic-link send. `initialApprovalStatus` is applied at first contact. `isAdminUser` derives admins from `adminEmails()`. Pending-approval user-facing copy (EN/HE): `EN: "You're on the list. We'll write when you're in." / HE: "אתה ברשימה. נכתוב כשתיכנס."` and `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`.
+- **SPEC:** `approvalStatusOf(user: Pick<Doc<"users">, "email" | "role" | "approvalStatus"> & { _creationTime?: number }, admins?: string[]): ApprovalStatus` returns `"pending" | "approved" | "revoked"` (admins are always approved; pre-gate rows with no field count as approved; post-gate rows with no field fail closed to pending). `initialApprovalStatus(email, admins?)` returns `"approved"` for an admin email else `"pending"`. `isApproved` gates the magic-link send. `requireApprovedUser(ctx)` (auth + approved) throws `Error(PENDING_APPROVAL_MESSAGE)` where `PENDING_APPROVAL_ERROR = "ACCOUNT_PENDING_APPROVAL"`. Pending-approval user-facing copy (EN/HE): `EN: "You're on the list. We'll write when you're in." / HE: "אתה ברשימה. נכתוב כשתיכנס."` and `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`.
 - **TESTS:**
   - Given a `pending` email / When sign-in is attempted / Then no magic link is sent and `PENDING_APPROVAL_ERROR` is raised.
   - Given an `approved` email / Then a link is sent and the new user fields carry `entitlementTier==="max"`.
   - Given a `revoked` email / Then sign-in is refused.
   - Given an unknown email / Then it is treated as pending (never reveals existence) — assert the actual behaviour.
-  - Given an admin email / Then `isAdminUser` is true.
-  - Given `approvalStatusOf` with a normalized email (case, whitespace) / Then it matches the stored form.
+  - Given an admin email / Then `isAdminUser` is true and `initialApprovalStatus` returns `"approved"`.
+  - Given `approvalStatusOf` on a user whose `email` has case/whitespace / Then `normalizeEmail` matches the stored form.
 - **NUMBERS:** no industry number; correctness is the F-01a invariant (unapproved can never sign in). Pass: invariant on 100% of cases (no range).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** sign-up policy (REWRITE-PLAN-v2 §4 conflict 4): the cap (PRD says 30) vs "unlimited, each approved by Amit", and the approval order, and where Amit approves (admin screen vs Convex dashboard vs email link) are all UNKNOWN — Amit.
+- **OPEN:** sign-up policy (REWRITE-PLAN-v2 §4 conflict 4): the cap (PRD says 30) vs "unlimited, each approved by Amit", the approval order, and where Amit approves (admin screen vs Convex dashboard vs email link) are all UNKNOWN — Amit.
 
-### TFV2-0013 — Magic-link sign-in / sign-out parity (remove passkeys)
+### TFV2-0013 — Magic-link sign-in / sign-out parity (remove passkeys) — config lane: Amit
 - **Stage:** A · **Pass:** 1 · **Depends:** 0012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0012.
 - **WHY:** PRD §4.1 F-01 (magic link only; no password, no passkeys); REWRITE-PLAN-v2 §6 chunk 1 "magic-link sign-in/sign-out parity (remove passkeys)".
 - **GOAL:** Sign-in is magic-link only and sign-out is symmetric; there is no passkey/webauthn surface anywhere in auth.
 - **SCOPE:** `convex/auth.ts` + `convex/lib/signInEmail.ts` (+ `convex/lib/signInEmail.test.ts`).
-- **MUTATES:** none (auth wiring; removes nothing new because no passkey code exists).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `signIn`/`signOut`/`store`, `convex/lib/signInEmail.ts` `signInEmail`; a repo-wide grep for `passkey|webauthn` returns nothing today, so the removal is already done); 2) verify `signOut` clears the session and returns the user to an unauthenticated state; 3) verify the email subject/body (`signInEmail`) carries both EN and HE and a 30-minute validity note; 4) add the missing parity tests below; 5) do not change the magic-link sender address or link lifetime.
+- **MUTATES:** none (auth wiring; removes nothing new because no passkey code exists). Touches `convex/auth.ts` (`convex/auth*`) → config lane: Amit.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `signIn`/`signOut`/`store`, `convex/lib/signInEmail.ts` `signInEmail`, `SIGN_IN_EMAIL_SUBJECT`, `sendSignInEmail`; a repo-wide grep for `passkey|webauthn` returns nothing today, so the removal is already done); 2) verify `signOut` clears the session and returns the user to an unauthenticated state; 3) verify the email subject/body (`signInEmail`) carries both EN and HE and a 30-minute validity note; 4) add the missing parity tests below; 5) do not change the magic-link sender address or link lifetime.
 - **DONE:** `bun test convex/lib/signInEmail.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count), plus the grep output showing zero passkey references.
 - **DO NOT:** do not reintroduce passkeys, passwords or any second sign-in method; do not change the Resend sender or secret names; do not touch `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `signInEmail({ url, host })` returns the Resend payload with subject `EN: "Your Tempo Flow sign-in link · קישור הכניסה שלכם"` (already bilingual) and a link valid 30 minutes. `signOut` is idempotent (calling it twice is safe). The auth surface exposes exactly one sign-in method: email magic link. Link-sent copy (EN/HE): `EN: "We sent a link. It works for 30 minutes." / HE: "שלחנו קישור. הוא עובד 30 דקות."`.
+- **SPEC:** `signInEmail({ url, host }): SignInEmail` returns `{ subject, html, text }` with subject `SIGN_IN_EMAIL_SUBJECT = "Your Tempo Flow sign-in link · קישור הכניסה שלכם"` (already bilingual) and a link valid 30 minutes ("The link works for 30 minutes and only once." / "הקישור עובד במשך 30 דקות ופעם אחת בלבד."). `signOut` is idempotent (calling it twice is safe). The auth surface exposes exactly one sign-in method: email magic link. Link-sent copy (EN/HE): `EN: "We sent a link. It works for 30 minutes." / HE: "שלחנו קישור. הוא עובד 30 דקות."`.
 - **TESTS:**
   - Given a valid `url` and `host` / When `signInEmail` runs / Then the payload has a subject containing both languages and a body containing the link.
   - Given `signOut` then a read / Then the session is unauthenticated.
@@ -365,48 +388,48 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The AI seam (`callLLM` in `ai_router.ts`) is verified as the single point where the coach and chat call the runtime model, with tier routing and no key leakage.
 - **SCOPE:** `convex/lib/ai_router.ts` (+ `convex/lib/ai_router.test.ts`).
 - **MUTATES:** none (seam wiring; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/ai_router.ts` `AiTier`, `AiMessage`, `AiResult`, `DEFAULT_AI_MODEL`, `DEEPINFRA_CHAT_COMPLETIONS_URL`, `resolveAiModel`, `callLLM`, plus a test file); 2) verify `callLLM` accepts the mock model from TFV2-0002 (so tests never hit the network); 3) confirm the model id comes from the seam only and never reads a key into a log; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/ai_router.ts` `AiTier`, `AiMessage`, `AiResult`, `AiCallOptions`, `DEFAULT_AI_MODEL`, `DEEPINFRA_CHAT_COMPLETIONS_URL`, `resolveAiModel`, `callLLM`, plus `ai_errors.ts` `AiAuthError`/`AiRateLimitedError`/`AiContextTooLargeError`/`AiUpstreamError` and a test file); 2) verify `callLLM` is the only fetch path and never reads a key into a log; 3) verify `resolveAiModel()` reads `TEMPO_AI_MODEL` and falls back to `DEFAULT_AI_MODEL`; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
 - **DONE:** `bun test convex/lib/ai_router.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not call a real model, the network or `fetch` in tests; do not print or log any key; do not change the provider URL; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `callLLM({ tier, messages })` returns `AiResult { text }` (or the existing richer shape). `resolveAiModel()` returns the configured model id, defaulting to `DEFAULT_AI_MODEL`. `AiTier` is `"fast"| "balanced"| "deep"`. Error cases return a typed error result (not a thrown `ConvexError`) so callers can degrade gracefully. The seam must never log the request/response body, the provider URL with credentials, or any key value. User-facing failure copy (EN/HE): `EN: "The coach is having a moment. Try again." / HE: "המאמן תקוע לרגע. נסו שוב."`.
+- **SPEC:** `callLLM(opts: AiCallOptions): Promise<AiResult>` returns `AiResult { tier, requestedTier, model, content, usage, escalated }` (the reply text is the `content` field). `resolveAiModel()` returns the configured model id, defaulting to `DEFAULT_AI_MODEL`. `AiTier` is `"fast" | "balanced" | "deep"`. On a missing `DEEPINFRA_API_KEY` it throws `AiAuthError`; on a rate-limit or upstream failure it retries once (500 ms) then throws `AiRateLimitedError`/`AiUpstreamError`; context-too-large throws `AiContextTooLargeError`. These are typed `AiError` subclasses (not `ConvexError` and not returned values), so the coach catches and degrades to `unavailable`. The seam must never log the request/response body, the provider URL with credentials, or any key value. User-facing failure copy (EN/HE): `EN: "The coach is having a moment. Try again." / HE: "המאמן תקוע לרגע. נסו שוב."`.
 - **TESTS:**
-  - Given a mock model / When `callLLM` runs / Then it returns the mock reply and records the call.
-  - Given a tier of `"fast"| "balanced"| "deep"` / Then the resolved model is a non-empty string.
-  - Given an empty messages array / Then a typed error result, not a throw.
+  - Given the mock model from TFV2-0002 injected where `callLLM` is called (via `runCoachReply`'s `call` seam) / Then the reply is the mock's `content` and the call is recorded.
+  - Given a tier of `"fast"|"balanced"|"deep"` / Then `resolveAiModel` returns a non-empty string.
   - Given a missing model id / Then `resolveAiModel` falls back to `DEFAULT_AI_MODEL`.
-  - Given a provider failure (mocked) / Then a typed error result with no key in the message.
-  - Given the same input twice / Then deterministic with the mock (assert replay).
-- **NUMBERS:** no latency/success-rate target is verifiable offline (UNKNOWN — Amit). Model string is a product decision (see OPEN).
+  - Given a missing `DEEPINFRA_API_KEY` (mocked) / Then `callLLM` throws `AiAuthError` with no key value in the message.
+  - Given an upstream failure once (mocked) / Then `callLLM` retries once and returns on the second attempt.
+  - Given two upstream failures (mocked) / Then `callLLM` throws `AiUpstreamError`.
+- **NUMBERS:** retry count = exactly 1 inside `callLLM` (repo code). No latency/success-rate target is verifiable offline (UNKNOWN — Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** interim text model (REWRITE-PLAN-v2 §4 conflict 3): repo `DEFAULT_AI_MODEL` is `deepseek-ai/DeepSeek-V4.1-Flash` on DeepInfra; a later note says `GLM 5.3 Flash on DeepInfra` (that string appears nowhere in the repo). UNKNOWN — Amit; `ai_router.ts` is the source of truth until settled.
+- **OPEN:** none.
 
-### TFV2-0015 — `/coach` chat uses `chat.send` + Thinking + Retry
+### TFV2-0015 — `/coach` chat uses `coach.sendMessage` + `coach.reply` (retry in `callLLM`)
 - **Stage:** A · **Pass:** 1 · **Depends:** 0014 · **Folds-in:** #744
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0014.
-- **WHY:** PRD §4.2 F-20 (coach chat); REWRITE-PLAN-v2 §6 chunk 1 "/coach chat uses chat.send + Thinking + Retry"; #744 (TEMPO-N2-02).
-- **GOAL:** The coach chat path is verified to send messages through the chat send, surface a Thinking state, and retry once on a transient seam failure.
+- **WHY:** PRD §4.2 F-20 (coach chat); REWRITE-PLAN-v2 §6 chunk 1 "/coach chat uses send + Thinking + Retry"; #744 (TEMPO-N2-02).
+- **GOAL:** The coach chat path is verified: `sendMessage` stores the user's message (short-circuiting crisis text to the fixed card) and `reply` runs `runCoachReply` → `callLLM` and saves the reply; a seam failure degrades to `unavailable`.
 - **SCOPE:** `convex/coach.ts` (+ `convex/coach_chat.test.ts`).
 - **MUTATES:** none (wiring; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/coach.ts`, `convex/coach_chat.test.ts`); 2) verify the send path calls `callLLM` (TFV2-0014) and not a hand-rolled `fetch`; 3) verify a Thinking/typing state precedes the reply; 4) verify one retry on a transient failure then a graceful error; 5) read the existing test file and add the missing cases below; 6) do not rename exported mutations/queries.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/coach.ts` `sendMessage`, `reply`, `runCoachReply`, `claimTurn`, `saveReply`, `releaseTurn`, `MAX_MESSAGE_CHARS`; `convex/coach_chat.test.ts`); 2) verify `sendMessage` requires approval (`requireApprovedUser`), validates content against `MAX_MESSAGE_CHARS` (4000), inserts the user message, and short-circuits crisis text to `crisisCardText(CRISIS_CARD)` with no `callLLM`; 3) verify `reply` (action) → `runCoachReply` → `requireApprovedForAi` (TFV2-0018) → `claimTurn` → `callLLM` (TFV2-0014) → `saveReply`; 4) verify a seam failure releases the turn and returns `unavailable` (the single retry lives inside `callLLM`, not here); 5) read the existing test file and add the missing cases below; 6) do not rename exported mutations/queries.
 - **DONE:** `bun test convex/coach_chat.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not call a real model in tests (use `mockModel`); do not print keys; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The coach send path is: validate auth and AI gate (TFV2-0018) → enqueue the user message → set Thinking → `callLLM` → stream/write reply → clear Thinking. On a transient seam error, retry once; on the second failure, surface the graceful error copy. User-facing strings (EN/HE): `EN: "Coach is typing" / HE: "המאמן מקליד"`; `EN: "Couldn't reach the coach. Try again." / HE: "לא הצלחנו להגיע למאמן. נסו שוב."`.
+- **SPEC:** The coach path is: `sendMessage` (store user message; crisis text also stores the fixed card) then `reply` → `runCoachReply` → `requireApprovedForAi` → `claimTurn` → build messages → `callLLM` (tier `"balanced"`) → `parseCoachReply` → `saveReply`. A seam error logs and returns `unavailable` (the "Thinking"/typing state is client-side only, and the retry is `callLLM`'s single retry). User-facing strings (client-side, in `apps/web/lib/i18n.ts`, outside SCOPE — referenced as contract, not edited): `coachChat.typing` `EN: "Coach is typing" / HE: "המאמן כותב"`; `coachChat.unavailable` `EN: "The coach can't reach its model right now. Your message is saved." / HE: "המאמן לא מצליח להגיע למודל כרגע. ההודעה שלך נשמרה."`.
 - **TESTS:**
-  - Given a queued mock reply / When the user sends a message / Then the reply appears and Thinking is cleared.
-  - Given a transient failure then success / When sent / Then exactly one retry happens and the reply lands.
-  - Given two failures / Then a graceful error, no infinite retry.
-  - Given an unapproved user / Then the send is refused at the AI gate.
-  - Given the Thinking state / Then it is announced (`role=status` equivalent) before the reply.
-- **NUMBERS:** retry count = exactly 1 (product rule; PRD/TRD). No latency target offline (UNKNOWN — Amit).
+  - Given a queued mock reply / When the user sends a message and `reply` runs / Then the reply is saved and the turn is released.
+  - Given crisis text / When `sendMessage` runs / Then the fixed crisis card is stored and `callLLM` is never called.
+  - Given a seam failure / When `reply` runs / Then it returns `unavailable` and releases the turn (no infinite retry).
+  - Given an unapproved user / Then `sendMessage` refuses at `requireApprovedUser`.
+  - Given an over-length message (> 4000 chars) / Then `sendMessage` throws ("That message is too long.").
+- **NUMBERS:** `MAX_MESSAGE_CHARS` = 4000 (repo code). Retry count = 1 inside `callLLM` (TFV2-0014), not in `coach.ts`. No latency target offline (UNKNOWN — Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** interim text model (same as TFV2-0014; UNKNOWN — Amit).
+- **OPEN:** none.
 
-### TFV2-0016 — Coach Agent foundation `convex/lib/agentComponent.ts`
+### TFV2-0016 — Coach Agent foundation `convex/lib/agentComponent.ts` — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0002, 0018 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0002, TFV2-0018.
@@ -427,7 +450,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a second instantiation / Then it returns an equivalent handle (no duplicate registration).
 - **NUMBERS:** pinned `@convex-dev/agent` version = 0.3.2 (repo `package.json`). No industry number.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether the wrapper is required or `coach.ts` may keep importing the component directly (UNKNOWN — Amit); interim text model (UNKNOWN — Amit).
+- **OPEN:** whether the wrapper is required at all, or `coach.ts` may keep importing `@convex-dev/agent` directly (UNKNOWN — Amit). This decides whether the wrapper gets built.
 
 ### TFV2-0017 — Crisis card `convex/crisis.ts` + `convex/lib/crisisWords.ts`
 - **Stage:** A · **Pass:** 1 · **Depends:** 0003 · **Folds-in:** none
@@ -437,7 +460,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The crisis detection and fixed resource card are verified: crisis text stops coaching and returns the human-written card, never a model reply.
 - **SCOPE:** `convex/crisis.ts` + `convex/lib/crisisWords.ts` (+ `convex/lib/crisisWords.test.ts`).
 - **MUTATES:** none (read-only queries + fixed copy; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/crisis.ts` `check`/`resourcesCard`, `convex/lib/crisisWords.ts` `CRISIS_CARD`, `crisisCardText`, `isCrisisText`, plus `crisisWords.test.ts`); 2) verify `isCrisisText` matches EN and HE crisis signals (self-harm, no sleep, escalating distress); 3) verify `check`/`resourcesCard` return the fixed `CRISIS_CARD` copy and that `coach.ts` stops coaching on crisis; 4) read the existing test file and add the missing cases below; 5) do not rename exported symbols or edit the fixed copy (it is written by people).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/crisis.ts` `check`/`resourcesCard`, `convex/lib/crisisWords.ts` `CRISIS_PHRASES`, `CRISIS_CARD`, `crisisCardText`, `isCrisisText`, plus `crisisWords.test.ts`); 2) verify `isCrisisText` matches EN and HE crisis signals (self-harm, no sleep, escalating distress); 3) verify `check`/`resourcesCard` return the fixed `CRISIS_CARD` copy and that `coach.ts` stops coaching on crisis; 4) read the existing test file and add the missing cases below; 5) do not rename exported symbols or edit the fixed copy (it is written by people).
 - **DONE:** `bun test convex/lib/crisisWords.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not let a model write the card text; do not add emoji or animation to the card; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
@@ -452,56 +475,57 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given the card in HE / Then it renders RTL and the numbers stay LTR (`.tp-num`).
 - **NUMBERS:** no industry number; correctness is F-24 (coaching stops on crisis = 100% of matched cases, no range). Crisis-word recall = 100% on the committed list.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** per-country resource list completeness (PRD F-24: per-country data is MVP; UNKNOWN — Amit).
+- **OPEN:** none.
 
-### TFV2-0018 — auth → entitlement → quota ordering `convex/lib/aiGate.ts`
+### TFV2-0018 — auth → entitlement gate `convex/lib/aiGate.ts` — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0004, 0012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0004, TFV2-0012.
 - **WHY:** PRD §4.11 (per-user isolation, tiers); REWRITE-PLAN-v2 §6 chunk 1 "auth→entitlement→quota ordering".
-- **GOAL:** The AI gate is verified to enforce, in order, authentication → approval/entitlement → quota, so no model call happens before all three pass.
+- **GOAL:** The AI gate is verified to enforce authentication → approval before any model call, so no model call happens before both pass.
 - **SCOPE:** `convex/lib/aiGate.ts` (+ `convex/lib/aiGate.test.ts`).
 - **MUTATES:** none (read-only gate; adds no table, route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/aiGate.ts` `requireApprovedForAi`); 2) verify the ordering: `requireUser` (auth) → `isApproved` (entitlement, TFV2-0012/0004) → quota check (TFV2-0011); 3) confirm `requireApprovedForAi` throws `ConvexError` before any model call when any stage fails; 4) add the unit test file for every error case below; 5) do not rename the exported symbol.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/aiGate.ts` `requireApprovedForAi(ctx: ActionCtx)`; it delegates to the internal query `approval.assertApprovedForAi`); 2) verify `requireApprovedForAi` runs as the calling user so a signed-out, pending or revoked account is rejected before any provider request; 3) confirm `approval.assertApprovedForAi` (convex/approval.ts) calls `requireApprovedUser` (auth via `requireUser`, then `isApproved`); 4) note there is NO quota stage in the current code (see OPEN); 5) add the unit test file for every error case below; 6) do not rename the exported symbol.
 - **DONE:** `bun test convex/lib/aiGate.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
-- **DO NOT:** do not reorder the three stages; do not call a model in the gate; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not call a model in the gate; do not add a quota stage without the OPEN ruling; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `requireApprovedForAi(ctx)` returns `void` on success and throws a typed `ConvexError` on failure, in this order: (1) unauthenticated → `UNAUTHENTICATED`; (2) pending/revoked → `PENDING_APPROVAL_ERROR`; (3) quota exhausted → `QUOTA_EXCEEDED`. User-facing copy (EN/HE): `EN: "You're signed out." / HE: "התנתקת."`; `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`; `EN: "You've used today's coach time." / HE: "ניצלת את זמן המאמן של היום."` (quota text is a placeholder until the voice/call quota lands in chunk E).
+- **SPEC:** `requireApprovedForAi(ctx: ActionCtx): Promise<void>` returns `void` on success. On failure the inner `requireApprovedUser` throws `Error(PENDING_APPROVAL_MESSAGE)` — message `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (the client matches `PENDING_APPROVAL_ERROR = "ACCOUNT_PENDING_APPROVAL"`). Ordering is authentication (inside `requireUser`) then approval (`isApproved`); there is no quota stage. User-facing copy (EN/HE): `EN: "You're signed out." / HE: "התנתקת."`; `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`.
 - **TESTS:**
-  - Given an authenticated, approved, under-quota user / Then `requireApprovedForAi` resolves without throwing.
-  - Given unauthenticated / Then `UNAUTHENTICATED` (and no quota/entitlement evaluation happens).
-  - Given authenticated but pending / Then `PENDING_APPROVAL_ERROR`.
-  - Given authenticated, approved, quota exhausted / Then `QUOTA_EXCEEDED`.
-  - Given authenticated, approved, under quota / Then no model/network call is made.
-- **NUMBERS:** no industry number; ordering invariant = exact (auth → entitlement → quota).
+  - Given an authenticated, approved user / Then `requireApprovedForAi` resolves without throwing.
+  - Given unauthenticated / Then the inner `requireUser` throws (and no quota/entitlement evaluation happens).
+  - Given authenticated but pending / Then it throws with a message starting `ACCOUNT_PENDING_APPROVAL`.
+  - Given authenticated but revoked / Then it throws (revoked is not approved).
+  - Given the gate / Then no model/network call is made (it is a pure internal query).
+- **NUMBERS:** no industry number; ordering invariant = exact (auth → approval; no quota today).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** quota value/source for the AI gate (voice-minute cap vs model-call cap) is UNKNOWN — Amit (chunk E).
+- **OPEN:** whether (and where) a quota stage is added after approval in the AI gate — the current `requireApprovedForAi` enforces only auth + approval; no quota stage exists. UNKNOWN — Amit (chunk E; see TFV2-0011b).
 
 ### TFV2-0019 — Memory adapter foundation `convex/memory.ts`
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** PRD §4.5 F-50 (one memory adapter over the `memories` table: remember, recall, context, forget, export); REWRITE-PLAN-v2 §6 chunk 1 "memory adapter foundation".
-- **GOAL:** The memory adapter's five operations (remember, recall, context, forget, export) are verified owner-scoped and complete for the coach to consume in chunk C.
+- **GOAL:** The memory adapter's operations are verified owner-scoped and complete for the coach to consume in chunk C.
 - **SCOPE:** `convex/memory.ts` (+ `convex/memory.test.ts`).
 - **MUTATES:** none (reads/writes the existing `memories` table only; adds no schema).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/memory.ts` `remember`, `recall`, `list`, `context`, `forget`, `restore`, `forgetAll`, `restoreAll`, `exportAll`); 2) verify owner scoping (a user can only touch its own memories); 3) verify `forget` hard-deletes today and `restore` is the soft path (mark the forget-semantics question OPEN per §4 conflict 8); 4) read the existing `convex/memoryUndo.test.ts` and add the missing error cases below; 5) do not rename exported symbols.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/memory.ts` `remember`, `recall`, `list`, `context`, `forget`, `restore`, `forgetAll`, `restoreAll`, `exportAll`, `importSourceOf`); 2) verify owner scoping (a user can only touch its own memories); 3) verify `forget` soft-deletes today (sets `deletedAt`; `restore` undoes within the grace window) — do not change the semantics (see §4 conflict 8 note); 4) read the existing `convex/memoryUndo.test.ts` and add the missing error cases below; 5) do not rename exported symbols.
 - **DONE:** `bun test convex/memory.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
-- **DO NOT:** do not add an outside memory engine; do not change `forget` to hard-delete without the OPEN ruling; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not call an embedding model here (chunk C).
+- **DO NOT:** do not add an outside memory engine; do not change `forget` to hard-delete (that is a future §4 conflict 8 ruling); do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not call an embedding model here (chunk C).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `remember({ fact, source })` inserts under the caller's `userId`; `recall({ query })` and `context({})` return only the caller's items (keyword match now; meaning-search arrives in chunk C); `forget({ id })` removes the item (current code hard-deletes); `exportAll()` returns all items as Markdown. Error copy (EN/HE): `EN: "That memory isn't here anymore." / HE: "הזיכרון הזה כבר לא כאן."` (missing id).
+- **SPEC:** `remember({ content: string, sector?: "semantic"|"episodic"|"procedural"|"emotional"|"general" })` inserts under the caller's `userId` and returns `v.id("memories")`; empty content throws `"Write something to remember first."`; over `CONTENT_MAX` (2000) throws `"Keep a memory to 2000 characters or fewer."`. `recall({ query, limit? })` returns the caller's items (keyword substring match, sorted by salience); `list({ sector?, limit? })` returns the caller's items; `context({ limit? })` returns `{ text, count }`; `forget({ memoryId })` soft-deletes (sets `deletedAt`) and returns `{ success: true }`; `restore({ memoryId })` undoes within the grace window; `exportAll()` returns `{ filename, exportedAt, count, markdown }`. Error copy for a missing/foreign memory (EN/HE): `EN: "That memory isn't here anymore." / HE: "הזיכרון הזה כבר לא כאן."` (surfaced by callers; the mutation itself throws `"Memory not found"`).
 - **TESTS:**
   - Given an owner calls `remember` / Then the item is retrievable by `list`.
   - Given a second user / Then `list` returns only its own items (isolation).
-  - Given `forget({ id })` / Then the item is gone from `list`.
-  - Given `forget` on a missing id / Then a graceful error, no crash.
-  - Given `exportAll` / Then output is Markdown containing every item.
-  - Given `restore` after `forget` (if soft path exists) / Then the item returns.
-- **NUMBERS:** no industry number; correctness is owner isolation (100% of reads/writes scoped). Recall-by-meaning arrives in chunk C (UNKNOWN numeric benchmark — Amit).
+  - Given `forget({ memoryId })` / Then the item is gone from `list` (soft-deleted).
+  - Given `restore({ memoryId })` after `forget` / Then the item returns (within the grace window).
+  - Given `forget` on a missing or foreign id / Then `"Memory not found"` (no crash).
+  - Given `exportAll` / Then it returns `{ filename, exportedAt, count, markdown }` containing every live item.
+  - Given empty `content` to `remember` / Then `"Write something to remember first."`.
+- **NUMBERS:** `CONTENT_MAX` = 2000 characters (repo code). Correctness is owner isolation (100% of reads/writes scoped). Recall-by-meaning arrives in chunk C (UNKNOWN numeric benchmark — Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** `forget` semantics (REWRITE-PLAN-v2 §4 conflict 8): PRD "soft delete everywhere, 30-day grace" vs memory spec "forget must be complete" (`deleteMemory` hard-deletes today). UNKNOWN — Amit.
+- **OPEN:** none.
 
 ### TFV2-0020 — EN/HE message baseline + RTL (`apps/web/lib/i18n.ts` + `apps/web/lib/i18n-groups/`)
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -511,12 +535,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The existing i18n baseline is verified: every string has EN and HE, `lang=he` sets `dir="rtl"` on `<html>`, and numbers/code stay LTR.
 - **SCOPE:** `apps/web/lib/i18n.ts` + `apps/web/lib/i18n-groups/*` (+ `apps/web/lib/i18n.test.ts`).
 - **MUTATES:** none (message dictionary; adds no route or env).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `apps/web/lib/i18n.ts` `LANG_STORAGE_KEY`, `LANGS`, `dirFor`, `resolveLang`, the EN/HE dictionaries, plus `apps/web/lib/i18n-groups/`; NOTE: the planned location `apps/web/messages/en.json`/`he.json` does NOT exist — the repo uses TS dictionaries in `apps/web/lib/`); 2) verify `resolveLang` precedence (URL param → stored → English); 3) verify `dirFor("he")==="rtl"` and digits use `.tp-num`/`.tp-mono` LTR isolation; 4) read the existing `i18n.test.ts` and add the missing cases below; 5) do not relocate the dictionaries (keep the existing file layout).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `apps/web/lib/i18n.ts` `LANG_STORAGE_KEY`, `LANGS`, `isLang`, `dirFor`, `resolveLang`, `MESSAGES`, `translate`, the EN/HE dictionaries, plus `apps/web/lib/i18n-groups/`); 2) verify `resolveLang` precedence (URL param → stored → English); 3) verify `dirFor("he")==="rtl"` and digits use `.tp-num`/`.tp-mono` LTR isolation; 4) read the existing `i18n.test.ts` and add the missing cases below; 5) do not relocate the dictionaries (keep the existing file layout).
 - **DONE:** `bun test apps/web/lib/i18n.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not create `apps/web/messages/*.json` (the repo's truth is `lib/i18n.ts`); do not machine-translate new copy as "final" (Hebrew needs native review — OVERNIGHT-RUN.md hard limit); do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `resolveLang(param, stored)` returns `"en" | "he"`. `dirFor` maps `he`→`rtl`. Every visible string has an EN and HE entry; keys are dotted (`nav.today`). Hebrew digits/times/dates/prices wrap in `.tp-num` (LTR isolate, tabular) and times also take `.tp-mono` (DESIGN.md §10). User-written text uses `dir="auto"` per paragraph (F-72). The baseline must compile both languages with no missing-key runtime error.
+- **SPEC:** `resolveLang(param: string | null | undefined, stored: string | null | undefined): "en" | "he"`. `dirFor` maps `he`→`rtl`, `en`→`ltr`. Every visible string has an EN and HE entry; keys are dotted (`nav.today`). Hebrew digits/times/dates/prices wrap in `.tp-num` (LTR isolate, tabular) and times also take `.tp-mono` (DESIGN.md §10). User-written text uses `dir="auto"` per paragraph (F-72). The baseline must compile both languages with no missing-key runtime error.
 - **TESTS:**
   - Given `resolveLang("he", null)` / Then `"he"`.
   - Given `resolveLang(null, "he")` / Then `"he"`.
@@ -526,7 +550,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a mixed-direction paragraph / Then `dir="auto"` is applied (component-level assert).
 - **NUMBERS:** no industry number; completeness = every EN key has a HE value (100%).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the task-specified location `apps/web/messages/en.json`/`he.json` differs from the repo reality `apps/web/lib/i18n.ts` (GitHub is truth; UNKNOWN whether to migrate to JSON — Amit).
+- **OPEN:** none.
 
 ### TFV2-0021 — TempoShell
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -536,14 +560,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The app shell grid (rail / topbar / main / coach, with scrim) is verified at every breakpoint and both directions.
 - **SCOPE:** `apps/web/components/tempo/TempoShell.tsx` (+ `tests/e2e/screens/tempo-shell.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `TempoShell.tsx` with `ShellSlots.tsx`, `ScaffoldScreen.tsx`); 2) verify grid areas `rail / top / main / coach` and the `toggle-rail` + scrim behaviour; 3) verify rail is a drawer under 1024 and a docked 264px column at ≥1280; 4) add the Playwright spec below; 5) no new tokens or colours in the component.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `TempoShell.tsx` with `ShellSlots.tsx`, `ScaffoldScreen.tsx`); 2) verify grid areas `rail / top / main / coach` and the `toggle-rail` + scrim behaviour; 3) verify rail is a drawer under 1024 and a docked 264px column at ≥1024 (DESIGN.md §8: the 1024–1279 band keeps the rail docked and only the coach panel floats); 4) add the Playwright spec below; in that spec set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` (mobile) and `{ width: 1280, height: 800 }` (desktop) — because `playwright.config.ts` has one chromium project with no width override; 5) no new tokens or colours in the component.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tempo-shell.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours/fonts/spacing (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Grid `rail` (264px, `--tp-rail-w`), `top` (56px, `--tp-topbar-h`), `main` (centred paper, max 760px `--tp-paper-max`), `coach` (400px, `--tp-coach-w`, docked ≥1280). Under 768: full-bleed paper, bottom tab bar, coach as bottom sheet. Scrim `--tp-scrim`. Glass only on floating chrome. One primary action per screen. Motion ≤250ms (`--tp-dur-slow` 240ms, `--tp-ease-out`).
-- **TESTS:** Given viewport 1280 / When shell renders / Then rail, topbar, main are visible and coach is dockable. Given 390 / Then rail is hidden behind a menu and main is full-bleed. Given `lang=he` / Then `dir=rtl` and rail moves to the right (logical properties). Given `toggle-rail` / Then the drawer opens and focus moves in; Esc closes.
-- **NUMBERS:** rail 264px, coach 400px, topbar 56px (tokens, repo). WCAG 2.2 AA text 4.5:1 (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum); target ≥24×24px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum); motion ≤250ms (DESIGN.md §7).
+- **SPEC:** Grid `rail` (264px, `--tp-rail-w`), `top` (56px, `--tp-topbar-h`), `main` (centred paper, max 760px `--tp-paper-max`), `coach` (400px, `--tp-coach-w`): docked ≥1280, floats as a glass sheet with a scrim at 1024–1279 (DESIGN.md §8). Under 768: full-bleed paper, bottom tab bar, coach as bottom sheet. Scrim `--tp-scrim`. Glass only on floating chrome (topbar, coach, tab bar, sheets); the paper page is always solid `--tp-paper`. One primary action per screen. Motion ≤250ms (`--tp-dur-slow` 240ms, `--tp-ease-out` cubic-bezier(0.2,0.8,0.2,1)). States: loading/error/offline are n/a for the shell itself (they are owned by the content each slot renders); the drawer open/closed and scrim visible/hidden are the only shell states, plus `prefers-reduced-motion` collapses drawer/sheet motion to instant. Keyboard: Esc closes the drawer and returns focus to the toggle; focus moves into the drawer when opened.
+- **TESTS:** Given viewport 1280×800 / When shell renders / Then rail (264px), topbar (56px), main (paper ≤760px) are visible and coach is dockable at 400px. Given viewport 390×844 / Then rail is hidden behind a menu and main is full-bleed (no sideways scroll). Given `lang=he` / Then `dir=rtl` and rail moves to the right (logical properties, no left/right layout). Given `toggle-rail` / Then the drawer opens and focus moves in; Esc closes and returns focus. Given `prefers-reduced-motion` / Then drawer/scrim appear instantly (no 240ms transition).
+- **NUMBERS:** rail 264px (`--tp-rail-w`), coach 400px (`--tp-coach-w`), topbar 56px (`--tp-topbar-h`), paper max 760px (`--tp-paper-max`) (tokens, repo). WCAG 2.2 AA text contrast 4.5:1 (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum); target ≥24×24 CSS px (WCAG 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum); motion ≤250ms (DESIGN.md §7).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -555,14 +579,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The page rail (brand, CommandTrigger, page tree with `aria-current`, nested folders) is verified, including the under-1024 drawer.
 - **SCOPE:** `apps/web/components/tempo/Sidebar.tsx` (+ `tests/e2e/screens/sidebar.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `Sidebar.tsx`; `PageTree` is rendered inside it); 2) verify `aria-current="page"`, collapsible folders, and the `Pages` label; 3) verify the drawer variant under 1024; 4) add the Playwright spec below.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `Sidebar.tsx`; `PageTree` is rendered inside it); 2) verify `aria-current="page"`, collapsible folders, and the `Pages` label; 3) verify the drawer variant under 1024; 4) add the Playwright spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`; 5) copy is consumed from the existing i18n keys (`rail.pages`, `rail.library`, `rail.search`, `nav.dyslexia`, `nav.settings` — all already present in `apps/web/lib/i18n.ts`); do not add new dictionary files.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sidebar.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not add colours; do not add new i18n files (reuse existing keys); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `.tp-rail` width 264px; groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE): `EN: "Pages" / HE: "דפים"`; `EN: "Library" / HE: "ספרייה"`; `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `EN: "Reading font" / HE: "גופן קריאה"`; `EN: "Settings" / HE: "הגדרות"`. RTL: rail on the right; chevrons flip.
-- **TESTS:** Given 1280 / Then the rail shows all groups and the current page has `aria-current`. Given a folder with children / Then tapping toggles collapse. Given 390 / Then the rail is a drawer opened from the topbar. Given `lang=he` / Then labels are Hebrew and the rail is on the right.
-- **NUMBERS:** rail 264px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
+- **SPEC:** `.tp-rail` width 264px (`--tp-rail-w`); groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE) via existing keys: `rail.pages` `EN: "Pages" / HE: "דפים"`; `rail.library` `EN: "Library" / HE: "ספרייה"`; `rail.search` `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `nav.dyslexia` `EN: "Reading font" / HE: "גופן קריאה"`; `nav.settings` `EN: "Settings" / HE: "הגדרות"`. RTL: rail on the right; chevrons flip (`tp-icon--flip`). States: loading/error/offline/empty are n/a for the rail chrome itself; an empty page list shows the `rail.noPages` kind copy. Keyboard: rows are links/buttons, focusable, Enter activates; the collapsed-folder toggle is a button with `aria-expanded`.
+- **TESTS:** Given 1280×800 / Then the rail shows all groups and the current page has `aria-current="page"`. Given a folder with children / Then tapping toggles collapse and `aria-expanded` flips. Given 390×844 / Then the rail is a drawer opened from the topbar, and Esc closes it. Given `lang=he` / Then labels are Hebrew and the rail is on the right. Given the current row / Then it uses `--tp-ink` (not muted) and a screen reader announces it as the current page.
+- **NUMBERS:** rail 264px (`--tp-rail-w`). WCAG 2.2 AA text contrast 4.5:1; target ≥24×24 CSS px (WCAG 2.5.8); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -572,35 +596,55 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0021.
 - **WHY:** DESIGN.md §9 Topbar (breadcrumb, glass); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The glass topbar (menu, breadcrumbs, "Saved" state, theme toggle, avatar) is verified at both breakpoints.
-- **SCOPE:** `apps/web/components/tempo/Topbar.tsx` (+ `tests/e2e/screens/topbar.spec.ts`).
+- **SCOPE:** `apps/web/components/tempo/Topbar.tsx` + `apps/web/lib/i18n.ts` (+ `tests/e2e/screens/topbar.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `Topbar.tsx`); 2) verify breadcrumb (`crumbs[]`), `Saved` status hides when offline, theme toggle `aria-pressed`, avatar; 3) verify glass (`tp-glass`) with solid fallback; 4) add the Playwright spec below.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `Topbar.tsx`); 2) verify breadcrumb (`crumbs[]`), `Saved` status hides when offline, theme toggle `aria-pressed`, avatar; 3) verify glass (`tp-glass`) with solid fallback (`--tp-glass-solid` under `prefers-reduced-transparency` / `?glass=off`); 4) add the Playwright spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`; 5) copy comes from existing i18n keys (`page.saved` already present; add `topbar.darkTheme` / `topbar.openPages` to `apps/web/lib/i18n.ts` if missing — that file is in SCOPE above).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/topbar.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Height 56px (`--tp-topbar-h`), glass recipe from DESIGN.md §5. Breadcrumbs with a chevron that flips in RTL (`tp-icon--flip`). Copy (EN/HE): `EN: "Saved" / HE: "נשמר"`; `EN: "Open pages" / HE: "פתיחת הדפים"`; `EN: "Dark theme" / HE: "ערכת צבעים כהה"`. Offline: "Saved" is hidden and the offline banner takes its meaning.
-- **TESTS:** Given 1280 / Then breadcrumbs, Saved, theme toggle, avatar are visible. Given 390 / Then crumbs collapse (hide `--hide-sm`). Given offline / Then "Saved" is hidden. Given `lang=he` / Then crumbs are RTL and the chevron flips. Given theme toggle / Then `aria-pressed` flips and `data-theme` changes.
-- **NUMBERS:** height 56px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
+- **SPEC:** Height 56px (`--tp-topbar-h`), glass recipe from DESIGN.md §5 (`--tp-glass` rgba(251,249,244,.82) light, blur 18px saturate 150%, `--tp-glass-line` hairline) with solid fallback `--tp-glass-solid` #FBF9F4. Breadcrumbs with a chevron that flips in RTL (`tp-icon--flip`). Copy (EN/HE): `page.saved` `EN: "Saved" / HE: "נשמר"`; `topbar.openPages` `EN: "Open pages" / HE: "פתיחת הדפים"`; `topbar.darkTheme` `EN: "Dark theme" / HE: "ערכת צבעים כהה"`. States: offline → "Saved" is hidden and the offline banner takes its meaning; loading/error are n/a (the topbar shows no async content of its own); theme toggle `aria-pressed` reflects `data-theme`. Motion ≤250ms; `prefers-reduced-motion` collapses the crumb/glass transitions to instant.
+- **TESTS:** Given 1280×800 / Then breadcrumbs, Saved, theme toggle, avatar are visible. Given 390×844 / Then crumbs collapse (hide `--hide-sm`). Given offline / Then "Saved" is hidden. Given `lang=he` / Then crumbs are RTL and the chevron flips. Given theme toggle / Then `aria-pressed` flips and `data-theme` changes. Given `prefers-reduced-motion` / Then the glass/transition renders instantly.
+- **NUMBERS:** height 56px (`--tp-topbar-h`). WCAG 2.2 AA text contrast 4.5:1; target ≥24×24 CSS px (WCAG 2.5.8); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0024 — Avatar
+### TFV2-0023a — Component render harness (isolated Playwright route + catalog)
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first (prerequisite for every design-system component ticket in chunk 1).
+- **WHY:** Defect-fix: every UI ticket must run its own Playwright spec, but the design-system primitives in `packages/ui` and the editor/coach components have no screen to mount in. This ticket builds the one isolated render route the component specs navigate to, using the repo's existing Playwright setup and e2e auth bypass, so no component ticket has to decide how to mount itself.
+- **GOAL:** A dev-only route renders any registered design-system component in isolation (no app chrome, no auth, no data fetch) so each component's Playwright spec can assert its states and RTL at both widths.
+- **SCOPE:** `apps/web/app/e2e/components/page.tsx` (new) + `apps/web/lib/e2e/component-catalog.tsx` (new) (+ `tests/e2e/screens/components-harness.spec.ts`).
+- **MUTATES:** none (adds two dev/e2e files behind the auth-bypass gate; no table, route group, schema, env or workflow).
+- **STEPS:** 1) Graphify code-map check (neither file exists today — confirmed); 2) create `apps/web/lib/e2e/component-catalog.tsx` exporting `export type CatalogEntry = { id: string; title: string; render: () => React.ReactNode }` and `export const componentCatalog: CatalogEntry[] = []` (empty to start; each component ticket appends its entry); 3) create `apps/web/app/e2e/components/page.tsx` as a `"use client"` component that reads `?lang=` and `?theme=` via `useSearchParams()`, sets `dir`/`lang` and `data-theme` on the wrapper, and renders each `componentCatalog` entry as `<section data-testid={entry.id}>{entry.render()}</section>` inside `<div data-testid="component-harness">`; 4) gate the route: `if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS !== "1") notFound()` (the same gate the repo's other e2e-only routes use, e.g. `apps/web/components/approval/ApprovalGate.tsx`); 5) no app shell, no `requireUser`, no Convex data, no i18n dictionary changes; 6) add the smoke spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/components-harness.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not render the harness in production (the bypass gate must 404); do not touch `convex/**`, `.github/**`, `.env` or workflows; do not add any component itself here (each component ticket builds and registers its own).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The route answers at `/e2e/components` with no layout chrome. `componentCatalog` entries are `{ id, title, render }`; `render` returns JSX for the component's documented states, each state under its own `data-testid="<id>-<state>"` anchor. `?lang=he` sets `dir="rtl"` + `lang="he"`; `?theme=dark` sets `data-theme="dark"` (DESIGN.md §14). Loading/empty/error/offline/success/disabled states are n/a for the harness route itself (it is a synchronous render surface; a component's own states live in that component's ticket). The harness has no user-facing copy. Keyboard/screen-reader/motion behaviour is the component's, not the harness's; reduced-motion is inherited from the component. Numbers: none for the harness (it renders whatever is registered).
+- **TESTS:** Given the route with an empty catalog / When loaded at 390×844 and 1280×800 / Then the `component-harness` container renders (possibly empty) and the route returns 200. Given `?lang=he` / Then the wrapper is `dir="rtl"` and `lang="he"`. Given `NODE_ENV=production` (or no bypass flag) / Then the route 404s (`notFound()`), never rendering components.
+- **NUMBERS:** no industry number; correctness = the route 404s without the bypass flag and renders `componentCatalog` entries otherwise.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+
+### TFV2-0024 — Avatar
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Avatar (person's initials, never "User"); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** An accessible initials avatar (name → initials, `role="img"` + `aria-label`, never the word "User") exists in the design-system package.
-- **SCOPE:** `packages/ui/src/primitives/Avatar.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Avatar.test.tsx`).
+- **GOAL:** An accessible initials avatar (`name` → initials, `role="img"` + `aria-label`, never the word "User") exists in the design-system package.
+- **SCOPE:** `packages/ui/src/primitives/Avatar.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/avatar.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — no `Avatar` primitive; the editor HTML uses `tp-avatar` but no React component exists); 2) implement `Avatar({ name, initials? })` deriving initials from `name` (first letter of first + last word, uppercased); 3) render `role="img"` with `aria-label={name}`; 4) export from `index.ts`; 5) add render test + Playwright assertions via the topbar spec.
-- **DONE:** `bun test packages/ui/src/primitives/Avatar.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING — no `Avatar` primitive; the editor HTML uses `tp-avatar` but no React component exists); 2) implement `Avatar({ name, initials? }: AvatarProps)` deriving initials from `name` (first letter of first + last word, uppercased); 3) render `role="img"` with `aria-label={name}`; 4) export `Avatar` and `AvatarProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="avatar-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/avatar.spec.ts` that navigates to `/e2e/components#avatar` and `/e2e/components?lang=he#avatar`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/avatar.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not fall back to the text "User"; do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** 32px circle, `--tp-paper` ground with `--tp-ink` initials, `--tp-line-strong` hairline. `initials` derived when omitted. `EN/HE` — no visible text; `aria-label` is the person's name in both scripts (name is user data, not translated). Keyboard: not focusable (decorative); `role="img"` exposes the name to screen readers.
-- **TESTS:** Given `name="Maya Ronen"` / Then initials are `"MR"` and `aria-label="Maya Ronen"`. Given `name="Yoni"` / Then initials `"Y"`. Given `initials="D"` / Then it overrides derivation. Given a screen reader / Then it announces the name, never "User".
-- **NUMBERS:** size 32px; contrast ≥4.5:1 (initials `--tp-ink` on `--tp-paper` = 16.67:1 light). WCAG 2.2 AA.
+- **SPEC:** Type `export type AvatarProps = { name: string; initials?: string; className?: string }`. 32px circle, `--tp-paper` ground with `--tp-ink` initials, `--tp-line-strong` hairline. `initials` derived when omitted. EN/HE — no visible text; `aria-label` is the person's name in both scripts (name is user data, not translated). States: loading/empty/error/offline/success/disabled are n/a (a static, non-interactive element has no async or disabled state). Keyboard: not focusable (decorative); `role="img"` exposes the name to screen readers. Motion: n/a (static).
+- **TESTS:** Given `name="Maya Ronen"` / Then initials are `"MR"` and `aria-label="Maya Ronen"`. Given `name="Yoni"` / Then initials `"Y"`. Given `initials="D"` / Then it overrides derivation. Given a screen reader / Then it announces the name, never "User". Given `name` with leading/trailing spaces / Then initials ignore whitespace. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** size 32px; contrast ≥4.5:1 (initials `--tp-ink` #1B1916 on `--tp-paper` #FBF9F4 = 16.67:1 light; 14.27:1 dark). WCAG 2.2 AA.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -612,14 +656,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The mobile glass tab bar (Today / Tasks / Pages / Calendar / More) is verified with `aria-current` and RTL.
 - **SCOPE:** `apps/web/components/tempo/TabBar.tsx` (+ `tests/e2e/screens/tabbar.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `TabBar.tsx`); 2) verify it renders only under 768, glass with solid fallback, `aria-current` on the active tab; 3) verify the "More" tab opens the rail; 4) add the Playwright spec below.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `TabBar.tsx`); 2) verify it renders only under 768, glass with solid fallback (`--tp-glass-solid`), `aria-current` on the active tab; 3) verify the "More" tab opens the rail; 4) add the Playwright spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`; 5) copy from existing i18n keys (`nav.today`, `nav.tasks`, `nav.notes`, `nav.calendar`, `tab.more`).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tabbar.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Height 64px (`--tp-tabbar-h`), glass, icons + labels. Copy (EN/HE): `EN: "Today" / HE: "היום"`; `EN: "Tasks" / HE: "משימות"`; `EN: "Pages" / HE: "דפים"`; `EN: "Calendar" / HE: "לוח שנה"`; `EN: "More" / HE: "עוד"`. Under 768 only; content reserves `padding-bottom` = tab bar + 64. RTL mirrors and chevrons flip.
-- **TESTS:** Given 390 / Then the tab bar shows five tabs with the active tab `aria-current`. Given 1280 / Then the tab bar is hidden. Given `lang=he` / Then labels are Hebrew and order mirrors. Given "More" / Then the rail opens.
-- **NUMBERS:** height 64px (token); target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **SPEC:** Height 64px (`--tp-tabbar-h`), glass (`.tp-tabbar.tp-glass`), icons + labels. Copy (EN/HE) via existing keys: `nav.today` `EN: "Today" / HE: "היום"`; `nav.tasks` `EN: "Tasks" / HE: "משימות"`; `nav.notes` `EN: "Pages" / HE: "דפים"`; `nav.calendar` `EN: "Calendar" / HE: "לוח שנה"`; `tab.more` `EN: "More" / HE: "עוד"`. Under 768 only; content reserves `padding-bottom` = tab bar + 64. RTL mirrors and chevrons flip. States: loading/error/offline/disabled n/a (nav chrome); the active tab carries `aria-current="page"`. Keyboard: each tab is a link/button, Tab to move, Enter activates; reduced-motion collapses the glass to instant.
+- **TESTS:** Given 390×844 / Then the tab bar shows five tabs with the active tab `aria-current`. Given 1280×800 / Then the tab bar is hidden. Given `lang=he` / Then labels are Hebrew and order mirrors. Given "More" / Then the rail opens. Given `prefers-reduced-motion` / Then no slide/glass animation.
+- **NUMBERS:** height 64px (`--tp-tabbar-h`); target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -629,16 +673,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0022.
 - **WHY:** DESIGN.md §9 CommandTrigger (Ctrl K in dialog); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "Search or jump to" rail trigger opens the command palette on click and on Ctrl/Cmd+K, with focus moved into the dialog.
-- **SCOPE:** `apps/web/components/tempo/CommandTrigger.tsx` (+ `tests/e2e/screens/command.spec.ts`).
+- **SCOPE:** `apps/web/components/tempo/CommandTrigger.tsx` + `apps/web/components/tempo/Sidebar.tsx` (+ `tests/e2e/screens/command-trigger.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (CommandTrigger is MISSING; `CommandPalette.tsx`/`CommandList.tsx` exist and are the dialog it opens); 2) implement `CommandTrigger` as a `--tp-btn--secondary` button labelled "Search or jump to" with a `Kbd` hint `Ctrl K`; 3) wire click and Ctrl/Cmd+K to open `CommandPalette`; 4) focus moves into the dialog and Esc returns focus to the trigger; 5) add the Playwright spec below.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → all pass.
+- **STEPS:** 1) Graphify code-map check (`CommandTrigger.tsx` is MISSING; the button is currently inline in `Sidebar.tsx` with `data-component="CommandTrigger"` and `onClick={onOpenPalette}`; `CommandPalette.tsx`/`CommandList.tsx` exist and are the dialog it opens); 2) extract the inline button into `CommandTrigger({ onOpen, label, kbd }: CommandTriggerProps)` — a `--tp-btn--secondary` button labelled `rail.search` with a `Kbd` hint `Ctrl K`; 3) replace the inline button in `Sidebar.tsx` with `<CommandTrigger>` (that file is in SCOPE so the mount is legal); 4) wire click and Ctrl/Cmd+K to open `CommandPalette`, move focus into the dialog, and Esc returns focus to the trigger; 5) add the Playwright spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command-trigger.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not rebuild the palette itself; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-rail__search` button (secondary), search icon, label `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`, trailing `Kbd` `Ctrl K` (renders `⌘ K` on macOS). Keyboard: Enter/Space opens, Esc closes and returns focus. RTL mirrors the trailing kbd to the start.
-- **TESTS:** Given a click / Then the palette opens and focus is inside. Given Ctrl+K / Then it opens. Given Esc / Then it closes and focus returns to the trigger. Given 390 vs 1280 / Then the trigger renders in the rail/drawer in both. Given `lang=he` / Then label is Hebrew.
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (dialog 180ms).
+- **SPEC:** Type `export type CommandTriggerProps = { onOpen: () => void; label: string; kbd?: string }`. `tp-rail__search` button (secondary, `--tp-line-control` outline on `--tp-paper`), search icon, label `rail.search` `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`, trailing `Kbd` `Ctrl K` (renders `⌘ K` on macOS). Keyboard: Enter/Space opens, Esc closes and returns focus. RTL mirrors the trailing kbd to the start. States: loading/error/offline/empty n/a (a trigger button); disabled n/a (always enabled). Motion ≤250ms (dialog 180ms `--tp-dur-base`); reduced-motion → instant.
+- **TESTS:** Given a click / Then the palette opens and focus is inside. Given Ctrl+K / Then it opens. Given Esc / Then it closes and focus returns to the trigger. Given 390×844 and 1280×800 / Then the trigger renders in the rail/drawer in both. Given `lang=he` / Then label is Hebrew and the kbd sits at the start.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms (dialog 180ms).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -646,265 +690,265 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0007.
-- **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks as elements, no JSON); DESIGN.md §9 Page/PageEditor; REWRITE-PLAN-v2 §6 chunk 1 "markdown editor (CodeMirror live preview + GFM)".
+- **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks as elements, no JSON); DESIGN.md §9 Page/PageEditor; REWRITE-PLAN-v2 §6 chunk 1 "markdown editor (CodeMirror live preview + GFM)"; REWRITE-PLAN-v2 §8 (settled: `notes.body` is the only source of truth, `- [ ]` stays plain markdown).
 - **GOAL:** The page editor renders `notes.body` as CodeMirror with a live `remark-gfm` preview and never shows raw JSON.
 - **SCOPE:** `apps/web/components/notes/PageEditorView.tsx` + `apps/web/components/editor/LivePreviewEditor.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `PageEditorView.tsx`, `LivePreviewEditor.tsx`, `editor/live-preview.ts`, `editor/ReadView.tsx`); 2) verify CodeMirror 6 editing + `remark-gfm` preview; 3) verify `- [ ]` stays plain markdown and `[[links]]` render as Wikilinks; 4) verify autosave calls `notes.save` (TFV2-0007) and no JSON appears; 5) add/refresh the Playwright spec below.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `PageEditorView.tsx`, `LivePreviewEditor.tsx`, `editor/live-preview.ts`, `editor/ReadView.tsx`); 2) verify CodeMirror 6 editing + `remark-gfm` preview; 3) verify `- [ ]` stays plain markdown (rendered as a GFM checkbox by `remark-gfm`; NOT converted to a block and NOT a task mutation); 4) verify autosave calls `notes.save` (TFV2-0007) and no JSON appears anywhere; 5) extend the spec below with these assertions; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-save.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not surface JSON; do not bypass `notes.save`; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not surface JSON; do not bypass `notes.save`; do not render `- [ ]` as a task mutation (it stays markdown); do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `.tp-paper` centred, max 760px. CodeMirror edits + live preview via `remark-gfm`. `- [ ]` renders as a TaskBlock/TaskRow (tick → `tasks.complete`), `[[page]]` as Wikilink. Save is optimistic with the topbar "Saved" state and 5-min Undo. Empty state `EN: "This page is empty." / HE: "הדף הזה ריק."`; `EN: "Just start writing. Type / on a new line for tasks, time blocks and more." / HE: "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד."`. Offline keeps editing; error shows `EN: "Couldn't open this page. Your data is safe." / HE: "לא הצלחנו לפתוח את הדף הזה. המידע שלך שמור."` + Retry.
-- **TESTS:** Given a page / When a task block is ticked / Then optimistic check and Undo toast. Given a typed `[[Other page]]` / Then a Wikilink renders. Given `/` on an empty line / Then the SlashMenu opens (TFV2-0036). Given `lang=he` / Then the editor is RTL and `dir="auto"` per paragraph. Given 390 and 1280 / Then editing works at both. Assert no `{`-led JSON string is visible anywhere.
-- **NUMBERS:** paper max 760px; text min 13px; contrast ≥4.5:1; motion ≤250ms; save autosave (no loss on refresh).
+- **SPEC:** `.tp-paper` centred, max 760px (`--tp-paper-max`). CodeMirror edits + live preview via `remark-gfm`. `- [ ]` renders as a GFM checkbox in the preview and stays plain markdown in the source (REWRITE-PLAN-v2 §8); the interactive TaskBlock/TaskRow is TFV2-0042 and the SlashMenu that inserts blocks is TFV2-0036 (both built after this ticket — this ticket only proves the editor skeleton renders markdown). `[[page]]` renders as a link in the preview; the interactive Wikilink picker is TFV2-0030. Save is optimistic with the topbar "Saved" state and 5-min Undo (`notes.save` → `convex/lib/pageLedger.ts`, TFV2-0010). Empty state `EN: "This page is empty." / HE: "הדף הזה ריק."`; `EN: "Just start writing. Type / on a new line for tasks, time blocks and more." / HE: "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד."`. Offline keeps editing; error shows `EN: "Couldn't open this page. Your data is safe." / HE: "לא הצלחנו לפתוח את הדף הזה. המידע שלך שמור."` + Retry. Loading shows a `tp-skeleton` while `notes.get` resolves. Success = the topbar "Saved" state. Disabled = n/a (the editor is always editable once loaded). RTL: `lang=he` → `dir="rtl"` and `dir="auto"` per paragraph (F-72); reduced-motion collapses cursor blink and skeleton shimmer to instant.
+- **TESTS:** Given a page / When it loads / Then a skeleton shows, then CodeMirror + preview render the markdown (heading, bold, list). Given a typed `- [ ]` line / Then the preview shows a GFM checkbox and the source stays plain markdown (no task mutation, no JSON). Given a body edit / Then autosave calls `notes.save` and the topbar shows "Saved". Given the empty body / Then the kind empty copy shows. Given an error opening the page / Then the error copy + Retry shows. Given offline / Then editing still works and "Saved" is hidden. Given `lang=he` / Then the editor is RTL and `dir="auto"` per paragraph. Given 390×844 and 1280×800 / Then editing works at both. Assert no `{`-led JSON string is visible anywhere.
+- **NUMBERS:** paper max 760px (`--tp-paper-max`); text min 13px (`--tp-text-xs`); contrast ≥4.5:1; motion ≤250ms; save autosave (no loss on refresh).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** block-model authority (UNKNOWN — Amit).
+- **OPEN:** none.
 
 ### TFV2-0028 — PageTitle / Headings
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §3 (serif 42px page title, headings weight 560); components.md §1 PageTitle/Headings; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** Serif page-title and heading primitives (h1 `.tp-page-title`, h2 `.tp-h2`, h3 `.tp-h3`) exist in the design-system package with correct type tokens.
-- **SCOPE:** `packages/ui/src/primitives/PageTitle.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/PageTitle.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/PageTitle.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/page-title.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageTitle({ children, as })` and `Heading({ level, children })` using `--tp-font-serif` / `--tp-text-3xl` (title 42px) and `--tp-text-xl` (h2 26px) / `--tp-text-lg` (h3 20px); 3) editable title uses `contenteditable` + `dir="auto"`; 4) export; 5) add render test + Playwright via the page-editor spec.
-- **DONE:** `bun test packages/ui/src/primitives/PageTitle.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageTitle({ children, as }: PageTitleProps)` and `Heading({ level, children }: HeadingProps)` using `--tp-font-serif` / `--tp-text-3xl` (title 42px) and `--tp-text-xl` (h2 26px) / `--tp-text-lg` (h3 20px); 3) editable title uses `contenteditable` + `dir="auto"`; 4) export `PageTitle`, `PageTitleProps`, `Heading`, `HeadingProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="page-title-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/page-title.spec.ts` that navigates to `/e2e/components#page-title` and `/e2e/components?lang=he#page-title`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-title.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not set colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Title: `--tp-font-serif`, `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew). h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px, `--tp-leading-heading` 1.18. Editable title focus ring `--tp-accent` 2px. No visible copy beyond the title text itself.
-- **TESTS:** Given a title / Then it renders in the serif face at 42px (assert class/token). Given an editable title / Then typing updates it and `dir="auto"` is set. Given `lang=he` / Then the serif face is Frank Ruhl Libre and tracking is 0.
-- **NUMBERS:** title 42px, h2 26px, h3 20px (tokens). Contrast ≥4.5:1.
+- **SPEC:** Types: `export type PageTitleProps = { children: ReactNode; as?: "h1" }; export type HeadingProps = { level: 2 | 3; children: ReactNode }`. Title: `--tp-font-serif` (Newsreader / Frank Ruhl Libre), `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew), `--tp-leading-heading` 1.18. h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px. Editable title focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`). No visible copy beyond the title text itself. States: loading/error/offline/disabled n/a (static typography); the only interactive state is the editable title's focus ring. Keyboard: editable title is focusable and announces as editable text; motion n/a.
+- **TESTS:** Given a title / Then it renders in the serif face at 42px (assert class/token `--tp-text-3xl`). Given an editable title / Then typing updates it and `dir="auto"` is set. Given `lang=he` / Then the serif face is Frank Ruhl Libre and tracking is 0. Given a heading level 2 / Then it renders at 26px (`--tp-text-xl`) and level 3 at 20px (`--tp-text-lg`). Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** title 42px (`--tp-text-3xl`), h2 26px (`--tp-text-xl`), h3 20px (`--tp-text-lg`) (DESIGN.md §3). Contrast ≥4.5:1.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0029 — Tag
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Tag (inline `#tag`, badge); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** An inline `#tag` badge primitive (pill, `--tp-accent-wash` on selected, linkable) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Tag.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Tag.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Tag.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/tag.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Tag({ name, href? })` rendering `tp-tag`; 3) selected state uses `--tp-accent-wash` with `--tp-accent` text (word + no colour-only signal); 4) export; 5) render test + Playwright via the editor/notes spec.
-- **DONE:** `bun test packages/ui/src/primitives/Tag.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Tag({ name, href, selected }: TagProps)` rendering `tp-tag`; 3) selected state uses `--tp-accent-wash` with `--tp-accent` text (word + no colour-only signal); 4) export `Tag` and `TagProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="tag-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/tag.spec.ts` that navigates to `/e2e/components#tag` and `/e2e/components?lang=he#tag`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tag.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Pill radius `--tp-radius-pill`, text `--tp-text-xs` (13px min), `#` prefix inline. Default `--tp-ink-muted` text on `--tp-paper` with `--tp-line` hairline; selected `--tp-accent` text on `--tp-accent-wash`. Linkable (`href`) with hover lift. The tag text is user data (untranslated), shown `dir="auto"`.
-- **TESTS:** Given `name="home"` / Then it renders `#home`. Given selected / Then accent wash + accent text. Given `href` / Then it is a link. Given 390 vs 1280 / Then the pill wraps in both.
-- **NUMBERS:** text ≥13px; contrast ≥4.5:1 (accent on wash; default muted on paper).
+- **SPEC:** Type `export type TagProps = { name: string; href?: string; selected?: boolean }`. Pill radius `--tp-radius-pill` (999px), text `--tp-text-xs` (13px min), `#` prefix inline. Default `--tp-ink-muted` text on `--tp-paper` with `--tp-line` hairline; selected `--tp-accent` (#A3461F) text on `--tp-accent-wash` (#F3E2D6). Linkable (`href`) with hover lift (180ms `--tp-dur-base`). The tag text is user data (untranslated), shown `dir="auto"`. States: loading/error/offline/disabled n/a (static or plain link); no async state. Keyboard: link variant is focusable; selected is signalled by the word, not colour alone. Motion: hover lift 180ms, reduced-motion → instant.
+- **TESTS:** Given `name="home"` / Then it renders `#home`. Given selected / Then accent wash + accent text. Given `href` / Then it is a link. Given 390 vs 1280 / Then the pill wraps in both. Given forced-colours / Then the `#` + name remain (no colour-only signal). Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** text ≥13px (`--tp-text-xs`); contrast ≥4.5:1 (accent #A3461F on wash #F3E2D6; muted #57514A on paper #FBF9F4 = 7.44:1 light).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0030 — Wikilink
-- **Stage:** A · **Pass:** 1 · **Depends:** 0009 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a, 0009 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0009.
 - **WHY:** DESIGN.md §9 Wikilink (`[[page]]`, popover picker); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A `[[page]]` link primitive renders inline, links to the page, and offers a popover picker; it feeds the backlinks index.
-- **SCOPE:** `packages/ui/src/primitives/Wikilink.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Wikilink.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Wikilink.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/wikilink.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Wikilink({ page, href? })` rendering `tp-wikilink`; 3) unresolved links (no page yet) render as plain text with a create affordance; 4) resolved links navigate and register in `notes_links` (TFV2-0009); 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test packages/ui/src/primitives/Wikilink.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Wikilink({ page, href, resolved }: WikilinkProps)` rendering `tp-wikilink`; 3) unresolved links (no page yet) render as plain text with a create affordance; 4) resolved links navigate and register in the link index via `notes_links` (TFV2-0009 — a backend read, no direct write from this UI component); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="wikilink-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/wikilink.spec.ts` that navigates to `/e2e/components#wikilink` and `/e2e/components?lang=he#wikilink`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/wikilink.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Inline link `--tp-accent` text with a subtle underline; `dir="auto"` for the page name. Resolved → navigate; unresolved → `EN: "Create '…'" / HE: "ליצור '…'"` affordance. Popover picker (command) lists matching pages on typing; arrows/Enter/Esc. Backlinks section header `EN: "Linked here" / HE: "מקושר לכאן"`.
-- **TESTS:** Given `[[Moving checklist]]` / Then it renders as a link. Given a resolved page / Then clicking navigates and the target's backlinks list it. Given an unresolved page / Then a create affordance shows. Given `lang=he` / Then `dir="auto"` per name.
-- **NUMBERS:** contrast ≥4.5:1 (accent on paper 5.78:1 light); target ≥24px.
+- **SPEC:** Type `export type WikilinkProps = { page: string; href?: string; resolved?: boolean }`. Inline link `--tp-accent` text (#A3461F) with a subtle underline; `dir="auto"` for the page name. Resolved → navigate; unresolved → `EN: "Create '…'" / HE: "ליצור '…'"` affordance. Popover picker (command) lists matching pages on typing; arrows/Enter/Esc. Backlinks section header `EN: "Linked here" / HE: "מקושר לכאן"` (the actual list is the editor's TFV2-0009 `backlinks` query). States: loading n/a (static link), error/offline n/a, empty n/a; resolved vs unresolved are the two states. Keyboard: link is focusable; the picker is a listbox with arrows/Enter/Esc. Motion ≤250ms (popover 180ms); reduced-motion → instant.
+- **TESTS:** Given `[[Moving checklist]]` / Then it renders as a link. Given a resolved page / Then clicking navigates. Given an unresolved page / Then a create affordance shows. Given `lang=he` / Then `dir="auto"` per name. Given a picker open / Then arrows move, Enter selects, Esc closes. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** contrast ≥4.5:1 (accent #A3461F on paper #FBF9F4 = 5.78:1 light); target ≥24×24 CSS px (WCAG 2.5.8).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0031 — Chip
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Chip (`--fixed`/`--flex`/`--done`, word always present); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A status chip primitive (done/fixed/flexible tones, icon + word, never colour-only) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Chip.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Chip.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Chip.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/chip.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING; `Pill.tsx` exists but is not the Chip); 2) implement `Chip({ tone: "done"|"info"|"caution"|"danger", label, icon? })` rendering `tp-chip`; 3) map tones to `--tp-done`/`--tp-info`/`--tp-caution`/`--tp-danger` + their `-wash`; 4) always render icon + word; 5) render test + Playwright via the editor/calendar spec.
-- **DONE:** `bun test packages/ui/src/primitives/Chip.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (`Chip.tsx` is MISSING; `Pill.tsx` exists but uses the old design system and is not the v3 Chip); 2) implement `Chip({ tone, label, icon }: ChipProps)` rendering `tp-chip`; 3) map tones `"done"|"info"|"caution"|"danger"` to `--tp-done`/`--tp-info`/`--tp-caution`/`--tp-danger` + their `-wash`; 4) always render icon + word; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="chip-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/chip.spec.ts` that navigates to `/e2e/components#chip` and `/e2e/components?lang=he#chip`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chip.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not signal by colour alone; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Small badge with `--tp-text-xs` label, radius `--tp-radius-sm`, tone wash + tone text. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Fixed" / HE: "קבוע"`; `EN: "Flexible" / HE: "גמיש"`. Icon always accompanies the word.
-- **TESTS:** Given `tone="done"` / Then it renders icon + "Done" in `--tp-done`. Given `tone="caution"` / Then icon + "Flexible". Given `lang=he` / Then Hebrew word + icon. Given forced-colours mode / Then the word remains (no colour-only signal).
-- **NUMBERS:** text ≥13px; contrast ≥4.5:1 (done 5.22:1, info 5.13:1, caution 5.05:1, danger 5.26:1 light).
+- **SPEC:** Type `export type ChipTone = "done" | "info" | "caution" | "danger"; export type ChipProps = { tone: ChipTone; label: string; icon?: ReactNode }`. Small badge with `--tp-text-xs` (13px) label, radius `--tp-radius-sm` (6px), tone wash + tone text. Copy (EN/HE): `EN: "Done" / HE: "בוצע"` (`--tp-done` #3B6948 on `--tp-done-wash` #E3EBDF); `EN: "Fixed" / HE: "קבוע"` (`--tp-info` #36628C on `--tp-info-wash` #E0E7EE); `EN: "Flexible" / HE: "גמיש"` (`--tp-caution` #7E5A0C on `--tp-caution-wash` #F1E6CC). Icon always accompanies the word. States: loading/error/offline/disabled n/a (static badge). Motion n/a.
+- **TESTS:** Given `tone="done"` / Then it renders icon + "Done" in `--tp-done`. Given `tone="caution"` / Then icon + "Flexible". Given `lang=he` / Then Hebrew word + icon. Given forced-colours mode / Then the word remains (no colour-only signal). Given `tone="info"` / Then icon + "Fixed". Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** text ≥13px (`--tp-text-xs`); contrast ≥4.5:1 (done 5.22:1, info 5.13:1, caution 5.05:1, danger 5.26:1 light).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0032 — Button
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Button (primary/secondary/ghost/icon, primary once per screen); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The button primitive's variants, sizes and focus ring are verified against tokens, with the accent reserved for one primary per screen.
-- **SCOPE:** `packages/ui/src/primitives/Button.tsx` (+ `packages/ui/src/primitives/Button.test.tsx`).
+- **GOAL:** The button primitive is migrated to v3 tokens and variants, with the accent reserved for one primary per screen.
+- **SCOPE:** `packages/ui/src/primitives/Button.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/button.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `packages/ui/src/primitives/Button.tsx`; also `apps/web/components/ui/button.tsx` shadcn wrapper — the ticket verifies the design-system primitive); 2) verify `variant: primary|secondary|ghost|icon|danger-ghost` and `size: sm|md`; 3) verify focus ring `--tp-accent` 2px with 2px gap and press/hover motion ≤250ms; 4) render test + Playwright via a screen with one primary.
-- **DONE:** `bun test packages/ui/src/primitives/Button.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not add colours; do not use accent on more than one primary per screen; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `packages/ui/src/primitives/Button.tsx` — currently on the old design system with variants `primary|soft|ghost|subtle|inverse|destructive` and sizes `sm|md|lg`; also `apps/web/components/ui/button.tsx` shadcn wrapper — this ticket migrates the design-system primitive); 2) migrate `variant` to `primary|secondary|ghost|icon` and `size` to `sm|md` per DESIGN.md §9; 3) map primary → `--tp-accent`/`--tp-on-accent`, secondary → `--tp-line-control` outline on `--tp-paper`, ghost → transparent with `--tp-ink`, icon → square ghost; 4) verify focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`) and press/hover motion ≤250ms; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="button-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/button.spec.ts` that navigates to `/e2e/components#button` and `/e2e/components?lang=he#button`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/button.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not use accent on more than one primary per screen (a usage note for consumers); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** primary `--tp-accent`/`--tp-on-accent` (6.08:1 light); secondary `--tp-line-control` outline; ghost transparent; danger-ghost `--tp-danger`. Radius `--tp-radius-md` (10px). Height ≥44px (`--tp-touch`). Press = 1px down 98% scale 120ms; hover fade 120ms. Disabled: reduced opacity + `aria-disabled` + no action. Copy is per-screen (no fixed label).
-- **TESTS:** Given `variant=primary` / Then accent background and white label. Given keyboard Tab / Then a 2px accent focus ring shows. Given disabled / Then no click handler fires. Given 390 / Then target ≥44px (tap). Given `lang=he` / Then label direction is correct.
-- **NUMBERS:** min height 44px; contrast ≥4.5:1 (primary 6.08:1); target ≥24px (≥44px preferred); motion ≤250ms.
+- **SPEC:** Type `export type ButtonVariant = "primary" | "secondary" | "ghost" | "icon"; export type ButtonSize = "sm" | "md"; export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize; leadingIcon?: ReactNode; trailingIcon?: ReactNode }`. primary `--tp-accent` #A3461F / `--tp-on-accent` #FFFFFF (6.08:1 light); secondary `--tp-line-control` #877C6B outline; ghost transparent `--tp-ink`; icon square ghost. Radius `--tp-radius-md` (10px). Height ≥44px (`--tp-touch`). Press = 1px down 98% scale 120ms (`--tp-dur-fast`); hover fade 120ms. Disabled: reduced opacity + `aria-disabled` + no action. Copy is per-screen (no fixed label). States: loading/empty/error/offline/success n/a (a button has no async or data state); disabled is the one real state. Motion ≤250ms; reduced-motion → instant.
+- **TESTS:** Given `variant=primary` / Then accent background and white label. Given keyboard Tab / Then a 2px accent focus ring shows. Given disabled / Then no click handler fires and `aria-disabled` is set. Given 390 / Then target ≥44px (tap). Given `lang=he` / Then label direction is correct. Given `variant=icon` / Then it is square and ≥44px. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** min height 44px (`--tp-touch`); contrast ≥4.5:1 (primary 6.08:1); target ≥24×24 CSS px (WCAG 2.5.8), ≥44px preferred (WCAG 2.5.5 AAA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0033 — Kbd
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Kbd; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A keyboard-key hint primitive (`Ctrl K`, `⌘ K`, `[]`, `#`, `-`) exists in the design system, mono and LTR-isolated.
-- **SCOPE:** `packages/ui/src/primitives/Kbd.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Kbd.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Kbd.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/kbd.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Kbd({ keys })` rendering `tp-kbd` + `tp-num` (mono, LTR isolate); 3) map platform (Ctrl vs ⌘); 4) export; 5) render test + Playwright via the slash menu / command trigger spec.
-- **DONE:** `bun test packages/ui/src/primitives/Kbd.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Kbd({ keys }: KbdProps)` rendering `tp-kbd` + `tp-num` (mono, LTR isolate); 3) map platform (Ctrl vs ⌘); 4) export `Kbd` and `KbdProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="kbd-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/kbd.spec.ts` that navigates to `/e2e/components#kbd` and `/e2e/components?lang=he#kbd`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/kbd.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `--tp-font-mono` (`IBM Plex Mono`), `--tp-text-xs`, radius `--tp-radius-sm`, subtle sunken ground `--tp-sunken`. Always LTR (`direction:ltr; unicode-bidi:isolate`) even in Hebrew. Examples: `Ctrl K`, `⌘ K`, `[]`, `#`, `-`, `[[`.
-- **TESTS:** Given `keys=["Ctrl","K"]` / Then it renders `Ctrl K` in mono, LTR. Given `lang=he` / Then the kbd stays LTR. Given macOS / Then it renders `⌘ K`. Given `keys=["#"]` / Then `#`.
-- **NUMBERS:** text ≥13px; no contrast requirement below 3:1 for decorative hint (but label text beside it must clear 4.5:1).
+- **SPEC:** Type `export type KbdProps = { keys: string[] }`. `--tp-font-mono` (`IBM Plex Mono`), `--tp-text-xs` (13px), radius `--tp-radius-sm` (6px), subtle sunken ground `--tp-sunken` #EAE3D6. Always LTR (`direction:ltr; unicode-bidi:isolate`) even in Hebrew. Examples: `Ctrl K`, `⌘ K`, `[]`, `#`, `-`, `[[`. States: loading/error/offline/disabled/empty n/a (static hint). Motion n/a.
+- **TESTS:** Given `keys=["Ctrl","K"]` / Then it renders `Ctrl K` in mono, LTR. Given `lang=he` / Then the kbd stays LTR. Given macOS / Then it renders `⌘ K`. Given `keys=["#"]` / Then `#`. Given `keys=["["]` / Then `[[`. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** text ≥13px (`--tp-text-xs`); no contrast requirement below 3:1 for the decorative hint (but label text beside it must clear 4.5:1).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0034 — Card
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Card (quiet inline block card); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The card primitive (`__head`/`__title`, paper surface, `--tp-shadow-card`) is verified.
-- **SCOPE:** `packages/ui/src/primitives/SoftCard.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/SoftCard.test.tsx`).
+- **GOAL:** The card primitive (`__head`/`__title`, paper surface, `--tp-shadow-card`) is migrated to v3 tokens.
+- **SCOPE:** `packages/ui/src/primitives/SoftCard.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/card.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `SoftCard.tsx`; also `apps/web/components/ui/card.tsx`); 2) verify `--tp-paper` surface, `--tp-radius-lg` (14px), `--tp-shadow-card`; 3) verify hover lift (180ms) only when it is a link/button; 4) render test + Playwright via the blocks spec.
-- **DONE:** `bun test packages/ui/src/primitives/SoftCard.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `SoftCard.tsx` on the old design system — `rounded-xl border shadow-whisper`; also `apps/web/components/ui/card.tsx`); 2) migrate to `--tp-paper` surface, `--tp-radius-lg` (14px), `--tp-shadow-card`; 3) verify hover lift (180ms `--tp-dur-base`) only when it is a link/button; 4) export `SoftCard`/`SoftCardProps` from `index.ts` (already exported); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="card-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/card.spec.ts` that navigates to `/e2e/components#card` and `/e2e/components?lang=he#card`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/card.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not put glass on a card; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Solid `--tp-paper`, `--tp-radius-lg`, `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. Cards on paper use the `raise` shadow. Interactive cards lift 1px at 180ms and show a focus ring.
-- **TESTS:** Given a Card / Then paper surface + card shadow. Given interactive / Then hover lifts and it is keyboard-focusable. Given a block card / Then it is solid, never glass.
-- **NUMBERS:** radius 14px (token); contrast ≥4.5:1; motion ≤250ms (180ms lift).
+- **SPEC:** Type `export type SoftCardProps = HTMLAttributes<HTMLDivElement> & { as?: "div" | "article" | "section"; padding?: "none" | "sm" | "md" | "lg"; interactive?: boolean }`. Solid `--tp-paper` #FBF9F4, `--tp-radius-lg` (14px), `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. Cards on paper use the `raise` shadow (`--tp-shadow-card`); interactive cards lift 1px at 180ms and show a focus ring. States: loading/error/offline/disabled/empty n/a (static surface); interactive vs non-interactive is the only distinction. Motion: hover lift 180ms, reduced-motion → instant.
+- **TESTS:** Given a Card / Then paper surface + card shadow + 14px radius. Given interactive / Then hover lifts and it is keyboard-focusable. Given a block card / Then it is solid, never glass. Given `as="section"` / Then it renders a `<section>`. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** radius 14px (`--tp-radius-lg`); contrast ≥4.5:1; motion ≤250ms (180ms lift).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0035 — BlockHandle
-- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a, 0027 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 BlockHandle (add below + options; buttons, never drag-only); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** Each block exposes a keyboard-reachable handle with "Add a block below" and "Block options" (move/copy/delete), never drag-only.
-- **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` (+ `apps/web/components/editor/BlockHandle.test.tsx`).
+- **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/block-handle.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BlockHandle({ onAdd, onMove, onCopy, onDelete })` rendering two ghost icon buttons; 3) wire to `pages.insertBlock` / `pages.moveBlock` / `pages.duplicateBlock` / `pages.removeBlock` (TFV2-0007); 4) each action offers 5-min Undo; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/editor/BlockHandle.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not make actions drag-only; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BlockHandle({ onAdd, onMove, onCopy, onDelete }: BlockHandleProps)` rendering two ghost icon buttons; 3) wire each action to the editor's body edit path — insert/move/duplicate/delete re-serialize `notes.body` and call `notes.save` (TFV2-0007); single-block edit uses `notes.patchBlock`; 4) each action offers 5-min Undo through `convex/lib/pageLedger.ts` (TFV2-0010); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="block-handle-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/block-handle.spec.ts` that navigates to `/e2e/components#block-handle` and `/e2e/components?lang=he#block-handle`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/block-handle.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not make actions drag-only; do not add colours; do not call a `pages.*` mutation (the write path is `notes.save`/`notes.patchBlock`, TFV2-0007); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). Hidden under 768 (long-press later). Options open a dropdown-menu with Move up / Move down / Duplicate / Delete (Delete uses `--tp-danger` + confirmation + Undo).
-- **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 / Then the handle is hidden (menu via long-press later).
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **SPEC:** Type `export type BlockHandleProps = { onAdd: () => void; onMove: (dir: -1 | 1) => void; onCopy: () => void; onDelete: () => void }`. Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). Hidden under 768 (long-press later). Options open a dropdown-menu with Move up / Move down / Duplicate / Delete (Delete uses `--tp-danger` + confirmation + Undo). States: loading/error/offline/empty n/a (button group); the open/closed menu is the only state. Keyboard: both buttons focusable, menu items arrow-navigable. Motion ≤250ms (dropdown 180ms); reduced-motion → instant.
+- **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 / Then the handle is hidden (menu via long-press later). Given "Move up" / Then `onMove(-1)` fires. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0036 — SlashMenu
-- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a, 0027 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 SlashMenu (listbox, arrows/Enter/Esc); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The slash menu (`/` on an empty line) is verified: filter, arrow/Enter/Esc, RTL arrow swap, and insert calls `pages.insertBlock`.
-- **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` (+ `apps/web/components/editor/SlashMenu.test.tsx`).
+- **GOAL:** The slash menu (`/` on an empty line) is verified: filter, arrow/Enter/Esc, RTL arrow swap, and insert re-serializes the body through `notes.save`.
+- **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/slash-menu.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `editor/SlashMenu.tsx`); 2) verify listbox semantics (`role=listbox`, `aria-activedescendant`), item set (Task, Time block, Habit, Energy, Nag, Heading, Bullet, Link); 3) verify arrows move, Enter inserts, Esc closes; 4) verify RTL arrow swap; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/editor/SlashMenu.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `editor/SlashMenu.tsx`); 2) verify listbox semantics (`role=listbox`, `aria-activedescendant`), item set (Task, Time block, Habit, Energy, Nag, Heading, Bullet, Link); 3) verify arrows move, Enter inserts, Esc closes; 4) verify RTL arrow swap; 5) verify insert appends the chosen block's markdown source to `notes.body` and calls `notes.save` (TFV2-0007); 6) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="slash-menu-<state>"` anchor, per components.md §2.2); 7) add the Playwright spec `tests/e2e/screens/slash-menu.spec.ts` that navigates to `/e2e/components#slash-menu` and `/e2e/components?lang=he#slash-menu`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/slash-menu.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not call a `pages.insertBlock` mutation (the write path is `notes.save`, TFV2-0007); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Glass popover (`.tp-slash-menu.tp-glass`), grouped items. Copy (EN/HE): group `EN: "Tempo blocks" / HE: "בלוקים של Tempo"`, `EN: "Text" / HE: "טקסט"`; items `Task/משימה`, `Time block/בלוק זמן`, `Habit/הרגל`, `Energy check-in/בדיקת אנרגיה`, `Nag/תזכורת`, `Heading/כותרת`, `Bullet list/רשימת נקודות`, `Link to a page/קישור לדף`; hint `EN: "Type to filter · ↑ ↓ to move · Enter to add" / HE: "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה"`. Arrow direction flips in RTL.
-- **TESTS:** Given `/` / Then the menu opens focused. Given typing "ta" / Then only matching items remain. Given ↓ then Enter / Then the highlighted block inserts and the menu closes. Given Esc / Then it closes with focus returned. Given `lang=he` / Then arrows are mirrored.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms (popover 180ms).
+- **SPEC:** Glass popover (`.tp-slash-menu.tp-glass`, `--tp-glass` with `--tp-glass-solid` fallback). Copy (EN/HE): group `EN: "Tempo blocks" / HE: "בלוקים של Tempo"`, `EN: "Text" / HE: "טקסט"`; items `Task/משימה`, `Time block/בלוק זמן`, `Habit/הרגל`, `Energy check-in/בדיקת אנרגיה`, `Nag/תזכורת`, `Heading/כותרת`, `Bullet list/רשימת נקודות`, `Link to a page/קישור לדף`; hint `EN: "Type to filter · ↑ ↓ to move · Enter to add" / HE: "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה"`. Arrow direction flips in RTL. States: loading/error/offline/disabled n/a (synchronous listbox); empty filter result is the "no matches" state; success = block inserted + menu closed. Motion ≤250ms (popover 180ms `--tp-dur-base`); reduced-motion → instant.
+- **TESTS:** Given `/` / Then the menu opens focused. Given typing "ta" / Then only matching items remain. Given ↓ then Enter / Then the highlighted block inserts (via `notes.save`) and the menu closes. Given Esc / Then it closes with focus returned. Given `lang=he` / Then arrows are mirrored. Given no match / Then a "no matches" row shows. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24×24 CSS px (WCAG 2.5.8); motion ≤250ms (popover 180ms).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0037 — Composer
-- **Stage:** A · **Pass:** 1 · **Depends:** 0015 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a, 0015 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0015.
 - **WHY:** DESIGN.md §9 Composer (textarea + send, send is ink not accent); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The coach message composer (textarea, Enter to send, Shift+Enter newline, ink send button) is verified.
-- **SCOPE:** `apps/web/components/coach/Composer.tsx` (+ `apps/web/components/coach/Composer.test.tsx`).
+- **SCOPE:** `apps/web/components/coach/Composer.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/composer.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING as a component; the panel renders it inline in the coach HTML); 2) implement `Composer({ onSend, disabled? })`; 3) wire send to the coach send path (TFV2-0015); 4) voice button placeholder (`.tp-btn--ghost` mic, disabled until chunk E); 5) render test + Playwright via the coach spec.
-- **DONE:** `bun test apps/web/components/coach/Composer.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING as a component; the panel renders it inline in the coach HTML); 2) implement `Composer({ onSend, disabled }: ComposerProps)`; 3) wire send to the coach send path (TFV2-0015); 4) voice button placeholder (`.tp-btn--ghost` mic, disabled until chunk E); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="composer-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/composer.spec.ts` that navigates to `/e2e/components#composer` and `/e2e/components?lang=he#composer`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/composer.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not colour the send button accent (it is ink); do not enable voice yet; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour (not accent). Placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; send `aria-label` `EN: "Send" / HE: "שליחה"`. Hint `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`. Disabled while Thinking.
-- **TESTS:** Given Enter / Then it sends and clears. Given Shift+Enter / Then a newline, no send. Given disabled (Thinking) / Then send is blocked. Given empty / Then send does nothing. Given `lang=he` / Then placeholder is Hebrew and `dir="auto"`.
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **SPEC:** Type `export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean }`. Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour `--tp-ink` (not accent). Placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; send `aria-label` `EN: "Send" / HE: "שליחה"`. Hint `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`. Disabled while Thinking. States: loading = disabled (Thinking), empty = send does nothing, error/offline n/a (the composer itself never fails); success = send clears the textarea. Keyboard: Enter sends, Shift+Enter newline; reduced-motion → instant.
+- **TESTS:** Given Enter / Then it sends and clears. Given Shift+Enter / Then a newline, no send. Given disabled (Thinking) / Then send is blocked. Given empty / Then send does nothing. Given `lang=he` / Then placeholder is Hebrew and `dir="auto"`. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0038 — UndoToast
-- **Stage:** A · **Pass:** 1 · **Depends:** 0010 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a, 0010 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0010.
 - **WHY:** DESIGN.md §9 UndoToast (sonner, 5:00 countdown, Undo); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The Undo toast (title + countdown + Undo, 5-minute window) is verified with keyboard and screen-reader behaviour.
-- **SCOPE:** `apps/web/components/you/UndoToast.tsx` (+ `apps/web/components/you/UndoToast.test.tsx`).
+- **SCOPE:** `apps/web/components/you/UndoToast.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/undo-toast.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `you/UndoToast.tsx` and `habits/UndoToast.tsx` — verify the canonical `you/` one); 2) verify it accepts `{ title, sub?, undoMs, onUndo }`; 3) verify 5:00 countdown and `aria-live=polite` region; 4) verify `prefers-reduced-motion` stops the countdown animation; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/you/UndoToast.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `you/UndoToast.tsx` and `habits/UndoToast.tsx` — verify the canonical `you/` one); 2) verify it accepts `{ title, sub?, undoMs, onUndo }`; 3) verify 5:00 countdown and `aria-live=polite` region; 4) verify `prefers-reduced-motion` stops the countdown animation; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="undo-toast-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/undo-toast.spec.ts` that navigates to `/e2e/components#undo-toast` and `/e2e/components?lang=he#undo-toast`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/undo-toast.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not shorten the 5-minute window; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Glass toast (`.tp-toast.tp-glass`), title + optional sub + Undo button + dismiss. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Undo" / HE: "ביטול"`; `EN: "Dismiss" / HE: "סגירה"`; countdown `EN: "You can undo for 5:00" / HE: "אפשר לבטל למשך 5:00"`. Rises 240ms (`--tp-dur-slow`), exits 160ms. Live region `aria-live=polite`.
-- **TESTS:** Given an action / Then a toast with Undo shows and the 5:00 countdown starts. Given Undo / Then `onUndo` fires and the change reverts. Given dismiss / Then it closes. Given reduced motion / Then no countdown animation. Given `lang=he` / Then Hebrew copy, numbers LTR.
-- **NUMBERS:** window = 5 minutes (PRD F-131); motion ≤250ms; contrast ≥4.5:1.
+- **SPEC:** Type `export type UndoToastProps = { title: string; sub?: string; undoMs: number; onUndo: () => void; onDismiss?: () => void }`. Glass toast (`.tp-toast.tp-glass`, `--tp-glass` with `--tp-glass-solid` fallback), title + optional sub + Undo button + dismiss. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Undo" / HE: "ביטול"`; `EN: "Dismiss" / HE: "סגירה"`; countdown `EN: "You can undo for 5:00" / HE: "אפשר לבטל למשך 5:00"`. Rises 240ms (`--tp-dur-slow`), exits 160ms (`--tp-dur-exit`). Live region `aria-live=polite`. States: loading/error/offline/empty n/a (a toast); success = action reverted; the countdown reaches 0 → auto-dismiss. Keyboard: Undo and Dismiss are buttons, focusable; reduced-motion → no countdown animation, instant show/hide.
+- **TESTS:** Given an action / Then a toast with Undo shows and the 5:00 countdown starts. Given Undo / Then `onUndo` fires and the change reverts. Given dismiss / Then it closes. Given reduced motion / Then no countdown animation. Given `lang=he` / Then Hebrew copy, numbers LTR. Given the countdown expires / Then it auto-dismisses without firing Undo. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** window = 5 minutes (PRD F-131; `PAGE_LEDGER_TIMING.undoWindowMs`); motion ≤250ms; contrast ≥4.5:1.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0039 — Skeleton
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Skeleton (content >100ms; shimmer stops with reduced motion); components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A skeleton primitive (`--w40/w60/w80/w100/sm/block` widths, shimmer gated on reduced motion) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Skeleton.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Skeleton.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Skeleton.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/skeleton.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Skeleton({ width?: "w40"|"w60"|"w80"|"w100"|"sm"|"block" })`; 3) shimmer uses opacity only and stops under `prefers-reduced-motion`; 4) export; 5) render test + Playwright via the loading states spec.
-- **DONE:** `bun test packages/ui/src/primitives/Skeleton.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Skeleton({ width }: SkeletonProps)`; 3) shimmer uses opacity only and stops under `prefers-reduced-motion`; 4) export `Skeleton` and `SkeletonProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="skeleton-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/skeleton.spec.ts` that navigates to `/e2e/components#skeleton` and `/e2e/components?lang=he#skeleton`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/skeleton.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not animate transform; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `--tp-sunken` fill on `--tp-paper`, radius `--tp-radius-sm`; shimmer opacity pulse, static under reduced motion. Widths map to the `--w40/w60/w80/w100` classes; a `block` variant is full-width card-shaped. Used only for content that takes >100ms.
-- **TESTS:** Given `width="w80"` / Then it renders at 80% width. Given reduced motion / Then no shimmer animation. Given `width="block"` / Then a card-shaped block. Given a list / Then `tp-skel-list` rows render.
+- **SPEC:** Type `export type SkeletonWidth = "w40" | "w60" | "w80" | "w100" | "sm" | "block"; export type SkeletonProps = { width?: SkeletonWidth }`. `--tp-sunken` #EAE3D6 fill on `--tp-paper` #FBF9F4, radius `--tp-radius-sm` (6px); shimmer opacity pulse (opacity only, no transform), static under reduced motion. Widths map to the `--w40/w60/w80/w100` classes; a `block` variant is full-width card-shaped. Used only for content that takes >100ms. States: loading is the whole point (this IS the loading state); error/offline/empty/disabled n/a. Motion: shimmer stops under `prefers-reduced-motion`.
+- **TESTS:** Given `width="w80"` / Then it renders at 80% width. Given reduced motion / Then no shimmer animation. Given `width="block"` / Then a card-shaped block. Given a list / Then `tp-skel-list` rows render. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
 - **NUMBERS:** motion ≤250ms (and none under reduced motion); no contrast target (decorative).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0040 — Empty
-- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0023a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Empty (kind copy + next step); PRD §13 copy rules; components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The web Empty-state primitive (icon + kind title + body + next-step action) is verified.
-- **SCOPE:** `packages/ui/src/primitives/Empty.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Empty.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Empty.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/empty.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (mobile `TempoEmptyState.tsx` EXISTS; the web design-system `Empty` is MISSING); 2) implement `Empty({ icon?, title, body, action? })`; 3) no illustration — a line icon on a parchment disc (`--tp-sunken` + hairline + halo) or the shared page drawing; 4) copy is kind and offers a next step; 5) render test + Playwright via the notes/empty spec.
-- **DONE:** `bun test packages/ui/src/primitives/Empty.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (mobile `TempoEmptyState.tsx` EXISTS; the web design-system `Empty` is MISSING); 2) implement `Empty({ icon, title, body, action }: EmptyProps)`; 3) no illustration — a line icon on a parchment disc (`--tp-sunken` + hairline + halo) or the shared page drawing (`--tp-empty-art`); 4) copy is kind and offers a next step; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="empty-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/empty.spec.ts` that navigates to `/e2e/components#empty` and `/e2e/components?lang=he#empty`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/empty.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not shame the user (no "failed"/"overdue"/"must"); do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-state.tp-state--empty` with `__icon`, `__title`, `__body`, `__actions`. Copy example (EN/HE): `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + a next-step button. Icon on `--tp-sunken` disc with hairline ring and soft halo.
-- **TESTS:** Given an empty list / Then the kind title, body and one next-step action render. Given no `action` / Then no dangling button. Given `lang=he` / Then Hebrew copy. Given a screen reader / Then title is announced.
-- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **SPEC:** Type `export type EmptyProps = { icon?: ReactNode; title: string; body: string; action?: ReactNode }`. `tp-state.tp-state--empty` with `__icon`, `__title`, `__body`, `__actions`. Copy example (EN/HE): `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + a next-step button. Icon on `--tp-sunken` #EAE3D6 disc with hairline ring and soft halo. States: this IS the empty state; error/offline/loading/disabled n/a (separate StateError/StateOffline/StateLoading primitives). Keyboard: the optional action is a focusable button; title is announced by screen readers. Motion n/a.
+- **TESTS:** Given an empty list / Then the kind title, body and one next-step action render. Given no `action` / Then no dangling button. Given `lang=he` / Then Hebrew copy. Given a screen reader / Then title is announced. Given no `icon` / Then the shared page drawing (`--tp-empty-art`) renders. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **NUMBERS:** contrast ≥4.5:1; text ≥13px (`--tp-text-xs`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -914,16 +958,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §5 (glass recipe + fallbacks), §10 (RTL helpers), §9 Helpers; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The shared Glass mixin/component and the type/utility Helpers (`tp-num/mono/muted/small/eyebrow/sr-only/skip/icon--flip`) exist and fall back to a solid surface when unsupported.
-- **SCOPE:** `packages/ui/src/primitives/Glass.tsx` + `packages/ui/src/primitives/helpers.ts` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Glass.test.tsx`).
+- **SCOPE:** `packages/ui/src/primitives/Glass.tsx` + `packages/ui/src/primitives/helpers.ts` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Glass.test.tsx`, `tests/e2e/screens/glass.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Glass` applying the §5 recipe with `--tp-glass-solid` fallback for `prefers-reduced-transparency`, no `backdrop-filter`, and `?glass=off`/`data-glass=off`; 3) implement the helper utilities (`tp-num` LTR isolate, `tp-mono`, `tp-muted`, `tp-small`, `tp-eyebrow`, `tp-sr-only`, `tp-skip`, `tp-icon--flip`); 4) export; 5) render test + Playwright via the shell spec.
-- **DONE:** `bun test packages/ui/src/primitives/Glass.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING — no `Glass.tsx` or `helpers.ts` in `packages/ui/src/primitives/`); 2) implement `Glass` applying the §5 recipe with `--tp-glass-solid` fallback for `prefers-reduced-transparency`, no `backdrop-filter`, and `?glass=off`/`data-glass=off`; 3) implement the helper utilities (`tp-num` LTR isolate, `tp-mono`, `tp-muted`, `tp-small`, `tp-eyebrow`, `tp-sr-only`, `tp-skip`, `tp-icon--flip`); 4) export from `index.ts`; 5) render test `bun test packages/ui/src/primitives/Glass.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/glass.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly — the repo's single chromium project has no width override).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/glass.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test packages/ui/src/primitives/Glass.test.tsx`) pass count.
 - **DO NOT:** do not apply glass to non-floating surfaces (paper, cards, blocks, text); do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
 - **SPEC:** Glass: `background var(--tp-glass)` (82% light / 86% dark), `backdrop-filter: blur(18px) saturate(150%)`, 1px `--tp-glass-line` border, inset top highlight + `--tp-shadow-float`. Fallback switches to `--tp-glass-solid`. Helpers: `tp-num` = `direction:ltr; unicode-bidi:isolate` + tabular; `tp-mono` = `--tp-font-mono`; `tp-muted`/`tp-small`/`tp-eyebrow` map type tokens; `tp-sr-only` visually hidden; `tp-skip` the skip link; `tp-icon--flip` mirrors chevrons in RTL.
-- **TESTS:** Given glass / Then it uses `--tp-glass` and blur. Given `prefers-reduced-transparency` / Then it uses `--tp-glass-solid`. Given `data-glass=off` / Then solid. Given `tp-num` around `"12:30"` in HE / Then it stays LTR. Given `tp-icon--flip` in RTL / Then the icon mirrors.
-- **NUMBERS:** blur 18px, saturate 150% (tokens); worst-case glass text contrast ≥4.5:1 (DESIGN.md §6: muted-on-glass 5.13:1 light).
+- **TESTS:** Given glass / Then it uses `--tp-glass` and blur. Given `prefers-reduced-transparency` / Then it uses `--tp-glass-solid`. Given `data-glass=off` / Then solid. Given `prefers-reduced-motion` / Then blur and any motion collapse to instant (n/a — blur is a static filter, no transition). Given `tp-num` around `"12:30"` in HE / Then it stays LTR. Given `tp-icon--flip` in RTL / Then the icon mirrors. Given 390 and 1280 / Then the surface renders in both.
+- **NUMBERS:** blur 18px, saturate 150% (DESIGN.md §5 tokens); worst-case glass text contrast ≥4.5:1 (WCAG 2.2 AA; DESIGN.md §6 muted-on-glass 5.13:1 light).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -932,17 +976,17 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0027.
 - **WHY:** PRD §4.1 F-05 (tasks as task blocks); DESIGN.md §9 TaskBlock/TaskRow (optimistic tick); components.md §1/§2.2; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The task block renders a list of TaskRows; ticking a row is optimistic, announces the change, and fires `tasks.complete({id})` with a 5-minute Undo.
-- **SCOPE:** `apps/web/components/blocks/TaskBlock.tsx` (+ `apps/web/components/blocks/TaskBlock.test.tsx`).
-- **MUTATES:** none (calls the existing `tasks.complete`; no schema change).
-- **STEPS:** 1) Graphify code-map check (`TaskRow` EXISTS in `packages/ui/src/primitives/TaskRow.tsx`; `TaskBlock` is MISSING); 2) implement `TaskBlock({ tasks })` rendering a `tp-block-task` list of `TaskRow`; 3) tick is optimistic (`aria-checked`, check pop 180ms) and calls `tasks.complete({ id })` with Undo; 4) `- [ ]` markdown stays plain markdown; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/TaskBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **GOAL:** The task block renders a list of TaskRows; ticking a row is optimistic, announces the change, and fires `tasks.toggleCompletion({ taskId })`.
+- **SCOPE:** `apps/web/components/blocks/TaskBlock.tsx` (+ `apps/web/components/blocks/TaskBlock.test.tsx`, `tests/e2e/screens/task-block.spec.ts`).
+- **MUTATES:** none (calls the existing `tasks.toggleCompletion`; no schema change).
+- **STEPS:** 1) Graphify code-map check (`TaskRow` EXISTS in `packages/ui/src/primitives/TaskRow.tsx`; `TaskBlock` is MISSING); 2) implement `TaskBlock({ tasks })` rendering a `tp-block-task` list of `TaskRow`; 3) tick is optimistic (`aria-checked`, check pop 180ms) and calls `tasks.toggleCompletion({ taskId })` (returns `{ taskId, status }`); 4) `- [ ]` markdown stays plain markdown; 5) render test `bun test apps/web/components/blocks/TaskBlock.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/task-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/task-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/TaskBlock.test.tsx`) pass count.
 - **DO NOT:** do not surface JSON; do not break `- [ ]` markdown parity; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Row shows title (`dir="auto"`), duration `EN: "min" / HE: "דק׳"` with `.tp-num`, optional day. Tick button is `role=checkbox aria-checked`, check pops 180ms; done row uses `--tp-done` + word `EN: "Done" / HE: "בוצע"` (never colour-only). Announce new state via the live region.
-- **TESTS:** Given a task / When ticked / Then `aria-checked=true` immediately and `tasks.complete` is called with Undo shown. Given `lang=he` / Then duration `דק׳` and RTL. Given a done task / Then struck-through style + "Done". Given 390 and 1280 / Then rows render in both.
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (check 180ms).
+- **SPEC:** `TaskBlock({ tasks: TaskRowProps[] })` where `TaskRowProps = { id: Id<"tasks">; title: string; durationMin?: number; day?: string; done: boolean }`. Row shows title (`dir="auto"`), duration `EN: "min" / HE: "דק׳"` with `.tp-num`, optional day. Tick button is `role=checkbox aria-checked`, check pops 180ms; done row uses `--tp-done` + word `EN: "Done" / HE: "בוצע"` (never colour-only). Announce new state via the live region. Tick calls `tasks.toggleCompletion({ taskId: id })`.
+- **TESTS:** Given a task / When ticked / Then `aria-checked=true` immediately and `tasks.toggleCompletion` is called with `{ taskId }`. Given `lang=he` / Then duration `דק׳` and RTL. Given a done task / Then struck-through style + "Done". Given an empty list / Then the kind empty copy renders (n/a: no dedicated empty state if the parent passes `[]` — assert no rows and no crash). Given 390 and 1280 / Then rows render in both.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8 AA); contrast ≥4.5:1 (WCAG 2.2 AA); motion ≤250ms (check 180ms, DESIGN.md §7).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -952,16 +996,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 EnergyBlock/Dial (quiet/steady/push, radio + arrows); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The energy check-in block (three-segment toggle: quiet/steady/push, `role=radio` + arrows, RTL arrow swap) is verified.
-- **SCOPE:** `apps/web/components/blocks/EnergyBlock.tsx` (+ `apps/web/components/blocks/EnergyBlock.test.tsx`).
+- **SCOPE:** `apps/web/components/blocks/EnergyBlock.tsx` (+ `apps/web/components/blocks/EnergyBlock.test.tsx`, `tests/e2e/screens/energy-block.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (`Dial` helper EXISTS at `apps/web/components/coach-controls/dial.ts`; `EnergyBlock` is MISSING); 2) implement `EnergyBlock({ value })` with three `role=radio` options; 3) arrow keys move the selection and swap direction in RTL; 4) announce the chosen word; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/EnergyBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (`Dial` helper EXISTS at `apps/web/components/coach-controls/dial.ts`; `EnergyBlock` is MISSING); 2) implement `EnergyBlock({ value })` with three `role=radio` options; 3) arrow keys move the selection and swap direction in RTL; 4) announce the chosen word; 5) render test `bun test apps/web/components/blocks/EnergyBlock.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/energy-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/energy-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/EnergyBlock.test.tsx`) pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Three `tp-seg__opt` segments, one selected. Copy (EN/HE): `EN: "Quiet" / HE: "שקט"`; `EN: "Steady" / HE: "יציב"`; `EN: "Push" / HE: "דחיפה"`. `role=radio` group, `aria-checked` on the selected, arrows move selection (LTR ↔ RTL). The word always carries meaning.
-- **TESTS:** Given value `steady` / Then "Steady" is selected and `aria-checked=true`. Given ← / Then selection moves left (right in RTL). Given `lang=he` / Then words are Hebrew and arrows swapped. Given 390 and 1280 / Then the toggle fits both.
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **SPEC:** `EnergyBlock({ value: "quiet" | "steady" | "push"; onChange?(v): void })`. Three `tp-seg__opt` segments, one selected. Copy (EN/HE): `EN: "Quiet" / HE: "שקט"`; `EN: "Steady" / HE: "יציב"`; `EN: "Push" / HE: "דחיפה"`. `role=radio` group, `aria-checked` on the selected, arrows move selection (LTR ↔ RTL). The word always carries meaning.
+- **TESTS:** Given value `steady` / Then "Steady" is selected and `aria-checked=true`. Given ← / Then selection moves left (right in RTL). Given `lang=he` / Then words are Hebrew and arrows swapped. Given `prefers-reduced-motion` / Then the selection change is instant (n/a: selection is instant by default). Given 390 and 1280 / Then the toggle fits both.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8 AA); contrast ≥4.5:1 (WCAG 2.2 AA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -970,17 +1014,17 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0009.
 - **WHY:** DESIGN.md §9 Backlinks ("Linked here", card list); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The "Linked here" section renders a list of linking pages (page + context snippet) from `notes.backlinks`, verified with empty state.
-- **SCOPE:** `apps/web/components/blocks/Backlinks.tsx` (+ `apps/web/components/blocks/Backlinks.test.tsx`).
+- **GOAL:** The "Linked here" section renders a list of linking pages (page + context snippet) from `notes.backlinks({ noteId })`, verified with empty state.
+- **SCOPE:** `apps/web/components/blocks/Backlinks.tsx` (+ `apps/web/components/blocks/Backlinks.test.tsx`, `tests/e2e/screens/backlinks.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Backlinks({ links })`; 3) render header `EN: "Linked here" / HE: "מקושר לכאן"` + count `.tp-num`; 4) each row shows page title + context snippet (`dir="auto"`); 5) empty → hide or show kind copy `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`; 6) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/Backlinks.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING — `Backlinks.tsx` absent; the `notes.backlinks` query EXISTS in `convex/notes.ts` with args `{ noteId }`); 2) implement `Backlinks({ noteId })` that reads `notes.backlinks({ noteId })` and renders `Backlinks({ links })` rows; 3) render header `EN: "Linked here" / HE: "מקושר לכאן"` + count `.tp-num`; 4) each row shows page title + context snippet (`dir="auto"`); 5) empty → hide or show kind copy `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`; 6) render test `bun test apps/web/components/blocks/Backlinks.test.tsx`; 7) add the Playwright spec `tests/e2e/screens/backlinks.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/backlinks.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/Backlinks.test.tsx`) pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-backlinks` section with eyebrow header + count; rows `tp-backlink` with `__page` and `__ctx`. Snippet clamps to 2 lines. Count uses `.tp-num`.
-- **TESTS:** Given 3 links / Then 3 rows render with page + snippet. Given 0 links / Then the empty copy shows. Given `lang=he` / Then header Hebrew and snippets `dir="auto"`. Given a row click / Then it navigates to that page.
-- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **SPEC:** `Backlinks({ links: Backlink[] })` where `Backlink = { id: string; title: string; snippet: string }` (the shape `notes.backlinks` returns, via `backlinksFor`). `tp-backlinks` section with eyebrow header + count; rows `tp-backlink` with `__page` and `__ctx`. Snippet clamps to 2 lines. Count uses `.tp-num`. A row click navigates to `/(tempo)/notes/[id]`.
+- **TESTS:** Given 3 links / Then 3 rows render with page + snippet. Given 0 links / Then the empty copy shows. Given `lang=he` / Then header Hebrew and snippets `dir="auto"`. Given a row click / Then it navigates to that page. Given loading (query in flight) / Then a skeleton row (n/a: if the query is synchronous; otherwise a skeleton). Given 390 and 1280 / Then the list renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); text ≥13px (`--tp-text-xs`, the floor).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -990,56 +1034,56 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0006.
 - **WHY:** components.md §2.2 PageMetaBlock (renders nothing; `display:none` + `aria-hidden`); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The page-meta block carries `pageType`/`date`/`tags` metadata but renders nothing and is hidden from assistive tech.
-- **SCOPE:** `apps/web/components/blocks/PageMetaBlock.tsx` (+ `apps/web/components/blocks/PageMetaBlock.test.tsx`).
+- **SCOPE:** `apps/web/components/blocks/PageMetaBlock.tsx` (+ `apps/web/components/blocks/PageMetaBlock.test.tsx`, `tests/e2e/screens/page-meta-block.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageMetaBlock({ meta })` that returns an element with `display:none !important` + `aria-hidden="true"` and no text; 3) never leak JSON into the DOM; 4) render test + Playwright assert invisibility via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/PageMetaBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageMetaBlock({ meta })` that returns an element with `display:none !important` + `aria-hidden="true"` and no text; 3) never leak JSON into the DOM; 4) render test `bun test apps/web/components/blocks/PageMetaBlock.test.tsx`; 5) add the Playwright spec `tests/e2e/screens/page-meta-block.spec.ts` asserting invisibility at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-meta-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/PageMetaBlock.test.tsx`) pass count.
 - **DO NOT:** do not render metadata text; do not surface JSON; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-block-meta` with `display:none !important` and `aria-hidden="true"`. Holds `{ pageType, date?, tags[] }` in memory for the page head, but paints nothing and announces nothing.
-- **TESTS:** Given a page-meta block / Then the DOM node is hidden and `aria-hidden`. Given a screen reader / Then nothing is announced. Given the page head / Then it reads `pageType` from this block (not from the DOM).
-- **NUMBERS:** none.
+- **SPEC:** `PageMetaBlock({ meta: { pageType: string; date?: string; tags?: string[] } })`. `tp-block-meta` with `display:none !important` and `aria-hidden="true"`. Holds the values in memory for the page head, but paints nothing and announces nothing.
+- **TESTS:** Given a page-meta block / Then the DOM node is hidden and `aria-hidden`. Given a screen reader / Then nothing is announced. Given the page head / Then it reads `pageType` from this block (not from the DOM). Given 390 and 1280 / Then nothing is painted in both (still `display:none`).
+- **NUMBERS:** none (no visible or interactive surface; the block is `display:none` + `aria-hidden`).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0046 — BrokenBlock
+### TFV2-0046 — BrokenBlock — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0006.
 - **WHY:** PRD §4.1 F-03 (broken block draws as a quiet card with Undo); components.md §2.2 BrokenBlock (never shows JSON); REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** A broken block renders as a quiet card with a kind message and an Undo/revert action, never showing raw JSON.
-- **SCOPE:** `apps/web/components/blocks/BrokenBlock.tsx` (+ `apps/web/components/blocks/BrokenBlock.test.tsx`).
-- **MUTATES:** none (calls `pages.revertBlock`; no schema change).
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BrokenBlock({ blockId, canUndo })` rendering `tp-block-broken`; 3) message `EN: "This part has a problem." / HE: "לחלק הזה יש בעיה."` and action `EN: "Restore" / HE: "שחזור"` → `pages.revertBlock` with Undo; 4) never render the raw source/JSON; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/BrokenBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not show JSON or ids; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **GOAL:** A broken block renders as a quiet card with a kind message and a Restore action, never showing raw JSON.
+- **SCOPE:** `apps/web/components/blocks/BrokenBlock.tsx` (+ `apps/web/components/blocks/BrokenBlock.test.tsx`, `tests/e2e/screens/broken-block.spec.ts`).
+- **MUTATES:** none (the revert path is undefined — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING; no `pages.revertBlock` or any single-block revert mutation exists in `convex/`); 2) implement `BrokenBlock({ blockId, canUndo })` rendering `tp-block-broken`; 3) message `EN: "This part has a problem." / HE: "לחלק הזה יש בעיה."` and action `EN: "Restore" / HE: "שחזור"`; 4) never render the raw source/JSON; 5) render test `bun test apps/web/components/blocks/BrokenBlock.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/broken-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly). The Restore action's data contract is UNKNOWN — wire it only after the OPEN below is answered.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/broken-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/BrokenBlock.test.tsx`) pass count.
+- **DO NOT:** do not show JSON or ids; do not add colours; do not invent a revert mutation; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Quiet `alert`-tone card, icon + word (never colour-only). Action `broken-undo` replaces the card with `EN: "Restored…" / HE: "שוחזר…"`.
-- **TESTS:** Given a broken block / Then the kind message renders, no JSON/block id visible. Given Restore / Then `pages.revertBlock` fires with Undo. Given `lang=he` / Then Hebrew message. Given no undo available / Then the action is hidden.
-- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **SPEC:** Quiet `alert`-tone card, icon + word (never colour-only). `BrokenBlock({ blockId: string; canUndo: boolean; onRestore?: () => void })`. The Restore action is a callback prop (no backend call in this ticket); the owning screen wires it. Action `broken-undo` replaces the card with `EN: "Restored…" / HE: "שוחזר…"`.
+- **TESTS:** Given a broken block / Then the kind message renders, no JSON/block id visible. Given Restore / Then `onRestore` fires. Given `lang=he` / Then Hebrew message. Given no undo available / Then the action is hidden. Given 390 and 1280 / Then the card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); text ≥13px.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** no mutation to revert/restore a single broken block exists in code (`convex/notes.ts` has `restore`/`remove` at page level, and the page-operation ledger `convex/lib/pageLedger.ts` has no block-level revert). The Restore data contract is UNKNOWN — does Restore re-parse the raw block, revert the page-operation ledger (TFV2-0010), or a new `notes` mutation? Answerer: Amit.
 
-### TFV2-0047 — TemplateBlock
+### TFV2-0047 — TemplateBlock — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0046 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0046.
 - **WHY:** PRD §4.1 F-06 (app proposes the right template, one tap accepts); DESIGN.md §9 TemplateBlock; components.md §2.2; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The template-offer block (icon, name, what-it-adds, Use / Not now) is verified; Use applies the template with a 5-minute Undo.
-- **SCOPE:** `apps/web/components/blocks/TemplateBlock.tsx` (+ `apps/web/components/blocks/TemplateBlock.test.tsx`).
-- **MUTATES:** none (calls `templates.apply`; no schema change).
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `TemplateBlock({ template, why })` rendering `tp-template-offer`; 3) Use (primary) → `templates.apply` + Undo toast; Not now (ghost) → `templates.dismissOffer`; 4) one primary per screen; 5) render test + Playwright via the new-page spec.
-- **DONE:** `bun test apps/web/components/blocks/TemplateBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not use accent on Not now; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **GOAL:** The template-offer block (icon, name, what-it-adds, Use / Not now) is verified; Use applies the template via `templates.applyToNote({ templateId })`.
+- **SCOPE:** `apps/web/components/blocks/TemplateBlock.tsx` (+ `apps/web/components/blocks/TemplateBlock.test.tsx`, `tests/e2e/screens/template-block.spec.ts`).
+- **MUTATES:** none (calls `templates.applyToNote`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING; `templates.applyToNote` EXISTS in `convex/templates.ts` with args `{ templateId, title? }` → `v.id("notes")`; no `templates.dismissOffer` exists); 2) implement `TemplateBlock({ template, why })` rendering `tp-template-offer`; 3) Use (primary) → `templates.applyToNote({ templateId })`; Not now (ghost) → callback prop only (persistence is UNKNOWN — see OPEN); 4) one primary per screen; 5) render test `bun test apps/web/components/blocks/TemplateBlock.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/template-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/TemplateBlock.test.tsx`) pass count.
+- **DO NOT:** do not use accent on Not now; do not add colours; do not invent a dismiss mutation; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Card with icon, title `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"`, reason, and a bulleted `adds[]` (e.g. Intention / Energy check-in / Top three tasks / End of day → `כוונה / בדיקת אנרגיה / שלוש משימות עיקריות / סוף היום`). Use = one primary; Not now = ghost `EN: "Not now" / HE: "לא עכשיו"`. Dismissed state persists.
-- **TESTS:** Given an offer / When Use is tapped / Then `templates.apply` fires and an Undo toast shows. Given Not now / Then the offer dismisses and the page stays. Given `lang=he` / Then Hebrew copy. Given 390 and 1280 / Then the offer card renders in both.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **SPEC:** `TemplateBlock({ template: { id: string; name: string; adds: string[] }; why: string; onUse?: () => void; onNotNow?: () => void })`. Card with icon, title `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"`, reason, and a bulleted `adds[]` (e.g. Intention / Energy check-in / Top three tasks / End of day → `כוונה / בדיקת אנרגיה / שלוש משימות עיקריות / סוף היום`). Use = one primary (→ `templates.applyToNote({ templateId: id })`); Not now = ghost `EN: "Not now" / HE: "לא עכשיו"` (→ `onNotNow`).
+- **TESTS:** Given an offer / When Use is tapped / Then `templates.applyToNote` fires with `{ templateId }`. Given Not now / Then `onNotNow` fires and the offer dismisses. Given `lang=he` / Then Hebrew copy. Given 390 and 1280 / Then the offer card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** no `templates.dismissOffer` mutation exists, and "Dismissed state persists" (SPEC) has no backend. Is a dismissed offer persisted (needs a new `templates` mutation), or is Not now client-only for this ticket? Answerer: Amit.
 
 ### TFV2-0048 — EventBlock
 - **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
@@ -1047,16 +1091,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** PRD §4.1 F-07 (fixed vs flexible events); DESIGN.md §9 EventBlock (solid "Fixed" / dashed "Flexible"); components.md §2.2; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The event block (time, title, place, fixed/flexible kind with word + edge) is verified.
-- **SCOPE:** `apps/web/components/blocks/EventBlock.tsx` (+ `apps/web/components/blocks/EventBlock.test.tsx`).
+- **SCOPE:** `apps/web/components/blocks/EventBlock.tsx` (+ `apps/web/components/blocks/EventBlock.test.tsx`, `tests/e2e/screens/event-block.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EventBlock({ event })`; 3) render `__time` (mono LTR), `__title` (`dir="auto"`), `__place`, kind chip (solid edge + "Fixed" / dashed + "Flexible"); 4) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/EventBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EventBlock({ event })`; 3) render `__time` (mono LTR), `__title` (`dir="auto"`), `__place`, kind chip (solid edge + "Fixed" / dashed + "Flexible"); 4) render test `bun test apps/web/components/blocks/EventBlock.test.tsx`; 5) add the Playwright spec `tests/e2e/screens/event-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/EventBlock.test.tsx`) pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-block-event` card. Time `EN: "08:00"` in `.tp-mono` `.tp-num` (LTR). Kind copy `EN: "Fixed" / HE: "קבוע"` (solid edge, `--tp-info`) and `EN: "Flexible" / HE: "גמיש"` (dashed edge, `--tp-caution`). Word + shape, never shape alone.
-- **TESTS:** Given a fixed event / Then solid edge + "Fixed". Given a flexible event / Then dashed edge + "Flexible". Given `lang=he` / Then time stays LTR and kind is Hebrew. Given 390 and 1280 / Then the card renders in both.
-- **NUMBERS:** contrast ≥4.5:1 (info 5.13:1, caution 5.05:1); text ≥13px.
+- **SPEC:** `EventBlock({ event: { time: string; title: string; place?: string; kind: "fixed" | "flexible" } })`. `tp-block-event` card. Time `EN: "08:00"` in `.tp-mono` `.tp-num` (LTR). Kind copy `EN: "Fixed" / HE: "קבוע"` (solid edge, `--tp-info`) and `EN: "Flexible" / HE: "גמיש"` (dashed edge, `--tp-caution`). Word + shape, never shape alone.
+- **TESTS:** Given a fixed event / Then solid edge + "Fixed". Given a flexible event / Then dashed edge + "Flexible". Given `lang=he` / Then time stays LTR and kind is Hebrew. Given `prefers-reduced-motion` / Then any edge transition is instant (n/a: edges are static). Given 390 and 1280 / Then the card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA; info 5.13:1, caution 5.05:1); text ≥13px.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1066,37 +1110,37 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** PRD §4.1 F-10 (habits as blocks, no streak counters); components.md §2.2 HabitBlock (no streak, per-day sr text); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The habit block (name, last-7 days as rings/dots, Log today, no streak counter) is verified.
-- **SCOPE:** `apps/web/components/blocks/HabitBlock.tsx` (+ `apps/web/components/blocks/HabitBlock.test.tsx`).
-- **MUTATES:** none (calls `habits.log`; no schema change).
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `HabitBlock({ habit })`; 3) render last-7 days with `data-done`/`data-today` and per-day sr text `EN: "logged" / HE: "נרשם"` / `EN: "not logged" / HE: "לא נרשם"`; 4) Log today → `habits.log({ habitId, date })`; 5) NO streak counter; 6) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/HabitBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **SCOPE:** `apps/web/components/blocks/HabitBlock.tsx` (+ `apps/web/components/blocks/HabitBlock.test.tsx`, `tests/e2e/screens/habit-block.spec.ts`).
+- **MUTATES:** none (calls `habitCheckIns.check`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING; `habitCheckIns.check` and `habitCheckIns.listForHabit` EXIST in `convex/habitCheckIns.ts`); 2) implement `HabitBlock({ habit })`; 3) render last-7 days with `data-done`/`data-today` and per-day sr text `EN: "logged" / HE: "נרשם"` / `EN: "not logged" / HE: "לא נרשם"`; 4) Log today → `habitCheckIns.check({ habitId, localDate, source: "habits" })`; 5) NO streak counter; 6) render test `bun test apps/web/components/blocks/HabitBlock.test.tsx`; 7) add the Playwright spec `tests/e2e/screens/habit-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/HabitBlock.test.tsx`) pass count.
 - **DO NOT:** do not add a streak counter; do not shame missed days; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-block-habit` card with `__log` toggle (Log today / Logged today). Missed day = empty ring (no "broken streak"). Per-day dot carries sr text. Copy `EN: "Log today" / HE: "לרשום להיום"`; `EN: "Logged today" / HE: "נרשם היום"`.
-- **TESTS:** Given a habit / Then 7 day-dots render with sr text each. Given Log today / Then `habits.log` fires and today's dot fills with "Logged today". Given `lang=he` / Then Hebrew. Given a missed day / Then an empty ring, no counter or shame word.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **SPEC:** `HabitBlock({ habit: { id: Id<"habits">; name: string; last7: boolean[]; loggedToday: boolean } })`. `tp-block-habit` card with `__log` toggle (`role="switch" aria-checked`). Missed day = empty ring (no "broken streak"). Per-day dot carries sr text. Copy `EN: "Log today" / HE: "לרשום להיום"`; `EN: "Logged today" / HE: "נרשם היום"`. Log today calls `habitCheckIns.check({ habitId: id, localDate: "YYYY-MM-DD", source: "habits" })` (returns `{ checkInId, alreadyChecked }`).
+- **TESTS:** Given a habit / Then 7 day-dots render with sr text each. Given Log today / Then `habitCheckIns.check` fires and today's dot fills with "Logged today". Given `lang=he` / Then Hebrew. Given a missed day / Then an empty ring, no counter or shame word. Given 390 and 1280 / Then the card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0050 — NagBlock
+### TFV2-0050 — NagBlock — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0027.
 - **WHY:** PRD §4.6 F-60 (nags in the user's own words; no stock copy, no emoji); components.md §2.2 NagBlock; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The nag block (user's own phrase, Now / Snooze / Not today choices) is verified with no emoji or stock copy.
-- **SCOPE:** `apps/web/components/blocks/NagBlock.tsx` (+ `apps/web/components/blocks/NagBlock.test.tsx`).
-- **MUTATES:** none (calls `nags.respond`; no schema change).
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `NagBlock({ nag })`; 3) render the user's phrase (`dir="auto"`) with origin, choices Now / Snooze / Not today → `nags.respond`; 4) no icon, no emoji, no stock copy; 5) render test + Playwright via the editor spec.
-- **DONE:** `bun test apps/web/components/blocks/NagBlock.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not use emoji or stock copy; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **SCOPE:** `apps/web/components/blocks/NagBlock.tsx` (+ `apps/web/components/blocks/NagBlock.test.tsx`, `tests/e2e/screens/nag-block.spec.ts`).
+- **MUTATES:** none (the runtime respond path is undefined — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING; `convex/nags.ts` has `list`/`create`/`addPhrase`/`decidePhrase`/`setEnabled`/`remove`, but NO runtime "now/snooze/not-today" respond mutation); 2) implement `NagBlock({ nag })`; 3) render the user's phrase (`dir="auto"`) with origin, choices Now / Snooze / Not today → callback props; 4) no icon, no emoji, no stock copy; 5) render test `bun test apps/web/components/blocks/NagBlock.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/nag-block.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly). The choices' data contract is UNKNOWN — wire only after the OPEN below is answered.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/blocks/NagBlock.test.tsx`) pass count.
+- **DO NOT:** do not use emoji or stock copy; do not add colours; do not invent a respond mutation; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-block-nag` card, `__label` + `__phrase` (the user's own words, `dir="auto"`), `__meta` (about/at), `__actions` Now / Snooze / Not today (`nag` + `data-choice` → `nags.respond`). Copy (EN/HE): `EN: "Now" / HE: "עכשיו"`; `EN: "Snooze" / HE: "נדנוד"`; `EN: "Not today" / HE: "לא היום"`.
-- **TESTS:** Given a nag / Then the user's phrase renders verbatim, no emoji. Given Now / Then `nags.respond` fires. Given Not today / Then status updates without shame. Given `lang=he` / Then choices Hebrew, phrase `dir="auto"`.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **SPEC:** `NagBlock({ nag: { id: Id<"nags">; phrase: string; about?: string; at?: string }; onNow?: () => void; onSnooze?: () => void; onNotToday?: () => void })`. `tp-block-nag` card, `__label` + `__phrase` (the user's own words, `dir="auto"`), `__meta` (about/at), `__actions` Now / Snooze / Not today (buttons, callback props only). Copy (EN/HE): `EN: "Now" / HE: "עכשיו"`; `EN: "Snooze" / HE: "נדנוד"`; `EN: "Not today" / HE: "לא היום"`.
+- **TESTS:** Given a nag / Then the user's phrase renders verbatim, no emoji. Given Now / Then `onNow` fires. Given Not today / Then `onNotToday` fires without shame. Given `lang=he` / Then choices Hebrew, phrase `dir="auto"`. Given 390 and 1280 / Then the card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** nag delivery channel beyond in-app (REWRITE-PLAN-v2 §4 conflict 11; UNKNOWN — Amit; chunk B).
+- **OPEN:** no runtime "now/snooze/not-today" respond mutation exists (`convex/nags.ts` `decidePhrase` is accept/reject of a proposed phrase, a different concept). The Now/Snooze/Not-today data contract (a new `nags` mutation or a different mechanism) is UNKNOWN — answerer: Amit.
 
 ### TFV2-0051 — NextUpCard
 - **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
@@ -1104,16 +1148,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 NextUpCard (the one primary); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "Next up" card (one task + why, Start / Not now / Make it smaller) is verified.
-- **SCOPE:** `apps/web/components/today/NextUpCard.tsx` (+ `apps/web/components/today/NextUpCard.test.tsx`).
+- **SCOPE:** `apps/web/components/today/NextUpCard.tsx` (+ `apps/web/components/today/NextUpCard.test.tsx`, `tests/e2e/screens/next-up-card.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `today/NextUpCard.tsx`); 2) verify it renders one task with the reason (why) and three actions; 3) Start is the one primary; 4) render test + Playwright via the today spec (chunk 2 exercises the screen; here assert the card).
-- **DONE:** `bun test apps/web/components/today/NextUpCard.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `today/NextUpCard.tsx`); 2) verify it renders one task with the reason (why) and three actions; 3) Start is the one primary; 4) render test `bun test apps/web/components/today/NextUpCard.test.tsx`; 5) add the Playwright spec `tests/e2e/screens/next-up-card.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/next-up-card.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/today/NextUpCard.test.tsx`) pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-nextup` card with task title (`dir="auto"`), `why` line, and actions Start (primary) / Not now (ghost) / Make it smaller (ghost). Copy (EN/HE): `EN: "Next up" / HE: "הבא בתור"`; `EN: "Start" / HE: "להתחיל"`; `EN: "Not now" / HE: "לא עכשיו"`; `EN: "Make it smaller" / HE: "לחלק לקטן"`.
+- **SPEC:** `NextUpCard({ task: { id: string; title: string; why: string }; onStart?: () => void; onNotNow?: () => void; onMakeSmaller?: () => void })`. `tp-nextup` card with task title (`dir="auto"`), `why` line, and actions Start (primary) / Not now (ghost) / Make it smaller (ghost). Copy (EN/HE): `EN: "Next up" / HE: "הבא בתור"`; `EN: "Start" / HE: "להתחיל"`; `EN: "Not now" / HE: "לא עכשיו"`; `EN: "Make it smaller" / HE: "לחלק לקטן"`.
 - **TESTS:** Given a task / Then title + why render. Given Start / Then the one primary action fires. Given Not now / Then it dismisses without shame. Given 390 and 1280 / Then the card renders in both. Given `lang=he` / Then Hebrew.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1123,16 +1167,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** components.md §2.15 AuthCard (bare layout, no shell); DESIGN.md §9; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The bare auth card (brand, title, lede, form slot, foot) exists with no app shell.
-- **SCOPE:** `apps/web/components/auth/AuthCard.tsx` (+ `apps/web/components/auth/AuthCard.test.tsx`).
+- **SCOPE:** `apps/web/components/auth/AuthCard.tsx` (+ `apps/web/components/auth/AuthCard.test.tsx`, `tests/e2e/screens/auth-card.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `AuthCard({ title, lede, children, foot? })` rendering `tp-auth-card` with brand, title, lede; 3) bare layout, no shell; 4) render test + Playwright via the sign-in/sign-up specs.
-- **DONE:** `bun test apps/web/components/auth/AuthCard.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `AuthCard({ title, lede, children, foot? })` rendering `tp-auth-card` with brand, title, lede; 3) bare layout, no shell; 4) render test `bun test apps/web/components/auth/AuthCard.test.tsx`; 5) add the Playwright spec `tests/e2e/screens/auth-card.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/auth-card.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/auth/AuthCard.test.tsx`) pass count.
 - **DO NOT:** do not render the app shell; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-auth` wrapper centred on `--tp-ground`; `tp-auth-card` is `--tp-paper` with `--tp-radius-xl` (20px) and `--tp-shadow-card`. Brand `Tempo`, title `--tp-text-2xl`, lede `--tp-ink-muted`. Foot holds the language switch.
-- **TESTS:** Given title/lede / Then both render in the card. Given no shell / Then no rail/topbar renders. Given 390 and 1280 / Then the card centres in both. Given `lang=he` / Then title/lede Hebrew, RTL.
-- **NUMBERS:** contrast ≥4.5:1; radius 20px (token); motion ≤250ms.
+- **SPEC:** `AuthCard({ title: string; lede?: string; children: React.ReactNode; foot?: React.ReactNode })`. `tp-auth` wrapper centred on `--tp-ground`; `tp-auth-card` is `--tp-paper` with 20px radius (the sheet radius, DESIGN.md §4) and `--tp-shadow-card`. Brand `Tempo`, title `--tp-text-2xl` (32px), lede `--tp-ink-muted`. Foot holds the language switch.
+- **TESTS:** Given title/lede / Then both render in the card. Given no shell / Then no rail/topbar renders. Given 390 and 1280 / Then the card centres in both. Given `lang=he` / Then title/lede Hebrew, RTL. Given `prefers-reduced-motion` / Then any entrance motion is instant (n/a: static card).
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); radius 20px (sheet); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1140,39 +1184,39 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0052.
-- **WHY:** components.md §2.15 EmailField (`type=email dir=ltr`); DESIGN.md §2.8; REWRITE-PLAN-v2 §6 chunk 1.
+- **WHY:** components.md §2.15 EmailField (`type=email dir=ltr`); DESIGN.md §2/§9; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** An email field (label, help, error, `autocomplete=email`, `dir="ltr"`, inline error + `aria-invalid`) exists.
-- **SCOPE:** `apps/web/components/auth/EmailField.tsx` (+ `apps/web/components/auth/EmailField.test.tsx`).
+- **SCOPE:** `apps/web/components/auth/EmailField.tsx` (+ `apps/web/components/auth/EmailField.test.tsx`, `tests/e2e/screens/email-field.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EmailField({ id, label, help, error? })`; 3) validate against a Zod email schema shared with the backend; 4) `aria-describedby`, `aria-invalid`, inline error with icon; 5) render test + Playwright via the sign-in/sign-up specs.
-- **DONE:** `bun test apps/web/components/auth/EmailField.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EmailField({ id, label, help, error? })`; 3) validate against a local Zod email schema (RFC 5321/5322 subset) defined in this file — do not depend on a shared backend schema; 4) `aria-describedby`, `aria-invalid`, inline error with icon; 5) render test `bun test apps/web/components/auth/EmailField.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/email-field.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/email-field.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/auth/EmailField.test.tsx`) pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows; do not import a shared email schema from another file (keep it local).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-field` + `tp-input[type=email][autocomplete=email][inputmode=email][dir=ltr][spellcheck=false]`. Label `EN: "Email" / HE: "מייל"`; help `EN: "Use the email you asked to join with." / HE: "המייל שאיתו ביקשת להצטרף."`; error `EN: "Enter your email, like name@example.com" / HE: "כתבו את המייל שלכם, למשל name@example.com"`; placeholder `name@example.com`. Invalid → `aria-invalid="true"` + visible error.
-- **TESTS:** Given empty submit / Then error shows and `aria-invalid`. Given `"maya@"` / Then error. Given valid email / Then no error. Given `lang=he` / Then the input stays `dir="ltr"` while the label is Hebrew.
-- **NUMBERS:** contrast ≥4.5:1; input outline ≥3:1 (`--tp-line-control` 3.89:1 light); target ≥24px.
+- **SPEC:** `EmailField({ id: string; label: string; help?: string; error?: string; value?: string; onChange?: (v: string) => void })`. `tp-field` + `tp-input[type=email][autocomplete=email][inputmode=email][dir=ltr][spellcheck=false]` (10px radius, inputs). Label `EN: "Email" / HE: "מייל"`; help `EN: "Use the email you asked to join with." / HE: "המייל שאיתו ביקשת להצטרף."`; error `EN: "Enter your email, like name@example.com" / HE: "כתבו את המייל שלכם, למשל name@example.com"`; placeholder `name@example.com`. Invalid → `aria-invalid="true"` + visible error.
+- **TESTS:** Given empty submit / Then error shows and `aria-invalid`. Given `"maya@"` / Then error. Given valid email / Then no error. Given `lang=he` / Then the input stays `dir="ltr"` while the label is Hebrew. Given 390 and 1280 / Then the field renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); input outline ≥3:1 (`--tp-line-control` 3.89:1 light, WCAG 1.4.11); target ≥24×24 CSS px (WCAG 2.5.8 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0054 — GuestButton
+### TFV2-0054 — GuestButton — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0052.
 - **WHY:** components.md §2.15 GuestButton (secondary, never accent; preview only); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "Continue as guest" button is a secondary block button shown only on preview, never live.
-- **SCOPE:** `apps/web/components/auth/GuestButton.tsx` (+ `apps/web/components/auth/GuestButton.test.tsx`).
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `GuestButton({ onContinue })`; 3) secondary block (`tp-btn--secondary.tp-btn--block`), label `EN: "Continue as guest" / HE: "המשך כאורח/ת"` + help `EN: "Try it without an account. Guest notes stay on this preview." / HE: "לנסות בלי חשבון. פתקי אורח נשארים בגרסת התצוגה הזו."`; 4) render only when the preview flag is set; 5) render test + Playwright via the sign-in spec.
-- **DONE:** `bun test apps/web/components/auth/GuestButton.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
-- **DO NOT:** do not use accent; do not render on live; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **SCOPE:** `apps/web/components/auth/GuestButton.tsx` (+ `apps/web/components/auth/GuestButton.test.tsx`, `tests/e2e/screens/guest-button.spec.ts`).
+- **MUTATES:** none (the guest action is undefined — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING; no `auth.continueAsGuest` mutation exists — the only preview bypass is the `NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS` env flag, read in `apps/web/proxy.ts`/`apps/web/lib/e2eWiringRoutes.ts`); 2) implement `GuestButton({ onContinue })`; 3) secondary block (`tp-btn--secondary.tp-btn--block`), label `EN: "Continue as guest" / HE: "המשך כאורח/ת"` + help `EN: "Try it without an account. Guest notes stay on this preview." / HE: "לנסות בלי חשבון. פתקי אורח נשארים בגרסת התצוגה הזו."`; 4) render only when the preview flag is set; 5) render test `bun test apps/web/components/auth/GuestButton.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/guest-button.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly). The guest action's data contract is UNKNOWN — wire only after the OPEN below is answered.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/guest-button.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/auth/GuestButton.test.tsx`) pass count.
+- **DO NOT:** do not use accent; do not render on live; do not invent a guest mutation; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Secondary (never accent), full-width block. Preview-only: gated by a `NEXT_PUBLIC_` preview flag (name only, no value here).
-- **TESTS:** Given preview / Then the button renders. Given live / Then it does not render. Given click / Then `auth.continueAsGuest` is called. Given `lang=he` / Then Hebrew label.
-- **NUMBERS:** target ≥24px; contrast ≥4.5:1.
+- **SPEC:** `GuestButton({ onContinue?: () => void })`. Secondary (never accent), full-width block (10px radius, buttons). Preview-only: gated by the `NEXT_PUBLIC_` preview flag (name only, no value here).
+- **TESTS:** Given preview / Then the button renders. Given live / Then it does not render. Given click / Then `onContinue` fires. Given `lang=he` / Then Hebrew label. Given 390 and 1280 / Then the button renders in both (when preview).
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8 AA); contrast ≥4.5:1 (WCAG 2.2 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** no `auth.continueAsGuest` mutation (or any guest-auth path) exists in code; the only preview bypass is `NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS`. What "Continue as guest" actually calls (a new auth mutation, or reusing the E2E bypass flag) is UNKNOWN — answerer: Amit.
 
 ### TFV2-0055 — DividerText
 - **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
@@ -1180,16 +1224,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0052.
 - **WHY:** components.md §2.15 DividerText ("or"); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** An "or" separator with hairline dividers and an accessible label exists.
-- **SCOPE:** `apps/web/components/auth/DividerText.tsx` (+ `apps/web/components/auth/DividerText.test.tsx`).
+- **SCOPE:** `apps/web/components/auth/DividerText.tsx` (+ `apps/web/components/auth/DividerText.test.tsx`, `tests/e2e/screens/divider-text.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `DividerText({ label? })`; 3) default label `EN: "or" / HE: "או"`; 4) hairline dividers `--tp-line` either side; 5) render test + Playwright via the sign-in spec.
-- **DONE:** `bun test apps/web/components/auth/DividerText.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `DividerText({ label? })`; 3) default label `EN: "or" / HE: "או"`; 4) hairline dividers `--tp-line` either side; 5) render test `bun test apps/web/components/auth/DividerText.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/divider-text.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/divider-text.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/auth/DividerText.test.tsx`) pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-divider-text` with `--tp-line` hairlines and a `--tp-muted` `--tp-xs` label; decorative lines `aria-hidden`. The word carries the meaning.
-- **TESTS:** Given default / Then "or" renders between two hairlines. Given `lang=he` / Then "או". Given a screen reader / Then the label is announced once.
-- **NUMBERS:** contrast ≥4.5:1 for the label.
+- **SPEC:** `DividerText({ label?: string })`. `tp-divider-text` with `--tp-line` hairlines and a `--tp-muted` `--tp-xs` (13px) label; decorative lines `aria-hidden`. The word carries the meaning.
+- **TESTS:** Given default / Then "or" renders between two hairlines. Given `lang=he` / Then "או". Given a screen reader / Then the label is announced once. Given 390 and 1280 / Then the divider renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA) for the label.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1199,16 +1243,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0052.
 - **WHY:** components.md §2.15 StatusPanel (link sent / approval pending; no illustration); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A status panel (tone, icon, title, body, meta, actions: resend/back) exists with no illustration.
-- **SCOPE:** `apps/web/components/auth/StatusPanel.tsx` (+ `apps/web/components/auth/StatusPanel.test.tsx`).
+- **SCOPE:** `apps/web/components/auth/StatusPanel.tsx` (+ `apps/web/components/auth/StatusPanel.test.tsx`, `tests/e2e/screens/status-panel.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StatusPanel({ tone, title, body, meta?, actions? })`; 3) map tone to `--tp-info`/`--tp-done` wash; 4) no illustration (icon only); 5) render test + Playwright via the link-sent/approval-pending specs.
-- **DONE:** `bun test apps/web/components/auth/StatusPanel.test.tsx` → all pass.
-- **EVIDENCE:** paste the test pass count.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StatusPanel({ tone, title, body, meta?, actions? })`; 3) map tone to `--tp-info`/`--tp-done` wash; 4) no illustration (icon only); 5) render test `bun test apps/web/components/auth/StatusPanel.test.tsx`; 6) add the Playwright spec `tests/e2e/screens/status-panel.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/status-panel.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count and the render-test (`bun test apps/web/components/auth/StatusPanel.test.tsx`) pass count.
 - **DO NOT:** do not add an illustration; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `tp-status-panel[data-tone]` with `__icon`, `__title`, `__body`, `__meta`, `__actions`. Tones: info (link sent), done/caution (pending). Icon + word always. Title `--tp-text-xl`, body `--tp-ink-muted`.
+- **SPEC:** `StatusPanel({ tone: "info" | "done" | "caution"; title: string; body: string; meta?: string; actions?: React.ReactNode })`. `tp-status-panel[data-tone]` with `__icon`, `__title`, `__body`, `__meta`, `__actions`. Tones: info (link sent), done/caution (pending). Icon + word always. Title `--tp-text-xl` (26px), body `--tp-ink-muted`.
 - **TESTS:** Given tone=info + title/body / Then icon + title + body render, no illustration. Given actions / Then Resend/Back render. Given `lang=he` / Then Hebrew + RTL. Given 390 and 1280 / Then it centres in both.
-- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); text ≥13px.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1219,36 +1263,36 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** PRD §4.1 F-01 (magic link only); `screens/web/sign-in.html`; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The sign-in screen (email → magic link, sending/error/offline states, preview-only guest) matches the v3 spec in EN and HE at 390 and 1280.
 - **SCOPE:** `apps/web/app/sign-in/page.tsx` + `apps/web/components/auth/SignInForm.tsx` (+ `tests/e2e/screens/sign-in.spec.ts`).
-- **MUTATES:** none (screen + form; calls `auth.sendMagicLink`).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-in/page.tsx` + `SignInForm.tsx`; route is `/sign-in`, the v3 target is `(auth)/sign-in` — keep the existing route); 2) verify one email field, "Send magic link" primary, error summary, sending/offline states; 3) verify `getPostAuthDestination` returns `/today` for `/dashboard` and self-redirects; 4) add the Playwright spec below asserting each state at 390 and 1280, EN and HE.
+- **MUTATES:** none (screen + form; calls Convex Auth `signIn("resend", { email, redirectTo })` via `useAuthActions()`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-in/page.tsx` + `SignInForm.tsx`; route is `/sign-in`, the v3 target is `(auth)/sign-in` — keep the existing route); 2) verify one email field, "Send magic link" primary, error summary, sending/offline states; 3) verify `getPostAuthDestination` returns `/today` for `/dashboard` and self-redirects; 4) confirm the submit path calls `signIn("resend", { email, redirectTo })` (not a `auth.sendMagicLink` mutation, which does not exist); 5) ensure the Playwright spec `tests/e2e/screens/sign-in.spec.ts` asserts each state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly — the repo's single chromium project has no width override).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sign-in.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add passkeys/password; do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not restyle with new colours.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Auth layout (no shell). One `EmailField`; primary `EN: "Send magic link" / HE: "שליחת קישור כניסה"`; note `EN: "The link works for 30 minutes." / HE: "הקישור עובד במשך 30 דקות."`. States: default, loading (`EN: "Sending…" / HE: "שולחים…"`, button disabled + `aria-busy`), empty (error summary), error (`EN: "Couldn't send the link. Nothing was lost." / HE: "לא הצלחנו לשלוח את הקישור. שום דבר לא אבד."`), offline (banner + disabled button with reason), invalid (inline email error), plus preview-only DividerText + GuestButton. On success → `/link-sent?email=&next=`.
+- **SPEC:** Auth layout (no shell). One `EmailField`; primary `EN: "Send magic link" / HE: "שליחת קישור כניסה"`; note `EN: "The link works for 30 minutes." / HE: "הקישור עובד במשך 30 דקות."`. States: default, loading (`EN: "Sending…" / HE: "שולחים…"`, button disabled + `aria-busy`), empty (error summary), error (`EN: "Couldn't send the link. Nothing was lost." / HE: "לא הצלחנו לשלוח את הקישור. שום דבר לא אבד."`), offline (banner + disabled button with reason), invalid (inline email error), plus preview-only DividerText + GuestButton. Submit calls `signIn("resend", { email, redirectTo: nextPath })`. On success → `/link-sent?email=&next=`.
 - **TESTS:** Given 390 / When empty submit / Then the error summary focuses and shows the email error. Given valid email / When submit / Then "Sending…" then navigation to `/link-sent`. Given `?state=error` / Then the error alert shows and the email stays in the field. Given offline / Then the banner shows and the button is disabled. Given `lang=he` / Then all copy Hebrew, `dir=rtl`, input `dir=ltr`. Repeat at 1280. Assert no passkey/password field.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** route group `(auth)/sign-in` vs existing `/sign-in` (UNKNOWN — Amit).
 
-### TFV2-0058 — Sign-up screen
+### TFV2-0058 — Sign-up screen — OPEN
 - **Stage:** A · **Pass:** 1 · **Depends:** 0012, 0052, 0053, 0056 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0012, TFV2-0052, TFV2-0053, TFV2-0056.
 - **WHY:** PRD §4.1 F-01a (approval-gated sign-up); `screens/web/sign-up.html`; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The "Ask to join" screen (email + human check → pending request) matches the v3 spec in EN/HE at 390/1280.
+- **GOAL:** The sign-up screen matches the v3 spec in EN/HE at 390/1280, never revealing whether an email exists.
 - **SCOPE:** `apps/web/app/sign-up/page.tsx` + `apps/web/components/auth/SignUpForm.tsx` (+ `tests/e2e/screens/sign-up.spec.ts`).
-- **MUTATES:** none (screen + form; calls `access.request`).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-up/page.tsx` + `SignUpForm.tsx`); 2) verify email field + human check (Turnstile placeholder) + "Ask to join" primary; 3) verify same-answer-on-already-listed email (never reveal existence); 4) add the Playwright spec below asserting each state at 390/1280, EN/HE.
+- **MUTATES:** none (screen + form; the sign-up flow is UNDEFINED — see OPEN).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-up/page.tsx` + `SignUpForm.tsx`; `SignUpForm` wraps `SignInForm` with `flow="sign-up"` — both flows send the same magic link via `signIn("resend", …)`, and a new email auto-starts `pending` per `convex/lib/approval.ts`; no `access.request` mutation and no Turnstile human check exist); 2) verify email field + "Ask to join" primary; 3) verify same-answer-on-already-listed email (never reveal existence); 4) add the Playwright spec below asserting each state at 390/1280, EN/HE (the spec sets both viewport widths explicitly). Do not build the "Ask to join + Turnstile" flow until the OPEN below is answered.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sign-up.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not reveal whether an email exists; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not reveal whether an email exists; do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not invent `access.request` or a Turnstile integration.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
 - **SPEC:** Auth layout. EmailField (help `EN: "We only use it to let you in. No newsletters." / HE: "נשתמש בו רק כדי להכניס אותך. בלי ניוזלטרים."`); human check label `EN: "Quick check that you're a person" / HE: "בדיקה קצרה שאת/ה אדם"`; primary `EN: "Ask to join" / HE: "בקשה להצטרף"`; note `EN: "You'll get one email when you're in." / HE: "תקבלו מייל אחד כשתיכנסו."`. States: default, sending, invalid (email + check errors), error (`EN: "Couldn't send your request. Nothing was lost." / HE: "לא הצלחנו לשלוח את הבקשה. שום דבר לא אבד."`), offline. Success → `/approval-pending?email=`.
 - **TESTS:** Given 390 / When submit without the check / Then the check error shows in the summary. Given valid email + check / When submit / Then "Sending…" then `/approval-pending`. Given `lang=he` / Then Hebrew + RTL. Given error / Then the typed email is kept. Repeat at 1280.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** sign-up policy (cap vs unlimited, approval order/location — UNKNOWN, Amit; REWRITE-PLAN-v2 §4 conflict 4).
+- **OPEN:** the sign-up flow is undecided. Code today sends the SAME magic link for sign-in and sign-up (`SignInForm flow="sign-up"` → `signIn("resend", …)`, new email auto-`pending` per `convex/lib/approval.ts`); there is no `access.request` mutation and no Turnstile human check. Does sign-up keep the existing magic-link auto-pending flow, or add an explicit "Ask to join" form with a Turnstile check and a new `access.request` mutation? Also (REWRITE-PLAN-v2 §4 conflict 4): the cap (30 vs unlimited) and approval order. Answerer: Amit.
 
 ### TFV2-0059 — Link-sent screen
 - **Stage:** A · **Pass:** 1 · **Depends:** 0056, 0057 · **Folds-in:** none
@@ -1256,16 +1300,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0056, TFV2-0057.
 - **WHY:** `screens/web/sign-in.html` @flow (link-sent); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "link sent" status screen (resend + back, email shown, 30-minute note) exists in EN/HE at 390/1280.
-- **SCOPE:** `apps/web/app/(auth)/link-sent/page.tsx` (+ `tests/e2e/screens/link-sent.spec.ts`).
-- **MUTATES:** none (screen).
-- **STEPS:** 1) Graphify code-map check (MISSING — no `link-sent` route exists); 2) build the screen on `StatusPanel`; 3) show the email, a 30-minute note, Resend (→ `auth.sendMagicLink`) and Back (→ `/sign-in`); 4) add the Playwright spec below.
+- **SCOPE:** `apps/web/app/link-sent/page.tsx` (+ `tests/e2e/screens/link-sent.spec.ts`).
+- **MUTATES:** none (screen; Resend calls `signIn("resend", { email, redirectTo })`).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `link-sent` route exists); 2) build the screen on `StatusPanel` as a bare route (matching the existing bare `/sign-in` and `/sign-up`; do NOT place it under the `(auth)` route group whose `layout.tsx` has non-v3 dark styling); 3) show the email, a 30-minute note, Resend (→ `signIn("resend", { email, redirectTo })`) and Back (→ `/sign-in`); 4) add the Playwright spec `tests/e2e/screens/link-sent.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/link-sent.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not reveal whether the email has access; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not reveal whether the email has access; do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not use the `(auth)` route group.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Auth layout + StatusPanel (tone info). Copy (EN/HE): title `EN: "Check your email" / HE: "בדקו את המייל"`; body `EN: "We sent a sign-in link to {email}. It works for 30 minutes." / HE: "שלחנו קישור כניסה אל {email}. הוא עובד 30 דקות."`; meta `EN: "Didn't get it? Check spam, or resend." / HE: "לא קיבלתם? בדקו ספאם, או שלחו שוב."`; actions Resend `EN: "Resend link" / HE: "שליחה חוזרת"` and Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`. Email shown LTR (`tp-num`).
-- **TESTS:** Given `?email=` / Then the email shows and the 30-minute note. Given Resend / Then `auth.sendMagicLink` fires. Given Back / Then it returns to `/sign-in`. Given `lang=he` / Then Hebrew + RTL, email LTR. At 390 and 1280.
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **SPEC:** Auth layout + StatusPanel (tone info). Copy (EN/HE): title `EN: "Check your email" / HE: "בדקו את המייל"`; body `EN: "We sent a sign-in link to {email}. It works for 30 minutes." / HE: "שלחנו קישור כניסה אל {email}. הוא עובד 30 דקות."`; meta `EN: "Didn't get it? Check spam, or resend." / HE: "לא קיבלתם? בדקו ספאם, או שלחו שוב."`; actions Resend `EN: "Resend link" / HE: "שליחה חוזרת"` and Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`. Email shown LTR (`tp-num`). Resend → `signIn("resend", { email, redirectTo })`.
+- **TESTS:** Given `?email=` / Then the email shows and the 30-minute note. Given Resend / Then `signIn("resend", …)` fires. Given Back / Then it returns to `/sign-in`. Given `lang=he` / Then Hebrew + RTL, email LTR. At 390 and 1280.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1275,18 +1319,18 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0056, TFV2-0058.
 - **WHY:** PRD §4.1 F-01a; `screens/web/sign-up.html` @flow (approval-pending); REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "You're on the list" status screen exists in EN/HE at 390/1280, without revealing existence or sending email before approval.
-- **SCOPE:** `apps/web/app/(auth)/approval-pending/page.tsx` (+ `tests/e2e/screens/approval-pending.spec.ts`).
-- **MUTATES:** none (screen).
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) build the screen on `StatusPanel`; 3) show the email and a "we'll write when you're in" note; 4) no email is sent to the person until Amit approves; 5) add the Playwright spec below.
+- **SCOPE:** `apps/web/app/approval-pending/page.tsx` (+ `tests/e2e/screens/approval-pending.spec.ts`).
+- **MUTATES:** none (screen; reads `approval.myStatus` only if needed, display-only).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `approval-pending` route exists; `convex/approval.ts` `myStatus` query EXISTS, returning `{ status: "pending"|"approved"|"revoked", isAdmin, email } | null`); 2) build the screen on `StatusPanel` as a bare route (matching the existing bare `/sign-in` and `/sign-up`; do NOT place it under the `(auth)` route group whose `layout.tsx` has non-v3 dark styling); 3) show the email and a "we'll write when you're in" note; 4) no email is sent to the person until Amit approves; 5) add the Playwright spec `tests/e2e/screens/approval-pending.spec.ts` asserting every state at 390 and 1280, EN and HE (the spec sets both viewport widths explicitly).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/approval-pending.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not send email before approval; do not reveal list membership; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not send email before approval; do not reveal list membership; do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not use the `(auth)` route group.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
 - **SPEC:** Auth layout + StatusPanel (tone done). Copy (EN/HE): title `EN: "You're on the list" / HE: "אתה ברשימה"`; body `EN: "We let people in a few at a time. We'll email {email} when you're in." / HE: "אנחנו מכניסים אנשים בהדרגה. נשלח מייל אל {email} כשתיכנס."`; meta `EN: "No email has been sent yet." / HE: "עדיין לא נשלח מייל."`; action Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`.
 - **TESTS:** Given `?email=` / Then the email and note render. Given Back / Then `/sign-in`. Given `lang=he` / Then Hebrew + RTL. At 390 and 1280. Assert no sign-in link is sent (the screen only displays).
-- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **NUMBERS:** contrast ≥4.5:1 (WCAG 2.2 AA); target ≥24×24 CSS px (WCAG 2.5.8 AA).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** where Amit approves (admin screen vs Convex dashboard vs email link) — UNKNOWN, Amit (PRD F-01a).
+- **OPEN:** none.
 
 ### TFV2-0061 — Onboarding screen
 - **Stage:** A · **Pass:** 1 · **Depends:** 0020 · **Folds-in:** none
@@ -1294,15 +1338,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0020.
 - **WHY:** PRD §4.7 (language first); `screens/web/onboarding.html`; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The 5-step onboarding (language/font, name, dial, brain dump, privacy) is verified in EN/HE at 390/1280 with resume and save states.
-- **SCOPE:** `apps/web/components/onboarding/OnboardingFlow.tsx` + `apps/web/app/(auth)/onboarding/page.tsx` (+ `tests/e2e/wiring/templates-onboarding.spec.ts`).
-- **MUTATES:** none (calls `profiles.*`; no schema change).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `onboarding/OnboardingFlow.tsx`, `onboarding/NameStep.tsx`, `OnboardingFlow.test.tsx`); 2) verify the 5 steps, per-step save, "Step n of 5", Back/Skip, and Finish → `/today`; 3) verify language choice flips RTL/LTR at once; 4) refresh the Playwright spec below to assert each state at 390/1280, EN/HE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → all pass.
+- **SCOPE:** `apps/web/app/(bare)/onboarding/page.tsx` + `apps/web/components/onboarding/OnboardingFlow.tsx` (+ `tests/e2e/screens/onboarding.spec.ts`).
+- **MUTATES:** none (reads `users.getProfile`, `coach.getSettings`; saves `users.completeOnboarding`, `coach.setDial`, `notes.create`/`notes.update` (first brain dump), `preferences.update({ locale })`; no schema change).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `onboarding/OnboardingFlow.tsx`, `onboarding/NameStep.tsx`, `OnboardingFlow.test.tsx`, route `apps/web/app/(bare)/onboarding/page.tsx`); 2) verify the 5 steps, per-step save, "Step n of 5", Back/Skip, and Finish → `/today`; 3) verify language choice flips RTL/LTR at once via `preferences.update({ locale })`; 4) write the Playwright spec below, which sets BOTH `page.setViewportSize({ width: 390, height: 844 })` and `page.setViewportSize({ width: 1280, height: 800 })` and asserts each state in EN and HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/onboarding.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Auth layout; progress `EN: "Step {n} of 5" / HE: "שלב {n} מתוך 5"`. Step 1 language/font, Step 2 name (optional), Step 3 dial 0–10 (quiet/steady/push, starts 4), Step 4 brain dump (optional), Step 5 privacy + analytics (default Off). Primary `EN: "Continue" / HE: "המשך"`; final `EN: "Start using Tempo" / HE: "להתחיל להשתמש ב-Tempo"`. Saving `EN: "Saving…" / HE: "שומרים…"`; error `EN: "Couldn't save this step. What you entered is still here." / HE: "לא הצלחנו לשמור את השלב הזה. מה שכתבת עדיין כאן."`; offline keeps choices.
-- **TESTS:** Given step 1 / When Hebrew chosen / Then `dir=rtl` at once and copy flips. Given step 3 / Then the dial shows a number and word. Given Finish / Then it navigates to `/today`. Given refresh mid-flow / Then it resumes on the saved step. Given error / Then the entered text stays. At 390 and 1280, EN and HE.
+- **SPEC:** Auth (bare) layout. Tokens: paper `--tp-paper #FBF9F4/#201D1A`, ink `--tp-ink #1B1916/#F2ECE2`, muted `--tp-ink-muted #57514A/#B5AC9F`, accent `--tp-accent #A3461F/#EE9468`, on-accent `--tp-on-accent #FFFFFF/#1B1916`; button/input radius 10px, card/popover radius 14px, paper radius 20px; type md 17 / lg 20 / xl 26; fonts Source Sans 3 (Latin), Assistant (Hebrew), IBM Plex Mono (numbers). Progress `EN: "Step {n} of 5" / HE: "שלב {n} מתוך 5"`. Step 1 language/font, Step 2 name (optional), Step 3 dial 0–10 (quiet/steady/push, starts 4), Step 4 brain dump (optional), Step 5 privacy + analytics (default Off). Primary `EN: "Continue" / HE: "המשך"`; final `EN: "Start using Tempo" / HE: "להתחיל להשתמש ב-Tempo"`. Saving `EN: "Saving…" / HE: "שומרים…"`; error `EN: "Couldn't save this step. What you entered is still here." / HE: "לא הצלחנו לשמור את השלב הזה. מה שכתבת עדיין כאן."`; offline keeps choices.
+- **TESTS:** Given step 1 / When Hebrew chosen / Then `dir=rtl` at once and copy flips. Given step 3 / Then the dial shows a number and word. Given Finish / Then it navigates to `/today`. Given refresh mid-flow / Then it resumes on the saved step. Given error / Then the entered text stays. Each assertion runs at 390×844 AND 1280×800, in EN AND HE.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms; dial words: quiet 0–3, steady 4–7, push 8–10.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -1313,15 +1357,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0021, TFV2-0027, TFV2-0035, TFV2-0036, TFV2-0044.
 - **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks drawn as elements); DESIGN.md §8/§9 (TempoShell layout, PageEditor); `screens/web/page-editor.html`; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The full page-editor screen (rail, topbar, paper editor, slash menu, backlinks, coach button, states) is verified end-to-end in EN/HE at 390/1280.
-- **SCOPE:** `apps/web/app/(tempo)/notes/[id]/page.tsx` + `apps/web/components/notes/PageEditorView.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
-- **MUTATES:** none (screen wiring; calls `notes.save`, `notes.backlinks`, `tasks.complete`).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/[id]/page.tsx` + `PageEditorView.tsx`); 2) verify the screen composes TempoShell + Topbar + PageEditor + Backlinks + CoachButton + TabBar; 3) verify every state (default/empty/loading/error/offline) via `?state=`; 4) refresh the Playwright spec below to assert each state at 390/1280, EN/HE.
+- **SCOPE:** `apps/web/app/(tempo)/notes/[id]/page.tsx` + `apps/web/components/notes/NotesScreen.tsx` + `apps/web/components/notes/PageEditorView.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
+- **MUTATES:** none (screen wiring; reads `notes.get`/`notes.getSafe`, `notes.backlinks`; saves `notes.update`; completes `tasks.toggleCompletion`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/[id]/page.tsx`, `notes/NotesScreen.tsx`, `notes/PageEditorView.tsx`); 2) verify the screen composes TempoShell + Topbar + NotesScreen (which renders PageEditorView) + Backlinks + CoachButton + TabBar; 3) verify every state (default/empty/loading/error/offline) via `?state=`; 4) refresh the Playwright spec below, which sets BOTH 390×844 and 1280×800 viewports and asserts each state in EN and HE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-save.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not surface JSON; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `@route apps/web/app/(tempo)/notes/[id]/page.tsx`, `@layout TempoShell`. Data: `page = notes.get({ id })`, `backlinks = notes.backlinks({ pageId })`. States: default (editor + blocks), empty (`EN: "This page is empty. Just start writing…"` + template CTA), loading (skeleton rows), error (`EN: "Couldn't open this page. Your data is safe."` + Retry), offline (banner + keep editing). Backlinks "Linked here". Coach button bottom-right (Ctrl J).
-- **TESTS:** Given a page / When a block is edited / Then "Saved" shows and `notes.save` is called. Given `/` / Then the slash menu opens. Given `[[page]]` / Then a Wikilink renders and backlinks update. Given `?state=error` / Then the error state with Retry. Given `?state=empty` / Then the empty state. Given offline / Then the banner and editing still works. At 390 and 1280, EN and HE. Assert no JSON visible.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/[id]/page.tsx`, `@layout TempoShell`. Tokens: paper `--tp-paper #FBF9F4/#201D1A`, ink `--tp-ink #1B1916/#F2ECE2`, muted `--tp-ink-muted #57514A/#B5AC9F`, line `--tp-line #D9D0C1/#38332D`; paper max 760px; text floor 13px. Data: `page = notes.get({ noteId })` (fallback `notes.getSafe({ noteId })`), `backlinks = notes.backlinks({ noteId })`; save = `notes.update({ noteId, title?, body? })`; complete a task = `tasks.toggleCompletion({ taskId })`. States: default (editor + blocks), empty (`EN: "This page is empty. Just start writing…"` + template CTA), loading (skeleton rows), error (`EN: "Couldn't open this page. Your data is safe."` + Retry), offline (banner + keep editing). Backlinks "Linked here". Coach button bottom-right (Ctrl J).
+- **TESTS:** Given a page / When a block is edited / Then "Saved" shows and `notes.update` is called. Given `/` / Then the slash menu opens. Given `[[page]]` / Then a Wikilink renders and backlinks update. Given `?state=error` / Then the error state with Retry. Given `?state=empty` / Then the empty state. Given offline / Then the banner and editing still works. Each assertion runs at 390×844 AND 1280×800, in EN AND HE. Assert no JSON visible.
 - **NUMBERS:** contrast ≥4.5:1; paper max 760px; text min 13px; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority (UNKNOWN — Amit).
@@ -1331,16 +1375,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0021, TFV2-0022.
 - **WHY:** PRD §4.1 (notes/pages list); `screens/web/notes.html`; REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The Notes screen (folder tree + paginated page list, search/sort, pinned, states) is verified in EN/HE at 390/1280.
-- **SCOPE:** `apps/web/app/(tempo)/notes/page.tsx` + `apps/web/components/notes/NotesScreen.tsx` (+ `tests/e2e/screens/notes.spec.ts`).
-- **MUTATES:** none (screen wiring; calls `pages.tree`, `pages.list`).
-- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/page.tsx`, `notes/NotesScreen.tsx`, `notes-pages/NotesList.tsx`); 2) verify folder filter, search, sort (recent/title), pinned section, count status; 3) verify empty/loading/error/offline states; 4) refresh the Playwright spec below at 390/1280, EN/HE.
+- **GOAL:** The Notes screen (period filter + page list with search, pinned, create, soft-delete/undo, states) is verified in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(tempo)/notes/page.tsx` + `apps/web/components/notes-pages/NotesList.tsx` (+ `tests/e2e/screens/notes.spec.ts`).
+- **MUTATES:** none (screen wiring; reads `users.getProfile`, `notes.list`; writes `notes.create`, `notes.togglePin`, `notes.remove`, `notes.restore`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/page.tsx`, `notes-pages/NotesList.tsx`, `notes-pages/PeriodFilter.tsx`, `notes-pages/filterNotes.ts`); 2) verify period filter (all/daily/weekly/monthly), search, pinned-only toggle, create, soft-delete + 5-min Undo, count status; 3) verify empty/loading/error/offline states; 4) write the Playwright spec below, which sets BOTH 390×844 and 1280×800 viewports and asserts each state in EN and HE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `@route apps/web/app/(tempo)/notes/page.tsx`, `@layout TempoShell`. Header title `EN: "Notes" / HE: "פתקים"` + New page primary. Folder tree (`All pages`, folders), list rows (icon, title `dir="auto"`, edited time, folder, tags), pinned first. Status `EN: "Showing {n} pages" / HE: "מוצגים {n} דפים"`. Empty `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + template CTA. Error `EN: "Couldn't load your pages." / HE: "לא הצלחנו לטעון את הדפים."` + Retry.
-- **TESTS:** Given a folder pick / Then the list narrows and the count updates. Given search / Then rows filter. Given sort=title / Then A–Z (Hebrew too). Given no pages / Then the empty state. Given `?state=error` / Then error + Retry. At 390 and 1280, EN and HE.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/page.tsx`, `@layout TempoShell`. Tokens: paper `--tp-paper #FBF9F4/#201D1A`, ink `--tp-ink #1B1916/#F2ECE2`, muted `--tp-ink-muted #57514A/#B5AC9F`; row radius 6px. Header title `EN: "Notes" / HE: "פתקים"` + New page primary. Period filter (`All pages`, daily/weekly/monthly), list rows (icon, title `dir="auto"`, edited time, period), pinned first. Status `EN: "Showing {n} pages" / HE: "מוצגים {n} דפים"`. Empty `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + template CTA. Error `EN: "Couldn't load your pages." / HE: "לא הצלחנו לטעון את הדפים."` + Retry.
+- **TESTS:** Given a period filter pick / Then the list narrows and the count updates. Given search / Then rows filter. Given pinned toggle / Then pinned rows sort first. Given no pages / Then the empty state. Given `?state=error` / Then error + Retry. Given delete then Undo / Then the row returns within 5 minutes. Each assertion runs at 390×844 AND 1280×800, in EN AND HE.
 - **NUMBERS:** row min height 56px; contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -1350,16 +1394,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0047, TFV2-0062.
 - **WHY:** PRD §4.1 F-06 (propose template, one tap); `screens/web/new-page.html`; components.md §4 (state switch contract); REWRITE-PLAN-v2 §6 chunk 1.
-- **GOAL:** The new-page screen (one proposed template, full picker, plain-note, make-a-template) renders with the full state contract (default/empty/loading/error/offline) in EN/HE at 390/1280.
-- **SCOPE:** `apps/web/app/(tempo)/notes/new/page.tsx` (+ `tests/e2e/screens/new-page.spec.ts`).
-- **MUTATES:** none (screen wiring; calls `templates.suggest`, `templates.list`, `templates.apply`, `pages.create`, `templates.createFromPage`).
-- **STEPS:** 1) Graphify code-map check (MISSING — no `notes/new` route); 2) build the screen composing TempoShell + PageEditor (empty) + TemplateBlock (offer) + TemplatePicker + "Start a plain note" + "Make this page a template"; 3) implement the `?state=` StateSwitch contract from components.md §4 (default/empty/loading/error/offline); 4) add the Playwright spec below at 390/1280, EN/HE.
+- **GOAL:** The new-page screen (one proposed template, full library picker, plain-note, make-a-template) renders with the full state contract (default/empty/loading/error/offline) in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(tempo)/notes/new/page.tsx` + `apps/web/components/notes-pages/NewPageScreen.tsx` (+ `tests/e2e/screens/new-page.spec.ts`).
+- **MUTATES:** none (screen wiring; reads `templates.list`, `templates.proposeForPage`; writes `templates.applyToNote`, `notes.create`, `templates.create`).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `notes/new` route and no `NewPageScreen`; create both); 2) build the screen composing TempoShell + an empty PageEditor + the TemplatesLibrary/TemplateCard picker + "Start a plain note" + "Make this page a template"; 3) implement the `?state=` StateSwitch contract from components.md §4 (default/empty/loading/error/offline) inline in `NewPageScreen`; 4) write the Playwright spec below, which sets BOTH 390×844 and 1280×800 viewports and asserts each state in EN and HE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/new-page.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not surface JSON; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `@route apps/web/app/(tempo)/notes/new/page.tsx`, `@layout TempoShell`. Offer `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"` + adds + Use (primary) / Not now. Picker `EN: "Or pick another" / HE: "או לבחור תבנית אחרת"` (Daily/Weekly/Project/own/Plain note). Buttons `EN: "Use this one" / HE: "להשתמש בזו"`, `EN: "Start a plain note" / HE: "להתחיל פתק פשוט"`, `EN: "Make this page a template" / HE: "להפוך את הדף הזה לתבנית"`. States via `?state=`: empty (no own templates — built-ins + hint), loading (skeleton), error (`EN: "Couldn't load templates. Your data is safe." / HE: "לא הצלחנו לטעון את התבניות. המידע שלך שמור."` + Retry), offline (write works, templates load later).
-- **TESTS:** Given `?state=empty` / Then built-ins show plus the kind hint. Given Use / Then `templates.apply` + Undo toast. Given Not now / Then the offer dismisses, picker stays. Given plain note / Then `pages.create({ templateId:null })` then `/notes/[id]`. Given `?state=error` / Then error + Retry. Given `?state=loading` / Then skeletons. Given `lang=he` / Then RTL. At 390 and 1280.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/new/page.tsx`, `@layout TempoShell`. Tokens: paper `--tp-paper #FBF9F4/#201D1A`, ink `--tp-ink #1B1916/#F2ECE2`, accent `--tp-accent #A3461F/#EE9468`; card radius 14px, button radius 10px. Offer `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"` + Use (primary) / Not now. Picker `EN: "Or pick another" / HE: "או לבחור תבנית אחרת"` (built-ins from `templates.list` + own). Buttons `EN: "Use this one" / HE: "להשתמש בזו"` (→ `templates.applyToNote`), `EN: "Start a plain note" / HE: "להתחיל פתק פשוט"` (→ `notes.create({ title, body })` then `/notes/[id]`), `EN: "Make this page a template" / HE: "להפוך את הדף הזה לתבנית"` (→ `templates.create`). States via `?state=`: empty (no own templates — built-ins + hint), loading (skeleton), error (`EN: "Couldn't load templates. Your data is safe." / HE: "לא הצלחנו לטעון את התבניות. המידע שלך שמור."` + Retry), offline (write works, templates load later).
+- **TESTS:** Given `?state=empty` / Then built-ins show plus the kind hint. Given Use / Then `templates.applyToNote` + Undo toast. Given Not now / Then the offer dismisses, picker stays. Given plain note / Then `notes.create` then `/notes/[id]`. Given `?state=error` / Then error + Retry. Given `?state=loading` / Then skeletons. Given `lang=he` / Then RTL. Each assertion runs at 390×844 AND 1280×800.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -1371,21 +1415,21 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** APP-FLOW §5 items 3–4; BACKEND-SCHEMA §3 (`tasks soft delete + carry-over #530`); PRD F-05.
-- **GOAL:** Open tasks can be soft-deleted, carried over to a later day, and moved onto Today, all with a 5-minute Undo.
+- **GOAL:** Open tasks can be soft-deleted with a 5-minute Undo, and moved onto a target local day, reusing the existing mutation paths.
 - **SCOPE:** `convex/tasks.ts` · `convex/tasks.test.ts` (test; create if absent).
-- **MUTATES:** `tasks` rows (`deletedAt`, `scheduledAt`/carry-over date, `status`); `activity` rows for Undo.
-- **STEPS:** 1) Graphify code-map check of `convex/tasks.ts` (a `softDelete` helper exists in `convex/lib/softDelete.ts` — verify and reuse); 2) add `tasks.softDelete({ taskId })` (sets `deletedAt`, returns `{ ok: true }`); 3) add `tasks.carryOver({ taskId, date })` (sets the target local date, keeps status open); 4) add `tasks.moveToToday({ taskId, date })` (target = the caller's Today local date); 5) both mutations write an `activity` row and accept a 5-minute `undoId`; 6) write the tests; 7) run DONE.
+- **MUTATES:** `tasks` rows (`deletedAt`, `dueAt`, `status`) only; the 5-min Undo is timestamp-based (no `activity` row is written today).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `tasks.remove` soft-deletes and `tasks.restore` restores within `UNDO_WINDOW_MS` from `convex/lib/softDelete.ts`; `tasks.update` sets `dueAt`/`status`; `dayPlans.moveTaskToDay({ taskId, dueAt })` moves a task to a day); 2) verify `tasks.remove` sets `deletedAt` and `tasks.restore` restores only within the 5-minute window; 3) ensure moving a task onto Today reuses `tasks.update({ taskId, dueAt })` (set to the caller's Today local-day `dueAt` ms); 4) both paths rely on the timestamp `undoUntil(now)` / `isRestorable` from `convex/lib/softDelete.ts` (no `activity` row is written today); 5) write the tests; 6) run DONE.
 - **DONE:** `bun run test convex/tasks.test.ts` → all cases pass, including every error case below.
 - **EVIDENCE:** terminal output of DONE (pass count) + the `tasks.test.ts` file listing every Given/When/Then.
 - **DO NOT:** change `convex/schema.ts`; touch any other module; delete a task hard (must be soft); invent a new table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Mutations on `convex/tasks.ts`, owner-scoped (`requireUser`): `softDelete({taskId})`, `carryOver({taskId, date})`, `moveToToday({taskId, date})`. All return `{ taskId, undone: boolean }`. Auth: only the row's `userId`; reject missing/foreign/deleted task with typed `ConvexError("task_not_found")`. Errors (tested): missing args → `invalid_args`; task owned by another user → `forbidden`; already `deletedAt` → `already_deleted`; `date` not a valid `YYYY-MM-DD` → `invalid_date`. Limits: `date` parsed strictly (`YYYY-MM-DD`), carry-over date within ±1 year of today. No UI strings in this ticket (errors surface as codes; the screen renders copy).
-- **TESTS:** Given an open task owned by U / When `softDelete` / Then `deletedAt` set and list excludes it. Given a deleted task / When `carryOver` / Then `already_deleted`. Given `date:"2026-13-40"` / When any mutation / Then `invalid_date`. Given task owned by V / When U calls / Then `forbidden`. Given `moveToToday` / When success / Then activity row exists and `undo` restores the prior status/date.
+- **SPEC:** Owner-scoped (`requireUser`). Soft delete = `tasks.remove({ taskId })` → `{ success, undoUntilMs }`; undo = `tasks.restore({ taskId })` → `{ success }`; move-to-day = `tasks.update({ taskId, dueAt })`. Auth: only the row's `userId` (via `requireUser`). A missing, foreign, or already-`deletedAt` task → `throw new Error("Task not found")` (plain Error, the exact message the code throws). `restore` of a task outside `UNDO_WINDOW_MS` (5 min) returns `{ success: false }` (no throw). Move-to-day reuses `dayPlans.moveTaskToDay({ taskId, dueAt })` → `v.id("tasks")`, which throws `Error("Task not found")` for missing/foreign/deleted. Undo is timestamp-based (`undoUntil(now)` / `isRestorable`), not an activity row. No UI strings in this ticket (errors surface as codes; the screen renders copy).
+- **TESTS:** Given an open task owned by U / When `remove` / Then `deletedAt` set and `list` excludes it. Given a deleted task / When `restore` within 5 min / Then restored. Given `restore` after 5 min / Then `{ success: false }`. Given task owned by V / When U calls / Then `Error("Task not found")` (the same message as a missing task). Given `update({ dueAt })` / When success / Then activity row exists and `restore` recovers the prior `dueAt`.
 - **NUMBERS:** mutation round-trip p95 latency — UNKNOWN (Amit answers) · no N+1 on the happy path (code review) · every error path returns a typed error, never throws raw (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0066 — Calendar events: `endsAtMs` + edit + soft delete (`convex/calendar_events.ts`)
+### TFV2-0066 — Calendar events: `endsAtMs` + edit + soft delete (`convex/calendar_events.ts`) — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** #1341
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
@@ -1393,16 +1437,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** Calendar events carry an optional end time, can be edited, and are soft-deleted (never hard).
 - **SCOPE:** `convex/calendar_events.ts` · `convex/calendar_events.test.ts` (test; create if absent).
 - **MUTATES:** `calendarEvents.endsAtMs` (additive read/write); event `title`/`startAtMs`/`endsAtMs` on edit; `deletedAt` on delete.
-- **STEPS:** 1) Graphify code-map of `convex/calendar_events.ts` (endsAtMs may already be on the row — verify against `convex/schema.ts`, which you may NOT edit); 2) add `calendar_events.update({ eventId, title?, startAtMs?, endsAtMs? })`; 3) add `calendar_events.delete({ eventId })` (soft); 4) extend the return validator for the optional `endsAtMs`; 5) write tests; 6) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/calendar_events.ts` (EXISTS: `create`, `update`, `remove` (soft), `restore`, `listInRange`; `endsAtMs` may already be on the row — verify against `convex/schema.ts`, which you may NOT edit); 2) verify `update({ eventId, title?, startsAtMs? })` edits in place (the code has no `endsAtMs` on this mutation today); 3) verify `remove({ eventId })` soft-deletes and `restore` restores; 4) extend the return validator for the optional `endsAtMs`; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/calendar_events.test.ts` → all pass, incl. the end-before-start rejection.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** edit `convex/schema.ts`; hard-delete; allow `endsAtMs <= startAtMs`; touch any other module.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped mutations: `update({eventId, title?, startAtMs?, endsAtMs?})`, `delete({eventId})`; queries already list by month/day. Returns `{ eventId }`. Auth: `requireUser`, row owner only. Errors: `event_not_found`, `forbidden`, `end_before_start` (when `endsAtMs <= startAtMs`), `invalid_time` (non-integer ms). Limits: duration ≥ 5 min and ≤ 24 h; a future event's `endsAtMs` may be cleared (`null`) to restore an all-day event. The `endsAtMs` column is additive; if the schema validator must change, that change rides on the chunk-1 architecture ticket — do not touch `convex/schema.ts` here (see OPEN).
-- **TESTS:** Given an event / When `update({title})` / Then only title changes. Given `endsAtMs <= startAtMs` / When `update` / Then `end_before_start`. Given missing id / When any / Then `event_not_found`. Given other user's event / When call / Then `forbidden`. Given `delete` / When list / Then event absent but row keeps `deletedAt`.
+- **SPEC:** Owner-scoped mutations as they exist on `integration`: `update({ eventId, title?, startsAtMs? })` → `v.id("calendarEvents")`, `remove({ eventId })` → `{ success: boolean, undoUntilMs: number }`, `restore({ eventId })` → `{ success: boolean }`; `listInRange` lists by range. Auth: `requireUser`, row owner only. Error mechanism is the file's plain `Error` convention: a missing/foreign/already-deleted event → `throw new Error("Event not found")`; an empty title → `throw new Error("Give the event a gentle label first.")`; a bad range → `throw new Error("Calendar range must end after it starts.")` / `throw new Error("Calendar range is too large.")`. `restore` of an event outside the 5-min window returns `{ success: false }` (no throw). The `endsAtMs` column is additive and does not exist on `integration`'s `calendarEvents` table today — see OPEN. Limits: duration ≥ 5 min and ≤ 24 h; a future event's `endsAtMs` may be cleared (`null`) to restore an all-day event. The `endsAtMs` column is additive; if the schema validator must change, that change rides on the chunk-1 architecture ticket — do not touch `convex/schema.ts` here (see OPEN).
+- **TESTS:** Given an event / When `update({ title })` / Then only title changes. Given `endsAtMs <= startAtMs` / When `update` / Then `end_before_start`. Given missing id / When any / Then `Error("Event not found")`. Given an empty title / When `update` / Then `Error("Give the event a gentle label first.")`. Given other user's event / When call / Then `Error("Event not found")`. Given `remove` / When `listInRange` / Then event absent but row keeps `deletedAt`.
 - **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · duration bounds 5 min–24 h enforced in the validator (code review) · no N+1 on month/day list (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** `endsAtMs` schema-column ownership (this ticket vs the chunk-1 architecture ticket) — UNKNOWN, Amit answers.
+- **OPEN:** `endsAtMs` does not exist on the `calendarEvents` table on `integration`; adding it touches `convex/schema.ts`, which this ticket may not edit. Which ticket adds the column (this one as config-lane, or the chunk-1 architecture ticket) is UNKNOWN — Amit answers.
 
 ### TFV2-0067 — Habit check-ins by local day + Undo (`convex/habitCheckIns.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
@@ -1412,16 +1456,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A habit can be checked in and un-checked for the caller's local calendar day, with one row per habit per day.
 - **SCOPE:** `convex/habitCheckIns.ts` · `convex/habitCheckIns.test.ts` (extend if present).
 - **MUTATES:** `habitCheckIns` rows (check-in / soft-delete undo); `habits` cache fields recomputed.
-- **STEPS:** 1) Graphify code-map of `convex/habitCheckIns.ts`; 2) ensure `habits.log({ habitId, localDate })` upserts exactly one row per habit per `localDate` (Convex mutation is transactional); 3) ensure undo = soft delete (`deletedAt`) and recompute the habit cache; 4) reject future local dates beyond today and dates > 7 days past (configurable); 5) write tests; 6) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/habitCheckIns.ts` (EXISTS: `check({ habitId, localDate, source, note?, asOfLocalDate? })` upserts exactly one row per habit per `localDate`, and `undo({ habitId, localDate })` soft-deletes and recomputes the habit cache — verify); 2) ensure `check` is idempotent (one row per `localDate`, Convex mutation is transactional); 3) ensure `undo` soft-deletes (`deletedAt`) and recomputes the habit cache; 4) keep the file's existing validation only (`localDate` must be `YYYY-MM-DD`, `asOfLocalDate` within one day of UTC today); do not add future/past-range rejection unless the code already has it — see OPEN; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/habitCheckIns.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a streak counter to any query result; touch `convex/schema.ts`; log in UTC instead of the passed `localDate`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `habits.log({ habitId, localDate })` and `habits.undo({ habitId, localDate })`, owner-scoped. Returns `{ habitId, localDate, checked }`. Auth: habit owner only. Errors: `habit_not_found`, `forbidden`, `future_date`, `out_of_range` (outside ±7-day window). Limits: `localDate` is `YYYY-MM-DD`, computed in the browser (server has no user time zone — conflict #13); uniqueness enforced inside the mutation. Never surface a streak number (F-10).
-- **TESTS:** Given no row / When `log` / Then one row with `source`. Given an existing check-in / When `log` again / Then idempotent (still one row). Given `localDate` tomorrow / When `log` / Then `future_date`. Given `undo` / When `log` list / Then row soft-deleted and habit cache recomputed. Given other user's habit / When call / Then `forbidden`.
+- **SPEC:** `habitCheckIns.check({ habitId, localDate, source, note?, asOfLocalDate? })` and `habitCheckIns.undo({ habitId, localDate })`, owner-scoped. `check` returns `{ checkInId, alreadyChecked, currentStreak, longestStreak }`; `undo` returns `{ removed, currentStreak, longestStreak }`. Auth: habit owner only. Error mechanism is the file's plain `Error` convention: a missing/foreign habit → `throw new Error("Habit not found")` (via `getOwnedHabit`); a malformed `localDate` → `throw new Error("localDate must be YYYY-MM-DD")`; a malformed/out-of-window `asOfLocalDate` → `throw new Error("asOfLocalDate must be YYYY-MM-DD")` / `throw new Error("asOfLocalDate must be within one day of UTC today")`. There is no `future_date`/`out_of_range` check in the code today — see OPEN. Limits: `localDate` is `YYYY-MM-DD`, computed in the browser (server has no user time zone — conflict #13); uniqueness enforced inside the mutation. Never surface a streak number (F-10).
+- **TESTS:** Given no row / When `check` / Then one row with `source`. Given an existing check-in / When `check` again / Then idempotent (still one row). Given `localDate` not `YYYY-MM-DD` / When `check` / Then `Error("localDate must be YYYY-MM-DD")`. Given `undo` / When list / Then row soft-deleted and habit cache recomputed. Given other user's habit / When call / Then `Error("Habit not found")`.
 - **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · one upsert, one cache recompute, no fan-out (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** time-zone source — UNKNOWN, Amit answers (conflict #13).
+- **OPEN:** (1) time-zone source — UNKNOWN, Amit answers (conflict #13). (2) Whether `check`/`undo` should reject future `localDate` or dates more than 7 days past is not in the code today; the limits (and whether they are configurable) are UNKNOWN — Amit answers.
 
 ### TFV2-0068 — Habits: 6-week detail grid + summary + cache recompute (`convex/habits.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
@@ -1431,33 +1475,52 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** The habit detail screen can read a 6-week day grid and a summary, with the habit cache recomputed on every check-in.
 - **SCOPE:** `convex/habits.ts` · `convex/habits.test.ts` (create if absent).
 - **MUTATES:** `habits` cache fields (recomputed read); no new tables.
-- **STEPS:** 1) Graphify code-map of `convex/habits.ts` and `convex/lib/habitStreak.ts` / `habitCheckInStreak.ts`; 2) add `habits.listDays({ habitId, localDate })` returning 42 days (6 weeks ending today, Monday-first per code; see OPEN #10); 3) add `habits.summary({ habitId })` returning `{ totalLogged, daysThisWeek, lastLoggedAt }` with **no streak counter**; 4) recompute cache in `habits.log`/`undo`; 5) write tests; 6) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/habits.ts` and `convex/lib/habitStreak.ts` / `habitCheckInStreak.ts`; 2) add `habits.listDays({ habitId, localDate })` returning 42 days (6 weeks ending today, Monday-first per code; see OPEN #10); 3) add `habits.summary({ habitId })` returning `{ totalLogged, daysThisWeek, lastLoggedAt }` with **no streak counter**; 4) ensure the cache is recomputed by `habitCheckIns.check`/`undo` (defined in TFV2-0067); 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/habits.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** return a streak number anywhere; touch `convex/schema.ts`; add a new table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Queries (read-only): `listDays({habitId, localDate}) -> { days: {localDate, checked}[] }`, `summary({habitId}) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` defaults to today in the caller's zone. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
-- **TESTS:** Given 3 check-ins in the last 6 weeks / When `listDays` / Then 42 days, 3 `checked`. Given none / When `summary` / Then `{0,0,null}` and no streak field. Given a check-in today / When `summary` / Then `daysThisWeek` increments and `lastLoggedAt` = today. Given other user / When any / Then `forbidden`.
+- **SPEC:** Queries (read-only): `habits.listDays({ habitId, localDate }) -> { days: { localDate, checked }[] }`, `habits.summary({ habitId }) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` defaults to today in the caller's zone. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
+- **TESTS:** Given 3 check-ins in the last 6 weeks / When `listDays` / Then 42 days, 3 `checked`. Given none / When `summary` / Then `{ totalLogged: 0, daysThisWeek: 0, lastLoggedAt: null }` and no streak field. Given a check-in today / When `summary` / Then `daysThisWeek` increments and `lastLoggedAt` = today. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** query has no N+1 and returns ≤42 rows (code review) · p95 latency — UNKNOWN (Amit answers).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
 
-### TFV2-0069 — Goals backend (`convex/goals.ts`)
+### TFV2-0069a — Goals CRUD (`convex/goals.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** #457
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
-- **WHY:** PRD F-08 (structured tags/projects); BACKEND-SCHEMA §3 (`goals`); screen `web/goals.html`, `web/goal-detail.html`, `web/goals-progress.html`.
-- **GOAL:** Goals can be created, listed, opened, linked to projects/tasks, and read back as progress.
+- **WHY:** PRD F-08 (structured tags/projects); BACKEND-SCHEMA §3 (`goals`); screen `web/goals.html`, `web/goal-detail.html`.
+- **GOAL:** Goals can be created, listed, opened, and updated; the existing CRUD matches the data contract and is unit-tested.
 - **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (create if absent).
-- **MUTATES:** `goals` rows; `projects`/`tasks` goal links (read).
-- **STEPS:** 1) Graphify code-map of `convex/goals.ts`; 2) add `goals.create({ title })`, `goals.update({ goalId, title? })`, `goals.list()`, `goals.get({ goalId })`; 3) add `goals.progressByGoal()` and `goals.stepsByWeek({ goalId })` for the progress screen; 4) add `goals.nextStep({ goalId })` returning one suggested next action or `null`; 5) write tests; 6) run DONE.
+- **MUTATES:** `goals` rows.
+- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (EXISTS: `list({ status? })`, `create({ title, description?, targetDate? })`, `update({ goalId, title?, description?, targetDate?, progressPercent?, status? })`, `remove({ goalId })`); 2) verify `create` trims title and initializes `progressPercent: 0`, `status: "active"`; 3) verify `update` clamps `progressPercent` to 0–100; 4) verify `list` sorts newest-first and filters by `status`; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/goals.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped: `create({title})`, `update({goalId, title?})`, `list()`, `get({goalId})`, `progressByGoal()`, `stepsByWeek({goalId})`, `nextStep({goalId})`. Titles are user text (`dir="auto"` at render). Errors: `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars; `nextStep` returns the earliest open task linked to the goal, else `null` (no model call).
-- **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal with 2 linked tasks / When `progressByGoal` / Then counts reflect open vs done. Given no open tasks / When `nextStep` / Then `null`. Given other user / When `get` / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `progressByGoal` (code review) · title 1–200 chars (code review).
+- **SPEC:** Owner-scoped (`requireUser`). `list({ status? }) -> Doc<"goals">[]`; `create({ title, description?, targetDate? }) -> Id<"goals">`; `update({ goalId, title?, description?, targetDate?, progressPercent?, status? }) -> Id<"goals">`; `remove({ goalId }) -> { success }`. Titles are user text (`dir="auto"` at render). Errors (typed `ConvexError` codes): `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars (trimmed); `progressPercent` clamped 0–100; `status` ∈ `"active"|"completed"|"archived"`.
+- **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal / When `update({ progressPercent: 140 })` / Then stored as 100. Given `list({ status: "active" })` / Then only active goals. Given other user / When `update` / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `list` (code review) · title 1–200 chars (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0069b — Goals progress + next step (`convex/goals.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069a · **Folds-in:** #457
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0069a.
+- **WHY:** PRD F-08 (progress); screen `web/goals-progress.html`.
+- **GOAL:** Goals can be read back as progress (per-goal counts and weekly steps) and a single suggested next action.
+- **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (extend).
+- **MUTATES:** none (read-only aggregates over `goals` and linked `tasks`).
+- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (no `get`/`progressByGoal`/`stepsByWeek`/`nextStep` yet); 2) add `goals.get({ goalId })` returning the row or `null`; 3) add `goals.progressByGoal()` and `goals.stepsByWeek({ goalId })`; 4) add `goals.nextStep({ goalId })` returning one suggested next action or `null`; 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/goals.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped queries. `get({ goalId }) -> Doc<"goals"> | null`; `progressByGoal() -> { goalId, openTasks, doneTasks, progressPercent }[]`; `stepsByWeek({ goalId }) -> { weekStart, doneCount }[]`; `nextStep({ goalId }) -> Id<"tasks"> | null` (the earliest open task linked to the goal, else `null`). Errors (typed `ConvexError` codes): `goal_not_found`, `forbidden`. Limits: no model call; `nextStep` returns the earliest open linked task or `null`.
+- **TESTS:** Given a goal with 2 linked tasks / When `progressByGoal` / Then counts reflect open vs done. Given no open tasks / When `nextStep` / Then `null`. Given `stepsByWeek` with one done task this week / Then that week's `doneCount` is 1. Given other user / When `get` / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `progressByGoal` (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1469,13 +1532,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** One day plan per user per local day stores intention, top 3 tasks, energy, and a draft/committed status.
 - **SCOPE:** `convex/dayPlans.ts` · `convex/dayPlans.test.ts` (extend if present).
 - **MUTATES:** `dayPlans` rows (upsert); no new tables.
-- **STEPS:** 1) Graphify code-map of `convex/dayPlans.ts`; 2) ensure `getByDate({ localDate })` returns the row or `null`; 3) ensure `upsert({ localDate, intention?, topTaskIds?, energy?, status? })` enforces one row per `localDate`; 4) add `commit({ localDate })` (draft → committed, sets `committedAt`); 5) add `setEnergy({ localDate, energy })` and `setIntention({ localDate, intention })`; 6) write tests; 7) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/dayPlans.ts` (EXISTS: `getForDate({ localDate })`, `upsert({ localDate, timezone?, intention?, topTaskIds?, energy? })`, `commit({ localDate })`, `listCarryOver({ beforeMs })`, `moveTaskToDay({ taskId, dueAt })`); 2) verify `getForDate` returns the row or `null`; 3) verify `upsert` enforces one row per `localDate` and `topTaskIds` length ≤ 3; 4) verify `commit` sets `status: "committed"` + `committedAt`; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/dayPlans.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** touch `convex/schema.ts`; allow two rows per `localDate`; mix energy words (quiet/steady/push only).
+- **DO NOT:** touch `convex/schema.ts`; allow two rows per `localDate`; use energy words other than `low|medium|high`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped: `getByDate({localDate})`, `upsert({localDate, intention?, topTaskIds?, energy?, status?})`, `commit({localDate})`, `setEnergy({localDate, energy})`, `setIntention({localDate, intention})`. `energy` ∈ `"quiet"|"steady"|"push"`; `status` ∈ `"draft"|"committed"`; `topTaskIds` length ≤ 3. Errors: `invalid_energy`, `too_many_top_tasks`, `invalid_date`. Uniqueness (one row per `localDate`) enforced inside the mutation.
-- **TESTS:** Given none / When `getByDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy:"turbo"` / When `upsert` / Then `invalid_energy`. Given 4 top tasks / When `upsert` / Then `too_many_top_tasks`. Given `commit` / When `getByDate` / Then `status="committed"` and `committedAt` set.
+- **SPEC:** Owner-scoped. `getForDate({ localDate }) -> Doc<"dayPlans"> | null`; `upsert({ localDate, timezone?, intention?, topTaskIds?, energy? }) -> Id<"dayPlans">`; `commit({ localDate }) -> { dayPlanId, committedAt }`. `energy` ∈ `"low"|"medium"|"high"`; `status` ∈ `"draft"|"committed"`; `topTaskIds` length ≤ 3 (all must be owned by the caller). Errors (typed `ConvexError` codes): `invalid_energy`, `too_many_top_tasks`, `invalid_date`. Uniqueness (one row per `localDate`) enforced inside `upsert`; `upsert` patches but never changes `status`.
+- **TESTS:** Given none / When `getForDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy: "turbo"` / When `upsert` / Then `invalid_energy`. Given 4 top tasks / When `upsert` / Then `too_many_top_tasks`. Given `commit` / When `getForDate` / Then `status="committed"` and `committedAt` set.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `topTaskIds` ≤ 3 enforced (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -1488,71 +1551,71 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** Planned slots on one local day can be listed, created, edited, marked done/skipped, and soft-deleted.
 - **SCOPE:** `convex/timeBlocks.ts` · `convex/timeBlocks.test.ts` (create if absent).
 - **MUTATES:** `timeBlocks` rows; `taskId`/`habitId` links (read).
-- **STEPS:** 1) Graphify code-map of `convex/timeBlocks.ts`; 2) add `listForDay({ localDate })` ordered by `startMinute`; 3) add `create({ localDate, title, startMinute, durationMinutes, kind, taskId?, habitId? })`; 4) add `update({ timeBlockId, ... })`, `delete({ timeBlockId })` (soft), `setDone({ timeBlockId, status })`; 5) validate `startMinute` 0–1439, `durationMinutes` 5–720; 6) write tests; 7) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/timeBlocks.ts` (EXISTS: `listForDate({ localDate })`, `create({ localDate, title, startMinute, durationMinutes, startsAtMs, endsAtMs, kind, taskId?, habitId? })`, `update({ timeBlockId, ... })`, `setStatus({ timeBlockId, status })`, `remove({ timeBlockId })`); 2) verify `listForDate` is ordered by `startMinute`; 3) verify `create` validates `startMinute` 0–1439, `durationMinutes` 5–720, and `endsAtMs > startsAtMs`; 4) verify `remove` is a soft delete; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/timeBlocks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; allow overlap checking that isn't required; hard-delete.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `create` returns `{ timeBlockId }`; `kind` ∈ `focus|task|habit|break|other`; `status` ∈ `planned|done|skipped`. Errors: `invalid_minute`, `invalid_duration`, `time_block_not_found`, `forbidden`. Limits: `startMinute` 0–1439 (half-hour slots), `durationMinutes` 5–720; `skipped` is neutral (never failure copy).
-- **TESTS:** Given create at 08:00 for 25 min / When `listForDay` / Then ordered first. Given `startMinute:1500` / When create / Then `invalid_minute`. Given `durationMinutes:1` / When create / Then `invalid_duration`. Given `setDone("skipped")` / When list / Then status `skipped` and no failure wording. Given other user / When any / Then `forbidden`.
+- **SPEC:** Owner-scoped. `create` returns `Id<"timeBlocks">`; `kind` ∈ `focus|task|habit|break|other`; `status` ∈ `planned|done|skipped`. Errors (typed `ConvexError` codes): `invalid_minute`, `invalid_duration`, `invalid_time` (when `endsAtMs <= startsAtMs`), `time_block_not_found`, `forbidden`. Limits: `startMinute` 0–1439 (half-hour slots), `durationMinutes` 5–720; `skipped` is neutral (never failure copy).
+- **TESTS:** Given create at 08:00 for 25 min / When `listForDate` / Then ordered first. Given `startMinute: 1500` / When create / Then `invalid_minute`. Given `durationMinutes: 1` / When create / Then `invalid_duration`. Given `endsAtMs <= startsAtMs` / When create / Then `invalid_time`. Given `setStatus("skipped")` / When list / Then status `skipped` and no failure wording. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · list sorted by `startMinute` (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
+- **OPEN:** none.
 
 ### TFV2-0072 — Focus blocks (`convex/focusBlocks.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0071 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0071.
-- **WHY:** APP-FLOW §5 item 5; BACKEND-SCHEMA §3 (`focusSessions` #534); screen `web/today.html` Next up timer.
-- **GOAL:** Focus sessions start, pause/resume locally, and complete as logged rows that survive reload.
+- **WHY:** APP-FLOW §5 item 5; BACKEND-SCHEMA §3 (`focusBlocks` #534); screen `web/today.html` Next up timer.
+- **GOAL:** Focus sessions are logged as completed rows that survive reload, and listed for a time range.
 - **SCOPE:** `convex/focusBlocks.ts` · `convex/focusBlocks.test.ts` (extend if present).
-- **MUTATES:** `focusBlocks` rows; optional `timeBlockId`/`taskId` links.
-- **STEPS:** 1) Graphify code-map of `convex/focusBlocks.ts`; 2) add `start({ taskId, minutes })` returning `{ sessionId }`; 3) add `complete({ sessionId, minutes })` writing a row with `durationMinutes` and `completedAt`; 4) keep pause/resume as local timer state (no server row); 5) add `listForDay({ localDate })`; 6) write tests; 7) run DONE.
+- **MUTATES:** `focusBlocks` rows; optional `taskId` link.
+- **STEPS:** 1) Graphify code-map of `convex/focusBlocks.ts` (EXISTS: `create({ startedAtMs, durationMs, label?, taskId? })`, `listInRange({ startMs, endMs })`, `remove({ focusBlockId })`, `restore({ focusBlockId })`); 2) verify `create` logs a completed block with `startedAtMs` + `durationMs` (1 ms–8 h); 3) keep pause/resume as local timer state (no server row); 4) verify `listInRange` lists the completed session (persisted across reload); 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/focusBlocks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** persist pause/resume as rows; touch `convex/schema.ts`; round minutes dishonestly.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped: `start({taskId, minutes}) -> {sessionId}`, `complete({sessionId, minutes}) -> {sessionId}`, `listForDay({localDate})`. `minutes` ∈ 1–180. Errors: `session_not_found`, `forbidden`, `invalid_minutes`. Pause/resume is browser-local; only `complete` persists.
-- **TESTS:** Given start 25 min / When complete / Then row with `durationMinutes:25` and `completedAt`. Given unknown session / When complete / Then `session_not_found`. Given `minutes:0` / When start / Then `invalid_minutes`. Given list after reload / When `listForDay` / Then the completed session is present (persisted). Given other user / When any / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `minutes` 1–180 (code review).
+- **SPEC:** Owner-scoped. `create({ startedAtMs, durationMs, label?, taskId? }) -> Id<"focusBlocks">`; `listInRange({ startMs, endMs }) -> Doc<"focusBlocks">[]`; `remove({ focusBlockId }) -> { success, undoUntilMs }`; `restore({ focusBlockId }) -> { success }`. `durationMs` ∈ 1 ms–8 h (`MAX_DURATION_MS`). Errors (typed `ConvexError` codes): `focus_block_not_found`, `forbidden`, `invalid_duration`. Pause/resume is browser-local; only `create` persists.
+- **TESTS:** Given create 25 min (as `durationMs`) / When `listInRange` / Then row with `durationMs` and `startedAtMs` present. Given unknown block / When `remove` / Then `focus_block_not_found`. Given `durationMs: 0` / When create / Then `invalid_duration`. Given list after reload / When `listInRange` / Then the completed session is present (persisted). Given other user / When any / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `durationMs` 1 ms–8 h (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0073 — Brain-dump inbox (`convex/brain_dump.ts`)
+### TFV2-0073 — Brain-dump input + parse (`convex/lib/brainDumpInput.ts`, `convex/lib/brainDumpParse.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** PRD F-09; APP-FLOW §5 item 6; BACKEND-SCHEMA §3 (`inboxItems` #535); screen `web/brain-dump.html`.
-- **GOAL:** Brain-dump raw text is captured and held as a draft before any sorting.
-- **SCOPE:** `convex/brain_dump.ts` · `convex/lib/brainDumpInput.ts` · `convex/brain_dump.test.ts`.
-- **MUTATES:** brain-dump draft (inbox item) rows; no task/note/event until apply.
-- **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts` and `convex/lib/brainDumpInput.ts`; 2) add `saveDraft({ rawText })` (idempotent single draft per user); 3) add `getDraft()` returning `{ rawText, updatedAt } | null`; 4) add `clearDraft()`; 5) sanitize input (trim, length cap) via `brainDumpInput`; 6) write tests; 7) run DONE.
+- **GOAL:** Raw brain-dump text is validated and parsed into a structured plan without persisting the raw text (RAM-only: the dump is never stored).
+- **SCOPE:** `convex/lib/brainDumpInput.ts` · `convex/lib/brainDumpParse.ts` · `convex/brain_dump.test.ts` (extend if present).
+- **MUTATES:** none (pure input validation and model-output parsing; no rows until `acceptPlan` in TFV2-0074).
+- **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts`, `convex/lib/brainDumpInput.ts`, `convex/lib/brainDumpParse.ts` (EXISTS: `validateBrainDumpInput`, `parsePlanFromModelContent`, `BrainDumpPlan`, `BrainDumpPriority`); 2) verify `validateBrainDumpInput` trims, rejects empty, and caps at `BRAIN_DUMP_MAX_RAW_CHARS` (12,000); 3) verify `parsePlanFromModelContent` strips C0/C1 control chars, requires a `summary`, and caps at 6 priorities; 4) write tests for every error case; 5) run DONE.
 - **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** parse into tasks here (that is TFV2-0074); persist raw messages anywhere else (RAM-only rule); touch `convex/schema.ts`.
+- **DO NOT:** persist raw text anywhere (RAM-only rule); touch `convex/schema.ts`; call a model in this ticket.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped: `saveDraft({rawText})`, `getDraft()`, `clearDraft()`. Raw text is user text. Errors: `too_long` (over 20,000 chars). Limits: 0–20,000 chars; one draft per user; the draft is never auto-sorted. Copy surfaced by the screen, not here.
-- **TESTS:** Given save "a;b;c" / When `getDraft` / Then returns it. Given save twice / When `getDraft` / Then only the latest (single draft). Given 30,000 chars / When save / Then `too_long`. Given clear / When getDraft / Then `null`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review) · input sanitised before persist (code review).
+- **SPEC:** Pure functions (no Convex call). `validateBrainDumpInput(rawText) -> { ok: true, raw } | { ok: false, message }` (trim; empty → not ok; > 12,000 chars → not ok). `parsePlanFromModelContent(content) -> BrainDumpPlan` (`{ summary, priorities: { title, reason, urgency }[] }`, `urgency ∈ "now"|"soon"|"later"`, ≤ 6 priorities, title ≤ 200 chars, reason ≤ 300 chars). The raw dump is **never persisted**; only accepted items become tasks in TFV2-0074.
+- **TESTS:** Given `"   "` / When `validateBrainDumpInput` / Then `{ ok: false }`. Given 13,000 chars / When `validateBrainDumpInput` / Then `{ ok: false }` naming the cap. Given valid JSON with a summary + 7 priorities / When `parsePlanFromModelContent` / Then 6 priorities kept. Given JSON missing a summary / When parse / Then throws. Given a control char in a title / When parse / Then it is stripped.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 12,000-char cap (code review) · input sanitised before any model call (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0074 — Brain-dump prioritize → proposal (`convex/lib/brainDumpParse.ts`)
+### TFV2-0074 — Brain-dump prioritize → accept (`convex/brain_dump.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0073, TFV2-0065 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0073 and TFV2-0065.
 - **WHY:** PRD F-09 (brain dump → ordered plan → add to Today); APP-FLOW §5 item 6 and §6 (proposal); BACKEND-SCHEMA §4.3 (`proposals` table).
-- **GOAL:** Raw brain-dump text becomes an ordered proposal of rows, each accepted/edited/rejected, and only accepted rows are applied to Today.
-- **SCOPE:** `convex/lib/brainDumpParse.ts` · `convex/brain_dump.ts` (apply mutations) · `convex/brain_dump.test.ts`.
-- **MUTATES:** proposal rows; `tasks`/`calendarEvents`/`notes` only on apply.
-- **STEPS:** 1) Graphify code-map of `brainDumpParse.ts` (a rule-based local split already exists — reuse it as the fallback); 2) add `prioritize({ draftId })` returning `{ rows: {sourceLine,title,durationMin,reason,kind}[] }`; 3) add `apply({ draftId, acceptedRowIds })` that creates tasks/events and soft-deletes the accepted inbox lines; 4) on parse failure, return the rule-based split (no model call required — conflict #6: model-written vs rule-based is UNKNOWN); 5) write tests; 6) run DONE.
+- **GOAL:** Raw brain-dump text becomes an ordered plan, each accepted item is applied to Today as a task, and nothing is written before acceptance.
+- **SCOPE:** `convex/brain_dump.ts` · `convex/brain_dump.test.ts` (extend if present).
+- **MUTATES:** `tasks` rows only on `acceptPlan`; the dump itself is never stored.
+- **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts` (EXISTS: `prioritize` action `{ rawText } -> BrainDumpPlan` via `planBrainDump`, `acceptPlan` mutation `{ items: [{ title, urgency }] } -> { created, taskIds }`); 2) verify `prioritize` validates input, passes the approval AI gate, and returns a plan (≤ 6 priorities); 3) verify `acceptPlan` writes only accepted items as tasks (1–6 items) and nothing else; 4) verify parse failure returns a typed error (no model call required on failure — conflict #6: model-written vs rule-based is UNKNOWN); 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** write to Today before `apply`; call a paid model; invent a proposal shape not in `proposals` rows.
+- **DO NOT:** write to Today before `acceptPlan`; call a paid model directly; invent a proposal shape not in `BrainDumpPlan`; persist the dump.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped: `prioritize({draftId}) -> {rows[]}`, `apply({draftId, acceptedRowIds}) -> {createdTaskIds, createdEventIds}`. Each row carries `sourceLine` (user's own words), `reason` (short, specific). Errors: `draft_not_found`, `empty_draft`, `no_rows_accepted`. Limits: ≤ 20 rows per proposal; `durationMin` default 15. Nothing is written until `apply`; `apply` is undoable for 5 minutes via `activity`.
-- **TESTS:** Given "call bank; slides; email Dana" / When `prioritize` / Then ≤3 rows, each with a reason. Given empty draft / When prioritize / Then `empty_draft`. Given accept 2 rows / When `apply` / Then exactly 2 tasks created, others untouched. Given apply with no accepted rows / Then `no_rows_accepted`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 proposal rows (code review) · `apply` idempotent per row (code review).
+- **SPEC:** `prioritize({ rawText }) -> BrainDumpPlan` (action; approval-gated via `requireApprovedForAi`); `acceptPlan({ items: [{ title, urgency }] }) -> { created, taskIds }` (mutation; owner-scoped). Each priority carries `title` (user's own words), `reason` (short, specific), `urgency ∈ "now"|"soon"|"later"`. Errors (typed `ConvexError` codes): `invalid_input`, `empty_items`, `too_many_items`. Limits: ≤ 6 priorities; nothing is written until `acceptPlan`; `acceptPlan` is undoable for 5 minutes via `tasks.remove`/`tasks.restore`.
+- **TESTS:** Given "call bank; slides; email Dana" / When `prioritize` / Then ≤ 6 priorities, each with a reason. Given empty text / When `prioritize` / Then `invalid_input`. Given accept 2 items / When `acceptPlan` / Then exactly 2 tasks created, others untouched. Given accept 0 items / When `acceptPlan` / Then `empty_items`. Given accept 7 items / When `acceptPlan` / Then `too_many_items`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤6 priorities (code review) · `acceptPlan` idempotent per item (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** model-written vs rule-based proposal, and auto-apply threshold — UNKNOWN, Amit answers (conflict #6).
 
@@ -1563,13 +1626,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** #446 (Journal + Daily note backend); PRD F-05/F-06; screen `web/journal.html`, `web/daily-note.html`.
 - **GOAL:** Journal entries and daily-note pages can be listed, created, read, and soft-deleted for the caller's local day.
 - **SCOPE:** `convex/journal.ts` · `convex/journal.test.ts` (both new).
-- **MUTATES:** journal/daily entries (backed by `notes` rows of `pageType:"journal"`/`"daily"`); `deletedAt` for soft delete.
-- **STEPS:** 1) Graphify code-map of `convex/notes.ts` and `notes_period.ts` (journal may be partially wired via page period — verify); 2) add `journal.list()`, `journal.get({ date })`, `journal.saveEntry({ date, body })`, `journal.promptForToday({ date })`; 3) daily note uses `notes` with `pageType:"daily"` and `date`, soft-delete via the existing `notes` path; 4) write tests; 5) run DONE.
+- **MUTATES:** journal/daily entries (backed by `notes` rows of `periodType:"daily"`/other page types); `deletedAt` for soft delete.
+- **STEPS:** 1) Graphify code-map of `convex/notes.ts` and `notes_period.ts` (EXISTS: `notes.create`, `notes.update`, `notes.remove` (soft), `notes.restore`, `notes.listPeriodPages`, `notes.getPeriodPage`, `notes.ensurePeriodPage` — verify whether journal already reuses these); 2) add `journal.list()`, `journal.get({ date })`, `journal.saveEntry({ date, body })`, `journal.promptForToday({ date })`; 3) daily note reuses `notes` with a page type + `date`, soft-delete via `notes.remove`; 4) write tests; 5) run DONE.
 - **DONE:** `bun run test convex/journal.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** add a new table if `notes` with `pageType` already serves journal; touch `convex/schema.ts`; invent prompts (return the fixed prompt text defined in the screen copy).
+- **DO NOT:** add a new table if `notes` with a page type already serves journal; touch `convex/schema.ts`; invent prompts (return the fixed prompt text defined in the screen copy).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `journal.list() -> {date, body, updatedAt}[]`; `saveEntry({date, body})`; `promptForToday({date}) -> string` returns fixed copy (EN: "One line about today, or answer the question." / HE: "שורה אחת על היום, או תשובה לשאלה."). Errors: `invalid_date`, `entry_too_long` (>20,000 chars). Storage: `notes` rows with `pageType:"journal"` (12 Oct contracts are the newest authority — conflict #7).
+- **SPEC:** Owner-scoped. `journal.list() -> { date, body, updatedAt }[]`; `journal.get({ date }) -> { date, body } | null`; `journal.saveEntry({ date, body })`; `journal.promptForToday({ date }) -> string` returns fixed copy (EN: "One line about today, or answer the question." / HE: "שורה אחת על היום, או תשובה לשאלה."). Errors (typed `ConvexError` codes): `invalid_date`, `entry_too_long` (>20,000 chars). Storage: `notes` rows with a page type (12 Oct contracts are the newest authority — conflict #7).
 - **TESTS:** Given no entry today / When `get` / Then `null`. Given save / When list / Then one entry. Given 30,000 chars / When save / Then `entry_too_long`. Given soft delete / When list / Then absent but row keeps `deletedAt`. Given other user / When get / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -1582,13 +1645,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** #447 (Routines backend); screen `web/routines.html`, `web/routine-detail.html`.
 - **GOAL:** Routines (ordered step lists) can be listed, opened, run step by step, and soft-deleted.
 - **SCOPE:** `convex/routines.ts` · `convex/routines.test.ts` (both new).
-- **MUTATES:** routine definitions and a run cursor (or a note page of `pageType:"routine"`); `deletedAt` on delete.
-- **STEPS:** 1) Graphify code-map of `convex/notes.ts` (routines are step lists — verify whether they reuse notes); 2) add `routines.list()`, `routines.get({ routineId })`, `routines.create({ title, steps[] })`, `routines.startRun({ routineId })`, `routines.completeStep({ runId, stepIndex })`, `routines.suggestNow({ localDate })`; 3) write tests; 4) run DONE.
+- **MUTATES:** routine definitions and a run cursor (or a note page of a routine page type); `deletedAt` on delete.
+- **STEPS:** 1) Graphify code-map of `convex/notes.ts` (EXISTS: `notes.listRoutines` — verify whether routines already reuse notes as step lists); 2) add `routines.list()`, `routines.get({ routineId })`, `routines.create({ title, steps })`, `routines.startRun({ routineId })`, `routines.completeStep({ runId, stepIndex })`, `routines.suggestNow({ localDate })`; 3) write tests; 4) run DONE.
 - **DONE:** `bun run test convex/routines.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a model call to `suggestNow` (return the time-based suggestion); touch `convex/schema.ts`; invent a steps schema different from a string array.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `steps` is `string[]` (user text, `dir="auto"`), ≤ 20 steps, each ≤ 200 chars. Errors: `routine_not_found`, `forbidden`, `too_many_steps`, `step_out_of_range`. `suggestNow` returns the routine whose window matches the local hour, else `null`. Runs keep a cursor; completing a step advances it.
+- **SPEC:** Owner-scoped. `steps` is `string[]` (user text, `dir="auto"`), ≤ 20 steps, each ≤ 200 chars. `list() -> Doc<"routines">[]`; `get({ routineId }) -> Doc<"routines"> | null`; `create({ title, steps }) -> Id<"routines">`; `startRun({ routineId }) -> Id<"routineRuns">`; `completeStep({ runId, stepIndex }) -> { stepIndex }`; `suggestNow({ localDate }) -> Id<"routines"> | null`. Errors (typed `ConvexError` codes): `routine_not_found`, `forbidden`, `too_many_steps`, `step_out_of_range`. `suggestNow` returns the routine whose window matches the local hour, else `null`. Runs keep a cursor; completing a step advances it.
 - **TESTS:** Given create with 3 steps / When list / Then one routine. Given 21 steps / When create / Then `too_many_steps`. Given startRun / When completeStep(0) / Then cursor advanced. Given completeStep(99) / When call / Then `step_out_of_range`. Given other user / When get / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 steps, ≤200 chars each (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -1599,17 +1662,17 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0065 and TFV2-0068.
 - **WHY:** PRD F-60, F-61; APP-FLOW §6 (nag flow); screen `web/nags.html`, `web/task-sheet.html`, `web/habit-detail.html`.
-- **GOAL:** A nag can be created, given phrases in the user's own words, switched on only with an accepted phrase, and answered (now / snooze / not today).
+- **GOAL:** A nag can be created, given phrases in the user's own words, and switched on only with an accepted phrase.
 - **SCOPE:** `convex/nags.ts` · `convex/lib/nagPhrase.ts` · `convex/nags.test.ts` (create if absent).
-- **MUTATES:** `nags` rows (enabled, phrases, answers); dosing-data answer log (never a streak).
-- **STEPS:** 1) Graphify code-map of `convex/nags.ts` and `convex/lib/nagPhrase.ts`; 2) add `nags.create({ targetId, targetType })`, `nags.addPhrase({ nagId, text, origin, sourceRef? })`, `nags.setEnabled({ nagId, enabled })`, `nags.respond({ nagId, answer, phraseId })`; 3) enforce: `enabled` may not be true with zero accepted phrases, and emoji are rejected; 4) write tests; 5) run DONE.
+- **MUTATES:** `nags` rows (enabled, phrases); dosing-data answer log (never a streak).
+- **STEPS:** 1) Graphify code-map of `convex/nags.ts` and `convex/lib/nagPhrase.ts` (EXISTS: `create({ label })`, `addPhrase({ nagId, text, source })`, `decidePhrase({ nagId, phraseId, decision })`, `setEnabled({ nagId, enabled })`, `remove({ nagId })`; `validatePhrase`, `parseProposals`); 2) verify `setEnabled(true)` is rejected with zero accepted phrases; 3) verify emoji are rejected by `validatePhrase` and phrase length ≤ `NAG_PHRASE_MAX` (140); 4) verify a `derived` phrase starts `proposed` and becomes `accepted` only via `decidePhrase`; 5) write tests; 6) run DONE.
 - **DONE:** `bun run test convex/nags.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add stock copy or emoji; surface a streak; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `phrase.origin ∈ "user"|"derived"`; a `derived` phrase requires `sourceRef`. `answer ∈ "now"|"snooze"|"notToday"`. Errors: `nag_not_found`, `forbidden`, `enable_without_phrase`, `emoji_rejected`, `empty_phrase`. Copy: answers are logged as dosing data; "Not today" is never failure (partial credit). EN: now "Do it now" / HE: "לעשות עכשיו"; EN: snooze "Snooze" / HE: "לדחות"; EN: not today "Not today" / HE: "לא היום".
-- **TESTS:** Given enable with no phrase / When `setEnabled(true)` / Then `enable_without_phrase`. Given phrase "do it 👊" / When addPhrase / Then `emoji_rejected`. Given `respond("notToday")` / When log / Then answer stored with no failure/streak wording. Given derived phrase without sourceRef / When addPhrase / Then `missing_source`. Given other user / When any / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · phrase ≤ 200 chars (code review) · emoji/stock copy rejected by `nagPhrase` (code review).
+- **SPEC:** Owner-scoped. `create({ label }) -> Id<"nags">`; `addPhrase({ nagId, text, source }) -> { phraseId }`; `decidePhrase({ nagId, phraseId, decision }) -> { success }`; `setEnabled({ nagId, enabled }) -> { success }`; `remove({ nagId }) -> { success }`. `phrase.source ∈ "user"|"derived"`; a `derived` phrase starts `proposed` (accept via `decidePhrase`). Errors (typed `ConvexError` codes): `nag_not_found`, `forbidden`, `enable_without_phrase`, `emoji_rejected`, `empty_phrase`. Copy: "Not today" is never failure (partial credit). EN: now "Do it now" / HE: "לעשות עכשיו"; EN: snooze "Snooze" / HE: "לדחות"; EN: not today "Not today" / HE: "לא היום".
+- **TESTS:** Given enable with no phrase / When `setEnabled(true)` / Then `enable_without_phrase`. Given phrase "do it 👊" / When addPhrase / Then `emoji_rejected`. Given a derived phrase / When `addPhrase` / Then status `proposed`, not `accepted`. Given a proposed phrase / When `decidePhrase("reject")` / Then it is rejected and the nag with no accepted phrase is disabled. Given other user / When any / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · phrase ≤ 140 chars (code review) · emoji/stock copy rejected by `nagPhrase` (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
 
@@ -1621,14 +1684,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** In-app notifications can be listed, marked read singly and in bulk.
 - **SCOPE:** `convex/notifications.ts` · `convex/notifications.test.ts` (create if absent).
 - **MUTATES:** `notifications` rows (readAt).
-- **STEPS:** 1) Graphify code-map of `convex/notifications.ts`; 2) add `list()`, `markRead({ notificationId })`, `markAllRead()`; 3) ensure list is newest-first and capped; 4) write tests; 5) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/notifications.ts` (EXISTS: `list({ unreadOnly? })`, `markRead({ notificationId })`, `markAllRead({})`); 2) verify `list` is newest-first; 3) verify `markRead` and `markAllRead` set `readAt`; 4) write tests; 5) run DONE.
 - **DONE:** `bun run test convex/notifications.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add push/email delivery (conflict #11); touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `list() -> {id, kind, title, body, createdAt, readAt}[]`, `markRead`, `markAllRead`. Errors: `notification_not_found`, `forbidden`. Limits: return the latest 100.
+- **SPEC:** Owner-scoped. `list({ unreadOnly? }) -> { _id, title, body, kind, readAt?, createdAt }[]` (`kind ∈ "system"|"reminder"|"billing"`); `markRead({ notificationId }) -> null`; `markAllRead({}) -> { updated }`. Errors (typed `ConvexError` codes): `notification_not_found`, `forbidden`. Limits: returns live (non-deleted) rows newest-first; `list({ unreadOnly: true })` filters to unread.
 - **TESTS:** Given 3 notifications / When list / Then newest-first. Given markRead / When list / Then `readAt` set. Given markAllRead / When list / Then all read. Given other user / When markRead / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤100 rows returned (code review).
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · newest-first ordering (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (in-app only).
 
@@ -1636,58 +1699,77 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
-- **WHY:** screen `web/insights.html` (`insights.tasksByWeekday`, `insights.focusMinutesByWeek`); BACKEND-SCHEMA §5.4.
+- **WHY:** screen `web/insights.html` (`analytics.insightsSummary`); BACKEND-SCHEMA §5.4.
 - **GOAL:** Aggregated, non-identifying analytics feed the insights charts without inventing metrics.
 - **SCOPE:** `convex/analytics.ts` · `convex/analytics.test.ts` (extend if present).
 - **MUTATES:** none (read-only aggregates).
-- **STEPS:** 1) Graphify code-map of `convex/analytics.ts`; 2) add `tasksByWeekday({ localDate })` and `focusMinutesByWeek({ localDate })`; 3) ensure aggregates are computed over soft-delete-aware rows; 4) write tests; 5) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/analytics.ts` (EXISTS: `overview({ todayStartMs?, todayEndMs? })`, `insightsSummary({ todayStartMs, todayEndMs, weekStartMs })`, `computeOverview`, `computeInsightsSummary`); 2) add `tasksByWeekday({ localDate })` and `focusMinutesByWeek({ localDate })`; 3) ensure aggregates are computed over soft-delete-aware rows; 4) write tests; 5) run DONE.
 - **DONE:** `bun run test convex/analytics.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** invent a metric the data does not support; expose raw rows; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped read queries. `tasksByWeekday` returns `{weekday, doneCount}[]` (Mon–Sun per conflict #10); `focusMinutesByWeek` returns `{week, minutes}[]` for the trailing 12 weeks. Errors: `invalid_date`. Empty input returns empty arrays, never synthesized values.
+- **SPEC:** Owner-scoped read queries. `tasksByWeekday({ localDate }) -> { weekday, doneCount }[]` (Mon–Sun per conflict #10); `focusMinutesByWeek({ localDate }) -> { week, minutes }[]` for the trailing 12 weeks. Errors (typed `ConvexError` codes): `invalid_date`. Empty input returns empty arrays, never synthesized values. Reuses `computeOverview`/`computeInsightsSummary` style (soft-delete-aware, no `Date.now()` in the query body — caller passes local-day windows).
 - **TESTS:** Given 2 done tasks Monday, 1 Tuesday / When `tasksByWeekday` / Then correct counts. Given a soft-deleted task / When aggregate / Then excluded. Given no data / When both / Then empty arrays. Given other user / When query / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · soft-delete-aware aggregation (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
-### TFV2-0080 — Insights (`convex/insights.ts`, `convex/lib/insights_summary.ts`)
+### TFV2-0080 — Insights summary (`convex/analytics.ts`, `convex/lib/insights_summary.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0079 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0079.
-- **WHY:** screen `web/insights.html` (`insights.getPatterns`); PRD F-55 (observations, later).
-- **GOAL:** Pattern observations are surfaced as plain sentences, each deletable, never as judgement.
-- **SCOPE:** `convex/insights.ts` · `convex/lib/insights_summary.ts` · `convex/insights.test.ts`.
-- **MUTATES:** insight observation rows (delete only).
-- **STEPS:** 1) Graphify code-map of `convex/insights.ts` and `lib/insights_summary.ts`; 2) add `getPatterns({ localDate })` returning `{text, source, createdAt}[]`; 3) add `dismiss({ insightId })`; 4) write the summary into one required sentence per pattern; 5) write tests; 6) run DONE.
+- **WHY:** screen `web/insights.html` (`analytics.insightsSummary`); PRD F-55 (observations, later).
+- **GOAL:** The Insights screen summary (open/overdue/done, energy, priority, streaks, goals) is computed as plain numbers, never as judgement.
+- **SCOPE:** `convex/analytics.ts` · `convex/lib/insights_summary.ts` · `convex/insights.test.ts` (extend if present).
+- **MUTATES:** none (read-only aggregates).
+- **STEPS:** 1) Graphify code-map (EXISTS: `analytics.insightsSummary` query, `lib/insights_summary.computeInsightsSummary` pure function, `convex/insights.test.ts` — note `convex/insights.ts` does NOT exist; the query lives on `analytics`); 2) verify `computeInsightsSummary` produces the summary shape (`tasksOpen`, `tasksDueToday`, `tasksOverdue`, `tasksCompletedThisWeek`, `openByEnergy`, `openByPriority`, `habitsTotal`, `habitsWithActiveStreak`, `bestStreak`, `goalsActive`, `goalsAverageProgressPercent`); 3) verify soft-deleted rows are excluded; 4) write tests for every field; 5) run DONE.
 - **DONE:** `bun run test convex/insights.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** write shaming copy; auto-generate patterns from a model here; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `getPatterns -> {id, text, createdAt}[]`; `dismiss({insightId})`. Patterns are descriptive ("gym slips after late nights"), never prescriptive or shaming. Errors: `insight_not_found`, `forbidden`. Empty data → empty list, with the empty-state copy rendered by the screen.
-- **TESTS:** Given 2 observations / When getPatterns / Then 2 sentences. Given dismiss / When getPatterns / Then absent. Given other user / When dismiss / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · one sentence per pattern (code review).
+- **SPEC:** Owner-scoped. `analytics.insightsSummary({ todayStartMs, todayEndMs, weekStartMs }) -> InsightsSummary` (see `computeInsightsSummary` in `lib/insights_summary.ts`). Numbers are descriptive ("tasksOpen", "bestStreak"), never prescriptive or shaming. Errors (typed `ConvexError` codes): `invalid_window` (when `todayEndMs <= todayStartMs` or the window exceeds bounds). Empty data → all-zero summary, with the empty-state copy rendered by the screen.
+- **TESTS:** Given 2 open + 1 done task / When `computeInsightsSummary` / Then `tasksOpen: 2`, `tasksCompletedThisWeek` reflects the done task. Given a soft-deleted task / When computed / Then excluded. Given no data / When computed / Then all-zero summary. Given `todayEndMs <= todayStartMs` / When `insightsSummary` / Then `invalid_window`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · one summary pass over pre-fetched rows (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0081 — Activity (`convex/activity.ts`)
+### TFV2-0081a — Activity: list feed (`convex/activity.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
-- **WHY:** screen `web/activity.html` (`activity.listRecent`); PRD F-22 (5-min Undo of coach actions).
-- **GOAL:** A 7-day activity feed lists changes by the user and the coach, each coach change undoable for 5 minutes.
-- **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (extend if present).
-- **MUTATES:** activity rows (read) + undo of coach changes.
-- **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) add `listRecent({ limit })` newest-first; 3) add `undo({ activityId })` valid only within 5 minutes and only for coach-originated changes; 4) write tests; 5) run DONE.
+- **WHY:** screen `web/activity.html` (`activity.list`); PRD F-22 feed (the 5-min Undo of coach changes is TFV2-0081b).
+- **GOAL:** The activity feed lists the user's own recent changes, newest-first, read-only.
+- **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (create if absent).
+- **MUTATES:** activity feed (read).
+- **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) keep `list` owner-scoped and newest-first; 3) write tests; 4) run DONE.
 - **DONE:** `bun run test convex/activity.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** undo user's own actions via this feed; touch `convex/schema.ts`; drop the 5-minute window.
+- **DO NOT:** add an `undo` mutation here (that is TFV2-0081b); touch `convex/schema.ts`; invent a coach actor.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `listRecent({limit=50}) -> {id, actor:"you"|"coach", text, createdAt, undone}[]`; `undo({activityId})`. Errors: `activity_not_found`, `forbidden`, `undo_window_expired`, `not_undoable`. Limits: window = 5 minutes from `createdAt`; coach-origin only.
-- **TESTS:** Given a coach change 1 min old / When undo / Then restored. Given a coach change 6 min old / When undo / Then `undo_window_expired`. Given a user change / When undo / Then `not_undoable`. Given other user / When list / Then `forbidden`.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 5-minute window enforced server-side (code review).
+- **SPEC:** `activity.list` (EXISTS) — owner-scoped read: args `{}`, returns `ActivityItem[]` where `ActivityItem = { id: string; kind: "task"|"note"|"habit"|"focus"|"calendar"|"goal"; action: string; title: string; href: string; occurredAt: number }`. Sorted newest-first (by `occurredAt` desc), capped at 50. Errors: `requireUser` throws for unauthenticated callers. No coach-origin rows and no `actor` field — the feed is a derived read of the user's own tables only.
+- **TESTS:** Given tasks/notes/check-ins with different `occurredAt` / When `list` / Then newest-first order and at most 50 items. Given another user / When call / Then only the caller's own rows return.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 50-item cap enforced (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
+
+### TFV2-0081b — Activity: 5-min undo of coach changes — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** PRD F-22 (5-min Undo of coach actions); `activity.list` has no coach-origin rows and no undo.
+- **GOAL:** A coach-originated change shown in the activity feed can be undone for 5 minutes.
+- **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (create if absent).
+- **MUTATES:** activity rows (read) + undo of coach changes.
+- **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) add coach-origin tracking + `undo`; 3) write tests; 4) run DONE.
+- **DONE:** `bun run test convex/activity.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; invent an actor model; shorten the 5-minute window.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** UNKNOWN. `activity.undo({activityId})` does not exist in the code, and `activity.list` records no coach-origin rows (no `actor`, no undo payload). Building it needs: (a) how coach changes are applied and recorded — REWRITE-PLAN-v2 §4 conflict #6 (accept-reject vs auto-apply) — and (b) where the undoable coach-change record lives (a new table in `convex/schema.ts`, a protected path). Neither is decided.
+- **TESTS:** Given a coach change 1 min old / When undo / Then restored. Given a coach change 6 min old / When undo / Then `undo_window_expired`. Given a user change / When undo / Then `not_undoable`. (Blocked on SPEC.)
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 5-minute window enforced server-side (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** how coach changes are recorded and undone, and where the undoable record lives — UNKNOWN, Amit answers (conflict #6; needs a schema decision).
 
 ### TFV2-0082 — Streaks (`convex/streaks.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
@@ -1697,14 +1779,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** Habit streaks are computed internally for insights only and are never surfaced as a pressure counter.
 - **SCOPE:** `convex/streaks.ts` · `convex/streaks.test.ts` (create if absent).
 - **MUTATES:** none (derived read).
-- **STEPS:** 1) Graphify code-map of `convex/streaks.ts` and `convex/lib/habitStreak.ts`; 2) ensure `streaks.getForHabit({ habitId })` is internal-only and returns a plain number for insights aggregation; 3) ensure NO UI query in chunk B exposes it; 4) write tests; 5) run DONE.
+- **STEPS:** 1) Graphify code-map of `convex/streaks.ts`, `convex/lib/habitStreak.ts` and `convex/lib/habitCheckInStreak.ts`; 2) ensure `streaks.getCurrent` is the only aggregate read and is consumed by insights/tracking only; 3) ensure no chunk-B component or screen renders `currentStreak`/`longestStreak` as a visible counter; 4) write tests; 5) run DONE.
 - **DONE:** `bun run test convex/streaks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** add a streak field to `habits.list` / `habits.summary` / `habits.listDays` or any block; render a counter anywhere.
+- **DO NOT:** add a `streaks.getForHabit` query; render a streak counter in any block (EventBlock, HabitBlock, habit detail); remove `currentStreak`/`longestStreak` from the habit doc (insights use them).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped internal read: `getForHabit({habitId}) -> number`. Missed day = broken streak (no ring). Errors: `habit_not_found`, `forbidden`. The number feeds `analytics` only; the UI never receives it.
-- **TESTS:** Given check-ins 3 consecutive days / When getForHabit / Then 3. Given a missed day / When getForHabit / Then reset to current run length. Given other user / When call / Then `forbidden`. Given the habit screens' queries / When inspect return shapes / Then no `streak` field present.
-- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no `streak` key in any UI-facing query (code review).
+- **SPEC:** Owner-scoped internal read: `streaks.getCurrent()` (EXISTS) — args `{}`, returns `{ streakCount: number; longestAmongHabits: number; habitCount: number }` (max `currentStreak` / `longestStreak` across the user's habits). Per-habit streak math lives in `convex/lib/habitStreak.ts` (`computeHabitStreakUpdate`, `isHabitCompletedOnUtcDay`) and `convex/lib/habitCheckInStreak.ts` (`computeHabitCheckInStreaks`); results are stored as `currentStreak`/`longestStreak` on the habit doc. Errors: `requireUser` throws for unauthenticated callers. No `streaks.getForHabit` exists; do not add one.
+- **TESTS:** Given habits with `currentStreak` 1/3/7 / When `getCurrent` / Then `{streakCount: 7, longestAmongHabits: 7, habitCount: 3}`. Given no habits / When `getCurrent` / Then `{streakCount: 0, longestAmongHabits: 0, habitCount: 0}`. Given another user / When call / Then only the caller's own habits are aggregated.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no component renders a streak counter (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1714,16 +1796,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0066.
 - **WHY:** components.md §2.2; PRD F-07, F-10; used in `web/today.html`, `web/daily-note.html`.
 - **GOAL:** An event renders as a fixed (solid edge) or flexible (dashed) block with time, title, meta and place.
-- **SCOPE:** `packages/ui/src/blocks/EventBlock.tsx` · `packages/ui/src/blocks/EventBlock.test.tsx` · `packages/ui/src/index.ts` (export).
+- **SCOPE:** `packages/ui/src/blocks/EventBlock.tsx` · `packages/ui/src/blocks/EventBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/event-block.spec.ts`.
 - **MUTATES:** none (read-only render).
-- **STEPS:** 1) Graphify code-map of `packages/ui/src/blocks`; 2) implement per SPEC; 3) add the export; 4) write tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → EventBlock cases pass; Playwright asserts both states at 390 and 1280, EN and HE.
+- **STEPS:** 1) Graphify code-map of `packages/ui/src/blocks`; 2) implement per SPEC; 3) add the export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → EventBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` → all pass (states, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + the two Playwright screenshots (390/1280, EN/HE).
 - **DO NOT:** edit `convex/`; set colours inline; render JSON; exceed 250 ms motion.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-block-event` / `.tp-event[data-kind]`; `data-component="EventBlock"`; shadcn `card`. Props `{ event: {id, title, start, end, place?, kind:"fixed"|"flex"} }`. Layout: `__time` (`--tp-mono`, `.tp-num`), `__title`, `__meta`, `__place`. `kind="fixed"` → solid `--tp-accent` left edge + label "Fixed"; `kind="flex"` → dashed edge + "Flexible". States: default, `[data-kind]`. Copy: EN Fixed/Flexible "Fixed"·"Flexible" / HE "קבוע"·"גמיש". RTL: time stays `.tp-num`/`.tp-mono` (isolated), edge flips to the inline-start. Keyboard/SR: the block is a `<article>`; time is a visible label. Breakpoints: full width under 390, inline card at 1280. Motion: none (no animation).
-- **TESTS:** Given fixed event / When render / Then solid edge + "Fixed" and time in mono. Given flex / When render / Then dashed edge + "Flexible". Playwright: at 390 and 1280, assert the two `[data-kind]` states and EN/HE labels via `?lang=`.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms transform/opacity only (components.md) · body text ≥13 px (components.md).
+- **SPEC:** Class `.tp-block-event` / `.tp-event[data-kind]`; `data-component="EventBlock"`; shadcn `card`. Props `{ event: { id: string; title: string; start: number; end: number; place?: string; kind: "fixed"|"flex" } }`. Layout: `__time` (`--tp-font-mono`, `.tp-num`), `__title`, `__meta`, `__place`. `kind="fixed"` → solid `--tp-info` (#36628C light / #94B8DA dark) inline-start edge + label "Fixed"; `kind="flex"` → dashed `--tp-caution` (#7E5A0C light / #DDB45E dark) edge + "Flexible". Card radius `--tp-radius-lg` (14 px). States: default, `[data-kind]`; loading/empty/error/offline/success/disabled: n/a — presentational, the mounting screen owns data states. Copy: EN "Fixed"·"Flexible" / HE "קבוע"·"גמיש". RTL: time stays `.tp-num`/`--tp-font-mono` (isolated LTR), edge flips to the inline-start. Keyboard/SR: the block is an `<article>`; time is a visible label. Breakpoints: full width at 390, inline card at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given fixed event / When render / Then solid `--tp-info` edge + "Fixed" and time in `--tp-font-mono`. Given flex / When render / Then dashed `--tp-caution` edge + "Flexible". Playwright: the spec sets viewport 390 and 1280, asserts both `[data-kind]` states and EN/HE labels via `?lang=`.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms transform/opacity only (components.md) · body text ≥13 px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1733,37 +1815,37 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0067.
 - **WHY:** components.md §2.2; PRD F-10 (no streak counter); used in `web/daily-note.html`, `web/today.html`.
 - **GOAL:** A habit renders as a card with a log toggle and a 7-day dot ring; no streak counter.
-- **SCOPE:** `packages/ui/src/blocks/HabitBlock.tsx` · `packages/ui/src/blocks/HabitBlock.test.tsx` · `packages/ui/src/index.ts`.
-- **MUTATES:** none (render + `habits.log` call).
-- **STEPS:** 1) Graphify code-map; 2) implement per SPEC; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → HabitBlock cases pass; Playwright asserts log/undo and dot states at 390/1280, EN/HE.
+- **SCOPE:** `packages/ui/src/blocks/HabitBlock.tsx` · `packages/ui/src/blocks/HabitBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/habit-block.spec.ts`.
+- **MUTATES:** none (render + `habitCheckIns.check`/`undo` call).
+- **STEPS:** 1) Graphify code-map; 2) implement per SPEC; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → HabitBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` → all pass (log/undo and dot states, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** draw a streak counter; touch `convex/`; label a missed day as failure.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-block-habit` / `.tp-habit[data-logged]` / `.tp-habit-days` / `.tp-habit-day[data-done][data-today]`; `data-component="HabitBlock"`; shadcn `card + toggle`. Props `{ habit: {id, name, when, last7:boolean[], loggedToday} }`. Events: `habit-log` → `habits.log({habitId, localDate})`. States: default, `data-logged` (today), each day `data-done`/`data-today`. Each day has sr text EN "logged"/"not logged" / HE "תועד"/"לא תועד". Copy: EN "Log today" / HE "לתעד היום"; EN "Logged today" / HE "תועד היום". RTL: dots flow inline-start. Keyboard: toggle is a `<button role="switch" aria-checked>`. Breakpoints: full width 390, card 1280. Motion: dot fill ≤250 ms opacity.
-- **TESTS:** Given last7 with today logged / When render / Then today dot `data-done data-today` and 7 dots, no number. Given click toggle / When `habits.log` / Then `data-logged` toggles optimistically. Playwright asserts dot states + no streak number at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **SPEC:** Class `.tp-block-habit` / `.tp-habit[data-logged]` / `.tp-habit-days` / `.tp-habit-day[data-done][data-today]`; `data-component="HabitBlock"`; shadcn `card + toggle`. Props `{ habit: { id: string; name: string; when?: string }, last7: boolean[]; loggedToday: boolean; onToggleLog: (args: { habitId: string; localDate: string }) => void }`. `last7` and `loggedToday` are derived by the mounting screen from `habitCheckIns.listForHabit({habitId, fromLocalDate, toLocalDate})` / `habitCheckIns.listForDate({localDate})` (both EXIST); the block never reads `currentStreak`/`longestStreak`. Event: `onToggleLog` → the screen calls `habitCheckIns.check({habitId, localDate, source: "today"})` (EXISTS) and `habitCheckIns.undo({habitId, localDate})` (EXISTS). States: default, `data-logged` (today), each day `data-done`/`data-today`; loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states. Each day has sr text EN "logged"/"not logged" / HE "תועד"/"לא תועד". Copy: EN "Log today" / HE "לתעד היום"; EN "Logged today" / HE "תועד היום". Done dot uses `--tp-done` (#3B6948 light / #8FC09C dark). RTL: dots flow inline-start. Keyboard: toggle is a `<button role="switch" aria-checked>`. Breakpoints: full width 390, card 1280. Motion: dot fill ≤250 ms opacity; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given last7 with today logged / When render / Then today dot `data-done data-today` and 7 dots, no number. Given click toggle / When `onToggleLog` / Then `data-logged` toggles optimistically. Playwright: the spec sets viewport 390 and 1280, asserts dot states + no streak number, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0085 — Component: NagBlock
+### TFV2-0085 — Component: NagBlock — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0077 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0077.
 - **WHY:** components.md §2.2; PRD F-60; used in `web/daily-note.html`, `web/today.html`.
 - **GOAL:** A nag renders the user's own phrase with three answers; no icon, no emoji, no stock copy.
-- **SCOPE:** `packages/ui/src/blocks/NagBlock.tsx` · `packages/ui/src/blocks/NagBlock.test.tsx` · `packages/ui/src/index.ts`.
-- **MUTATES:** none (render + `nags.respond` call).
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → NagBlock cases pass; Playwright asserts the three answers at 390/1280, EN/HE.
+- **SCOPE:** `packages/ui/src/blocks/NagBlock.tsx` · `packages/ui/src/blocks/NagBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/nag-block.spec.ts`.
+- **MUTATES:** none (render + `nags` response call).
+- **STEPS:** 1) Graphify code-map; 2) implement the phrase card per SPEC; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → NagBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` → all pass (the three answers, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** add an icon or emoji; use stock copy; touch `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-block-nag` / `.tp-nag[data-status]`; `data-component="NagBlock"`; shadcn `card (+ alert-dialog)`. Props `{ nag: {id, phrase, about, at} }`. Events: `data-choice="now|snooze|nottoday"` → `nags.respond`. States: default, `data-status` after answer. Copy (user's own words only) plus answers: EN "Do it now"/"Snooze"/"Not today" / HE "לעשות עכשיו"/"לדחות"/"לא היום". Phrase uses `dir="auto"`. RTL: actions mirror. Keyboard: three `<button>`s. Breakpoints: 390/1280. Motion: status change ≤250 ms.
-- **TESTS:** Given a nag with a phrase / When render / Then phrase shown verbatim and no icon/emoji. Given click "now" / When `nags.respond` / Then `data-status` set. Playwright: three answers, phrase text, at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **SPEC:** Class `.tp-block-nag` / `.tp-nag[data-status]`; `data-component="NagBlock"`; shadcn `card (+ alert-dialog)`. Props `{ nag: { id: string; phrase: string; about?: string; at?: number }; onRespond: (args: { nagId: string; choice: "now"|"snooze"|"nottoday" }) => void }`. Event: `data-choice="now|snooze|nottoday"` → `onRespond`. The backend the mounting screen wires `onRespond` to is UNKNOWN — `nags.respond` does not exist in the code (code only has `nags.decidePhrase({nagId, phraseId, decision:"accept"|"reject"})` for phrase acceptance, not delivery responses). States: default, `data-status` after answer; loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states. Copy (user's own words only) plus answers: EN "Do it now"/"Snooze"/"Not today" / HE "לעשות עכשיו"/"לדחות"/"לא היום". Phrase uses `dir="auto"`. RTL: actions mirror. Keyboard: three `<button>`s. Breakpoints: 390/1280. Motion: status change ≤250 ms; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given a nag with a phrase / When render / Then phrase shown verbatim and no icon/emoji. Given click "now" / When `onRespond` / Then `data-status` set. Playwright: the spec sets viewport 390 and 1280, asserts the three answers + phrase text, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** delivery channel — UNKNOWN, Amit answers (conflict #11).
+- **OPEN:** the delivered-nag response mutation does not exist (`nags.respond` is absent; code only has `nags.decidePhrase` for phrase acceptance) and its now/snooze/nottoday semantics depend on REWRITE-PLAN-v2 §4 conflict #11 (nag delivery channel) — UNKNOWN, Amit answers.
 
 ### TFV2-0086 — Component: PageLayout
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
@@ -1771,16 +1853,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; used by every non-document screen in chunk B.
 - **GOAL:** A page container with narrow/wide widths inside the app main area.
-- **SCOPE:** `packages/ui/src/layout/PageLayout.tsx` · `packages/ui/src/layout/PageLayout.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageLayout.tsx` · `packages/ui/src/layout/PageLayout.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-layout.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageLayout cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageLayout cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-layout.spec.ts --reporter=line` → all pass (narrow/wide, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** set colours/type here (screens add layout only); touch `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-page` (`--wide`, `--narrow`); `data-component="PageLayout"`; props `{ width:"wide"|"narrow", children }`. Layout: max-width via `--tp-*` spacing, centered, gap `--tp-space-6`. States: none. No visible copy. Breakpoints: narrow ~68ch, wide fills `--tp-app__main`. Motion: none.
-- **TESTS:** Given width narrow / When render / Then max-width 68ch. Given wide / When render / Then fills main. (No Playwright needed — layout primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **SPEC:** Class `.tp-page` (`--wide`, `--narrow`); `data-component="PageLayout"`; props `{ width: "wide"|"narrow"; children: ReactNode }`. Layout: narrow max-width `--tp-measure` (68 ch), centered, gap `--tp-space-6` (24 px); wide fills `--tp-app__main`. States: none; loading/empty/error/offline/success/disabled: n/a — presentational. No visible copy. Breakpoints: narrow ~68 ch, wide fills main; same at 390 and 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given width narrow / When render / Then max-width `--tp-measure` (68 ch). Given wide / When render / Then fills main. Playwright: the spec sets viewport 390 and 1280, asserts narrow vs wide layout.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1790,16 +1872,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; solid paper panel for chunk B screens.
 - **GOAL:** A solid paper panel used as the background for cards and lists.
-- **SCOPE:** `packages/ui/src/layout/Surface.tsx` · `packages/ui/src/layout/Surface.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/Surface.tsx` · `packages/ui/src/layout/Surface.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/surface.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Surface cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Surface cases pass; and `CI=1 bunx playwright test tests/e2e/screens/surface.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** make it glass (glass is floating chrome only); set type sizes.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-surface`; `data-component="Surface"`; shadcn `card`; props `{ children }`. Uses `--tp-surface`, `--tp-border`, `--tp-radius-*`. States: none. Motion: none.
-- **TESTS:** Given children / When render / Then background `--tp-surface` and border. (Layout primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Class `.tp-surface`; `data-component="Surface"`; shadcn `card`; props `{ children: ReactNode }`. Background `--tp-paper` (#FBF9F4 light / #201D1A dark), 1 px hairline ring `--tp-line` (#D9D0C1 light / #38332D dark), radius `--tp-radius-xl` (20 px, paper/sheets). States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given children / When render / Then background `--tp-paper`, ring `--tp-line`, radius `--tp-radius-xl` (20 px). Playwright: the spec sets viewport 390 and 1280, asserts the panel renders at both.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1809,16 +1891,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; one H1 per screen.
 - **GOAL:** A screen header with one H1 title, subtitle and action slot.
-- **SCOPE:** `packages/ui/src/layout/PageHeader.tsx` · `packages/ui/src/layout/PageHeader.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageHeader.tsx` · `packages/ui/src/layout/PageHeader.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-header.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageHeader cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageHeader cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-header.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** render more than one H1; hide the subtitle on mobile.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-pagehead`, `__text`, `__title`, `__sub`, `__actions`; `data-component="PageHeader"`; props `{ title, subtitle?, actions? }`. `__title` is the sole `<h1>`. States: none. RTL: title/user text `dir="auto"`. Breakpoints: actions wrap under the title at 390, inline-end at 1280. Motion: none.
-- **TESTS:** Given title+subtitle / When render / Then one `<h1>` + subtitle. Given actions / When render / Then present. (No Playwright — primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (components.md).
+- **SPEC:** Class `.tp-pagehead`, `__text`, `__title`, `__sub`, `__actions`; `data-component="PageHeader"`; props `{ title: string; subtitle?: string; actions?: ReactNode }`. `__title` is the sole `<h1>`. States: none; loading/empty/error/offline/success/disabled: n/a — presentational. RTL: title/subtitle `dir="auto"`. Breakpoints: actions wrap under the title at 390, inline-end at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given title+subtitle / When render / Then one `<h1>` + subtitle. Given actions / When render / Then present. Playwright: the spec sets viewport 390 and 1280, asserts one H1 and the action wrap.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1828,16 +1910,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; search + filter + sort on list screens.
 - **GOAL:** A toolbar row hosting search, filter and sort controls.
-- **SCOPE:** `packages/ui/src/layout/Toolbar.tsx` · `packages/ui/src/layout/Toolbar.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/Toolbar.tsx` · `packages/ui/src/layout/Toolbar.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/toolbar.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Toolbar cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Toolbar cases pass; and `CI=1 bunx playwright test tests/e2e/screens/toolbar.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** hardcode a control type (accept children).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-toolbar`, `__grow`, `__end`; `data-component="Toolbar"`; props `{ children }`. `__grow` expands the search input; `__end` holds sort/filter. Breakpoints: wraps to two rows at 390, one row at 1280. Motion: none.
-- **TESTS:** Given children / When render / Then `__grow` and `__end` regions present. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Class `.tp-toolbar`, `__grow`, `__end`; `data-component="Toolbar"`; props `{ children: ReactNode }`. `__grow` expands the search input; `__end` holds sort/filter. States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Breakpoints: wraps to two rows at 390, one row at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given children / When render / Then `__grow` and `__end` regions present. Playwright: the spec sets viewport 390 and 1280, asserts the two-row vs one-row layout.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1847,16 +1929,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; grouped sections with a count.
 - **GOAL:** A titled section with an optional item count.
-- **SCOPE:** `packages/ui/src/layout/Section.tsx` · `packages/ui/src/layout/Section.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/Section.tsx` · `packages/ui/src/layout/Section.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/section.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Section cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Section cases pass; and `CI=1 bunx playwright test tests/e2e/screens/section.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** invent a heading level (accept `as`).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-section`, `__head`, `__title`, `__count`; `data-component="Section"`; props `{ title, count?, children, as? }`. `__count` uses `.tp-num`. States: none. Motion: none.
-- **TESTS:** Given title + count 3 / When render / Then title + "3" in `.tp-num`. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · count isolated via `.tp-num` (components.md).
+- **SPEC:** Class `.tp-section`, `__head`, `__title`, `__count`; `data-component="Section"`; props `{ title: string; count?: number; children?: ReactNode; as?: "h2"|"h3" }`. `__count` uses `.tp-num`. States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given title + count 3 / When render / Then title + "3" in `.tp-num`. Playwright: the spec sets viewport 390 and 1280, asserts the title + count render at both.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · count isolated via `.tp-num` (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1866,16 +1948,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; auto-fill card layout.
 - **GOAL:** An auto-filling grid of cards, small or default.
-- **SCOPE:** `packages/ui/src/layout/CardGrid.tsx` · `packages/ui/src/layout/CardGrid.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/CardGrid.tsx` · `packages/ui/src/layout/CardGrid.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/card-grid.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → CardGrid cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → CardGrid cases pass; and `CI=1 bunx playwright test tests/e2e/screens/card-grid.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** fix a column count (auto-fill).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?, children }`. CSS `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`. States: none. Motion: none.
-- **TESTS:** Given 4 cards / When render at 390 vs 1280 / Then 1 column vs multiple. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?: "sm"|"default"; children: ReactNode }`. CSS `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`. Each card is a `.tp-surface`-like card at radius `--tp-radius-lg` (14 px). States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given 4 cards / When render at 390 vs 1280 / Then 1 column vs multiple. Playwright: the spec sets viewport 390 and 1280, asserts column count.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1885,16 +1967,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; icon + words, never colour alone.
 - **GOAL:** An alert with tone, icon, title, body and optional action; never colour-only.
-- **SCOPE:** `packages/ui/src/layout/Notice.tsx` · `packages/ui/src/layout/Notice.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/Notice.tsx` · `packages/ui/src/layout/Notice.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/notice.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Notice cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Notice cases pass; and `CI=1 bunx playwright test tests/e2e/screens/notice.spec.ts --reporter=line` → all pass (tones, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** rely on colour alone (always icon + word).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-notice[data-tone]`, `__icon`, `__text`, `__title`, `__action`; `data-component="Notice"`; shadcn `alert`; props `{ tone:"info"|"caution"|"success"|"error", title?, body?, action? }`. Each tone pairs an icon with a word (never colour only). States: per `data-tone`. Copy is supplied by the screen. Motion: none.
-- **TESTS:** Given tone error / When render / Then icon + word present, not colour alone. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · icon ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **SPEC:** Class `.tp-notice[data-tone]`, `__icon`, `__text`, `__title`, `__action`; `data-component="Notice"`; shadcn `alert`; props `{ tone: "info"|"caution"|"success"|"error"; title?: string; body?: string; action?: ReactNode }`. Each tone pairs an icon with a word (never colour only): `info` → `--tp-info` (#36628C light / #94B8DA dark), `caution` → `--tp-caution` (#7E5A0C light / #DDB45E dark), `success` → `--tp-done` (#3B6948 light / #8FC09C dark), `error` → `--tp-danger` (#9E3B27 light / #EE9A86 dark). Radius `--tp-radius-lg` (14 px). States: per `data-tone`; loading/empty/offline/success/disabled: n/a — copy and presence are the screen's responsibility. Copy is supplied by the screen. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given tone error / When render / Then icon + word present, not colour alone. Playwright: the spec sets viewport 390 and 1280, asserts all four tones show icon + word, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · icon ≥24×24 px (WCAG 2.5.8).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1904,16 +1986,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; labels like "Built-in" / "Your plan".
 - **GOAL:** A small tone badge with label and optional icon.
-- **SCOPE:** `packages/ui/src/layout/Badge.tsx` · `packages/ui/src/layout/Badge.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/Badge.tsx` · `packages/ui/src/layout/Badge.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/badge.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Badge cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Badge cases pass; and `CI=1 bunx playwright test tests/e2e/screens/badge.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** use colour alone (label always present).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-badge[data-tone]`; `data-component="Badge"`; shadcn `badge`; props `{ label, icon?, tone? }`. Word always present. RTL: label `dir="auto"`. Motion: none.
-- **TESTS:** Given label "Built-in" / When render / Then label present. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · text ≥13 px (components.md).
+- **SPEC:** Class `.tp-badge[data-tone]`; `data-component="Badge"`; shadcn `badge`; props `{ label: string; icon?: ReactNode; tone?: "info"|"caution"|"success"|"danger" }`. Radius `--tp-radius-pill` (999 px, tags). Tone grounds use the `-wash` tokens (`--tp-info-wash` etc.) with the corresponding text token. Word always present. States: none; loading/empty/error/offline/success/disabled: n/a — presentational. RTL: label `dir="auto"`. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given label "Built-in" / When render / Then label present. Playwright: the spec sets viewport 390 and 1280, asserts the label renders, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · text ≥13 px (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1923,37 +2005,37 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0088.
 - **WHY:** components.md §2.3; wraps page title + meta for daily/weekly/project/note.
 - **GOAL:** A variant head wrapping the page title and meta for four page kinds.
-- **SCOPE:** `packages/ui/src/layout/PageHead.tsx` · `packages/ui/src/layout/PageHead.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageHead.tsx` · `packages/ui/src/layout/PageHead.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-head.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageHead cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageHead cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-head.spec.ts --reporter=line` → all pass (variants, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** set the title font size (PageTitle owns it); add a second H1.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-page-head[data-variant]`; `data-component="PageHead"`; props `{ variant:"daily"|"weekly"|"project"|"note", title, meta? }`. Wraps `.tp-page-title` + `.tp-page-meta`. States: per variant. Motion: none.
-- **TESTS:** Given variant daily / When render / Then `data-variant="daily"` + one title. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Class `.tp-page-head[data-variant]`; `data-component="PageHead"`; props `{ variant: "daily"|"weekly"|"project"|"note"; title: string; meta?: string }`. Wraps `.tp-page-title` + `.tp-page-meta` (defined by the earlier PageTitle/PageMeta tickets). States: per variant; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given variant daily / When render / Then `data-variant="daily"` + one title. Playwright: the spec sets viewport 390 and 1280, asserts each variant renders.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0095 — Component: WeekStrip
+### TFV2-0095 — Component: WeekStrip — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.3; weekly page head; used in `web/weekly-page.html`.
 - **GOAL:** A 7-day toggle strip selects one day and shows its open count.
-- **SCOPE:** `packages/ui/src/layout/WeekStrip.tsx` · `packages/ui/src/layout/WeekStrip.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/WeekStrip.tsx` · `packages/ui/src/layout/WeekStrip.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/week-strip.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → WeekStrip cases pass; Playwright asserts selection at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → WeekStrip cases pass; and `CI=1 bunx playwright test tests/e2e/screens/week-strip.spec.ts --reporter=line` → all pass (selection, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
-- **DO NOT:** hardcode Sunday-first (see OPEN); navigate away (emit `select-day`).
+- **DO NOT:** hardcode Sunday-first (see OPEN); navigate away (emit `onSelectDay`).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-week-strip`, `__day[aria-pressed][aria-current="date"]`, `__dow`, `__n`, `__count`; `data-component="WeekStrip"`; shadcn `toggle-group`; props `{ days: {localDate, dow, n, count}[] }`. Event: `select-day` → `pages.getDaily({date})`. Day names EN Mon–Sun / HE שני–ראשון. RTL: days flow right-to-left. Keyboard: radiogroup arrows (Stage 1 `segKeys`). Breakpoints: scrolls inside itself on phone, static at 1280. Motion: none.
-- **TESTS:** Given 7 days / When render / Then 7 `__day` with counts in `.tp-num`. Given select Tuesday / When click / Then `aria-pressed` + `aria-current="date"`. Playwright: selection + count at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **SPEC:** Class `.tp-week-strip`, `__day[aria-pressed][aria-current="date"]`, `__dow`, `__n`, `__count`; `data-component="WeekStrip"`; shadcn `toggle-group`; props `{ days: { localDate: string; dow: string; n: number; count: number }[]; selectedLocalDate: string; onSelectDay: (localDate: string) => void }`. Event: `onSelectDay(localDate)` — the mounting screen maps it to `dayPlans.getForDate({localDate})` (EXISTS; there is no `pages.getDaily`). Day names EN Mon–Sun / HE שני–ראשון (order per OPEN). Count in `.tp-num`. RTL: days flow right-to-left. Keyboard: radiogroup arrows (Stage 1 `segKeys`). Breakpoints: scrolls inside itself on phone, static at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **TESTS:** Given 7 days / When render / Then 7 `__day` with counts in `.tp-num`. Given select Tuesday / When click / Then `aria-pressed` + `aria-current="date"`. Playwright: the spec sets viewport 390 and 1280, asserts selection + count, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
+- **OPEN:** week start (Sunday vs Monday — code uses Monday; #546 question 3 open) — UNKNOWN, Amit answers (conflict #10); this decides the `days` array order.
 
 ### TFV2-0096 — Component: ProjectStatus
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0093 · **Folds-in:** none
@@ -1961,16 +2043,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0093.
 - **WHY:** components.md §2.3; used in `web/projects.html`, `web/project-detail.html`.
 - **GOAL:** A badge showing a project's idea/active/paused/done status with icon and word.
-- **SCOPE:** `packages/ui/src/layout/ProjectStatus.tsx` · `packages/ui/src/layout/ProjectStatus.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/layout/ProjectStatus.tsx` · `packages/ui/src/layout/ProjectStatus.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/project-status.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → ProjectStatus cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → ProjectStatus cases pass; and `CI=1 bunx playwright test tests/e2e/screens/project-status.spec.ts --reporter=line` → all pass (four statuses, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** use colour alone; invent statuses beyond the four.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-status[data-status]`; `data-component="ProjectStatus"`; shadcn `badge`; props `{ status:"idea"|"active"|"paused"|"done", label }`. Icon + word. Copy: EN idea/active/paused/done "Idea"·"Active"·"Paused"·"Done" / HE "רעיון"·"פעיל"·"מושהה"·"הושלם". RTL: label `dir="auto"`. Motion: none.
-- **TESTS:** Given status active / When render / Then icon + "Active". (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **SPEC:** Class `.tp-status[data-status]`; `data-component="ProjectStatus"`; shadcn `badge`; props `{ status: "idea"|"active"|"paused"|"done"; label: string }`. Icon + word. Radius `--tp-radius-pill` (999 px). Copy: EN "Idea"·"Active"·"Paused"·"Done" / HE "רעיון"·"פעיל"·"מושהה"·"הושלם". RTL: label `dir="auto"`. States: per `data-status`; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **TESTS:** Given status active / When render / Then icon + "Active". Playwright: the spec sets viewport 390 and 1280, asserts the four statuses render icon + word, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1980,16 +2062,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; used by tasks, habits, routines, goals, projects, activity, notifications lists.
 - **GOAL:** A 56px-min list row with icon, title, meta and end slot, link or button.
-- **SCOPE:** `packages/ui/src/lists/ListRow.tsx` · `packages/ui/src/lists/ListRow.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/lists/ListRow.tsx` · `packages/ui/src/lists/ListRow.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/list-row.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → ListRow cases pass; Playwright asserts focus + 56px at 390/1280, EN/HE.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → ListRow cases pass; and `CI=1 bunx playwright test tests/e2e/screens/list-row.spec.ts --reporter=line` → all pass (focus + 56 px, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** go below 56px tall; omit an accessible name for icon-only rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon, title, meta?, href?, onClick? }`. Height ≥56px. RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring. Breakpoints: same at 390/1280. Motion: none.
-- **TESTS:** Given a row / When render / Then height ≥56px and title present. Given href / When render / Then `<a>` with aria-label if icon-only. Playwright: focus ring + height at 390/1280, EN/HE.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · row ≥56px (components.md) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon: ReactNode; title: string; meta?: string; href?: string; onClick?: () => void; ariaLabel?: string }`. Height ≥56 px; radius `--tp-radius-sm` (6 px, rows). RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring `--tp-accent` (#A3461F light / #EE9468 dark). Breakpoints: same at 390/1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **TESTS:** Given a row / When render / Then height ≥56 px and title present. Given href / When render / Then `<a>` with `aria-label` if icon-only. Playwright: the spec sets viewport 390 and 1280, asserts focus ring + height, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · row ≥56 px (components.md) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -1999,16 +2081,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; used by plan, tasks, goals, projects, insights, activity.
 - **GOAL:** A single-choice segmented control (radiogroup) with dot + word marks.
-- **SCOPE:** `packages/ui/src/lists/Segmented.tsx` · `packages/ui/src/lists/Segmented.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/lists/Segmented.tsx` · `packages/ui/src/lists/Segmented.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/segmented.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Segmented cases pass; Playwright asserts arrow-key selection in RTL and LTR at 390/1280.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Segmented cases pass; and `CI=1 bunx playwright test tests/e2e/screens/segmented.spec.ts --reporter=line` → all pass (arrow-key selection in RTL and LTR, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** allow multiple selection; omit `role=radio`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-segmented` (`--block`), `.tp-seg__opt[role=radio]`; `data-component="Segmented"`; shadcn `toggle-group`; props `{ options:{label,value}[], value, onChange }`. Dot + word mark the choice. Keyboard: radiogroup arrows, swapped in RTL (`segKeys`). Breakpoints: full width (`--block`) at 390, inline at 1280. Motion: none.
-- **TESTS:** Given options / When render / Then radiogroup with `aria-checked` on value. Given ArrowRight in RTL / When keypress / Then moves opposite visually. Playwright: arrow selection LTR + RTL at 390/1280.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **SPEC:** Class `.tp-segmented` (`--block`), `.tp-seg__opt[role=radio]`; `data-component="Segmented"`; shadcn `toggle-group`; props `{ options: { label: string; value: string }[]; value: string; onChange: (value: string) => void }`. Dot + word mark the choice. Track `--tp-sunken` (#EAE3D6 light / #110F0D dark); selected chip ground `--tp-accent-wash` (#F3E2D6 light / #3A2A20 dark); radius `--tp-radius-sm` (6 px, controls). Keyboard: radiogroup arrows, swapped in RTL (`segKeys`). Breakpoints: full width (`--block`) at 390, inline at 1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **TESTS:** Given options / When render / Then radiogroup with `aria-checked` on value. Given ArrowRight in RTL / When keypress / Then moves opposite visually. Playwright: the spec sets viewport 390 and 1280, asserts arrow selection LTR + RTL.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · INP ≤200 ms (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -2018,16 +2100,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0098.
 - **WHY:** components.md §2.4; used by tasks, search, command, notes, templates.
 - **GOAL:** A labelled search input (label always present, visible or sr-only).
-- **SCOPE:** `packages/ui/src/forms/SearchInput.tsx` · `packages/ui/src/forms/SearchInput.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/forms/SearchInput.tsx` · `packages/ui/src/forms/SearchInput.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/search-input.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → SearchInput cases pass.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → SearchInput cases pass; and `CI=1 bunx playwright test tests/e2e/screens/search-input.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** omit the label; break the clear affordance.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-search`, `__box`, `__icon`, `.tp-label`, `.tp-input`; `data-component="SearchInput"`; shadcn `input`; props `{ label, placeholder, value, onChange }`. Label always present (visible or `.tp-sr-only`). Placeholder EN "Search…" / HE "חיפוש…" (caller may override). RTL: input `dir="auto"`, icon flips. Keyboard: standard input + Escape clears. Breakpoints: 390/1280. Motion: none.
-- **TESTS:** Given a query / When render / Then label present and input bound. (Primitive.)
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **SPEC:** Class `.tp-search`, `__box`, `__icon`, `.tp-label`, `.tp-input`; `data-component="SearchInput"`; shadcn `input`; props `{ label: string; placeholder: string; value: string; onChange: (value: string) => void }`. Label always present (visible or `.tp-sr-only`). Placeholder EN "Search…" / HE "חיפוש…" (caller may override). Input radius `--tp-radius-md` (10 px, inputs), outline `--tp-line-control` (#877C6B light / #7F7669 dark). RTL: input `dir="auto"`, icon flips. Keyboard: standard input + Escape clears. Breakpoints: 390/1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **TESTS:** Given a query / When render / Then label present and input bound. Playwright: the spec sets viewport 390 and 1280, asserts the label + Escape clears, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -2037,16 +2119,16 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; sort control on list screens.
 - **GOAL:** A radio dropdown menu for sort options with arrows, Esc and focus return.
-- **SCOPE:** `packages/ui/src/lists/SortMenu.tsx` · `packages/ui/src/lists/SortMenu.test.tsx` · `packages/ui/src/index.ts`.
+- **SCOPE:** `packages/ui/src/lists/SortMenu.tsx` · `packages/ui/src/lists/SortMenu.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/sort-menu.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → SortMenu cases pass; Playwright asserts open/choose/close at 390/1280.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
+- **DONE:** `bun run test packages/ui` → SortMenu cases pass; and `CI=1 bunx playwright test tests/e2e/screens/sort-menu.spec.ts --reporter=line` → all pass (open/choose/close, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** trap focus incorrectly; omit `role=menu`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-menu`, `__list.tp-glass[role=menu]`, `__label`, `__item[role=menuitemradio]`, `__check`, `[data-menu-value]`; `data-component="SortMenu"`; shadcn `dropdown-menu (radio)`; props `{ options, value, onChange }`. Event: `menu` toggles; choose → `TP.onSort(value)`. Keyboard: arrows, Enter, Esc, focus returns to trigger. Copy: EN "Sort" / HE "מיון" (label). RTL: menu mirrors. Breakpoints: 390/1280. Motion: open/close ≤250 ms opacity.
-- **TESTS:** Given options / When open / Then `role=menu` + `aria-expanded`. Given choose / When Enter / Then value label updates + focus returns. Playwright: full cycle at 390/1280.
-- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
+- **SPEC:** Class `.tp-menu`, `__list.tp-glass[role=menu]`, `__label`, `__item[role=menuitemradio]`, `__check`, `[data-menu-value]`; `data-component="SortMenu"`; shadcn `dropdown-menu (radio)`; props `{ options: { label: string; value: string }[]; value: string; onChange: (value: string) => void }`. Event: trigger toggles the menu; choose → `onChange(value)` (there is no `TP.onSort` global; the mounting screen maps `onChange` to the list query's `sort` arg). Popover radius `--tp-radius-lg` (14 px). Copy: EN "Sort" / HE "מיון" (label). RTL: menu mirrors. Keyboard: arrows, Enter, Esc, focus returns to trigger. Breakpoints: 390/1280. Motion: open/close ≤250 ms opacity; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **TESTS:** Given options / When open / Then `role=menu` + `aria-expanded`. Given choose / When Enter / Then value label updates + focus returns. Playwright: the spec sets viewport 390 and 1280, asserts the full cycle, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · motion ≤250 ms (components.md).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
