@@ -278,11 +278,12 @@ t("batch loop: CI gate, readiness (drafts allowed), order, body, one review requ
   assert.equal(isConflict(new Error("GitHub API POST /merges -> 403 forbidden")), false);
   assert.ok(FINALIZE_CLEARS.includes("status:ready") && !FINALIZE_CLEARS.includes("status:done"));
   const head = { headSha: "abc", headDate: "2026-10-06T08:00:00Z" };
-  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [] }).need, true);
-  assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "Cursor Bugbot", status: "in_progress" }], comments: [] }).need, false);
-  assert.equal(reviewNeeded({ ...head, checkRuns: [{ name: "gate Bugbot (one review)", app: { slug: "github-actions" }, status: "in_progress" }], comments: [] }).need, true);
-  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T08:01:00Z" }] }).need, false);
-  assert.equal(reviewNeeded({ ...head, checkRuns: [], comments: [{ user: { login: "Division6066" }, body: "@cursor review", created_at: "2026-10-06T07:00:00Z" }] }).need, true);
+  assert.equal(reviewNeeded({ ...head, reviews: [], comments: [] }).need, true);
+  assert.equal(reviewNeeded({ ...head, reviews: [{ user: { login: "coderabbitai[bot]" }, commit_id: "abc" }], comments: [] }).need, false);
+  assert.equal(reviewNeeded({ ...head, reviews: [{ user: { login: "coderabbitai[bot]" }, commit_id: "older" }], comments: [] }).need, true);
+  assert.equal(reviewNeeded({ ...head, reviews: [{ user: { login: "some-human" }, commit_id: "abc" }], comments: [] }).need, true);
+  assert.equal(reviewNeeded({ ...head, reviews: [], comments: [{ user: { login: "Division6066" }, body: "@coderabbitai review", created_at: "2026-10-06T08:01:00Z" }] }).need, false);
+  assert.equal(reviewNeeded({ ...head, reviews: [], comments: [{ user: { login: "Division6066" }, body: "@coderabbitai review", created_at: "2026-10-06T07:00:00Z" }] }).need, true);
 });
 t("batch fix: finding goes to the ticket that owns the file", () => {
   const tickets = [{ number: 1, fm: { scope: ["apps/web/components/a/"] } }, { number: 2, fm: { scope: ["apps/web/components/b/"] } }];

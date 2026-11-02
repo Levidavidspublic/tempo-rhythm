@@ -1,4 +1,4 @@
-// batch-loop (2026-10-06, factory/LOOP.md). ONE Cursor Bugbot review per factory loop instead of one per PR.
+// batch-loop (2026-10-06, factory/LOOP.md). ONE CodeRabbit review per factory loop instead of one per PR.
 // A loop = ticket 0 (convex architecture, type: data, lands on integration first) + 8-14 component PRs.
 // Component PRs get CI only. When they are CI-green this script:
 //   build    creates batch/<loop-id> from integration (if missing); for each ready component PR: retargets
@@ -10,8 +10,8 @@
 //            integration, label batch:conflict + comment (rolls to the next loop).
 //   open     opens ONE PR batch/<loop-id> -> integration (body: "Closes #N" for every merged ticket, so the
 //            issues close when the batch lands; labels batch + factory).
-//   review   requests ONE Bugbot review on the batch PR ("@cursor review") unless Bugbot already ran / is
-//            running on the head commit or a request is already pending (waits --wait-auto seconds first).
+//   review   requests ONE CodeRabbit review on the batch PR ("@coderabbitai review") unless CodeRabbit already
+//            reviewed the head commit or a request is already pending (waits --wait-auto seconds first).
 //   status   prints CI + Bugbot gate for the batch PR; after 3 review-fix rounds with findings -> blocked:amit.
 //   enqueue  CI green (5 required checks) + Bugbot clean + not blocked -> GraphQL enqueuePullRequest.
 //   finalize after the batch PR merged: comment on every component PR "landed via #B", label
@@ -31,7 +31,7 @@
 import { quietHours } from "./quiet-hours.mjs";
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 import { frontMatter, labelNames, addLabels, removeLabel, comment, BASE } from "./factory-lib.mjs";
-import { fetchBugbot, isBugbotRun } from "./review-gate.mjs";
+import { fetchBugbot } from "./review-gate.mjs";
 import { appendFile } from "node:fs/promises";
 
 // Ticket labels a landed batch clears (status:done is added). status:ready stayed on f3-1's tickets.
@@ -43,7 +43,7 @@ export const batchBranch = (loop) => {
 };
 // POST /merges answers 409 for a merge conflict; other failures are not conflicts.
 export const isConflict = (e) => / -> 409 /.test(String(e?.message || ""));
-const REVIEW_REQ = /(^|\s)@?(cursor review|bugbot run)\b/i;
+const REVIEW_REQ = /(^|\s)@?coderabbitai review\b/i;
 
 // Latest check run per name on a commit -> { name: conclusion|status }.
 export function latestChecks(checkRuns) {
@@ -80,14 +80,14 @@ export function batchBody({ loop, merged, skipped }) {
     "Merge: GitHub merge queue (squash) when Bugbot is clean and the 5 required checks are green.",
   ].join("\n");
 }
-// Is a Bugbot review already done / running / requested for the head commit?
-export function reviewNeeded({ headSha, headDate, checkRuns, comments }) {
-  const runs = checkRuns.filter(isBugbotRun);
-  if (runs.length) return { need: false, why: `Bugbot check already ${runs.some((r) => r.status !== "completed") ? "running" : "done"} on ${String(headSha).slice(0, 7)}` };
+// Is a CodeRabbit review already done / requested for the head commit?
+export function reviewNeeded({ headSha, headDate, reviews, comments }) {
+  const done = reviews.filter((r) => r.user?.login === "coderabbitai[bot]" && r.commit_id === headSha);
+  if (done.length) return { need: false, why: `CodeRabbit already reviewed ${String(headSha).slice(0, 7)}` };
   const t = Date.parse(headDate || 0) || 0;
   const req = comments.filter((c) => REVIEW_REQ.test(c.body || "") && !/\[bot\]$/.test(c.user?.login || "") && (Date.parse(c.created_at) || 0) >= t);
   if (req.length) return { need: false, why: `review already requested at ${req[req.length - 1].created_at}` };
-  return { need: true, why: "no Bugbot run or request for the head commit" };
+  return { need: true, why: "no CodeRabbit review or request for the head commit" };
 }
 
 const args = process.argv.slice(2);
@@ -198,14 +198,14 @@ async function review(owner, repo, loop) {
   const waitAuto = Number(opt("--wait-auto", "0"));
   for (let waited = 0; ; waited += 15) {
     const head = await gh(`/repos/${owner}/${repo}/commits/${pr.head.sha}`);
-    const r = reviewNeeded({ headSha: pr.head.sha, headDate: head.commit.committer.date, checkRuns: await checksOf(owner, repo, pr.head.sha), comments: await ghAll(`/repos/${owner}/${repo}/issues/${pr.number}/comments`) });
+    const r = reviewNeeded({ headSha: pr.head.sha, headDate: head.commit.committer.date, reviews: await ghAll(`/repos/${owner}/${repo}/pulls/${pr.number}/reviews`), comments: await ghAll(`/repos/${owner}/${repo}/issues/${pr.number}/comments`) });
     if (!r.need) { say(`#${pr.number}: no request needed (${r.why})`); return; }
     if (waited >= waitAuto) break;
     await sleep(15000);
   }
   const labels = labelNames(pr);
   if (labels.includes("blocked:amit")) { say(`#${pr.number} is blocked:amit: no review request`); return; }
-  await act(`comment "@cursor review" on batch PR #${pr.number}`, () => comment(owner, repo, pr.number, "@cursor review"));
+  await act(`comment "@coderabbitai review" on batch PR #${pr.number}`, () => comment(owner, repo, pr.number, "@coderabbitai review"));
 }
 
 async function status(owner, repo, loop) {
