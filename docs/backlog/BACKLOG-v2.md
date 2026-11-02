@@ -326,7 +326,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** One helper module gives every UI spec the same viewports, URL builders, direction check, console-error tracker, target-size check, motion check and LCP/CLS measurement.
 - **SCOPE:** `tests/e2e/helpers/harness.ts` · test: `tests/e2e/helpers.spec.ts`.
 - **MUTATES:** `tests/e2e/helpers/harness.ts` (new) · `tests/e2e/helpers.spec.ts` (new).
-- **STEPS:** 1) Code-map check: `ls tests/e2e` (no `helpers/` folder today). 2) Create `tests/e2e/helpers/harness.ts` exporting exactly the SPEC API. 3) Implement `harnessUrl`/`screenUrl` as pure string builders (query keys in the order `state`, `lang`, `theme`; omit keys whose value is undefined). 4) Implement `openHarness` as `page.goto(harnessUrl(id, opts))` then wait for `page.locator(\`[data-testid^="${id}-"]\`).first()` to be visible; `openScreen` as `page.goto(screenUrl(route, opts))` then `page.waitForLoadState("domcontentloaded")`. 5) Implement `expectDir`, `trackConsoleErrors` (records `console` messages of type `error` and every `pageerror` message), `expectTargetSize`, `expectMotionBudget` (parses comma lists of `s`/`ms`; after the reduced-motion pass calls `page.emulateMedia({ reducedMotion: null })`) and `measureVitals` (two `page.goto(url)` calls, then reads `largest-contentful-paint` and `layout-shift` entries with `buffered: true` PerformanceObservers inside `page.evaluate`, resolving after 1,000 ms). 6) Create `tests/e2e/helpers.spec.ts` with the 7 TESTS cases; cases 3–7 use `page.setContent(…)` so they need no route. 7) Run DONE.
+- **STEPS:** 1) Code-map check: `ls tests/e2e` (no `helpers/` folder today). 2) Create `tests/e2e/helpers/harness.ts` exporting exactly the SPEC API. 3) Implement `harnessUrl`/`screenUrl` as pure string builders (query keys in the order `state`, `lang`, `theme`; omit keys whose value is undefined). 4) Implement `openHarness` as `page.goto(harnessUrl(id, opts))` then wait for `page.locator(\`[data-testid^="${id}-"]\`).first()` to be visible; `openScreen` as `page.goto(screenUrl(route, opts))` then `page.waitForLoadState("networkidle")` (CONVENTIONS §15). 5) Implement `expectDir`, `trackConsoleErrors` (records `console` messages of type `error` and every `pageerror` message), `expectTargetSize`, `expectMotionBudget` (parses comma lists of `s`/`ms`; after the reduced-motion pass calls `page.emulateMedia({ reducedMotion: null })`) and `measureVitals` (two `page.goto(url)` calls, then reads `largest-contentful-paint` and `layout-shift` entries with `buffered: true` PerformanceObservers inside `page.evaluate`, resolving after 1,000 ms). 6) Create `tests/e2e/helpers.spec.ts` with the 7 TESTS cases; cases 3–5 use `page.setContent(…)`, case 6 runs on the blank page Playwright opens, and case 7 serves its page with `page.route(…)`, so no case needs an app route. 7) Run DONE.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/helpers.spec.ts --reporter=line` → `7 passed`, no failures.
 - **EVIDENCE:** the Playwright summary pasted into the PR.
 - **DO NOT:** edit `playwright.config.ts` or any existing spec; add a dependency; call Convex; touch `convex/**`, `.github/**`, `.env*`.
@@ -352,9 +352,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `screenUrl("/modules", { state: "empty", lang: "en" })` / Then it equals `"/modules?state=empty&lang=en"`.
   - Given `page.setContent('<html dir="rtl" lang="he"><body></body></html>')` / When `expectDir(page, "he")` runs / Then it passes; and `expectDir(page, "en")` throws.
   - Given content with a `<button style="width:40px;height:40px">` / When `expectTargetSize(page, "body")` runs / Then it passes; given a `<button style="width:20px;height:20px;padding:0;border:0">` it throws with a message starting `"target smaller than 24x24"`.
-  - Given a `<div style="transition: opacity 120ms">` plus `<style>@media (prefers-reduced-motion: reduce) { div { transition-duration: 0.01ms; } }</style>` / When `expectMotionBudget(page, "body")` runs / Then it passes; given `transition: opacity 400ms` it throws with a message starting `"motion over 250ms"`.
+  - Given `page.setContent('<style>div { transition: opacity 120ms; } @media (prefers-reduced-motion: reduce) { div { transition-duration: 0.01ms; } }</style><div>a</div>')` (a stylesheet rule, not an inline `style`, so the reduced-motion rule can override it) / When `expectMotionBudget(page, "body")` runs / Then it passes; given `page.setContent('<style>div { transition: opacity 400ms; }</style><div>a</div>')` / Then it throws with a message starting `"motion over 250ms"`.
   - Given `trackConsoleErrors(page)` then `page.evaluate(() => console.error("boom"))` / Then the returned array equals `["boom"]`.
-  - Given `page.setContent("<h1>Hi</h1>")` served through `page.route("http://helpers.test/", …)` / When `measureVitals(page, "http://helpers.test/")` runs / Then `lcpMs` is a finite number ≥ 0 and `cls` is a number ≥ 0.
+  - Given `await page.route("http://helpers.test/", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<html><body><h1>Hi</h1></body></html>" }))` (no `setContent`; the page is served by the route) / When `measureVitals(page, "http://helpers.test/")` runs / Then `lcpMs` is a finite number ≥ 0 and `cls` is a finite number ≥ 0.
 - **NUMBERS:** 7 of 7 cases pass. The helper thresholds are the catalogue numbers: target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum); motion ≤ 250 ms (DESIGN.md motion rule; CONVENTIONS §5).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -475,7 +475,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When the table's `vectorIndexes` is read (cast per CONVENTIONS §18) / Then it contains `{ indexDescriptor: "by_userId_embedding", vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-14: which embedding model, and therefore the vector dimension (proposed 1024) — Amit.
+- **OPEN:** Q-14: Embedding model and vector dimension. — Amit.
 
 ### CFG-002 — Schema: `entities` table (life graph) — config lane: Amit
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -664,7 +664,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.tasks[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_goalId", fields: ["userId", "goalId"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** How does a task link to a goal: this `tasks.goalId` field, or another model? — Amit.
+- **OPEN:** new: How does a task link to a goal: this `tasks.goalId` field, or another model? — Amit.
 
 ### CFG-007 — Schema: `projects` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -705,7 +705,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_goalId", fields: ["userId", "goalId"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings? — Amit.
+- **OPEN:** new: Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings? — Amit.
 
 ### CFG-008 — Schema: `templates` module fields (`status`, `enabled`, `summary`) — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -735,7 +735,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["status", "enabled", "summary"]` is read from `schema.tables.templates.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table? — Amit.
+- **OPEN:** new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table? — Amit.
 
 ### CFG-009 — Schema: `templateRunDrafts` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -776,7 +776,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_templateId", fields: ["userId", "templateId"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`? — Amit.
+- **OPEN:** new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`? — Amit.
 
 ### CFG-010 — Schema: `templateSketches` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -814,7 +814,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.templateSketches[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere? — Amit.
+- **OPEN:** new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere? — Amit.
 
 ### CFG-011 — Schema: `userPreferences.plainMode` — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -842,7 +842,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["plainMode"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Is `plainMode` stored on `userPreferences` (this shape) or on `users`? — Amit.
+- **OPEN:** new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`? — Amit.
 
 ### CFG-012 — Schema: `jobs` table (scheduled jobs) — config lane: Amit
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -919,7 +919,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["renewsAt", "trialEndsAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract? — Amit.
+- **OPEN:** new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract? — Amit.
 
 ### CFG-014 — Schema: `subscriptionStates.conversionAcknowledgedAt` — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -947,7 +947,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["conversionAcknowledgedAt"]` is read from `schema.tables.subscriptionStates.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag? — Amit.
+- **OPEN:** new: Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag? — Amit.
 
 ### CFG-015 — Schema: `userPreferences.analyticsOptIn` — config lane: Amit
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1049,7 +1049,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_notifiedAt", fields: ["notifiedAt"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right? — Amit.
+- **OPEN:** new: Is the table named `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right? — Amit.
 
 ### CFG-018 — Schema: `studyCards` table — config lane: Amit
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1218,7 +1218,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.marketplaceListings[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_status_category", fields: ["status", "category"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** The category list (planning, coach, learning, habits, wellbeing, other) and the moderation workflow behind `status` — Amit.
+- **OPEN:** new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`? — Amit.
 
 ### CFG-022 — Schema: `plugins` table (installed plugins) — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** CFG-021 · **Folds-in:** none
@@ -1263,7 +1263,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_pluginId", fields: ["userId", "pluginId"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type? — Amit. Also inherits CFG-021 (category list and moderation) — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type? — Amit.
 
 ### CFG-023 — Schema: `marketplaceReviews` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** CFG-021 · **Folds-in:** none
@@ -1305,7 +1305,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_listingId_createdAt", fields: ["listingId", "createdAt"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-021 (category list and moderation) — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?) — Amit.
 
 ### CFG-024 — Schema: `deviceTokens` table (push) — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1346,7 +1346,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_token", fields: ["token"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Is the push token stored as plain text (this shape) or encrypted at rest? — Amit.
+- **OPEN:** new: Is the push token stored as plain text (this shape) or encrypted at rest? — Amit.
 
 ### CFG-025 — Schema: `userPreferences` notification toggles — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1377,7 +1377,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["notifyReminders", "notifyCalendar", "notifyCoach", "pushEnabled"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Are notification preferences typed columns on `userPreferences` (this shape) or one loose object? — Amit.
+- **OPEN:** new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object? — Amit.
 
 ### CFG-026 — Schema: `familyGroups` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1414,7 +1414,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.familyGroups[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_ownerId", fields: ["ownerId"] }`.
 - **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Member limit (proposed default 5), family price, and whether children get full or limited features — Amit.
+- **OPEN:** new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features? — Amit.
 
 ### CFG-027 — Schema: `familyMembers` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** CFG-026 · **Folds-in:** none
@@ -1458,7 +1458,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.familyMembers[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_inviteEmail", fields: ["inviteEmail"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-026 (member limit, price, children's features) — Amit.
+- **OPEN:** inherits CFG-026 (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?) — Amit.
 
 ### CFG-028 — Schema: `auditEvents` table (SOC 2) — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1494,7 +1494,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.auditEvents[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_createdAt", fields: ["userId", "createdAt"] }`.
 - **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** The exact event list, the retention window, and whether audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`) — Amit.
+- **OPEN:** new: Which exact events are audited, what is the retention window, and do audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`)? — Amit.
 
 ### CFG-029 — Schema: `routines` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1535,7 +1535,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.routines[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-07: are routines their own table (this shape) or `notes` pages (code today: `notes.listRoutines`)? — Amit.
+- **OPEN:** Q-07: Block model authority (`notes.body` single authority vs typed tables). For this table: are routines their own table (this shape) or `notes` pages (code today: `notes.listRoutines`)? — Amit.
 
 ### CFG-030 — Schema: `routineRuns` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** CFG-029 · **Folds-in:** none
@@ -1577,7 +1577,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_routineId", fields: ["userId", "routineId"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-029 (Q-07 routine storage) — Amit.
+- **OPEN:** inherits CFG-029 (Q-07: Block model authority (`notes.body` single authority vs typed tables).) — Amit.
 
 ### CFG-031 — Playwright mobile config (Expo web) + CI step — config lane: Amit
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1743,7 +1743,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When the same list is read / Then it contains `{ indexDescriptor: "by_userId_utcDateKey", fields: ["userId", "utcDateKey"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
-- **OPEN:** none. (Its only reader, TFV2-0199, is OPEN on the cap value; the table shape copies `coachWebSearches` and is not a product choice. If Amit prefers to hold it until TFV2-0199 is answered, build order is unaffected.)
+- **OPEN:** none.
 
 
 ### CFG-036 — Config: install `@convex-dev/crons` 0.2.3 and register the component — config lane: Amit
@@ -1879,7 +1879,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.subscriptionStates[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_trialEndsAt", fields: ["trialEndsAt"] }` and still `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-013 (add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); new: store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)? — Amit.
+- **OPEN:** inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); new: Store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)? — Amit.
 
 
 ### CFG-041 — Mobile: pin the Expo SDK major in `apps/mobile/package.json` + `bun.lock` — config lane: Amit — OPEN
@@ -2065,7 +2065,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.plugins.validator.fields.grantedPermissions` is read / Then its `kind` is `"array"` and its `element.kind` is `"string"`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-022 (new: a dedicated `plugins` table vs `notes` rows with a plugin page type; CFG-022 also inherits CFG-021: the listing category list and moderation workflow) — Amit.
+- **OPEN:** inherits CFG-022 (new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?) — Amit.
 
 
 ### CFG-047 — Schema: `calendarEvents.externalId` + `externalSource` + index `by_userId_externalId` — config lane: Amit
@@ -2264,7 +2264,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the file / Then it contains `needs: [typecheck, lint, test, scan, notices, e2e, build, desktop-rust]`.
 - **NUMBERS:** 3 of 3 cases pass; CI job time: UNKNOWN (first Tauri compile is typically several minutes; no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### CFG-050 — Config: new `apps/claude-runner` workspace + runner env names — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -2420,7 +2420,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.nags[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_nextPushAt", fields: ["nextPushAt"] }` and still `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-11: Nag delivery channel beyond in-app — is it push?; new: store a nag's daily push time as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day? — Amit.
+- **OPEN:** Q-11: Nag delivery channel beyond in-app; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day? — Amit.
 
 ### CFG-055 — Config: app links in `apps/mobile/app.json` (iOS associated domains, Android intent filters) — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -2567,6 +2567,45 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex? — Amit.
 
+
+### CFG-059 — CI: Lighthouse budget (`scripts/lighthouse-budget.ts` + one CI step) — config lane: Amit — OPEN
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** TFV2-0005 (old id; superseded), #1342 (TEMPO-BL-0004)
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (touches `.github/**`, `package.json`, `bun.lock` — CONVENTIONS §18). Factory lanes never build this.
+- **WHEN:** first.
+- **WHY:** PRD §4.8 F-80 (polished, fast); TICKET-STANDARD NUMBERS (Core Web Vitals); CONVENTIONS §20 (INP is "measured on preview, not a ticket gate"); REWRITE-PLAN-v2 §6 chunk 1 "smoke + a11y + perf budget". Moved here from TFV2-0005 because config-lane work has a CFG id (CONVENTIONS §19).
+- **GOAL:** CI runs Lighthouse against three named routes and fails when a category score, LCP, CLS or TBT is outside the SPEC budget, or when Lighthouse cannot run.
+- **SCOPE:** `scripts/lighthouse-budget.ts` · `.github/workflows/ci.yml` · `package.json` + `bun.lock` (one pinned dev dependency; `bun.lock` is generated by `bun install`) · test: `scripts/lighthouse-budget.test.ts`.
+- **MUTATES:** `scripts/lighthouse-budget.ts` (new) · `scripts/lighthouse-budget.test.ts` (new) · `.github/workflows/ci.yml` (edit: one step in the job Amit names) · `package.json` and `bun.lock` (edit: one dev dependency) · CI workflow behaviour.
+- **STEPS:**
+  1. Code-map: `grep -rn "lighthouse" .github package.json scripts` → no output today.
+  2. After Amit answers OPEN: add the dev dependency and exact version he names to the root `package.json` `devDependencies` and run `bun install` so `bun.lock` updates.
+  3. Create `scripts/lighthouse-budget.ts` exporting the pure `evaluate` function and the `BUDGET` and `ROUTES` constants in SPEC; when run directly (`if (import.meta.main)`), it runs Lighthouse once per route against `http://localhost:3000`, prints the lines `evaluate` returns, and exits 1 if any line starts with `FAIL`, else 0.
+  4. Create `scripts/lighthouse-budget.test.ts` with the TESTS cases (pure `evaluate` only; no browser).
+  5. Add one step to `.github/workflows/ci.yml` in the job Amit names in the OPEN answer: `run: bun scripts/lighthouse-budget.ts`, after that job starts the web server.
+  6. Run DONE.
+- **DONE:** `bun test scripts/lighthouse-budget.test.ts` → `5 pass`, `0 fail`; then `bun scripts/lighthouse-budget.ts` against the local dev server → 21 lines (7 per route), none starting `FAIL`, exit code 0; the same step green in CI.
+- **EVIDENCE:** the summary of `bun test scripts/lighthouse-budget.test.ts`, the output of `bun scripts/lighthouse-budget.ts`, and the CI step log with its exit code, pasted into the PR.
+- **DO NOT:** lower a threshold, skip a category or route, gate the step behind an env flag, or turn a run failure into a pass; touch secrets or any other workflow; edit `convex/**`.
+- **REPORT:** AGENTS.md format — `status / ticket: CFG-059 / evidence / changed: scripts/lighthouse-budget.ts, scripts/lighthouse-budget.test.ts, .github/workflows/ci.yml, package.json, bun.lock / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const ROUTES = ["/", "/sign-in", "/today"]; // the E2E bypass releases /today
+  export const BUDGET = { performance: 90, accessibility: 90, "best-practices": 90, seo: 90, lcpMs: 2500, cls: 0.1, tbtMs: 200 };
+  /** One route's measured values (category scores 0–100; null when Lighthouse could not produce the value). */
+  export type Measured = { performance: number | null; accessibility: number | null; "best-practices": number | null; seo: number | null; lcpMs: number | null; cls: number | null; tbtMs: number | null };
+  /** Returns 7 lines for the route, in BUDGET key order. */
+  export function evaluate(route: string, m: Measured): string[];
+  ```
+  Line format: `<PASS|FAIL> <route> <metric> <value> (budget <op> <limit>)` where `<op>` is `>=` for the four categories and `<=` for `lcpMs`, `cls`, `tbtMs`; a `null` value prints `FAIL <route> <metric> missing (budget <op> <limit>)`. A Lighthouse run that throws (for example when Google Fonts are unreachable) prints `FAIL <route> run <error message>` and the script exits 1 — a run that cannot happen never passes (CONVENTIONS §19).
+- **TESTS:**
+  1. Given `evaluate("/", { performance: 90, accessibility: 95, "best-practices": 100, seo: 90, lcpMs: 2500, cls: 0.1, tbtMs: 200 })` / Then it returns 7 lines, all starting `PASS`, the first equal to `"PASS / performance 90 (budget >= 90)"` (every value exactly at its limit passes).
+  2. Given the same with `performance: 89` / Then line 1 equals `"FAIL / performance 89 (budget >= 90)"` and the other 6 start `PASS`.
+  3. Given the same with `lcpMs: 2501` / Then line 5 equals `"FAIL / lcpMs 2501 (budget <= 2500)"`.
+  4. Given the same with `cls: 0.11` and `tbtMs: 201` / Then line 6 equals `"FAIL / cls 0.11 (budget <= 0.1)"` and line 7 equals `"FAIL / tbtMs 201 (budget <= 200)"`.
+  5. Given the same with `seo: null` / Then line 4 equals `"FAIL / seo missing (budget >= 90)"`.
+- **NUMBERS:** Lighthouse categories ≥ 90 (https://developer.chrome.com/docs/lighthouse/overview); LCP ≤ 2,500 ms, CLS ≤ 0.1 (https://web.dev/articles/vitals); TBT ≤ 200 ms (https://web.dev/articles/lighthouse-total-blocking-time). Each limit is tested at the limit (pass) and one step past it (fail).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** new: Does the Lighthouse step run on every PR against the local dev server (which CI job), or once per loop against the preview URL (the batch PR's `e2e-preview` job), and which dev dependency and exact version may be added for it (proposed: `@lhci/cli` at a pinned version), given CONVENTIONS §7 B? — Amit.
 
 ## Chunk 1 — MVP · Core (chat-first)
 
