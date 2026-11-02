@@ -51,6 +51,7 @@ The ticket count and the split map are listed below and updated after each range
 | TFV2-0232 … TFV2-0266b (range 6) | rewritten (merged) |
 | TFV2-0267 … TFV2-0313 (range 7) | rewritten (merged) |
 | TFV2-0314 … TFV2-0360 (range 8) | rewritten (merged) |
+| TFV2-0361 … TFV2-0408 (range 9) | rewritten (merged) |
 | TFV2-0001 … TFV2-0456 | being rewritten |
 <!-- rewrite-status:end -->
 
@@ -189,6 +190,26 @@ The ticket count and the split map are listed below and updated after each range
 - CFG-R8-1 (provisional) → CFG-041
 - CFG-R8-2 (provisional) → CFG-042
 - CFG-R8-20 (provisional) → CFG-043
+- TFV2-0361 → TFV2-0361a (`byokCrypto` helper; the table part is CFG-019), TFV2-0361b (`normalizeByokInput`)
+- TFV2-0362 → TFV2-0362c (`byok.checkKeySlot`), TFV2-0362d (`byok.insertKey`), TFV2-0362a (`byok.setKey`), TFV2-0362b (`byok.listKeys`), TFV2-0362e (`byok.deleteKey`), TFV2-0362f (`byok.keyForUse`), TFV2-0362g (`byok.recordCheck`), TFV2-0362h (`byok.checkKey`) — build order c, d, a, b, e, f, g, h
+- TFV2-0363 → TFV2-0363a (`callLLM` route), TFV2-0363b (`byok.activeKeyForUse`, OPEN), TFV2-0363c (`resolveByokRoute`, OPEN)
+- TFV2-0364 → TFV2-0364a (`ByokKeyVault` component), TFV2-0364b (screen `/settings/byok`)
+- TFV2-0367 → TFV2-0367a (`voice.start`), TFV2-0367b (`voice.renew`), TFV2-0367c (`voice.stop`)
+- TFV2-0390 → TFV2-0390a (`preferences.getVoicePrefs`), TFV2-0390b (`preferences.setVoicePrefs`), TFV2-0390c (`voice.ts` call language from `voiceLanguage`)
+- TFV2-0375 → TFV2-0375a, TFV2-0375b
+- TFV2-0376 → TFV2-0376a, TFV2-0376b
+- TFV2-0387 → superseded by TFV2-0206
+- TFV2-0388 → TFV2-0388a, TFV2-0388b, TFV2-0388c
+- TFV2-0400 → superseded by CFG-022
+- TFV2-0401 → TFV2-0401a, TFV2-0401b, TFV2-0401c
+- TFV2-0402 → TFV2-0402a, TFV2-0402b
+- TFV2-0404 → superseded by TFV2-0244
+- TFV2-0405 → TFV2-0405a, TFV2-0405b
+- TFV2-0406 → superseded by CFG-021
+- TFV2-0407 → TFV2-0407a, TFV2-0407b, TFV2-0407c
+- CFG-R9-1 (provisional) → CFG-044
+- CFG-R9-10 (provisional) → CFG-045
+- CFG-R9-20 (provisional) → CFG-046
 <!-- split-map:end -->
 
 ## Groundwork — test infrastructure and config lane (comes before Chunk 1)
@@ -394,13 +415,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Life graph (PRD memory spec); old TFV2-0150. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `entities` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg002_entities.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `entities`) · `convex/schema_cfg002_entities.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "entities" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg002_entities.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg002_entities.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg002_entities.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg002_entities.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `entities`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg002_entities.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "entities" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "entities",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `entities: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, kind: "person", name: "x", aliases: [], createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg002_entities.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg002_entities.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg002_entities.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-002 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg002_entities.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-002 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg002_entities.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -413,6 +434,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_kind", ["userId", "kind"]),
 ```
@@ -422,9 +444,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.entities.validator.fields).sort()` is read / Then it equals `["aliases", "createdAt", "deletedAt", "kind", "name", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.entities.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "kind", "name", "aliases", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_kind", fields: ["userId", "kind"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -434,13 +457,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** after CFG-002.
 - **WHY:** Life graph; old TFV2-0151. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `edges` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg003_edges.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `edges`) · `convex/schema_cfg003_edges.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "edges" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg003_edges.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg003_edges.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg003_edges.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg003_edges.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `edges`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg003_edges.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "edges" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "edges",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `edges: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, fromEntityId: NO_ID("entities") as Id<"entities">, toEntityId: NO_ID("entities") as Id<"entities">, relation: "x", origin: "extracted", confidence: 1, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg003_edges.test.ts` with the 7 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg003_edges.test.ts` (expect `7 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg003_edges.test.ts` → `7 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-003 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg003_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-003 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg003_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -456,6 +479,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_fromEntityId", ["userId", "fromEntityId"])
     .index("by_userId_toEntityId", ["userId", "toEntityId"]),
@@ -466,10 +490,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.edges.validator.fields).sort()` is read / Then it equals `["confidence", "createdAt", "deletedAt", "fromEntityId", "origin", "relation", "sourceMemoryId", "toEntityId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["sourceMemoryId", "deletedAt"]` is read from `schema.tables.edges.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "fromEntityId", "toEntityId", "relation", "origin", "confidence", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_fromEntityId", fields: ["userId", "fromEntityId"] }`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_toEntityId", fields: ["userId", "toEntityId"] }`.
-- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 7 of 7 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -479,13 +504,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Reflect consolidation; old TFV2-0152. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `observations` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg004_observations.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `observations`) · `convex/schema_cfg004_observations.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "observations" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg004_observations.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg004_observations.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg004_observations.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg004_observations.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `observations`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg004_observations.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "observations" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "observations",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `observations: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, text: "x", memoryIds: [], createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg004_observations.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg004_observations.test.ts` (expect `5 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg004_observations.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-004 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg004_observations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-004 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg004_observations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -497,6 +522,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
@@ -505,8 +531,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.observations.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "memoryIds", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.observations.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "text", "memoryIds", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.observations[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.observations[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
-- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -577,13 +604,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Projects screens (TFV2-0136…0141); today a project is only `tasks.projectId` (string). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `projects` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg007_projects.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `projects`) · `convex/schema_cfg007_projects.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "projects" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg007_projects.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg007_projects.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg007_projects.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg007_projects.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `projects`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg007_projects.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "projects" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "projects",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `projects: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, name: "x", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg007_projects.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg007_projects.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg007_projects.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-007 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg007_projects.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-007 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg007_projects.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -595,6 +622,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_goalId", ["userId", "goalId"]),
 ```
@@ -604,9 +632,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.projects.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "goalId", "name", "updatedAt", "userId"]`.
   - Given the schema / When each of `["goalId", "deletedAt"]` is read from `schema.tables.projects.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "name", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.projects[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_goalId", fields: ["userId", "goalId"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Do projects become their own table (this shape), or stay the `tasks.projectId` / `tasks.projectName` strings? — Amit.
 
@@ -646,13 +675,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Template run drafts (TFV2-0239a). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `templateRunDrafts` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg009_templateRunDrafts.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `templateRunDrafts`) · `convex/schema_cfg009_templateRunDrafts.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "templateRunDrafts" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg009_templateRunDrafts.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg009_templateRunDrafts.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg009_templateRunDrafts.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg009_templateRunDrafts.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `templateRunDrafts`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg009_templateRunDrafts.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "templateRunDrafts" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "templateRunDrafts",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `templateRunDrafts: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, templateId: "x", answers: {}, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg009_templateRunDrafts.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg009_templateRunDrafts.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg009_templateRunDrafts.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-009 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg009_templateRunDrafts.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-009 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg009_templateRunDrafts.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -664,6 +693,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_templateId", ["userId", "templateId"]),
 ```
@@ -673,9 +703,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.templateRunDrafts.validator.fields).sort()` is read / Then it equals `["answers", "createdAt", "deletedAt", "templateId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateRunDrafts.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "templateId", "answers", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.templateRunDrafts[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_templateId", fields: ["userId", "templateId"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`? — Amit.
 
@@ -685,13 +716,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Template sketch drafts (TFV2-0241a). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `templateSketches` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg010_templateSketches.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `templateSketches`) · `convex/schema_cfg010_templateSketches.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "templateSketches" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg010_templateSketches.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg010_templateSketches.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg010_templateSketches.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg010_templateSketches.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `templateSketches`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg010_templateSketches.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "templateSketches" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "templateSketches",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `templateSketches: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, text: "x", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg010_templateSketches.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg010_templateSketches.test.ts` (expect `5 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg010_templateSketches.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-010 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg010_templateSketches.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-010 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg010_templateSketches.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -702,6 +733,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
@@ -710,8 +742,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.templateSketches.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.templateSketches.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "text", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.templateSketches[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.templateSketches[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
-- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere? — Amit.
 
@@ -749,13 +782,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Scheduled jobs (TFV2-0250…0252). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `jobs` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg012_jobs.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `jobs`) · `convex/schema_cfg012_jobs.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "jobs" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg012_jobs.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg012_jobs.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg012_jobs.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg012_jobs.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `jobs`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg012_jobs.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "jobs" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "jobs",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `jobs: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, cron: "x", timeZone: "x", task: "x", targetPageType: "daily", enabled: true, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg012_jobs.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg012_jobs.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg012_jobs.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-012 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg012_jobs.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-012 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg012_jobs.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -774,6 +807,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_enabled", ["enabled"]),
 ```
@@ -783,9 +817,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.jobs.validator.fields).sort()` is read / Then it equals `["approvedAt", "createdAt", "cron", "deletedAt", "enabled", "lastRunAt", "lastRunNoteId", "lastRunResult", "targetPageType", "task", "timeZone", "updatedAt", "userId"]`.
   - Given the schema / When each of `["approvedAt", "lastRunAt", "lastRunResult", "lastRunNoteId", "deletedAt"]` is read from `schema.tables.jobs.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "cron", "timeZone", "task", "targetPageType", "enabled", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_enabled", fields: ["enabled"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -909,13 +944,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Ask the founder (TFV2-0268). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `askFounderQueue` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg017_askFounderQueue.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `askFounderQueue`) · `convex/schema_cfg017_askFounderQueue.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "askFounderQueue" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg017_askFounderQueue.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg017_askFounderQueue.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg017_askFounderQueue.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg017_askFounderQueue.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `askFounderQueue`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg017_askFounderQueue.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "askFounderQueue" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "askFounderQueue",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `askFounderQueue: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, email: "x", subject: "x", body: "x", priority: "low", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg017_askFounderQueue.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg017_askFounderQueue.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg017_askFounderQueue.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-017 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg017_askFounderQueue.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-017 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg017_askFounderQueue.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -931,6 +966,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_notifiedAt", ["notifiedAt"]),
 ```
@@ -940,9 +976,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.askFounderQueue.validator.fields).sort()` is read / Then it equals `["body", "createdAt", "deletedAt", "email", "name", "notifiedAt", "priority", "subject", "updatedAt", "userId"]`.
   - Given the schema / When each of `["name", "notifiedAt", "deletedAt"]` is read from `schema.tables.askFounderQueue.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "email", "subject", "body", "priority", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.askFounderQueue[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_notifiedAt", fields: ["notifiedAt"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right? — Amit.
 
@@ -952,13 +989,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Study track; old TFV2-0336. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `studyCards` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg018_studyCards.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `studyCards`) · `convex/schema_cfg018_studyCards.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "studyCards" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg018_studyCards.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg018_studyCards.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg018_studyCards.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg018_studyCards.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `studyCards`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg018_studyCards.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "studyCards" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "studyCards",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `studyCards: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, front: "x", back: "x", repetitions: 1, easeFactor: 1, intervalDays: 1, dueAtMs: 1, status: "new", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg018_studyCards.test.ts` with the 7 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg018_studyCards.test.ts` (expect `7 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg018_studyCards.test.ts` → `7 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-018 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg018_studyCards.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-018 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg018_studyCards.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -976,6 +1013,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_dueAtMs", ["userId", "dueAtMs"])
     .index("by_sourceNoteId", ["sourceNoteId"]),
@@ -986,10 +1024,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.studyCards.validator.fields).sort()` is read / Then it equals `["back", "createdAt", "deletedAt", "dueAtMs", "easeFactor", "front", "intervalDays", "repetitions", "sourceNoteId", "status", "updatedAt", "userId"]`.
   - Given the schema / When each of `["sourceNoteId", "deletedAt"]` is read from `schema.tables.studyCards.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "front", "back", "repetitions", "easeFactor", "intervalDays", "dueAtMs", "status", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_dueAtMs", fields: ["userId", "dueAtMs"] }`.
   - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_sourceNoteId", fields: ["sourceNoteId"] }`.
-- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 7 of 7 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -999,13 +1038,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** BYOK key vault (TFV2-0361). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `byokKeys` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg019_byokKeys.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `byokKeys`) · `convex/schema_cfg019_byokKeys.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "byokKeys" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg019_byokKeys.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg019_byokKeys.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg019_byokKeys.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg019_byokKeys.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `byokKeys`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg019_byokKeys.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "byokKeys" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "byokKeys",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `byokKeys: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, provider: "openai_compatible", label: "x", keyCipher: "x", endpointUrl: "x", keyVersion: 1, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg019_byokKeys.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg019_byokKeys.test.ts` (expect `5 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg019_byokKeys.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-019 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg019_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-019 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg019_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1022,6 +1061,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
@@ -1030,8 +1070,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.byokKeys.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "endpointUrl", "keyCipher", "keyVersion", "label", "lastCheckOk", "lastCheckedAt", "provider", "updatedAt", "userId"]`.
   - Given the schema / When each of `["lastCheckedAt", "lastCheckOk", "deletedAt"]` is read from `schema.tables.byokKeys.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "provider", "label", "keyCipher", "endpointUrl", "keyVersion", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.byokKeys[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.byokKeys[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
-- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
@@ -1117,13 +1158,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** after CFG-021.
 - **WHY:** Plugins (Gen 2); old TFV2-0400. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `plugins` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg022_plugins.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `plugins`) · `convex/schema_cfg022_plugins.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "plugins" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg022_plugins.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg022_plugins.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg022_plugins.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg022_plugins.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `plugins`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg022_plugins.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "plugins" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "plugins",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `plugins: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, pluginId: "x", manifest: {}, version: "x", source: "marketplace", enabled: true, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg022_plugins.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg022_plugins.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg022_plugins.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-022 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg022_plugins.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-022 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg022_plugins.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1139,6 +1180,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_pluginId", ["userId", "pluginId"]),
 ```
@@ -1148,9 +1190,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.plugins.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "enabled", "listingId", "manifest", "pluginId", "source", "updatedAt", "userId", "version"]`.
   - Given the schema / When each of `["listingId", "deletedAt"]` is read from `schema.tables.plugins.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "pluginId", "manifest", "version", "source", "enabled", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.plugins[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_pluginId", fields: ["userId", "pluginId"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type? — Amit. Also inherits CFG-021 (category list and moderation) — Amit.
 
@@ -1160,13 +1203,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** after CFG-021.
 - **WHY:** Marketplace reviews (TFV2-0412). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `marketplaceReviews` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg023_marketplaceReviews.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `marketplaceReviews`) · `convex/schema_cfg023_marketplaceReviews.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "marketplaceReviews" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg023_marketplaceReviews.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg023_marketplaceReviews.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg023_marketplaceReviews.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg023_marketplaceReviews.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `marketplaceReviews`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg023_marketplaceReviews.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "marketplaceReviews" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "marketplaceReviews",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `marketplaceReviews: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, listingId: NO_ID("marketplaceListings") as Id<"marketplaceListings">, stars: 1, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg023_marketplaceReviews.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg023_marketplaceReviews.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg023_marketplaceReviews.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-023 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg023_marketplaceReviews.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-023 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg023_marketplaceReviews.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1179,6 +1222,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_listingId_userId", ["listingId", "userId"])
     .index("by_listingId_createdAt", ["listingId", "createdAt"]),
 ```
@@ -1188,9 +1232,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.marketplaceReviews.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "listingId", "stars", "text", "updatedAt", "userId"]`.
   - Given the schema / When each of `["text", "deletedAt"]` is read from `schema.tables.marketplaceReviews.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "listingId", "stars", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_listingId_userId", fields: ["listingId", "userId"] }`.
   - Given the schema / When `schema.tables.marketplaceReviews[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_listingId_createdAt", fields: ["listingId", "createdAt"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** inherits CFG-021 (category list and moderation) — Amit.
 
@@ -1200,13 +1245,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Push tokens (TFV2-0426). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `deviceTokens` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg024_deviceTokens.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `deviceTokens`) · `convex/schema_cfg024_deviceTokens.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "deviceTokens" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg024_deviceTokens.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg024_deviceTokens.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg024_deviceTokens.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg024_deviceTokens.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `deviceTokens`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg024_deviceTokens.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "deviceTokens" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "deviceTokens",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `deviceTokens: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, token: "x", platform: "ios", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg024_deviceTokens.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg024_deviceTokens.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg024_deviceTokens.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-024 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg024_deviceTokens.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-024 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg024_deviceTokens.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1218,6 +1263,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_token", ["token"]),
 ```
@@ -1227,9 +1273,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.deviceTokens.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "platform", "token", "updatedAt", "userId"]`.
   - Given the schema / When each of `["deletedAt"]` is read from `schema.tables.deviceTokens.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "token", "platform", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.deviceTokens[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_token", fields: ["token"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Is the push token stored as plain text (this shape) or encrypted at rest? — Amit.
 
@@ -1307,13 +1354,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** after CFG-026.
 - **WHY:** Family plans (TFV2-0452). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `familyMembers` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg027_familyMembers.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `familyMembers`) · `convex/schema_cfg027_familyMembers.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "familyMembers" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg027_familyMembers.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg027_familyMembers.test.ts` (expect `6 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg027_familyMembers.test.ts` → `6 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg027_familyMembers.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `familyMembers`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg027_familyMembers.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "familyMembers" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "familyMembers",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `familyMembers: fixture("owned-table-soft-delete", (userId) => ({ groupId: NO_ID("familyGroups") as Id<"familyGroups">, userId: userId, inviteEmail: "x", role: "owner", status: "invited", createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg027_familyMembers.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg027_familyMembers.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg027_familyMembers.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-027 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg027_familyMembers.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-027 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg027_familyMembers.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1379,7 +1426,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.auditEvents[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_createdAt", fields: ["userId", "createdAt"] }`.
 - **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** The exact event list and the retention window — Amit.
+- **OPEN:** The exact event list, the retention window, and whether audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`) — Amit.
 
 ### CFG-029 — Schema: `routines` table — config lane: Amit — OPEN
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -1387,13 +1434,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Routines backend (TFV2-0076). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `routines` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg029_routines.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `routines`) · `convex/schema_cfg029_routines.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "routines" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg029_routines.test.ts` with the 4 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg029_routines.test.ts` (expect `4 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg029_routines.test.ts` → `4 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg029_routines.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `routines`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg029_routines.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "routines" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "routines",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `routines: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, title: "x", steps: [], createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg029_routines.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg029_routines.test.ts` (expect `5 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg029_routines.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-029 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg029_routines.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-029 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg029_routines.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1407,6 +1454,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 ```
 
@@ -1415,8 +1463,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.routines.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "steps", "title", "updatedAt", "userId", "windowEndHour", "windowStartHour"]`.
   - Given the schema / When each of `["windowStartHour", "windowEndHour", "deletedAt"]` is read from `schema.tables.routines.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "title", "steps", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.routines[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.routines[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
-- **NUMBERS:** schema test cases = 4 of 4 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** Q-07: are routines their own table (this shape) or `notes` pages (code today: `notes.listRoutines`)? — Amit.
 
@@ -1426,13 +1475,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** after CFG-029.
 - **WHY:** Routines backend (TFV2-0076). Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `routineRuns` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg030_routineRuns.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `routineRuns`) · `convex/schema_cfg030_routineRuns.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "routineRuns" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) Create `convex/schema_cfg030_routineRuns.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg030_routineRuns.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg030_routineRuns.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg030_routineRuns.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `routineRuns`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg030_routineRuns.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "routineRuns" convex/schema.ts` — confirm the table does not exist yet (if any already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC, placed after the last table in the `defineSchema({…})` object. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "routineRuns",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (account deletion soft-deletes the table; CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `routineRuns: fixture("owned-table-soft-delete", (userId) => ({ userId: userId, routineId: NO_ID("routines") as Id<"routines">, cursor: 1, createdAt: 1, updatedAt: 1 })),` (the file's schema-derived coverage tests then cover the table). 5) Create `convex/schema_cfg030_routineRuns.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg030_routineRuns.test.ts` (expect `6 pass`, `0 fail`), then `bun test convex/lib/accountDeletion.test.ts` (`0 fail`) and `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg030_routineRuns.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-030 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg030_routineRuns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-030 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg030_routineRuns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1445,6 +1494,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_routineId", ["userId", "routineId"]),
 ```
@@ -1454,9 +1504,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.routineRuns.validator.fields).sort()` is read / Then it equals `["completedAt", "createdAt", "cursor", "deletedAt", "routineId", "updatedAt", "userId"]`.
   - Given the schema / When each of `["completedAt", "deletedAt"]` is read from `schema.tables.routineRuns.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "routineId", "cursor", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
+  - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.routineRuns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_routineId", fields: ["userId", "routineId"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
 - **OPEN:** inherits CFG-029 (Q-07 routine storage) — Amit.
 
@@ -1527,13 +1578,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** Recall by time (TFV2-0176, TRD §5c) must be a bounded index range read (CONVENTIONS §16); `memories` (`convex/schema.ts` line 228) has indexes `by_userId`, `by_userId_salience`, `by_userId_deletedAt`, `by_userId_deletedAt_salience_updatedAt` and none ending in `createdAt`. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the index `by_userId_deletedAt_createdAt` on `memories` exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg033_memories.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: one index appended to `memories`; no field changes) · `convex/schema_cfg033_memories.test.ts` (new) · Convex schema of the deployment on next deploy (index backfill).
-- **STEPS:** 1) Code-map check: `grep -n "by_userId_deletedAt_createdAt" convex/schema.ts` — confirm it is absent on `memories` (if it already exists with this exact field list, add only the test and report it). 2) In `convex/schema.ts`, append the index line in SPEC after the last existing index of `memories` (`by_userId_deletedAt_salience_updatedAt`). 3) Create `convex/schema_cfg033_memories.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg033_memories.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg033_memories.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.test.ts` (edit: the exact `memories` index list) · test: `convex/schema_cfg033_memories.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: one index appended to `memories`; no field changes) · `convex/lib/accountDeletion.test.ts` (edit: one entry added to the expected array in the test "memories keeps its indexes and adds the bounded live-memory index") · `convex/schema_cfg033_memories.test.ts` (new) · Convex schema of the deployment on next deploy (index backfill).
+- **STEPS:** 1) Code-map check: `grep -n "by_userId_deletedAt_createdAt" convex/schema.ts` — confirm it is absent on `memories` (if it already exists with this exact field list, add only the test and report it). 2) In `convex/schema.ts`, append the index line in SPEC after the last existing index of `memories` (`by_userId_deletedAt_salience_updatedAt`). 3) In `convex/lib/accountDeletion.test.ts`, test "memories keeps its indexes and adds the bounded live-memory index": append `{ indexDescriptor: "by_userId_deletedAt_createdAt", fields: ["userId", "deletedAt", "createdAt"] },` as the last element of the `toEqual([...])` array, and change `indexesOf("memories").at(-1)` to `indexesOf("memories").at(-2)` so the salience assertions still read `by_userId_deletedAt_salience_updatedAt`; change nothing else in that file. 3b) Create `convex/schema_cfg033_memories.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg033_memories.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg033_memories.test.ts` → `2 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-033 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg033_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-033 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg033_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds one index to an existing table in `convex/schema.ts`; no field is added.
 
 ```ts
@@ -1590,13 +1641,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **WHEN:** first.
 - **WHY:** TRD §7.3 (quota before any model call); TFV2-0199 books one row per claimed coach turn and counts a UTC day's rows. No existing table holds coach turns (`messages` is indexed by conversation, not by user). The shape copies `coachWebSearches` (`convex/schema.ts` line ~843), the same per-user, per-UTC-day counter for web search, plus the `by_userId_deletedAt` index CONVENTIONS §18 requires. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18).
 - **GOAL:** `convex/schema.ts` has the `coachTurns` table exactly as in SPEC, proven by its own schema test.
-- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg035_coachTurns.test.ts`.
-- **MUTATES:** `convex/schema.ts` (edit: new table `coachTurns`) · `convex/schema_cfg035_coachTurns.test.ts` (new) · Convex schema of the deployment on next deploy.
-- **STEPS:** 1) Code-map check: `grep -n "coachTurns" convex/schema.ts` — confirm the table does not exist yet (if it already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC directly after `coachWebSearches`. 3) Create `convex/schema_cfg035_coachTurns.test.ts` with the 5 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg035_coachTurns.test.ts` (expect `5 pass`, `0 fail`), then `bun run typecheck` (exit 0).
-- **DONE:** `bun test convex/schema_cfg035_coachTurns.test.ts` → `5 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` (one fixture entry) · test: `convex/schema_cfg035_coachTurns.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: new table `coachTurns`) · `convex/lib/accountDeletion.ts` (edit: one `USER_OWNED_TABLES` line) · `convex/lib/accountDeletion.test.ts` (edit: one `OWNED_FIXTURES` entry) · `convex/schema_cfg035_coachTurns.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "coachTurns" convex/schema.ts` — confirm the table does not exist yet (if it already exists with this exact shape, add only the test and report it). 2) In `convex/schema.ts`, add the table exactly as in SPEC directly after `coachWebSearches`. 3) In `convex/lib/accountDeletion.ts`, add the one line `  "coachTurns",` as the last entry of `USER_OWNED_TABLES`, before `] as const;` (CONVENTIONS §18). 4) In `convex/lib/accountDeletion.test.ts`, add one entry to `OWNED_FIXTURES`, after the last entry: `coachTurns: fixture("owned-table-soft-delete", (userId) => ({ userId, utcDateKey: "2026-11-02", createdAt: 1, updatedAt: 1 })),`. 5) Create `convex/schema_cfg035_coachTurns.test.ts` with the 6 TESTS cases, using the public-API snippet in CONVENTIONS §18. 6) Run `bun test convex/schema_cfg035_coachTurns.test.ts` (expect `6 pass`, `0 fail`), `bun test convex/lib/accountDeletion.test.ts` (`0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg035_coachTurns.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; touch `coachWebSearches` or any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-035 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg035_coachTurns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-035 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg035_coachTurns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1609,6 +1660,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_utcDateKey", ["userId", "utcDateKey"]),
 ```
@@ -1618,9 +1670,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.coachTurns.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "updatedAt", "userId", "utcDateKey"]`.
   - Given the schema / When `deletedAt` is read from `schema.tables.coachTurns.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When each of `["userId", "utcDateKey", "createdAt", "updatedAt"]` is read / Then its `isOptional` is `"required"`.
-  - Given the schema / When `schema.tables.coachTurns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
+  - Given the schema / When `schema.tables.coachTurns[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }` (account deletion relies on it, `convex/lib/accountDeletion.test.ts`).
+  - Given the schema / When the same list is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When the same list is read / Then it contains `{ indexDescriptor: "by_userId_utcDateKey", fields: ["userId", "utcDateKey"] }`.
-- **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none. (Its only reader, TFV2-0199, is OPEN on the cap value; the table shape copies `coachWebSearches` and is not a product choice. If Amit prefers to hold it until TFV2-0199 is answered, build order is unaffected.)
 
@@ -1867,6 +1920,84 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **NUMBERS:** 2 of 2 cases pass (exact); runtime dependencies added: 0. No industry number applies to a package scaffold.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
+
+
+### CFG-044 — Schema: `byokKeys.keyHint` + `byokKeys.model` — config lane: Amit
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-019 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-019.
+- **WHY:** BYOK key vault (TFV2-0362a writes, TFV2-0362b/f and TFV2-0363b read). CFG-019's `byokKeys` table stores only the ciphertext, so the vault list cannot show which key is which without decrypting (TRD §7 rule 6: never returned to the client), and an OpenAI-compatible endpoint needs a model name for every chat call, which CFG-019 has no field for. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18). The lead may fold these two lines into CFG-019 before CFG-019 is built.
+- **GOAL:** `convex/schema.ts` `byokKeys` table has the optional fields `keyHint` and `model` exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg044_byokKeys.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: two optional fields on `byokKeys`) · `convex/schema_cfg044_byokKeys.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "byokKeys: defineTable" convex/schema.ts` prints the CFG-019 table; `grep -n "keyHint" convex/schema.ts` prints nothing (if both fields already exist with this exact shape, add only the test and report it). 2) In the `byokKeys` table, add the two SPEC lines directly after `keyCipher: v.string(),`. 3) Create `convex/schema_cfg044_byokKeys.test.ts` with the 2 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg044_byokKeys.test.ts` (expect `2 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg044_byokKeys.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** make either field required; store any part of the key beyond the hint (`byokKeyHint`: first 3 characters, "…", last 4); change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-044 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg044_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** Two lines added to the existing `byokKeys` table (CFG-019) in `convex/schema.ts`:
+
+```ts
+    keyHint: v.optional(v.string()),
+    model: v.optional(v.string()),
+```
+
+  Readers/writers: TFV2-0362a/TFV2-0362d (write both on every new key), TFV2-0362b (`listKeys` returns both, `""` when absent), TFV2-0362f and TFV2-0363b (read `model`). `keyHint` is `byokKeyHint(plaintext)` from TFV2-0361a (16+ character keys only, TFV2-0361b). No index. No data migration: the table is new and absent fields read as `""`.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.byokKeys.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "endpointUrl", "keyCipher", "keyHint", "keyVersion", "label", "lastCheckOk", "lastCheckedAt", "model", "provider", "updatedAt", "userId"]`.
+  - Given the schema / When each of `["keyHint", "model"]` is read from `schema.tables.byokKeys.validator.fields` / Then its `isOptional` is `"optional"` and its `kind` is `"string"`.
+- **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails. · 11 config lane: built by Amit or a convex-arch run only.
+- **OPEN:** none.
+
+### CFG-045 — Config: add a mobile microphone-streaming package to `apps/mobile` — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** first
+- **WHY:** PRD F-121/F-32 (live voice on the phone); TRD §5a step 2 (the device streams the microphone straight to Deepgram). Code truth: `apps/mobile/package.json` has no audio package, and Expo's own audio modules record to a file rather than stream chunks, so the mobile speech client (TFV2-0372) and the live mobile call (TFV2-0389) need a streaming package. A dependency change is config lane (CONVENTIONS §7 B, §18).
+- **GOAL:** The package Amit names is a pinned dependency of `apps/mobile`, proven by its own test.
+- **SCOPE:** `apps/mobile/package.json` · `bun.lock` · test: `tests/unit/mobile_config_cfg045_mic_stream.test.ts`.
+- **MUTATES:** `apps/mobile/package.json` (edit: one dependency, exact pin) · `bun.lock` (regenerated) · `tests/unit/mobile_config_cfg045_mic_stream.test.ts` (new). Native config (`app.json` microphone permission strings) only if the package's install guide requires it, listed here once named.
+- **STEPS:** 1) Code-map check: `grep -n "<package>" apps/mobile/package.json` → nothing. 2) Add `"<package>": "<exact version>"` to `apps/mobile` `dependencies` (exact pin, alphabetical); run `bun install`. 3) Create the test with the 2 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test tests/unit/mobile_config_cfg045_mic_stream.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** use a caret range; add a provider key or env value; add a second audio package; record audio to disk.
+- **REPORT:** `status / ticket: CFG-045 / evidence: <DONE output> / changed: apps/mobile/package.json, bun.lock, tests/unit/mobile_config_cfg045_mic_stream.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** `apps/mobile/package.json` `dependencies` gains `"<package>": "<exact version>"` (Amit's answer). Readers: TFV2-0372 (`startMicStream`), TFV2-0389. The package must emit microphone audio as chunks of about 100 ms in memory (PCM16 at 16 kHz or Opus), work on iOS and Android under Expo SDK 54 (`expo` `~54.0.9`, React Native `0.81.5`), and need no paid service.
+- **TESTS:**
+  - Given `apps/mobile/package.json` / Then `dependencies["<package>"]` equals `"<exact version>"` (no `^` or `~`).
+  - Given `bun.lock` / Then it contains an entry for `<package>@<exact version>`.
+- **NUMBERS:** 2 of 2 cases pass (exact). Chunk size about 100 ms (matches web `VOICE_CLIENT_LIMITS.chunkMs`).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage? — Amit.
+
+### CFG-046 — Schema: `plugins.grantedPermissions` — config lane: Amit — OPEN
+- **Stage:** config · **Pass:** 1 · **Depends:** CFG-022 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
+- **WHEN:** after CFG-022.
+- **WHY:** Plugin permissions (TFV2-0405a writes, TFV2-0405b reads); TRD §7 rule 8 (a plugin never exceeds what the person approved). CFG-022's `plugins` table has no field for the granted set, and storing grants inside `manifest` would change the validated manifest. Build tickets may not edit `convex/schema.ts` (CONVENTIONS §16, §18). Values are plain strings checked in code against `PLUGIN_PERMISSIONS` (`@tempo/utils`, TFV2-0397), so the schema does not wait on the permission-enum question. (The lead may fold this one field into CFG-022 before CFG-022 is built.)
+- **GOAL:** `convex/schema.ts` `plugins` table has the optional field `grantedPermissions` exactly as in SPEC, proven by its own schema test.
+- **SCOPE:** `convex/schema.ts` · test: `convex/schema_cfg046_plugins.test.ts`.
+- **MUTATES:** `convex/schema.ts` (edit: one optional field on `plugins`) · `convex/schema_cfg046_plugins.test.ts` (new) · Convex schema of the deployment on next deploy.
+- **STEPS:** 1) Code-map check: `grep -n "plugins: defineTable" convex/schema.ts` prints the CFG-022 table; `grep -n "grantedPermissions" convex/schema.ts` prints nothing (if the field already exists with this exact shape, add only the test and report it). 2) In the `plugins` table, add the SPEC line directly after `enabled: v.boolean(),`. 3) Create `convex/schema_cfg046_plugins.test.ts` with the 3 TESTS cases, using the public-API snippet in CONVENTIONS §18. 4) Run `bun test convex/schema_cfg046_plugins.test.ts` (expect `3 pass`, `0 fail`), then `bun run typecheck` (exit 0).
+- **DONE:** `bun test convex/schema_cfg046_plugins.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
+- **EVIDENCE:** the `bun test` summary lines and the typecheck exit code, pasted into the PR.
+- **DO NOT:** make the field required; use a `v.union` of permission literals (the enum is OPEN in TFV2-0397); change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
+- **REPORT:** `status / ticket: CFG-046 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg046_plugins.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **SPEC:** One line added to the existing `plugins` table (CFG-022) in `convex/schema.ts`:
+
+```ts
+    grantedPermissions: v.optional(v.array(v.string())),
+```
+
+  Readers/writers: TFV2-0405a (writes the whole set), TFV2-0405b (reads it). Absent means nothing granted. Every entry is one of `PLUGIN_PERMISSIONS` and also declared by the row's `manifest.permissions`, enforced by TFV2-0405a. No index (read only through `by_userId_pluginId`). No data migration: absent on existing rows.
+- **TESTS:**
+  - Given the schema / When `Object.keys(schema.tables.plugins.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "enabled", "grantedPermissions", "listingId", "manifest", "pluginId", "source", "updatedAt", "userId", "version"]`.
+  - Given the schema / When `schema.tables.plugins.validator.fields.grantedPermissions` is read / Then its `isOptional` is `"optional"`.
+  - Given the schema / When `schema.tables.plugins.validator.fields.grantedPermissions` is read / Then its `kind` is `"array"` and its `element.kind` is `"string"`.
+- **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-022 (new: a dedicated `plugins` table vs `notes` rows with a plugin page type; CFG-022 also inherits CFG-021: the listing category list and moderation workflow) — Amit.
 
 
 ## Chunk 1 — MVP · Core (chat-first)
@@ -27725,920 +27856,3674 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0361 — BYOK key vault: `byokKeys` table + per-user crypto
+### TFV2-0361a — BYOK: key encryption helper `convex/lib/byokCrypto.ts`
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-019 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-019.
+- **WHY:** PRD F-102 (key vault: BYOK with any OpenAI-compatible key, encrypted per user; Gen 1); TRD §7 rule 6 (BYOK keys encrypted per user, never returned to the client); CONVENTIONS §9 (pure helper). Old TFV2-0361 bundled the `byokKeys` table and the crypto; the table is CFG-019 (config lane), so this ticket keeps only the helper. Code truth: `convex/lib/connections/crypto.ts` already implements AES-256-GCM through Web Crypto with a fresh 12-byte IV per value, `TEMPO_CONNECTIONS_KEY` as the key, `v1.<iv>.<ciphertext>` format, `CONNECTIONS_KEY_VERSION = 1`, owner-bound additional data (`secretAad`) and the fixed-text `SecretCryptoError`. This helper reuses it unchanged; it adds no crypto of its own.
+- **GOAL:** `convex/lib/byokCrypto.ts` encrypts and decrypts one person's BYOK API key bound to that person, and makes the display hint, by reusing `convex/lib/connections/crypto.ts`.
+- **SCOPE:** `convex/lib/byokCrypto.ts` · test: `convex/lib/byokCrypto.test.ts`.
+- **MUTATES:** `convex/lib/byokCrypto.ts` (new) · `convex/lib/byokCrypto.test.ts` (new). No table, route or env change.
+- **STEPS:**
+  1. Code-map check: `ls convex/lib/byokCrypto.ts` (absent); read `convex/lib/connections/crypto.ts` and confirm the exports `CONNECTIONS_KEY_VERSION`, `SecretCryptoError`, `secretAad(owner, field)`, `encryptSecret(key, plaintext, aad)`, `decryptSecret(key, cipher, aad)`, `loadConnectionsKey(env)`.
+  2. Create `convex/lib/byokCrypto.ts` with exactly the SPEC code.
+  3. Create `convex/lib/byokCrypto.test.ts` (`bun:test`) with the 7 TESTS cases. Build the test key at runtime the way `convex/lib/connections/crypto.test.ts` does: `const KEY_B64 = btoa(String.fromCharCode(...Uint8Array.from({ length: 32 }, (_, i) => i)));` and `const key = await loadConnectionsKey({ TEMPO_CONNECTIONS_KEY: KEY_B64 })` (a synthetic test key, not a secret).
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/lib/byokCrypto.test.ts` → `7 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary and the typecheck exit code pasted into the PR.
+- **DO NOT:** edit `convex/lib/connections/crypto.ts`; write any new cipher code or use a crypto library (HARD_RULES §2); log or return a plaintext key; read `process.env` in this file (the caller passes the loaded `CryptoKey`); write a real key value anywhere (names only: `TEMPO_CONNECTIONS_KEY`); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0361a / evidence: <DONE output> / changed: convex/lib/byokCrypto.ts, convex/lib/byokCrypto.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Pure server helper, exact code:
+  ```ts
+  import { CONNECTIONS_KEY_VERSION, SecretCryptoError, decryptSecret, encryptSecret, secretAad } from "./connections/crypto";
+
+  /** The field every BYOK ciphertext is bound to (additional authenticated data). */
+  export const BYOK_KEY_FIELD = "byokKeys.keyCipher";
+
+  /** `tempo-connections|<userId>|byokKeys.keyCipher`: a ciphertext copied to another person's row does not decrypt. */
+  export function byokAad(userId: string): string {
+    return secretAad(userId, BYOK_KEY_FIELD);
+  }
+
+  /** Encrypts one person's API key. The plaintext never leaves this call. */
+  export async function encryptByokKey(cryptoKey: CryptoKey, userId: string, plaintext: string): Promise<{ keyCipher: string; keyVersion: number }> {
+    return { keyCipher: await encryptSecret(cryptoKey, plaintext, byokAad(userId)), keyVersion: CONNECTIONS_KEY_VERSION };
+  }
+
+  /** The plaintext of `encryptByokKey`'s ciphertext for the same person and key version; `SecretCryptoError` otherwise. */
+  export async function decryptByokKey(cryptoKey: CryptoKey, userId: string, keyCipher: string, keyVersion: number): Promise<string> {
+    if (keyVersion !== CONNECTIONS_KEY_VERSION) throw new SecretCryptoError("decrypt");
+    return decryptSecret(cryptoKey, keyCipher, byokAad(userId));
+  }
+
+  /** What the vault shows instead of the key: first 3 characters, "…", last 4. Callers pass keys of at least 16 characters (TFV2-0361b). */
+  export function byokKeyHint(plaintext: string): string {
+    return `${plaintext.slice(0, 3)}…${plaintext.slice(-4)}`;
+  }
+  ```
+  Errors: `SecretCryptoError` with message `"secret could not be decrypted"` for a wrong person, a tampered ciphertext or a key version other than `1`; `"secret could not be encrypted"` if Web Crypto fails. No user-facing copy.
+- **TESTS:** (`bun:test`, file `convex/lib/byokCrypto.test.ts`; `PLAIN = "sk-test-0123456789abcdef"`, a synthetic value)
+  1. Given `encryptByokKey(key, "users:1", PLAIN)` / When `decryptByokKey(key, "users:1", keyCipher, keyVersion)` runs / Then it returns `PLAIN` and `keyVersion` is `1`.
+  2. Given the result of case 1 / Then `keyCipher` starts with `"v1."` and does not contain `PLAIN`.
+  3. Given two `encryptByokKey(key, "users:1", PLAIN)` calls / Then the two `keyCipher` values differ and both decrypt to `PLAIN`.
+  4. Given a ciphertext made for `"users:1"` / When `decryptByokKey(key, "users:2", keyCipher, 1)` runs / Then it rejects with `"secret could not be decrypted"`.
+  5. Given a ciphertext whose last character is replaced (`A` becomes `B`, any other character becomes `A`) / When decrypted for `"users:1"` / Then it rejects with `"secret could not be decrypted"`.
+  6. Given a valid ciphertext / When `decryptByokKey(key, "users:1", keyCipher, 2)` runs / Then it rejects with `"secret could not be decrypted"`.
+  7. Given `byokKeyHint("sk-test-0123456789abcdef")` / Then `"sk-…cdef"`; and `byokAad("users:1")` equals `"tempo-connections|users:1|byokKeys.keyCipher"`.
+- **NUMBERS:** AES-256-GCM with a 96-bit IV, fresh per encryption (NIST SP 800-38D §5.2.1.1 and §8.2, https://csrc.nist.gov/pubs/sp/800/38/d/final; inherited from `encryptSecret`, `IV_BYTES = 12`) · 7 of 7 cases pass (exact) · latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0361b — BYOK: input validation `convex/lib/byokInput.ts`
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md` (needs `convex-arch` label).
-- **WHEN:** first (BYOK; reuse `convex/lib/connections/crypto.ts` AES-256-GCM).
-- **WHY:** PRD F-102 (BYOK, encrypted per user); TRD §7 rule 6 (BYOK keys encrypted per user, never returned to client).
-- **GOAL:** `convex/schema.ts` gains a `byokKeys` table storing only ciphertext (AES-256-GCM, key from `TEMPO_CONNECTIONS_KEY`), plus a crypto helper that encrypts/decrypts a user-supplied OpenAI-compatible key.
-- **SCOPE:** `convex/schema.ts` · `convex/lib/byokCrypto.ts` · test `convex/byok.test.ts`.
-- **MUTATES:** `convex/schema.ts` (new table).
-- **STEPS:** 1) Graphify code-map of `convex/schema.ts` and `lib/connections/crypto.ts`; 2) add `byokKeys`; 3) add `byokCrypto.ts` (encrypt/decrypt, reusing the GCM helper); 4) write the test.
-- **DONE:** `bun test convex/byok.test.ts` → all pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** test output + typecheck exit code.
-- **DO NOT:** do not store plaintext; do not return a key to the client; do not write a key value (names only: `TEMPO_CONNECTIONS_KEY`); do not touch `convex/auth*`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `byokKeys: defineTable({ userId, provider: v.literal("openai_compatible"), label, keyCipher, endpointUrl, keyVersion, lastCheckedAt?, lastCheckOk?, createdAt, updatedAt, deletedAt })` indexed `by_userId`. `byokCrypto.encrypt(plaintext) → { cipher, keyVersion }`, `decrypt(cipher, keyVersion) → plaintext`; GCM nonce unique per encryption. Errors: missing key env → throw (fail closed); bad cipher → throw.
-- **TESTS:** Given a plaintext / When encrypted then decrypted / Then it round-trips. Given two encryptions of the same text / When compared / Then nonces differ (ciphertexts differ). Given tampered ciphertext / When decrypted / Then throws. Given a stored row / When listed / Then no `keyCipher` is returned by the public path.
-- **NUMBERS:** AES-256-GCM (NIST SP 800-38D) · nonce ≥ 96 bits unique per message.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-102 (any OpenAI-compatible key); TRD §7 rule 6; CONVENTIONS §7 H (no contradictions; every error tested), §8 (`throw new Error("<exact message>")` in a new module). Code truth: Convex actions run on Convex's servers, so a BYOK endpoint must be reachable from the internet; a bearer key is sent only over TLS, so the endpoint must be `https://`. PRD F-102's "local endpoints" cannot be reached from the server; that gap is recorded as the open question on TFV2-0363b, not decided here.
+- **GOAL:** `BYOK_MAX_KEYS` is defined once and `normalizeByokInput` trims and checks the label, key, endpoint and model a person types, returns the stored form, and throws one exact message per bad field.
+- **SCOPE:** `convex/lib/byokInput.ts` · test: `convex/lib/byokInput.test.ts`.
+- **MUTATES:** `convex/lib/byokInput.ts` (new) · `convex/lib/byokInput.test.ts` (new).
+- **STEPS:**
+  1. Code-map check: `ls convex/lib/byokInput.ts` (absent).
+  2. Create `convex/lib/byokInput.ts` with exactly the SPEC code.
+  3. Create `convex/lib/byokInput.test.ts` (`bun:test`) with the 9 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/lib/byokInput.test.ts` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** accept `http://` endpoints; put the key in any error message; add a URL or validation library; import anything into this file (the web screen imports it, so it stays free of Convex server code); touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0361b / evidence: <DONE output> / changed: convex/lib/byokInput.ts, convex/lib/byokInput.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Pure helper, exact code:
+  ```ts
+  /** Most live BYOK keys one person keeps (shared by `convex/byok.ts` and the vault screen). */
+  export const BYOK_MAX_KEYS = 10;
+  export const BYOK_LABEL_MAX = 60;
+  export const BYOK_KEY_MIN = 16;
+  export const BYOK_KEY_MAX = 512;
+  export const BYOK_ENDPOINT_MAX = 300;
+  export const BYOK_MODEL_MAX = 200;
+
+  export type ByokInput = { label: string; key: string; endpointUrl: string; model: string };
+
+  const ENDPOINT_ERROR = "Endpoint must be an https:// address";
+
+  /** Trimmed, checked fields; the endpoint loses a trailing "/" and its host is lower-cased. Throws one exact message per bad field. */
+  export function normalizeByokInput(input: ByokInput): ByokInput {
+    const label = input.label.trim();
+    if (!label) throw new Error("Label is required");
+    if (label.length > BYOK_LABEL_MAX) throw new Error("Label is too long");
+
+    const key = input.key.trim();
+    if (key.length < BYOK_KEY_MIN) throw new Error("That key is too short");
+    if (key.length > BYOK_KEY_MAX) throw new Error("That key is too long");
+    if (/\s/.test(key)) throw new Error("That key has spaces in it");
+
+    const rawEndpoint = input.endpointUrl.trim();
+    if (rawEndpoint.length > BYOK_ENDPOINT_MAX) throw new Error(ENDPOINT_ERROR);
+    let url: URL;
+    try {
+      url = new URL(rawEndpoint);
+    } catch {
+      throw new Error(ENDPOINT_ERROR);
+    }
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) throw new Error(ENDPOINT_ERROR);
+    const endpointUrl = `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+
+    const model = input.model.trim();
+    if (!model) throw new Error("Model is required");
+    if (model.length > BYOK_MODEL_MAX) throw new Error("Model is too long");
+
+    return { label, key, endpointUrl, model };
+  }
+  ```
+  Checks run in the order label → key → endpoint → model; the first failing field throws. Errors (exact): `"Label is required"`, `"Label is too long"`, `"That key is too short"`, `"That key is too long"`, `"That key has spaces in it"`, `"Endpoint must be an https:// address"`, `"Model is required"`, `"Model is too long"`. Lengths are UTF-16 `.length` (short identifiers, not byte budgets). No user-facing copy (the screen maps messages, TFV2-0364b).
+- **TESTS:** (`bun:test`; `OK = { label: "Work", key: "sk-test-0123456789abcdef", endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini" }`)
+  1. Given `{ label: "  Work ", key: " sk-test-0123456789abcdef ", endpointUrl: "https://API.Example.com/v1/", model: " gpt-4o-mini " }` / When normalized / Then it equals `{ label: "Work", key: "sk-test-0123456789abcdef", endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini" }`.
+  2. Given `{ ...OK, endpointUrl: "https://api.example.com/" }` / Then `endpointUrl` is `"https://api.example.com"`.
+  3. Given `label: "   "` / Then it throws `"Label is required"`; given `label: "x".repeat(61)` / Then `"Label is too long"`; and `"x".repeat(60)` passes.
+  4. Given `key: "sk-short"` / Then `"That key is too short"`; given `"k".repeat(513)` / Then `"That key is too long"`.
+  5. Given `key: "sk-test 0123456789abcdef"` / Then `"That key has spaces in it"`.
+  6. Given each of `"http://api.example.com/v1"`, `"localhost:11434"`, `"not a url"`, `"https://user:pw@api.example.com"`, `"https://api.example.com/v1?x=1"`, `"https://api.example.com/v1#a"` / Then each throws `"Endpoint must be an https:// address"`.
+  7. Given an endpoint of 301 characters (`"https://a.example.com/" + "p".repeat(279)`) / Then `"Endpoint must be an https:// address"`.
+  8. Given `model: "  "` / Then `"Model is required"`; given `"m".repeat(201)` / Then `"Model is too long"`.
+  9. Given `{ ...OK, label: "", key: "short" }` / Then it throws `"Label is required"` (label is checked first), and no thrown message in cases 3–8 contains the key text.
+- **NUMBERS:** 9 of 9 cases pass (exact) · `BYOK_MAX_KEYS` = 10 (the cap `convex/byok.ts` enforces, TFV2-0362c) · endpoint scheme `https:` only (bearer credentials only over TLS: RFC 6750 §5.3, https://www.rfc-editor.org/rfc/rfc6750#section-5.3) · limits label 60, key 16–512, endpoint 300, model 200 characters (the constants above).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0362 — BYOK: set/list-masked/delete + endpoint health-check
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0361.
-- **WHY:** PRD F-102; TRD §7 rule 6.
-- **GOAL:** `convex/byok.ts` exposes `setKey`, `listKeys` (masked), `deleteKey`, and `checkKey` (a one-call health probe to the endpoint), never returning the plaintext.
-- **SCOPE:** `convex/byok.ts` · test `convex/byok.test.ts`.
-- **MUTATES:** `byokKeys` (via functions).
-- **STEPS:** 1) Graphify code-map; 2) implement the mutations/action; 3) return only masked labels (`sk-…` + last 4) in `listKeys`; 4) write the test.
-- **DONE:** `bun test convex/byok.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not return plaintext anywhere; do not log the endpoint probe body; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `setKey({ label, key, endpointUrl? }) → { id }` (requireApprovedUser; encrypt; one active key per user or allow many — allow many, ≤ 10; endpoint must be `https://`). `listKeys() → { id, label, masked, endpointUrl, lastCheckedAt?, lastCheckOk? }[]` (masked = first 3 + `…` + last 4). `deleteKey({ id })` soft-deletes. `checkKey({ id })` action: a minimal `GET /models` probe (or `POST /chat/completions` with 1 token) → set `lastCheckedAt`/`lastCheckOk`. Errors: > 10 keys → `ConvexError`; non-https endpoint → `ConvexError`; foreign id → `ConvexError`.
-- **TESTS:** Given a setKey / When listed / Then only the masked form appears. Given a setKey / When checkKey probes a stub / Then `lastCheckOk` reflects it. Given 11 keys / When setKey / Then error. Given a foreign id / When deleteKey / Then error and nothing changes.
-- **NUMBERS:** ≤ 10 keys per user (internal) · endpoint must be HTTPS (TRD §7 rule 6 / security).
+### TFV2-0362c — BYOK: `byok.checkKeySlot` (internal query: who is adding, and is there room)
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-019, CFG-044, TFV2-0000a, TFV2-0361b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-019, CFG-044, TFV2-0000a, TFV2-0361b.
+- **WHY:** PRD F-102; CONVENTIONS §16. An action cannot read the database or learn the caller's `users` id directly; `byok.setKey` (TFV2-0362a) needs the id to bind the ciphertext to its owner before it encrypts. Same pattern as `connections.reserveConnectAttempt` in `convex/connections.ts` (an internal function that runs as the caller, checks approval and returns `userId`). Old TFV2-0362 bundled four functions; split one function per ticket (§7 H). TFV2-0000a gives `makeSignedOutCtx`; TFV2-0361b defines the cap value `BYOK_MAX_KEYS`.
+- **GOAL:** `convex/byok.ts` exists with `MAX_BYOK_KEYS_PER_USER` and `checkKeySlot`, which returns the approved caller's id or refuses when they already keep the maximum number of keys.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (new) · `convex/byok.test.ts` (new). Reads `byokKeys`; writes nothing.
+- **STEPS:**
+  1. Code-map check: `ls convex/byok.ts convex/byok.test.ts` (both absent); `grep -n "byokKeys" -A16 convex/schema.ts` shows the table with `keyHint` and `model` (CFG-019, CFG-044); read `requireApprovedUser` in `convex/lib/approval.ts` (throws `PENDING_APPROVAL_MESSAGE` = `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`).
+  2. Create `convex/byok.ts` with the SPEC code.
+  3. Create `convex/byok.test.ts` (`bun:test`; `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`; `import * as byok from "./byok"`) with a `describe("byok.checkKeySlot", …)` block holding the 4 TESTS cases. Seed rows with `ctx.db.insert("byokKeys", { userId, provider: "openai_compatible", label: "k", keyCipher: "v1.iv.sealed", keyHint: "sk-…abcd", endpointUrl: "https://api.example.com/v1", model: "m", keyVersion: 1, createdAt: 1, updatedAt: 1 })`.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** make it a public `query`; return anything but `userId`; count soft-deleted keys; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362c / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  import { v } from "convex/values";
+  import type { Id } from "./_generated/dataModel";
+  import { internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
+  import { requireApprovedUser } from "./lib/approval";
+  import { BYOK_MAX_KEYS } from "./lib/byokInput";
+
+  /** Most live BYOK keys one person keeps (10). */
+  export const MAX_BYOK_KEYS_PER_USER = BYOK_MAX_KEYS;
+
+  /** The person's live keys, at most one more than the cap (enough to tell "full"). */
+  export async function liveKeys(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
+    return ctx.db
+      .query("byokKeys")
+      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
+      .take(MAX_BYOK_KEYS_PER_USER + 1);
+  }
+
+  export function keyCapMessage(): string {
+    return `You can keep up to ${MAX_BYOK_KEYS_PER_USER} keys`;
+  }
+
+  export const checkKeySlot = internalQuery({
+    args: {},
+    returns: v.object({ userId: v.id("users") }),
+    handler: async (ctx: QueryCtx): Promise<{ userId: Id<"users"> }> => {
+      const user = await requireApprovedUser(ctx);
+      if ((await liveKeys(ctx, user._id)).length >= MAX_BYOK_KEYS_PER_USER) throw new Error(keyCapMessage());
+      return { userId: user._id };
+    },
+  });
+  ```
+  Kind: `internalQuery`, called only by `byok.setKey` with the caller's identity. Auth: approved account (`requireApprovedUser`). Errors (exact): `"Not authenticated"` (signed out), `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (pending or revoked), `"You can keep up to 10 keys"` (10 live keys already). Limit: `MAX_BYOK_KEYS_PER_USER = 10`; the read is bounded by `.take(11)`.
+- **TESTS:** (`describe("byok.checkKeySlot")`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.checkKeySlot, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given user `users:1` patched to `approvalStatus: "pending"` / When run / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given `users:1` with 9 live keys, 3 soft-deleted keys (`deletedAt: 5`) and 10 keys of `users:2` / When run as `users:1` / Then it returns `{ userId: "users:1" }`.
+  4. Given `users:1` with 10 live keys / When run / Then it rejects with `"You can keep up to 10 keys"`.
+- **NUMBERS:** at most 10 live keys per person (`MAX_BYOK_KEYS_PER_USER`, bounded read `.take(11)`; case 4 seeds exactly 10) · 4 of 4 cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0363 — BYOK: runtime model routing via `ai_router` seam
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0362.
-- **WHY:** PRD F-102; TRD §3/§7 (seam is the source of truth; BYOK overrides default); `convex/lib/ai_router.ts`.
-- **GOAL:** `ai_router.ts` gains a route that, when the caller has an active BYOK key, sends their model calls to their own OpenAI-compatible endpoint/key, else the default DeepInfra seam; the key never leaves the server.
-- **SCOPE:** `convex/lib/ai_router.ts` · test `convex/lib/ai_router.test.ts`.
-- **MUTATES:** none (routing only; reads `byokKeys`).
-- **STEPS:** 1) Graphify code-map of `ai_router.ts`; 2) add `resolveRuntimeRoute(userId)` returning either `{ kind: "byok", endpoint, key }` (decrypted in-process, never returned) or the default; 3) keep the existing callers' signatures; 4) write the test.
-- **DONE:** `bun test convex/lib/ai_router.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not log or return the key; do not change the default model id; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `resolveRuntimeRoute(userId): Promise<Route>` where `Route = { kind: "default" } | { kind: "byok"; endpoint: string }`. The key is decrypted and used only inside the `fetch`; the caller never sees it. Errors: BYOK endpoint unhealthy (`lastCheckOk === false`) → fall back to default (or throw with a clear error if `strict` is set); no active key → default.
-- **TESTS:** Given a user with a healthy BYOK key / When a call routes / Then it hits the BYOK endpoint. Given no BYOK key / When a call routes / Then it uses the default. Given an unhealthy BYOK key / When routed / Then it falls back to default. Given any route / When serialized / Then no key material appears in logs/returns.
-- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+### TFV2-0362d — BYOK: `byok.insertKey` (internal mutation: store one encrypted key)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362c.
+- **WHY:** PRD F-102; TRD §7 rule 6 (only ciphertext stored); CONVENTIONS §16. The action `byok.setKey` (TFV2-0362a) encrypts; this mutation stores the result and re-checks the cap inside the transaction, so two concurrent saves cannot pass 10 keys.
+- **GOAL:** `byok.insertKey` stores one already-encrypted key row for the approved caller and returns its id, refusing past the cap.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `insertKey`; import `internalMutation`) · `convex/byok.test.ts` (edit: append one `describe` block) · `byokKeys` rows (insert).
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (from TFV2-0362c: `MAX_BYOK_KEYS_PER_USER`, `liveKeys`, `keyCapMessage`, `checkKeySlot`); run `bun test convex/byok.test.ts` (4 pass).
+  2. Add `insertKey` exactly as SPEC.
+  3. Append `describe("byok.insertKey", …)` with the 4 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `8 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** accept or store a plaintext key (the args carry only `keyCipher` and `keyHint`); make it a public `mutation`; change `checkKeySlot`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362d / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const insertKey = internalMutation({
+    args: { label: v.string(), keyCipher: v.string(), keyHint: v.string(), endpointUrl: v.string(), model: v.string(), keyVersion: v.number() },
+    returns: v.id("byokKeys"),
+    handler: async (
+      ctx: MutationCtx,
+      args: { label: string; keyCipher: string; keyHint: string; endpointUrl: string; model: string; keyVersion: number },
+    ): Promise<Id<"byokKeys">> => {
+      const user = await requireApprovedUser(ctx);
+      if ((await liveKeys(ctx, user._id)).length >= MAX_BYOK_KEYS_PER_USER) throw new Error(keyCapMessage());
+      const now = Date.now();
+      return ctx.db.insert("byokKeys", { userId: user._id, provider: "openai_compatible", ...args, createdAt: now, updatedAt: now });
+    },
+  });
+  ```
+  Kind: `internalMutation` (only `byok.setKey` calls it; the args were validated and encrypted there). Auth: `requireApprovedUser`. Errors (exact): `"Not authenticated"`, `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`, `"You can keep up to 10 keys"`. Writes one `byokKeys` row with `provider: "openai_compatible"`.
+- **TESTS:** (`describe("byok.insertKey")`; `ARGS = { label: "Work", keyCipher: "v1.iv.sealed", keyHint: "sk-…cdef", endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini", keyVersion: 1 }`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.insertKey, ctx, ARGS)` / Then it rejects with `"Not authenticated"` and the `byokKeys` table is empty.
+  2. Given `users:1` with `approvalStatus: "pending"` / When run / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given an approved `users:1` / When run / Then the returned id's row matches `{ userId: "users:1", provider: "openai_compatible", ...ARGS }` with numeric `createdAt` equal to `updatedAt` and no `deletedAt`.
+  4. Given `users:1` with 10 live keys / When run / Then it rejects with `"You can keep up to 10 keys"` and the row count stays 10.
+- **NUMBERS:** cap 10 live keys re-checked in the write (`MAX_BYOK_KEYS_PER_USER`) · 8 of 8 file cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0364 — BYOK: key vault screen (settings)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0362.
-- **WHY:** PRD F-102; DESIGN.md §8/§10; components.md §2.9.
-- **GOAL:** `apps/web/app/(tempo)/settings/byok/page.tsx` lists masked keys and lets the user add (label + endpoint + key, key never echoed back), test-connect, and delete, with all states.
-- **SCOPE:** `apps/web/app/(tempo)/settings/byok/page.tsx` · test `tests/e2e/byok.spec.ts`.
-- **MUTATES:** `apps/web` UI only (calls `convex/byok.ts`).
-- **STEPS:** 1) Graphify code-map; 2) build the list + add/test/delete forms; 3) wire loading/empty/error/offline states; 4) implement the Playwright click-through.
-- **DONE:** `bunx playwright test tests/e2e/byok.spec.ts` → all pass.
-- **EVIDENCE:** Playwright output.
-- **DO NOT:** do not echo the key back; do not store the key client-side; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Copy: `EN: Bring your own key / HE: הבא מפתח משלך`; `EN: Add key / HE: הוסף מפתח`; `EN: Label / HE: תווית`; `EN: Endpoint / HE: נקודת קצה`; `EN: API key / HE: מפתח API`; `EN: Test connection / HE: בדיקת חיבור`; `EN: Connected / HE: מחובר`; `EN: Couldn't reach that endpoint / HE: לא הצלחנו להגיע לנקודת הקצה`; `EN: Delete / HE: מחק`. States: default, loading, empty (no keys), error, offline, testing, tested-ok, tested-fail. Key input `type=password autocomplete=off dir=ltr`, never pre-filled. RTL: labels inline-start; endpoint/key LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
-- **TESTS:** Given no keys / When loaded / Then empty state shows. Given a masked key / When listed / Then only the masked form shows. Given an invalid endpoint / When Test connection runs / Then the fail copy shows. Given Delete / When confirmed / Then the key leaves the list. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+### TFV2-0362a — BYOK: `byok.setKey` (action: validate, encrypt, store)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0361b, TFV2-0362c, TFV2-0362d · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0361a, TFV2-0361b, TFV2-0362c, TFV2-0362d.
+- **WHY:** PRD F-102; TRD §7 rule 6 (encrypted per user, never returned). Encryption runs in an action because `loadConnectionsKey` (`convex/lib/connections/crypto.ts`) reads `TEMPO_CONNECTIONS_KEY` and its comment says "Actions only"; `convex/connections.ts` follows the same order (`requireApprovedForAi` → load key → internal function returning `userId` → encrypt → internal mutation).
+- **GOAL:** A signed-in, approved person can save an OpenAI-compatible key; only its ciphertext and a hint are stored, and the call returns only the new row id.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `setKey`; imports `action`, `type ActionCtx`, `internal`, `requireApprovedForAi`, `loadConnectionsKey`, `encryptByokKey`, `byokKeyHint`, `normalizeByokInput`, `type ByokInput`) · `convex/byok.test.ts` (edit: add the `HANDLERS` map, `actionCtx` helper and env setup in STEP 3, append one `describe` block) · `byokKeys` rows (insert through `insertKey`). Reads env `TEMPO_CONNECTIONS_KEY` (name only).
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (`checkKeySlot`, `insertKey`), `convex/lib/aiGate.ts` (`requireApprovedForAi` runs `internal.approval.assertApprovedForAi`), and the `actionAs` helper in `convex/voice.test.ts` (lines 72–87) that this ticket's helper mirrors; run `bun test convex/byok.test.ts` (8 pass).
+  2. Add `setKey` exactly as SPEC.
+  3. In `convex/byok.test.ts` add `import { getFunctionName } from "convex/server"; import * as approval from "./approval";` and `beforeEach`/`afterEach` to the `bun:test` import, then after the imports:
+     ```ts
+     const HANDLERS: Record<string, unknown> = {
+       "approval:assertApprovedForAi": approval.assertApprovedForAi,
+       "byok:checkKeySlot": byok.checkKeySlot,
+       "byok:insertKey": byok.insertKey,
+     };
+     // biome-ignore lint/suspicious/noExplicitAny: the fake ctx is untyped.
+     function actionCtx(ctx: any) {
+       const dispatch = (ref: unknown, args: unknown) => {
+         const handler = HANDLERS[getFunctionName(ref as never)];
+         if (!handler) throw new Error(`unexpected call ${getFunctionName(ref as never)}`);
+         return run(handler, ctx, args);
+       };
+       return { auth: ctx.auth, runQuery: dispatch, runMutation: dispatch };
+     }
+     /** Synthetic vault key: bytes 0…31. Not a secret. */
+     const TEST_KEY_B64 = btoa(String.fromCharCode(...Uint8Array.from({ length: 32 }, (_, i) => i)));
+     let savedVaultKey: string | undefined;
+     beforeEach(() => {
+       savedVaultKey = process.env.TEMPO_CONNECTIONS_KEY;
+       process.env.TEMPO_CONNECTIONS_KEY = TEST_KEY_B64;
+     });
+     afterEach(() => {
+       if (savedVaultKey === undefined) delete process.env.TEMPO_CONNECTIONS_KEY;
+       else process.env.TEMPO_CONNECTIONS_KEY = savedVaultKey;
+     });
+     ```
+     Then append `describe("byok.setKey", …)` with the 6 TESTS cases.
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/byok.test.ts` → `14 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary and typecheck exit code pasted into the PR.
+- **DO NOT:** return, log or store the plaintext key anywhere (`setKey` calls no `console.*`); call the endpoint here (TFV2-0362h checks it); read `TEMPO_CONNECTIONS_KEY` outside `loadConnectionsKey`; write a real key value in the test; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362a / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const setKey = action({
+    args: { label: v.string(), key: v.string(), endpointUrl: v.string(), model: v.string() },
+    returns: v.object({ keyId: v.id("byokKeys") }),
+    handler: async (ctx: ActionCtx, args: ByokInput): Promise<{ keyId: Id<"byokKeys"> }> => {
+      await requireApprovedForAi(ctx);
+      const input = normalizeByokInput(args);
+      const cryptoKey = await loadConnectionsKey();
+      if (!cryptoKey) throw new Error("Key vault is not set up");
+      const { userId } = await ctx.runQuery(internal.byok.checkKeySlot, {});
+      const { keyCipher, keyVersion } = await encryptByokKey(cryptoKey, userId, input.key);
+      const keyId = await ctx.runMutation(internal.byok.insertKey, {
+        label: input.label, keyCipher, keyHint: byokKeyHint(input.key), endpointUrl: input.endpointUrl, model: input.model, keyVersion,
+      });
+      return { keyId };
+    },
+  });
+  ```
+  Kind: `action` (public). Auth: approved account (`requireApprovedForAi`, then `requireApprovedUser` inside both internal calls). Order of checks: auth → input (TFV2-0361b) → vault key → cap. Errors (exact): `"Not authenticated"`; `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`; the `normalizeByokInput` messages (`"Label is required"`, `"Label is too long"`, `"That key is too short"`, `"That key is too long"`, `"That key has spaces in it"`, `"Endpoint must be an https:// address"`, `"Model is required"`, `"Model is too long"`; each is tested in TFV2-0361b, case 5 here proves they pass through); `"Key vault is not set up"` (missing or malformed `TEMPO_CONNECTIONS_KEY`; fail closed, nothing stored); `"You can keep up to 10 keys"`. Returns only `{ keyId }`.
+- **TESTS:** (`describe("byok.setKey")`; `INPUT = { label: "Work", key: "sk-test-0123456789abcdef", endpointUrl: "https://API.example.com/v1/", model: "gpt-4o-mini" }`)
+  1. Given `actionCtx(makeSignedOutCtx())` / When `run(byok.setKey, ctx, INPUT)` / Then it rejects with `"Not authenticated"` and no `byokKeys` row exists.
+  2. Given `users:1` with `approvalStatus: "pending"` / When run through `actionCtx(makeFakeCtx("users:1"))` / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given an approved `users:1` / When run / Then the result's only key is `keyId`, `JSON.stringify(result)` does not contain `"0123456789abcdef"`, and the stored row has `label: "Work"`, `keyHint: "sk-…cdef"`, `endpointUrl: "https://api.example.com/v1"`, `model: "gpt-4o-mini"`, `keyVersion: 1`, `provider: "openai_compatible"` and a `keyCipher` that starts with `"v1."` and does not contain `"0123456789abcdef"`.
+  4. Given the row from case 3 / When `decryptByokKey(await loadConnectionsKey({ TEMPO_CONNECTIONS_KEY: TEST_KEY_B64 }), "users:1", row.keyCipher, 1)` runs / Then it returns `"sk-test-0123456789abcdef"`.
+  5. Given `{ ...INPUT, endpointUrl: "http://api.example.com/v1" }` / When run / Then it rejects with `"Endpoint must be an https:// address"` and no row exists.
+  6. Given `delete process.env.TEMPO_CONNECTIONS_KEY` / When run / Then it rejects with `"Key vault is not set up"` and no row exists; and given the env restored and 10 live keys for `users:1` / When run / Then it rejects with `"You can keep up to 10 keys"` and the count stays 10.
+- **NUMBERS:** plaintext appears in 0 stored fields and 0 return values (TRD §7 rule 6; cases 3–4) · cap 10 keys · 14 of 14 file cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0365 — Voice: `voicePolicy` minutes cap + tier limits verify
+### TFV2-0362b — BYOK: `byok.listKeys` (query: the vault list, never the key)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362c.
+- **WHY:** PRD F-102; TRD §7 rule 6 (never returned to the client); CONVENTIONS §16 (bounded list read; returns validator). The key vault screen (TFV2-0364b) reads it.
+- **GOAL:** `byok.listKeys` returns the caller's live keys, newest first, with label, hint, endpoint, model and last check, and never the ciphertext.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `byokKeyView`, `ByokKeyView` and `listKeys`; import `query`, `requireUser`) · `convex/byok.test.ts` (edit: append one `describe` block). Reads `byokKeys`; writes nothing.
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (`liveKeys`); run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `byokKeyView`, `ByokKeyView` and `listKeys` exactly as SPEC.
+  3. Append `describe("byok.listKeys", …)` with the 3 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 3 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** return `keyCipher`, `keyVersion` or `userId`; decrypt anything; list soft-deleted keys; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362b / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const byokKeyView = v.object({
+    keyId: v.id("byokKeys"),
+    label: v.string(),
+    keyHint: v.string(),
+    endpointUrl: v.string(),
+    model: v.string(),
+    lastCheckedAt: v.optional(v.number()),
+    lastCheckOk: v.optional(v.boolean()),
+    createdAt: v.number(),
+  });
+  export type ByokKeyView = typeof byokKeyView.type;
+
+  export const listKeys = query({
+    args: {},
+    returns: v.array(byokKeyView),
+    handler: async (ctx: QueryCtx): Promise<ByokKeyView[]> => {
+      const user = await requireUser(ctx);
+      const rows = (await liveKeys(ctx, user._id)).slice(0, MAX_BYOK_KEYS_PER_USER);
+      return rows
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .map((r) => ({
+          keyId: r._id,
+          label: r.label,
+          keyHint: r.keyHint ?? "",
+          endpointUrl: r.endpointUrl,
+          model: r.model ?? "",
+          ...(r.lastCheckedAt !== undefined ? { lastCheckedAt: r.lastCheckedAt } : {}),
+          ...(r.lastCheckOk !== undefined ? { lastCheckOk: r.lastCheckOk } : {}),
+          createdAt: r.createdAt,
+        }));
+    },
+  });
+  ```
+  Kind: `query` (public). Auth: signed in (`requireUser`); listing spends nothing, so approval is not required. Errors (exact): `"Not authenticated"`. Limit: at most `MAX_BYOK_KEYS_PER_USER` (10) items. `keyHint` and `model` are optional in the schema (CFG-044) and read as `""` when missing.
+- **TESTS:** (`describe("byok.listKeys")`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.listKeys, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given `users:1` keys A (`createdAt: 10`, `lastCheckOk: true`, `lastCheckedAt: 20`) and B (`createdAt: 30`), a soft-deleted key C of `users:1`, and a key D of `users:2` / When run as `users:1` / Then it returns 2 items, B first then A; A has `lastCheckOk: true` and `lastCheckedAt: 20`; B has no `lastCheckOk` key; for every item `Object.keys(item)` contains none of `"keyCipher"`, `"keyVersion"`, `"userId"`.
+  3. Given 11 live keys for `users:1` seeded directly (`createdAt` 1…11) / When run / Then it returns 10 items.
+- **NUMBERS:** list bounded at 10 (`MAX_BYOK_KEYS_PER_USER`; case 3 seeds 11) · ciphertext fields returned: 0 (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0362e — BYOK: `byok.deleteKey` (mutation: soft delete)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362c.
+- **WHY:** PRD F-102; CONVENTIONS §16 (ownership: a missing, foreign or deleted row throws `"<Thing> not found"`; soft delete through `deletedAt`, as CFG-019's shape gives every row).
+- **GOAL:** `byok.deleteKey` soft-deletes one of the caller's keys so it no longer lists or routes.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `ownedKey` helper and `deleteKey`; import `mutation`, `requireUser` if absent) · `convex/byok.test.ts` (edit: append one `describe` block) · `byokKeys.deletedAt`, `byokKeys.updatedAt` (patch).
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts`; run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `ownedKey` and `deleteKey` exactly as SPEC.
+  3. Append `describe("byok.deleteKey", …)` with the 4 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 4 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** hard-delete the row (`ctx.db.delete`); clear `keyCipher`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362e / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  /** The caller's live key, or "Key not found" for a missing, foreign or deleted row. */
+  export async function ownedKey(ctx: QueryCtx | MutationCtx, userId: Id<"users">, keyId: Id<"byokKeys">) {
+    const row = await ctx.db.get(keyId);
+    if (!row || row.userId !== userId || row.deletedAt !== undefined) throw new Error("Key not found");
+    return row;
+  }
+
+  export const deleteKey = mutation({
+    args: { keyId: v.id("byokKeys") },
+    returns: v.null(),
+    handler: async (ctx: MutationCtx, args: { keyId: Id<"byokKeys"> }): Promise<null> => {
+      const user = await requireUser(ctx);
+      await ownedKey(ctx, user._id, args.keyId);
+      const now = Date.now();
+      await ctx.db.patch(args.keyId, { deletedAt: now, updatedAt: now });
+      return null;
+    },
+  });
+  ```
+  Kind: `mutation` (public). Auth: `requireUser` (deleting your own key needs no approval). Errors (exact): `"Not authenticated"`; `"Key not found"` (missing, another person's, or already deleted).
+- **TESTS:** (`describe("byok.deleteKey")`)
+  1. Given `makeSignedOutCtx()` and a key of `users:1` / When `run(byok.deleteKey, ctx, { keyId })` / Then it rejects with `"Not authenticated"`.
+  2. Given a live key of `users:1` / When run as `users:1` / Then it returns `null`, the row still exists with a numeric `deletedAt` equal to its `updatedAt`, and `keyCipher` is unchanged.
+  3. Given a key of `users:2` / When run as `users:1` (`makeFakeCtx("users:1", ["users:2"])`) / Then it rejects with `"Key not found"` and that row has no `deletedAt`.
+  4. Given a key of `users:1` with `deletedAt: 5` / When run as `users:1` / Then it rejects with `"Key not found"` and `deletedAt` stays `5`.
+- **NUMBERS:** soft delete only, 0 rows removed (CONVENTIONS §16) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0362f — BYOK: `byok.keyForUse` (internal query: ciphertext for a server-side call)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362e · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362e.
+- **WHY:** PRD F-102; TRD §7 rule 6. `byok.checkKey` (TFV2-0362h) needs the ciphertext and endpoint of one key inside the server; same pattern as `connections.secretsForCall` in `convex/connections.ts` (ciphertexts out of an internal query, decrypted only in the action). Uses `ownedKey` from TFV2-0362e.
+- **GOAL:** `byok.keyForUse` returns one of the approved caller's keys as ciphertext plus endpoint and model, only to server code.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `keyMaterial`, `KeyMaterial`, `keyForUse`) · `convex/byok.test.ts` (edit: append one `describe` block). Reads `byokKeys`; writes nothing.
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (`ownedKey`); run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `keyMaterial`, `KeyMaterial` and `keyForUse` exactly as SPEC.
+  3. Append `describe("byok.keyForUse", …)` with the 4 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 4 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** make it public; decrypt in a query; return any field beyond SPEC; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362f / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const keyMaterial = v.object({
+    userId: v.id("users"), keyCipher: v.string(), keyVersion: v.number(), endpointUrl: v.string(), model: v.string(),
+  });
+  export type KeyMaterial = typeof keyMaterial.type;
+
+  export const keyForUse = internalQuery({
+    args: { keyId: v.id("byokKeys") },
+    returns: keyMaterial,
+    handler: async (ctx: QueryCtx, args: { keyId: Id<"byokKeys"> }): Promise<KeyMaterial> => {
+      const user = await requireApprovedUser(ctx);
+      const row = await ownedKey(ctx, user._id, args.keyId);
+      return { userId: user._id, keyCipher: row.keyCipher, keyVersion: row.keyVersion, endpointUrl: row.endpointUrl, model: row.model ?? "" };
+    },
+  });
+  ```
+  Kind: `internalQuery`. Auth: approved account. Errors (exact): `"Not authenticated"`, `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`, `"Key not found"`.
+- **TESTS:** (`describe("byok.keyForUse")`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.keyForUse, ctx, { keyId })` / Then it rejects with `"Not authenticated"`.
+  2. Given `users:1` with `approvalStatus: "pending"` and their own key / When run / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given a key of `users:2` / When run as `users:1` / Then it rejects with `"Key not found"`.
+  4. Given a live key of `users:1` (`keyCipher: "v1.iv.sealed"`, `endpointUrl: "https://api.example.com/v1"`, `model: "gpt-4o-mini"`, `keyVersion: 1`) / When run as `users:1` / Then it returns exactly `{ userId: "users:1", keyCipher: "v1.iv.sealed", keyVersion: 1, endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini" }`.
+- **NUMBERS:** internal function: public API surface added 0 (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0362g — BYOK: `byok.recordCheck` (internal mutation: store a health check)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362e · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362e.
+- **WHY:** PRD F-102; CFG-019 fields `lastCheckedAt` / `lastCheckOk`. `byok.checkKey` (TFV2-0362h) writes its result through this mutation.
+- **GOAL:** `byok.recordCheck` stamps one of the caller's keys with the time and result of a health check.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `recordCheck`) · `convex/byok.test.ts` (edit: append one `describe` block) · `byokKeys.lastCheckedAt`, `lastCheckOk`, `updatedAt` (patch).
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (`ownedKey`); run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `recordCheck` exactly as SPEC.
+  3. Append `describe("byok.recordCheck", …)` with the 3 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 3 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** make it public; write any field beyond SPEC; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362g / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const recordCheck = internalMutation({
+    args: { keyId: v.id("byokKeys"), ok: v.boolean() },
+    returns: v.null(),
+    handler: async (ctx: MutationCtx, args: { keyId: Id<"byokKeys">; ok: boolean }): Promise<null> => {
+      const user = await requireUser(ctx);
+      await ownedKey(ctx, user._id, args.keyId);
+      const now = Date.now();
+      await ctx.db.patch(args.keyId, { lastCheckedAt: now, lastCheckOk: args.ok, updatedAt: now });
+      return null;
+    },
+  });
+  ```
+  Kind: `internalMutation`. Auth: `requireUser`. Errors (exact): `"Not authenticated"`, `"Key not found"` (missing, foreign or deleted, for example deleted while the check ran).
+- **TESTS:** (`describe("byok.recordCheck")`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.recordCheck, ctx, { keyId, ok: true })` / Then it rejects with `"Not authenticated"`.
+  2. Given a live key of `users:1` / When run with `ok: false` / Then the row has `lastCheckOk: false` and a numeric `lastCheckedAt` equal to `updatedAt`; and when run again with `ok: true` / Then `lastCheckOk: true`.
+  3. Given a key of `users:1` with `deletedAt: 5` / When run as `users:1` / Then it rejects with `"Key not found"` and `lastCheckOk` stays unset.
+- **NUMBERS:** fields written: exactly 3 (`lastCheckedAt`, `lastCheckOk`, `updatedAt`) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0362h — BYOK: `byok.checkKey` (action: one health probe to the endpoint)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0362a, TFV2-0362f, TFV2-0362g · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0361a, TFV2-0362a, TFV2-0362f, TFV2-0362g.
+- **WHY:** PRD F-102; TRD §7 rule 6 (the key never leaves the server). OpenAI-compatible APIs answer `GET <base>/models` with the bearer key (OpenAI API reference "List models", https://platform.openai.com/docs/api-reference/models/list); it spends no tokens. Errors and logs carry no provider body, the same rule as `mintDeepgramToken` in `convex/voice.ts`. Depends on TFV2-0362a for the test helpers (`HANDLERS`, `actionCtx`, env setup) it extends.
+- **GOAL:** `byok.checkKey` decrypts one key on the server, probes its endpoint once, stores the result and returns only `{ ok }`.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `BYOK_CHECK_TIMEOUT_MS`, private `probeEndpoint`, `checkKey`; import `decryptByokKey`) · `convex/byok.test.ts` (edit: add `"byok:keyForUse": byok.keyForUse,` and `"byok:recordCheck": byok.recordCheck,` to `HANDLERS`; append one `describe` block) · `byokKeys.lastCheckedAt`/`lastCheckOk` (through `recordCheck`) · one outbound HTTPS `GET` to the person's endpoint per call.
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` and `convex/byok.test.ts` (`HANDLERS`, `actionCtx`); run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `BYOK_CHECK_TIMEOUT_MS`, `probeEndpoint` and `checkKey` exactly as SPEC.
+  3. Add the two `HANDLERS` lines; append `describe("byok.checkKey", …)` with the 6 TESTS cases. Stub the network with `spyOn(globalThis, "fetch")` (restored in `finally`) and silence logs with `const consoleError = spyOn(console, "error").mockImplementation(() => {})`, as `convex/voice.test.ts` does. Seed a key row of `users:1` (`endpointUrl: "https://api.example.com/v1"`) whose `keyCipher` comes from `encryptByokKey(await loadConnectionsKey({ TEMPO_CONNECTIONS_KEY: TEST_KEY_B64 }), "users:1", "sk-test-0123456789abcdef")`.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 6 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** read or log the response body; put the key in a log line; retry; call the real network in tests; return anything but `{ ok }`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0362h / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const BYOK_CHECK_TIMEOUT_MS = 10_000;
+
+  /** One GET <endpoint>/models with the key. True on a 2xx. Never reads or logs the body. */
+  async function probeEndpoint(endpointUrl: string, apiKey: string): Promise<boolean> {
+    let response: Response;
+    try {
+      response = await fetch(`${endpointUrl}/models`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(BYOK_CHECK_TIMEOUT_MS),
+      });
+    } catch (error) {
+      console.error(`byok.checkKey: endpoint could not be reached (${error instanceof Error ? error.name : typeof error})`);
+      return false;
+    }
+    if (!response.ok) console.error(`byok.checkKey: endpoint returned HTTP ${response.status}`);
+    return response.ok;
+  }
+
+  export const checkKey = action({
+    args: { keyId: v.id("byokKeys") },
+    returns: v.object({ ok: v.boolean() }),
+    handler: async (ctx: ActionCtx, args: { keyId: Id<"byokKeys"> }): Promise<{ ok: boolean }> => {
+      await requireApprovedForAi(ctx);
+      const cryptoKey = await loadConnectionsKey();
+      if (!cryptoKey) throw new Error("Key vault is not set up");
+      const material: KeyMaterial = await ctx.runQuery(internal.byok.keyForUse, args);
+      let ok = false;
+      try {
+        const apiKey = await decryptByokKey(cryptoKey, material.userId, material.keyCipher, material.keyVersion);
+        ok = await probeEndpoint(material.endpointUrl, apiKey);
+      } catch {
+        ok = false;
+      }
+      await ctx.runMutation(internal.byok.recordCheck, { keyId: args.keyId, ok });
+      return { ok };
+    },
+  });
+  ```
+  Kind: `action` (public). Auth: approved account. Errors (exact): `"Not authenticated"`, `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`, `"Key vault is not set up"`, `"Key not found"` (from `keyForUse`). A key that cannot be decrypted, an unreachable endpoint and a non-2xx answer all return `{ ok: false }` (stored), never an error. Timeout 10 s.
+- **TESTS:** (`describe("byok.checkKey")`)
+  1. Given `actionCtx(makeSignedOutCtx())` / When `run(byok.checkKey, ctx, { keyId })` / Then it rejects with `"Not authenticated"` and `fetch` was not called.
+  2. Given the seeded key and `fetch` stubbed to `new Response("[]", { status: 200 })` / When run as `users:1` / Then it returns `{ ok: true }`; the one fetch call's URL is `"https://api.example.com/v1/models"`, its method `"GET"`, its `authorization` header `"Bearer sk-test-0123456789abcdef"`; the row has `lastCheckOk: true` and a numeric `lastCheckedAt`.
+  3. Given `fetch` stubbed to `new Response("bad key sk-test-0123456789abcdef echoed", { status: 401 })` / When run / Then `{ ok: false }`, the row has `lastCheckOk: false`, and `JSON.stringify(consoleError.mock.calls)` contains `"HTTP 401"` and contains neither `"sk-test"` nor `"echoed"`.
+  4. Given `fetch` stubbed to throw `new TypeError("network down")` / When run / Then `{ ok: false }` and the row has `lastCheckOk: false`.
+  5. Given the row's `keyCipher` patched to a ciphertext made for `"users:2"` / When run as `users:1` / Then `{ ok: false }`, `fetch` was not called and `lastCheckOk` is `false`.
+  6. Given a key of `users:2` / When run as `users:1` / Then it rejects with `"Key not found"` and `fetch` was not called; and given `delete process.env.TEMPO_CONNECTIONS_KEY` with `users:1`'s own key / When run / Then it rejects with `"Key vault is not set up"`.
+- **NUMBERS:** at most 1 outbound request per call, timeout 10,000 ms (`BYOK_CHECK_TIMEOUT_MS`) · provider body characters logged: 0 (case 3) · p95 latency: UNKNOWN (depends on the person's endpoint; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0363a — BYOK: `callLLM` accepts a per-call route (`convex/lib/ai_router.ts`)
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** first (live voice; `convex/lib/voicePolicy.ts` exists).
-- **WHY:** PRD F-35, F-30; TRD §5a; HARD_RULES §9; `convex/lib/voicePolicy.ts`; `convex/voice.ts`.
-- **GOAL:** `voicePolicy` limits (per-user daily minutes, tier caps, global ceiling, TTS char cap, lease windows) are verified against HARD_RULES §9 and unit-tested.
-- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
-- **MUTATES:** none (policy constants + pure functions).
-- **STEPS:** 1) Graphify code-map of `voicePolicy.ts`; 2) run `voicePolicy.test.ts`; 3) verify `dailyMinutesFor` caps each tier under the preview cap and fails closed for unknown tiers; 4) add missing coverage.
-- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not raise a limit or lower a threshold to pass; do not remove the preview cap; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `TIER_LIVE_MINUTES = { none:0, basic:30, pro:90, max:180, god:180 }`; `VOICE_LIMITS.dailyMinutesPerUser = 15` preview cap that only lowers a tier; `dailyMinutesFor(tier)` = min(tier, 15), unknown tier → 0 (fail closed). `leaseMs`/`leaseExpired` count a stale lease only to last renewal + `renewEveryMs`, never past `maxSessionMs`. `localDateKey`/`utcDateKey` partition per-user vs global.
-- **TESTS:** Given tier `pro` / When `dailyMinutesFor` / Then 15 (min of 90 and the 15 preview cap). Given tier `max` / When called / Then 15. Given an unknown tier / When called / Then 0. Given a lease past `maxSessionMs` / When `leaseMs` / Then it counts to `startedAt + maxSessionMs`. Given a stale lease / When `leaseExpired` / Then true.
-- **NUMBERS:** 30/90/180 min per tier, 15 min preview cap, 20,000 TTS chars/day, 120 global min/day (HARD_RULES §9 + `voicePolicy.ts`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-102; TRD §3 (`convex/lib/ai_router.ts` is the one place for Tempo's text model); Q-03 (the default model id stays whatever `ai_router.ts` resolves). Code truth: `callLLM(opts)` always posts to `DEEPINFRA_CHAT_COMPLETIONS_URL` with `DEEPINFRA_API_KEY` and `resolveAiModel()`; its error messages include up to 200 characters of the provider body. This ticket adds an optional `route` so a caller can send one call to a person's own OpenAI-compatible endpoint, with no body text in BYOK errors. Which callers pass a BYOK route is TFV2-0363b/c (OPEN); every existing caller is unchanged. TFV2-0174a (OPEN) also edits this file to add `embedTexts`; the two changes touch different functions.
+- **GOAL:** `callLLM({ …, route: { kind: "byok", endpointUrl, apiKey, model } })` posts to `<endpointUrl>/chat/completions` with that key and model, while every call without `route` behaves exactly as today.
+- **SCOPE:** `convex/lib/ai_router.ts` · test: `convex/lib/ai_router.test.ts`.
+- **MUTATES:** `convex/lib/ai_router.ts` (edit: add `AiRoute`, `route?` on `AiCallOptions`, a private `CallTarget`; `attemptCall` takes a target; `callLLM` builds it) · `convex/lib/ai_router.test.ts` (edit: append one `describe` block). No env change.
+- **STEPS:**
+  1. Code-map check: read `convex/lib/ai_router.ts` (163 lines; `attemptCall(tier, opts, apiKey)`, `callLLM`) and run `bun test convex/lib/ai_router.test.ts` (10 pass today; note the count P if other tickets added cases).
+  2. Apply the SPEC changes; leave every default-path string, URL, header, timeout and retry exactly as it is.
+  3. Append `describe("callLLM with a BYOK route", …)` with the 5 TESTS cases, reusing the file's `jsonResponse`, `errorResponse`, `successBody` helpers and its `globalThis.fetch = mock(…)` style.
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/lib/ai_router.test.ts` → `0 fail` and P + 5 pass (15 pass when P is 10); `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 and the typecheck exit code pasted into the PR.
+- **DO NOT:** change `DEFAULT_AI_MODEL`, `resolveAiModel`, `DEEPINFRA_CHAT_COMPLETIONS_URL` or any default-path message; read `byokKeys` or decrypt here; log the BYOK key or body; edit any caller of `callLLM`; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0363a / evidence: <DONE output> / changed: convex/lib/ai_router.ts, convex/lib/ai_router.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  /** Where one call goes. "default" is DeepInfra with Tempo's key; "byok" is a person's own OpenAI-compatible endpoint. */
+  export type AiRoute =
+    | { kind: "default" }
+    | { kind: "byok"; endpointUrl: string; apiKey: string; model: string };
 
-### TFV2-0366 — Voice: `availability` + admission order verify
+  export type AiCallOptions = {
+    tier: AiTier;
+    messages: AiMessage[];
+    maxTokens?: number;
+    temperature?: number;
+    responseFormat?: "text" | "json_object";
+    /** Omitted = { kind: "default" }. */
+    route?: AiRoute;
+  };
+
+  type CallTarget = { url: string; apiKey: string; model: string; byok: boolean };
+  ```
+  - `attemptCall(tier: AiTier, opts: AiCallOptions, target: CallTarget)`: uses `target.model` for `body.model` and `result.model`, `target.url` for `fetch`, and `Bearer ${target.apiKey}`. When `target.byok` is `false`, every branch (fetch failure and non-OK handling) is byte-for-byte today's code. When `target.byok` is `true`, a non-OK body is never read and: 401 → `new AiAuthError("BYOK endpoint refused the key")`; 429 → `new AiRateLimitedError("Rate limited by the BYOK endpoint", retryAfterMs)` (same `Retry-After` parsing); any other status → `new AiUpstreamError(\`BYOK endpoint returned HTTP ${response.status}\`, response.status, "")` (context-too-large detection needs the body, so it is not attempted for BYOK); a thrown `fetch` → `new AiUpstreamError(isAbort ? "Request timed out after 30s" : "BYOK endpoint could not be reached", 0, "")`.
+  - `callLLM(opts)`: `const route = opts.route ?? { kind: "default" };` For `"byok"`: `target = { url: \`${route.endpointUrl}/chat/completions\`, apiKey: route.apiKey, model: route.model, byok: true }` and `DEEPINFRA_API_KEY` is not required. For `"default"`: today's missing-key check (`new AiAuthError("DEEPINFRA_API_KEY not set in Convex env")`) then `target = { url: DEEPINFRA_CHAT_COMPLETIONS_URL, apiKey, model: resolveAiModel(), byok: false }`. The retry loop (one retry on rate-limit or upstream errors after 500 ms) is unchanged for both.
+  - The route object is never logged or returned; `AiResult` is unchanged.
+- **TESTS:** (`describe("callLLM with a BYOK route")`; `ROUTE = { kind: "byok", endpointUrl: "https://llm.example.com/v1", apiKey: "byok-test-key-0123456789", model: "my-model" } as const`)
+  1. Given `delete process.env.DEEPINFRA_API_KEY` and `fetch` mocked to `jsonResponse(successBody("hi"))` / When `callLLM({ tier: "fast", messages: [{ role: "user", content: "x" }], route: ROUTE })` / Then it resolves with `content: "hi"` and `model: "my-model"`; the fetch URL is `"https://llm.example.com/v1/chat/completions"`, the `Authorization` header is `"Bearer byok-test-key-0123456789"` and the JSON body's `model` is `"my-model"`.
+  2. Given `fetch` mocked to `errorResponse(401, "invalid key byok-test-key-0123456789")` / When called with `ROUTE` / Then it rejects with an `AiAuthError` whose message is exactly `"BYOK endpoint refused the key"`, after 1 fetch call.
+  3. Given `fetch` mocked to `errorResponse(503, "upstream detail")` on every call / When called with `ROUTE` / Then it rejects with an `AiUpstreamError` whose message is `"BYOK endpoint returned HTTP 503"` and whose `upstream` is `""`, after 2 fetch calls.
+  4. Given `fetch` mocked to `jsonResponse(successBody())` / When called with `route: { kind: "default" }` / Then the URL is `DEEPINFRA_CHAT_COMPLETIONS_URL` and the body `model` is `DEFAULT_AI_MODEL` (same as with no `route`).
+  5. Given `fetch` mocked to `jsonResponse(successBody())` / When called with `ROUTE` / Then `JSON.stringify(result)` does not contain `"byok-test-key"`.
+- **NUMBERS:** default path unchanged: the 10 existing cases still pass (exact) · BYOK error messages carry 0 provider-body characters (cases 2–3) · timeout 30 s and one retry, as today (code constants) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0363b — BYOK: `byok.activeKeyForUse` (internal query: the key a person's model calls use) — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362f, TFV2-0362g · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362f, TFV2-0362g.
+- **WHY:** PRD F-102 ("Key vault: BYOK with any OpenAI-compatible key plus local endpoints"); TRD §3/§7. Old TFV2-0363 assumed a person's healthy key silently replaces Tempo's model for "their model calls" and falls back to Tempo's model when unhealthy; neither is decided in PRD or TRD, and "local endpoints" cannot be reached from Convex's servers (TFV2-0361b accepts only public `https://`).
+- **GOAL:** `byok.activeKeyForUse` returns, for the approved caller, the ciphertext, endpoint and model of the key their model calls should use, or `null` when none should be used.
+- **SCOPE:** `convex/byok.ts` · test: `convex/byok.test.ts`.
+- **MUTATES:** `convex/byok.ts` (edit: add `activeKeyForUse`) · `convex/byok.test.ts` (edit: append one `describe` block). Reads `byokKeys`; writes nothing.
+- **STEPS:**
+  1. Code-map check: read `convex/byok.ts` (`liveKeys`, `keyMaterial`); run `bun test convex/byok.test.ts` and note the pass count P.
+  2. Add `activeKeyForUse` exactly as SPEC.
+  3. Append `describe("byok.activeKeyForUse", …)` with the 4 TESTS cases.
+  4. Run DONE.
+- **DONE:** `bun test convex/byok.test.ts` → `0 fail` and P + 4 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** make it public; decrypt here; pick a key whose last check failed or never ran; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0363b / evidence: <DONE output> / changed: convex/byok.ts, convex/byok.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** (written for the answer "the newest key whose last check passed is used"; changes with Amit's answer)
+  ```ts
+  export const activeKeyForUse = internalQuery({
+    args: {},
+    returns: v.union(v.null(), keyMaterial),
+    handler: async (ctx: QueryCtx): Promise<KeyMaterial | null> => {
+      const user = await requireApprovedUser(ctx);
+      const healthy = (await liveKeys(ctx, user._id))
+        .filter((r) => r.lastCheckOk === true && (r.model ?? "") !== "")
+        .sort((a, b) => b.createdAt - a.createdAt);
+      const row = healthy[0];
+      return row
+        ? { userId: user._id, keyCipher: row.keyCipher, keyVersion: row.keyVersion, endpointUrl: row.endpointUrl, model: row.model ?? "" }
+        : null;
+    },
+  });
+  ```
+  Kind: `internalQuery`. Auth: approved account. Errors (exact): `"Not authenticated"`, `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`. Rule: the newest live key whose last check passed and that has a model; `null` otherwise.
+- **TESTS:** (`describe("byok.activeKeyForUse")`)
+  1. Given `makeSignedOutCtx()` / When `run(byok.activeKeyForUse, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given `users:1` with `approvalStatus: "pending"` / When run / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given `users:1` keys A (`createdAt: 10`, `lastCheckOk: true`), B (`createdAt: 20`, `lastCheckOk: false`), C (`createdAt: 30`, never checked), D (`createdAt: 40`, `lastCheckOk: true`, `deletedAt: 50`) / When run / Then it returns A's material.
+  4. Given `users:1` with only key B / When run / Then it returns `null`.
+- **NUMBERS:** bounded read ≤ 11 rows (`liveKeys`) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** new: Which model calls use a person's BYOK key (the coach only, or every text call: brain dump, nag phrases, memory extraction), which key is used when they keep several, and when the key fails does Tempo fall back to its own model (Tempo pays) or show an error? PRD F-102 also promises "local endpoints", which Convex's servers cannot reach: drop them, or route them from the person's device? — Amit.
+
+### TFV2-0363c — BYOK: `resolveByokRoute` (`convex/lib/byokRoute.ts`) — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0363a, TFV2-0363b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0361a, TFV2-0363a, TFV2-0363b.
+- **WHY:** PRD F-102; TRD §7 rule 6 (the key is decrypted only inside the server action that uses it). Turns `byok.activeKeyForUse` (TFV2-0363b) into the `AiRoute` that `callLLM` accepts (TFV2-0363a). Wiring individual AI callers to pass the route is not part of this ticket; it waits on the same answer.
+- **GOAL:** `resolveByokRoute(ctx)` returns `{ kind: "byok", … }` with the decrypted key for an approved caller with a usable key, else `{ kind: "default" }`.
+- **SCOPE:** `convex/lib/byokRoute.ts` · test: `convex/lib/byokRoute.test.ts`.
+- **MUTATES:** `convex/lib/byokRoute.ts` (new) · `convex/lib/byokRoute.test.ts` (new). Reads `byokKeys` through `internal.byok.activeKeyForUse`; reads env `TEMPO_CONNECTIONS_KEY` (name only) through `loadConnectionsKey`.
+- **STEPS:**
+  1. Code-map check: `ls convex/lib/byokRoute.ts` (absent); read `AiRoute` in `convex/lib/ai_router.ts`, `activeKeyForUse` in `convex/byok.ts`, `decryptByokKey` in `convex/lib/byokCrypto.ts`.
+  2. Create `convex/lib/byokRoute.ts` with exactly the SPEC code.
+  3. Create `convex/lib/byokRoute.test.ts` (`bun:test`) with the 4 TESTS cases; the fake `ctx` is `{ runQuery: async () => <material or null> }` and `env` is passed explicitly (`TEST_KEY_B64` = synthetic bytes 0…31 as in TFV2-0361a).
+  4. Run DONE.
+- **DONE:** `bun test convex/lib/byokRoute.test.ts` → `4 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **DO NOT:** log, cache or return the decrypted key outside the route; change any `callLLM` caller; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0363c / evidence: <DONE output> / changed: convex/lib/byokRoute.ts, convex/lib/byokRoute.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  import { internal } from "../_generated/api";
+  import type { ActionCtx } from "../_generated/server";
+  import type { AiRoute } from "./ai_router";
+  import { decryptByokKey } from "./byokCrypto";
+  import { loadConnectionsKey } from "./connections/crypto";
+
+  /** The route for the caller's model calls: their usable BYOK key, else Tempo's default. Never throws for a bad key. */
+  export async function resolveByokRoute(
+    ctx: Pick<ActionCtx, "runQuery">,
+    env: Record<string, string | undefined> = process.env,
+  ): Promise<AiRoute> {
+    const material = await ctx.runQuery(internal.byok.activeKeyForUse, {});
+    if (!material) return { kind: "default" };
+    const cryptoKey = await loadConnectionsKey(env);
+    if (!cryptoKey) return { kind: "default" };
+    try {
+      const apiKey = await decryptByokKey(cryptoKey, material.userId, material.keyCipher, material.keyVersion);
+      return { kind: "byok", endpointUrl: material.endpointUrl, apiKey, model: material.model };
+    } catch {
+      return { kind: "default" };
+    }
+  }
+  ```
+  Errors: only those `activeKeyForUse` throws (`"Not authenticated"`, `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`), passed through. No user-facing copy.
+- **TESTS:**
+  1. Given `runQuery` resolving `null` / When `resolveByokRoute(ctx, { TEMPO_CONNECTIONS_KEY: TEST_KEY_B64 })` runs / Then it returns `{ kind: "default" }`.
+  2. Given material `{ userId: "users:1", keyCipher: <encryptByokKey(key, "users:1", "sk-test-0123456789abcdef")>, keyVersion: 1, endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini" }` / When resolved / Then it returns `{ kind: "byok", endpointUrl: "https://api.example.com/v1", apiKey: "sk-test-0123456789abcdef", model: "gpt-4o-mini" }`.
+  3. Given the same material and `env = {}` / When resolved / Then `{ kind: "default" }`.
+  4. Given material whose ciphertext was made for `"users:2"` but `userId: "users:1"` / When resolved / Then `{ kind: "default" }`.
+- **NUMBERS:** 4 of 4 cases pass · the decrypted key leaves the function only inside the returned route (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0363b (new: which model calls use a BYOK key, which key, fallback to Tempo's model or an error, and local endpoints) — Amit.
+
+### TFV2-0364a — Component: `ByokKeyVault` (key list + add form, props only)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023a, TFV2-0023b, TFV2-0361b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023a, TFV2-0023b, TFV2-0361b.
+- **WHY:** PRD F-102 (key vault); TRD §7 rule 6 (the key is never returned or echoed); CONVENTIONS §9 (web component file set), §11 (copy), §12 (Hebrew), §13 (props only, harness), §22 (spec skeleton). There is no design screen for BYOK (`docs/design/v3/README.md`: "F-101, F-102, F-103 | No screen (END)"), so the component composes existing tempo.css components: SettingsSection (`.tp-settings-section`, line 1097), SettingRow (`.tp-setting-row`, line 1103), Field (`.tp-form`, `.tp-field`, `.tp-label`, `.tp-help`, `.tp-error-text`, line 1015), TextInput (`.tp-input`, line 1026), Badge (`.tp-badge[data-tone]`, line 597), Button (`.tp-btn` + variants, lines 121–142 and 585–588), Notice/StateOffline (`.tp-notice[data-tone="caution"]`, `.tp-offline`), StateError/StateEmpty (`.tp-state`, line 1445), StateLoading (`.tp-skel-list`, `.tp-skeleton`). Case A in spirit: it writes no CSS rule of its own, so it adds no stylesheet. `BYOK_MAX_KEYS` comes from TFV2-0361b. Old TFV2-0364 bundled the whole screen; split into this props-only component and the route (TFV2-0364b).
+- **GOAL:** `ByokKeyVault` shows the saved keys (name, hint, endpoint, model, last check), lets a person add, test and delete keys through callbacks, and renders every state, with no Convex call.
+- **SCOPE:** `apps/web/components/settings/ByokKeyVault.tsx` · `apps/web/app/e2e/components/byok-key-vault/page.tsx` · test: `tests/e2e/screens/byok-key-vault.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/ByokKeyVault.tsx` (new) · `apps/web/app/e2e/components/byok-key-vault/page.tsx` (new) · `tests/e2e/screens/byok-key-vault.spec.ts` (new). Route `/e2e/components/byok-key-vault` (dev-only harness, already covered by `/e2e/components` in `E2E_WIRING_ROUTES`, TFV2-0023a).
+- **STEPS:**
+  1. Code-map check: `ls apps/web/components/settings/ByokKeyVault.tsx` (absent); `ls apps/web/app/e2e/components/layout.tsx apps/web/lib/e2e/HarnessFrame.tsx tests/e2e/helpers/harness.ts` (present from TFV2-0023b, TFV2-0000b); `grep -n "@component SettingRow \|@component Field \|@component Badge \|@component StateError \|@component StateOffline " apps/web/app/tempo.css` to confirm the classes in WHY; confirm `BYOK_MAX_KEYS` in `convex/lib/byokInput.ts`.
+  2. Create `ByokKeyVault.tsx` (`"use client"`) per SPEC.
+  3. Create the harness page per SPEC and CONVENTIONS §13.
+  4. Create the spec per the §22 skeleton with the 9 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/byok-key-vault.spec.ts --reporter=line` → `36 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary and the typecheck exit code pasted into the PR.
+- **DO NOT:** call `useQuery`/`useMutation`/`useAction`/`fetch` or import `convex/react` or `@/convex/_generated/*`; keep the typed key after Save (the key field is emptied on submit and never pre-filled); show, log or store a key anywhere except the controlled password input; add a stylesheet or edit `apps/web/app/tempo.css`; edit `apps/web/lib/i18n.ts`; use `left`/`right`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0364a / evidence: <DONE output> / changed: ByokKeyVault.tsx, e2e/components/byok-key-vault/page.tsx, byok-key-vault.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  - **Props:**
+    ```ts
+    export type ByokVaultKey = { keyId: string; label: string; keyHint: string; endpointUrl: string; model: string; lastCheckOk?: boolean };
+    export type ByokNewKey = { label: string; key: string; endpointUrl: string; model: string };
+    export type ByokSaveError = "label" | "key" | "endpoint" | "model" | "full" | "other";
+    export type ByokKeyVaultProps = {
+      status: "loading" | "error" | "ready";
+      keys: ByokVaultKey[];
+      online: boolean;
+      saving: boolean;
+      saveError: ByokSaveError | null;
+      checkingKeyId: string | null;
+      onAdd: (input: ByokNewKey) => void;
+      onCheck: (keyId: string) => void;
+      onDelete: (keyId: string) => void;
+      onRetry: () => void;
+    };
+    export function ByokKeyVault(props: ByokKeyVaultProps): JSX.Element;
+    ```
+    Imports: `useRef`, `useState`, `type FormEvent` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `BYOK_MAX_KEYS` from `@/convex/lib/byokInput`. Copy through one `COPY: Record<Lang, Record<CopyKey, string>>` constant (§11); `{n}` and `{label}` placeholders filled with `.replace`; a number placed into a string is wrapped as `\u2066<n>\u2069` (LTR isolate).
+  - **Structure** (root `<div data-component="ByokKeyVault" aria-busy={status === "loading" ? "true" : undefined}>`, in order):
+    1. When `online` is `false`: `<div className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline" role="status">` with `copy.offline`.
+    2. `status === "loading"`: `<div className="tp-skel-list" data-component="StateLoading" role="status">` with 3 `<div className="tp-skeleton tp-skeleton--w80" />` and `<span className="tp-sr-only">{copy.loading}</span>`; nothing else renders.
+    3. `status === "error"`: `<div className="tp-state tp-state--error" data-component="StateError" role="alert">` with `<p className="tp-state__title">{copy.error}</p>`, `<p className="tp-state__body">{copy.safe}</p>`, and `<div className="tp-state__actions"><button type="button" className="tp-btn tp-btn--secondary" onClick={onRetry}>{copy.retry}</button></div>`; nothing else renders.
+    4. `status === "ready"`: section **Saved keys** `<section className="tp-settings-section" data-component="SettingsSection" aria-labelledby="byok-list-title">` → `.tp-settings-section__head` with `<h2 className="tp-settings-section__title" id="byok-list-title">{copy.listTitle}</h2>`. With 0 keys: `<div className="tp-state tp-state--empty" data-component="StateEmpty"><p className="tp-state__title">{copy.emptyTitle}</p><p className="tp-state__body">{copy.emptyBody}</p></div>`. Otherwise one `<div className="tp-setting-row od-row" data-component="SettingRow" data-testid="byok-key-row" data-key-id={keyId}>` per key, in the order given:
+       - `.tp-setting-row__text`: `<span className="tp-setting-row__label">{label}</span>` (`dir="auto"`) and `<span className="tp-help"><span className="tp-mono" dir="ltr">{keyHint}</span> · <span className="tp-mono" dir="ltr">{endpointUrl}</span> · <span dir="auto">{model}</span></span>`, then the status Badge: `lastCheckOk === true` → `<span className="tp-badge" data-component="Badge" data-tone="done">{copy.statusOk}</span>`; `false` → `data-tone="caution"` `{copy.statusFail}`; `undefined` → no `data-tone`, `{copy.statusNever}`. The Badge sits in `<span aria-live="polite">`.
+       - `.tp-setting-row__control`: `<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" aria-label={copy.checkAria.replace("{label}", label)} disabled={!online || checkingKeyId !== null} aria-busy={checkingKeyId === keyId ? "true" : undefined} onClick={() => onCheck(keyId)}>` with text `checkingKeyId === keyId ? copy.checking : copy.check`; then `<button type="button" className="tp-btn tp-btn--danger-ghost tp-btn--sm" aria-label={copy.deleteAria.replace("{label}", label)} disabled={!online}>` `{copy.delete}`.
+       - Delete confirm (component state `confirmId: string | null`): pressing Delete sets `confirmId = keyId`; the control area then shows `<span role="alert">{copy.confirmDelete}</span>`, `<button type="button" className="tp-btn tp-btn--danger tp-btn--sm">{copy.confirmYes}</button>` (calls `onDelete(keyId)` and clears `confirmId`) and `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm">{copy.cancel}</button>` (clears `confirmId`). Focus moves to the Cancel button when the confirm opens and back to that row's Delete button when it closes by Cancel or `Escape` (keydown on the confirm area).
+    5. `status === "ready"`: section **Add a key** (`.tp-settings-section`, `aria-labelledby="byok-add-title"`, title `copy.addTitle`). When `keys.length >= BYOK_MAX_KEYS`: `<div className="tp-notice" data-tone="info" data-component="Notice">` with `copy.full` (n = `BYOK_MAX_KEYS`) and no form. Otherwise `<form className="tp-form" noValidate onSubmit>` with four `.tp-field`s, each `<label className="tp-label" htmlFor>` + `<input className="tp-input">` + `<p className="tp-help" id="<id>-help">` (`aria-describedby`):
+       - `byok-label` (`type="text"`, `maxLength={60}`, `autoComplete="off"`, `dir="auto"`): `copy.labelLabel` / `copy.labelHelp`.
+       - `byok-endpoint` (`type="url"`, `inputMode="url"`, `dir="ltr"`, `placeholder="https://"`, `autoComplete="off"`, `spellCheck={false}`): `copy.endpointLabel` / `copy.endpointHelp`.
+       - `byok-model` (`type="text"`, `dir="ltr"`, `autoComplete="off"`, `spellCheck={false}`): `copy.modelLabel` / `copy.modelHelp`.
+       - `byok-key` (`type="password"`, `dir="ltr"`, `autoComplete="off"`, `spellCheck={false}`, never given a default value): `copy.keyLabel` / `copy.keyHelp`.
+       - When `saveError !== null`: `<p className="tp-error-text" id="byok-save-error" role="alert">` with the matching copy (`label` → `errLabel` (n = 60), `key` → `errKey`, `endpoint` → `errEndpoint`, `model` → `errModel` (n = 200), `full` → `full` (n = 10), `other` → `errOther`), and the field it names (`label`/`key`/`endpoint`/`model`) gets `aria-invalid="true"`.
+       - `.tp-form__actions`: `<button type="submit" className="tp-btn tp-btn--primary" disabled={!online || saving || any of the four fields is blank after trim} aria-busy={saving ? "true" : undefined}>` text `saving ? copy.saving : copy.add`.
+       - Submit (`preventDefault`): calls `onAdd({ label, key, endpointUrl, model })` with the raw field values, then sets the key field to `""`. The other three fields keep their values.
+  - **Copy (EN / HE):**
+    | key | EN | HE |
+    |---|---|---|
+    | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+    | loading | Loading your keys | טוענים את המפתחות |
+    | error | Couldn't load your keys. | לא הצלחנו לטעון את המפתחות. |
+    | safe | Your data is safe. | המידע שלך שמור. |
+    | retry | Try again | לנסות שוב |
+    | listTitle | Saved keys | מפתחות שמורים |
+    | emptyTitle | No keys yet | עדיין אין מפתחות |
+    | emptyBody | Keys added below are stored encrypted and shown only by their first and last characters. | מפתחות שמוסיפים למטה נשמרים מוצפנים ומוצגים רק לפי התווים הראשונים והאחרונים שלהם. |
+    | statusOk | Connected | מחובר |
+    | statusFail | Couldn't connect | אין חיבור |
+    | statusNever | Not tested yet | עדיין לא נבדק |
+    | check | Test connection | בדיקת חיבור |
+    | checking | Testing… | בבדיקה… |
+    | checkAria | Test connection for {label} | בדיקת חיבור עבור {label} |
+    | delete | Delete | מחיקה |
+    | deleteAria | Delete {label} | מחיקת {label} |
+    | confirmDelete | Delete this key? | למחוק את המפתח הזה? |
+    | confirmYes | Delete | מחיקה |
+    | cancel | Cancel | ביטול |
+    | addTitle | Add a key | הוספת מפתח |
+    | labelLabel | Name | שם |
+    | labelHelp | A name that tells your keys apart. | שם שעוזר להבדיל בין המפתחות. |
+    | endpointLabel | Endpoint | כתובת השירות |
+    | endpointHelp | The service's base address. It starts with https:// | הכתובת הבסיסית של השירות. היא מתחילה ב־⁦https://⁩ |
+    | modelLabel | Model | מודל |
+    | modelHelp | The model name this service expects. | שם המודל שהשירות מצפה לו. |
+    | keyLabel | API key | מפתח API |
+    | keyHelp | After saving, Tempo shows only its first and last characters. | אחרי השמירה Tempo מציג רק את התווים הראשונים והאחרונים שלו. |
+    | add | Save key | שמירת מפתח |
+    | saving | Saving… | בשמירה… |
+    | full | You can keep up to {n} keys. Delete one to add another. | אפשר לשמור עד {n} מפתחות. מוחקים מפתח אחד כדי להוסיף אחר. |
+    | errLabel | Add a name of up to {n} characters. | צריך שם של עד {n} תווים. |
+    | errKey | That key doesn't look right. Paste it again, without spaces. | המפתח לא נראה תקין. אפשר להדביק אותו שוב, בלי רווחים. |
+    | errEndpoint | Use an address that starts with https:// | צריך כתובת שמתחילה ב־⁦https://⁩ |
+    | errModel | Add the model name, up to {n} characters. | צריך שם מודל, עד {n} תווים. |
+    | errOther | Couldn't save the key. Try again. | לא הצלחנו לשמור את המפתח. אפשר לנסות שוב. |
+    (`⁦…⁩` in HE is U+2066 … U+2069, an LTR isolate around the Latin address.)
+  - **States** (harness section ids `byok-key-vault-<state>`, in this order): `default` (2 keys, online), `loading`, `empty` (ready, 0 keys), `error`, `offline` (2 keys, `online: false`), `saving` (2 keys, `saving: true`), `save-error` (2 keys, `saveError: "endpoint"`), `checking` (2 keys, `checkingKeyId: "k2"`), `full` (10 keys).
+  - **RTL / keyboard / screen reader:** layout uses only the components' logical properties; label text `dir="auto"`; hint, endpoint, model and the endpoint/model/key inputs are `dir="ltr"`. All controls are native buttons/inputs reachable by Tab in DOM order; Enter in any field submits the form; Escape closes the delete confirm. Status changes are announced (`aria-live="polite"` on the Badge, `role="alert"` on the confirm and the save error, `role="status"` on loading/offline).
+  - **Breakpoints:** 390 px base; the tempo.css `.tp-setting-row` and `.tp-form` rules handle 768/1024/1280; no component-specific breakpoint.
+  - **Motion:** none added; button transitions come from `.tp-btn` (≤ 250 ms; reduced motion → `0.01ms`, tempo.css line 480).
+  - **Harness page** (`apps/web/app/e2e/components/byok-key-vault/page.tsx`, `"use client"`): imports only `React`/`useState`, `ByokKeyVault` and its types. Fixtures inline: `KEY_OK: ByokVaultKey = { keyId: "k1", label: "Work", keyHint: "sk-…cdef", endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini", lastCheckOk: true }`, `KEY_FAIL: ByokVaultKey = { keyId: "k2", label: "Home lab", keyHint: "abc…9xyz", endpointUrl: "https://llm.example.org/v1", model: "llama-3.1-8b", lastCheckOk: false }`, `TWO = [KEY_OK, KEY_FAIL]`, `TEN = Array.from({ length: 10 }, (_, i) => ({ ...KEY_OK, keyId: \`k${i + 1}\`, label: \`Key ${i + 1}\` }))`. One `<section data-testid="byok-key-vault-<state>">` per state; every callback is `log("<propName>")` where `const log = (name: string) => (arg?: unknown) => setLog(\`${name}:${JSON.stringify(arg ?? null)}\`)`, and `<output data-testid="byok-key-vault-log">{logText}</output>` sits after the sections.
+- **TESTS:** §22 spec skeleton (`openHarness(page, "byok-key-vault", { lang })`; 9 bullets × 2 viewports × 2 languages = 36). The spec keeps its own `EXPECT: Record<"en" | "he", {…}>` with the SPEC copy it asserts. Every test ends with `expectDir(page, lang)` and `expect(errors).toEqual([])`.
+  1. Given section `default` / Then it has 2 `[data-testid="byok-key-row"]`; row 1 shows "Work", "sk-…cdef", "https://api.example.com/v1", "gpt-4o-mini" and a `.tp-badge[data-tone="done"]` with `statusOk`; row 2 has `.tp-badge[data-tone="caution"]` with `statusFail`; the section's text does not contain `"0123456789"`; `expectTargetSize` and `expectMotionBudget` on `[data-testid="byok-key-vault-default"]` pass.
+  2. Given section `default` / When Name "Home", Endpoint "https://api.example.com/v1", Model "gpt-4o-mini" and API key "sk-test-0123456789abcdef" are filled and `addTitle`'s submit button (`add`) is clicked / Then the log reads `onAdd:{"label":"Home","key":"sk-test-0123456789abcdef","endpointUrl":"https://api.example.com/v1","model":"gpt-4o-mini"}`, the API key input's value is `""`, its `type` is `"password"` and its `autocomplete` is `"off"`, and the Name input still holds "Home".
+  3. Given section `default` with Name, Endpoint and API key filled and Model empty / Then the `add` button is disabled; after focusing the Name input and pressing Tab, the Endpoint input is focused and its computed `outline-width` is at least `2px`.
+  4. Given section `default` / When row 1's `deleteAria` button is clicked / Then `confirmDelete` is visible and the `cancel` button is focused; When Escape is pressed / Then the confirm is gone and row 1's Delete button is focused; When Delete and then `confirmYes` are clicked / Then the log reads `onDelete:"k1"`.
+  5. Given section `default` / When row 2's `checkAria` button is clicked / Then the log reads `onCheck:"k2"`.
+  6. Given section `loading` / Then it has `aria-busy="true"` on `[data-component="ByokKeyVault"]`, contains the `.tp-sr-only` text `loading`, and has 0 key rows and no form.
+  7. Given section `empty` / Then `emptyTitle` and `emptyBody` are visible, there are 0 key rows, and the form with 4 inputs is visible; and section `full` has 10 key rows, the `full` notice with "10", and no form.
+  8. Given section `error` / Then `[role="alert"]` contains `error` and `safe`; When `retry` is clicked / Then the log reads `onRetry:null`.
+  9. Given section `offline` / Then `[role="status"]` shows `offline`, both rows are visible, and every `check`, `delete` and `add` button in the section is disabled; section `saving` shows the submit button with text `saving` and `aria-busy="true"`; section `save-error` shows `[role="alert"]` `errEndpoint` and the Endpoint input has `aria-invalid="true"`; section `checking` shows row 2's button text `checking` with `aria-busy="true"` and row 1's test button disabled.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`; `.tp-btn--sm` is 36 px high) · focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7; tempo.css `:focus-visible`, case 3) · motion ≤ 250 ms, ≤ 1 ms with reduced motion (DESIGN.md; `expectMotionBudget`) · text contrast ≥ 4.5:1 and control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; only tempo.css classes, `bun run scan:design-tokens` passes) · key characters rendered after save: 0 (TRD §7 rule 6; case 2) · 36 of 36 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0364b — Screen: AI keys (`/settings/byok`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0361b, TFV2-0362a, TFV2-0362b, TFV2-0362e, TFV2-0362h, TFV2-0364a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0361b, TFV2-0362a, TFV2-0362b, TFV2-0362e, TFV2-0362h, TFV2-0364a.
+- **WHY:** PRD F-102; TRD §7 rule 6; CONVENTIONS §9 (screen file set), §14 (only the route calls Convex; `useE2EState` + fixtures; `useOnline`), §17 (one wiring line), §22 (`ProfileReady`, `ScreenBoundary`). Code truth: settings routes live under `apps/web/app/(tempo)/settings/` (`integrations`, `memory`, `nags`, `preferences`, `privacy`, `profile`); there is no `byok` folder. A plain `Error` message from Convex is replaced on production deployments (comment in `convex/voice.ts`), so the screen validates input with the same `normalizeByokInput` (TFV2-0361b) before calling the server and maps only the remaining server errors. Linking the route from the Settings page is not part of this ticket.
+- **GOAL:** `/settings/byok` lists the person's keys and lets them add, test and delete keys through `ByokKeyVault`, in every state.
+- **SCOPE:** `apps/web/app/(tempo)/settings/byok/page.tsx` · `apps/web/lib/e2e/fixtures/settings-byok.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/settings-byok.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/settings/byok/page.tsx` (new) · `apps/web/lib/e2e/fixtures/settings-byok.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/settings-byok.spec.ts` (new) · route `/settings/byok` registered for the dev-only E2E bypass · `byokKeys` rows through `byok.setKey`, `byok.checkKey`, `byok.deleteKey`.
+- **STEPS:**
+  1. Code-map check: `ls "apps/web/app/(tempo)/settings/byok"` (absent); confirm in code `api.byok.listKeys`, `api.byok.setKey`, `api.byok.checkKey`, `api.byok.deleteKey` (TFV2-0362a/b/e/h), `ByokKeyVault` and its types (TFV2-0364a), `useE2EState` (TFV2-0000c), `ProfileReady`, `ScreenBoundary` (`apps/web/components/goals/shared.tsx`), `useOnline`.
+  2. Create the fixtures file per SPEC.
+  3. Create `page.tsx` per SPEC.
+  4. Named step — register the route: insert `  "/settings/byok",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else.
+  5. Create the spec per the §22 skeleton with the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-byok.spec.ts --reporter=line` → `20 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, the typecheck exit code and the one-line `git diff` of `e2eWiringRoutes.ts` pasted into the PR.
+- **DO NOT:** keep the key in React state beyond the `onAdd` call or put it in a URL, log, toast or `localStorage`; export anything from `page.tsx` but the default component and the two types; edit `ByokKeyVault.tsx`, `SettingsScreen.tsx` or the Settings index page; contact Convex when `?state=` is forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0364b / evidence: <DONE output> / changed: settings/byok/page.tsx, fixtures/settings-byok.ts, e2eWiringRoutes.ts, settings-byok.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  - **Types (exported from `page.tsx`, types only):**
+    ```ts
+    export type ByokScreenState = "default" | "loading" | "empty" | "error" | "offline";
+    export type ByokScreenView = { status: "loading" | "error" | "ready"; keys: ByokVaultKey[] };
+    ```
+  - **Fixtures** (`apps/web/lib/e2e/fixtures/settings-byok.ts`): only `import type { ByokScreenState, ByokScreenView } from "@/app/(tempo)/settings/byok/page";` and `export const FIXTURES: Record<ByokScreenState, ByokScreenView>`: `default` and `offline` = `{ status: "ready", keys: [{ keyId: "k1", label: "Work", keyHint: "sk-…cdef", endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini", lastCheckOk: true }, { keyId: "k2", label: "Home lab", keyHint: "abc…9xyz", endpointUrl: "https://llm.example.org/v1", model: "llama-3.1-8b" }] }`; `loading` = `{ status: "loading", keys: [] }`; `empty` = `{ status: "ready", keys: [] }`; `error` = `{ status: "error", keys: [] }`.
+  - **Page:** `"use client"`. `export default function Page()` → `<Suspense fallback={null}><ByokScreen /></Suspense>`. `ByokScreen`: `const forced = useE2EState(); const liveOnline = useOnline();` root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-testid="settings-byok-screen">` with `<header className="tp-pagehead" data-component="PageHeader"><h1>{copy.title}</h1><p>{copy.sub}</p></header>`, then:
+    - `forced !== null`: `const key = (forced in FIXTURES ? forced : "loading") as ByokScreenState; const view = FIXTURES[key];` render `<ByokKeyVault status={view.status} keys={view.keys} online={key !== "offline"} saving={false} saveError={null} checkingKeyId={null} onAdd={() => {}} onCheck={() => {}} onDelete={() => {}} onRetry={() => {}} />`. No hook that contacts Convex runs (every `useQuery` receives `"skip"`).
+    - otherwise: `<ProfileReady><ScreenBoundary fallback={(retry) => <ByokKeyVault status="error" keys={[]} online={liveOnline} saving={false} saveError={null} checkingKeyId={null} onAdd={() => {}} onCheck={() => {}} onDelete={() => {}} onRetry={retry} />}><ByokLive online={liveOnline} /></ScreenBoundary></ProfileReady>`.
+  - **`ByokLive`:** `const keys = useQuery(api.byok.listKeys, {}); const setKey = useAction(api.byok.setKey); const checkKey = useAction(api.byok.checkKey); const deleteKey = useMutation(api.byok.deleteKey);` state `saving`, `saveError: ByokSaveError | null`, `checkingKeyId: string | null`. `status = keys === undefined ? "loading" : "ready"`; `keys` mapped to `ByokVaultKey` (`keyId: k.keyId` as string, other fields copied; `lastCheckedAt` and `createdAt` dropped).
+    - `onAdd(input)`: `let clean: ByokInput; try { clean = normalizeByokInput(input); } catch (e) { setSaveError(errorFor(e)); return; }` if `(keys?.length ?? 0) >= BYOK_MAX_KEYS` → `setSaveError("full")` and return; `setSaving(true); setSaveError(null); try { await setKey(clean); } catch (e) { setSaveError(errorFor(e)); } finally { setSaving(false); }`.
+    - `errorFor(e: unknown): ByokSaveError` (module-private): message `m = e instanceof Error ? e.message : ""`; `"Label is required"`/`"Label is too long"` → `"label"`; `"That key is too short"`/`"That key is too long"`/`"That key has spaces in it"` → `"key"`; `"Endpoint must be an https:// address"` → `"endpoint"`; `"Model is required"`/`"Model is too long"` → `"model"`; `m.includes("You can keep up to")` → `"full"`; anything else → `"other"`. Server errors are matched with `includes` because Convex prefixes messages in development.
+    - `onCheck(keyId)`: `setCheckingKeyId(keyId); try { await checkKey({ keyId: keyId as Id<"byokKeys"> }); } catch { /* the row keeps its last status */ } finally { setCheckingKeyId(null); }` (the new status arrives through `listKeys`).
+    - `onDelete(keyId)`: `void deleteKey({ keyId: keyId as Id<"byokKeys"> }).catch(() => {});` (a failed delete leaves the row in the list).
+  - **Copy:** `title` EN "AI keys" / HE "מפתחות AI"; `sub` EN "Use a key from any OpenAI-compatible service. Tempo stores it encrypted and never shows it again." / HE "אפשר להשתמש במפתח מכל שירות שתואם ל־OpenAI. Tempo שומר אותו מוצפן ולא מציג אותו שוב." All other strings belong to `ByokKeyVault` (TFV2-0364a).
+  - **States:** `default`, `loading`, `empty`, `error`, `offline` (`?state=`); live: loading while `listKeys` is `undefined`, error through `ScreenBoundary`, offline through `useOnline()`.
+  - **RTL / keyboard / breakpoints / motion:** `dir`/`lang` from `LocaleProvider`; the page adds only `.tp-page`, `.tp-pagehead`; `.tp-page--narrow` handles 768/1024/1280; no motion added; keyboard and screen-reader behaviour come from `ByokKeyVault`.
+- **TESTS:** §22 spec skeleton (`openScreen(page, "/settings/byok", { state, lang })`; screen specs drop console messages matching `/example\.convex\.cloud|WebSocket/i` before asserting `[]`; 5 bullets × 4 = 20). The spec keeps its own `EXPECT` copy constant.
+  1. Given `state=default` / Then the `h1` equals `title`, the `sub` paragraph is visible, 2 `[data-testid="byok-key-row"]` show, `expectTargetSize` and `expectMotionBudget` on `[data-testid="settings-byok-screen"]` pass, and `measureVitals(page, "/settings/byok?state=default&lang=<lang>")` gives LCP ≤ 2500 and CLS ≤ 0.1.
+  2. Given `state=loading` / Then `[data-component="ByokKeyVault"][aria-busy="true"]` is visible and there are 0 key rows.
+  3. Given `state=empty` / Then the empty title (EN "No keys yet" / HE "עדיין אין מפתחות") and the 4-field form are visible.
+  4. Given `state=error` / Then `[role="alert"]` contains EN "Couldn't load your keys." / HE "לא הצלחנו לטעון את המפתחות." and a Try again button (EN "Try again" / HE "לנסות שוב").
+  5. Given `state=offline` / Then `[role="status"]` shows EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.", the 2 rows are visible and the "Save key" / "שמירת מפתח" button is disabled.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · motion ≤ 250 ms (DESIGN.md; `expectMotionBudget`) · contrast per WCAG 2.2 SC 1.4.3 / 1.4.11 through tempo.css classes only · 20 of 20 cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0365 — Voice: `dailyMinutesFor` / `leaseMs` / `leaseExpired` and the limit values — verify + tests (`convex/lib/voicePolicy.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-35, F-30; TRD §5a; HARD_RULES §9 (live minutes Basic 30 / Pro 90 / Max 180); `.cursorrules` (voice minutes count real audio, daily caps); CONVENTIONS §9 (a verify ticket lists the existing file plus its one test file). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `convex/lib/voicePolicy.ts` holds `VOICE_LIMITS` (14 values), `TIER_LIVE_MINUTES = { none: 0, basic: 30, pro: 90, max: 180, god: 180 }`, `dailyMinutesFor`, `leaseMs`, `leaseExpired`; `convex/lib/voicePolicy.test.ts` has 14 cases. Missing today: no test pins the `VOICE_LIMITS` values or `god`, no test of `leaseMs` hitting the 15-minute session cap on a live lease or going negative, no test of the exact `maxSessionMs` boundary.
+- **GOAL:** `convex/lib/voicePolicy.test.ts` pins every voice limit value and proves the tier cap, the session-length cap and the lease-expiry boundary, with no source change.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (read only, unchanged) · test: `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** `convex/lib/voicePolicy.test.ts` (edit: append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `convex/lib/voicePolicy.ts` lines 12–64 and 146–157; run `bun test convex/lib/voicePolicy.test.ts` and note the pass count P (14 today).
+  2. Append `describe("voice limits and lease caps", …)` with the 5 TESTS cases, importing nothing new beyond the names the file already imports.
+  3. Run DONE. If a case fails, stop and report `blocked: question — voicePolicy behaviour differs from SPEC: <case>`; do not change `voicePolicy.ts`.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → `0 fail` and P + 5 pass (19 when P is 14).
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/lib/voicePolicy.ts`; raise a limit or lower a threshold; change or delete an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0365 / evidence: <DONE output> / changed: convex/lib/voicePolicy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Functions under test, unchanged:
+  ```ts
+  export const VOICE_LIMITS: { dailyMinutesPerUser: 15; sessionsPerUserPerDay: 40; globalRowsPerDay: 5000; dailyMinutesGlobal: 120; dailyTtsCharsPerUser: 20000; minStartMs: 60000; renewEveryMs: 15000; leaseExpiresAfterMs: 45000; maxSessionMs: 900000; grantsPerLease: 3; tokenTtlSeconds: 30; maxSentenceChars: 300; sentencesAhead: 2; maxAudioBytes: 4194304 };
+  export const TIER_LIVE_MINUTES: { none: 0; basic: 30; pro: 90; max: 180; god: 180 };
+  export function dailyMinutesFor(tier: string | undefined): number; // min(tier minutes, 15); unknown or missing tier → 0
+  export function leaseMs(lease: { startedAt: number; lastRenewalAt: number; endedAt?: number }, now: number): number; // max(0, (endedAt ?? min(now, lastRenewalAt + renewEveryMs, startedAt + maxSessionMs)) - startedAt)
+  export function leaseExpired(lease: { startedAt: number; lastRenewalAt: number; endedAt?: number }, now: number): boolean; // now - lastRenewalAt > leaseExpiresAfterMs || now - startedAt > maxSessionMs
+  ```
+  Pure functions; no errors; no user-facing copy.
+- **TESTS:** (`describe("voice limits and lease caps")`; `s = 1_000_000`)
+  1. Given `VOICE_LIMITS` / Then it equals `{ dailyMinutesPerUser: 15, sessionsPerUserPerDay: 40, globalRowsPerDay: 5000, dailyMinutesGlobal: 120, dailyTtsCharsPerUser: 20000, minStartMs: 60000, renewEveryMs: 15000, leaseExpiresAfterMs: 45000, maxSessionMs: 900000, grantsPerLease: 3, tokenTtlSeconds: 30, maxSentenceChars: 300, sentencesAhead: 2, maxAudioBytes: 4194304 }`.
+  2. Given `TIER_LIVE_MINUTES` / Then it equals `{ none: 0, basic: 30, pro: 90, max: 180, god: 180 }`; and `dailyMinutesFor("god")` is `15`.
+  3. Given an open lease `{ startedAt: s, lastRenewalAt: s + 20 * 60_000 }` / When `leaseMs(lease, s + 20 * 60_000)` runs / Then `900000` (held at `maxSessionMs`).
+  4. Given `{ startedAt: s, lastRenewalAt: s, endedAt: s - 5 }` / Then `leaseMs(…, s)` is `0`; and given `{ startedAt: s, lastRenewalAt: s }` with `now = s - 1_000` / Then `0`.
+  5. Given `{ startedAt: s, lastRenewalAt: s + VOICE_LIMITS.maxSessionMs - 1_000 }` / When `leaseExpired(lease, s + VOICE_LIMITS.maxSessionMs)` / Then `false`; and at `s + VOICE_LIMITS.maxSessionMs + 1` / Then `true`.
+- **NUMBERS:** Basic 30, Pro 90, Max 180 live minutes a day (HARD_RULES §9), held under the 15-minute preview cap (VOICE.md A-7, `dailyMinutesPerUser`) · global 120 minutes a day, 20,000 read-aloud characters a day, session ≤ 15 minutes, renew every 15 s, expire after 45 s (code constants, pinned by case 1) · 5 new cases pass, P + 5 total (exact).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0370 — Voice: `speechSentences` / `ttsLanguage` — verify + tests (`convex/lib/voicePolicy.ts`)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0365.
-- **WHY:** TRD §7 rule 3 (auth → entitlement → quota order); `convex/voice.ts` `availability`.
-- **GOAL:** `voice.availability` returns the correct `{available, reason, minutesLeft}` for off/language/budget/resting/pending, in the admission order, and is unit-tested for each reason.
-- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
-- **MUTATES:** none (read-only query).
-- **STEPS:** 1) Graphify code-map of `availability`; 2) run `voice.test.ts`; 3) verify the admission order (approved → keys → language → minutes → sessions → global); 4) add missing coverage.
-- **DONE:** `bun test convex/voice.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not reorder admission (A-1); do not weaken a gate; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Returns `{ available: boolean, reason: null|"off"|"language"|"budget"|"resting"|"pending", minutesLeft }`. `off` = a provider key missing; `language` = no lane for locale (Hebrew off until a Hebrew crisis list is approved); `budget` = own minutes/sessions spent; `resting` = global ceiling spent; `pending` = account not approved.
-- **TESTS:** Given keys missing / When `availability` / Then reason `off`. Given Hebrew locale / When called / Then reason `language`. Given paid user with minutes left / When called / Then `available` true. Given unapproved user / When called / Then reason `pending`. Given global ceiling spent / When called / Then reason `resting`.
-- **NUMBERS:** `minStartMs` 60,000 ms gate; `sessionsPerUserPerDay` 40 (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** Hebrew crisis phrase list approval — Amit (voicePolicy `laneFor`); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
-
-### TFV2-0367 — Voice: lease lifecycle start/renew/stop verify
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** PRD F-30; TRD §5a; `convex/voice.ts` `start`/`renew`/`stop`.
-- **GOAL:** The `voiceSessions` lease lifecycle is verified: one active lease per person, idempotent re-start on the same `clientKey`, heartbeat renewal, and idempotent stop.
-- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
-- **MUTATES:** `voiceSessions` (via functions).
-- **STEPS:** 1) Graphify code-map of `start`/`renew`/`stop`/`endLease`; 2) run `voice.test.ts`; 3) verify A-1…A-5; 4) add missing coverage.
-- **DONE:** `bun test convex/voice.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store audio/transcript/token in a lease; do not weaken `endLease` counting; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `start({conversationId, clientKey})` ends an existing active lease (reason `replaced`) and returns `{sessionId, language, renewEveryMs, minutesLeft}`; same `clientKey` + live conversation + unexpired → same lease idempotently. `renew` returns `ok|revoked|exhausted|expired` and ends the lease accordingly. `stop` is idempotent. Errors: voice off, language, daily limit, global rest → calm `ConvexError` codes.
-- **TESTS:** Given an active lease / When `start` with a new clientKey / Then the old lease ends `replaced` and a new one starts. Given the same clientKey / When `start` again / Then the same lease id returns. Given an expired lease / When `renew` / Then `expired` and the lease ends. Given `stop` twice / When run / Then idempotent (second no-op).
-- **NUMBERS:** `renewEveryMs` 15,000; `leaseExpiresAfterMs` 45,000; `maxSessionMs` 15 min (repo constants).
+- **WHY:** TRD §5a step 4 (speech starts one sentence at a time); VOICE.md A-10 (the server resolves a sentence from reply + index, so the split must be deterministic). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `speechSentences` already has 5 cases (marks and line breaks, Markdown/code/links, Hebrew and quotes, over-limit cut, determinism); `ttsLanguage` has none, and images, blockquotes, numbered lists, full-width marks, the ellipsis and the hard cut of a space-free word are untested. Depends on TFV2-0365 only so the two tickets append to the same test file in order.
+- **GOAL:** `convex/lib/voicePolicy.test.ts` proves `ttsLanguage` and the untested parts of `speechSentences`, with no source change.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (read only, unchanged) · test: `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** `convex/lib/voicePolicy.test.ts` (edit: add `ttsLanguage` to the import list; append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `speechSentences`, `cut` and `ttsLanguage` in `convex/lib/voicePolicy.ts` (lines 89–130); run `bun test convex/lib/voicePolicy.test.ts` and note P.
+  2. Add `ttsLanguage` to the file's import from `./voicePolicy`; append `describe("speechSentences and ttsLanguage, more cases", …)` with the 5 TESTS cases.
+  3. Run DONE. If a case fails, stop and report `blocked: question — speechSentences differs from SPEC: <case>`; do not change the source.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → `0 fail` and P + 5 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/lib/voicePolicy.ts` (the sentence grammar is A-10's); change or delete an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0370 / evidence: <DONE output> / changed: convex/lib/voicePolicy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Unchanged functions: `speechSentences(reply: string): string[]` (drops fenced code, keeps inline-code and link words, drops images, strips heading/list/quote marks and `*_~` emphasis, splits after `. ! ? … 。 ！ ？` and at line breaks, skips pieces with no letter or digit, cuts a piece over `VOICE_LIMITS.maxSentenceChars` (300) at the last space in the window when that space is past a third of the window, else hard at 300); `ttsLanguage(lane: "en" | "he"): string` (returns the lane). No errors; no copy.
+- **TESTS:** (`describe("speechSentences and ttsLanguage, more cases")`)
+  1. Given `ttsLanguage("en")` and `ttsLanguage("he")` / Then `"en"` and `"he"`.
+  2. Given `"See ![chart](x.png) and run \`npm test\` now."` / When split / Then `["See and run npm test now."]`.
+  3. Given `"> Breathe first.\n1. Water\n2) Walk"` / When split / Then `["Breathe first.", "Water", "Walk"]`.
+  4. Given `"待って… 今日は休み。 明日！"` / When split / Then `["待って…", "今日は休み。", "明日！"]`.
+  5. Given `"x".repeat(300)` / When split / Then one piece of length 300; and given `"x".repeat(301)` / Then `["x".repeat(300), "x"]`.
+- **NUMBERS:** sentence ≤ 300 characters (`maxSentenceChars`, VOICE.md A-10) · 5 new cases pass, P + 5 total (exact).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0368 — Voice: Deepgram STT token grant verify
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0367.
-- **WHY:** PRD F-32/F-33; TRD §5a step 1 and §7 rule 2 (30-second token, key never leaves the server); `convex/voice.ts` `grant`/`admitGrant`/`releaseGrant`.
-- **GOAL:** `voice.grant` is verified to mint a 30-second Deepgram token for a live lease, reserve/release the grant on failure, and never log the key or token.
-- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
-- **MUTATES:** `voiceSessions.grants` (reserve/release only).
-- **STEPS:** 1) Graphify code-map of `grant`/`admitGrant`/`mintDeepgramToken`; 2) run `voice.test.ts`; 3) verify grant-count cap and release-on-failure; 4) add missing coverage.
-- **DONE:** `bun test convex/voice.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store or log the token; do not raise `grantsPerLease`; do not call the real provider in tests (stub `fetch`); do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `grant({sessionId}) → { token, url }` (action; `requireApprovedForAi`; uses `DEEPGRAM_API_KEY`). `admitGrant` increments `grants` (cap `grantsPerLease` 3); `releaseGrant` decrements on a failed mint so failures don't consume the lease. Provider errors surface as `voice_connect` (nothing about the body).
-- **TESTS:** Given a live lease / When `grant` runs against a stubbed Deepgram / Then a token + the server-chosen `url` return and `grants` increments. Given a stub that fails / When `grant` runs / Then `releaseGrant` runs and `grants` does not grow. Given 3 grants used / When a 4th is admitted / Then `voice_session_ended`. Given a stub returning an unusable token / When `grant` runs / Then `voice_connect`.
-- **NUMBERS:** token TTL 30 s (`tokenTtlSeconds`), `grantsPerLease` 3 (repo constants / TRD §5a).
+### TFV2-0391 — Voice: `localDateKey` / `utcDateKey` at midnight — verify + tests (`convex/lib/voicePolicy.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0370 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0370.
+- **WHY:** PRD F-35; `.cursorrules` ("Daily caps reset at user's local midnight"); VOICE.md A-6 (personal minutes per local day, the global ceiling per UTC day); CONVENTIONS §14 (time zone from `userPreferences.timeZone`). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `localDateKey(now, timeZone)` formats with `Intl.DateTimeFormat("en-CA", { timeZone: timeZone || "UTC", … })` and falls back to the UTC ISO date on a bad zone; the existing "day keys" case checks one instant in three zones. The exact second of local midnight, a daylight-saving change and the empty-string zone are untested. Depends on TFV2-0370 only to keep appends to this test file in order.
+- **GOAL:** `convex/lib/voicePolicy.test.ts` proves the voice day key turns over exactly at local midnight in summer and winter time, and that an empty zone means UTC, with no source change.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (read only, unchanged) · test: `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** `convex/lib/voicePolicy.test.ts` (edit: append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `localDateKey` and `utcDateKey` (lines 159–176); run `bun test convex/lib/voicePolicy.test.ts` and note P.
+  2. Append `describe("day keys at midnight", …)` with the 3 TESTS cases.
+  3. Run DONE. If a case fails, stop and report `blocked: question — localDateKey differs from SPEC: <case>`.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → `0 fail` and P + 3 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/lib/voicePolicy.ts`; switch the personal cap to UTC; change or delete an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0391 / evidence: <DONE output> / changed: convex/lib/voicePolicy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Unchanged: `localDateKey(now: number, timeZone: string | undefined): string` (`YYYY-MM-DD` in the zone; `""` or `undefined` → `"UTC"`; a zone `Intl` rejects → `new Date(now).toISOString().slice(0, 10)`); `utcDateKey(now: number): string` (`toISOString().slice(0, 10)`). No errors; no copy.
+- **TESTS:** (`describe("day keys at midnight")`)
+  1. Given Israel summer time (UTC+3, 15 Oct 2026) / When `localDateKey(Date.UTC(2026, 9, 15, 20, 59, 59), "Asia/Jerusalem")` / Then `"2026-10-15"`; and at `Date.UTC(2026, 9, 15, 21, 0, 0)` / Then `"2026-10-16"`.
+  2. Given Israel winter time (UTC+2, 15 Nov 2026) / When `localDateKey(Date.UTC(2026, 10, 15, 21, 59, 59), "Asia/Jerusalem")` / Then `"2026-11-15"`; and at `Date.UTC(2026, 10, 15, 22, 0, 0)` / Then `"2026-11-16"`.
+  3. Given `localDateKey(Date.UTC(2026, 9, 15, 22, 30), "")` / Then `"2026-10-15"`; and `utcDateKey(Date.UTC(2026, 9, 15, 23, 59, 59, 999))` / Then `"2026-10-15"`, `utcDateKey(Date.UTC(2026, 9, 16))` / Then `"2026-10-16"`.
+- **NUMBERS:** personal cap resets at local midnight, to the second (`.cursorrules`; VOICE.md A-6) · global ceiling on the UTC day · 3 new cases pass, P + 3 total (exact). The Israel offsets (UTC+3 until the last Sunday of October 2026, then UTC+2) come from the IANA tz database shipped with the runtime's ICU.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0369 — Voice: Chatterbox TTS `speak` + sentence admit/release verify
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0367.
-- **WHY:** PRD F-32/F-33; TRD §5a step 4; `convex/voice.ts` `speak`/`admitSentence`/`releaseSentence`.
-- **GOAL:** `voice.speak` is verified to resolve one sentence of a coach reply (never the crisis card), count read-aloud chars, synthesize audio, and release the sentence on failure.
-- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
-- **MUTATES:** `voiceSessions.sentences`/`ttsChars` (admit/release only).
-- **STEPS:** 1) Graphify code-map of `speak`/`admitSentence`/`synthesize`/`audioFrom`; 2) run `voice.test.ts`; 3) verify crisis-card exclusion and char cap; 4) add missing coverage.
-- **DONE:** `bun test convex/voice.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store audio; do not read the crisis card aloud; do not raise `dailyTtsCharsPerUser`; do not call the real provider in tests; do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `speak({sessionId, messageId, index}) → {status:"audio", audio, mime, count} | {status:"done"} | {status:"exhausted"}`. `admitSentence` resolves sentence `index` server-side from the assistant message (never client text), refuses the crisis card (`modelUsed === "crisis-card"`), enforces `dailyTtsCharsPerUser`, and counts before synthesis. `releaseSentence` gives back the chars on failure.
-- **TESTS:** Given a coach reply / When `speak` index 0 against a stubbed TTS / Then audio returns and `ttsChars` increments. Given the crisis card / When `speak` runs / Then status `done` and no audio. Given char cap exceeded / When `admitSentence` / Then `exhausted`. Given a stub failure / When `speak` runs / Then `releaseSentence` restores the count.
-- **NUMBERS:** `dailyTtsCharsPerUser` 20,000; `maxAudioBytes` 4 MB; `maxSentenceChars` 300 (repo constants).
+### TFV2-0366 — Voice: `voice.availability` — verify + tests (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** TRD §7 rule 3 (auth → entitlement → quota order); VOICE.md A-1 (admission order); PRD F-35. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `availability` (query, `convex/voice.ts` lines 186–208) checks, in order: `requireUser`, approval (`"pending"`), both keys (`"off"`), a language lane (`"language"`), personal minutes or sessions today (`"budget"`), the global ceiling (`"resting"`). `convex/voice.test.ts` builds its own in-memory world (`makeWorld`, lines 20–89) rather than `convex/lib/testFakeCtx.ts`; this ticket follows the file (CONVENTIONS §8 "follow the code"). Untested today: signed out, pending through `availability`, "off" winning over "language", the floor of `minutesLeft`, and that a lease from another local day does not count.
+- **GOAL:** `convex/voice.test.ts` proves every untested branch of `voice.availability` and adds the shared `signedOutCtx` and `rejection` helpers, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: two helpers after `type World = ReturnType<typeof makeWorld>;`, one `describe` block appended). No source change.
+- **STEPS:**
+  1. Code-map check: read `availability`, `leasesToday`, `dailyCapMs` in `convex/voice.ts` and `makeWorld`, `conversation`, `startSession`, `KEYS` in `convex/voice.test.ts`; run `bun test convex/voice.test.ts` and note P (29 today).
+  2. After the line `type World = ReturnType<typeof makeWorld>;` add exactly:
+     ```ts
+     /** The same in-memory db with no signed-in person. */
+     function signedOutCtx(world: World) {
+       return { auth: { getUserIdentity: async () => null }, db: world.db } as unknown as MutationCtx;
+     }
+
+     /** The machine code of a rejected voice ConvexError, or the message of a plain Error. */
+     async function rejection(promise: Promise<unknown>): Promise<string> {
+       const error = await promise.then(() => null, (e: unknown) => e);
+       if (error instanceof ConvexError) return (error.data as { code: string }).code;
+       if (error instanceof Error) return error.message;
+       throw new Error("expected a rejection");
+     }
+     ```
+  3. Append `describe("availability: every branch", …)` with the 5 TESTS cases. Preferences rows are inserted as the existing Hebrew case does: `{ userId: A, locale, timeZone, theme: "system", weekStartsOn: 1, emailReminders: false, inAppNotifications: true, createdAt: 1, updatedAt: 1 }`. Ended lease rows copy the shape the existing cases insert (`clientKey`, `status: "ended"`, `language: "en"`, `startedAt`, `lastRenewalAt`, `endedAt`, `dateKey`, `utcDateKey`, `grants: 0`, `sentences: 0`, `ttsChars: 0`, `createdAt: 1`, `updatedAt: 1`).
+  4. Run DONE. If a case fails, stop and report `blocked: question — availability differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 5 pass (34 when P is 29).
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; reorder admission; change `makeWorld` or any existing test; call a provider; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0366 / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Function under test, unchanged:
+  ```ts
+  export const availability = query({
+    args: {},
+    returns: v.object({ available: v.boolean(), reason: v.union(v.null(), v.literal("off"), v.literal("language"), v.literal("budget"), v.literal("resting"), v.literal("pending")), minutesLeft: v.number() }),
+    handler: async (ctx: QueryCtx): Promise<{ available: boolean; reason: null | "off" | "language" | "budget" | "resting" | "pending"; minutesLeft: number }> => { … },
+  });
+  ```
+  Order: `requireUser` → not approved `{ available: false, reason: "pending", minutesLeft: 0 }` → `DEEPGRAM_API_KEY` or `DEEPINFRA_API_KEY` missing → `"off"`, `0` → `laneFor(prefs?.locale)` null → `"language"`, `0` → `minutesLeft = max(0, floor((dailyCapMs(user) − Σ leaseMs of today's leases) / 60000))`; less than `minStartMs` left or ≥ 40 sessions today → `"budget"` → global minutes left < `minStartMs` → `"resting"` → `{ available: true, reason: null, minutesLeft }`. "Today" = `localDateKey(Date.now(), prefs?.timeZone)`. Errors: `"Not authenticated"` (thrown, signed out); every other outcome is a returned reason.
+- **TESTS:** (`describe("availability: every branch")`)
+  1. Given `signedOutCtx(world)` / When `rejection(run(voice.availability, ctx, {}))` / Then `"Not authenticated"`.
+  2. Given `A` patched to `approvalStatus: "pending"` and `delete process.env.DEEPGRAM_API_KEY` / When `availability` runs as `A` / Then it equals `{ available: false, reason: "pending", minutesLeft: 0 }`.
+  3. Given `delete process.env.DEEPINFRA_API_KEY` and a preferences row with `locale: "he"` / When run / Then `reason` is `"off"` (not `"language"`).
+  4. Given one ended lease of `A` today (`dateKey` and `utcDateKey` = today's UTC date, `startedAt: now - 200_000`, `lastRenewalAt: now - 110_000`, `endedAt: now - 110_000`, so 90,000 ms used) / When run / Then `{ available: true, reason: null, minutesLeft: 13 }`.
+  5. Given a preferences row `{ locale: "en", timeZone: "Asia/Jerusalem" }` and an ended lease of `A` using 14.5 minutes with `dateKey: "2000-01-01"`, `utcDateKey: "2000-01-01"` / When run / Then `{ available: true, reason: null, minutesLeft: 15 }`; When a second such lease is added with `dateKey: localDateKey(Date.now(), "Asia/Jerusalem")` (import `localDateKey` from `./lib/voicePolicy`) / Then `reason` is `"budget"`.
+- **NUMBERS:** admission order pending → off → language → budget → resting (VOICE.md A-1, TRD §7 rule 3) · `minStartMs` 60,000 ms, 40 sessions a day, preview cap 15 minutes (code constants) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0370 — Voice: `speechSentences` split + `ttsLanguage` verify
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** TRD §5a (sentence-at-a-time); `convex/lib/voicePolicy.ts` `speechSentences`/`ttsLanguage`.
-- **GOAL:** `speechSentences` deterministically splits a markdown reply into speakable sentences (markdown marks dropped, long sentences cut under the limit), and `ttsLanguage` maps a lane to the Chatterbox language id.
-- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
-- **MUTATES:** none (pure functions).
-- **STEPS:** 1) Graphify code-map of `speechSentences`/`ttsLanguage`; 2) run the test; 3) verify determinism (same reply → same sentences) and markdown stripping; 4) add missing coverage.
-- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not change the sentence grammar; do not allow the crisis card into TTS (caller-level, but keep the split deterministic); do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Split after `. ! ? … 。 ！ ？` and line breaks; strip code fences, inline code, images, links, heading/list marks; a sentence > `maxSentenceChars` (300) is cut at a comma/space. `ttsLanguage("en")→"en"`, `ttsLanguage("he")→"he"`.
-- **TESTS:** Given `"Hi **there**.\nHow are you?"` / When `speechSentences` / Then two sentences, bold stripped. Given a 500-char sentence / When split / Then no piece exceeds 300 and no words are lost. Given the same input twice / When split / Then identical output. Given `ttsLanguage("he")` / When called / Then `"he"`.
-- **NUMBERS:** `maxSentenceChars` 300 (repo constant).
+### TFV2-0367a — Voice: `voice.start` — verify + tests (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0366 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0366.
+- **WHY:** PRD F-30; TRD §5a; VOICE.md A-1 (admission order), A-2 (one lease per person), A-6 (local day). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Old TFV2-0367 bundled `start`, `renew` and `stop`; split one function per ticket (CONVENTIONS §7 H) into 0367a/b/c. Code truth: `start` (mutation, lines 216–271) runs `requireApprovedUser` → `requireLegacyWritableConversation` (`"Conversation not found or access denied"`) → `clientKey` must match `/^[A-Za-z0-9_-]{8,64}$/` (else `voice_session_ended`) → keys → lane → reuse or end active leases → budget → global ceiling → insert. Untested today: signed out, the exact pending and conversation messages, a malformed `clientKey`, an expired same-key lease, a same-key start on another conversation, and the stored `dateKey` in the person's zone. Uses `signedOutCtx` and `rejection` from TFV2-0366.
+- **GOAL:** `convex/voice.test.ts` proves every untested branch of `voice.start`, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: add `localDateKey`, `utcDateKey` to the `./lib/voicePolicy` import if absent; append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `start` and `endLease` in `convex/voice.ts`; confirm `signedOutCtx` and `rejection` exist in `convex/voice.test.ts`; run `bun test convex/voice.test.ts` and note P.
+  2. Append `describe("start: every branch", …)` with the 7 TESTS cases.
+  3. Run DONE. If a case fails, stop and report `blocked: question — start differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 7 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; store audio, transcript or token in a lease; change an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0367a / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Function under test, unchanged:
+  ```ts
+  export const start = mutation({
+    args: { conversationId: v.id("conversations"), clientKey: v.string() },
+    returns: v.object({ sessionId: v.id("voiceSessions"), language: v.union(v.literal("en"), v.literal("he")), renewEveryMs: v.number(), minutesLeft: v.number() }),
+    handler: async (ctx: MutationCtx, args: { conversationId: Id<"conversations">; clientKey: string }) => { … },
+  });
+  ```
+  Errors (exact): `"Not authenticated"`; `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` (`PENDING_APPROVAL_MESSAGE`, plain `Error`); `"Conversation not found or access denied"` (`CONVERSATION_UNAVAILABLE_MESSAGE`, plain `Error`); `ConvexError` codes `voice_session_ended` (malformed `clientKey`), `voice_off`, `voice_language`, `voice_daily_limit`, `voice_resting` (the last four already covered by existing cases). An active lease with the same `clientKey` and conversation that has not expired is returned again; any other active lease ends with `endReason` `"expired"` (if it has expired) or `"replaced"`. The new row's `dateKey` is `localDateKey(now, prefs?.timeZone)` and `utcDateKey` is `utcDateKey(now)`.
+- **TESTS:** (`describe("start: every branch")`)
+  1. Given `signedOutCtx(world)` and a conversation of `A` / When `rejection(run(voice.start, ctx, { conversationId, clientKey: "client_key_1" }))` / Then `"Not authenticated"` and `world.rows("voiceSessions")` is empty.
+  2. Given `A` with `approvalStatus: "pending"` / When `rejection(startSession(world, conversationId))` / Then `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
+  3. Given a conversation of `B` / When `A` starts on it / Then `rejection` gives `"Conversation not found or access denied"` and no lease is stored.
+  4. Given each `clientKey` of `"short"`, `"has space key"` and `"x".repeat(65)` / When `A` starts / Then each `rejection` is `"voice_session_ended"` and no lease is stored.
+  5. Given a lease started with `"client_key_1"` whose `lastRenewalAt` is patched to `Date.now() - VOICE_LIMITS.leaseExpiresAfterMs - 1` / When `A` starts again with `"client_key_1"` on the same conversation / Then a different `sessionId` returns and the old row has `status: "ended"`, `endReason: "expired"`.
+  6. Given a lease started with `"client_key_1"` on conversation 1 / When `A` starts with `"client_key_1"` on a second conversation of `A` / Then a different `sessionId` returns and the old row has `endReason: "replaced"`.
+  7. Given a preferences row `{ locale: "en", timeZone: "Asia/Jerusalem" }` / When `A` starts / Then the stored row has `dateKey === localDateKey(Date.now(), "Asia/Jerusalem")` and `utcDateKey === utcDateKey(Date.now())`.
+- **NUMBERS:** one active lease per person (VOICE.md A-2) · `clientKey` 8–64 characters of `[A-Za-z0-9_-]` (code regex) · 7 new cases pass, P + 7 total · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0371 — Voice: Deepgram STT WebSocket client (browser)
+### TFV2-0367b — Voice: `voice.renew` (heartbeat) — verify + tests (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367a.
+- **WHY:** PRD F-30; VOICE.md A-3 (heartbeat), A-5 (counting), L-14 (anything but "ok" tears the session down). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `renew` (mutation, lines 277–312) uses `requireUser` then `ownedLease` (`voice_session_ended` for a missing, foreign or tombstoned lease); an ended lease returns `{ status: "expired", minutesLeft: 0 }` without a write. Existing cases cover ok/expired, revoked, personal exhaustion; untested are signed out, another person's lease, an already ended lease, the `minutesLeft` and `lastRenewalAt` of an ok renewal, and global-ceiling exhaustion. Depends on TFV2-0367a to keep appends in order.
+- **GOAL:** `convex/voice.test.ts` proves every untested branch of `voice.renew`, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `renew`, `ownedLease`, `usedGlobalMs` in `convex/voice.ts`; run `bun test convex/voice.test.ts` and note P.
+  2. Append `describe("renew: every branch", …)` with the 5 TESTS cases.
+  3. Run DONE. If a case fails, stop and report `blocked: question — renew differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 5 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; weaken `endLease` counting; change an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0367b / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Function under test, unchanged:
+  ```ts
+  export const renew = mutation({
+    args: { sessionId: v.id("voiceSessions") },
+    returns: v.object({ status: v.union(v.literal("ok"), v.literal("revoked"), v.literal("exhausted"), v.literal("expired")), minutesLeft: v.number() }),
+    handler: async (ctx: MutationCtx, args: { sessionId: Id<"voiceSessions"> }) => { … },
+  });
+  ```
+  Errors (exact): `"Not authenticated"`; `ConvexError` `voice_session_ended` (missing, foreign or tombstoned lease). Statuses: ended lease → `expired` (no write); not approved or conversation gone → `revoked` (lease ends); stale → `expired` (lease ends); personal or global minutes spent → `exhausted` (lease ends); else `ok` with `lastRenewalAt = now` and `minutesLeft = floor((cap − spent) / 60000)`.
+- **TESTS:** (`describe("renew: every branch")`)
+  1. Given a lease of `A` / When `rejection(run(voice.renew, signedOutCtx(world), { sessionId }))` / Then `"Not authenticated"` and the lease stays `status: "active"`.
+  2. Given a lease of `A` / When `B` renews it / Then `rejection` gives `"voice_session_ended"` and the lease stays `"active"`.
+  3. Given a lease of `A` that `voice.stop` ended / When `A` renews / Then it returns `{ status: "expired", minutesLeft: 0 }` and the row's `endReason` stays `"stopped"`.
+  4. Given a lease patched to `startedAt: now - 90_000`, `lastRenewalAt: now - 10_000` / When `A` renews / Then `{ status: "ok", minutesLeft: 13 }` and the row's `lastRenewalAt` is ≥ `now`.
+  5. Given another person's ended lease on the same `utcDateKey` using 120 minutes (`userId: "users:many"`, `dateKey: "2000-01-01"`, `startedAt: now - 200 * 60_000`, `endedAt: now - 80 * 60_000`) / When `A` renews / Then `{ status: "exhausted", minutesLeft: 0 }` and the row has `endReason: "exhausted"`.
+- **NUMBERS:** renew every 15,000 ms, expire after 45,000 ms, global 120 minutes a day (code constants; VOICE.md A-3, A-7) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0367c — Voice: `voice.stop` — verify + tests (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367b.
+- **WHY:** PRD F-30; VOICE.md A-5. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `stop` (mutation, lines 315–324) is `requireUser` → `ownedLease` → `endLease(…, "stopped")` → `null`; idempotent and the foreign case are tested; signed out, the return value and fields of a fresh stop, and a tombstoned or missing lease are not. Depends on TFV2-0367b to keep appends in order.
+- **GOAL:** `convex/voice.test.ts` proves the untested branches of `voice.stop`, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `stop` and `endLease`; run `bun test convex/voice.test.ts` and note P.
+  2. Append `describe("stop: every branch", …)` with the 3 TESTS cases.
+  3. Run DONE. If a case fails, stop and report `blocked: question — stop differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 3 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; change an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0367c / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Function under test, unchanged: `export const stop = mutation({ args: { sessionId: v.id("voiceSessions") }, returns: v.null(), handler: async (ctx: MutationCtx, args: { sessionId: Id<"voiceSessions"> }): Promise<null> => { … } });` Errors (exact): `"Not authenticated"`; `ConvexError` `voice_session_ended` (missing, foreign or tombstoned lease). A live lease gets `status: "ended"`, `endReason: "stopped"`, `endedAt`, `durationMs`, `updatedAt`.
+- **TESTS:** (`describe("stop: every branch")`)
+  1. Given a lease of `A` / When `rejection(run(voice.stop, signedOutCtx(world), { sessionId }))` / Then `"Not authenticated"` and the lease stays `"active"`.
+  2. Given a fresh lease of `A` / When `A` stops it / Then the result is `null` and the row has `status: "ended"`, `endReason: "stopped"`, a numeric `endedAt`, and `durationMs` ≥ 0 and < 60,000.
+  3. Given a lease of `A` patched with `deletedAt: Date.now()` / When `A` stops it / Then `rejection` gives `"voice_session_ended"`; and given `sessionId` `"voiceSessions:999"` (no row) / Then `"voice_session_ended"`.
+- **NUMBERS:** stop is idempotent and counts at most to last renewal + 15 s for a stale lease (VOICE.md A-5; existing cases) · 3 new cases pass, P + 3 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0368 — Voice: `voice.grant` (30-second Deepgram token) — verify + tests (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367c.
+- **WHY:** PRD F-32/F-33; TRD §5a step 1 and §7 rule 2 (30-second token; the key never leaves the server); VOICE.md A-4 (a few grants per lease). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `grant` (action, lines 365–380) runs `requireApprovedForAi` → `DEEPGRAM_API_KEY` present (else `voice_off`) → `internal.voice.admitGrant` (reserves one of `grantsPerLease`) → `mintDeepgramToken` → on failure `internal.voice.releaseGrant`. `admitGrant`/`releaseGrant` are its internal halves, tested through `grant`. Existing cases cover success, the cap, an HTTP error, release after failure, a newly unpaid account, a pending account. Untested: signed out, a missing Deepgram key, a network throw, an unusable or minimum-length token, another person's lease. Depends on TFV2-0367c to keep appends in order.
+- **GOAL:** `convex/voice.test.ts` proves the untested branches of `voice.grant` and adds the `signedOutActionCtx` helper, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: one helper after `signedOutCtx`; append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `grant`, `admitGrant`, `releaseGrant`, `mintDeepgramToken`; confirm `signedOutCtx`, `rejection`, `fakeFetch`, `errorLog` in the test file; run `bun test convex/voice.test.ts` and note P.
+  2. After `signedOutCtx` add exactly:
+     ```ts
+     /** An action ctx with no signed-in person: only the approval gate is reachable. */
+     function signedOutActionCtx(world: World) {
+       const ctx = signedOutCtx(world);
+       const dispatch = (ref: unknown, args: unknown) => {
+         if (getFunctionName(ref as never) !== "approval:assertApprovedForAi") throw new Error(`unexpected call ${getFunctionName(ref as never)}`);
+         return run(approval.assertApprovedForAi, ctx, args);
+       };
+       return { runQuery: dispatch, runMutation: dispatch } as unknown as ActionCtx;
+     }
+     ```
+  3. Append `describe("grant: every branch", …)` with the 5 TESTS cases.
+  4. Run DONE. If a case fails, stop and report `blocked: question — grant differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 5 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; raise `grantsPerLease`; call the real provider (every case stubs `fetch` with `fakeFetch` and restores it in `finally`); put a real key in the test (`KEYS` holds fake names); change an existing test; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0368 / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Function under test, unchanged:
+  ```ts
+  export const grant = action({
+    args: { sessionId: v.id("voiceSessions") },
+    returns: v.object({ token: v.string(), url: v.string() }),
+    handler: async (ctx: ActionCtx, args: { sessionId: Id<"voiceSessions"> }): Promise<{ token: string; url: string }> => { … },
+  });
+  ```
+  Errors (exact): `"Not authenticated"` (through `approval.assertApprovedForAi`); `ConvexError` `voice_off` (no `DEEPGRAM_API_KEY`, before any reservation), `voice_session_ended` (foreign, ended or expired lease, or grants used up), `voice_daily_limit` (minutes spent), `voice_connect` (network throw, non-2xx, or a token that is not a string of 16–8,192 characters; the grant is given back). Log lines carry the error name or HTTP status only, never the key, token or body.
+- **TESTS:** (`describe("grant: every branch")`)
+  1. Given a lease of `A` and `fakeFetch` returning a token / When `rejection(run(voice.grant, signedOutActionCtx(world), { sessionId }))` / Then `"Not authenticated"` and `net.calls` is empty.
+  2. Given `delete process.env.DEEPGRAM_API_KEY` / When `A` calls `grant` / Then `rejection` gives `"voice_off"`, no fetch is made and the lease's `grants` stays `0`.
+  3. Given `fakeFetch` that throws `new TypeError("network down")` / When `A` calls `grant` / Then `"voice_connect"`, `grants` is back to `0`, and `JSON.stringify(errorLog.mock.calls)` contains `"could not be reached (TypeError)"`.
+  4. Given `fakeFetch` returning `{ access_token: "short" }` / When `A` calls `grant` / Then `"voice_connect"`, `grants` is `0` and the log contains `"no usable token"`; and given `{ access_token: "abcdefghijklmnop" }` (16 characters) / Then it returns `{ token: "abcdefghijklmnop", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" }` and `grants` is `1`.
+  5. Given a lease of `A` / When `B` calls `grant` with it (`world.actionAs(B)`) / Then `rejection` gives `"voice_session_ended"` and no fetch is made.
+- **NUMBERS:** token TTL 30 s (`tokenTtlSeconds`; TRD §5a) · 3 grants per lease (`grantsPerLease`; VOICE.md A-4) · token length 16–8,192 characters (code check) · key or token characters in logs: 0 · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (provider-bound; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0369 — Voice: `voice.speak` (one sentence read aloud) — verify + tests (`convex/voice.ts`)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0368.
-- **WHY:** TRD §5a step 2; PRD F-32/F-33.
-- **GOAL:** A browser client opens the Deepgram `/listen` WebSocket with the 30-second token, streams `MediaRecorder` mic audio, and emits interim + final transcripts plus end-of-turn.
-- **SCOPE:** `apps/web/lib/voice-stt.ts` · test `apps/web/lib/voice-stt.test.ts`.
-- **MUTATES:** none (client-side streaming; no storage).
-- **STEPS:** 1) Graphify code-map of `apps/web/lib/voice-call.ts` and `apps/web/components/coach/voice/voiceSession.ts`; 2) implement (or verify) the socket open (token as `bearer` subprotocol), mic capture, and transcript events; 3) write the unit test with a fake WebSocket.
-- **DONE:** `bun test apps/web/lib/voice-stt.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store or log audio or transcripts; do not embed a key; do not call the real provider in tests; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `openSttSocket({ url, token, onInterim, onFinal, onUtteranceEnd, onError })` returns a handle with `close()`. Audio is WebM/Opus (`MediaRecorder`); the socket sends binary frames. Interim transcripts feed `onInterim` (live transcript); final feed `onFinal`; `vad_events`/`utterance_end` drive `onUtteranceEnd` (end-of-turn and barge-in signal). Errors surface as `voice_connect` copy.
-- **TESTS:** Given a fake WebSocket / When opened / Then the subprotocol carries the token and the URL is unchanged. Given a final transcript event / When received / Then `onFinal` fires with the text. Given an utterance-end event / When received / Then `onUtteranceEnd` fires. Given a socket error / When fired / Then `onError` fires.
-- **NUMBERS:** token TTL 30 s (opens once, valid at connect) (TRD §5a).
+- **WHY:** PRD F-32/F-33; TRD §5a step 4; VOICE.md A-10 (the server resolves the sentence), L-12 (the crisis card is never spoken). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `speak` (action, lines 501–521) runs `requireApprovedForAi` → `DEEPINFRA_API_KEY` present (else `voice_off`) → `internal.voice.admitSentence` (counts the sentence) → `synthesize` → on failure `internal.voice.releaseSentence`; the internal halves are tested through `speak`. Existing cases cover audio, base64, the crisis card, wrong message/index, outage give-back, a broken body, the character cap. Untested: signed out, a missing DeepInfra key, oversized and empty audio, a deleted message, an ended lease. Uses `signedOutActionCtx` from TFV2-0368.
+- **GOAL:** `convex/voice.test.ts` proves the untested branches of `voice.speak`, with no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `speak`, `admitSentence`, `releaseSentence`, `synthesize`, `audioFrom`; run `bun test convex/voice.test.ts` and note P.
+  2. Append `describe("speak: every branch", …)` with the 5 TESTS cases (`WAV` bytes as in the existing `speak` block: `new Uint8Array([82, 73, 70, 70, 1, 2, 3, 4])`).
+  3. Run DONE. If a case fails, stop and report `blocked: question — speak differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 5 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`; store audio; raise `dailyTtsCharsPerUser` or `maxAudioBytes`; call the real provider; change an existing test; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0369 / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Function under test, unchanged:
+  ```ts
+  export const speak = action({
+    args: { sessionId: v.id("voiceSessions"), messageId: v.id("messages"), index: v.number() },
+    returns: v.union(
+      v.object({ status: v.literal("audio"), audio: v.bytes(), mime: v.string(), count: v.number() }),
+      v.object({ status: v.literal("done") }),
+      v.object({ status: v.literal("exhausted") }),
+    ),
+    handler: async (ctx: ActionCtx, args: { sessionId: Id<"voiceSessions">; messageId: Id<"messages">; index: number }) => { … },
+  });
+  ```
+  Errors (exact): `"Not authenticated"`; `ConvexError` `voice_off` (no `DEEPINFRA_API_KEY`, before counting), `voice_session_ended` (foreign/ended/expired lease; message missing, deleted, not an assistant message or in another conversation; bad index), `voice_daily_limit`, `voice_connect` (network throw, non-2xx, no audio, 0 bytes, or more than `maxAudioBytes`; the sentence is given back).
+- **TESTS:** (`describe("speak: every branch")`)
+  1. Given a lease and a coach reply `"Start with Dana."` / When `rejection(run(voice.speak, signedOutActionCtx(world), { sessionId, messageId, index: 0 }))` / Then `"Not authenticated"` and no fetch is made.
+  2. Given `delete process.env.DEEPINFRA_API_KEY` / When `A` speaks index 0 / Then `"voice_off"`, no fetch, and the lease has `sentences: 0`, `ttsChars: 0`.
+  3. Given `fakeFetch` returning `new Response(new Uint8Array(VOICE_LIMITS.maxAudioBytes + 1), { headers: { "content-type": "audio/wav" } })` / When `A` speaks index 0 / Then `"voice_connect"` and `sentences: 0`, `ttsChars: 0`.
+  4. Given `fakeFetch` returning `new Response(new Uint8Array(0), { headers: { "content-type": "audio/wav" } })` / When `A` speaks / Then `"voice_connect"` and the counts are given back to `0`.
+  5. Given the reply patched with `deletedAt: Date.now()` / When `A` speaks / Then `"voice_session_ended"` and no fetch; and given a live reply but the lease ended by `voice.stop` / When `A` speaks / Then `"voice_session_ended"` and no fetch.
+- **NUMBERS:** 20,000 read-aloud characters a day, audio ≤ 4 MiB (4,194,304 bytes), sentence ≤ 300 characters (code constants; VOICE.md A-7, A-10) · audio stored: 0 bytes · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (provider-bound; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0372 — Voice: Deepgram STT WebSocket client (native/Expo)
+### TFV2-0392 — Voice: a spoken crisis turn gets the fixed card and is never read aloud — tests (`convex/voice.ts`, `convex/coach.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0015, TFV2-0369 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0015, TFV2-0369.
+- **WHY:** PRD F-24; TRD §7 rule 7 (the crisis card is fixed content, never model-written); VOICE.md L-12 and L-16 (voice has no send path of its own; the final transcript goes through the ordinary coach send). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: the web voice hook sends the transcript through the same `send` as typed text (`apps/web/components/coach/voice/useVoiceCall.ts` lines 22–32, 246–247), which calls `coach.sendMessage`; `sendMessage` inserts the card as an assistant message with `modelUsed: "crisis-card"` and returns `{ success: true, crisis: true }`; `admitSentence` returns `{ status: "done" }` for that message. Existing tests check each half alone (`convex/coach_chat.test.ts` "crisis text gets the fixed card…", `convex/voice.test.ts` "the crisis card is never read aloud" with a hand-inserted card); nothing checks the card that `sendMessage` really writes against `speak`. The Hebrew voice lane is off (`laneFor("he")` is `null`), so only English transcripts reach this path; Hebrew crisis phrases are TFV2-0230b/TFV2-0395, not this ticket.
+- **GOAL:** `convex/voice.test.ts` proves that a crisis transcript sent through `coach.sendMessage` during a live voice lease produces the fixed card and that `voice.speak` refuses to read it, with no provider call and no source change.
+- **SCOPE:** `convex/voice.ts` (read only, unchanged) · `convex/coach.ts` (read only, unchanged) · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.test.ts` (edit: add `import * as coach from "./coach";`; append one `describe` block). No source change.
+- **STEPS:**
+  1. Code-map check: read `coach.sendMessage` (`convex/coach.ts` lines 106–144) and `admitSentence` in `convex/voice.ts`; `grep -n "kill myself" convex/lib/crisisWords.ts` (an English phrase on the list); run `bun test convex/voice.test.ts` and note P.
+  2. Add the import and append `describe("a spoken crisis turn", …)` with the 2 TESTS cases; call `run(coach.sendMessage, world.as(A), { conversationId, content })`.
+  3. Run DONE. If a case fails, stop and report `blocked: question — the crisis path differs from SPEC: <case>`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 2 pass.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 3 pasted into the PR.
+- **DO NOT:** edit `convex/voice.ts`, `convex/coach.ts` or `convex/lib/crisisWords.ts`; change the crisis card text; call a provider; change an existing test; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0392 / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
+- **SPEC:** Functions under test, unchanged: `coach.sendMessage` (mutation, `{ conversationId: v.id("conversations"), content: v.string() }` → `{ success: true, crisis?: true }`; crisis text inserts `{ role: "assistant", content: crisisCardText(CRISIS_CARD), modelUsed: "crisis-card" }`) and `voice.speak` (TFV2-0369 SPEC; returns `{ status: "done" }` for a `modelUsed: "crisis-card"` message before any provider call). No new errors; no copy.
+- **TESTS:** (`describe("a spoken crisis turn")`; `fakeFetch` returns `WAV` audio in both)
+  1. Given a live lease of `A` on a conversation / When `coach.sendMessage` runs as `A` with `"I want to kill myself"` / Then it returns `{ success: true, crisis: true }`, the newest message in that conversation has `role: "assistant"` and `modelUsed: "crisis-card"`; When `A` calls `voice.speak` with that message and index `0` / Then it returns `{ status: "done" }`, `net.calls` is empty and the lease has `sentences: 0`, `ttsChars: 0`.
+  2. Given a live lease of `A` / When `coach.sendMessage` runs with `"Plan my morning"` / Then it returns `{ success: true }` with no `crisis` key and the conversation holds only the one user message (no assistant message is written by the send).
+- **NUMBERS:** model calls and TTS requests for a crisis turn: 0 (TRD §7 rule 7; VOICE.md L-12) · 2 new cases pass, P + 2 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0390a — Voice prefs: `preferences.getVoicePrefs` (`convex/preferences.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-020, TFV2-0000a, TFV2-0265a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-020, TFV2-0000a, TFV2-0265a.
+- **WHY:** PRD F-35 (walkie-talkie on every tier), F-73 (language); CFG-020 adds `userPreferences.voicePushToTalk` (missing = `false`) and `voiceLanguage` (missing = the `locale` value). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. A separate query (not a new field in `preferences.get`) keeps `preferences.get`'s returns validator and the two full-object asserts in `convex/users.test.ts` unchanged. Old TFV2-0390 bundled get, set and the `voice.start` read; split into 0390a/b/c. `convex/preferences.test.ts` is created by TFV2-0265a; `.unique()` in the fake ctx comes from TFV2-0000a.
+- **GOAL:** `preferences.getVoicePrefs` returns the caller's push-to-talk default and call language, with the CFG-020 defaults.
+- **SCOPE:** `convex/preferences.ts` · test: `convex/preferences.test.ts`.
+- **MUTATES:** `convex/preferences.ts` (edit: add `voicePrefsValidator`, `VoicePrefs`, `getVoicePrefs`) · `convex/preferences.test.ts` (edit: append one `describe` block). Reads `userPreferences`; writes nothing.
+- **STEPS:**
+  1. Code-map check: `grep -n "voicePushToTalk\|voiceLanguage" convex/schema.ts` (CFG-020 fields present); read `localeValidator`, `PREFERENCE_DEFAULTS` and `preferencesFor` in `convex/preferences.ts`; run `bun test convex/preferences.test.ts` and note P.
+  2. Add the SPEC code after `preferencesFor`.
+  3. Append `describe("preferences.getVoicePrefs", …)` (`makeFakeCtx`, `makeSignedOutCtx`, `run`) with the 4 TESTS cases. A preferences row is `{ userId: "users:1", theme: "system", locale, weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, createdAt: 1, updatedAt: 1 }` plus the case's fields.
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/preferences.test.ts` → `0 fail` and P + 4 pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 and the typecheck exit code pasted into the PR.
+- **DO NOT:** change `get`, `update`, `preferencesValidator`, `PREFERENCE_DEFAULTS` or `fromRow`; edit `convex/users.test.ts`; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0390a / evidence: <DONE output> / changed: convex/preferences.ts, convex/preferences.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const voicePrefsValidator = v.object({ voicePushToTalk: v.boolean(), voiceLanguage: localeValidator });
+  export type VoicePrefs = { voicePushToTalk: boolean; voiceLanguage: Locale };
+
+  /** Push-to-talk default (false) and call language (the person's locale) for a voice call. */
+  export const getVoicePrefs = query({
+    args: {},
+    returns: voicePrefsValidator,
+    handler: async (ctx: QueryCtx): Promise<VoicePrefs> => {
+      const user = await requireUser(ctx);
+      const row = await ctx.db
+        .query("userPreferences")
+        .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
+        .first();
+      return {
+        voicePushToTalk: row?.voicePushToTalk ?? false,
+        voiceLanguage: row?.voiceLanguage ?? row?.locale ?? PREFERENCE_DEFAULTS.locale,
+      };
+    },
+  });
+  ```
+  Kind: `query` (public). Auth: `requireUser`. Errors (exact): `"Not authenticated"`. No user-facing copy.
+- **TESTS:** (`describe("preferences.getVoicePrefs")`)
+  1. Given `makeSignedOutCtx()` / When `run(preferences.getVoicePrefs, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given no preferences row / When run as `users:1` / Then `{ voicePushToTalk: false, voiceLanguage: "en" }`.
+  3. Given a row with `locale: "he"` and no voice fields / When run / Then `{ voicePushToTalk: false, voiceLanguage: "he" }`; and given a row with `locale: "he"`, `voicePushToTalk: true`, `voiceLanguage: "en"` / Then `{ voicePushToTalk: true, voiceLanguage: "en" }`.
+  4. Given a row with `voicePushToTalk: true` and `deletedAt: 5` / When run / Then `{ voicePushToTalk: false, voiceLanguage: "en" }`.
+- **NUMBERS:** defaults exactly per CFG-020 (`false`, the locale) · 4 new cases pass, P + 4 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0390b — Voice prefs: `preferences.setVoicePrefs` (`convex/preferences.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0390a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0390a.
+- **WHY:** PRD F-35, F-73; CFG-020. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Mirrors `preferences.update`'s row handling (one row per person found `by_userId`; a soft-deleted row is revived with defaults; no row → insert with `PREFERENCE_DEFAULTS`) but writes only the two voice fields, so it never races the other settings.
+- **GOAL:** `preferences.setVoicePrefs` stores the caller's push-to-talk default and/or call language and leaves every other preference as it was.
+- **SCOPE:** `convex/preferences.ts` · test: `convex/preferences.test.ts`.
+- **MUTATES:** `convex/preferences.ts` (edit: add `setVoicePrefs`) · `convex/preferences.test.ts` (edit: append one `describe` block) · `userPreferences.voicePushToTalk`, `voiceLanguage`, `updatedAt` (and a new row or a revived row when needed).
+- **STEPS:**
+  1. Code-map check: read `update` in `convex/preferences.ts` (row lookup `by_userId` + `.unique()`); run `bun test convex/preferences.test.ts` and note P.
+  2. Add `setVoicePrefs` after `getVoicePrefs`, exactly as SPEC.
+  3. Append `describe("preferences.setVoicePrefs", …)` with the 5 TESTS cases.
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/preferences.test.ts` → `0 fail` and P + 5 pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4 and the typecheck exit code pasted into the PR.
+- **DO NOT:** change `get`, `update` or `getVoicePrefs`; let this mutation pick the voice lane or model (the server decides those in `convex/voice.ts`); touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0390b / evidence: <DONE output> / changed: convex/preferences.ts, convex/preferences.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const setVoicePrefs = mutation({
+    args: { voicePushToTalk: v.optional(v.boolean()), voiceLanguage: v.optional(localeValidator) },
+    returns: v.null(),
+    handler: async (ctx: MutationCtx, args: { voicePushToTalk?: boolean; voiceLanguage?: Locale }): Promise<null> => {
+      const user = await requireUser(ctx);
+      const fields: { voicePushToTalk?: boolean; voiceLanguage?: Locale } = {};
+      if (args.voicePushToTalk !== undefined) fields.voicePushToTalk = args.voicePushToTalk;
+      if (args.voiceLanguage !== undefined) fields.voiceLanguage = args.voiceLanguage;
+      if (Object.keys(fields).length === 0) return null;
+      const existing = await ctx.db
+        .query("userPreferences")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .unique();
+      const now = Date.now();
+      if (!existing) {
+        await ctx.db.insert("userPreferences", { userId: user._id, ...PREFERENCE_DEFAULTS, ...fields, createdAt: now, updatedAt: now });
+      } else if (existing.deletedAt !== undefined) {
+        await ctx.db.patch(existing._id, { ...PREFERENCE_DEFAULTS, ...fields, updatedAt: now, deletedAt: undefined });
+      } else {
+        await ctx.db.patch(existing._id, { ...fields, updatedAt: now });
+      }
+      return null;
+    },
+  });
+  ```
+  Kind: `mutation` (public). Auth: `requireUser`. Errors (exact): `"Not authenticated"`. With neither field given it writes nothing. No user-facing copy.
+- **TESTS:** (`describe("preferences.setVoicePrefs")`)
+  1. Given `makeSignedOutCtx()` / When `run(preferences.setVoicePrefs, ctx, { voicePushToTalk: true })` / Then it rejects with `"Not authenticated"`.
+  2. Given no row / When run as `users:1` with `{ voicePushToTalk: true }` / Then one row exists with every `PREFERENCE_DEFAULTS` value, `voicePushToTalk: true`, no `voiceLanguage` key, and `createdAt === updatedAt`.
+  3. Given a live row with `theme: "dark"`, `locale: "he"`, `voicePushToTalk: true` / When run with `{ voiceLanguage: "en" }` / Then the row has `voiceLanguage: "en"`, `voicePushToTalk: true`, `theme: "dark"`, `locale: "he"`.
+  4. Given a row with `theme: "dark"` and `deletedAt: 5` / When run with `{ voicePushToTalk: true }` / Then the row has no `deletedAt`, `theme: "system"` (defaults restored) and `voicePushToTalk: true`.
+  5. Given a live row with `updatedAt: 1` / When run with `{}` / Then the row is unchanged (`updatedAt` still `1`) and no row was inserted.
+- **NUMBERS:** fields written per call: only the given voice fields plus `updatedAt` (live row) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0390c — Voice: the call language follows `voiceLanguage` (`convex/voice.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-020, TFV2-0367a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-020, TFV2-0367a.
+- **WHY:** PRD F-73; CFG-020 ("missing `voiceLanguage` means the `locale` value"). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `availability` and `start` both call `laneFor(prefs?.locale)` (lines 193 and 225); the call language still comes only from the server's lane table, so a client cannot pick a model or URL. With this change a person whose app is in Hebrew can still talk to the coach in English while the Hebrew lane is off. Depends on TFV2-0367a for the test helpers and the order of appends to `convex/voice.test.ts`.
+- **GOAL:** `voice.availability` and `voice.start` pick the lane from `voiceLanguage`, falling back to `locale`.
+- **SCOPE:** `convex/voice.ts` · test: `convex/voice.test.ts`.
+- **MUTATES:** `convex/voice.ts` (edit: one private helper `callLanguageOf`; the two `laneFor(prefs?.locale)` calls become `laneFor(callLanguageOf(prefs))`) · `convex/voice.test.ts` (edit: append one `describe` block).
+- **STEPS:**
+  1. Code-map check: `grep -n "laneFor(prefs?.locale)" convex/voice.ts` → exactly 2 hits (in `availability` and `start`); `grep -n "voiceLanguage" convex/schema.ts` (CFG-020); run `bun test convex/voice.test.ts` and note P.
+  2. Add the helper from SPEC after `preferencesOf` and replace the 2 calls; nothing else in the file changes.
+  3. Append `describe("call language", …)` with the 3 TESTS cases (preferences rows as in TFV2-0366 plus `voiceLanguage`).
+  4. Run DONE, then `bun run typecheck`.
+- **DONE:** `bun test convex/voice.test.ts` → `0 fail` and P + 3 pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summaries from STEP 1 and STEP 4, the typecheck exit code and the `git diff convex/voice.ts` (3 changed spots) pasted into the PR.
+- **DO NOT:** change `laneFor` or `LANES` (TFV2-0395 owns the Hebrew lane); accept a language from the client; change any other line of `convex/voice.ts`; change an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0390c / evidence: <DONE output> / changed: convex/voice.ts, convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  /** The language a call uses: the person's voice choice, else their app language (CFG-020). */
+  function callLanguageOf(prefs: { locale?: string; voiceLanguage?: "en" | "he" } | null): string | undefined {
+    return prefs?.voiceLanguage ?? prefs?.locale;
+  }
+  ```
+  `availability`: `if (!laneFor(callLanguageOf(prefs))) return { available: false, reason: "language" as const, minutesLeft: 0 };`. `start`: `const lane = laneFor(callLanguageOf(prefs)); if (!lane) throw voiceError("voice_language");`. Admission order, return shapes and errors are otherwise unchanged (`voice_language` = `"Voice in this language isn't ready yet. Typing works as always."`).
+- **TESTS:** (`describe("call language")`)
+  1. Given a preferences row `{ locale: "he", voiceLanguage: "en" }` / When `availability` runs as `A` / Then `available` is `true`; When `A` starts / Then `language` is `"en"`.
+  2. Given `{ locale: "en", voiceLanguage: "he" }` / When `availability` runs / Then `reason` is `"language"`; When `A` starts / Then `rejection` gives `"voice_language"`.
+  3. Given `{ locale: "he" }` with no `voiceLanguage` / When `availability` runs / Then `reason` is `"language"` (unchanged behaviour).
+- **NUMBERS:** lane chosen only from the server's table (TRD §5a: the client never picks the model) · 3 new cases pass, P + 3 total · p95 latency: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0395 — Voice: turn on the Hebrew lane (Nova-3) in `laneFor` — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0230b, TFV2-0365, TFV2-0390c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0230b, TFV2-0365, TFV2-0390c.
+- **WHY:** PRD F-33 (Hebrew: Deepgram Nova-3 → Chatterbox multilingual), F-71/F-72; TRD §5a; VOICE.md L-12(d) (Hebrew stays off until a Hebrew crisis phrase list is approved, because the crisis check runs on the transcript). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds. Code truth: `LANES.he` already holds the Nova-3 URL; `laneFor` returns `LANES.en` for `"en"`/`undefined` and `null` for everything else. Two existing assertions encode "Hebrew off": `convex/lib/voicePolicy.test.ts` "Hebrew stays off until a Hebrew crisis list is approved; anything else is off" and, in `convex/voice.test.ts`, the Hebrew lines of "a pending account, someone else's conversation, or Hebrew is refused" and TFV2-0390c's case 2. This ticket changes them to the new behaviour (a decided change, not a weakened check). The Hebrew crisis phrases are TFV2-0230b (OPEN, Q-15); the RTL of the call UI belongs to the voice UI tickets.
+- **GOAL:** `laneFor("he")` returns the Nova-3 Hebrew lane, and Hebrew voice is available once Hebrew crisis phrases are on the list.
+- **SCOPE:** `convex/lib/voicePolicy.ts` · `convex/voice.test.ts` · test: `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** `convex/lib/voicePolicy.ts` (edit: `laneFor` body and its doc comment) · `convex/voice.test.ts` (edit: the Hebrew lines of the existing case and TFV2-0390c case 2, as SPEC) · `convex/lib/voicePolicy.test.ts` (edit: the existing Hebrew case, as SPEC).
+- **STEPS:**
+  1. Code-map check: confirm `CRISIS_PHRASES_HE` (TFV2-0230b) is in `convex/lib/crisisWords.ts` and `isCrisisText` checks it; read `laneFor` and `LANES`; run both test files and note their pass counts.
+  2. Change `laneFor` exactly as SPEC.
+  3. Edit the three assertions exactly as SPEC; change nothing else in either test file.
+  4. Run DONE.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → `0 fail`, same pass count as STEP 1; `bun test convex/voice.test.ts` → `0 fail`, same pass count as STEP 1.
+- **EVIDENCE:** the four `bun test` summaries and the `git diff` of the three files pasted into the PR.
+- **DO NOT:** change `LANES.he`'s URL or pick another Hebrew model; enable any language besides `en` and `he`; delete a test; touch `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0395 / evidence: <DONE output> / changed: convex/lib/voicePolicy.ts, convex/voice.test.ts, convex/lib/voicePolicy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  /** The lane for a person's language, or null when live voice is off for it. Hebrew runs on Nova-3 now that Hebrew crisis phrases are checked (TFV2-0230b). */
+  export function laneFor(locale: string | undefined): VoiceLane | null {
+    if (locale === undefined || locale === "en") return LANES.en;
+    if (locale === "he") return LANES.he;
+    return null;
+  }
+  ```
+  `LANES.he.url` stays `"wss://api.deepgram.com/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true"`; `ttsLanguage("he")` stays `"he"`. Test edits: (a) `voicePolicy.test.ts` case "Hebrew stays off…" is renamed `"Hebrew streams to Nova-3; anything else is off"` and asserts `laneFor("he")` equals `{ language: "he", url: <that URL> }` and `laneFor("fr")` is `null`; (b) in `voice.test.ts` "a pending account, someone else's conversation, or Hebrew is refused", the Hebrew lines become `expect((await run(voice.availability, world.as(A), {})).available).toBe(true)` and the start on `mine` resolves with `language: "he"` (that lease is stopped before the pending part of the case), and the case is renamed `"a pending account or someone else's conversation is refused; Hebrew starts a Hebrew lease"`; (c) TFV2-0390c case 2 now expects `available: true` and a start with `language: "he"`. No new errors.
+- **TESTS:**
+  1. Given `laneFor("he")` / Then the Nova-3 Hebrew lane; `laneFor("fr")` / Then `null`; `laneFor("en")` and `laneFor(undefined)` / Then the English Flux lane.
+  2. Given a preferences row `{ locale: "he" }` / When `availability` runs as `A` / Then `available` is `true`; When `A` starts / Then the lease has `language: "he"`.
+  3. Given `{ locale: "en", voiceLanguage: "he" }` / When `A` starts / Then `language` is `"he"`.
+- **NUMBERS:** Hebrew STT model Nova-3 (PRD F-33; Deepgram's Hebrew support is Nova-3, Flux is English-only, comment P-2 in `voicePolicy.ts`) · pass counts unchanged in both files (exact).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0230b (Q-15: which Hebrew crisis phrases Amit approves for `CRISIS_PHRASES_HE`) — Amit.
+
+### TFV2-0371 — Voice: speech socket client `apps/web/lib/voice-stt.ts` (extracted from `useVoiceCall`)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0368.
-- **WHY:** TRD §5a step 2; PRD F-121/F-32/F-33.
-- **GOAL:** The mobile voice-call screen can open the same Deepgram socket on Expo (RN WebSocket + `expo-av`/mic) and emit the same interim/final/utterance events.
-- **SCOPE:** `apps/mobile/lib/v3/voice-stt.ts` · test `apps/mobile/lib/v3/__tests__/voice-stt.test.ts`.
-- **MUTATES:** none (client streaming; no storage).
-- **STEPS:** 1) Graphify code-map of `apps/mobile/app/(tempo)/voice-call.tsx`; 2) implement `openSttSocket` on RN WebSocket + mic capture; 3) write the unit test with a fake socket.
-- **DONE:** `bun test apps/mobile/lib/v3/__tests__/voice-stt.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not record/persist audio; do not embed a key; do not call the real provider; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Same contract as TFV2-0371 (`openSttSocket({url, token, onInterim, onFinal, onUtteranceEnd, onError})`), RN-native: `WebSocket` from `react-native`, mic via `expo-av` (or the platform mic API), binary frames. Mic permission denied → `onError` with calm copy.
-- **TESTS:** Given a fake RN socket / When opened / Then the subprotocol carries the token. Given mic permission denied / When opened / Then `onError` fires with the permission copy. Given a final event / When received / Then `onFinal` fires.
-- **NUMBERS:** token TTL 30 s (TRD §5a).
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0368
+- **WHY:** TRD §5a step 2 (the browser streams the microphone straight to Deepgram with a 30-second token); PRD F-32/F-33; `convex/voice.ts` `grant` (returns `{ token, url }`; the socket opens with the token as its `bearer` subprotocol; TFV2-0368 verifies it). Code truth: the socket already exists inline in `apps/web/components/coach/voice/useVoiceCall.ts` (`start`: `new WebSocket(url, ["bearer", token])`, `onopen` starts a `MediaRecorder`, `onmessage` parses JSON through `speechEvent` from `apps/web/lib/voice-runtime.ts`, `onerror`/`onclose` call `fail()`), and none of that wiring has a test (`speechEvent` itself is tested in `apps/web/lib/voice-runtime.test.ts`). This ticket moves the socket wiring into a small module that takes a socket factory, so it is unit-tested with a fake socket, and makes the hook call it; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-stt.ts` exports `openSpeechSocket`, which opens the speech socket with the token subprotocol, reports open, parsed speech events and failure, sends audio only while open, and closes once; `useVoiceCall` uses it, proven by `apps/web/lib/voice-stt.test.ts`.
+- **SCOPE:** `apps/web/lib/voice-stt.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-stt.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-stt.ts` (new) · `apps/web/components/coach/voice/useVoiceCall.ts` (edit: the socket block of `start`, the socket line of `end`, the `socket` ref type, one import) · `apps/web/lib/voice-stt.test.ts` (new). No data, schema, route or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "new WebSocket\|ws.onopen\|ws.onmessage\|ws.onerror\|ws.onclose\|socket.current" apps/web/components/coach/voice/useVoiceCall.ts` (the block described in WHY); `grep -n "export function speechEvent\|export type SpeechEvent" apps/web/lib/voice-runtime.ts`; `test -e apps/web/lib/voice-stt.ts` fails. If the hook differs from WHY, stop and report `blocked: code differs from SPEC`.
+  2. Create `apps/web/lib/voice-stt.ts` exactly as SPEC "Module".
+  3. Edit `useVoiceCall.ts` exactly as SPEC "Hook changes"; nothing else in the file.
+  4. Create `apps/web/lib/voice-stt.test.ts` with the 8 TESTS cases (a `FakeSocket` class implementing `SpeechSocketLike`, passed as the factory `(url, protocols) => new FakeSocket(url, protocols)`).
+  5. Run DONE, then `bun test apps/web/lib/voice-runtime.test.ts apps/web/lib/voice-call.test.ts`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-stt.test.ts` → `8 pass`, `0 fail`; `bun test apps/web/lib/voice-runtime.test.ts apps/web/lib/voice-call.test.ts` → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the three `bun test` summaries, the typecheck and lint exit codes, and the diff of `useVoiceCall.ts`, pasted into the PR.
+- **DO NOT:** change what the hook does (teardown order, the generation fence, recorder handling, barge-in, `onFinal`); store or log audio, transcripts or the token; open a real socket in the test; add a dependency; touch `convex/**`, `apps/web/lib/voice-runtime.ts`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0371 / evidence: <DONE output> / changed: apps/web/lib/voice-stt.ts, apps/web/components/coach/voice/useVoiceCall.ts, apps/web/lib/voice-stt.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5, each with its evidence.
+- **SPEC:**
+  Module (`apps/web/lib/voice-stt.ts`, no `"use client"`, no React import):
+  ```ts
+  /** The voice call's speech socket (TRD §5a step 2): token as the `bearer` subprotocol, binary audio out, JSON speech events in. */
+  import { type SpeechEvent, speechEvent } from "./voice-runtime";
+
+  /** The part of the browser WebSocket the call uses (a fake in tests). */
+  export type SpeechSocketLike = {
+    readonly readyState: number;
+    onopen: (() => void) | null;
+    onmessage: ((event: { data: unknown }) => void) | null;
+    onerror: (() => void) | null;
+    onclose: (() => void) | null;
+    send(data: Blob): void;
+    close(code?: number): void;
+  };
+  export type SpeechSocketFactory = (url: string, protocols: string[]) => SpeechSocketLike;
+  export type SpeechSocketHandlers = {
+    onOpen: () => void;
+    onSpeech: (event: Exclude<SpeechEvent, null>) => void;
+    onFail: () => void;
+  };
+  export type SpeechSocket = { sendAudio: (chunk: Blob) => void; close: () => void };
+
+  /** WebSocket.OPEN as a number, so a fake needs no WebSocket global. */
+  export const SOCKET_OPEN = 1;
+
+  export const browserSocket: SpeechSocketFactory = (url, protocols) =>
+    new WebSocket(url, protocols) as unknown as SpeechSocketLike;
+
+  export function openSpeechSocket(
+    url: string,
+    token: string,
+    handlers: SpeechSocketHandlers,
+    create: SpeechSocketFactory = browserSocket,
+  ): SpeechSocket {
+    const ws = create(url, ["bearer", token]);
+    let closed = false;
+    ws.onopen = () => {
+      if (!closed) handlers.onOpen();
+    };
+    ws.onmessage = (event) => {
+      if (closed || typeof event.data !== "string") return;
+      let parsed: unknown = null;
+      try {
+        parsed = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+      const speech = speechEvent(parsed);
+      if (speech) handlers.onSpeech(speech);
+    };
+    ws.onerror = () => {
+      if (!closed) handlers.onFail();
+    };
+    ws.onclose = () => {
+      if (!closed) handlers.onFail();
+    };
+    return {
+      sendAudio: (chunk) => {
+        if (!closed && ws.readyState === SOCKET_OPEN && chunk.size > 0) ws.send(chunk);
+      },
+      close: () => {
+        if (closed) return;
+        closed = true;
+        if (ws.readyState <= SOCKET_OPEN) ws.close(1000);
+      },
+    };
+  }
+  ```
+  Hook changes (`useVoiceCall.ts`):
+  - Import `import { openSpeechSocket, type SpeechSocket } from "@/lib/voice-stt";` and drop `speechEvent` from the `@/lib/voice-runtime` import (it becomes unused).
+  - `const socket = useRef<SpeechSocket | null>(null);` (was `useRef<WebSocket | null>(null)`).
+  - In `end`, replace `if (socket.current && socket.current.readyState <= WebSocket.OPEN) socket.current.close(1000);` with `socket.current?.close();` (the next line `socket.current = null;` stays).
+  - In `start`, replace everything from `const ws = new WebSocket(url, ["bearer", token]);` through the end of the `ws.onclose = …;` statement with:
+    ```ts
+    const speechSocket = openSpeechSocket(url, token, {
+      onOpen: () => {
+        if (gen !== generation.current) return;
+        const rec = new MediaRecorder(media, { mimeType: mime });
+        recorder.current = rec;
+        rec.ondataavailable = (event) => speechSocket.sendAudio(event.data);
+        // (the existing rec.onerror and rec.onstop handlers and their comment, unchanged)
+        rec.start(VOICE_CLIENT_LIMITS.chunkMs);
+        setConnecting(false);
+      },
+      onSpeech: (speech) => {
+        if (gen !== generation.current) return;
+        lastActivity.current = Date.now();
+        // (the existing body from `if (speech.kind === "speechStarted") {` through `void onFinal(speech.text);`, unchanged)
+      },
+      onFail: () => {
+        if (gen === generation.current && session.current) fail();
+      },
+    });
+    socket.current = speechSocket;
+    ```
+    The heartbeat and idle timers that follow stay as they are. (`onFail` keeps both old guards: `session.current` is already set when the socket exists, so the old `onerror` path behaves the same.)
+  Errors: none thrown; a socket error or close is reported once through `onFail` and the hook shows its existing error state (`vc.notConnected` + "Couldn't connect."). Limits: audio chunks of `VOICE_CLIENT_LIMITS.chunkMs` (100 ms) are sent only while the socket is open; empty chunks are dropped. No user-facing copy.
+- **TESTS:** (`bun:test`; `FakeSocket` records `url`, `protocols`, `sent: Blob[]`, `closes: number[]`; its `readyState` starts at `0` and tests set it; `close(code)` pushes `code` and sets `readyState = 3`)
+  1. Given `openSpeechSocket("wss://x/listen?model=flux-general-en", "tok-123", handlers, factory)` / Then the fake's `url` is exactly `"wss://x/listen?model=flux-general-en"` and `protocols` equals `["bearer", "tok-123"]`.
+  2. Given an opened socket / When the fake calls `onopen()` / Then `handlers.onOpen` was called once and `onSpeech`/`onFail` not at all.
+  3. Given an opened socket / When `onmessage` receives `{ data: JSON.stringify({ type: "TurnInfo", event: "EndOfTurn", transcript: "Call Dana" }) }`, then `{ type: "TurnInfo", event: "StartOfTurn", transcript: "" }`, then a Nova `Results` with `speech_final: false` and transcript `"call"` / Then `onSpeech` received, in order, `{ kind: "final", text: "Call Dana" }`, `{ kind: "speechStarted" }`, `{ kind: "interim", text: "call" }`.
+  4. Given an opened socket / When `onmessage` receives `{ data: new Blob(["x"]) }`, `{ data: "not json" }` and `{ data: JSON.stringify({ type: "Metadata" }) }` / Then `onSpeech` was never called and `onFail` was never called.
+  5. Given an opened socket / When `onerror()` fires, and on a second socket `onclose()` fires / Then each socket's `onFail` was called exactly once.
+  6. Given `readyState = 0` / When `sendAudio(new Blob(["a"]))` / Then `sent` is empty; given `readyState = 1` / When `sendAudio(new Blob(["a"]))` and `sendAudio(new Blob([]))` / Then `sent` has exactly one Blob of size 1.
+  7. Given `readyState = 1` / When `close()` is called twice / Then `closes` equals `[1000]`; and afterwards `onopen()`, `onmessage({ data: JSON.stringify({ type: "SpeechStarted" }) })`, `onerror()` and `onclose()` call no handler, and `sendAudio(new Blob(["a"]))` sends nothing.
+  8. Given `readyState = 3` (already closed by the server) / When `close()` / Then `closes` is empty.
+- **NUMBERS:** 8 of 8 cases pass (exact). Token lifetime 30 s, used once at open (`VOICE_LIMITS.tokenTtlSeconds`, TRD §5a) — not changed here. Audio chunk 100 ms (`VOICE_CLIENT_LIMITS.chunkMs`, repo constant). Latency: UNKNOWN (no baseline measured; CONVENTIONS §20; TFV2-0396 records it).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0373 — Voice: TTS playback sentence queue
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0369.
-- **WHY:** TRD §5a step 4 (speech starts before the whole reply); `VOICE_LIMITS.sentencesAhead` 2.
-- **GOAL:** The client fetches sentences `K=2` ahead, plays them in order, and stops on an interrupt signal, without skipping or duplicating audio.
-- **SCOPE:** `apps/web/lib/voice-tts.ts` · test `apps/web/lib/voice-tts.test.ts`.
-- **MUTATES:** none (client playback only).
-- **STEPS:** 1) Graphify code-map of the existing playback in `apps/web/components/coach/voice/`; 2) implement a queue that prefetches `sentencesAhead` and plays in order; 3) expose `stop()`; 4) write the test.
-- **DONE:** `bun test apps/web/lib/voice-tts.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store audio beyond playback; do not call the real provider; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `TtsQueue({ speak })` with `enqueue(messageId, count)`, `play()`, `stop()`. Prefetch the next 2 sentences while the current plays; `stop()` cancels the current audio and the pending fetches. Emits `onDone` when `count` sentences have played or `done` is returned.
-- **TESTS:** Given a reply of 3 sentences / When played / Then sentences play in index order with no duplicates. Given `stop()` / When called mid-playback / Then the current audio stops and no further sentence plays. Given `done` returned / When the queue drains / Then `onDone` fires.
-- **NUMBERS:** `sentencesAhead` 2 (repo constant).
+### TFV2-0372 — Voice: mobile speech socket client `apps/mobile/lib/v3/voice-stt.ts` — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-045, TFV2-0368, TFV2-0371 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-045, TFV2-0368, TFV2-0371
+- **WHY:** TRD §5a step 2; PRD F-121/F-32/F-33; `convex/voice.ts` `grant` (`{ token, url }`, TFV2-0368). Code truth: `apps/mobile` has no microphone capture and no voice client at all (`apps/mobile/package.json` has no audio package; `apps/mobile/app/(tempo)/voice-call.tsx` is a layout with every control disabled). Expo's own audio modules record to a file, so streaming live audio to Deepgram needs a microphone-streaming package; adding one is a dependency change (config lane, CONVENTIONS §7 B), requested as CFG-045, whose package choice is Amit's. The socket half mirrors the web contract of TFV2-0371 (`openSpeechSocket`), so both clients behave the same. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/mobile/lib/v3/voice-stt.ts` exports `openSpeechSocket` (same signature and behaviour as the web module of TFV2-0371, on React Native's global `WebSocket`) and `startMicStream`, which streams microphone chunks from the CFG-045 package into the socket, proven by `tests/unit/mobile_voice_stt.test.ts`.
+- **SCOPE:** `apps/mobile/lib/v3/voice-stt.ts` · test: `tests/unit/mobile_voice_stt.test.ts`.
+- **MUTATES:** `apps/mobile/lib/v3/voice-stt.ts` (new) · `tests/unit/mobile_voice_stt.test.ts` (new). No data, schema, route or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "<package from CFG-045>" apps/mobile/package.json` (present, else `blocked: missing CFG-045`); `sed -n 1,60p apps/web/lib/voice-stt.ts` (TFV2-0371, the contract to mirror); `test -e apps/mobile/lib/v3/voice-stt.ts` fails.
+  2. Create `apps/mobile/lib/v3/voice-stt.ts` exactly as SPEC.
+  3. Create `tests/unit/mobile_voice_stt.test.ts` with the 8 TESTS cases.
+  4. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test tests/unit/mobile_voice_stt.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` summary and both exit codes, pasted into the PR.
+- **DO NOT:** import anything from `apps/web`; record audio to a file or keep it after it is sent; log audio, transcripts or the token; add or change a dependency (CFG-045 does that); touch `convex/**`, `apps/mobile/app/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0372 / evidence: <DONE output> / changed: apps/mobile/lib/v3/voice-stt.ts, tests/unit/mobile_voice_stt.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  - Types and `openSpeechSocket`: the web module's `SpeechSocketLike`, `SpeechSocketFactory`, `SpeechSocketHandlers`, `SpeechSocket`, `SOCKET_OPEN = 1` and `openSpeechSocket(url, token, handlers, create)` with the same body, except `sendAudio(chunk: ArrayBuffer)` (sends when open and `chunk.byteLength > 0`) and the default factory `nativeSocket = (url, protocols) => new WebSocket(url, protocols) as unknown as SpeechSocketLike` (React Native's global `WebSocket` accepts a protocols array). The speech-event parser is a private copy of `speechEvent` from `apps/web/lib/voice-runtime.ts` (same Flux `TurnInfo` and Nova `SpeechStarted`/`Results` rules), because mobile cannot import `apps/web`.
+  - `export async function startMicStream(onChunk: (chunk: ArrayBuffer) => void): Promise<{ stop: () => void }>`: asks for microphone permission through the CFG-045 package, rejects with `new Error("mic_permission_denied")` when refused, streams 16-bit PCM chunks of about 100 ms to `onChunk`, and `stop()` ends capture and releases the microphone. The exact package calls depend on the package Amit names in CFG-045 (this is why the ticket is OPEN). The socket URL comes from `grant`; for PCM the screen ticket (TFV2-0389) appends the `encoding=linear16&sample_rate=16000` parameters only if Amit's CFG-045 answer says the package emits raw PCM.
+  - No user-facing copy here (the screen maps `mic_permission_denied` to its copy in TFV2-0389).
+- **TESTS:** cases 1–7 are the TFV2-0371 cases with an `ArrayBuffer` in place of a `Blob` (`new Uint8Array([1]).buffer`, empty `new ArrayBuffer(0)`); 8. Given the CFG-045 package mocked with `mock.module` to refuse permission / When `startMicStream(() => {})` / Then it rejects with `"mic_permission_denied"`.
+- **NUMBERS:** 8 of 8 cases pass (exact). Audio chunk about 100 ms (matches `VOICE_CLIENT_LIMITS.chunkMs` on web). Latency UNKNOWN (CONVENTIONS §20).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-045 (new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?) — Amit.
+
+### TFV2-0373 — Voice: read-aloud sentence queue `apps/web/lib/voice-tts.ts` (extracted from `useVoiceCall`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369, TFV2-0371 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0369, TFV2-0371
+- **WHY:** TRD §5a step 4 (speech starts before the whole reply is read); `convex/voice.ts` `speak({ sessionId, messageId, index })` → `{ status: "audio", audio, mime, count } | { status: "done" } | { status: "exhausted" }` (TFV2-0369 verifies it); `VOICE_CLIENT_LIMITS.sentencesAhead` = 2 in `apps/web/lib/voice-runtime.ts` (A-10). Code truth: the queue already exists inline as `readAloud` in `apps/web/components/coach/voice/useVoiceCall.ts` (a `Map` of `speak` promises, fetches `sentencesAhead` ahead, plays each clip with `new Audio(url)`, stops when the `live()` fence fails) and has no test; it also prefetches indexes past the last sentence (each one an extra `speak` call that returns `done`). This ticket moves the loop into a tested function, stops prefetching once the sentence count is known, and keeps the hook's audio element handling. Depends on TFV2-0371 only because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-tts.ts` exports `playReply`, which fetches sentence clips up to `ahead` in front of playback (never past the reply's `count`), plays them in index order exactly once, and reports `finished`, `stopped` or `failed`; `useVoiceCall`'s `readAloud` uses it, proven by `apps/web/lib/voice-tts.test.ts`.
+- **SCOPE:** `apps/web/lib/voice-tts.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-tts.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-tts.ts` (new) · `apps/web/components/coach/voice/useVoiceCall.ts` (edit: `readAloud` body, a new `playClip` callback, one import) · `apps/web/lib/voice-tts.test.ts` (new). No data, schema, route or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "const readAloud\|fetchAt\|sentencesAhead\|new Audio" apps/web/components/coach/voice/useVoiceCall.ts` (the inline loop); `grep -n "openSpeechSocket" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0371 merged, else `blocked: missing TFV2-0371`); `test -e apps/web/lib/voice-tts.ts` fails.
+  2. Create `apps/web/lib/voice-tts.ts` exactly as SPEC "Module".
+  3. Edit `useVoiceCall.ts` exactly as SPEC "Hook changes".
+  4. Create `apps/web/lib/voice-tts.test.ts` with the 7 TESTS cases.
+  5. Run DONE, then `bun test apps/web/lib/voice-stt.test.ts`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-tts.test.ts` → `7 pass`, `0 fail`; `bun test apps/web/lib/voice-stt.test.ts` → `8 pass`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both `bun test` summaries, both exit codes and the `useVoiceCall.ts` diff, pasted into the PR.
+- **DO NOT:** keep audio after it plays (object URLs are still revoked by `stopPlayback`); read the crisis card (the server returns `done` for it); change `VOICE_CLIENT_LIMITS`; change any other part of the hook; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0373 / evidence: <DONE output> / changed: apps/web/lib/voice-tts.ts, apps/web/components/coach/voice/useVoiceCall.ts, apps/web/lib/voice-tts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  Module (`apps/web/lib/voice-tts.ts`, no React):
+  ```ts
+  /** One sentence of a coach reply as audio (convex/voice.ts `speak`). */
+  export type SentenceAudio =
+    | { status: "audio"; audio: ArrayBuffer; mime: string; count: number }
+    | { status: "done" }
+    | { status: "exhausted" };
+  export type PlayReplyOutcome = "finished" | "stopped" | "failed";
+  export type PlayReplyDeps = {
+    fetchSentence: (index: number) => Promise<SentenceAudio>;
+    /** Plays one clip; resolves when it ends, rejects when it can't play. */
+    play: (audio: ArrayBuffer, mime: string) => Promise<void>;
+    /** The fence: false once the call ended or another reply started. */
+    live: () => boolean;
+    ahead: number;
+    onPlayed?: () => void;
+  };
+
+  /** Reads one reply aloud in order (A-10), fetching up to `ahead` sentences in front, never past `count`. */
+  export async function playReply(deps: PlayReplyDeps): Promise<PlayReplyOutcome> {
+    const fetches = new Map<number, Promise<SentenceAudio>>();
+    const fetchAt = (index: number): Promise<SentenceAudio> => {
+      let pending = fetches.get(index);
+      if (!pending) {
+        pending = deps.fetchSentence(index);
+        fetches.set(index, pending);
+      }
+      return pending;
+    };
+    let count = Number.POSITIVE_INFINITY;
+    try {
+      for (let index = 0; ; index += 1) {
+        for (let step = 1; step <= deps.ahead && index + step < count; step += 1) {
+          void fetchAt(index + step).catch(() => {});
+        }
+        const result = await fetchAt(index);
+        if (!deps.live()) return "stopped";
+        if (result.status !== "audio") return "finished";
+        count = result.count;
+        await deps.play(result.audio, result.mime);
+        deps.onPlayed?.();
+        if (!deps.live()) return "stopped";
+        if (index + 1 >= count) return "finished";
+      }
+    } catch {
+      return deps.live() ? "failed" : "stopped";
+    }
+  }
+  ```
+  Hook changes (`useVoiceCall.ts`):
+  - Import `import { playReply } from "@/lib/voice-tts";`.
+  - Add, after `stopPlayback`:
+    ```ts
+    /** Plays one clip through an audio element the teardown can pause (L-9). */
+    const playClip = useCallback((bytes: ArrayBuffer, mime: string) => {
+      const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+      audioUrls.current.push(url);
+      const player = new Audio(url);
+      audio.current = player;
+      return new Promise<void>((resolve, reject) => {
+        player.onended = () => resolve();
+        player.onerror = () => reject(new Error("playback_failed"));
+        player.play().catch(reject);
+      });
+    }, []);
+    ```
+  - Replace the body of `readAloud` from `const fetches = new Map…` through the closing `}` of its `try { … } catch { … }` with:
+    ```ts
+    // Reading aloud can fail: the reply stays on screen (read-back, L-17) and the call keeps listening.
+    await playReply({
+      fetchSentence: (index) => speak({ sessionId: lease, messageId, index }),
+      play: playClip,
+      live,
+      ahead: VOICE_CLIENT_LIMITS.sentencesAhead,
+      onPlayed: () => {
+        lastActivity.current = Date.now();
+      },
+    });
+    ```
+    The lines before it (`lease` check, `stopPlayback()`, the `mine`/`gen`/`live` fence, `setPhaseBoth("speaking")`, `lastActivity.current = Date.now();`) and after it (`if (live()) { stopPlayback(); setPhaseBoth("listening"); }`) stay. The `useCallback` deps become `[playClip, setPhaseBoth, speak, stopPlayback]`.
+  Errors: none thrown (`failed`/`stopped` are outcomes). Limits: at most `ahead` (2) fetches in flight in front of playback; never an index ≥ `count`.
+- **TESTS:** (`bun:test`; `fetchSentence` is a recorder returning `{ status: "audio", audio: new Uint8Array([i]).buffer, mime: "audio/wav", count }` for index `i < count`, else `{ status: "done" }`; `play` records the first byte of each clip and resolves)
+  1. Given a 3-sentence reply, `ahead: 2`, `live: () => true` / When `playReply` / Then it returns `"finished"`, `play` saw bytes `[0, 1, 2]` in that order, and `onPlayed` ran 3 times.
+  2. Given the same reply / Then the set of fetched indexes is exactly `{0, 1, 2}` (no index 3), and indexes 1 and 2 were requested before the first `play` resolved.
+  3. Given `live` that turns `false` after the first `play` / Then it returns `"stopped"` and `play` ran once.
+  4. Given index 0 returns `{ status: "done" }` / Then it returns `"finished"` and `play` never ran.
+  5. Given index 1 returns `{ status: "exhausted" }` / Then it returns `"finished"` after exactly one `play`.
+  6. Given `play` rejects on the first clip / Then it returns `"failed"`; given `play` rejects while `live()` is `false` / Then it returns `"stopped"`.
+  7. Given `fetchSentence(0)` rejects / Then it returns `"failed"` and `play` never ran.
+- **NUMBERS:** 7 of 7 cases pass (exact). Sentences fetched ahead = 2 (`VOICE_CLIENT_LIMITS.sentencesAhead`, A-10). Time to first audio: UNKNOWN until measured (TRD §5a target ≈ 1 s; TFV2-0396 records it).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0374 — Voice: barge-in (interrupt playback on speech)
+### TFV2-0374 — Voice: barge-in rule `interruptsPlayback` (`apps/web/lib/voice-runtime.ts`)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0373 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0373.
-- **WHY:** TRD §5a step 5 (barge-in); PRD F-30.
-- **GOAL:** When the user speaks mid-reply (Deepgram reports speech), the client stops TTS at once and starts the new turn.
-- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` (or the state hook) · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
-- **MUTATES:** none (client behaviour).
-- **STEPS:** 1) Graphify code-map of `useVoiceCall.ts`; 2) wire `onUtteranceStart` (speech detected) to `TtsQueue.stop()` + new turn; 3) write the test.
-- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not restart TTS until the new reply; do not record audio; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** On `speechDetected` while `playing`: stop audio immediately (≤ 250 ms), clear the transcript's live state, and start the user's turn. Interrupt button fires the same handler. Playback never resumes for the interrupted sentence.
-- **TESTS:** Given playing audio / When speech is detected / Then `stop()` is called and the turn flips to user. Given an Interrupt press / When fired / Then the same stop+turn happens. Given no speech / When the reply ends / Then playback completes normally.
-- **NUMBERS:** interrupt latency ≤ 250 ms (DESIGN.md §7 / TRD §5a ack < 0.2 s).
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0373
+- **WHY:** TRD §5a step 5 (barge-in); PRD F-30; docs/contracts/VOICE.md L-6 as cited in `useVoiceCall.ts`. Code truth: barge-in already works inline in the `onSpeech` handler of `useVoiceCall.ts` (after TFV2-0371): a `speechStarted` or `interim` event while `phaseRef.current === "speaking"` calls `stopPlayback()` and `setPhaseBoth("listening")`; a `final` event never stops playback; the Interrupt button calls `interrupt()`, which does the same only while speaking. The rule has no test. This ticket names it as a pure function next to `speechEvent`, tests it, and makes the hook use it; behaviour does not change. Depends on TFV2-0373 only because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-runtime.ts` exports `interruptsPlayback(phase, event)` (true only for `speechStarted` or `interim` while the coach speaks) and `useVoiceCall` decides barge-in with it, proven by four new cases in `apps/web/lib/voice-runtime.test.ts`.
+- **SCOPE:** `apps/web/lib/voice-runtime.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-runtime.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-runtime.ts` (edit: one function and one type import) · `apps/web/components/coach/voice/useVoiceCall.ts` (edit: the start of the `onSpeech` body, one import) · `apps/web/lib/voice-runtime.test.ts` (edit: one `describe` block). No data or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "speechStarted\|phaseRef.current === \"speaking\"" apps/web/components/coach/voice/useVoiceCall.ts` (the two inline checks inside `onSpeech`); `grep -n "playReply" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0373 merged, else `blocked: missing TFV2-0373`); `bun test apps/web/lib/voice-runtime.test.ts` prints `9 pass` before any change.
+  2. Add `interruptsPlayback` to `voice-runtime.ts` exactly as SPEC, directly after `speechEvent`.
+  3. Edit the hook exactly as SPEC.
+  4. Append `describe("interruptsPlayback", …)` with the 4 TESTS cases to `voice-runtime.test.ts` (add `interruptsPlayback` to its import).
+  5. Run DONE, then `bun test apps/web/lib/voice-tts.test.ts apps/web/lib/voice-stt.test.ts`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-runtime.test.ts` → `13 pass`, `0 fail`; `bun test apps/web/lib/voice-tts.test.ts apps/web/lib/voice-stt.test.ts` → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` summaries, both exit codes and the diff, pasted into the PR.
+- **DO NOT:** let a `final` event stop playback; resume an interrupted sentence; change `speechEvent` or the existing tests; change `interrupt()`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0374 / evidence: <DONE output> / changed: apps/web/lib/voice-runtime.ts, apps/web/components/coach/voice/useVoiceCall.ts, apps/web/lib/voice-runtime.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  // voice-runtime.ts — add at the top: import type { VoiceSessionState } from "@/components/coach/voice/voiceSession";
+  /** Barge-in (L-6): the person starts talking while the coach speaks, so playback stops at once. A final turn never stops it. */
+  export function interruptsPlayback(phase: VoiceSessionState["phase"], event: Exclude<SpeechEvent, null>): boolean {
+    return phase === "speaking" && (event.kind === "speechStarted" || event.kind === "interim");
+  }
+  ```
+  Hook: add `interruptsPlayback` to the `@/lib/voice-runtime` import; inside `onSpeech`, after `lastActivity.current = Date.now();`, replace the existing `if (speech.kind === "speechStarted") { … return; }` and `if (speech.kind === "interim") { … return; }` blocks with:
+  ```ts
+  if (interruptsPlayback(phaseRef.current, speech)) {
+    stopPlayback();
+    setPhaseBoth("listening");
+  }
+  if (speech.kind === "speechStarted") return;
+  if (speech.kind === "interim") {
+    setInterim(speech.text);
+    return;
+  }
+  ```
+  (`void onFinal(speech.text);` stays as the last line.) Errors: none. No copy.
+- **TESTS:**
+  1. Given phase `"speaking"` and `{ kind: "speechStarted" }` / Then `interruptsPlayback` returns `true`.
+  2. Given phase `"speaking"` and `{ kind: "interim", text: "wait" }` / Then `true`.
+  3. Given phase `"speaking"` and `{ kind: "final", text: "wait" }` / Then `false`.
+  4. Given each phase of `["idle", "listening", "transcribing", "awaitingReply", "error"]` and `{ kind: "speechStarted" }` / Then `false` for every one.
+- **NUMBERS:** 13 of 13 cases in the file pass (9 existing + 4). Playback stops within the same event-loop turn as the speech event (no timer). End-to-end interrupt latency: UNKNOWN until measured (TRD §5a target: acknowledgement < 0.2 s).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0375 — Voice: call client state machine + heartbeat renew
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367, TFV2-0371 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0367 and TFV2-0371.
-- **WHY:** TRD §5a; `convex/voice.ts` `renew` (heartbeat A-3).
-- **GOAL:** The client call state machine (`idle → connecting → live → ending`) drives the UI and renews the lease every `renewEveryMs`, tearing down on `revoked|exhausted|expired`.
-- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
-- **MUTATES:** none (client state; calls `voice.start`/`renew`/`stop`).
-- **STEPS:** 1) Graphify code-map of `useVoiceCall.ts`; 2) implement the state machine + heartbeat timer; 3) map each `renew` status to a teardown; 4) write the test.
-- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not start the heartbeat before `start` succeeds; do not continue after `revoked`/`exhausted`; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** States `idle | connecting | live | ending | error`. Transitions: mic press → `connecting`; `voice.start` ok → `live` + schedule `renew` every `renewEveryMs`; `renew` `ok` → keep `minutesLeft`; `revoked|exhausted|expired` → teardown to `ending` then `idle` with the calm reason; `stop` → `ending` → `idle`. Any `voice_*` error → `error` state with the copy.
-- **TESTS:** Given `start` ok / When run / Then state `live` and a renew timer is scheduled. Given `renew` returns `exhausted` / When it fires / Then teardown to `idle`. Given `start` returns `voice_off` / When run / Then state `error` with the off copy. Given `stop` / When called / Then state `idle` and the timer clears.
-- **NUMBERS:** `renewEveryMs` 15,000 (repo constant).
+### TFV2-0375a — Voice: lease heartbeat and client bounds `apps/web/lib/voice-lease.ts` (extracted from `useVoiceCall`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367a, TFV2-0367b, TFV2-0367c, TFV2-0374 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367a, TFV2-0367b, TFV2-0367c, TFV2-0374
+- **WHY:** TRD §5a; `convex/voice.ts` `start` (returns `renewEveryMs` = `VOICE_LIMITS.renewEveryMs` 15 000), `renew` (returns `{ status: "ok" | "revoked" | "exhausted" | "expired"; minutesLeft: number }`), `stop` (TFV2-0367a/b/c verify them); docs/contracts/VOICE.md A-3 (heartbeat) and L-15 (idle and hidden-page bounds) as cited in the hook. Code truth: the client call state machine already lives in `apps/web/components/coach/voice/useVoiceCall.ts` (`start` → `listening`, `fail` → `error`, `end` → `idle` with `ended`), and inside `start` two `window.setInterval` timers run the heartbeat (anything but `"ok"`, or a failed `renew`, calls `end()`) and the idle/hidden check (`VOICE_CLIENT_LIMITS.idleMs` 90 000 with no speech and no playback; `hiddenMs` 30 000 with the page hidden). Neither timer has a test. This ticket moves both rules into a tested module with injectable timers and makes the hook use it; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-lease.ts` exports `startHeartbeat` (renews every `everyMs`, reports minutes, ends the call on any non-`ok` status or failed call, returns its stop function) and `pastClientBounds` (the L-15 idle and hidden rules); `useVoiceCall` uses both, proven by `apps/web/lib/voice-lease.test.ts`.
+- **SCOPE:** `apps/web/lib/voice-lease.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-lease.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-lease.ts` (new) · `apps/web/components/coach/voice/useVoiceCall.ts` (edit: the `timers` ref, the timer lines of `end`, the two timer blocks of `start`, one import) · `apps/web/lib/voice-lease.test.ts` (new). No data or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "timers" apps/web/components/coach/voice/useVoiceCall.ts` (the ref, the clear loop in `end`, two `timers.current.push(` in `start`); `grep -n "interruptsPlayback" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0374 merged, else `blocked: missing TFV2-0374`); `test -e apps/web/lib/voice-lease.ts` fails.
+  2. Create `apps/web/lib/voice-lease.ts` exactly as SPEC "Module".
+  3. Edit the hook exactly as SPEC "Hook changes".
+  4. Create `apps/web/lib/voice-lease.test.ts` with the 9 TESTS cases (a fake `Timers` that stores the callback and the interval, and a `flush = () => new Promise((resolve) => setTimeout(resolve, 0))` helper to settle the renew promise).
+  5. Run DONE, then `bun test apps/web/lib/voice-runtime.test.ts apps/web/lib/voice-tts.test.ts apps/web/lib/voice-stt.test.ts`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-lease.test.ts` → `9 pass`, `0 fail`; the other three files → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` summaries, both exit codes and the diff, pasted into the PR.
+- **DO NOT:** start the heartbeat before `voice.start` returns a lease; keep a call going after a non-`ok` renewal; change `VOICE_CLIENT_LIMITS` or the teardown order in `end`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0375a / evidence: <DONE output> / changed: apps/web/lib/voice-lease.ts, apps/web/components/coach/voice/useVoiceCall.ts, apps/web/lib/voice-lease.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  Module (`apps/web/lib/voice-lease.ts`, no React):
+  ```ts
+  import type { VoiceSessionState } from "@/components/coach/voice/voiceSession";
+  import { VOICE_CLIENT_LIMITS } from "./voice-runtime";
+
+  /** convex/voice.ts `renew`'s result. */
+  export type RenewResult = { status: "ok" | "revoked" | "exhausted" | "expired"; minutesLeft: number };
+  export type Timers = { every: (run: () => void, ms: number) => number; cancel: (id: number) => void };
+  export const browserTimers: Timers = {
+    every: (run, ms) => window.setInterval(run, ms),
+    cancel: (id) => window.clearInterval(id),
+  };
+
+  /** The heartbeat (A-3): renews every `everyMs`; "ok" reports minutes; anything else, or a failed call, ends the call. Returns stop. */
+  export function startHeartbeat(deps: {
+    renew: () => Promise<RenewResult>;
+    everyMs: number;
+    isCurrent: () => boolean;
+    onMinutes: (minutesLeft: number) => void;
+    onEnd: () => void;
+    timers?: Timers;
+  }): () => void {
+    const timers = deps.timers ?? browserTimers;
+    const id = timers.every(() => {
+      void deps
+        .renew()
+        .then((result) => {
+          if (!deps.isCurrent()) return;
+          deps.onMinutes(result.minutesLeft);
+          if (result.status !== "ok") deps.onEnd();
+        })
+        .catch(() => {
+          if (deps.isCurrent()) deps.onEnd();
+        });
+    }, deps.everyMs);
+    return () => timers.cancel(id);
+  }
+
+  /** The client's own bounds (L-15): quiet too long (no speech, no playback), or the page hidden too long. */
+  export function pastClientBounds(input: {
+    now: number;
+    lastActivityMs: number;
+    phase: VoiceSessionState["phase"];
+    /** When the page became hidden; 0 while it is visible. */
+    hiddenSinceMs: number;
+  }): boolean {
+    const quiet = input.phase !== "speaking" && input.phase !== "awaitingReply";
+    const idle = quiet && input.now - input.lastActivityMs > VOICE_CLIENT_LIMITS.idleMs;
+    const hidden = input.hiddenSinceMs > 0 && input.now - input.hiddenSinceMs > VOICE_CLIENT_LIMITS.hiddenMs;
+    return idle || hidden;
+  }
+  ```
+  Hook changes (`useVoiceCall.ts`):
+  - Import `import { pastClientBounds, startHeartbeat } from "@/lib/voice-lease";`.
+  - `const timers = useRef<number[]>([]);` becomes `const stoppers = useRef<Array<() => void>>([]);`.
+  - In `end`, `for (const id of timers.current) window.clearInterval(id); timers.current = [];` becomes `for (const stop of stoppers.current) stop(); stoppers.current = [];`.
+  - In `start`, the heartbeat block (`timers.current.push(window.setInterval(() => { const id = session.current; … }, lease.renewEveryMs));`) becomes:
+    ```ts
+    stoppers.current.push(
+      startHeartbeat({
+        renew: () => renewLease({ sessionId: lease.sessionId }),
+        everyMs: lease.renewEveryMs,
+        isCurrent: () => gen === generation.current,
+        onMinutes: setMinutesLeft,
+        onEnd: end,
+      }),
+    );
+    ```
+  - The idle/hidden block becomes:
+    ```ts
+    let hiddenSince = 0;
+    const boundsId = window.setInterval(() => {
+      if (gen !== generation.current) return;
+      const now = Date.now();
+      if (document.visibilityState === "hidden") hiddenSince ||= now;
+      else hiddenSince = 0;
+      if (pastClientBounds({ now, lastActivityMs: lastActivity.current, phase: phaseRef.current, hiddenSinceMs: hiddenSince })) end();
+    }, 1_000);
+    stoppers.current.push(() => window.clearInterval(boundsId));
+    ```
+  States of the call (unchanged, for reference): `idle` → (Start) `listening` with `connecting: true` → socket open → `connecting: false` → `awaitingReply` / `speaking` / `listening` → `end` → `idle` + `ended: true`; any failure → `error`. Errors: none thrown. No copy.
+- **TESTS:**
+  1. Given `startHeartbeat({ everyMs: 15000, timers: fake, … })` / Then `fake.every` was called once with `15000`.
+  2. Given `renew` resolving `{ status: "ok", minutesLeft: 12 }` / When the fake fires the callback and `await flush()` / Then `onMinutes` got `12` and `onEnd` was not called.
+  3. Given `renew` resolving each of `"revoked"`, `"exhausted"`, `"expired"` with `minutesLeft: 0` / When fired / Then `onMinutes` got `0` and `onEnd` ran once each time.
+  4. Given `renew` rejecting / When fired / Then `onEnd` ran once and `onMinutes` never.
+  5. Given `isCurrent: () => false` and `renew` resolving `"exhausted"` / When fired / Then neither `onMinutes` nor `onEnd` ran.
+  6. Given the stop function returned by `startHeartbeat` / When called / Then `fake.cancel` received the id `fake.every` returned.
+  7. Given phase `"listening"`, `hiddenSinceMs: 0`, `now - lastActivityMs = 90_001` / Then `pastClientBounds` is `true`; with `90_000` / Then `false`.
+  8. Given phase `"speaking"` or `"awaitingReply"`, `hiddenSinceMs: 0`, `now - lastActivityMs = 600_000` / Then `false` for both.
+  9. Given phase `"speaking"`, `now - hiddenSinceMs = 30_001` / Then `true`; with `30_000` / Then `false`.
+- **NUMBERS:** 9 of 9 cases pass (exact). Renew every 15 000 ms (`VOICE_LIMITS.renewEveryMs`, A-3); lease expires after 45 000 ms without renewal (server, `VOICE_LIMITS.leaseExpiresAfterMs`); idle bound 90 000 ms and hidden bound 30 000 ms (`VOICE_CLIENT_LIMITS`, L-15). All repo constants; not changed here.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0376 — Voice: `VoiceCall` component (full-screen dialog)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0375 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0375.
-- **WHY:** components.md §2.11 (VoiceCall `.tp-call[data-state][data-ended]`, `role="dialog" aria-modal="true"`, `.tp-call__state` `aria-live`); PRD F-30.
-- **GOAL:** `VoiceCall` renders the full-screen call dialog (top/title, stage, state word, hint, transcript dock, docked controls) driven by the call state, with Esc pausing.
-- **SCOPE:** `apps/web/components/coach/voice/VoiceCall.tsx` · test `apps/web/components/coach/voice/VoiceCall.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `VoiceCall.tsx`; 2) align structure/classes with components.md §2.11; 3) wire states (`idle/connecting/live/ending/error`) and `data-state`/`data-ended`; 4) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/VoiceCall.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not implement the child controls here (own tickets); do not call the backend; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Layout: `__top` (title), `__title` (`EN: Call with your coach / HE: שיחה עם המאמן שלך`), `__stage` (transcript/AudioLevel), `__state` (`aria-live`: `EN: Speaking / HE: מדבר`; `EN: Not connected / HE: לא מחובר`), `__hint` (`EN: Talk any time. You can cut in while the coach speaks. / HE: דבר בכל עת. אפשר לקטוע את המאמן בזמן שהוא מדבר.`), `__dock` (MicToggle, Interrupt, PushToTalk, EndCall). States: idle, connecting, live, ending, error, offline. `role="dialog" aria-modal="true"`; Esc pauses. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
-- **TESTS:** Given state `live` / When rendered / Then `data-state="live"` and the live hint shows. Given `connecting` / When rendered / Then the state word shows connecting. Given Esc / When pressed / Then the call pauses (mic off). Run at 390 and 1280, EN and HE.
-- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+### TFV2-0375b — Voice: `useVoiceCall` takes its backend as a parameter (`useConvexVoiceBackend`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0375a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0375a
+- **WHY:** CONVENTIONS §13 (a harness page never imports `convex/react`) and the end-to-end smoke of TFV2-0394, which drives the real hook against fake voice functions. Code truth: `useVoiceCall.ts` calls `useMutation(api.voice.start)`, `useMutation(api.voice.renew)`, `useMutation(api.voice.stop)`, `useAction(api.voice.grant)` and `useAction(api.voice.speak)` itself, so nothing can run it without a live Convex deployment; its only caller is `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` (`const voice = useVoiceCall({ conversationId, send: sendSpoken, latestReply: …, replyInFlight: … })`). This ticket moves those five calls into one small hook and passes the result in; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `useVoiceCall` takes `backend: VoiceBackend` and imports nothing from `convex/react` or `@/convex/_generated/api`; `apps/web/components/coach/voice/useConvexVoiceBackend.ts` builds the backend from the five Convex functions and `CoachChat` passes it, proven by `apps/web/components/coach/voice/useConvexVoiceBackend.test.ts`.
+- **SCOPE:** `apps/web/components/coach/voice/useConvexVoiceBackend.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · `apps/web/components/coach/CoachChat.tsx` · test: `apps/web/components/coach/voice/useConvexVoiceBackend.test.ts`.
+- **MUTATES:** `apps/web/components/coach/voice/useConvexVoiceBackend.ts` (new) · `apps/web/components/coach/voice/useVoiceCall.ts` (edit: the `VoiceBackend` type, one parameter, the five hook lines, two imports removed) · `apps/web/components/coach/CoachChat.tsx` (edit: one import, one line, one argument) · `apps/web/components/coach/voice/useConvexVoiceBackend.test.ts` (new). No data or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "useMutation(api.voice\|useAction(api.voice\|from \"convex/react\"\|_generated/api" apps/web/components/coach/voice/useVoiceCall.ts` (five calls, two imports); `grep -n "startHeartbeat" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0375a merged, else `blocked: missing TFV2-0375a`); `grep -n "useVoiceCall(" apps/web/components/coach/CoachChat.tsx` (one call).
+  2. Create `useConvexVoiceBackend.ts` exactly as SPEC.
+  3. Edit `useVoiceCall.ts` exactly as SPEC.
+  4. Edit `CoachChat.tsx` exactly as SPEC; nothing else in the file.
+  5. Create the test with the 2 TESTS cases, mocking `convex/react` and `@/convex/_generated/api` with `mock.module` and restoring the real modules in `afterAll`, the way `apps/web/components/coach/CoachChat.test.tsx` does.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/components/coach/voice/useConvexVoiceBackend.test.ts` → `2 pass`, `0 fail`; `bun test apps/web/components/coach/CoachChat.test.tsx` → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both `bun test` summaries, both exit codes and the diff of the two edited files, pasted into the PR.
+- **DO NOT:** change what any voice function is called with; change the hook's return value or any other behaviour; add `useMemo` around the backend (Convex's `useMutation`/`useAction` already return stable functions); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0375b / evidence: <DONE output> / changed: useConvexVoiceBackend.ts, useVoiceCall.ts, CoachChat.tsx, useConvexVoiceBackend.test.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  `useVoiceCall.ts`:
+  ```ts
+  import type { RenewResult } from "@/lib/voice-lease";
+  import type { SentenceAudio } from "@/lib/voice-tts";
+  /** The voice call's server functions (convex/voice.ts), passed in so the hook runs without Convex in a harness. */
+  export type VoiceBackend = {
+    start: (args: { conversationId: Id<"conversations">; clientKey: string }) => Promise<{
+      sessionId: Id<"voiceSessions">;
+      language: "en" | "he";
+      renewEveryMs: number;
+      minutesLeft: number;
+    }>;
+    renew: (args: { sessionId: Id<"voiceSessions"> }) => Promise<RenewResult>;
+    stop: (args: { sessionId: Id<"voiceSessions"> }) => Promise<null>;
+    grant: (args: { sessionId: Id<"voiceSessions"> }) => Promise<{ token: string; url: string }>;
+    speak: (args: { sessionId: Id<"voiceSessions">; messageId: Id<"messages">; index: number }) => Promise<SentenceAudio>;
+  };
+  ```
+  The hook's parameter object gains `backend: VoiceBackend` (after `replyInFlight`); the five lines `const startLease = useMutation(api.voice.start); … const speak = useAction(api.voice.speak);` become `const { start: startLease, renew: renewLease, stop: stopLease, grant, speak } = backend;`; the imports `import { useAction, useMutation } from "convex/react";` and `import { api } from "@/convex/_generated/api";` are removed (`import type { Id } from "@/convex/_generated/dataModel";` stays).
+  `useConvexVoiceBackend.ts`:
+  ```ts
+  "use client";
+  import { useAction, useMutation } from "convex/react";
+  import { api } from "@/convex/_generated/api";
+  import type { VoiceBackend } from "./useVoiceCall";
+
+  /** The voice call's Convex functions; the only voice file that talks to Convex. */
+  export function useConvexVoiceBackend(): VoiceBackend {
+    return {
+      start: useMutation(api.voice.start),
+      renew: useMutation(api.voice.renew),
+      stop: useMutation(api.voice.stop),
+      grant: useAction(api.voice.grant),
+      speak: useAction(api.voice.speak),
+    };
+  }
+  ```
+  `CoachChat.tsx`: add `import { useConvexVoiceBackend } from "./voice/useConvexVoiceBackend";`; directly above `const voice = useVoiceCall({` add `const voiceBackend = useConvexVoiceBackend();`; add `backend: voiceBackend,` as the last property of the `useVoiceCall` argument. Errors: none. No copy.
+- **TESTS:**
+  1. Given `convex/react` mocked so `useMutation(ref)` returns `Object.assign(async () => null, { kind: "mutation", ref })` and `useAction(ref)` returns `Object.assign(async () => null, { kind: "action", ref })`, and the api mocked with `voice: { start: "voice.start", renew: "voice.renew", stop: "voice.stop", grant: "voice.grant", speak: "voice.speak" }` / When `useConvexVoiceBackend()` is called / Then `start`, `renew`, `stop` carry `kind: "mutation"` and refs `"voice.start"`, `"voice.renew"`, `"voice.stop"`, and `grant`, `speak` carry `kind: "action"` and refs `"voice.grant"`, `"voice.speak"`.
+  2. Given the text of `useVoiceCall.ts` (`await Bun.file(new URL("./useVoiceCall.ts", import.meta.url)).text()`) / Then it contains neither `from "convex/react"` nor `_generated/api"`, and it contains `backend: VoiceBackend`.
+- **NUMBERS:** 2 of 2 cases pass (exact); `CoachChat.test.tsx` keeps its current pass count with 0 fail. Latency: n/a (no new call).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0377 — Voice: `AudioLevel` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (AudioLevel `.tp-level` > `.tp-level__bar` `--level`, `aria-hidden`, static under reduced motion).
-- **GOAL:** `AudioLevel` renders the microphone level bars from `levels[]` with the current level via `--level`, static under reduced motion.
-- **SCOPE:** `apps/web/components/coach/voice/AudioLevel.tsx` · test `apps/web/components/coach/voice/AudioLevel.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/AudioLevel.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `AudioLevel` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/AudioLevel.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not animate under `prefers-reduced-motion`; do not expose the level to a screen reader (`aria-hidden`); do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `AudioLevel({ levels: number[] })`. Bars use `--tp-accent`; the active bar height reflects `--level` (0…1). `aria-hidden="true"`. Reduced motion → static max bars, no pulse. RTL: bars flow inline-start.
-- **TESTS:** Given levels `[0.2,0.8]` / When rendered / Then the highest bar carries the larger level. Given reduced motion / When rendered / Then no animation class is applied. Given any render / When inspected / Then the element is `aria-hidden`.
-- **NUMBERS:** motion ≤250 ms; static under reduced motion (DESIGN.md §7).
+### TFV2-0376a — Voice: `VoiceCallView` — the call layout without the dialog (extracted from `VoiceCall`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b
+- **WHY:** `docs/design/v3/components.md` §2.11 (VoiceCall `.tp-call[data-state][data-ended]`, `__top`, `__title`, `__stage`, `__state` `aria-live`, `__hint`, `__dock`); `docs/design/v3/screens/web/voice-call.html` (`@states default | empty | loading | error | offline` + ended; loading = connecting); PRD F-30; CONVENTIONS §10 Case A (tempo.css `@component VoiceCall` block, line 1182, and the blocks that follow it) and §13. Code truth: `apps/web/components/coach/voice/VoiceCall.tsx` is already props-only (no Convex) and is mounted by `CoachChat.tsx`, but it draws everything inside a Radix `Dialog.Portal`, so a harness cannot render its states side by side (each portal goes to `document.body`, and several open modal dialogs trap focus against each other). This ticket moves the `<section className="tp-call tp-glass">…</section>` unchanged into a new `VoiceCallView` and leaves `VoiceCall` as the dialog around it; its own strings keep their `t("vc.*")` keys (CONVENTIONS §11, existing component). Later tickets (TFV2-0377…TFV2-0384) replace the inline controls with their own components one by one. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/VoiceCallView.tsx` renders the call layout for every call state from props (no dialog, no portal), `VoiceCall` wraps it in the existing dialog, and a harness spec proves each state.
+- **SCOPE:** `apps/web/components/coach/voice/VoiceCallView.tsx` · `apps/web/components/coach/voice/VoiceCall.tsx` · `apps/web/app/e2e/components/voice-call-view/page.tsx` · test: `tests/e2e/screens/voice-call-view.spec.ts`.
+- **MUTATES:** `VoiceCallView.tsx` (new) · `VoiceCall.tsx` (edit: the section moves out; the dialog stays) · `apps/web/app/e2e/components/voice-call-view/page.tsx` (new) · `tests/e2e/screens/voice-call-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component VoiceCall " apps/web/app/tempo.css` (line 1182); `grep -n "Dialog\.\|className=\"tp-call tp-glass\"" apps/web/components/coach/voice/VoiceCall.tsx`; `grep -rn "from \"./VoiceCall\"\|voice/VoiceCall\"" apps/web --include=*.ts --include=*.tsx` (importers: `useVoiceCall.ts` for `CallLine`, `CoachChat.tsx` for `VoiceCall`); `test -e apps/web/components/coach/voice/VoiceCallView.tsx` fails.
+  2. Create `VoiceCallView.tsx` exactly as SPEC "VoiceCallView".
+  3. Replace `VoiceCall.tsx` exactly as SPEC "VoiceCall".
+  4. Create the harness page per SPEC "Harness".
+  5. Create the spec with the CONVENTIONS §22 spec skeleton (`openHarness(page, "voice-call-view", { lang })`) and the 10 TESTS bullets.
+  6. Run DONE, then `bun test apps/web/components/coach/CoachChat.test.tsx`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts --reporter=line` → `40 passed`, 0 failed; `bun test apps/web/components/coach/CoachChat.test.tsx` → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary, the `bun test` summary and both exit codes, pasted into the PR.
+- **DO NOT:** change any class, `data-*` attribute, `t()` key, string or markup order while moving the section; add a stylesheet; call Convex, `fetch`, audio or a socket in the view or the harness; edit `apps/web/lib/i18n*`, `apps/web/lib/voice-call.ts` or `CoachChat.tsx`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0376a / evidence: <DONE output> / changed: VoiceCallView.tsx, VoiceCall.tsx, voice-call-view/page.tsx, voice-call-view.spec.ts / unknowns / notes for ticket sync: vc.empty Hebrew ("…מה עובר עלייך") and vc.you ("את") are gendered (CONVENTIONS §12); fixing them is an i18n ticket`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  VoiceCallView (`"use client"`):
+  ```tsx
+  import type { ElementType } from "react";
+  export type CallLine = { id: string; who: "you" | "coach"; text: string; live?: boolean; notSent?: boolean };
+  export type VoiceCallViewProps = {
+    session: VoiceSessionState; connecting: boolean; ended: boolean; online: boolean; micOn: boolean;
+    lines: readonly CallLine[]; callLang: Lang; minutesLeft?: number;
+    action?: { text: string; onUndo: () => void };
+    onMicToggle: () => void; onInterrupt: () => void; onEnd: () => void; onClose: () => void; onRetry: () => void;
+    onCallLang?: (lang: Lang) => void; onReadAloud?: (line: CallLine) => void; onPushStart?: () => void; onPushEnd?: () => void;
+    /** The element for the title: "h2" alone, Radix `Dialog.Title` inside VoiceCall. */
+    titleAs?: ElementType;
+  };
+  export function VoiceCallView(props: VoiceCallViewProps): JSX.Element;
+  ```
+  Body: the current `VoiceCall` body from `const { t } = useLocale();` through the closing `</section>`, unchanged, except (a) `props.open` is not read, (b) `<Dialog.Title className="tp-call__title">{t("vc.title")}</Dialog.Title>` becomes `<TitleAs className="tp-call__title">{t("vc.title")}</TitleAs>` with `const TitleAs = props.titleAs ?? "h2";`, (c) no `Dialog` import.
+  VoiceCall (`"use client"`):
+  ```tsx
+  import * as Dialog from "@radix-ui/react-dialog";
+  import { callView } from "@/lib/voice-call";
+  import { type CallLine, VoiceCallView, type VoiceCallViewProps } from "./VoiceCallView";
+  export type { CallLine };
+  export type VoiceCallProps = Omit<VoiceCallViewProps, "titleAs"> & { open: boolean };
+  export function VoiceCall({ open, ...view }: VoiceCallProps) {
+    const { session, connecting, ended, online, micOn } = view;
+    const { showControls } = callView({ session, connecting, ended, online, micOn });
+    return (
+      <Dialog.Root open={open}>
+        <Dialog.Portal>
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="vc-dialog"
+            onEscapeKeyDown={(event) => {
+              event.preventDefault();
+              if (micOn && showControls) view.onMicToggle();
+            }}
+            onPointerDownOutside={(event) => event.preventDefault()}
+          >
+            <VoiceCallView {...view} titleAs={Dialog.Title} />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    );
+  }
+  ```
+  The doc comment above `VoiceCall` stays (drop its last sentence "Not mounted yet: the session reducer has no adapter.", which is no longer true).
+  Classes and attributes used (all in tempo.css or `apps/web/app/v3/extras.css`): `.tp-call` `.tp-glass` `[data-component="VoiceCall"]` `[data-state]` (`connecting | listening | speaking | paused`, from `callView`) `[data-ended]`, `.tp-call__top` `.tp-call__title` `.vc-top-end` `.tp-call__minutes` `.tp-lang-chip` `.tp-call__stage` `.vc-status` `.tp-level` `.tp-call__state` (`aria-live="polite"`) `.tp-call__hint` `.tp-notice` `.vc-notice` `.tp-offline` `.tp-call__transcript` `.tp-call-line` `.tp-call-action` `.tp-call__dock` `.tp-call__micwrap` `.tp-call__mic` `.tp-ptt` `.tp-btn--secondary` `.tp-btn--danger` `[data-action="call-interrupt" | "call-end" | "call-close"]`.
+  Copy (existing keys, values from `apps/web/lib/i18n-groups/extras.ts`, EN / HE): `vc.title` "Call with your coach" / "שיחה עם המאמן"; `vc.connecting` "Connecting…" / "מתחבר…"; `vc.listening` "Listening" / "מקשיב"; `vc.speaking` "Speaking" / "מדבר"; `vc.paused` "Paused" / "מושהה"; `vc.notConnected` "Not connected" / "לא מחובר"; `vc.ended` "Call ended" / "השיחה הסתיימה"; `vc.hint` "Talk any time. You can cut in while the coach speaks. Esc pauses the mic." / "אפשר לדבר בכל רגע. אפשר לקטוע את המאמן כשהוא מדבר. Esc משהה את המיקרופון."; `vc.err.title` "Couldn't connect." / "לא הצלחנו להתחבר."; `vc.err.body` "Nothing was lost. You can try the call again." / "שום דבר לא אבד. אפשר לנסות את השיחה שוב."; `vc.retry` "Try again" / "לנסות שוב"; `vc.off.title` "You're offline." / "אין חיבור לרשת."; `vc.off.body` "The call will reconnect when you're back. What was said stays here." / "השיחה תתחבר מחדש כשהחיבור יחזור. מה שנאמר נשאר כאן."; `vc.empty` "Say hello, or tell the coach what's on your mind." / "אפשר להגיד שלום, או לספר למאמן מה עובר עלייך." (existing value, kept as is: it is gendered, so the REPORT records it under "notes for ticket sync" for an i18n ticket); `vc.back` "Back to Today" / "חזרה להיום"; `vc.end` "End call" / "סיום שיחה". The child controls' strings are asserted by their own tickets.
+  States (harness order; `session` is `{ phase, generation: -1, identity: null, interimText: "", acceptedText: null, replyAttempt: 0, retryable: false, error: null, lastRequest: null }` with the phase shown; other props `connecting: false, ended: false, online: true, micOn: true, callLang: "en"` unless stated): `default` (phase `listening`, lines `[{ id: "l1", who: "you", text: "What should I do first?" }, { id: "l2", who: "coach", text: "Start with the email to Dana. It takes ten minutes." }]`, `minutesLeft: 12`); `connecting` (phase `listening`, `connecting: true`, lines `[]`); `empty` (phase `listening`, lines `[]`); `speaking` (phase `speaking`, the default lines); `paused` (phase `listening`, `micOn: false`, the default lines); `error` (phase `error`, lines `[]`); `offline` (phase `listening`, `online: false`, the default lines); `ended` (phase `idle`, `ended: true`, the default lines). Loading = `connecting`; success n/a; disabled = the Interrupt button outside `speaking`.
+  Layout and tokens (from tempo.css, unchanged): full-screen grid (`position: fixed; inset: 0`), top bar `--tp-space-3`/`--tp-space-4` padding, stage gap `--tp-space-5`, state word `--tp-font-serif` `--tp-text-3xl`, hint `--tp-text-sm` `--tp-ink-muted`, dock gap `--tp-space-4`/`--tp-space-6`; entry animation `tp-rise` `--tp-dur-slow` (240 ms). Breakpoints: one layout; the dock wraps at 390 px. RTL: the top bar and dock are flex rows, so they mirror under `dir="rtl"`; line text `dir="auto"`. Keyboard: native buttons in DOM order (top bar, notice action, transcript, dock). Screen reader: `.tp-call__state` and the transcript are polite live regions; the error notice is `role="alert"`; the offline notice is an `<output>`.
+  Harness (`apps/web/app/e2e/components/voice-call-view/page.tsx`, `"use client"`, imports only React, `VoiceCallView` and the `VoiceSessionState` / `CallLine` types): the 8 states in order, each `<section data-testid="voice-call-view-<state>" style={{ position: "relative", contain: "layout", blockSize: "100dvh" }}>` (`contain: layout` makes the section the containing block of `.tp-call`'s `position: fixed`, so the stacked calls do not overlap), plus `<output data-testid="voice-call-view-log">`; every callback writes `<propName>:undefined` (they take no argument).
+- **TESTS:** (the CONVENTIONS §22 spec skeleton; locators scoped to each section)
+  1. Given `default` / Then `.tp-call` has `data-component="VoiceCall"`, `data-state="listening"` and no `data-ended`; `.tp-call__state` has `aria-live="polite"` and text "Listening" / "מקשיב"; `.tp-call__hint` is visible; `ol.tp-call__transcript` has two `li.tp-call-line` with `data-who` `you` then `coach`; the title is an `h2` with "Call with your coach" / "שיחה עם המאמן".
+  2. Given `connecting` / Then `data-state="connecting"` and the state word "Connecting…" / "מתחבר…".
+  3. Given `empty` / Then there is no `ol.tp-call__transcript` and a second `p.tp-call__hint` (the empty hint) is visible; in `en` its text is "Say hello, or tell the coach what's on your mind.", in `he` it contains "המאמן".
+  4. Given `speaking` / Then `data-state="speaking"`, the word "Speaking" / "מדבר", and `[data-action="call-interrupt"]` is enabled; Given `default` / Then `[data-action="call-interrupt"]` is disabled.
+  5. Given `paused` / Then `data-state="paused"` and the word "Paused" / "מושהה".
+  6. Given `error` / Then the word is "Not connected" / "לא מחובר", `[role="alert"]` shows "Couldn't connect." / "לא הצלחנו להתחבר."; When its `.tp-notice__action button` is clicked / Then `voice-call-view-log` reads `onRetry:undefined`.
+  7. Given `offline` / Then `[data-component="StateOffline"]` shows "You're offline." / "אין חיבור לרשת." and there is no `[role="alert"]`.
+  8. Given `ended` / Then `.tp-call` has `data-ended="true"`, the word is "Call ended" / "השיחה הסתיימה", `[data-action="call-close"]` is visible with "Back to Today" / "חזרה להיום", and there is no `[data-action="call-end"]` and no `.tp-call__micwrap`; When `call-close` is clicked / Then the log reads `onClose:undefined`.
+  9. Given `default` / When `[data-action="call-end"]` is clicked / Then the log reads `onEnd:undefined`; When `.tp-call__mic` is clicked / Then the log reads `onMicToggle:undefined`.
+  10. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="voice-call-view-default"] .tp-call__dock')` and `expectMotionBudget(page, '[data-testid="voice-call-view-default"]')` pass.
+- **NUMBERS:** Playwright `40 passed` of 40 (10 bullets × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 10. Motion ≤ 250 ms (240 ms entry, 120 ms bars) and ≤ 1 ms reduced · bullet 10. State in words, not colour (WCAG 2.2 SC 1.4.1) · bullets 1–8.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0378 — Voice: `LiveTranscript` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (LiveTranscript `ol.tp-call__transcript[aria-live=polite]`, `.tp-call-line[data-who][data-live]`); PRD F-30 (read-back).
-- **GOAL:** `LiveTranscript` renders the rolling transcript (you / coach) with live lines marked and a ReadAloud action per coach line.
-- **SCOPE:** `apps/web/components/coach/voice/LiveTranscript.tsx` · test `apps/web/components/coach/voice/LiveTranscript.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/LiveTranscript.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `LiveTranscript` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/LiveTranscript.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not store transcripts; do not mark user lines as live; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `LiveTranscript({ lines: { who:"user"|"coach", text, live? }[] })`. Rows `data-who`; `data-live` only on the streaming coach line. `ol` is `aria-live=polite`. Copy `EN: You / HE: אתה` and `EN: Coach / HE: מאמן`. RTL: text `dir="auto"` per line; who label inline-start. ReadAloud button per coach line (TFV2-0387).
-- **TESTS:** Given two lines / When rendered / Then each shows with the right `data-who`. Given a live coach line / When rendered / Then only that line has `data-live`. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · motion ≤250 ms.
+### TFV2-0376b — Voice: `VoiceCall` dialog — harness spec (role, modality, Esc pauses)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376a
+- **WHY:** `docs/design/v3/components.md` §2.11 (VoiceCall: `role="dialog" aria-modal="true"`; "Esc pauses"); `voice-call.html` `@actions` ("mic on / off …; Esc also pauses"). Code truth (after TFV2-0376a): `VoiceCall` is a Radix `Dialog.Root open` → `Dialog.Portal` → `Dialog.Content` (`onEscapeKeyDown` prevents closing and calls `onMicToggle` while the mic is on and controls show; `onPointerDownOutside` prevents closing) around `VoiceCallView` with `titleAs={Dialog.Title}`. This ticket verifies that wrapper with a harness spec; no component code changes. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** A harness spec proves `VoiceCall` is a modal dialog named by its title, takes focus, and pauses the mic on Esc without closing.
+- **SCOPE:** `apps/web/components/coach/voice/VoiceCall.tsx` (unchanged) · `apps/web/app/e2e/components/voice-call/page.tsx` · test: `tests/e2e/screens/voice-call.spec.ts`.
+- **MUTATES:** `VoiceCall.tsx` (unchanged) · `apps/web/app/e2e/components/voice-call/page.tsx` (new) · `tests/e2e/screens/voice-call.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "VoiceCallView\|onEscapeKeyDown\|Dialog.Title" apps/web/components/coach/voice/VoiceCall.tsx` (TFV2-0376a merged, else `blocked: missing TFV2-0376a`).
+  2. Create the harness page per SPEC.
+  3. Create the spec with the CONVENTIONS §22 spec skeleton and the 3 TESTS bullets. Because Radix portals the dialog to `document.body`, locate it with `page.getByRole("dialog")` (the page has exactly one dialog) instead of scoping to the section.
+  4. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-call.spec.ts --reporter=line` → `12 passed`, 0 failed; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary and both exit codes, pasted into the PR.
+- **DO NOT:** edit `VoiceCall.tsx` or `VoiceCallView.tsx` (a failing case is reported as `blocked: code differs from SPEC`); render more than one dialog on the page; call Convex or audio; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0376b / evidence: <DONE output> / changed: voice-call/page.tsx, voice-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Harness (`"use client"`, imports only React, `VoiceCall` and the `VoiceSessionState` type): one `<section data-testid="voice-call-default">` holding `<VoiceCall open session={{ phase: "listening", generation: -1, identity: null, interimText: "", acceptedText: null, replyAttempt: 0, retryable: false, error: null, lastRequest: null }} connecting={false} ended={false} online micOn lines={[]} callLang="en" minutesLeft={12} … />` with every callback writing `<propName>:undefined` to `<output data-testid="voice-call-log">` (the output sits in the section, outside the portal). Dialog contract: `role="dialog"`, `aria-modal="true"`, accessible name from `Dialog.Title` = `vc.title` ("Call with your coach" / "שיחה עם המאמן"); focus moves inside on open; Esc → `onMicToggle` once, the dialog stays open; pointer-down outside never closes it. No copy of its own.
+- **TESTS:**
+  1. Given the harness / Then `page.getByRole("dialog")` is visible, has `aria-modal="true"` and the accessible name "Call with your coach" / "שיחה עם המאמן".
+  2. Given the harness / Then `document.activeElement` is inside the dialog (`await page.getByRole("dialog").evaluate((d) => d.contains(document.activeElement))` is `true`).
+  3. Given the harness / When `page.keyboard.press("Escape")` / Then `voice-call-log` reads `onMicToggle:undefined` and the dialog is still visible.
+- **NUMBERS:** Playwright `12 passed` of 12 (3 bullets × 2 viewports × 2 languages). Name, role, value exposed (WCAG 2.2 SC 4.1.2) · bullet 1. Focus order and no keyboard trap out of a modal (WCAG 2.2 SC 2.4.3, 2.1.2) · bullets 2–3.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0379 — Voice: `MicToggle` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (MicToggle `.tp-call__mic[aria-pressed]`, "The one accent on the call screen").
-- **GOAL:** `MicToggle` is the single accent mic button, `aria-pressed`, with the `call-mic` action.
-- **SCOPE:** `apps/web/components/coach/voice/MicToggle.tsx` · test `apps/web/components/coach/voice/MicToggle.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/MicToggle.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `MicToggle` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/MicToggle.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not add a second accent element on the call screen; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `MicToggle({ pressed, onToggle })`. Accent `--tp-accent` when off (inviting), `--tp-danger` muted state. Copy: `EN: Mic on / HE: מיקרופון פועל` / `EN: Mic off / HE: מיקרופון כבוי`. `aria-pressed` reflects state; `call-mic` event. Target ≥ 24×24 CSS px. RTL: label inline-start.
-- **TESTS:** Given `pressed=false` / When rendered / Then `aria-pressed=false` and the accent style applies. Given `pressed=true` / When rendered / Then the muted style and `Mic off` label show. Given a tap / When fired / Then `onToggle` runs.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+### TFV2-0377 — Voice: `AudioLevel` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0376a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0376a
+- **WHY:** `docs/design/v3/components.md` §2.11 (AudioLevel `.tp-level` > `.tp-level__bar` with `--level`, `aria-hidden`, static under reduced motion); CONVENTIONS §10 Case A (tempo.css `@component AudioLevel` block, line 1196: `.tp-level`, `.tp-level__bar { transform: scaleY(var(--level, 0.15)); transition: transform var(--tp-dur-fast) … }`, state rules under `.tp-call[data-state]`). Code truth: `VoiceCallView.tsx` (TFV2-0376a) draws nine `.tp-level__bar` spans inline without `--level`; the app measures no microphone level today, so the call keeps passing the quiet level (0.15, the stylesheet default) and the state word carries the meaning. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/AudioLevel.tsx` renders one bar per level with `--level` clamped to 0…1, hidden from assistive tech, and `VoiceCallView` uses it with `QUIET_LEVELS`.
+- **SCOPE:** `apps/web/components/coach/voice/AudioLevel.tsx` · `apps/web/app/e2e/components/audio-level/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/audio-level.spec.ts`.
+- **MUTATES:** `AudioLevel.tsx` (new) · `apps/web/app/e2e/components/audio-level/page.tsx` (new) · `VoiceCallView.tsx` (edit: the inline `.tp-level` block becomes `<AudioLevel levels={QUIET_LEVELS} />`, one import) · `tests/e2e/screens/audio-level.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component AudioLevel " apps/web/app/tempo.css` (line 1196); `grep -n "tp-level" apps/web/components/coach/voice/VoiceCallView.tsx` (the inline block); `test -e apps/web/components/coach/voice/AudioLevel.tsx` fails.
+  2. Stylesheet: Case A, no new file. Create `AudioLevel.tsx` exactly as SPEC.
+  3. In `VoiceCallView.tsx` replace the `<div className="tp-level" … data-component="AudioLevel">…</div>` element with `<AudioLevel levels={QUIET_LEVELS} />` and add `import { AudioLevel, QUIET_LEVELS } from "./AudioLevel";`.
+  4. Create the harness page (3 SPEC states, sections `audio-level-<state>`; no callbacks, so no log).
+  5. Create the spec (CONVENTIONS §22 skeleton, `openHarness(page, "audio-level", { lang })`) with the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/audio-level.spec.ts --reporter=line` → `20 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** animate the bars in JavaScript; expose the bars to a screen reader; measure the microphone (no `AudioContext`); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0377 / evidence: <DONE output> / changed: AudioLevel.tsx, audio-level/page.tsx, VoiceCallView.tsx, audio-level.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  import type { CSSProperties } from "react";
+  export type AudioLevelProps = { levels: readonly number[] };
+  /** Nine bars at the stylesheet's resting level (0.15). */
+  export const QUIET_LEVELS: readonly number[] = [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15];
+  function clampLevel(level: number): number {
+    return Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0;
+  }
+  export function AudioLevel({ levels }: AudioLevelProps) {
+    return (
+      <div className="tp-level" aria-hidden="true" data-component="AudioLevel">
+        {levels.map((level, i) => (
+          <span className="tp-level__bar" key={i} style={{ "--level": String(clampLevel(level)) } as CSSProperties} />
+        ))}
+      </div>
+    );
+  }
+  ```
+  Tokens (tempo.css): bar colour `--tp-ink` (`--tp-ink-muted` while speaking, `--tp-line-strong` paused/connecting), height `--tp-space-16`, gap `--tp-space-1`, radius `--tp-radius-pill`, transition `--tp-dur-fast` `--tp-ease-out`. Copy: none (decorative; `.tp-call__state` carries the meaning). States (harness order): `quiet` (`QUIET_LEVELS`), `active` (`[0.2, 0.4, 0.9, 0.6, 0.3]`), `clamped` (`[-1, 2, Number.NaN]`). Loading / empty / error / offline / success / disabled: n/a (the parent call shows them). RTL: the bars are symmetric; flex order mirrors with no visual change. Keyboard / screen reader: nothing focusable; `aria-hidden="true"`. Breakpoints: none. Motion: 120 ms transform; reduced motion → 0.01 ms (tempo.css line 480).
+- **TESTS:**
+  1. Given `quiet` / Then `.tp-level` has 9 `.tp-level__bar`, and each bar's `style.getPropertyValue("--level")` is `"0.15"`.
+  2. Given `active` / Then the 5 bars' `--level` values are `"0.2"`, `"0.4"`, `"0.9"`, `"0.6"`, `"0.3"` in order, and the third bar's computed `transform` is `matrix(1, 0, 0, 0.9, 0, 0)`.
+  3. Given `clamped` / Then the bars' `--level` values are `"0"`, `"1"`, `"0"`.
+  4. Given any section / Then its `.tp-level` has `aria-hidden="true"` and `data-component="AudioLevel"`, and `page.getByTestId("audio-level-active").getByRole("img")` has count 0.
+  5. Given any viewport and language / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="audio-level-"]')` pass.
+- **NUMBERS:** Playwright `20 passed` of 20; the two VoiceCall specs stay `52 passed`. Motion ≤ 250 ms (120 ms) and ≤ 1 ms reduced (DESIGN.md motion rule; CONVENTIONS §20) · bullet 5. Information not by graphics alone (WCAG 2.2 SC 1.1.1: decorative, hidden) · bullet 4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0380 — Voice: `Interrupt` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (Interrupt `.tp-btn--secondary[data-action=call-interrupt]`, hand icon, enabled only while the coach speaks).
-- **GOAL:** `Interrupt` is a secondary button that fires `session.interrupt()`, disabled unless the coach is speaking.
-- **SCOPE:** `apps/web/components/coach/voice/Interrupt.tsx` · test `apps/web/components/coach/voice/Interrupt.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/Interrupt.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `Interrupt` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/Interrupt.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not enable while the user speaks; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `Interrupt({ enabled, onInterrupt })`. Copy: `EN: Interrupt / HE: קטע`. Secondary style (`--tp-btn--secondary`), hand icon. Disabled state greyed. `data-action=call-interrupt` → `session.interrupt()`.
-- **TESTS:** Given the coach speaking / When rendered / Then enabled. Given the user speaking / When rendered / Then disabled. Given a press / When fired / Then `onInterrupt` runs.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+### TFV2-0378 — Voice: `LiveTranscript` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0206, TFV2-0377 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0206, TFV2-0377
+- **WHY:** `docs/design/v3/components.md` §2.11 (LiveTranscript `ol.tp-call__transcript[aria-live=polite]`, `.tp-call-line[data-who][data-live]`, `__who`, `__text`; ReadAloud per line); PRD F-30 (read-back); CONVENTIONS §10 Case A (tempo.css `@component LiveTranscript` block, line 1202). Code truth: `VoiceCallView.tsx` draws the transcript inline with `t("vc.you")` (HE "את", gendered), `t("vc.coach")`, `t("vc.notSent")`, `t("vc.transcript")` and an icon-only read-aloud button with local `reading` state. This new component owns its copy in a `COPY` constant (CONVENTIONS §11/§12: the person's label is "אני", as in TFV2-0202 UserMessage) and composes the merged `ReadAloudButton` (TFV2-0206, `apps/web/components/coach/ReadAloudButton.tsx`, props `{ pressed: boolean; onToggle: (next: boolean) => void; disabled?: boolean }`). Depends on TFV2-0377 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/LiveTranscript.tsx` renders the call's lines (who, text, not-sent note, a Read aloud toggle on coach lines when `onReadAloud` is given) as a polite live list, renders nothing for no lines, and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/LiveTranscript.tsx` · `apps/web/app/e2e/components/live-transcript/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/live-transcript.spec.ts`.
+- **MUTATES:** `LiveTranscript.tsx` (new) · `apps/web/app/e2e/components/live-transcript/page.tsx` (new) · `VoiceCallView.tsx` (edit: the `{lines.length > 0 ? (<ol …>) : null}` block becomes `<LiveTranscript lines={lines} onReadAloud={props.onReadAloud} />`; the `reading` state is removed) · `tests/e2e/screens/live-transcript.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component LiveTranscript " apps/web/app/tempo.css`; `grep -n "tp-call__transcript\|setReading" apps/web/components/coach/voice/VoiceCallView.tsx`; `grep -n "export function ReadAloudButton\|export type ReadAloudButtonProps" apps/web/components/coach/ReadAloudButton.tsx` (TFV2-0206, else `blocked: missing TFV2-0206`); `test -e apps/web/components/coach/voice/LiveTranscript.tsx` fails.
+  2. Stylesheet: Case A. Create `LiveTranscript.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says; remove the now-unused `reading` state (keep `useState` imported only if still used).
+  4. Create the harness page (5 SPEC states, sections `live-transcript-<state>`, `<output data-testid="live-transcript-log">`; `onReadAloud` writes `onReadAloud:<JSON of the line>`).
+  5. Create the spec (§22 skeleton, `openHarness(page, "live-transcript", { lang })`) with the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/live-transcript.spec.ts --reporter=line` → `28 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** store transcripts anywhere; read aloud automatically; render Markdown or HTML from `text`; edit `ReadAloudButton.tsx` or `apps/web/lib/i18n*`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0378 / evidence: <DONE output> / changed: LiveTranscript.tsx, live-transcript/page.tsx, VoiceCallView.tsx, live-transcript.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  import { useState } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import type { Lang } from "@/lib/i18n";
+  import { ReadAloudButton } from "../ReadAloudButton";
+  import type { CallLine } from "./VoiceCallView";
+  type CopyKey = "transcript" | "you" | "coach" | "notSent";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { transcript: "What was said", you: "You", coach: "Coach", notSent: "Not sent. Say it again." },
+    he: { transcript: "מה נאמר", you: "אני", coach: "המאמן", notSent: "לא נשלח. אפשר לומר שוב." },
+  };
+  export type LiveTranscriptProps = { lines: readonly CallLine[]; onReadAloud?: (line: CallLine) => void };
+  export function LiveTranscript({ lines, onReadAloud }: LiveTranscriptProps): JSX.Element | null;
+  ```
+  Body: `const { lang } = useLocale(); const copy = COPY[lang]; const [reading, setReading] = useState<string | null>(null); if (lines.length === 0) return null;` then `<ol className="tp-call__transcript" aria-live="polite" aria-label={copy.transcript} data-component="LiveTranscript">`, one `<li className="tp-call-line" data-who={line.who} data-live={line.live || undefined} key={line.id}>` per line holding `<span className="tp-call-line__who">{line.who === "you" ? copy.you : copy.coach}</span>`, `<span className="tp-call-line__text" dir="auto">{line.text}</span>`, `{line.notSent ? <span className="tp-muted tp-small" data-component="CallLineNotSent">{copy.notSent}</span> : null}` and, when `line.who === "coach" && onReadAloud`, `<ReadAloudButton pressed={reading === line.id} onToggle={(next) => { setReading(next ? line.id : null); onReadAloud(line); }} />`.
+  Tokens (tempo.css): list `--tp-paper` ground, `1px solid var(--tp-line)`, `--tp-radius-lg`, `--tp-space-4` padding, `--tp-space-3` gap, max height `38vh`; who label `--tp-text-xs` `--tp-ink-muted`; live text `--tp-ink-muted`. States (harness order): `default` (`[{ id: "l1", who: "you", text: "What should I do first?" }, { id: "l2", who: "coach", text: "Start with the email to Dana." }]`, with `onReadAloud`); `live` (`[{ id: "you-live", who: "you", text: "and then the", live: true }]`); `not-sent` (`[{ id: "l3", who: "you", text: "Move the dentist", notSent: true }]`); `no-read` (the `default` lines, no `onReadAloud`); `empty` (`[]`). Loading / error / offline / success / disabled: n/a (the call shows them). RTL: each text `dir="auto"`; the read-aloud toggle sits at the inline end (grid column 2). Keyboard: only the Read aloud toggles are focusable (Enter/Space). Screen reader: a polite live list named "What was said" / "מה נאמר"; each line starts with its who label.
+- **TESTS:**
+  1. Given `default` / Then the `ol` has `aria-live="polite"` and `aria-label` "What was said" / "מה נאמר"; it has two `li` with `data-who` `you` then `coach`; their who labels read "You" / "אני" and "Coach" / "המאמן"; each `.tp-call-line__text` has `dir="auto"`.
+  2. Given `default` / Then only the coach line has a `[data-component="ReadAloudButton"]`, with `aria-pressed="false"`; When it is clicked / Then the log reads `onReadAloud:{"id":"l2","who":"coach","text":"Start with the email to Dana."}`, the button has `aria-pressed="true"` and the label "Stop reading" / "עצירת ההקראה"; When clicked again / Then `aria-pressed="false"`.
+  3. Given `live` / Then its `li` has `data-live="true"`; Given `default` / Then no `li` has a `data-live` attribute.
+  4. Given `not-sent` / Then `[data-component="CallLineNotSent"]` reads "Not sent. Say it again." / "לא נשלח. אפשר לומר שוב.".
+  5. Given `no-read` / Then there is no `[data-component="ReadAloudButton"]`.
+  6. Given `empty` / Then the section contains no `ol`.
+  7. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="live-transcript-default"]')` and `expectMotionBudget(page, '[data-testid^="live-transcript-"]')` pass.
+- **NUMBERS:** Playwright `28 passed` of 28; the VoiceCall specs stay `52 passed`. Text contrast ≥ 4.5:1 (`--tp-ink-muted` on `--tp-paper`, WCAG 2.2 SC 1.4.3). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 7. Status messages announced (WCAG 2.2 SC 4.1.3, `aria-live="polite"`) · bullet 1. Motion ≤ 250 ms · bullet 7.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0381 — Voice: `EndCall` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (EndCall `.tp-btn--danger[data-action=call-end]`, phone-off icon, word "End call").
-- **GOAL:** `EndCall` is a danger button that ends the session (`voice.endSession`) then closes the call.
-- **SCOPE:** `apps/web/components/coach/voice/EndCall.tsx` · test `apps/web/components/coach/voice/EndCall.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/EndCall.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `EndCall` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/EndCall.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not skip `voice.endSession` before `call-close`; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `EndCall({ onEnd })`. Copy: `EN: End call / HE: סיים שיחה`. Danger style `--tp-danger`. `data-action=call-end` → `voice.endSession`; then `call-close`.
-- **TESTS:** Given a live call / When End call is pressed / Then `onEnd` fires once. Given `onEnd` / When pressed twice fast / Then it fires once (no double end). Run at 390 and 1280, EN and HE.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+### TFV2-0379 — Voice: `MicToggle` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0378 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0378
+- **WHY:** `docs/design/v3/components.md` §2.11 (MicToggle `.tp-call__micwrap`, `button.tp-call__mic[aria-pressed]`, `.tp-call__mic-label`; "the one accent on the call screen"); `voice-call.html` (`mic on / off -> track.enabled`); CONVENTIONS §10 Case A (tempo.css `@component MicToggle` block, line 1210: accent ground when pressed, `--tp-paper` with a `--tp-line-control` border when `aria-pressed="false"`). Code truth: `VoiceCallView.tsx` draws the mic inline with `t("vc.mute")`, `t("vc.unmute")`, `t("vc.micOn")` (HE "המיקרופון פתוח"), `t("vc.micOff")`; `useVoiceCall.toggleMic` flips the track. This component owns its copy (glossary On/Off = פועל/כבוי). Depends on TFV2-0378 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/MicToggle.tsx` renders the round mic toggle with `aria-pressed`, an action label and a visible on/off word, reports presses through `onToggle`, and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/MicToggle.tsx` · `apps/web/app/e2e/components/mic-toggle/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/mic-toggle.spec.ts`.
+- **MUTATES:** `MicToggle.tsx` (new) · `apps/web/app/e2e/components/mic-toggle/page.tsx` (new) · `VoiceCallView.tsx` (edit: the `<div className="tp-call__micwrap" …>…</div>` element becomes `<MicToggle on={micOn} onToggle={props.onMicToggle} />`, one import) · `tests/e2e/screens/mic-toggle.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component MicToggle " apps/web/app/tempo.css`; `grep -n "tp-call__micwrap" apps/web/components/coach/voice/VoiceCallView.tsx`; `test -e apps/web/components/coach/voice/MicToggle.tsx` fails.
+  2. Stylesheet: Case A. Create `MicToggle.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says.
+  4. Create the harness page (states `on`, `off`; sections `mic-toggle-<state>`; `onToggle` writes `onToggle:undefined` to `<output data-testid="mic-toggle-log">`).
+  5. Create the spec (§22 skeleton) with the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/mic-toggle.spec.ts --reporter=line` → `16 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** touch the microphone here (the hook does); add a second accent element; add a stylesheet; edit `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0379 / evidence: <DONE output> / changed: MicToggle.tsx, mic-toggle/page.tsx, VoiceCallView.tsx, mic-toggle.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "mute" | "unmute" | "micOn" | "micOff";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { mute: "Turn mic off", unmute: "Turn mic on", micOn: "Mic on", micOff: "Mic off" },
+    he: { mute: "כיבוי המיקרופון", unmute: "הפעלת המיקרופון", micOn: "המיקרופון פועל", micOff: "המיקרופון כבוי" },
+  };
+  export type MicToggleProps = { on: boolean; onToggle: () => void };
+  export function MicToggle({ on, onToggle }: MicToggleProps): JSX.Element;
+  ```
+  Markup: `<div className="tp-call__micwrap" data-component="MicToggle"><button className="tp-call__mic" type="button" aria-pressed={on} aria-label={on ? copy.mute : copy.unmute} onClick={onToggle}><TpIcon name={on ? "mic" : "mic-off"} /></button><span className="tp-call__mic-label" aria-hidden="true">{on ? copy.micOn : copy.micOff}</span></div>` (`TpIcon` from `@/components/tempo/TpIcon`, `useLocale` from `@/components/providers/LocaleProvider`, `Lang` from `@/lib/i18n`). Tokens (tempo.css): 96 px circle (`calc(var(--tp-space-20) + var(--tp-space-4))`), on = `--tp-accent` / `--tp-on-accent`, off = `--tp-paper` / `--tp-ink` with `2px solid var(--tp-line-control)`, icon `--tp-space-8`, label `--tp-text-sm` 600, press scale via `--tp-dur-fast`. States: `on` (`on: true`), `off` (`on: false`). Loading / empty / error / offline / success: n/a; disabled n/a (the call hides the mic when controls do not show). RTL: centred column, no direction-specific layout. Keyboard: native button (Enter, Space). Screen reader: "Turn mic off, toggle button, pressed" / "Turn mic on, toggle button, not pressed"; the visible word is `aria-hidden` (it repeats the state). Breakpoints: none. Motion: 120 ms scale on press.
+- **TESTS:**
+  1. Given `on` / Then the button has `aria-pressed="true"`, `aria-label` "Turn mic off" / "כיבוי המיקרופון", a `use[href="#i-mic"]`, and `.tp-call__mic-label` reads "Mic on" / "המיקרופון פועל".
+  2. Given `off` / Then `aria-pressed="false"`, `aria-label` "Turn mic on" / "הפעלת המיקרופון", a `use[href="#i-mic-off"]`, and the label "Mic off" / "המיקרופון כבוי".
+  3. Given `on` / When the button is clicked / Then `mic-toggle-log` reads `onToggle:undefined`; Given `off` / When it is focused and Space is pressed / Then the log reads `onToggle:undefined` again (log text reset to empty between the two by reloading the harness).
+  4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="mic-toggle-"]')` and `expectMotionBudget(page, '[data-testid^="mic-toggle-"]')` pass.
+- **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 96 px) · bullet 4. Non-text contrast ≥ 3:1 for the off border `--tp-line-control` (WCAG 2.2 SC 1.4.11). State exposed (`aria-pressed`, WCAG 2.2 SC 4.1.2) · bullets 1–2. Motion ≤ 250 ms · bullet 4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0382 — Voice: `PushToTalk` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** PRD F-35 (walkie-talkie on every tier); components.md §2.11 (PushToTalk `button.tp-ptt[data-pressed]`, pointer hold or Space/Enter hold).
-- **GOAL:** `PushToTalk` is a hold-to-talk button on every tier, active on pointer/Space/Enter hold, with `data-pressed`.
-- **SCOPE:** `apps/web/components/coach/voice/PushToTalk.tsx` · test `apps/web/components/coach/voice/PushToTalk.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/PushToTalk.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `PushToTalk` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/PushToTalk.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not gate push-to-talk by tier (it is every tier); do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `PushToTalk({ onPressStart, onPressEnd })`. Copy: `EN: Hold to talk / HE: החזק כדי לדבר`. Pointer down/Space/Enter keydown → `data-pressed` + `onPressStart`; up → `onPressEnd`. `aria-pressed`. RTL label inline-start.
-- **TESTS:** Given a pointer hold / When held / Then `onPressStart` fires and `data-pressed` is set. Given release / When fired / Then `onPressEnd` fires. Given Space held / When keydown / Then `onPressStart` fires.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
+### TFV2-0380 — Voice: `Interrupt` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0379 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0379
+- **WHY:** `docs/design/v3/components.md` §2.11 (Interrupt `.tp-btn--secondary[data-action=call-interrupt]`, hand icon, enabled only while the coach speaks); TRD §5a step 5 (barge-in); CONVENTIONS §10 Case A (Stage 1 `.tp-btn`, `.tp-btn--secondary` in tempo.css; the call rules at line 1194 hide it when `data-ended="true"`). Code truth: `VoiceCallView.tsx` draws the button inline with `t("vc.interrupt")` and `disabled={!view.canInterrupt}` (`callView` sets `canInterrupt` only while speaking); `useVoiceCall.interrupt` stops playback. Depends on TFV2-0379 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/Interrupt.tsx` renders the secondary Interrupt button, disabled unless `enabled`, reporting presses through `onInterrupt`, and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/Interrupt.tsx` · `apps/web/app/e2e/components/interrupt/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/interrupt.spec.ts`.
+- **MUTATES:** `Interrupt.tsx` (new) · `apps/web/app/e2e/components/interrupt/page.tsx` (new) · `VoiceCallView.tsx` (edit: the inline `data-action="call-interrupt"` button becomes `<Interrupt enabled={view.canInterrupt} onInterrupt={props.onInterrupt} />`, one import) · `tests/e2e/screens/interrupt.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "call-interrupt" apps/web/components/coach/voice/VoiceCallView.tsx apps/web/app/tempo.css`; `test -e apps/web/components/coach/voice/Interrupt.tsx` fails.
+  2. Stylesheet: Case A. Create `Interrupt.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says.
+  4. Create the harness page (states `enabled`, `disabled`; sections `interrupt-<state>`; `onInterrupt` writes `onInterrupt:undefined` to `<output data-testid="interrupt-log">`).
+  5. Create the spec (§22 skeleton) with the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/interrupt.spec.ts --reporter=line` → `16 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** decide when it is enabled inside the component (the caller passes `enabled`); stop audio here; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0380 / evidence: <DONE output> / changed: Interrupt.tsx, interrupt/page.tsx, VoiceCallView.tsx, interrupt.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "interrupt";
+  const COPY: Record<Lang, Record<CopyKey, string>> = { en: { interrupt: "Interrupt" }, he: { interrupt: "לקטוע" } };
+  export type InterruptProps = { enabled: boolean; onInterrupt: () => void };
+  export function Interrupt({ enabled, onInterrupt }: InterruptProps): JSX.Element;
+  ```
+  Markup: `<button className="tp-btn tp-btn--secondary" type="button" data-action="call-interrupt" data-component="Interrupt" disabled={!enabled} onClick={onInterrupt}><TpIcon name="hand" size="sm" /><span>{copy.interrupt}</span></button>`. Tokens: Stage 1 secondary button (`--tp-paper` ground, `1px solid var(--tp-line-control)`, `--tp-radius-md`, 44 px tall via `--tp-touch`); disabled uses the Stage 1 disabled opacity. States: `enabled`, `disabled`. Loading / empty / error / offline / success: n/a. RTL: icon at the inline start. Keyboard: native button; disabled is skipped by Tab. Screen reader: "Interrupt, button" / "לקטוע, לחצן", announced dimmed when disabled. Breakpoints: none. Motion: Stage 1 button transition (≤ 120 ms).
+- **TESTS:**
+  1. Given `enabled` / Then the button is enabled, reads "Interrupt" / "לקטוע", has `data-action="call-interrupt"` and a `use[href="#i-hand"]`.
+  2. Given `enabled` / When clicked / Then `interrupt-log` reads `onInterrupt:undefined`.
+  3. Given `disabled` / Then the button is disabled; When clicked with `{ force: true }` / Then the log is still empty.
+  4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="interrupt-"]')` and `expectMotionBudget(page, '[data-testid^="interrupt-"]')` pass.
+- **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 4. Text contrast ≥ 4.5:1 (tokens only). Motion ≤ 250 ms · bullet 4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0383 — Voice: `CallMinutes` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** components.md §2.11 (CallMinutes `.tp-call__minutes[data-low]`, clock icon + "12 minutes left today"); PRD F-35.
-- **GOAL:** `CallMinutes` shows the minutes left today from `voice.availability`/`renew`, with a low state when running low.
-- **SCOPE:** `apps/web/components/coach/voice/CallMinutes.tsx` · test `apps/web/components/coach/voice/CallMinutes.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/CallMinutes.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `CallMinutes` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/CallMinutes.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not compute minutes client-side beyond what the server returns; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `CallMinutes({ minutesLeft })`. Copy: `EN: n minutes left today / HE: נותרו n דקות היום` (n LTR `tp-num`); low state `EN: running low / HE: אוזל` with `data-low` at ≤ 5 min. Clock icon.
-- **TESTS:** Given `minutesLeft=12` / When rendered / Then "12 minutes left today" shows. Given `minutesLeft=3` / When rendered / Then `data-low` and "running low" show. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** low threshold ≤ 5 min (internal).
+### TFV2-0381 — Voice: `EndCall` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0380 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0380
+- **WHY:** `docs/design/v3/components.md` §2.11 (EndCall `.tp-btn--danger[data-action=call-end]`, phone-off icon, the word "End call"; then `call-close`); CONVENTIONS §10 Case A (Stage 1 `.tp-btn--danger`). Code truth: `VoiceCallView.tsx` draws End call inline (`t("vc.end")`) and, once the call has ended, a Back button (`data-action="call-close"`, `t("vc.back")`) in its place; `useVoiceCall.end` is safe to call twice, but a double press still runs the teardown twice. This component fires `onEnd` once per mount. The Back button stays in `VoiceCallView`. Depends on TFV2-0380 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/EndCall.tsx` renders the danger End call button that calls `onEnd` at most once, and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/EndCall.tsx` · `apps/web/app/e2e/components/end-call/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/end-call.spec.ts`.
+- **MUTATES:** `EndCall.tsx` (new) · `apps/web/app/e2e/components/end-call/page.tsx` (new) · `VoiceCallView.tsx` (edit: the inline `data-action="call-end"` button becomes `<EndCall onEnd={props.onEnd} />`, one import) · `tests/e2e/screens/end-call.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "call-end\|call-close" apps/web/components/coach/voice/VoiceCallView.tsx`; `test -e apps/web/components/coach/voice/EndCall.tsx` fails.
+  2. Stylesheet: Case A. Create `EndCall.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says (the `call-close` Back button is unchanged).
+  4. Create the harness page: one section `end-call-default`; `onEnd` writes `onEnd:undefined` to `<output data-testid="end-call-log">` and increments that output's `data-count` attribute (starts `"0"`), so the spec can count calls.
+  5. Create the spec (§22 skeleton) with the 3 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/end-call.spec.ts --reporter=line` → `12 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** call `voice.stop` or close the dialog here (the hook and the call do); move the Back button into this component; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0381 / evidence: <DONE output> / changed: EndCall.tsx, end-call/page.tsx, VoiceCallView.tsx, end-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "end";
+  const COPY: Record<Lang, Record<CopyKey, string>> = { en: { end: "End call" }, he: { end: "סיום שיחה" } };
+  export type EndCallProps = { onEnd: () => void };
+  export function EndCall({ onEnd }: EndCallProps): JSX.Element;
+  ```
+  Body: `const fired = useRef(false);` and `<button className="tp-btn tp-btn--danger" type="button" data-action="call-end" data-component="EndCall" onClick={() => { if (fired.current) return; fired.current = true; onEnd(); }}><TpIcon name="phone-off" size="sm" /><span>{copy.end}</span></button>`. (The button unmounts when the call ends, because `VoiceCallView` shows Back instead, so a new call gets a fresh guard.) Tokens: Stage 1 danger button (`--tp-danger` ground, `--tp-on-accent` text, `--tp-radius-md`, `--tp-touch` height). States: `default`. Loading / empty / error / offline / success / disabled: n/a. RTL: icon at the inline start. Keyboard: native button. Screen reader: "End call, button" / "סיום שיחה, לחצן". Breakpoints: none. Motion: Stage 1 button transition.
+- **TESTS:**
+  1. Given `default` / Then the button reads "End call" / "סיום שיחה", has `data-action="call-end"` and a `use[href="#i-phone-off"]`.
+  2. Given `default` / When the button is double-clicked (`dblclick()`) and then clicked again / Then `end-call-log` reads `onEnd:undefined` and its `data-count` is `"1"`.
+  3. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="end-call-default"]')` and `expectMotionBudget(page, '[data-testid="end-call-default"]')` pass.
+- **NUMBERS:** Playwright `12 passed` of 12; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 3. Text contrast ≥ 4.5:1 for `--tp-on-accent` on `--tp-danger` (tokens only). One end per press series (internal) · bullet 2.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0384 — Voice: `CallActionConfirm` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (CallActionConfirm `.tp-call-action[data-undone]`; "Added 'call the bank' to Today · Undo"); PRD F-22/F-131 (5-min Undo).
-- **GOAL:** `CallActionConfirm` is an inline sonner confirming a spoken action with a 5-minute Undo.
-- **SCOPE:** `apps/web/components/coach/voice/CallActionConfirm.tsx` · test `apps/web/components/coach/voice/CallActionConfirm.test.tsx`.
-- **MUTATES:** `apps/web` UI only (Undo calls the existing restore mutation).
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/CallActionConfirm.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `CallActionConfirm` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/CallActionConfirm.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not hide the Undo before 5 min; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `CallActionConfirm({ text, onUndo })`. Copy: `EN: Added "<text>" to Today / HE: הוספתי את "<text>" להיום`; `EN: Undo / HE: בטל`. `data-undone` after Undo. Countdown 5:00.
-- **TESTS:** Given a confirm / When rendered / Then the added copy and Undo show. Given Undo / When pressed / Then `onUndo` fires and `data-undone` is set. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** Undo window 5 min (PRD F-131).
+### TFV2-0382 — Voice: `PushToTalk` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0381 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0381
+- **WHY:** PRD F-35 (walkie-talkie on every tier); `docs/design/v3/components.md` §2.11 (PushToTalk `button.tp-ptt[data-pressed]` + `[data-label]`; pointer hold, or Space / Enter hold); CONVENTIONS §10 Case A (tempo.css `@component PushToTalk` block, line 1218). Code truth: `VoiceCallView.tsx` holds the push-to-talk state inline (`holding` state, `startPush`, `endPush`, `pushKey`, the `.tp-ptt` button shown only when `props.onPushStart` is set, and a `tp-sr-only` help span with the fixed id `vc-ptt-help`), using `t("vc.ptt")` (HE "החזיקי כדי לדבר", gendered), `t("vc.pttRelease")` and `t("vc.pttHelp")`. This component owns the hold state and gender-neutral copy (CONVENTIONS §12) and uses `useId` for the help id. Wiring it to a live call is TFV2-0388b. Depends on TFV2-0381 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/PushToTalk.tsx` renders the hold-to-talk button that reports `onPressStart` on pointer down or Space/Enter down and `onPressEnd` on release or pointer leave, with `data-pressed`/`aria-pressed` following the hold, and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/PushToTalk.tsx` · `apps/web/app/e2e/components/push-to-talk/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/push-to-talk.spec.ts`.
+- **MUTATES:** `PushToTalk.tsx` (new) · `apps/web/app/e2e/components/push-to-talk/page.tsx` (new) · `VoiceCallView.tsx` (edit: the `{props.onPushStart ? (<>…</>) : null}` block becomes `{props.onPushStart && props.onPushEnd ? <PushToTalk onPressStart={props.onPushStart} onPressEnd={props.onPushEnd} /> : null}`; `holding`, `startPush`, `endPush`, `pushKey` and their now-unused imports are removed) · `tests/e2e/screens/push-to-talk.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component PushToTalk " apps/web/app/tempo.css`; `grep -n "holding\|pushKey\|vc-ptt-help" apps/web/components/coach/voice/VoiceCallView.tsx`; `test -e apps/web/components/coach/voice/PushToTalk.tsx` fails.
+  2. Stylesheet: Case A. Create `PushToTalk.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says.
+  4. Create the harness page: one section `push-to-talk-default`; `onPressStart`/`onPressEnd` write `onPressStart:undefined` / `onPressEnd:undefined` to `<output data-testid="push-to-talk-log">`.
+  5. Create the spec (§22 skeleton) with the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/push-to-talk.spec.ts --reporter=line` → `20 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** gate push-to-talk by plan or tier; record audio here; use a fixed element id; add a stylesheet; edit `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0382 / evidence: <DONE output> / changed: PushToTalk.tsx, push-to-talk/page.tsx, VoiceCallView.tsx, push-to-talk.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  import { type KeyboardEvent, useId, useState } from "react";
+  type CopyKey = "hold" | "release" | "help";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { hold: "Hold to talk", release: "Listening… let go to send", help: "Hold with the pointer, or hold Space or Enter. Let go to send." },
+    he: { hold: "להחזיק כדי לדבר", release: "מקשיבים… אפשר לשחרר כדי לשלוח", help: "מחזיקים עם הסמן, או מחזיקים רווח או Enter. משחררים כדי לשלוח." },
+  };
+  export type PushToTalkProps = { onPressStart: () => void; onPressEnd: () => void };
+  export function PushToTalk({ onPressStart, onPressEnd }: PushToTalkProps): JSX.Element;
+  ```
+  Body: `const [holding, setHolding] = useState(false); const helpId = useId();` `const start = () => { if (holding) return; setHolding(true); onPressStart(); };` `const end = () => { if (!holding) return; setHolding(false); onPressEnd(); };` `const onKey = (event: KeyboardEvent<HTMLButtonElement>, down: boolean) => { if (event.key !== " " && event.key !== "Enter") return; event.preventDefault(); if (down) start(); else end(); };` Markup: `<><button className="tp-ptt" type="button" data-pressed={holding} aria-pressed={holding} aria-describedby={helpId} data-component="PushToTalk" onPointerDown={start} onPointerUp={end} onPointerLeave={end} onKeyDown={(event) => onKey(event, true)} onKeyUp={(event) => onKey(event, false)}><TpIcon name="mic" size="sm" /><span data-label="">{holding ? copy.release : copy.hold}</span></button><span className="tp-sr-only" id={helpId}>{copy.help}</span></>`. Tokens (tempo.css): pill (`--tp-radius-pill`), min height `--tp-space-16`, `2px solid var(--tp-line-control)`, `--tp-paper` / `--tp-ink`; held = `--tp-ink` ground, `--tp-paper` text, scale 0.98 over `--tp-dur-fast`. States: `default` (not held); held is reached by the TESTS interactions. Loading / empty / error / offline / success / disabled: n/a (the call hides it without controls). RTL: icon at the inline start. Keyboard: Space or Enter held = talking, released = send (key repeat is ignored because `start` returns while holding). Screen reader: "Hold to talk, toggle button, not pressed", described by the help text. Breakpoints: none. Motion: 120 ms scale.
+- **TESTS:**
+  1. Given `default` / Then the button has `aria-pressed="false"`, `data-pressed="false"`, the label "Hold to talk" / "להחזיק כדי לדבר", and its `aria-describedby` points to an element reading "Hold with the pointer, or hold Space or Enter. Let go to send." / "מחזיקים עם הסמן, או מחזיקים רווח או Enter. משחררים כדי לשלוח.".
+  2. Given `default` / When `button.dispatchEvent("pointerdown")` / Then `data-pressed="true"`, the label "Listening… let go to send" / "מקשיבים… אפשר לשחרר כדי לשלוח" and the log `onPressStart:undefined`; When `dispatchEvent("pointerup")` / Then `data-pressed="false"` and the log `onPressEnd:undefined`.
+  3. Given the button focused / When `page.keyboard.down("Space")` / Then the log reads `onPressStart:undefined`; When `page.keyboard.up("Space")` / Then `onPressEnd:undefined`; the same with `"Enter"`.
+  4. Given a pointer hold (`pointerdown`) / When `dispatchEvent("pointerleave")` / Then `data-pressed="false"` and the log `onPressEnd:undefined`.
+  5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="push-to-talk-default"]')` and `expectMotionBudget(page, '[data-testid="push-to-talk-default"]')` pass.
+- **NUMBERS:** Playwright `20 passed` of 20; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 64 px tall) · bullet 5. Keyboard operable (WCAG 2.2 SC 2.1.1) · bullet 3. Motion ≤ 250 ms · bullet 5.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0385 — Voice: `LanguageChip` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376.
-- **WHY:** components.md §2.11 (LanguageChip `button.tp-lang-chip[data-lang][data-lang-current]`, each name in its own `lang`); PRD F-73.
-- **GOAL:** `LanguageChip` toggles the call language (en/he) with each name in its own `lang`, calling `voice.setLanguage`.
-- **SCOPE:** `apps/web/components/coach/voice/LanguageChip.tsx` · test `apps/web/components/coach/voice/LanguageChip.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/LanguageChip.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `LanguageChip` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/LanguageChip.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not switch the app-wide locale here (call language only); do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `LanguageChip({ lang, onSet })`. Options `English` (`lang="en"`) / `עברית` (`lang="he"`), each name in its own `lang`. `data-lang-current` on the active. `call-lang` → `voice.setLanguage`.
-- **TESTS:** Given `lang="en"` / When rendered / Then "English" shows with `data-lang-current`. Given `lang="he"` / When rendered / Then "עברית" shows. Given a tap / When fired / Then `onSet` runs. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** Hebrew lane gated on a Hebrew crisis list — Amit (voicePolicy `laneFor`).
-
-### TFV2-0386 — Voice: calm error copy EN/HE + offline state
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** `convex/voice.ts` `VOICE_ERRORS`; PRD F-70/F-71; components.md §2.18 (StateOffline).
-- **GOAL:** Every `voice_*` machine code maps to calm EN/HE copy, and the call screen shows the offline state without clearing content.
-- **SCOPE:** `apps/web/lib/voice-strings.ts` · `apps/web/messages/en.json` · `apps/web/messages/he.json` (or the existing message dictionaries) · test `apps/web/lib/voice-strings.test.ts`.
-- **MUTATES:** `apps/web` strings only.
-- **STEPS:** 1) Graphify code-map of the message dictionaries and `VOICE_ERRORS`; 2) map each code to EN/HE; 3) add the offline string; 4) write the test.
-- **DONE:** `bun test apps/web/lib/voice-strings.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not change a code's meaning; do not drop the English fallback; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Pairs `EN / HE`: voice_off `Voice isn't switched on yet. Typing works as always. / הקול עדיין לא מופעל. ההקלדה עובדת כרגיל.`; voice_language `Voice in this language isn't ready yet. Typing works as always. / הקול בשפה הזו עדיין לא מוכן. ההקלדה עובדת כרגיל.`; voice_daily_limit `That's today's voice time. Typing works as always. / נגמר זמן הקול להיום. ההקלדה עובדת כרגיל.`; voice_resting `Voice is resting for today. Typing works as always. / הקול נח היום. ההקלדה עובדת כרגיל.`; voice_session_ended `This voice session has ended. Start it again when you like. / השיחה הקולית הסתיימה. אפשר להתחיל שוב מתי שתרצה.`; voice_connect `Voice couldn't connect just now. Try again in a moment. / לא הצלחנו להתחבר עכשיו. נסה שוב עוד רגע.`. Offline: `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`
-- **TESTS:** Given code `voice_off` / When resolved in `he` / Then the Hebrew copy returns. Given a missing key / When resolved / Then English returns. Given every `VOICE_ERRORS` key / When resolved / Then a non-empty EN and HE string exists.
-- **NUMBERS:** 100% of `VOICE_ERRORS` codes covered in both languages (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0387 — Voice: `ReadAloudButton` component
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0369.
-- **WHY:** components.md §2.10 (ReadAloudButton `read-aloud` → `voice.speak({text,lang})`); PRD F-36 (audio recap).
-- **GOAL:** `ReadAloudButton` reads a coach/text reply aloud via `voice.speak`, `aria-pressed`, and toggles on/off.
-- **SCOPE:** `apps/web/components/coach/voice/ReadAloudButton.tsx` · test `apps/web/components/coach/voice/ReadAloudButton.test.tsx`.
-- **MUTATES:** `apps/web` UI only.
-- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/ReadAloudButton.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `ReadAloudButton` per the SPEC; 3) write the render test.
-- **DONE:** `bun test apps/web/components/coach/voice/ReadAloudButton.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not read the crisis card; do not read arbitrary client text as coach (server resolves sentences); do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `ReadAloudButton({ messageId, lang })`. Copy: `EN: Read aloud / HE: הקרא בקול`; active `EN: Stop / HE: עצור`. `aria-pressed` reflects. Calls the TTS queue, never reads the crisis card.
-- **TESTS:** Given an idle button / When rendered / Then "Read aloud" shows. Given a press / When fired / Then `aria-pressed` true and "Stop" shows. Given the crisis card id / When rendered / Then the button is hidden/disabled.
-- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
+### TFV2-0383 — Voice: `CallMinutes` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0365, TFV2-0382 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0365, TFV2-0382
+- **WHY:** `docs/design/v3/components.md` §2.11 (CallMinutes `.tp-call__minutes[data-low]`, clock icon + "12 minutes left today"); PRD F-35; CONVENTIONS §10 Case A (tempo.css `@component CallMinutes` block, line 1222: `--tp-sunken` badge, low = `--tp-caution-wash` / `--tp-caution`). Code truth: minutes come from the server (`voice.start` / `voice.renew` `minutesLeft`, floored; caps from `dailyMinutesFor`, verified by TFV2-0365); `minutesLow(n)` in `apps/web/lib/voice-call.ts` is `n <= 5`; `VoiceCallView.tsx` draws the badge inline with `t("vc.minutes")` / `t("vc.minutesLow")`, which reads "1 minutes" for one minute and puts the number first in Hebrew. This component owns its copy with singular forms and Hebrew word order. Depends on TFV2-0382 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/CallMinutes.tsx` shows the minutes left today (number in `.tp-num`, singular for 1, the low note at 5 or fewer with `data-low`), and `VoiceCallView` uses it.
+- **SCOPE:** `apps/web/components/coach/voice/CallMinutes.tsx` · `apps/web/app/e2e/components/call-minutes/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/call-minutes.spec.ts`.
+- **MUTATES:** `CallMinutes.tsx` (new) · `apps/web/app/e2e/components/call-minutes/page.tsx` (new) · `VoiceCallView.tsx` (edit: the inline `.tp-call__minutes` span becomes `<CallMinutes minutesLeft={minutesLeft} />` inside the existing `minutesLeft !== undefined` check; the `low` constant and the `minutesLow` import are removed) · `tests/e2e/screens/call-minutes.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component CallMinutes " apps/web/app/tempo.css`; `grep -n "export function minutesLow" apps/web/lib/voice-call.ts`; `grep -n "tp-call__minutes\|minutesLow" apps/web/components/coach/voice/VoiceCallView.tsx`; `test -e apps/web/components/coach/voice/CallMinutes.tsx` fails.
+  2. Stylesheet: Case A. Create `CallMinutes.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says.
+  4. Create the harness page (4 SPEC states, sections `call-minutes-<state>`; no callbacks).
+  5. Create the spec (§22 skeleton) with the 5 TESTS bullets; compare text with whitespace collapsed (`(await el.textContent()).replace(/\s+/g, " ").trim()`).
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/call-minutes.spec.ts --reporter=line` → `20 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** count minutes in the browser (show what the server sent); change `minutesLow`; add a stylesheet; edit `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0383 / evidence: <DONE output> / changed: CallMinutes.tsx, call-minutes/page.tsx, VoiceCallView.tsx, call-minutes.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "before" | "beforeOne" | "after" | "afterOne" | "low";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { before: "", beforeOne: "", after: "minutes left today", afterOne: "minute left today", low: "running low" },
+    he: { before: "נשארו", beforeOne: "נשארה", after: "דקות היום", afterOne: "דקה היום", low: "הזמן כמעט נגמר" },
+  };
+  export type CallMinutesProps = { minutesLeft: number };
+  export function CallMinutes({ minutesLeft }: CallMinutesProps): JSX.Element;
+  ```
+  Body: `const low = minutesLow(minutesLeft); const one = minutesLeft === 1; const before = one ? copy.beforeOne : copy.before; const after = one ? copy.afterOne : copy.after;` Markup: `<span className="tp-call__minutes" data-low={low || undefined} data-component="CallMinutes"><TpIcon name="clock" size="sm" />{before ? <span>{before}</span> : null}{before ? " " : null}<span className="tp-num">{minutesLeft}</span> <span>{after}</span>{low ? <span> · {copy.low}</span> : null}</span>` (`minutesLow` from `@/lib/voice-call`). Tokens (tempo.css): pill `--tp-radius-pill`, `--tp-space-3` inline padding, `--tp-text-xs` 600, `--tp-sunken` / `--tp-ink-muted`; low `--tp-caution-wash` / `--tp-caution`. States (harness order): `plenty` (12), `low` (5), `one` (1), `none` (0). Loading / empty / error / offline / success / disabled: n/a (hidden until the server sends a number). RTL: the number is an LTR isolate (`.tp-num`); Hebrew reads "נשארו 12 דקות היום". Screen reader: plain text, read in order. Breakpoints: none. Motion: none.
+- **TESTS:**
+  1. Given `plenty` / Then the badge text is "12 minutes left today" / "נשארו 12 דקות היום", there is no `data-low`, `.tp-num` reads "12" and a `use[href="#i-clock"]` exists.
+  2. Given `low` / Then `data-low="true"` and the text "5 minutes left today · running low" / "נשארו 5 דקות היום · הזמן כמעט נגמר".
+  3. Given `one` / Then the text "1 minute left today · running low" / "נשארה 1 דקה היום · הזמן כמעט נגמר".
+  4. Given `none` / Then `data-low="true"` and the text "0 minutes left today · running low" / "נשארו 0 דקות היום · הזמן כמעט נגמר".
+  5. Given any viewport and language / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="call-minutes-"]')` pass.
+- **NUMBERS:** Playwright `20 passed` of 20; VoiceCall specs stay `52 passed`. Low threshold ≤ 5 minutes (`minutesLow`, repo constant). Text contrast ≥ 4.5:1 for `--tp-caution` on `--tp-caution-wash` and `--tp-ink-muted` on `--tp-sunken` (WCAG 2.2 SC 1.4.3; tokens only). Low state in words, not colour only (WCAG 2.2 SC 1.4.1) · bullets 2–4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0388 — Voice: web `/coach` voice in/out integration (fold-in #746)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376, TFV2-0387 · **Folds-in:** #746
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376 and TFV2-0387.
-- **WHY:** PRD F-30/F-31; issue #746 (`/coach` voice in/out); `apps/web/components/coach/CoachPanel.tsx`, `CoachChat.tsx`.
-- **GOAL:** The web `/coach` panel offers a mic entry that starts the live `VoiceCall` (STT in, TTS out, barge-in), with the mic gated by `voice.availability`, and ReadAloud on text replies.
-- **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` · `apps/web/components/coach/CoachChat.tsx` · test `apps/web/components/coach/CoachPanel.test.tsx`.
-- **MUTATES:** `apps/web` UI only (wires existing voice modules).
-- **STEPS:** 1) Graphify code-map of `CoachPanel.tsx`/`CoachChat.tsx` and the existing `components/coach/voice/`; 2) add the mic entry (disabled + reason when unavailable); 3) mount `VoiceCall` on start; 4) add ReadAloud to text replies; 5) write the render test.
-- **DONE:** `bun test apps/web/components/coach/CoachPanel.test.tsx` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not bypass the availability gate; do not implement the voice pipeline (own tickets); do not call a paid provider; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Mic entry (MicToggle) in the coach composer; disabled with the `availability` reason when not available; on start mounts the full-screen `VoiceCall`. Text replies get a `ReadAloudButton`. Copy reuses TFV2-0386. States: default, voice-off, voice-language, voice-budget, live.
-- **TESTS:** Given availability `off` / When rendered / Then the mic is disabled with the off copy. Given available / When the mic is pressed / Then `VoiceCall` mounts. Given a text reply / When rendered / Then a ReadAloud button is present. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
-
-### TFV2-0389 — Voice: mobile voice-call live wiring
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0388, TFV2-0376 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0388 and TFV2-0376.
-- **WHY:** PRD F-30/F-121; `docs/design/v3/screens/mobile/voice-call.html`; replaces the placeholder from TFV2-0325.
-- **GOAL:** `apps/mobile/app/(tempo)/voice-call.tsx` replaces the "Not connected" placeholder with the live call (native STT, TTS queue, barge-in, minutes, language chip), gated by `voice.availability`.
-- **SCOPE:** `apps/mobile/app/(tempo)/voice-call.tsx` · `apps/mobile/lib/v3/voice-stt.ts` (reuse) · test `tests/e2e/mobile-voice-call.spec.ts`.
-- **MUTATES:** `apps/mobile` UI only (wires existing voice modules).
-- **STEPS:** 1) Graphify code-map of `voice-call.tsx`; 2) wire the state machine + STT socket + TTS queue + barge-in; 3) keep the not-connected fallback when unavailable; 4) update the Playwright click-through.
-- **DONE:** `bunx playwright test tests/e2e/mobile-voice-call.spec.ts` → all pass.
-- **EVIDENCE:** Playwright output.
-- **DO NOT:** do not add a provider/key; do not record audio; do not enable the mic when availability is off; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Copy reuses TFV2-0325 + TFV2-0386. States: not-connected (unavailable), connecting, live (AudioLevel + LiveTranscript), ending, error, offline. Mic accent `--tp-accent`; end-call `--tp-danger`. RTL inline-start; digits LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
-- **TESTS:** Given availability off / When rendered / Then "Not connected" and disabled controls. Given available + a mocked socket / When mic pressed / Then the live state (AudioLevel + transcript) shows. Given End call / When pressed / Then returns to Coach. Run at 390 and 1280, EN and HE.
-- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
-
-### TFV2-0390 — Voice: call preferences (language + push-to-talk default)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** PRD F-35/F-73; `convex/preferences.ts` (userPreferences).
-- **GOAL:** `convex/preferences.ts` (or `voice.ts`) persists per-user voice prefs (preferred call language, push-to-talk default) and they are read on session start.
-- **SCOPE:** `convex/preferences.ts` · test `convex/preferences.test.ts`.
-- **MUTATES:** `userPreferences` (additive fields only).
-- **STEPS:** 1) Graphify code-map of `preferences.ts`; 2) add `voiceLanguage`/`voicePushToTalk` upsert; 3) read them in `voice.start` (language is still server-decided from locale/lane); 4) write the test.
-- **DONE:** `bun test convex/preferences.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not let the client override the server-chosen lane/model; do not edit `convex/schema.ts` unless the fields already exist (else mark UNKNOWN and stop); do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `setVoicePrefs({ voicePushToTalk?: boolean, voiceLanguage?: "en"|"he" })` and `getVoicePrefs()`. Push-to-talk default false (live conversation) or true (walkie-talkie) — persisted. Errors: none beyond requireUser.
-- **TESTS:** Given a set / When `getVoicePrefs` / Then the saved values return. Given `voicePushToTalk:true` / When a session starts / Then the client starts in push-to-talk mode. Given an unknown field / When set / Then it is ignored.
-- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether the prefs columns already exist in `userPreferences` — verify; if not, Amit (schema change).
-
-### TFV2-0391 — Voice: minutes usage + reset-at-midnight verify
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0365.
-- **WHY:** PRD F-35; `.cursorrules` (daily caps reset at local midnight); `convex/lib/voicePolicy.ts` `localDateKey`.
-- **GOAL:** Daily minutes are counted per the user's local midnight (not UTC) and reset when the local date rolls over.
-- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
-- **MUTATES:** none (pure date-key logic).
-- **STEPS:** 1) Graphify code-map of `localDateKey`/`utcDateKey`; 2) verify a local-midnight boundary changes `dateKey`; 3) add missing coverage.
-- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not switch the cap to UTC; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `localDateKey(now, timeZone)` returns `YYYY-MM-DD` in the user's zone (UTC fallback on unknown). Minutes sum per `dateKey`, so a new local day resets the personal cap; the global ceiling stays on `utcDateKey`.
-- **TESTS:** Given `now` just before local midnight in `Asia/Jerusalem` / When `localDateKey` / Then one date; given just after / Then the next date. Given an unknown zone / When `localDateKey` / Then UTC date. Given two leases across midnight / When summed / Then they fall in different date keys.
-- **NUMBERS:** daily reset at local midnight (`.cursorrules` / HARD_RULES §9).
+### TFV2-0384 — Voice: `CallActionConfirm` component (extracted from `VoiceCallView`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0383 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0383
+- **WHY:** `docs/design/v3/components.md` §2.11 (CallActionConfirm `.tp-call-action[data-undone]`, `__icon`, `__text`; "Added 'call the bank' to Today · Undo"); PRD F-22/F-131 (5-minute Undo); CONVENTIONS §10 Case A (tempo.css `@component CallActionConfirm` block, line 1226). Code truth: `VoiceCallView.tsx` draws an inline `<output className="tp-call-action">` when its `action?: { text; onUndo }` prop is set, with `t("tx.undo")`, and has no undone state; nothing passes `action` yet (whether spoken actions apply with Undo is TFV2-0393, OPEN on Q-06). This component is display-only: the caller supplies the sentence, the Undo handler and whether it was undone, and removes it when the 5-minute window ends. Depends on TFV2-0383 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/CallActionConfirm.tsx` shows a confirmed in-call action with an Undo button, and after Undo shows "Undone. Nothing was added." with `data-undone`; `VoiceCallView` uses it and its `action` prop gains `undone?: boolean`.
+- **SCOPE:** `apps/web/components/coach/voice/CallActionConfirm.tsx` · `apps/web/app/e2e/components/call-action-confirm/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/call-action-confirm.spec.ts`.
+- **MUTATES:** `CallActionConfirm.tsx` (new) · `apps/web/app/e2e/components/call-action-confirm/page.tsx` (new) · `VoiceCallView.tsx` (edit: `action?: { text: string; undone?: boolean; onUndo: () => void }`; the inline `.tp-call-action` output becomes `<CallActionConfirm text={props.action.text} undone={props.action.undone === true} onUndo={props.action.onUndo} />`) · `tests/e2e/screens/call-action-confirm.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component CallActionConfirm " apps/web/app/tempo.css`; `grep -n "tp-call-action\|action?:" apps/web/components/coach/voice/VoiceCallView.tsx`; `test -e apps/web/components/coach/voice/CallActionConfirm.tsx` fails.
+  2. Stylesheet: Case A. Create `CallActionConfirm.tsx` exactly as SPEC.
+  3. Edit `VoiceCallView.tsx` as MUTATES says.
+  4. Create the harness page (states `default`, `undone`; sections `call-action-confirm-<state>`; `onUndo` writes `onUndo:undefined` to `<output data-testid="call-action-confirm-log">`).
+  5. Create the spec (§22 skeleton) with the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/call-action-confirm.spec.ts --reporter=line` → `16 passed`; `CI=1 bunx playwright test tests/e2e/screens/voice-call-view.spec.ts tests/e2e/screens/voice-call.spec.ts --reporter=line` → `52 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** both Playwright summaries and both exit codes, pasted into the PR.
+- **DO NOT:** call any mutation (the caller's `onUndo` does); run a timer in the component; apply anything automatically; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0384 / evidence: <DONE output> / changed: CallActionConfirm.tsx, call-action-confirm/page.tsx, VoiceCallView.tsx, call-action-confirm.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "undo" | "undone";
+  const COPY: Record<Lang, Record<CopyKey, string>> = {
+    en: { undo: "Undo", undone: "Undone. Nothing was added." },
+    he: { undo: "ביטול", undone: "בוטל. שום דבר לא נוסף." },
+  };
+  export type CallActionConfirmProps = { text: string; undone: boolean; onUndo: () => void };
+  export function CallActionConfirm({ text, undone, onUndo }: CallActionConfirmProps): JSX.Element;
+  ```
+  Markup: `<output className="tp-call-action" data-component="CallActionConfirm" data-undone={undone || undefined}><span className="tp-call-action__icon"><TpIcon name={undone ? "undo" : "check"} size="sm" /></span><span className="tp-call-action__text" dir="auto">{undone ? copy.undone : text}</span>{undone ? null : <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={onUndo}><TpIcon name="undo" size="sm" /><span>{copy.undo}</span></button>}</output>`. `text` is the caller's sentence (data, shown as given). Tokens (tempo.css): `--tp-paper`, `1px solid var(--tp-line)`, `--tp-radius-lg`, icon `--tp-done` (undone `--tp-ink-muted`), text `--tp-text-sm`; entry `tp-rise` `--tp-dur-slow`. States: `default` (`text: "Added “call the bank” to Today"`, `undone: false`), `undone` (`undone: true`). Loading / empty / error / offline / disabled: n/a. RTL: tempo.css swaps the asymmetric padding under `[dir="rtl"]`; text `dir="auto"`. Keyboard: the Undo button. Screen reader: `<output>` is a status region, so the sentence and the undone line are announced. Breakpoints: none (width `min(100%, 60ch)`). Motion: 240 ms rise.
+- **TESTS:**
+  1. Given `default` / Then the output has no `data-undone`, shows "Added “call the bank” to Today", a `use[href="#i-check"]`, and a button "Undo" / "ביטול".
+  2. Given `default` / When Undo is clicked / Then `call-action-confirm-log` reads `onUndo:undefined`.
+  3. Given `undone` / Then `data-undone="true"`, the text "Undone. Nothing was added." / "בוטל. שום דבר לא נוסף.", and no button.
+  4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="call-action-confirm-"]')` and `expectMotionBudget(page, '[data-testid^="call-action-confirm-"]')` pass.
+- **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Undo window 5 minutes (PRD F-131; owned by the caller). Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 4. Status announced (WCAG 2.2 SC 4.1.3) · bullets 1, 3. Motion ≤ 250 ms (240 ms) · bullet 4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0392 — Voice: crisis-safety integration (transcript → fixed card)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0371 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0371.
-- **WHY:** PRD F-24; TRD §7 rule 7; `convex/lib/crisisWords.ts`; `convex/voice.ts` (crisis card never spoken, L-12).
-- **GOAL:** A spoken crisis turn is verified to route to the fixed crisis card with no model call and no TTS, exactly as the text path.
-- **SCOPE:** `convex/voice.ts` (fix only) · `convex/messages.ts` (fix only if the send path is there) · test `convex/voice.test.ts`.
-- **MUTATES:** none (verification of the transcript send path).
-- **STEPS:** 1) Graphify code-map of how the final transcript reaches the coach send and `isCrisisText`; 2) verify the transcript passes through the same crisis guard as typed text; 3) verify the crisis card is never read aloud; 4) add missing coverage.
-- **DONE:** `bun test convex/voice.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not let crisis text reach a model; do not read the crisis card aloud; do not change the crisis card copy; do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The final transcript goes through the ordinary coach send (same as typed text), so `isCrisisText` short-circuits to `crisisCardText(CRISIS_CARD)` with no model call. `admitSentence` already returns `done` for `modelUsed === "crisis-card"`, so no TTS. Hebrew crisis phrases remain gated (English list only) → UNKNOWN/Amit.
-- **TESTS:** Given a crisis transcript / When the turn runs / Then the fixed card returns and no model call is made. Given a crisis reply / When TTS is requested / Then `done`, no audio. Given a normal transcript / When run / Then the normal coach path runs.
-- **NUMBERS:** crisis card is fixed content, never model-written (TRD §7 rule 7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** Hebrew crisis phrase list — Amit (REWRITE-PLAN-v2 §4.1 / voicePolicy).
+### TFV2-0385 — Voice: `LanguageChip` component (call language) — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b
+- **WHY:** `docs/design/v3/components.md` §2.11 (LanguageChip `button.tp-lang-chip[data-lang]`, `[data-lang-current]`, `__other`; each name in its own `lang`); PRD F-73; CONVENTIONS §10 Case A (tempo.css `@component LanguageChip` block, line 1233). Code truth: the call language is decided by the server from `userPreferences.locale` through `laneFor` in `convex/lib/voicePolicy.ts`, which returns a lane only for English (`laneFor("he")` is `null` until Amit approves a Hebrew crisis phrase list); there is no `voice.setLanguage`. A chip that offers Hebrew would offer a call that cannot start, so the component waits for Q-15 (and TFV2-0395, the Hebrew lane). `VoiceCallView.tsx` keeps its inline chip (shown only when `onCallLang` is passed; nobody passes it today). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/LanguageChip.tsx` renders the call-language chip (globe, current language name in its own `lang`, the other name quieter) and reports the other language through `onChange`, proven by a harness spec.
+- **SCOPE:** `apps/web/components/coach/voice/LanguageChip.tsx` · `apps/web/app/e2e/components/language-chip/page.tsx` · test: `tests/e2e/screens/language-chip.spec.ts`.
+- **MUTATES:** `LanguageChip.tsx` (new) · `apps/web/app/e2e/components/language-chip/page.tsx` (new) · `tests/e2e/screens/language-chip.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component LanguageChip " apps/web/app/tempo.css`; `test -e apps/web/components/coach/voice/LanguageChip.tsx` fails.
+  2. Stylesheet: Case A. Create `LanguageChip.tsx` exactly as SPEC.
+  3. Create the harness page (states `english`, `hebrew`; sections `language-chip-<state>`; each keeps `lang` in `useState` and `onChange={(next) => { setLang(next); log("onChange", next); }}` writing `onChange:"he"` or `onChange:"en"` to `<output data-testid="language-chip-log">`).
+  4. Create the spec (§22 skeleton) with the 4 TESTS bullets.
+  5. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/language-chip.spec.ts --reporter=line` → `16 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary and both exit codes, pasted into the PR.
+- **DO NOT:** change the app's page language (call language only); call a backend; mount it in `VoiceCallView`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0385 / evidence: <DONE output> / changed: LanguageChip.tsx, language-chip/page.tsx, language-chip.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  type CopyKey = "label";
+  const COPY: Record<Lang, Record<CopyKey, string>> = { en: { label: "Call language" }, he: { label: "שפת השיחה" } };
+  const NAME: Record<Lang, string> = { en: "English", he: "עברית" };
+  export type LanguageChipProps = { lang: Lang; onChange: (next: Lang) => void };
+  export function LanguageChip({ lang, onChange }: LanguageChipProps): JSX.Element;
+  ```
+  Markup: `const other: Lang = lang === "en" ? "he" : "en";` `<button className="tp-lang-chip" type="button" aria-label={copy.label + ": " + NAME[lang]} data-component="LanguageChip" data-lang={lang} onClick={() => onChange(other)}><TpIcon name="globe" size="sm" /><span lang={lang} data-lang-current="">{NAME[lang]}</span><span className="tp-lang-chip__other" lang={other}>{NAME[other]}</span></button>`. Tokens (tempo.css): pill, `--tp-touch` min height, `1px solid var(--tp-line-control)`, `--tp-paper` / `--tp-ink`, `--tp-text-sm` 600; the other name `--tp-ink-muted` 400. States: `english` (`lang: "en"`), `hebrew` (`lang: "he"`). Loading / empty / error / offline / success / disabled: n/a. RTL: flex row mirrors; each name keeps its own `lang`. Keyboard: native button. Screen reader: "Call language: English, button" / "שפת השיחה: עברית, לחצן". Breakpoints: none. Motion: none.
+- **TESTS:**
+  1. Given `english` / Then the button has `data-lang="en"`, the `[data-lang-current]` span reads "English" with `lang="en"`, `.tp-lang-chip__other` reads "עברית" with `lang="he"`, and `aria-label` is "Call language: English" / "שפת השיחה: English".
+  2. Given `hebrew` / Then `data-lang="he"`, the current name "עברית" with `lang="he"`, the other "English".
+  3. Given `english` / When clicked / Then the log reads `onChange:"he"` and the chip now shows "עברית" as current.
+  4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="language-chip-"]')` and `expectMotionBudget(page, '[data-testid^="language-chip-"]')` pass.
+- **NUMBERS:** Playwright `16 passed` of 16. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 44 px) · bullet 4. Language of parts (WCAG 2.2 SC 3.1.2) · bullets 1–2.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Q-15: Is the Hebrew crisis phrase list approved, so that a Hebrew voice lane (and a call-language choice between English and Hebrew) can be offered? — Amit.
 
-### TFV2-0393 — Voice: proposal/Undo path for spoken actions
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0384 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0384.
-- **WHY:** PRD F-31/F-22/F-131; HARD_RULES §6.2 (every mutation a proposal with Undo).
-- **GOAL:** Every spoken coach action surfaces as a `CallActionConfirm` with a 5-minute Undo, never auto-applied, verified end-to-end.
-- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` (fix only) · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
-- **MUTATES:** none (client presentation of existing proposals).
-- **STEPS:** 1) Graphify code-map of how voice turns surface proposals (the same Accept/Reject as text); 2) verify each proposal renders as `CallActionConfirm`; 3) verify Undo fires the restore; 4) write the test.
-- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not auto-apply any voice action; do not shorten the Undo window; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Voice has no action path of its own (L-16); the final transcript goes through the normal coach send, so every change is still a proposal. Each accepted proposal shows `CallActionConfirm` with the Undo toast (5:00).
-- **TESTS:** Given a spoken "add a task" / When the coach proposes / Then a CallActionConfirm shows, not an auto-apply. Given Undo / When pressed / Then the restore runs and `data-undone` is set. Given a rejected proposal / When surfaced / Then no confirm shows.
-- **NUMBERS:** Undo window 5 min (PRD F-131).
+### TFV2-0386 — Voice: calm EN/HE copy for every voice refusal `apps/web/lib/voice-errors.ts`
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0366, TFV2-0367a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0366, TFV2-0367a
+- **WHY:** PRD F-70/F-71 (calm refusals); `convex/voice.ts` `VOICE_ERRORS` (not exported; six codes thrown as `new ConvexError({ code, message })` so the copy survives production) and `availability` (`reason: null | "off" | "language" | "budget" | "resting" | "pending"`, TFV2-0366); `start` throws `voice_off`, `voice_language`, `voice_daily_limit`, `voice_resting`, `voice_session_ended` (TFV2-0367a). Code truth: the server messages are English only (CONVENTIONS §11: the UI maps them); the web client has no mapping today (`useVoiceCall` swallows the error and shows the generic "Couldn't connect."). This ticket adds the one mapping module the voice UI reads (TFV2-0388a uses it for the Talk button). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-errors.ts` maps every `voice_*` code and every unavailable reason to calm EN/HE copy and reads the code out of a thrown `ConvexError`, proven by `apps/web/lib/voice-errors.test.ts`, whose English matches `convex/voice.ts` word for word.
+- **SCOPE:** `apps/web/lib/voice-errors.ts` · test: `apps/web/lib/voice-errors.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-errors.ts` (new) · `apps/web/lib/voice-errors.test.ts` (new). No data or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "voice_[a-z_]*:" convex/voice.ts` (the six `VOICE_ERRORS` lines); `grep -n "v.literal(\"off\")\|v.literal(\"pending\")" convex/voice.ts`; `grep -n "export type Lang" apps/web/lib/i18n.ts`; `test -e apps/web/lib/voice-errors.ts` fails.
+  2. Create `apps/web/lib/voice-errors.ts` exactly as SPEC.
+  3. Create the test with the 5 TESTS cases.
+  4. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-errors.test.ts` → `5 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` summary and both exit codes, pasted into the PR.
+- **DO NOT:** change a code's meaning or the server's English; export or edit anything in `convex/voice.ts`; put the copy in `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0386 / evidence: <DONE output> / changed: apps/web/lib/voice-errors.ts, apps/web/lib/voice-errors.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  import type { Lang } from "@/lib/i18n";
+  export type VoiceErrorCode = "voice_off" | "voice_language" | "voice_daily_limit" | "voice_resting" | "voice_session_ended" | "voice_connect";
+  export type VoiceUnavailableReason = "off" | "language" | "budget" | "resting" | "pending";
+  /** EN is convex/voice.ts VOICE_ERRORS word for word; HE is gender-neutral (CONVENTIONS §12). */
+  export const VOICE_ERROR_COPY: Record<VoiceErrorCode, Record<Lang, string>> = {
+    voice_off: { en: "Voice isn't switched on yet. Typing works as always.", he: "הקול עוד לא מופעל. אפשר להמשיך להקליד כרגיל." },
+    voice_language: { en: "Voice in this language isn't ready yet. Typing works as always.", he: "הקול בשפה הזו עוד לא מוכן. אפשר להמשיך להקליד כרגיל." },
+    voice_daily_limit: { en: "That's today's voice time. Typing works as always.", he: "זה כל זמן הקול של היום. אפשר להמשיך להקליד כרגיל." },
+    voice_resting: { en: "Voice is resting for today. Typing works as always.", he: "הקול נח להיום. אפשר להמשיך להקליד כרגיל." },
+    voice_session_ended: { en: "This voice session has ended. Start it again when you like.", he: "השיחה הקולית הזו הסתיימה. אפשר להתחיל אותה שוב מתי שרוצים." },
+    voice_connect: { en: "Voice couldn't connect just now. Try again in a moment.", he: "לא הצלחנו להתחבר לקול כרגע. אפשר לנסות שוב עוד רגע." },
+  };
+  /** The refusal each unavailable reason shows; "pending" shows nothing (the approval screen explains it). */
+  const REASON_CODE: Record<Exclude<VoiceUnavailableReason, "pending">, VoiceErrorCode> = {
+    off: "voice_off",
+    language: "voice_language",
+    budget: "voice_daily_limit",
+    resting: "voice_resting",
+  };
+  export function isVoiceErrorCode(value: unknown): value is VoiceErrorCode {
+    return typeof value === "string" && Object.prototype.hasOwnProperty.call(VOICE_ERROR_COPY, value);
+  }
+  /** The `code` of a ConvexError thrown by convex/voice.ts, or null. */
+  export function voiceErrorCode(error: unknown): VoiceErrorCode | null {
+    if (!error || typeof error !== "object" || !("data" in error)) return null;
+    const data = (error as { data: unknown }).data;
+    const code = data && typeof data === "object" ? (data as { code?: unknown }).code : undefined;
+    return isVoiceErrorCode(code) ? code : null;
+  }
+  /** Calm copy for a thrown error; anything unknown reads as a connection problem. */
+  export function voiceErrorText(error: unknown, lang: Lang): string {
+    return VOICE_ERROR_COPY[voiceErrorCode(error) ?? "voice_connect"][lang];
+  }
+  /** Copy for `voice.availability`'s reason, or null when nothing should show. */
+  export function unavailableText(reason: VoiceUnavailableReason, lang: Lang): string | null {
+    return reason === "pending" ? null : VOICE_ERROR_COPY[REASON_CODE[reason]][lang];
+  }
+  ```
+  Errors: none thrown. Limits: none.
+- **TESTS:** (`bun:test`)
+  1. Given the text of `convex/voice.ts` (`await Bun.file(new URL("../../../convex/voice.ts", import.meta.url)).text()`) / Then for every key of `VOICE_ERROR_COPY` it contains `` `${code}: ${JSON.stringify(VOICE_ERROR_COPY[code].en)}` `` (the server line, word for word), and `Object.keys(VOICE_ERROR_COPY).length` is `6`.
+  2. Given every code / Then its `he` string is non-empty, contains a Hebrew letter (`/[\u0590-\u05FF]/`) and differs from its `en` string.
+  3. Given `new ConvexError({ code: "voice_daily_limit", message: "x" })` (from `convex/values`) / Then `voiceErrorCode` returns `"voice_daily_limit"`; given `new Error("voice_off")`, `{ data: { code: "other" } }`, `null` and `"voice_off"` / Then it returns `null` for each.
+  4. Given `new ConvexError({ code: "voice_off", message: "x" })` / Then `voiceErrorText(error, "he")` is `"הקול עוד לא מופעל. אפשר להמשיך להקליד כרגיל."`; given `new Error("boom")` / Then `voiceErrorText(error, "en")` is `"Voice couldn't connect just now. Try again in a moment."`.
+  5. Given `unavailableText` / Then `"budget"`/`"en"` returns the `voice_daily_limit` English, `"language"`/`"he"` the `voice_language` Hebrew, `"resting"`/`"en"` the `voice_resting` English, `"off"`/`"en"` the `voice_off` English, and `"pending"` returns `null` in both languages.
+- **NUMBERS:** 5 of 5 cases pass (exact). Codes covered: 6 of 6 `VOICE_ERRORS` codes and 5 of 5 availability reasons, in both languages (internal completeness).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0394 — Voice: end-to-end smoke (Playwright, mocked providers)
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0388, TFV2-0389 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0388 and TFV2-0389.
-- **WHY:** PRD F-30; AGENTS.md (E2E smoke); the voice path end-to-end.
-- **GOAL:** A Playwright smoke clicks the coach mic → live call → transcript → end call, with Deepgram/Chatterbox mocked, asserting every state.
-- **SCOPE:** `tests/e2e/voice-smoke.spec.ts` · (fixture) `tests/e2e/fixtures/voice-mock.ts`.
-- **MUTATES:** none (test only; mocks providers).
-- **STEPS:** 1) Graphify code-map; 2) mock `fetch`/WebSocket for Deepgram and the TTS; 3) write the click-through: open coach, press mic, assert live state, end call; 4) run.
-- **DONE:** `bunx playwright test tests/e2e/voice-smoke.spec.ts` → all pass.
-- **EVIDENCE:** Playwright output.
-- **DO NOT:** do not use real keys/providers; do not set `PLAYWRIGHT_BASE_URL`; do not weaken an assertion; do not touch `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Covers the states from TFV2-0375/0388: idle → connecting → live (AudioLevel + LiveTranscript) → end → idle; and the unavailable path (mic disabled with reason). EN and HE, 390 and 1280.
-- **TESTS:** Given mocked providers / When the mic is pressed / Then the call reaches `live` with a transcript line. Given End call / When pressed / Then back to `idle` with the mic available again. Given availability off / When rendered / Then the mic is disabled with the reason.
-- **NUMBERS:** smoke asserts every state (internal completeness); no latency number without measurement → `UNKNOWN`.
+### TFV2-0387 — Voice: `ReadAloudButton` component — superseded by TFV2-0206
+- **Status:** superseded by TFV2-0206; not a build ticket.
+
+### TFV2-0388a — Voice: `VoiceStartButton` — the coach's Talk button with the unavailable reason
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0366, TFV2-0386, TFV2-0375b · **Folds-in:** #746
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0366, TFV2-0386, TFV2-0375b
+- **WHY:** PRD F-30/F-31; issue #746 (`/coach` voice in/out); `docs/design/v3/screens/web/voice-call.html` (the call opens from the coach composer). Code truth: voice in/out on `/coach` is already wired — `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` reads `api.voice.availability` (`{ available, reason, minutesLeft }`, TFV2-0366), shows an inline "Talk" button (`data-component="VoiceStart"`, `t("coachChat.talk")`) only when `available`, starts `useVoiceCall`, and mounts `VoiceCall`. When voice is unavailable the button disappears with no reason. This ticket moves the button into a props-only component that also shows a disabled button with the calm reason (TFV2-0386 `unavailableText`) for `language`, `budget` and `resting`; for `off` (voice not set up on the deployment) and `pending` (account not approved) it stays hidden, as today, because neither is something the person can act on in the composer. Depends on TFV2-0375b only because both edit `CoachChat.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/components/coach/voice/VoiceStartButton.tsx` renders nothing, an enabled Talk button, or a disabled Talk button described by the unavailable reason, from props; `CoachChat` uses it, proven by a harness spec.
+- **SCOPE:** `apps/web/components/coach/voice/VoiceStartButton.tsx` · `apps/web/app/e2e/components/voice-start-button/page.tsx` · `apps/web/components/coach/CoachChat.tsx` · test: `tests/e2e/screens/voice-start-button.spec.ts`.
+- **MUTATES:** `VoiceStartButton.tsx` (new) · `apps/web/app/e2e/components/voice-start-button/page.tsx` (new) · `CoachChat.tsx` (edit: the inline `{voiceAvailability?.available ? (<button …data-component="VoiceStart">…</button>) : null}` block and the send button's `style`) · `tests/e2e/screens/voice-start-button.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "VoiceStart\|voiceAvailability" apps/web/components/coach/CoachChat.tsx` (the query line, the inline button, the send button's `style`); `grep -n "export function unavailableText" apps/web/lib/voice-errors.ts` (TFV2-0386); `grep -n "useConvexVoiceBackend" apps/web/components/coach/CoachChat.tsx` (TFV2-0375b); `test -e apps/web/components/coach/voice/VoiceStartButton.tsx` fails.
+  2. Create `VoiceStartButton.tsx` exactly as SPEC (existing tempo.css classes only; no stylesheet).
+  3. Edit `CoachChat.tsx` exactly as SPEC "CoachChat"; nothing else.
+  4. Create the harness page (8 SPEC states, sections `voice-start-button-<state>`; `onStart` writes `onStart:undefined` to `<output data-testid="voice-start-button-log">`).
+  5. Create the spec (§22 skeleton) with the 6 TESTS bullets.
+  6. Run DONE, then `bun test apps/web/components/coach/CoachChat.test.tsx`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-start-button.spec.ts --reporter=line` → `24 passed`; `bun test apps/web/components/coach/CoachChat.test.tsx` → `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary, the `bun test` summary and both exit codes, pasted into the PR.
+- **DO NOT:** start a call without availability; show the button for `off` or `pending`; call Convex in the component or the harness; change the voice call or `useVoiceCall`; edit `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0388a / evidence: <DONE output> / changed: VoiceStartButton.tsx, voice-start-button/page.tsx, CoachChat.tsx, voice-start-button.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
+- **SPEC:**
+  ```tsx
+  "use client";
+  import { useId } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
+  import { unavailableText, type VoiceUnavailableReason } from "@/lib/voice-errors";
+  type CopyKey = "talk";
+  const COPY: Record<Lang, Record<CopyKey, string>> = { en: { talk: "Talk" }, he: { talk: "לדבר" } };
+  export type VoiceAvailability = { available: boolean; reason: VoiceUnavailableReason | null; minutesLeft: number };
+  export type VoiceStartButtonProps = { availability: VoiceAvailability | undefined; disabled: boolean; onStart: () => void };
+  /** Whether the Talk button shows at all: available, or unavailable for a reason worth saying. */
+  export function voiceStartShown(availability: VoiceAvailability | undefined): boolean {
+    if (!availability) return false;
+    if (availability.available) return true;
+    return availability.reason === "language" || availability.reason === "budget" || availability.reason === "resting";
+  }
+  export function VoiceStartButton({ availability, disabled, onStart }: VoiceStartButtonProps): JSX.Element | null;
+  ```
+  Body: `const { lang } = useLocale(); const copy = COPY[lang]; const reasonId = useId(); if (!availability || !voiceStartShown(availability)) return null; const reason = availability.available || availability.reason === null ? null : unavailableText(availability.reason, lang);` Markup: `<span data-component="VoiceStart" style={{ marginInlineStart: "auto", display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "var(--tp-space-2)" }}><button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={disabled || !availability.available} aria-describedby={reason ? reasonId : undefined} onClick={onStart}><TpIcon name="mic" size="sm" /><span>{copy.talk}</span></button>{reason ? <span className="tp-muted tp-small" id={reasonId} data-reason={availability.reason ?? undefined}>{reason}</span> : null}</span>`.
+  CoachChat: add `import { VoiceStartButton, voiceStartShown } from "./voice/VoiceStartButton";`; replace the inline Talk block with `<VoiceStartButton availability={voiceAvailability} disabled={!conversationId || busy || waitingForPage || voice.open} onStart={() => void voice.start()} />`; the send button's `style={voiceAvailability?.available ? undefined : { marginInlineStart: "auto" }}` becomes `style={voiceStartShown(voiceAvailability) ? undefined : { marginInlineStart: "auto" }}`. The `voiceAvailability` query line is unchanged.
+  Copy (EN / HE): Talk "Talk" / "לדבר"; reasons from TFV2-0386: `language` "Voice in this language isn't ready yet. Typing works as always." / "הקול בשפה הזו עוד לא מוכן. אפשר להמשיך להקליד כרגיל."; `budget` "That's today's voice time. Typing works as always." / "זה כל זמן הקול של היום. אפשר להמשיך להקליד כרגיל."; `resting` "Voice is resting for today. Typing works as always." / "הקול נח להיום. אפשר להמשיך להקליד כרגיל.".
+  States (harness order; `minutesLeft` 12 when available, else 0): `available` (`{ available: true, reason: null }`, `disabled: false`); `busy` (available, `disabled: true`); `budget`; `language`; `resting` (each `{ available: false, reason }`, `disabled: false`); `off`; `pending` (render nothing); `loading` (`availability: undefined`, renders nothing). Error / offline: n/a (offline is the composer's; the availability query has no error state on the client). Tokens: Stage 1 ghost small button (36 px, `--tp-ink-muted`), reason `.tp-muted .tp-small` (`--tp-ink-muted`, `--tp-text-sm`), gap `--tp-space-2`. RTL: `margin-inline-start: auto` pushes it to the inline end; the icon leads. Keyboard: native button; a disabled one is skipped by Tab. Screen reader: "Talk, button" / "Talk, button, dimmed, That's today's voice time. Typing works as always." (description). Breakpoints: the reason wraps under the button at 390 px. Motion: Stage 1 button transition.
+- **TESTS:**
+  1. Given `available` / Then the button is enabled, reads "Talk" / "לדבר", has a `use[href="#i-mic"]` and no `aria-describedby`; When clicked / Then the log reads `onStart:undefined`.
+  2. Given `busy` / Then the button is disabled; When clicked with `{ force: true }` / Then the log is still empty.
+  3. Given `budget` / Then the button is disabled and its `aria-describedby` element (with `data-reason="budget"`) reads "That's today's voice time. Typing works as always." / "זה כל זמן הקול של היום. אפשר להמשיך להקליד כרגיל.".
+  4. Given `language` and `resting` / Then each shows a disabled button and its reason text exactly as in SPEC Copy.
+  5. Given `off`, `pending` and `loading` / Then each section contains no `button` and no `[data-component="VoiceStart"]`.
+  6. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="voice-start-button-"]')` and `expectMotionBudget(page, '[data-testid^="voice-start-button-"]')` pass.
+- **NUMBERS:** Playwright `24 passed` of 24; `CoachChat.test.tsx` 0 fail. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 36 px) · bullet 6. Text contrast ≥ 4.5:1 for `--tp-ink-muted` (WCAG 2.2 SC 1.4.3). Reason exposed to assistive tech (`aria-describedby`, WCAG 2.2 SC 1.3.1) · bullets 3–4.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0395 — Voice: Hebrew lane (Nova-3) + RTL verification
-- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0371, TFV2-0365 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0371 and TFV2-0365.
-- **WHY:** PRD F-33 (Hebrew Nova-3 → Chatterbox multilingual), F-71/F-72; TRD §5a; `convex/lib/voicePolicy.ts` `LANES.he`.
-- **GOAL:** The Hebrew lane is verified (Nova-3 `he` socket URL, Chatterbox `he` TTS) and gated off until a Hebrew crisis phrase list is approved, with RTL verified in the call UI.
-- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · `apps/web/components/coach/voice/VoiceCall.tsx` (RTL) · test `convex/lib/voicePolicy.test.ts`.
-- **MUTATES:** none (lane gating + RTL).
-- **STEPS:** 1) Graphify code-map of `LANES.he`/`laneFor`; 2) verify the `he` lane returns the Nova-3 `he` URL only when the Hebrew crisis list is approved; 3) verify call UI RTL; 4) write the test.
-- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
-- **EVIDENCE:** test output.
-- **DO NOT:** do not enable `he` before the Hebrew crisis list is approved; do not hard-code a Hebrew model choice beyond the lane; do not touch `convex/schema.ts`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `LANES.he = { language:"he", url:"wss://api.deepgram.com/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true" }`. `laneFor("he")` returns `null` until the Hebrew crisis phrase list is approved (today's list is English-only). RTL: transcript lines `dir="auto"`, controls inline-start.
-- **TESTS:** Given locale `he` and no approved Hebrew crisis list / When `laneFor` / Then null (voice off for Hebrew). Given `en` / When `laneFor` / Then the Flux en lane. Given an approved Hebrew list (flag) / When `laneFor("he")` / Then the Nova-3 he lane.
-- **NUMBERS:** Deepgram Nova-3 `he` model (PRD F-33, known fact) · Hebrew crisis list approval → `UNKNOWN` (Amit).
+### TFV2-0394 — Voice: end-to-end smoke of the web call with fake providers (harness + Playwright)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0375b, TFV2-0384 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0375b, TFV2-0384
+- **WHY:** PRD F-30; AGENTS.md (UI changes need an e2e check; no real keys or providers); TRD §5a (socket → transcript → spoken reply → barge-in → end). Code truth: `/coach` signed out under the E2E bypass skips every Convex query, so the Talk button never shows there and the real call cannot be driven on that route. After TFV2-0375b the call runtime `useVoiceCall` takes a `VoiceBackend` and imports nothing from Convex, and after TFV2-0371 the socket goes through `browserSocket` (the global `WebSocket`). So this smoke renders the real `useVoiceCall` + `VoiceCall` on a harness page with a fake backend, and the spec replaces the browser's microphone, recorder, speech socket and audio element with fakes before the page loads. The harness imports the hook as well as the component (the unit under test is the pair); it still imports no Convex client (CONVENTIONS §13's purpose), which TFV2-0375b's test guarantees. The unavailable path (Talk disabled with a reason) is proven by TFV2-0388a; Esc by TFV2-0376b. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** A Playwright smoke starts a call, sees it connect, sends a final transcript, sees the reply in the transcript and read aloud, interrupts it by speaking and by the Interrupt button, mutes the mic, ends the call (lease stopped, socket closed) and fails cleanly on a socket error — all with fake providers.
+- **SCOPE:** `apps/web/app/e2e/components/voice-smoke/page.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts`.
+- **MUTATES:** `apps/web/app/e2e/components/voice-smoke/page.tsx` (new) · `tests/e2e/screens/voice-smoke.spec.ts` (new). No data; no network beyond the local dev server.
+- **STEPS:**
+  1. Code-map check: `grep -n "backend: VoiceBackend\|export type VoiceBackend" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0375b); `grep -n "browserSocket" apps/web/lib/voice-stt.ts` (TFV2-0371); `grep -n "CallActionConfirm" apps/web/components/coach/voice/VoiceCallView.tsx` (TFV2-0384, the last child extraction); `test -e apps/web/app/e2e/components/voice-smoke/page.tsx` fails.
+  2. Create the harness page exactly as SPEC "Harness".
+  3. Create the spec: the CONVENTIONS §22 spec skeleton (`openHarness(page, "voice-smoke", { lang })`) with `await page.addInitScript(INSTALL_FAKES)` before `openHarness` in every test, `INSTALL_FAKES` exactly as SPEC "Browser fakes", and the 7 TESTS bullets.
+  4. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-smoke.spec.ts --reporter=line` → `28 passed`, 0 failed; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary and both exit codes, pasted into the PR.
+- **DO NOT:** use real keys, Deepgram or DeepInfra; set `PLAYWRIGHT_BASE_URL`; replace `WebSocket` for any URL other than `wss://speech.example/`; import `convex/react` or `@/convex/_generated/api` in the harness; edit `useVoiceCall.ts`, `VoiceCall.tsx` or `VoiceCallView.tsx` (a failing case is reported as `blocked: code differs from SPEC`); weaken an assertion; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0394 / evidence: <DONE output> / changed: voice-smoke/page.tsx, voice-smoke.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  Harness (`apps/web/app/e2e/components/voice-smoke/page.tsx`, `"use client"`; imports React, `VoiceCall` from `@/components/coach/voice/VoiceCall`, `useVoiceCall` and the types `VoiceBackend`, `VoiceReply`, `VoiceSendResult` from `@/components/coach/voice/useVoiceCall`, and the `Id` type from `@/convex/_generated/dataModel`):
+  ```tsx
+  const SESSION = "voiceSessions:smoke" as Id<"voiceSessions">;
+  export default function VoiceSmokePage() {
+    const [log, setLog] = useState("");
+    const [reply, setReply] = useState<VoiceReply>(null);
+    const backend = useMemo<VoiceBackend>(() => ({
+      start: async () => ({ sessionId: SESSION, language: "en", renewEveryMs: 15_000, minutesLeft: 12 }),
+      renew: async () => ({ status: "ok", minutesLeft: 12 }),
+      stop: async (args) => { setLog(`stop:${JSON.stringify(args)}`); return null; },
+      grant: async () => ({ token: "smoke-token-0123456789", url: "wss://speech.example/listen" }),
+      speak: async ({ index }) =>
+        index === 0 ? { status: "audio", audio: new Uint8Array([1, 2, 3]).buffer, mime: "audio/wav", count: 1 } : { status: "done" },
+    }), []);
+    const send = async (text: string): Promise<VoiceSendResult> => {
+      setReply({ id: "messages:reply-1" as Id<"messages">, content: `You said: ${text}` });
+      return { kind: "reply" };
+    };
+    const voice = useVoiceCall({ conversationId: "conversations:smoke" as Id<"conversations">, send, latestReply: reply, backend });
+    return (
+      <section data-testid="voice-smoke-default">
+        <button type="button" data-testid="voice-smoke-start" onClick={() => void voice.start()}>Start call</button>
+        <output data-testid="voice-smoke-log">{log}</output>
+        {voice.open ? (
+          <VoiceCall open session={voice.session} connecting={voice.connecting} ended={voice.ended} online micOn={voice.micOn}
+            lines={voice.lines} callLang="en" minutesLeft={voice.minutesLeft} onMicToggle={voice.toggleMic}
+            onInterrupt={voice.interrupt} onEnd={voice.end} onClose={voice.close} onRetry={() => void voice.start()} />
+        ) : null}
+      </section>
+    );
+  }
+  ```
+  ("Start call" is harness-only text, not product copy.)
+  Browser fakes (`INSTALL_FAKES`, a function passed to `page.addInitScript`; it runs before the app):
+  ```ts
+  const INSTALL_FAKES = () => {
+    const v: Record<string, unknown> & { sockets: any[]; played: number; paused: number; hold: boolean } = { sockets: [], played: 0, paused: 0, hold: false };
+    (window as any).__voice = v;
+    const track = { enabled: true, stop() {} };
+    v.track = track;
+    const stream = { getTracks: () => [track], getAudioTracks: () => [track] };
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia: async () => stream } });
+    class FakeRecorder {
+      static isTypeSupported(mime: string) { return mime === "audio/webm;codecs=opus"; }
+      state = "inactive"; ondataavailable: unknown = null; onerror: unknown = null; onstop: unknown = null;
+      start() { this.state = "recording"; }
+      stop() { this.state = "inactive"; }
+    }
+    (window as any).MediaRecorder = FakeRecorder;
+    const RealSocket = window.WebSocket;
+    class FakeSocket {
+      readyState = 0; onopen: any = null; onmessage: any = null; onerror: any = null; onclose: any = null; closedWith: number | null = null;
+      constructor(public url: string, public protocols: string[]) {
+        v.sockets.push(this);
+        setTimeout(() => { this.readyState = 1; this.onopen?.(); }, 50);
+      }
+      send() {}
+      close(code?: number) { this.closedWith = code ?? null; this.readyState = 3; }
+    }
+    (window as any).WebSocket = function (url: string, protocols?: string | string[]) {
+      return String(url).startsWith("wss://speech.example/") ? new FakeSocket(url, protocols as string[]) : new RealSocket(url, protocols);
+    } as unknown as typeof WebSocket;
+    Object.assign((window as any).WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
+    class FakeAudio {
+      onended: (() => void) | null = null; onerror: (() => void) | null = null;
+      constructor(public src: string) {}
+      play() { v.played += 1; if (!v.hold) setTimeout(() => this.onended?.(), 300); return Promise.resolve(); }
+      pause() { v.paused += 1; }
+    }
+    (window as any).Audio = FakeAudio;
+  };
+  ```
+  Helper in the spec: `const say = (page, msg) => page.evaluate((m) => (window as any).__voice.sockets.at(-1).onmessage({ data: JSON.stringify(m) }), msg);`. Copy asserted is VoiceCallView's existing strings (EN / HE): "Listening" / "מקשיב", "Speaking" / "מדבר", "Call ended" / "השיחה הסתיימה", "Not connected" / "לא מחובר", "Couldn't connect." / "לא הצלחנו להתחבר.".
+- **TESTS:** (each test: `addInitScript(INSTALL_FAKES)`, `openHarness`, click `voice-smoke-start`; the dialog is `page.getByRole("dialog")`, the call `.tp-call` inside it)
+  1. Given the harness / When Start is clicked / Then the dialog shows, `window.__voice.sockets[0].url` is `"wss://speech.example/listen"` and its `protocols` equal `["bearer", "smoke-token-0123456789"]`; after the fake opens, `.tp-call` has `data-state="listening"`, the word "Listening" / "מקשיב", and `.tp-call__minutes .tp-num` reads "12".
+  2. Given a live call / When `say({ type: "TurnInfo", event: "EndOfTurn", transcript: "What should I do first?" })` / Then the transcript shows a `you` line "What should I do first?" and a `coach` line "You said: What should I do first?", `window.__voice.played` becomes `1`, and `.tp-call` returns to `data-state="listening"` after playback (within 5 s).
+  3. Given `window.__voice.hold = true` and a final transcript so the call is `data-state="speaking"` / When `say({ type: "TurnInfo", event: "StartOfTurn", transcript: "" })` / Then `data-state="listening"` and `window.__voice.paused` ≥ 1 (barge-in).
+  4. Given `hold = true` and the call speaking / When `[data-action="call-interrupt"]` is clicked / Then `data-state="listening"`.
+  5. Given a live call / When `.tp-call__mic` is clicked / Then it has `aria-pressed="false"`, `.tp-call` has `data-state="paused"` and `window.__voice.track.enabled` is `false`.
+  6. Given a live call / When `[data-action="call-end"]` is clicked / Then `.tp-call` has `data-ended="true"` and the word "Call ended" / "השיחה הסתיימה", `voice-smoke-log` reads `stop:{"sessionId":"voiceSessions:smoke"}`, and `sockets[0].closedWith` is `1000`; When `[data-action="call-close"]` is clicked / Then there is no dialog and `voice-smoke-start` is visible.
+  7. Given a live call / When `page.evaluate(() => window.__voice.sockets[0].onerror())` / Then the word is "Not connected" / "לא מחובר", `[role="alert"]` shows "Couldn't connect." / "לא הצלחנו להתחבר.", and the log reads `stop:{"sessionId":"voiceSessions:smoke"}`.
+- **NUMBERS:** Playwright `28 passed` of 28 (7 bullets × 2 viewports × 2 languages). Every call state reached (internal completeness): listening, speaking, paused, ended, error · bullets 1–7. Latency: UNKNOWN (fake providers measure nothing; TFV2-0396 records real values).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** Hebrew crisis phrase list approval — Amit (REWRITE-PLAN-v2 §4.1); voice stage — Amit.
+- **OPEN:** none.
 
-### TFV2-0396 — Voice: latency + performance budget
-- **Stage:** E · **Pass:** 2 · **Depends:** TFV2-0394 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0394.
-- **WHY:** TRD §5a step 6 (ack < 0.2 s, response ≈ 1 s); TICKET-STANDARD NUMBERS rule.
-- **GOAL:** The voice path is instrumented with measured acknowledgment and first-audio/first-text latency, reported honestly (measured or UNKNOWN), without inventing numbers.
-- **SCOPE:** `apps/web/lib/voice-perf.ts` · test `apps/web/lib/voice-perf.test.ts`.
-- **MUTATES:** none (measurement only).
-- **STEPS:** 1) Graphify code-map; 2) instrument timers for acknowledge (mic→socket open) and first-text (→ first transcript) and first-audio (→ first sentence playback); 3) expose them for CI/logging without storing audio; 4) write the test.
-- **DONE:** `bun test apps/web/lib/voice-perf.test.ts` → all pass.
-- **EVIDENCE:** test output + a measured sample if available, else the `UNKNOWN` record.
-- **DO NOT:** do not invent a latency value; do not block on a provider to measure; do not store audio; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `recordLatency(kind, ms)` for `ack`, `first_text`, `first_audio`; a `summary()` returning the last values or null. No threshold is asserted until measured; the TRD budget (ack < 0.2 s, response ≈ 1 s) is the target to check against.
-- **TESTS:** Given a recorded `ack` of 150 ms / When summarized / Then it reports 150. Given no measurement / When summarized / Then null (never a fabricated number). Given a recorded `first_audio` / When summarized / Then the value is a finite ms.
-- **NUMBERS:** ack < 0.2 s, response ≈ 1 s (TRD §5a step 6, target) · first-audio latency `UNKNOWN` until measured (Amit).
+### TFV2-0388b — Voice: push-to-talk mode in the call runtime (`useVoiceCall` `pushToTalk`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0382, TFV2-0394 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0382, TFV2-0394
+- **WHY:** PRD F-35 (walkie-talkie on every tier); `docs/design/v3/components.md` §2.11 (PushToTalk). Code truth: `PushToTalk` (TFV2-0382) shows in `VoiceCallView` only when `onPushStart` and `onPushEnd` are passed, and `useVoiceCall` has no push-to-talk mode (the mic starts on; `toggleMic` flips every audio track's `enabled`). There is no clip-upload backend (`voice.sendClip` in the design does not exist), so push-to-talk uses the same live socket: in this mode the tracks start disabled (silence keeps the socket open, as the existing mute does), holding enables them, and letting go disables them again, so the speech provider ends the turn on the silence. The person's saved default comes from `preferences.getVoicePrefs` in TFV2-0388c. Depends on TFV2-0394 because this ticket extends its harness and spec. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `useVoiceCall({ pushToTalk: true, … })` starts the call with the mic off and exposes `pushStart` / `pushEnd`, which turn the mic on only while held; the voice smoke proves it.
+- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` · `apps/web/app/e2e/components/voice-smoke/page.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts`.
+- **MUTATES:** `useVoiceCall.ts` (edit: one parameter, two lines in `start`, two callbacks, two return fields) · `apps/web/app/e2e/components/voice-smoke/page.tsx` (edit: a harness-only "Push to talk" checkbox) · `tests/e2e/screens/voice-smoke.spec.ts` (edit: 2 bullets). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "setMicOn(true)\|stream.current = media\|const toggleMic" apps/web/components/coach/voice/useVoiceCall.ts`; `grep -n "voice-smoke-start" apps/web/app/e2e/components/voice-smoke/page.tsx` (TFV2-0394); `grep -n "onPushStart && props.onPushEnd" apps/web/components/coach/voice/VoiceCallView.tsx` (TFV2-0382).
+  2. Edit `useVoiceCall.ts` exactly as SPEC "Hook".
+  3. Edit the harness exactly as SPEC "Harness".
+  4. Add the 2 TESTS bullets to the spec (same loops and fakes).
+  5. Run DONE, then `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-smoke.spec.ts --reporter=line` → `36 passed`, 0 failed; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the Playwright summary and both exit codes, pasted into the PR.
+- **DO NOT:** stop the recorder or close the socket between holds; add a backend call; gate the mode by plan; change the 7 existing smoke cases; touch `convex/**`, `CoachChat.tsx`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0388b / evidence: <DONE output> / changed: useVoiceCall.ts, voice-smoke/page.tsx, voice-smoke.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  Hook (`useVoiceCall.ts`): the parameter object gains `pushToTalk = false` (typed `pushToTalk?: boolean`, documented "Walkie-talkie: the mic is on only while the person holds the button."). In `start`, `setMicOn(true);` becomes `setMicOn(!pushToTalk);`, and directly after `stream.current = media;` add `for (const track of media.getAudioTracks()) track.enabled = !pushToTalk;`; add `pushToTalk` to `start`'s dependency list. Add after `toggleMic`:
+  ```ts
+  /** Push-to-talk: the mic is on only while held (the socket keeps getting silence otherwise). */
+  const pushStart = useCallback(() => {
+    for (const track of stream.current?.getAudioTracks() ?? []) track.enabled = true;
+    setMicOn(true);
+    lastActivity.current = Date.now();
+  }, []);
+  const pushEnd = useCallback(() => {
+    for (const track of stream.current?.getAudioTracks() ?? []) track.enabled = false;
+    setMicOn(false);
+  }, []);
+  ```
+  and add `pushStart, pushEnd` to the returned object. While not held the call word reads "Paused" / "מושהה" (existing `callView` rule for a muted mic).
+  Harness: `const [ptt, setPtt] = useState(false);` a `<label><input type="checkbox" data-testid="voice-smoke-ptt" checked={ptt} onChange={(event) => setPtt(event.target.checked)} /> Push to talk</label>` before the Start button (harness-only text); `useVoiceCall({ …, pushToTalk: ptt })`; `VoiceCall` gets `onPushStart={ptt ? voice.pushStart : undefined}` and `onPushEnd={ptt ? voice.pushEnd : undefined}`.
+- **TESTS:** (added to the TFV2-0394 spec)
+  8. Given `voice-smoke-ptt` checked, then Start, and the fake socket open / Then `.tp-ptt` is visible, `.tp-call__mic` has `aria-pressed="false"` and `window.__voice.track.enabled` is `false`; When `.tp-ptt` gets `pointerdown` / Then `track.enabled` is `true` and `.tp-call__mic` has `aria-pressed="true"`; When it gets `pointerup` / Then `track.enabled` is `false` again.
+  9. Given the checkbox unchecked, then Start / Then there is no `.tp-ptt` and `window.__voice.track.enabled` is `true`.
+- **NUMBERS:** Playwright `36 passed` of 36 (9 bullets × 2 × 2). Mic on only while held (internal) · bullet 8.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** first-audio latency — Amit (TRD §5a: "first-audio latency is UNKNOWN until measured"); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
+- **OPEN:** none.
 
+### TFV2-0388c — Voice: the coach starts calls in the person's saved push-to-talk mode (`CoachChat`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0390a, TFV2-0388a, TFV2-0388b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0390a, TFV2-0388a, TFV2-0388b
+- **WHY:** PRD F-35; `convex/preferences.ts` `getVoicePrefs` (TFV2-0390a: a `query` with `args: {}` returning `{ voicePushToTalk: boolean; voiceLanguage: "en" | "he" }`, `voicePushToTalk` `false` when unset; field from CFG-020). Code truth: `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` calls `useVoiceCall` and mounts `VoiceCall` without push-to-talk; `useVoiceCall` takes `pushToTalk` and returns `pushStart`/`pushEnd` after TFV2-0388b. `CoachChat.test.tsx` mocks `@/convex/_generated/api` without `preferences`, so the new query needs one mock entry. Depends on TFV2-0388a because both edit `CoachChat.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `CoachChat` reads `preferences.getVoicePrefs` (only once the profile exists), starts calls with `pushToTalk` from it, and passes the push handlers to `VoiceCall` in that mode; its unit test proves the query is asked for (skipped while signed out).
+- **SCOPE:** `apps/web/components/coach/CoachChat.tsx` · test: `apps/web/components/coach/CoachChat.test.tsx`.
+- **MUTATES:** `apps/web/components/coach/CoachChat.tsx` (edit: one query line, one `useVoiceCall` argument, two `VoiceCall` props) · `apps/web/components/coach/CoachChat.test.tsx` (edit: the api mock gains `preferences`, `useQuery` records its calls, one new test). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const getVoicePrefs" convex/preferences.ts` (TFV2-0390a, else `blocked: missing TFV2-0390a`); `grep -n "pushStart\|pushToTalk" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0388b); `grep -n "voiceAvailability = useQuery\|useVoiceCall(\|<VoiceCall" apps/web/components/coach/CoachChat.tsx`.
+  2. Edit `CoachChat.tsx` exactly as SPEC.
+  3. Edit `CoachChat.test.tsx` exactly as SPEC.
+  4. Run DONE, then `CI=1 bunx playwright test tests/e2e/screens/voice-start-button.spec.ts --reporter=line`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/components/coach/CoachChat.test.tsx` → `0 fail`, with the new test `"voice preferences are read once signed in, and skipped before"` passing; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` summary (showing the new test name), the Playwright summary and both exit codes, pasted into the PR.
+- **DO NOT:** write preferences from the chat; read `voiceLanguage` (the server picks the lane); change any other existing test; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0388c / evidence: <DONE output> / changed: CoachChat.tsx, CoachChat.test.tsx / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:**
+  `CoachChat.tsx`: directly below the `voiceAvailability` line add `const voicePrefs = useQuery(api.preferences.getVoicePrefs, isAuthenticated && profile ? {} : "skip"); const pushToTalk = voicePrefs?.voicePushToTalk === true;`; add `pushToTalk,` to the `useVoiceCall({ … })` argument; on `<VoiceCall …>` add `onPushStart={pushToTalk ? voice.pushStart : undefined}` and `onPushEnd={pushToTalk ? voice.pushEnd : undefined}`.
+  `CoachChat.test.tsx`: above the `mock.module("convex/react", …)` call add `const queried: Array<[unknown, unknown]> = [];`; its `useQuery: () => undefined` becomes `useQuery: (ref: unknown, args: unknown) => { queried.push([ref, args]); return undefined; }`; the api mock gains `preferences: { getVoicePrefs: "preferences.getVoicePrefs" },`; append inside `describe("deliverCoachMessage", …)` a test `"voice preferences are read once signed in, and skipped before"` that renders `markup(createElement(CoachChat))` and expects `queried` to contain `["preferences.getVoicePrefs", "skip"]` (the mock is signed out, so the chat must skip it).
+  No copy. Errors: none (a missing preference reads as `false`).
+- **TESTS:**
+  1. Given `CoachChat.test.tsx`'s signed-out mocks / When `CoachChat` renders / Then `useQuery` was called with `"preferences.getVoicePrefs"` and `"skip"`, and every existing test in the file still passes.
+- **NUMBERS:** `CoachChat.test.tsx` 0 fail (existing count + 1). One extra query per signed-in chat; latency UNKNOWN (CONVENTIONS §20).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0393 — Voice: spoken coach actions inside a call (confirm with 5-minute Undo) — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0384, TFV2-0394, TFV2-0388c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0384, TFV2-0394, TFV2-0388c
+- **WHY:** PRD F-31/F-22/F-131; HARD_RULES §6.2 (the coach never silently changes data); `docs/design/v3/screens/web/voice-call.html` (`CallActionConfirm` "Added 'call the bank' to Today · Undo", `undo an in-call action -> tasks.remove`). Code truth: voice has no action path of its own (`convex/voice.ts` header, L-16): a spoken turn goes through `coach.sendMessage` + `coach.reply` like typed text, so any change the coach suggests arrives as a pending proposal (`ChatProposal` in `CoachChat.tsx`, Accept / Edit / Not now) in the thread behind the full-screen call, where the person cannot see or accept it while talking. The design's in-call line instead shows the change as already done with an Undo, which is the auto-apply-with-Undo model. Which model voice uses is Q-06; the build differs completely (auto-apply: on a proposal for the current call, accept it and pass `action={{ text, undone, onUndo }}` to `VoiceCall`, `onUndo` calling `coach.undoProposal`; always-propose: an in-call Accept / Not now control that does not exist in the design yet). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** A change the coach proposes during a voice call is surfaced inside the call according to Amit's Q-06 answer, never applied without a visible confirm and a 5-minute Undo.
+- **SCOPE:** `apps/web/components/coach/CoachChat.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts` (TFV2-0394's spec, one added case).
+- **MUTATES:** `apps/web/components/coach/CoachChat.tsx` (edit: the `VoiceCall` props) · `tests/e2e/screens/voice-smoke.spec.ts` (edit). Runtime writes through existing coach proposal mutations only.
+- **STEPS:**
+  1. Code-map check: `grep -n "acceptProposal\|undoProposal\|rejectProposal" convex/coach.ts apps/web/components/coach/CoachChat.tsx apps/web/components/coach/ChatProposal.tsx`; `grep -n "action?:" apps/web/components/coach/voice/VoiceCallView.tsx` (TFV2-0384).
+  2. Implement the model Amit chooses for Q-06 in `CoachChat.tsx` (the exact edit is written into this ticket when Q-06 is answered).
+  3. Add the matching case to `tests/e2e/screens/voice-smoke.spec.ts`.
+  4. Run DONE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/voice-smoke.spec.ts --reporter=line` → all cases pass, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary and the typecheck exit code, pasted into the PR.
+- **DO NOT:** apply a change without the confirm line and its Undo; shorten the 5-minute window; add a voice-only mutation; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0393 / evidence: <DONE output> / changed: CoachChat.tsx, voice-smoke.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** Copy comes from TFV2-0384 (`CallActionConfirm`: "Undo" / "ביטול", "Undone. Nothing was added." / "בוטל. שום דבר לא נוסף."); the action sentence per proposal kind is written here once Q-06 is answered (for a task: EN "Added “{title}” to Today" / HE "המשימה “{title}” נוספה להיום"). Undo window: `UNDO_WINDOW_MS` 300 000 (`convex/lib/softDelete.ts`).
+- **TESTS:** Given a spoken turn whose reply carries a task proposal / When the call is open / Then the behaviour Amit chose for Q-06 shows inside the call (auto-apply: the confirm line with Undo, and Undo restores; always-propose: an Accept control, and nothing changes until it is pressed).
+- **NUMBERS:** Undo window 5 minutes (PRD F-131; `UNDO_WINDOW_MS`). Latency: UNKNOWN (CONVENTIONS §20).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo — and, for a live voice call, should a proposed change be applied with the in-call "Added … · Undo" line, or wait for an in-call Accept? — Amit.
+
+### TFV2-0389 — Voice: mobile voice-call screen goes live — OPEN
+- **Stage:** E · **Pass:** 1 · **Depends:** CFG-031, CFG-032, TFV2-0000d, TFV2-0325, TFV2-0367c, TFV2-0369, TFV2-0372 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
+- **WHEN:** after CFG-031, CFG-032, TFV2-0000d, TFV2-0325, TFV2-0367c, TFV2-0369, TFV2-0372
+- **WHY:** PRD F-30/F-121; `docs/design/v3/screens/mobile/voice-call.html`; CONVENTIONS §9 (mobile screen set), §13–§15. Code truth: `apps/mobile/app/(tempo)/voice-call.tsx` shows the call layout honestly disconnected (state "Not connected", notice `voiceCall.unavailable.*` "Live calls aren't ready on the phone yet.", every control disabled; TFV2-0325 owns that layout). Going live needs the mobile speech socket and microphone stream of TFV2-0372 (OPEN on CFG-045), the same `voice.availability` / `start` / `renew` / `stop` / `grant` / `speak` functions as web (TFV2-0366…TFV2-0369), and the mobile strings in `apps/mobile/lib/v3/strings.ts` group `voiceCall` (several Hebrew entries there are gendered — "החזיקי", "את", "עלייך" — and are replaced with neutral copy in this ticket's `COPY`). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** The mobile voice-call screen starts a real call when `voice.availability` says it can (connecting → listening → speaking, transcript, minutes, interrupt, mute, end), keeps today's disconnected layout when it cannot, and forces every state from fixtures.
+- **SCOPE:** `apps/mobile/app/(tempo)/voice-call.tsx` · `apps/mobile/lib/v3/useVoiceCall.ts` · `apps/mobile/lib/e2e/fixtures/voice-call.ts` · test: `tests/e2e/mobile/voice-call.spec.ts`.
+- **MUTATES:** `voice-call.tsx` (edit) · `apps/mobile/lib/v3/useVoiceCall.ts` (new: the mobile call runtime, mirroring the web hook's lease, socket, read-aloud and barge-in rules on TFV2-0372's `openSpeechSocket` / `startMicStream`) · `apps/mobile/lib/e2e/fixtures/voice-call.ts` (new) · `tests/e2e/mobile/voice-call.spec.ts` (new). Runtime writes: `voiceSessions` rows through `voice.start` / `renew` / `stop` only.
+- **STEPS:**
+  1. Code-map check: `grep -n "export function openSpeechSocket\|export async function startMicStream" apps/mobile/lib/v3/voice-stt.ts` (TFV2-0372); `grep -n "voiceCall:" apps/mobile/lib/v3/strings.ts`; read `voice-call.tsx`.
+  2. Create the hook, the fixtures and the screen changes as written into this ticket once CFG-045 is answered (the package decides how audio is captured and which socket parameters are added).
+  3. Create the spec (states `unavailable`, `connecting`, `listening`, `speaking`, `ended`, `error`, `offline` through `?state=` and `useE2EMobile()`).
+  4. Run DONE.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line` → all cases pass, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary and the typecheck exit code, pasted into the PR.
+- **DO NOT:** add a provider key or a dependency; record audio to a file; enable the mic when availability is not `available`; import from `apps/web`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0389 / evidence: <DONE output> / changed: voice-call.tsx, useVoiceCall.ts, fixtures/voice-call.ts, voice-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **SPEC:** States: `unavailable` (today's layout: "Not connected" / "לא מחובר", the unavailable notice, controls disabled), `connecting` ("Connecting…" / "מתחבר…"), `listening` ("Listening" / "מקשיב"), `speaking` ("Speaking" / "מדבר", Interrupt enabled), `ended` ("Call ended" / "השיחה הסתיימה", Back to chat), `error` ("Couldn't connect." / "לא הצלחנו להתחבר."), `offline` (existing `voiceCall.off.*`). Neutral Hebrew for the gendered entries: hold "להחזיק כדי לדבר"; release "מקשיבים… אפשר לשחרר כדי לשלוח"; help "מחזיקים עם האצבע, או מחזיקים רווח או Enter. משחררים כדי לשלוח."; who-you "אני"; empty hint "אפשר להגיד שלום, או לספר למאמן מה עובר עליך היום."; skip "דילוג למיקרופון"; error body "אפשר להחזיק את הכפתור למטה כדי לדבר. נמשיך לנסות את השיחה החיה.". Mic accent `c.accent`; End call danger; RTL via `p.row`; numbers LTR.
+- **TESTS:** Given `?state=unavailable` / Then "Not connected" and every control disabled. Given `?state=listening` / Then the word "Listening" / "מקשיב" and the mic enabled. Given `?state=speaking` / Then Interrupt is enabled. Given `?state=ended` / Then Back to chat shows. Given `?state=error` and `?state=offline` / Then their notices show. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8); text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms. Latency UNKNOWN (CONVENTIONS §20).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0372 (CFG-045 new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?) — Amit.
+
+### TFV2-0396 — Voice: latency record for the web call `apps/web/lib/voice-perf.ts`
+- **Stage:** E · **Pass:** 2 · **Depends:** TFV2-0388b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0388b
+- **WHY:** TRD §5a step 6 (acknowledgement < 0.2 s; response ≈ 1 s; first-audio latency is UNKNOWN until measured); TICKET-STANDARD NUMBERS rule (measured or UNKNOWN, never invented). Code truth: `useVoiceCall.ts` measures nothing. This ticket adds a small in-memory latency record and three marks in the hook — `ack` (Start pressed → speech socket open), `first_text` (socket open → first speech event), `first_audio` (a turn's final words sent → its first reply clip starts) — and returns the record's summary from the hook, so a preview measurement can read real values. Nothing is stored or sent. Depends on TFV2-0388b because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
+- **GOAL:** `apps/web/lib/voice-perf.ts` exports `createLatencyLog` and `LATENCY_TARGET_MS`; `useVoiceCall` marks `ack`, `first_text` and `first_audio` and returns `latency()`; proven by `apps/web/lib/voice-perf.test.ts`.
+- **SCOPE:** `apps/web/lib/voice-perf.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-perf.test.ts`.
+- **MUTATES:** `apps/web/lib/voice-perf.ts` (new) · `useVoiceCall.ts` (edit: one ref, three marks, one return field, one import) · `apps/web/lib/voice-perf.test.ts` (new). No data, logging or network change.
+- **STEPS:**
+  1. Code-map check: `grep -n "openSpeechSocket(\|onOpen:\|onSpeech:\|sendSpokenTurn(\|play: playClip\|pushEnd" apps/web/components/coach/voice/useVoiceCall.ts` (TFV2-0371/0373/0388b merged); `test -e apps/web/lib/voice-perf.ts` fails.
+  2. Create `voice-perf.ts` exactly as SPEC "Module".
+  3. Edit the hook exactly as SPEC "Hook".
+  4. Create the test with the 6 TESTS cases.
+  5. Run DONE, then `CI=1 bunx playwright test tests/e2e/screens/voice-smoke.spec.ts --reporter=line` (still `36 passed`), `bun run typecheck`, `bun run lint`.
+- **DONE:** `bun test apps/web/lib/voice-perf.test.ts` → `6 pass`, `0 fail`; the voice smoke → `36 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
+- **EVIDENCE:** the `bun test` and Playwright summaries, both exit codes, and — if a preview call was made — the three measured values; otherwise `UNKNOWN: voice latency (not measured)`.
+- **DO NOT:** invent or hard-code a measured value; assert a latency threshold in a test; log, store or send timings, audio or transcripts; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0396 / evidence: <DONE output> / changed: voice-perf.ts, useVoiceCall.ts, voice-perf.test.ts / unknowns: voice latency values unless measured / notes for ticket sync`; list STEPS 1–5 with evidence.
+- **SPEC:**
+  Module (`apps/web/lib/voice-perf.ts`):
+  ```ts
+  export type LatencyKind = "ack" | "first_text" | "first_audio";
+  export type LatencySummary = Record<LatencyKind, number | null>;
+  /** TRD §5a step 6 targets (ms); null where the TRD gives none. For comparison by a person, never asserted in CI. */
+  export const LATENCY_TARGET_MS: LatencySummary = { ack: 200, first_text: null, first_audio: 1000 };
+  export type LatencyLog = { mark: (kind: LatencyKind, startedAt: number) => void; summary: () => LatencySummary };
+  /** In-memory, last value per kind; a negative or non-finite duration is ignored. */
+  export function createLatencyLog(now: () => number = Date.now): LatencyLog {
+    const last: LatencySummary = { ack: null, first_text: null, first_audio: null };
+    return {
+      mark: (kind, startedAt) => {
+        const ms = now() - startedAt;
+        if (Number.isFinite(ms) && ms >= 0) last[kind] = ms;
+      },
+      summary: () => ({ ...last }),
+    };
+  }
+  ```
+  Hook (`useVoiceCall.ts`): import `createLatencyLog`; add `const latencyLog = useRef(createLatencyLog());` and `const turnSentAt = useRef(0);`. In `start`, after `const gen = generation.current;` add `const startedAt = Date.now(); let openedAt = 0; let heard = false;`; first line of the socket's `onOpen` after the generation check: `openedAt = Date.now(); latencyLog.current.mark("ack", startedAt);`; in `onSpeech` after the generation check: `if (!heard) { heard = true; latencyLog.current.mark("first_text", openedAt); }`. In `onFinal`, directly before `const turn = await sendSpokenTurn(`: `turnSentAt.current = Date.now();`. In `readAloud`, `play: playClip` becomes `play: (bytes, mime) => { if (turnSentAt.current) { latencyLog.current.mark("first_audio", turnSentAt.current); turnSentAt.current = 0; } return playClip(bytes, mime); }`. The returned object gains `latency: () => latencyLog.current.summary()`.
+- **TESTS:** (`bun:test`; a fake clock `let t = 0; const now = () => t;`)
+  1. Given a new log / Then `summary()` is `{ ack: null, first_text: null, first_audio: null }`.
+  2. Given `t = 150` and `mark("ack", 0)` / Then `summary().ack` is `150` and the other two stay `null`.
+  3. Given `mark("first_audio", 100)` at `t = 900`, then again at `t = 1400` with start `1000` / Then `summary().first_audio` is `400` (the last value wins).
+  4. Given `mark("first_text", 500)` at `t = 100` (negative) and `mark("first_text", Number.NaN)` / Then `summary().first_text` stays `null`.
+  5. Given a summary object that the test mutates (`s.ack = 1`) / Then a later `summary().ack` is unchanged.
+  6. Given `LATENCY_TARGET_MS` / Then it equals `{ ack: 200, first_text: null, first_audio: 1000 }`.
+- **NUMBERS:** 6 of 6 cases pass (exact). Acknowledgement target < 200 ms and first audio ≈ 1 000 ms (TRD §5a step 6) — targets only; measured values UNKNOWN until a preview call is measured (Amit; CONVENTIONS §20: not a ticket gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
 
 ## Chunk 6 — Gen 2 (later)
 
-### TFV2-0397 — Plugin manifest schema (Zod) `packages/types/src/plugins.ts`
+### TFV2-0397 — Plugin manifest schema (Zod) `packages/utils/src/plugin-manifest.ts` — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `types`, lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
-- **WHY:** PRD §4.4 F-45 (Plugin SDK + marketplace, authors keep 100%); PRD §5 (modules ↔ Claude Code mods); TRD §4a (modules are validated data, Zod on every field); REWRITE-PLAN-v2 §6 chunk 6 "Plugin SDK".
-- **GOAL:** A single Zod schema describes a Tempo plugin manifest — id, name, version, summary, author, permissions, the catalog components/actions it extends, and a min Tempo version — so every later ticket validates against one source of truth.
-- **SCOPE:** `packages/types/src/plugins.ts` · `packages/types/src/index.ts` (export) · test `packages/types/src/plugins.test.ts`.
-- **MUTATES:** none (adds a pure schema module; no table, route or env).
-- **STEPS:** 1) Graphify code-map of `packages/types/src/` (no `plugins.ts` exists today — confirmed MISSING); 2) write `plugins.ts` exporting `pluginManifestSchema`, `pluginPermissionSchema` and the inferred types `PluginManifest`, `PluginPermission`; 3) mirror the existing block-schema style (Zod, `v: 1`, kebab-case names) used by `packages/utils/src/blocks.ts`; 4) export both from `packages/types/src/index.ts`; 5) write the test file for every error case below.
-- **DONE:** `bun test packages/types/src/plugins.test.ts` → all tests pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** paste the test output (pass count) and the `typecheck` exit code.
-- **DO NOT:** do not add a table or a Convex module here; do not depend on any runtime-only package; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, any `.env` or workflow.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `pluginManifestSchema` fields: `id` (`^[a-z0-9][a-z0-9-]*$`, max 64), `name` (1–60 chars), `version` (semver string), `summary` (1–200 chars), `description?` (markdown string, max 8,000 chars), `author { name, email? }`, `permissions` (array of `pluginPermissionSchema` literals, e.g. `"read_pages"`, `"write_today"`, `"schedule_job"`, `"web_request"`), `components` (array of catalog `data-component` names, max 24), `actions` (array of catalog action names, max 24), `minTempoVersion` (semver). Unknown keys are stripped. Any unknown `components`/`actions`/`permissions` name is an error (the catalog is the only authority, mirroring TRD §4a validation). The `permissions` enum is deliberately conservative and OPEN below.
-- **TESTS:** Given a valid manifest / When parsed / Then it round-trips and no error. Given a missing `name` / Then a Zod issue names `name`. Given a `components` entry not in the allowed catalog / Then a Zod issue is raised. Given an `id` with uppercase or spaces / Then invalid. Given an unknown top-level key / Then it is stripped, not failed. Given `minTempoVersion` non-semver / Then invalid.
-- **NUMBERS:** manifest size cap 8 KiB and description cap 8,000 chars (repo convention; deterministic, no external range) · permission list content → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the exact permission enum and the `components`/`actions` catalog allowlist (which catalog names a plugin may extend) — Amit.
+- **WHY:** PRD §4.4 F-45 (Plugin SDK + marketplace); PRD §5 RULES ("a data module uses only Tempo's catalog components and actions"); TRD §4a ("Zod on every field. Unknown component, unknown action … → rejected"); REWRITE-PLAN-v2 §6 chunk 6 "Plugin SDK"; CONVENTIONS §7 B, §9 (pure helper). Location: `packages/types/package.json` has no `zod` (devDependencies: `typescript` only) and nothing in `convex/` imports `@tempo/types`, so a schema there would need a dependency change (config lane, §18). `packages/utils/package.json` already depends on `zod` `4.3.6` and `convex/` already imports `@tempo/utils` (`convex/notes.ts` line 9), so the schema lives in `packages/utils` with no dependency change. The real catalog is `packages/ui/src/blocks/catalog.ts`: `BLOCK_COMPONENT_TYPES = ["TaskBlock", "PageMeta", "TemplateBlock", "BrokenBlockCard"]`, `BLOCK_ACTION_NAMES = ["setTaskDone"]`. `@tempo/utils` cannot import `@tempo/ui` (`@tempo/ui` depends on `@tempo/utils`), so the plugin allowlist is written here as constants and TFV2-0403 pins it as a subset of the catalog.
+- **GOAL:** `packages/utils/src/plugin-manifest.ts` exports `pluginManifestSchema`, the permission and catalog-name allowlists, the inferred `PluginManifest` type and `compareVersions`, re-exported from `@tempo/utils`, proven by its own test file.
+- **SCOPE:** `packages/utils/src/plugin-manifest.ts` · `packages/utils/src/index.ts` (one export block) · test: `packages/utils/src/plugin-manifest.test.ts`.
+- **MUTATES:** `packages/utils/src/plugin-manifest.ts` (new) · `packages/utils/src/index.ts` (edit: one export block) · `packages/utils/src/plugin-manifest.test.ts` (new). No table, route, env or dependency change.
+- **STEPS:**
+  1. Code-map: `ls packages/utils/src | grep -i plugin` → no output (nothing exists); `grep -n '"zod"' packages/utils/package.json` → `"zod": "4.3.6"`; `grep -n -A 6 "export const BLOCK_COMPONENT_TYPES\|export const BLOCK_ACTION_NAMES" packages/ui/src/blocks/catalog.ts` shows the two catalog lists quoted in WHY; `grep -n 'from "./page-summary"' packages/utils/src/index.ts` finds the `./page-summary` export block. If a list differs, stop and report `blocked: catalog differs from ticket`.
+  2. Create `packages/utils/src/plugin-manifest.ts` exactly as SPEC. Its only import is `import { z } from "zod";`.
+  3. In `packages/utils/src/index.ts`, insert the SPEC export block immediately before the `./page-summary` export block (`export {` … `} from "./page-summary";`). Change nothing else in the file.
+  4. Create `packages/utils/src/plugin-manifest.test.ts` (`import { describe, expect, test } from "bun:test";`, imports from `"./plugin-manifest"`) with exactly the 12 TESTS cases inside `describe("TFV2-0397 plugin manifest", …)`, using the `VALID` constant from TESTS.
+  5. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test packages/utils/src/plugin-manifest.test.ts` → `12 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus the `bun run lint` and `bun run typecheck` exit codes, pasted into the PR.
+- **DO NOT:** put the schema in `packages/types` or add `zod` to any `package.json`; import `@tempo/ui`, React, Convex or any runtime-only package; add an `email` field to `author` (listings are public, an email must never be exposed); make unknown keys an error (they are stripped); add a block type to `packages/utils/src/blocks.ts`; edit any other export block in `index.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0397 / evidence: <DONE command> -> <summary> / changed: packages/utils/src/plugin-manifest.ts, packages/utils/src/index.ts, packages/utils/src/plugin-manifest.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
+- **SPEC:** `packages/utils/src/plugin-manifest.ts`:
+  ```ts
+  import { z } from "zod";
 
-### TFV2-0398 — Plugin manifest validator `packages/utils/src/plugin-validate.ts`
+  export const PLUGIN_LIMITS = {
+    idMaxChars: 64,
+    nameMaxChars: 60,
+    summaryMaxChars: 200,
+    descriptionMaxChars: 8_000,
+    authorNameMaxChars: 80,
+    manifestMaxBytes: 8_192,
+  } as const;
+
+  /** Lower-case letters, digits and hyphens; starts with a letter or digit. Also the listing slug grammar. */
+  export const PLUGIN_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+  /** MAJOR.MINOR.PATCH, digits only, no leading zeros, no pre-release or build suffix. */
+  export const PLUGIN_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+  export const PLUGIN_PERMISSIONS = ["read_pages", "write_today", "schedule_job", "web_request"] as const;
+  export type PluginPermission = (typeof PLUGIN_PERMISSIONS)[number];
+  /** Confirmed by the person on every use, even when granted (PRD F-131: confirmation before any external write). */
+  export const PLUGIN_CONFIRM_EACH_USE: readonly PluginPermission[] = ["web_request"];
+
+  /** Catalog components a plugin may extend: a subset of BLOCK_COMPONENT_TYPES in packages/ui/src/blocks/catalog.ts. */
+  export const PLUGIN_COMPONENT_NAMES = ["TaskBlock", "TemplateBlock"] as const;
+  export type PluginComponentName = (typeof PLUGIN_COMPONENT_NAMES)[number];
+  /** Catalog actions a plugin may use: a subset of BLOCK_ACTION_NAMES in packages/ui/src/blocks/catalog.ts. */
+  export const PLUGIN_ACTION_NAMES = ["setTaskDone"] as const;
+  export type PluginActionName = (typeof PLUGIN_ACTION_NAMES)[number];
+
+  const UNIQUE_MESSAGE = "Each entry may appear once.";
+  const isUnique = (list: readonly string[]): boolean => new Set(list).size === list.length;
+
+  export const pluginPermissionSchema = z.enum(PLUGIN_PERMISSIONS);
+
+  export const pluginManifestSchema = z.object({
+    id: z.string().max(PLUGIN_LIMITS.idMaxChars).regex(PLUGIN_ID_PATTERN),
+    name: z.string().min(1).max(PLUGIN_LIMITS.nameMaxChars),
+    version: z.string().regex(PLUGIN_VERSION_PATTERN),
+    summary: z.string().min(1).max(PLUGIN_LIMITS.summaryMaxChars),
+    description: z.string().max(PLUGIN_LIMITS.descriptionMaxChars).optional(),
+    author: z.object({ name: z.string().min(1).max(PLUGIN_LIMITS.authorNameMaxChars) }),
+    permissions: z.array(pluginPermissionSchema).max(PLUGIN_PERMISSIONS.length).refine(isUnique, UNIQUE_MESSAGE),
+    components: z.array(z.enum(PLUGIN_COMPONENT_NAMES)).max(PLUGIN_COMPONENT_NAMES.length).refine(isUnique, UNIQUE_MESSAGE),
+    actions: z.array(z.enum(PLUGIN_ACTION_NAMES)).max(PLUGIN_ACTION_NAMES.length).refine(isUnique, UNIQUE_MESSAGE),
+    minTempoVersion: z.string().regex(PLUGIN_VERSION_PATTERN),
+  });
+  export type PluginManifest = z.infer<typeof pluginManifestSchema>;
+
+  /** -1 when a < b, 0 when equal, 1 when a > b, comparing MAJOR, then MINOR, then PATCH as integers. */
+  export function compareVersions(a: string, b: string): -1 | 0 | 1;
+  ```
+  - `z.object` (Zod 4) strips unknown keys at every level; that is the intended behaviour, not an error.
+  - `compareVersions` throws `new Error("Invalid version")` when either argument does not match `PLUGIN_VERSION_PATTERN`; otherwise it splits on `.` and compares the three parts with `Number(…)`, first difference wins.
+  - The 8 KiB manifest byte cap (`PLUGIN_LIMITS.manifestMaxBytes`, UTF-8 bytes per CONVENTIONS §7 H) is enforced by `validatePluginManifest` (TFV2-0398), not by the schema.
+  - Export block added to `packages/utils/src/index.ts` (exact text):
+    ```ts
+    export {
+      compareVersions,
+      PLUGIN_ACTION_NAMES,
+      PLUGIN_COMPONENT_NAMES,
+      PLUGIN_CONFIRM_EACH_USE,
+      PLUGIN_ID_PATTERN,
+      PLUGIN_LIMITS,
+      PLUGIN_PERMISSIONS,
+      PLUGIN_VERSION_PATTERN,
+      type PluginActionName,
+      type PluginComponentName,
+      type PluginManifest,
+      pluginManifestSchema,
+      type PluginPermission,
+      pluginPermissionSchema,
+    } from "./plugin-manifest";
+    ```
+  - Errors: none thrown by the schema (callers use `safeParse`); `compareVersions` throws only `"Invalid version"` (case 12). No user-facing copy. No I/O.
+- **TESTS:** (`const VALID = { id: "focus-timer", name: "Focus timer", version: "1.0.0", summary: "A calm timer card for your Today.", author: { name: "Dana Levi" }, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], minTempoVersion: "0.1.0" };` and `const issues = (raw: unknown) => { const r = pluginManifestSchema.safeParse(raw); return r.success ? [] : r.error.issues; };`)
+  1. Given `VALID` / When `pluginManifestSchema.safeParse(VALID)` runs / Then `success` is `true` and `data` equals `VALID`.
+  2. Given `{ ...VALID, extra: 1, author: { name: "Dana Levi", email: "d@example.com" } }` / When parsed / Then `success` is `true`, `"extra" in data` is `false` and `data.author` equals `{ name: "Dana Levi" }`.
+  3. Given `VALID` without `name` / When `issues(raw)` runs / Then it contains an issue with `path` `["name"]` and `code` `"invalid_type"`.
+  4. Given `id: "Focus Timer"` / Then `issues` has an issue at `["id"]` with code `"invalid_format"`; Given `id: "a".repeat(65)` / Then an issue at `["id"]` with code `"too_big"`.
+  5. Given `components: ["Calendar"]` / Then an issue at `["components", 0]` with code `"invalid_value"`.
+  6. Given `actions: ["navigate"]` / Then an issue at `["actions", 0]` with code `"invalid_value"`.
+  7. Given `permissions: ["admin"]` / Then an issue at `["permissions", 0]` with code `"invalid_value"`.
+  8. Given `permissions: ["read_pages", "read_pages"]` / Then `issues` has exactly one issue: `path` `["permissions"]`, `code` `"custom"`, `message` `"Each entry may appear once."`.
+  9. Given `version: "1.0"`, then separately `minTempoVersion: "v1.0.0"`, then `version: "01.0.0"` / Then each has an issue at its own path (`["version"]`, `["minTempoVersion"]`, `["version"]`) with code `"invalid_format"`.
+  10. Given `summary: ""` / Then an issue at `["summary"]` with code `"too_small"`; Given `name: "a".repeat(61)` / Then an issue at `["name"]` with code `"too_big"`.
+  11. Given the constants / Then every entry of `PLUGIN_CONFIRM_EACH_USE` is in `PLUGIN_PERMISSIONS`, and `PLUGIN_LIMITS.manifestMaxBytes === 8192`.
+  12. Given `compareVersions` / Then `("1.0.0", "1.0.1")` → `-1`, `("1.10.0", "1.9.9")` → `1`, `("2.0.0", "2.0.0")` → `0`, and `("1.0", "1.0.0")` throws `"Invalid version"`.
+- **NUMBERS:** 12 of 12 cases pass (exact). Limits are code constants checked by TESTS: id ≤ 64, name 1–60, summary 1–200, description ≤ 8,000 chars, author name 1–80 (source: old TFV2-0397 proposal; no external standard). `manifestMaxBytes` 8,192 UTF-8 bytes (source: old TFV2-0397 "repo convention"; enforced and tested in TFV2-0398). Latency: n/a (pure, in memory).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component? — Amit.
+
+### TFV2-0398 — Plugin manifest validator `validatePluginManifest` (`packages/utils/src/plugin-validate.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0397 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils`, lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0397.
-- **WHY:** TRD §4a (a module that fails validation never goes live; Zod on every field); PRD §5 module RULES; REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** `validatePluginManifest(raw)` returns a discriminated result — `{ ok: true, manifest }` or `{ ok: false, issues[] }` with a human-readable issue per field — so no later install path has to hand-roll manifest checks.
-- **SCOPE:** `packages/utils/src/plugin-validate.ts` · test `packages/utils/src/plugin-validate.test.ts`.
-- **MUTATES:** none (pure validator).
-- **STEPS:** 1) Graphify code-map of `packages/utils/src/` (no `plugin-validate.ts` — MISSING); 2) wrap `pluginManifestSchema` (TFV2-0397) in `safeParse`; 3) map Zod issues to `{ path, message }` with no raw JSON in the message; 4) add the catalog-name cross-check (`components`/`actions` must be known catalog names — pass the catalog list as an argument); 5) write the test file.
-- **DONE:** `bun test packages/utils/src/plugin-validate.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not log the raw manifest on failure (redact `description`); do not call the network or a model; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Signature: `validatePluginManifest(raw: unknown, catalog: { components: string[]; actions: string[] }): { ok: true; manifest: PluginManifest } | { ok: false; issues: { path: string; message: string }[] }`. An issue message is one short sentence, never the offending value in full, and never JSON. Errors are collected (all issues, not first-only). An empty `components` and empty `actions` both is allowed (a plugin may be metadata-only), but a plugin with any `web_request` permission must also declare at least one action.
-- **TESTS:** Given a valid manifest and a catalog containing its names / When validated / Then `ok: true`. Given an unknown component name / Then `ok: false` with an issue at `components`. Given a `web_request` permission with no actions / Then `ok: false`. Given malformed JSON / Then `ok: false` with a single parse issue and no throw. Given three invalid fields / Then three issues are returned (all collected).
-- **NUMBERS:** issue list cap 50 (deterministic bound) · catalog-name source of truth → `UNKNOWN` (Amit: the json-render catalog export name).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** catalog-name source (the exact export that lists valid `data-component`/action names) — Amit.
+- **WHY:** TRD §4a ("Zod on every field … rejected, and the module stays `draft`"); PRD §5 RULES; REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §7 H ("Bytes" = UTF-8 length), §9 (pure helper). One validator so `plugins.install` (TFV2-0401a), `marketplace.publish` (TFV2-0407a) and any UI preview share the same result shape. The catalog-name check lives inside `pluginManifestSchema` (TFV2-0397 enums), so this function takes no catalog argument.
+- **GOAL:** `validatePluginManifest(raw)` returns `{ ok: true, manifest }` or `{ ok: false, issues }` with a fixed, value-free sentence per issue, enforces the 8 KiB UTF-8 cap, and is re-exported from `@tempo/utils`, proven by its own test file.
+- **SCOPE:** `packages/utils/src/plugin-validate.ts` · `packages/utils/src/index.ts` (one export block) · test: `packages/utils/src/plugin-validate.test.ts`.
+- **MUTATES:** `packages/utils/src/plugin-validate.ts` (new) · `packages/utils/src/index.ts` (edit: one export block) · `packages/utils/src/plugin-validate.test.ts` (new). No table, route, env or dependency change.
+- **STEPS:**
+  1. Code-map: `test -e packages/utils/src/plugin-validate.ts` fails; `grep -n "export const pluginManifestSchema\|manifestMaxBytes" packages/utils/src/plugin-manifest.ts` prints both (TFV2-0397); `grep -n 'from "./page-summary"' packages/utils/src/index.ts` finds the block. If TFV2-0397 is missing, report `blocked: missing TFV2-0397`.
+  2. Create `packages/utils/src/plugin-validate.ts` exactly as SPEC; it imports only from `"./plugin-manifest"`.
+  3. In `packages/utils/src/index.ts`, insert the SPEC export block immediately before the `./page-summary` export block. Change nothing else.
+  4. Create `packages/utils/src/plugin-validate.test.ts` (`bun:test`) with exactly the 9 TESTS cases in `describe("TFV2-0398 validatePluginManifest", …)`.
+  5. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test packages/utils/src/plugin-validate.test.ts` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus the `bun run lint` and `bun run typecheck` exit codes, pasted into the PR.
+- **DO NOT:** throw for bad input (every failure is a returned result); put the offending value, a Zod default message or JSON into an issue message; `console.log` anything; parse JSON or markdown (that is `parsePlugin`, TFV2-0399); measure size with `string.length`; edit `plugin-manifest.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0398 / evidence: <DONE command> -> <summary> / changed: packages/utils/src/plugin-validate.ts, packages/utils/src/index.ts, packages/utils/src/plugin-validate.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
+- **SPEC:**
+  ```ts
+  import { PLUGIN_LIMITS, type PluginManifest, pluginManifestSchema } from "./plugin-manifest";
 
-### TFV2-0399 — Plugin pack/parse `.tempo-plugin.md` format `packages/utils/src/plugin-pack.ts`
+  export const PLUGIN_ISSUES_MAX = 50;
+  export type PluginManifestIssue = { path: string; message: string };
+  export type PluginValidationResult =
+    | { ok: true; manifest: PluginManifest }
+    | { ok: false; issues: PluginManifestIssue[] };
+
+  export const PLUGIN_ISSUE_MESSAGES = {
+    invalid_type: "This field is missing or has the wrong type.",
+    too_small: "This field is too short.",
+    too_big: "This field is too long.",
+    invalid_format: "This field is not in the expected format.",
+    invalid_value: "This value is not allowed.",
+    other: "This field is not valid.",
+    tooLarge: "The manifest is larger than 8 KiB.",
+    notPlainData: "The manifest is not plain data.",
+    webRequestNeedsAction: "A plugin that asks for web requests must declare an action.",
+  } as const;
+
+  export function validatePluginManifest(raw: unknown): PluginValidationResult;
+  ```
+  Algorithm, in order:
+  1. `let json: string | undefined; try { json = JSON.stringify(raw); } catch { json = undefined; }` — when `json` is `undefined` (a thrown `TypeError` for a `BigInt` or a cycle, or `raw` is `undefined` or a function) return `{ ok: false, issues: [{ path: "", message: PLUGIN_ISSUE_MESSAGES.notPlainData }] }`.
+  2. When `new TextEncoder().encode(json).length > PLUGIN_LIMITS.manifestMaxBytes` return `{ ok: false, issues: [{ path: "", message: PLUGIN_ISSUE_MESSAGES.tooLarge }] }`.
+  3. `const result = pluginManifestSchema.safeParse(raw);` When it fails, return `{ ok: false, issues }` with `issues = result.error.issues.slice(0, PLUGIN_ISSUES_MAX).map((i) => ({ path: i.path.map(String).join("."), message }))`, where `message` is `i.message` when `i.code === "custom"` (the schema's own fixed sentence), `PLUGIN_ISSUE_MESSAGES[i.code]` for `invalid_type`, `too_small`, `too_big`, `invalid_format` and `invalid_value`, else `PLUGIN_ISSUE_MESSAGES.other`. A root issue has `path` `""`.
+  4. When it succeeds but `result.data.permissions.includes("web_request") && result.data.actions.length === 0`, return `{ ok: false, issues: [{ path: "actions", message: PLUGIN_ISSUE_MESSAGES.webRequestNeedsAction }] }`.
+  5. Otherwise return `{ ok: true, manifest: result.data }` (unknown keys already stripped).
+  - Export block added to `packages/utils/src/index.ts` (exact text):
+    ```ts
+    export {
+      PLUGIN_ISSUE_MESSAGES,
+      PLUGIN_ISSUES_MAX,
+      type PluginManifestIssue,
+      type PluginValidationResult,
+      validatePluginManifest,
+    } from "./plugin-validate";
+    ```
+  - Errors: none thrown; every failure is one of the returned messages above, each with a TESTS case (cases 2–9). No user-facing copy beyond these fixed English sentences, which are developer-facing (a UI that shows them maps them, CONVENTIONS §11). No I/O.
+- **TESTS:** (`VALID` is the same constant as in TFV2-0397 TESTS, copied into this file)
+  1. Given `VALID` / When validated / Then the result equals `{ ok: true, manifest: VALID }`.
+  2. Given `{ ...VALID, components: ["Calendar"] }` / Then the result equals `{ ok: false, issues: [{ path: "components.0", message: "This value is not allowed." }] }`.
+  3. Given `VALID` without `name`, with `version: "1"` and `id: "Bad Id"` / Then `ok` is `false`, `issues.length === 3`, and the sorted paths equal `["id", "name", "version"]`.
+  4. Given `{ ...VALID, permissions: ["web_request"], actions: [] }` / Then the result equals `{ ok: false, issues: [{ path: "actions", message: "A plugin that asks for web requests must declare an action." }] }`.
+  5. Given `{ ...VALID, description: "a".repeat(8000) }` / Then the result equals `{ ok: false, issues: [{ path: "", message: "The manifest is larger than 8 KiB." }] }`; Given `{ ...VALID, description: "ש".repeat(4100) }` (4,100 characters, 8,200 UTF-8 bytes) / Then the same result (bytes, not characters).
+  6. Given `{ ...VALID, n: 1n }` / Then the result equals `{ ok: false, issues: [{ path: "", message: "The manifest is not plain data." }] }`; Given `undefined` / Then the same result.
+  7. Given `{ ...VALID, permissions: Array.from({ length: 60 }, () => "x") }` / Then `ok` is `false` and `issues.length === 50`.
+  8. Given `{ ...VALID, id: "SECRET VALUE" }` / Then `ok` is `false` and no issue `message` contains `"SECRET"`.
+  9. Given the string `"not an object"` / Then the result equals `{ ok: false, issues: [{ path: "", message: "This field is missing or has the wrong type." }] }`.
+- **NUMBERS:** 9 of 9 cases pass (exact). Manifest cap 8,192 UTF-8 bytes (`PLUGIN_LIMITS.manifestMaxBytes`, source TFV2-0397; case 5 checks bytes with Hebrew text per CONVENTIONS §7 H). Issue list ≤ 50 (`PLUGIN_ISSUES_MAX`, code constant; case 7). Latency: n/a (pure).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend) — Amit.
+
+### TFV2-0399 — Plugin file pack/parse `packPlugin` / `parsePlugin` (`packages/utils/src/plugin-pack.ts`)
+- **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §5 (a module is a page with blocks); TRD §4 (markdown + `json tempo` fences are the storage format); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §9 (pure helper). A plugin travels as one markdown text whose first `json tempo` fence holds the manifest. `parseTempoBlocks` (`packages/utils/src/blocks.ts`) accepts only the block types `page-meta`, `task` and `template` (`tempoBlockSchema`) and would mark a `plugin-meta` fence `broken` with `unsupported_type`, so this module reads the leading fence itself and leaves the body to `parseTempoBlocks`. The manifest is typed `Record<string, unknown>` here (validation is TFV2-0398's job), so this ticket does not wait on TFV2-0397. The file name or extension a person sees is a UI concern and not part of these functions.
+- **GOAL:** `packages/utils/src/plugin-pack.ts` exports `packPlugin` and `parsePlugin`, an exact inverse pair over the plugin text format, re-exported from `@tempo/utils`, proven by its own test file.
+- **SCOPE:** `packages/utils/src/plugin-pack.ts` · `packages/utils/src/index.ts` (one export block) · test: `packages/utils/src/plugin-pack.test.ts`.
+- **MUTATES:** `packages/utils/src/plugin-pack.ts` (new) · `packages/utils/src/index.ts` (edit: one export block) · `packages/utils/src/plugin-pack.test.ts` (new). No table, route, env or dependency change.
+- **STEPS:**
+  1. Code-map: `test -e packages/utils/src/plugin-pack.ts` fails; `grep -n 'z.literal("page-meta")\|z.literal("task")\|z.literal("template")' packages/utils/src/blocks.ts` shows the three accepted types (`plugin-meta` is not one); `grep -n "maxBodyChars" packages/utils/src/blocks.ts` → `maxBodyChars: 1_048_576`; `grep -n 'from "./page-summary"' packages/utils/src/index.ts` finds the block.
+  2. Create `packages/utils/src/plugin-pack.ts` exactly as SPEC. No imports.
+  3. In `packages/utils/src/index.ts`, insert the SPEC export block immediately before the `./page-summary` export block. Change nothing else.
+  4. Create `packages/utils/src/plugin-pack.test.ts` (`bun:test`) with exactly the 9 TESTS cases in `describe("TFV2-0399 plugin pack", …)`.
+  5. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test packages/utils/src/plugin-pack.test.ts` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus the `bun run lint` and `bun run typecheck` exit codes, pasted into the PR.
+- **DO NOT:** add `plugin-meta` to `tempoBlockSchema` or change `parseTempoBlocks`; validate the manifest (TFV2-0398); trim, normalise line endings or re-indent the body; throw from `parsePlugin`; read or embed any key; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0399 / evidence: <DONE command> -> <summary> / changed: packages/utils/src/plugin-pack.ts, packages/utils/src/index.ts, packages/utils/src/plugin-pack.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const PLUGIN_META_TYPE = "plugin-meta" as const;
+  export const PLUGIN_META_OPENER = "```json tempo\n";
+  export const PLUGIN_META_CLOSER = "\n```\n";
+  /** UTF-8 bytes; equal to BLOCK_CODEC_LIMITS.maxBodyChars because a plugin body is a page body. */
+  export const PLUGIN_FILE_MAX_BYTES = 1_048_576;
+  export type PluginParseError = "not_a_plugin" | "plugin_too_large";
+  export type ParsedPlugin =
+    | { ok: true; manifest: Record<string, unknown>; body: string }
+    | { ok: false; error: PluginParseError };
+
+  export function packPlugin(manifest: Readonly<Record<string, unknown>>, body: string): string;
+  export function parsePlugin(text: string): ParsedPlugin;
+  ```
+  - `packPlugin` returns exactly `PLUGIN_META_OPENER + JSON.stringify({ type: PLUGIN_META_TYPE, v: 1, data: manifest }) + PLUGIN_META_CLOSER + body` (the envelope JSON on one line, then the body verbatim). It does not catch a `JSON.stringify` error.
+  - `parsePlugin`, in order: (1) `new TextEncoder().encode(text).length > PLUGIN_FILE_MAX_BYTES` → `{ ok: false, error: "plugin_too_large" }`; (2) `!text.startsWith(PLUGIN_META_OPENER)` → `{ ok: false, error: "not_a_plugin" }` (so leading whitespace, a BOM or `\r\n` line endings are not a plugin); (3) `const end = text.indexOf(PLUGIN_META_CLOSER, PLUGIN_META_OPENER.length)`; `end === -1` → `not_a_plugin`; (4) `JSON.parse(text.slice(PLUGIN_META_OPENER.length, end))` inside `try`; a throw → `not_a_plugin`; (5) the parsed value must be a non-null, non-array object with `type === "plugin-meta"`, `v === 1` and `data` a non-null, non-array object, else `not_a_plugin`; (6) return `{ ok: true, manifest: data, body: text.slice(end + PLUGIN_META_CLOSER.length) }`.
+  - Export block added to `packages/utils/src/index.ts` (exact text):
+    ```ts
+    export {
+      type ParsedPlugin,
+      PLUGIN_FILE_MAX_BYTES,
+      PLUGIN_META_CLOSER,
+      PLUGIN_META_OPENER,
+      PLUGIN_META_TYPE,
+      type PluginParseError,
+      packPlugin,
+      parsePlugin,
+    } from "./plugin-pack";
+    ```
+  - Errors are returned codes, never thrown: `"plugin_too_large"` (case 8), `"not_a_plugin"` (cases 4–7). No user-facing copy. No I/O.
+- **TESTS:** (`const M = { id: "focus-timer", name: "Focus timer" }; const B = "# Focus timer\n\nA calm card.\n";` and `const FENCE = "```json tempo\n";`)
+  1. Given `M` and `B` / When `parsePlugin(packPlugin(M, B))` runs / Then it equals `{ ok: true, manifest: M, body: B }`.
+  2. Given `packPlugin({ id: "a" }, "x")` / Then it equals `FENCE + '{"type":"plugin-meta","v":1,"data":{"id":"a"}}' + "\n```\n" + "x"`.
+  3. Given `const t = packPlugin(M, B)` and `const p = parsePlugin(t)` / When `packPlugin(p.manifest, p.body)` runs / Then it is `===` to `t` (byte-identical re-pack).
+  4. Given `FENCE + '{"type":"task","v":1,"data":{}}' + "\n```\n" + "body"` / Then `parsePlugin` returns `{ ok: false, error: "not_a_plugin" }`.
+  5. Given `"# Just markdown\n"` and, separately, `""` / Then each returns `{ ok: false, error: "not_a_plugin" }`.
+  6. Given `FENCE + '{"type":"plugin-meta","v":1,"data":{}}'` (no closer) and, separately, `FENCE + "{not json}" + "\n```\n"` / Then each returns `{ ok: false, error: "not_a_plugin" }`.
+  7. Given a well-fenced envelope with `v: 2`, and separately one with `data: []` / Then each returns `{ ok: false, error: "not_a_plugin" }`.
+  8. Given `FENCE + "a".repeat(1_048_577)` / Then `{ ok: false, error: "plugin_too_large" }`; Given `"ש".repeat(524_289)` (524,289 characters, 1,048,578 UTF-8 bytes) / Then `{ ok: false, error: "plugin_too_large" }`.
+  9. Given a body that itself starts a second `json tempo` fence after a heading (`"# T\n" + FENCE + "{}\n```\n"`) / Then `parsePlugin(packPlugin(M, body)).body === body`; Given body `""` / Then the parsed `body` is `""`.
+- **NUMBERS:** 9 of 9 cases pass (exact). File cap 1,048,576 UTF-8 bytes (`PLUGIN_FILE_MAX_BYTES`, source `BLOCK_CODEC_LIMITS.maxBodyChars` in `packages/utils/src/blocks.ts`; case 8 checks bytes with Hebrew text, CONVENTIONS §7 H). Round trip byte-exact (cases 1, 3). Latency: n/a (pure, O(n)).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0400 — `plugins` table (installed plugins) in `convex/schema.ts` — superseded by CFG-022
+- **Status:** superseded by CFG-022; not a build ticket.
+
+### TFV2-0401a — `plugins.install`: install or update a plugin from its file text (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0397, TFV2-0398, TFV2-0399 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (this ticket creates `convex/plugins.ts`).
+- **WHEN:** after TFV2-0000a, CFG-022, TFV2-0397, TFV2-0398, TFV2-0399.
+- **WHY:** PRD §4.4 F-45; PRD §5 (a module is validated before it goes live); TRD §4a (validation before install); TRD §7 rule 8 (nothing runs before approval; a plugin row only stores data, no code runs here); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (kind, full signature, `requireUser`, plain `Error`, bounded reads, every error tested), §7 H (one function per ticket). Old TFV2-0401 bundled `install`, `list`, `get` and a resolver; split into TFV2-0401a/b/c, and the resolver moved to TFV2-0403 (`buildPluginOverlay`, web). Install is the person's explicit action (the confirm UI is a range-10 ticket); permissions are granted separately by `plugins.grantPermissions` (TFV2-0405a).
+- **GOAL:** `convex/plugins.ts` exists and exports the public mutation `install`, which parses and validates a plugin file and inserts, updates or revives the caller's one `plugins` row for that plugin id, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (new) · `convex/plugins.test.ts` (new) · `plugins` rows of the caller (insert, patch or replace). No schema, route or env change.
+- **STEPS:**
+  1. Code-map: `test -e convex/plugins.ts` fails (MISSING); `grep -n "plugins: defineTable" convex/schema.ts` prints the CFG-022 table and `grep -n '"by_userId_pluginId"\|"by_userId_deletedAt"' convex/schema.ts` shows both indexes; `grep -n "makeSignedOutCtx\|replace:\|unique:" convex/lib/testFakeCtx.ts` prints all three (TFV2-0000a); `grep -n "validatePluginManifest\|parsePlugin\|packPlugin" packages/utils/src/index.ts` prints all three (TFV2-0398, TFV2-0399). Any miss → report `blocked: missing <id>`.
+  2. Create `convex/plugins.ts` with exactly the SPEC imports, constant, private helper `pluginRow` and the `install` mutation.
+  3. Create `convex/plugins.test.ts` with the shared fixtures in TESTS (they are reused by TFV2-0401b, 0401c, 0402a, 0402b, 0405a) and `describe("TFV2-0401a plugins.install", …)` holding exactly the 9 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401a"` → `9 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 9 test names.
+- **DO NOT:** store or run the plugin body (only the validated manifest is stored; CFG-022 has no body field); install from a marketplace listing or set `source: "marketplace"` / `listingId` (a separate range-10 ticket); grant any permission; create a second row for the same `userId` + `pluginId`; hard-delete; use `ConvexError`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or any other test file; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0401a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:** new file `convex/plugins.ts`:
+  ```ts
+  import { parsePlugin, validatePluginManifest } from "@tempo/utils";
+  import { v } from "convex/values";
+  import type { Doc, Id } from "./_generated/dataModel";
+  import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
+  import { requireUser } from "./lib/requireUser";
+
+  /** Most live plugins one person may have installed. */
+  export const PLUGINS_PER_USER_MAX = 50;
+
+  /** The caller's row for one plugin id, live or uninstalled; null when there is none. */
+  async function pluginRow(ctx: QueryCtx | MutationCtx, userId: Id<"users">, pluginId: string): Promise<Doc<"plugins"> | null> {
+    return ctx.db
+      .query("plugins")
+      .withIndex("by_userId_pluginId", (q) => q.eq("userId", userId).eq("pluginId", pluginId))
+      .unique();
+  }
+
+  export const install = mutation({
+    args: { manifestText: v.string() },
+    returns: v.object({ pluginId: v.string(), created: v.boolean() }),
+    handler: async (ctx: MutationCtx, args: { manifestText: string }): Promise<{ pluginId: string; created: boolean }> => { … },
+  });
+  ```
+  Behaviour, in order:
+  1. `const user = await requireUser(ctx);`
+  2. `const parsed = parsePlugin(args.manifestText);` — `parsed.ok === false` with `error === "plugin_too_large"` → `throw new Error("Plugin file is too large")`; with `error === "not_a_plugin"` → `throw new Error("Not a plugin file")`.
+  3. `const checked = validatePluginManifest(parsed.manifest);` — `checked.ok === false` → `throw new Error("Invalid plugin manifest")`.
+  4. `const manifest = checked.manifest; const now = Date.now(); const existing = await pluginRow(ctx, user._id, manifest.id);`
+  5. `existing` live (`deletedAt === undefined`) → `ctx.db.patch(existing._id, { manifest, version: manifest.version, updatedAt: now })` (keeps `enabled`, `source`, `listingId`, `createdAt` and any stored grants) and return `{ pluginId: manifest.id, created: false }`.
+  6. Otherwise read `ctx.db.query("plugins").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).take(PLUGINS_PER_USER_MAX)`; when its length is `PLUGINS_PER_USER_MAX` → `throw new Error("Plugin limit reached")`.
+  7. `const doc = { userId: user._id, pluginId: manifest.id, manifest, version: manifest.version, source: "file" as const, enabled: true, createdAt: now, updatedAt: now };` — an uninstalled `existing` row → `ctx.db.replace(existing._id, doc)` (a fresh install: old grants, `listingId` and `deletedAt` are dropped); no row → `ctx.db.insert("plugins", doc)`. Return `{ pluginId: manifest.id, created: true }`.
+  - Auth: any signed-in, active person; acts only on their own rows (the index is keyed by `user._id`).
+  - Errors (plain `Error`, exact messages, one TESTS case each): `"Not authenticated"` — no identity (case 1); `"Plugin file is too large"` — file over `PLUGIN_FILE_MAX_BYTES` UTF-8 bytes (case 2); `"Not a plugin file"` — no leading `plugin-meta` fence (case 3); `"Invalid plugin manifest"` — `validatePluginManifest` fails (case 4); `"Plugin limit reached"` — a new install when 50 live rows exist (case 9). (`requireUser`'s `"User not found"` / `"This account is not active"` are covered by `convex/lib/requireUser.test.ts`.)
+  - Limits: one indexed `.unique()` read, at most one bounded `.take(50)` read, one write. No model call, no network, no user-facing copy.
+- **TESTS:** (`convex/plugins.test.ts` shared fixtures, created here: `import { describe, expect, test } from "bun:test"; import { packPlugin } from "@tempo/utils"; import * as plugins from "./plugins"; import { makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` · `const A = "users:a"; const B = "users:b";` · `const VALID = { id: "focus-timer", name: "Focus timer", version: "1.0.0", summary: "A calm timer card for your Today.", author: { name: "Dana Levi" }, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], minTempoVersion: "0.1.0" };` · `const file = (over: Record<string, unknown> = {}) => packPlugin({ ...VALID, ...over }, "# Body\n");` · `async function addPlugin(ctx: any, over: Record<string, unknown> = {}) { return ctx.db.insert("plugins", { userId: A, pluginId: "focus-timer", manifest: VALID, version: "1.0.0", source: "file", enabled: true, createdAt: 1, updatedAt: 1, ...over }); }` · `const rows = (ctx: any) => ctx.db.query("plugins").collect();` · every context is `makeFakeCtx(A, [B])` unless a case says signed out)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.install, ctx, { manifestText: file() })` / Then it rejects with `"Not authenticated"`.
+  2. Given `manifestText: "x".repeat(1_048_577)` / When A installs / Then it rejects with `"Plugin file is too large"` and `rows(ctx)` is empty.
+  3. Given `manifestText: "# not a plugin\n"` / Then it rejects with `"Not a plugin file"` and `rows(ctx)` is empty.
+  4. Given `file({ components: ["Calendar"] })` / Then it rejects with `"Invalid plugin manifest"` and `rows(ctx)` is empty.
+  5. Given no rows / When A installs `file()` / Then it returns `{ pluginId: "focus-timer", created: true }` and the one row has `userId: A`, `pluginId: "focus-timer"`, `version: "1.0.0"`, `source: "file"`, `enabled: true`, `deletedAt: undefined`, `createdAt === updatedAt`, and `manifest` equal to `VALID`.
+  6. Given `addPlugin(ctx, { enabled: false })` / When A installs `file({ version: "1.1.0" })` / Then it returns `{ pluginId: "focus-timer", created: false }`, `rows(ctx)` has length 1, and that row has `version: "1.1.0"`, `manifest.version === "1.1.0"`, `enabled: false`, `createdAt: 1`.
+  7. Given `addPlugin(ctx, { deletedAt: 5, enabled: false, source: "marketplace", listingId: "marketplaceListings:1" })` / When A installs `file()` / Then it returns `created: true`, `rows(ctx)` has length 1, and the row has `deletedAt: undefined`, `enabled: true`, `source: "file"`, `listingId: undefined`.
+  8. Given `addPlugin(ctx, { userId: B })` / When A installs `file()` / Then it returns `created: true`, `rows(ctx)` has length 2, and B's row still has `userId: B`, `updatedAt: 1`.
+  9. Given 50 rows from `addPlugin(ctx, { pluginId: "p" + i })` for `i` 0–49 / When A installs `file()` / Then it rejects with `"Plugin limit reached"` and `rows(ctx)` still has length 50.
+- **NUMBERS:** 9 of 9 cases pass (exact). `PLUGINS_PER_USER_MAX` = 50 live plugins per person (code constant; no external source; case 9 seeds the cap). File cap 1,048,576 UTF-8 bytes and manifest cap 8,192 UTF-8 bytes come from TFV2-0399 / TFV2-0397 (cases 2, 4). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-022 (new: a dedicated `plugins` table vs `notes` rows with a plugin page type; CFG-022 also inherits CFG-021: the listing category list and moderation workflow) and TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend) — Amit.
+
+### TFV2-0401b — `plugins.list`: the caller's installed plugins (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0397, TFV2-0401a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-022, TFV2-0397, TFV2-0401a.
+- **WHY:** PRD §5 RULES (each module has an off switch the person can see); TRD §4a (`enabled: false` hides one module); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (bounded list read with a named constant; soft-deleted rows never listed). Split from old TFV2-0401 (§7 H). Never returns the raw manifest: only the fields a settings or marketplace screen shows.
+- **GOAL:** `plugins.list` returns the caller's live installed plugins as `PluginView[]`, enabled first, bounded by `PLUGINS_PER_USER_MAX`, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (edit: add `pluginViewValidator`, `PluginView`, private `toPluginView`, `list`; extend the `./_generated/server` import with `query`) · `convex/plugins.test.ts` (edit: append one `describe` block). Reads `plugins`; writes nothing.
+- **STEPS:**
+  1. Code-map: `grep -n "export const install\|async function pluginRow\|PLUGINS_PER_USER_MAX" convex/plugins.ts` prints all three (TFV2-0401a); `grep -n "export const list" convex/plugins.ts` prints nothing; `grep -n "const VALID\|async function addPlugin" convex/plugins.test.ts` prints both fixtures.
+  2. Add the SPEC code to `convex/plugins.ts` after `install`; add `query` to the existing `./_generated/server` import and, when not already there (TFV2-0405a may have added it), `type PluginManifest` to the existing `@tempo/utils` import.
+  3. Append `describe("TFV2-0401b plugins.list", …)` with exactly the 5 TESTS cases, reusing the TFV2-0401a fixtures.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401b"` → `5 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DO NOT:** return `manifest`, `userId`, `_id` or another person's rows; use `.collect()`; sort with `localeCompare` (the order must not depend on the server's locale); change `install` or `pluginRow`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or the TFV2-0401a test block; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0401b / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const pluginViewValidator = v.object({
+    pluginId: v.string(),
+    name: v.string(),
+    summary: v.string(),
+    version: v.string(),
+    source: v.union(v.literal("marketplace"), v.literal("file")),
+    enabled: v.boolean(),
+    permissions: v.array(v.string()),
+    components: v.array(v.string()),
+    actions: v.array(v.string()),
+    updatedAt: v.number(),
+  });
+  export type PluginView = {
+    pluginId: string; name: string; summary: string; version: string; source: "marketplace" | "file";
+    enabled: boolean; permissions: string[]; components: string[]; actions: string[]; updatedAt: number;
+  };
+
+  function toPluginView(row: Doc<"plugins">): PluginView {
+    const m = row.manifest as PluginManifest;
+    return { pluginId: row.pluginId, name: m.name, summary: m.summary, version: row.version, source: row.source, enabled: row.enabled,
+      permissions: [...m.permissions], components: [...m.components], actions: [...m.actions], updatedAt: row.updatedAt };
+  }
+
+  export const list = query({
+    args: {},
+    returns: v.array(pluginViewValidator),
+    handler: async (ctx: QueryCtx): Promise<PluginView[]> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx);` then `ctx.db.query("plugins").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).take(PLUGINS_PER_USER_MAX)`, map with `toPluginView`, sort: `enabled` rows first, then `name` ascending by plain code-unit comparison (`a.name < b.name ? -1 : a.name > b.name ? 1 : 0`), then `pluginId` the same way. The manifest was validated at install, so the cast is safe.
+  - Errors (one TESTS case each): `"Not authenticated"` — no identity (case 1).
+  - Limits: one bounded read of at most `PLUGINS_PER_USER_MAX` (50) rows (case 5). No writes, no user-facing copy.
+- **TESTS:** (reuses the TFV2-0401a fixtures; contexts `makeFakeCtx(A, [B])`)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.list, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given no rows / When A lists / Then it returns `[]`.
+  3. Given A's rows `zen` (`manifest: { ...VALID, id: "zen", name: "Zen" }`, enabled), `alpha` (`name: "Alpha"`, `enabled: false`), `beta` (`name: "Beta"`, enabled), a fourth A row `gone` with `deletedAt: 5`, and B's row `focus-timer` / When A lists / Then the returned `pluginId`s are `["beta", "zen", "alpha"]`.
+  4. Given one A row from `addPlugin(ctx, { updatedAt: 7 })` / When A lists / Then the result equals `[{ pluginId: "focus-timer", name: "Focus timer", summary: "A calm timer card for your Today.", version: "1.0.0", source: "file", enabled: true, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], updatedAt: 7 }]` (no `manifest`, `userId` or `_id` key).
+  5. Given 51 live A rows (`pluginId` `p0`…`p50`) / When A lists / Then it returns exactly 50 items.
+- **NUMBERS:** 5 of 5 cases pass (exact). Bounded read ≤ `PLUGINS_PER_USER_MAX` = 50 (code constant from TFV2-0401a; case 5 seeds 51). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0401c — `plugins.get`: one of the caller's plugins by id (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b.
+- **WHY:** The plugin detail screen (range 10) shows "Installed" / "Update" from this read; REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16. Split from old TFV2-0401 (§7 H). The argument is the manifest id string (`plugins.pluginId`, `v.string()` in CFG-022), looked up only inside the caller's own rows, so another person's row is never visible and the answer for it is `null`, the same as for a missing id.
+- **GOAL:** `plugins.get` returns the caller's live plugin with that `pluginId` as a `PluginView`, or `null`, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (edit: add `get`) · `convex/plugins.test.ts` (edit: append one `describe` block). Reads `plugins`; writes nothing.
+- **STEPS:**
+  1. Code-map: `grep -n "async function pluginRow\|function toPluginView\|export const pluginViewValidator" convex/plugins.ts` prints all three (TFV2-0401a, TFV2-0401b); `grep -n "export const get " convex/plugins.ts` prints nothing.
+  2. Add the SPEC `get` after `list`.
+  3. Append `describe("TFV2-0401c plugins.get", …)` with exactly the 5 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401c"` → `5 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DO NOT:** throw for a missing, uninstalled or foreign row (they return `null`); return `manifest`; change `install`, `list`, `pluginRow` or `toPluginView`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0401c / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const get = query({
+    args: { pluginId: v.string() },
+    returns: v.union(pluginViewValidator, v.null()),
+    handler: async (ctx: QueryCtx, args: { pluginId: string }): Promise<PluginView | null> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx); const row = await pluginRow(ctx, user._id, args.pluginId); return row === null || row.deletedAt !== undefined ? null : toPluginView(row);`
+  - Errors (one TESTS case each): `"Not authenticated"` — no identity (case 1).
+  - Limits: one indexed `.unique()` read. No writes, no user-facing copy.
+- **TESTS:** (reuses the TFV2-0401a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.get, ctx, { pluginId: "focus-timer" })` / Then it rejects with `"Not authenticated"`.
+  2. Given `addPlugin(ctx, { updatedAt: 7 })` / When A gets `"focus-timer"` / Then it returns exactly `{ pluginId: "focus-timer", name: "Focus timer", summary: "A calm timer card for your Today.", version: "1.0.0", source: "file", enabled: true, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], updatedAt: 7 }`.
+  3. Given no rows / When A gets `"focus-timer"` / Then it returns `null`.
+  4. Given `addPlugin(ctx, { deletedAt: 5 })` / When A gets `"focus-timer"` / Then it returns `null`.
+  5. Given `addPlugin(ctx, { userId: B })` only / When A gets `"focus-timer"` / Then it returns `null`.
+- **NUMBERS:** 5 of 5 cases pass (exact). One indexed read (no list read). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0402a — `plugins.setEnabled`: turn one installed plugin on or off (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a.
+- **WHY:** PRD §5 RULES (every module has an off switch; one bad module never breaks a page); TRD §4a ("`enabled: false` hides one module"); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (ownership: `"<Thing> not found"` for a missing, foreign or deleted row; other-user case tested), §7 H. Old TFV2-0402 bundled `setEnabled`, `uninstall` and a plain-mode resolver; split into TFV2-0402a/b, and plain mode moved to `buildPluginOverlay` (TFV2-0403), which takes `plainMode` as an argument so this backend does not wait on CFG-011.
+- **GOAL:** `plugins.setEnabled` sets `enabled` on the caller's live plugin row and refuses missing, uninstalled and foreign rows with `"Plugin not found"`, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (edit: add `setEnabled`) · `convex/plugins.test.ts` (edit: append one `describe` block) · `plugins.enabled` and `plugins.updatedAt` of the caller's row.
+- **STEPS:**
+  1. Code-map: `grep -n "async function pluginRow\|export const install" convex/plugins.ts` prints both (TFV2-0401a); `grep -n "export const setEnabled" convex/plugins.ts` prints nothing.
+  2. Add the SPEC `setEnabled` after the last exported function in `convex/plugins.ts`.
+  3. Append `describe("TFV2-0402a plugins.setEnabled", …)` with exactly the 6 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0402a"` → `6 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DO NOT:** change any other field (`manifest`, `version`, grants, `deletedAt`); revive an uninstalled row; hard-delete; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0402a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const setEnabled = mutation({
+    args: { pluginId: v.string(), enabled: v.boolean() },
+    returns: v.null(),
+    handler: async (ctx: MutationCtx, args: { pluginId: string; enabled: boolean }): Promise<null> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx); const row = await pluginRow(ctx, user._id, args.pluginId);` — `row === null || row.deletedAt !== undefined` → `throw new Error("Plugin not found")`; else `ctx.db.patch(row._id, { enabled: args.enabled, updatedAt: Date.now() })` and return `null`. Setting the value it already has still patches (`updatedAt` moves).
+  - Errors (plain `Error`, one TESTS case each): `"Not authenticated"` — no identity (case 1); `"Plugin not found"` — no row for that id (case 2), the only row with that id belongs to another person (case 3), or the caller's row has `deletedAt` (case 4).
+  - Limits: one indexed `.unique()` read, one patch. No user-facing copy.
+- **TESTS:** (reuses the TFV2-0401a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.setEnabled, ctx, { pluginId: "focus-timer", enabled: false })` / Then it rejects with `"Not authenticated"`.
+  2. Given no rows / When A calls `setEnabled` for `"focus-timer"` / Then it rejects with `"Plugin not found"`.
+  3. Given `addPlugin(ctx, { userId: B })` only / When A calls `setEnabled(false)` / Then it rejects with `"Plugin not found"` and B's row still has `enabled: true`, `updatedAt: 1`.
+  4. Given `addPlugin(ctx, { deletedAt: 5 })` / When A calls `setEnabled(false)` / Then it rejects with `"Plugin not found"` and the row still has `enabled: true`, `deletedAt: 5`.
+  5. Given `addPlugin(ctx)` / When A calls `setEnabled(false)` / Then it returns `null`, the row has `enabled: false`, `updatedAt > 1`, `version: "1.0.0"` and `deletedAt: undefined`.
+  6. Given `addPlugin(ctx, { enabled: false })` / When A calls `setEnabled(true)` / Then it returns `null` and the row has `enabled: true`.
+- **NUMBERS:** 6 of 6 cases pass (exact). One indexed read and one write (no list read). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0402b — `plugins.uninstall`: soft-delete one installed plugin (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b.
+- **WHY:** PRD F-131 (soft delete, never a hard delete); PRD §5 RULES (removing a module never breaks a page: the page falls back to the built-in layout, TRD §4a "Fallback"); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16, §7 H (split from old TFV2-0402). Installing the same plugin again later is a fresh install (`install` replaces the uninstalled row, TFV2-0401a case 7), so there is no separate restore.
+- **GOAL:** `plugins.uninstall` sets `deletedAt` on the caller's live plugin row, so `plugins.list` and `plugins.get` stop returning it, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (edit: add `uninstall`) · `convex/plugins.test.ts` (edit: append one `describe` block) · `plugins.deletedAt` and `plugins.updatedAt` of the caller's row.
+- **STEPS:**
+  1. Code-map: `grep -n "async function pluginRow\|export const list" convex/plugins.ts` prints both (TFV2-0401a, TFV2-0401b); `grep -n "export const uninstall" convex/plugins.ts` prints nothing.
+  2. Add the SPEC `uninstall` after the last exported function in `convex/plugins.ts`.
+  3. Append `describe("TFV2-0402b plugins.uninstall", …)` with exactly the 6 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0402b"` → `6 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DO NOT:** hard-delete (`ctx.db.delete`); change `enabled`, `manifest` or grants; treat a second uninstall as success; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0402b / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const uninstall = mutation({
+    args: { pluginId: v.string() },
+    returns: v.object({ pluginId: v.string() }),
+    handler: async (ctx: MutationCtx, args: { pluginId: string }): Promise<{ pluginId: string }> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx); const row = await pluginRow(ctx, user._id, args.pluginId);` — `row === null || row.deletedAt !== undefined` → `throw new Error("Plugin not found")`; else `const now = Date.now(); await ctx.db.patch(row._id, { deletedAt: now, updatedAt: now }); return { pluginId: row.pluginId };`
+  - Errors (plain `Error`, one TESTS case each): `"Not authenticated"` — no identity (case 1); `"Plugin not found"` — no row (case 2), another person's row (case 3), already uninstalled (case 4).
+  - Limits: one indexed `.unique()` read, one patch. No user-facing copy.
+- **TESTS:** (reuses the TFV2-0401a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.uninstall, ctx, { pluginId: "focus-timer" })` / Then it rejects with `"Not authenticated"`.
+  2. Given no rows / When A uninstalls `"focus-timer"` / Then it rejects with `"Plugin not found"`.
+  3. Given `addPlugin(ctx, { userId: B })` only / When A uninstalls / Then it rejects with `"Plugin not found"` and B's row still has `deletedAt: undefined`.
+  4. Given `addPlugin(ctx, { deletedAt: 5 })` / When A uninstalls / Then it rejects with `"Plugin not found"` and `deletedAt` is still `5`.
+  5. Given `addPlugin(ctx)` / When A uninstalls / Then it returns `{ pluginId: "focus-timer" }`, the row still exists (`ctx.db.get(id)` is not `null`), its `deletedAt` is a number equal to its `updatedAt`, and `enabled` is still `true`.
+  6. Given A's rows `focus-timer` and `other` (`pluginId: "other"`, `manifest: { ...VALID, id: "other", name: "Other" }`) and `uninstall("focus-timer")` / When `run(plugins.list, ctx, {})` / Then it returns exactly one item with `pluginId: "other"`.
+- **NUMBERS:** 6 of 6 cases pass (exact). One indexed read and one write. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0403 — Plugin overlay over the block catalog `buildPluginOverlay` (`apps/web/lib/pluginOverlay.ts`) — OPEN
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0397 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils`, lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lib lane per `factory/SLOTS.md` (pure helper, no UI).
 - **WHEN:** after TFV2-0397.
-- **WHY:** PRD §5 (a module is a page with blocks; export/import before the marketplace exists is listed under PRD §11 ideas); TRD §4 (markdown + `json tempo` fences are the storage format); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** A plugin is a single markdown file (`.tempo-plugin.md`) whose front-matter block is the manifest and whose body is the plugin's template/code content, with `packPlugin`/`parsePlugin` as the exact inverse pair.
-- **SCOPE:** `packages/utils/src/plugin-pack.ts` · test `packages/utils/src/plugin-pack.test.ts`.
-- **MUTATES:** none (pure pack/unpack).
-- **STEPS:** 1) Graphify code-map of `packages/utils/src/` (MISSING); 2) reuse the existing `parseTempoBlocks`/`serializeTempoBlocks` (repo `packages/utils/src/blocks.ts`) so a plugin body is just markdown + `json tempo` blocks; 3) implement `packPlugin(manifest, body) => string` (a leading `json tempo` fence with `type: "plugin-meta"` holding the manifest, then the body) and `parsePlugin(text) => { manifest, body }`; 4) round-trip must be byte-exact for valid input; 5) write the test file.
-- **DONE:** `bun test packages/utils/src/plugin-pack.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not invent a new block envelope (reuse `type/id/v/data`); do not embed or read any key; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `packPlugin` emits the `plugin-meta` block as the first `json tempo` fence, then the body verbatim. `parsePlugin` reads only the first fence as `plugin-meta`; a file whose first fence is not `plugin-meta` fails with `not_a_plugin`. The manifest block's `data` is the raw manifest object. `parsePlugin` returns `{ manifest, body }` and does not validate beyond parse (validation is TFV2-0398's job). Maximum file size is enforced by the caller's byte budget.
-- **TESTS:** Given a manifest and body / When packed then parsed / Then `body` and `manifest` round-trip exactly. Given a file whose first fence is `task` / When parsed / Then `not_a_plugin`. Given a file with no fence / Then `not_a_plugin`. Given `packPlugin` output / When re-packed from the parsed parts / Then byte-identical to the first pack.
-- **NUMBERS:** pack/unpack byte-exactness = exact (no range) · `.tempo-plugin.md` extension is a proposal → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the distribution file extension/name — Amit.
+- **WHY:** PRD §5 RULES (a data module uses only catalog components and actions); TRD §4a ("Off switches: `enabled: false` hides one module. A per-user `plainMode` flag ignores all `origin: user` modules"; "Fallback … built-in layout"); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §6 (web lib test), §9. Code truth: `apps/web/components/blocks/registry.tsx` does NOT exist, and no json-render React registry exists anywhere (`grep -rn "defineRegistry" apps packages` finds nothing; the catalog's own comment says the registry "is a separate ticket (TEMPO-B06-03)"); today `apps/web/components/editor/ReadView.tsx` draws blocks by hand. So this ticket builds only the pure, renderer-independent piece: which installed, enabled plugins attach to which catalog component and action, with the built-in catalog never touched. Whatever renderer later draws blocks reads this overlay; an empty overlay means the built-in rendering. Plain mode is an argument, so this does not wait on CFG-011.
+- **GOAL:** `apps/web/lib/pluginOverlay.ts` exports `buildPluginOverlay` and `pluginsExtending`, which map enabled plugins onto the catalog names in `@tempo/ui/blocks/catalog` that `@tempo/utils` allows, ignore every other name, return the empty overlay in plain mode, and never mutate the catalog, proven by its own test file.
+- **SCOPE:** `apps/web/lib/pluginOverlay.ts` · test: `apps/web/lib/pluginOverlay.test.ts`.
+- **MUTATES:** `apps/web/lib/pluginOverlay.ts` (new) · `apps/web/lib/pluginOverlay.test.ts` (new). No Convex, schema, route or env change.
+- **STEPS:**
+  1. Code-map: `test -e apps/web/lib/pluginOverlay.ts` fails; `test -e apps/web/components/blocks/registry.tsx` fails (no registry, as WHY says); `grep -n "export const BLOCK_COMPONENT_TYPES\|export const BLOCK_ACTION_NAMES\|export const tempoBlockCatalog" packages/ui/src/blocks/catalog.ts` prints all three; `grep -n '"./blocks/catalog"' packages/ui/package.json` shows the export path; `grep -n "PLUGIN_COMPONENT_NAMES\|PLUGIN_ACTION_NAMES" packages/utils/src/index.ts` prints both (TFV2-0397).
+  2. Create `apps/web/lib/pluginOverlay.ts` exactly as SPEC (no React, no Convex, no `"use client"`).
+  3. Create `apps/web/lib/pluginOverlay.test.ts` (`bun:test`) with exactly the 8 TESTS cases in `describe("TFV2-0403 buildPluginOverlay", …)`.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test apps/web/lib/pluginOverlay.test.ts` → `8 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus the lint and typecheck exit codes, pasted into the PR.
+- **DO NOT:** create `apps/web/components/blocks/registry.tsx` or any renderer; edit `packages/ui/src/blocks/catalog.ts` or call `defineCatalog`/`defineRegistry`; run plugin code; call Convex, `fetch` or `localStorage`; read plain mode from anywhere (it is an argument); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0403 / evidence: <DONE command> -> <summary> / changed: apps/web/lib/pluginOverlay.ts, apps/web/lib/pluginOverlay.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  import {
+    BLOCK_ACTION_NAMES,
+    BLOCK_COMPONENT_TYPES,
+    type BlockActionName,
+    type BlockComponentType,
+  } from "@tempo/ui/blocks/catalog";
+  import { PLUGIN_ACTION_NAMES, PLUGIN_COMPONENT_NAMES } from "@tempo/utils";
 
-### TFV2-0400 — `plugins` table (installed plugins) in `convex/schema.ts`
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0397 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (convex-arch), lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0397.
-- **WHY:** PRD §4.4 F-45 (marketplace, authors keep 100%); PRD §5 module RULES (off switch, fallback); TRD §4a (`enabled: false` hides one module; a module that fails at render falls back to the built-in layout); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** A per-user `plugins` table records each installed plugin — its manifest, install source, version and `enabled` flag — so the plugin list, off-switch and fallback all read one row.
-- **SCOPE:** `convex/schema.ts` · `convex/MIGRATIONS.md` (log entry) · test `convex/schema.gen2.test.ts`.
-- **MUTATES:** `plugins` table (new); `USER_OWNED_TABLES` in `convex/lib/accountDeletion.ts` gains `"plugins"`.
-- **STEPS:** 1) Graphify code-map of `convex/schema.ts` (no `plugins` table — MISSING); 2) add the `plugins` table with the fields/indexes in SPEC, following the `notes`/`templates` convention (`v.id("users")` owner, `createdAt`/`updatedAt`/`deletedAt`); 3) add `"plugins"` to `USER_OWNED_TABLES` so account deletion soft-deletes installed plugins; 4) log the additive change in `convex/MIGRATIONS.md`; 5) write the schema test asserting the validator accepts a minimal row and rejects a bad `enabled` type.
-- **DONE:** `bun test convex/schema.gen2.test.ts` → all pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** paste the test output and the `typecheck` exit code.
-- **DO NOT:** do not add any other table in this ticket; do not write the install mutation here (TFV2-0401); do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not record a key value.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `plugins` table: `userId: v.id("users")`, `pluginId` (the manifest `id` string), `manifest` (object: the validated manifest, stored whole), `version` (semver string), `source` (`"marketplace"` / `"file"`), `listingId?` (`v.id("marketplaceListings")`, optional until TFV2-0406 exists), `enabled: v.boolean()` (default true), `createdAt`, `updatedAt`, `deletedAt?`. Indexes: `by_userId`, `by_userId_pluginId` (unique per user per plugin), `by_userId_deletedAt`. One install per `pluginId` per user (re-install is an update, not a second row).
-- **TESTS:** Given a valid row / When the validator runs / Then it accepts. Given `enabled: "yes"` / Then rejected. Given a second row for the same `userId`+`pluginId` / Then the unique index forbids it.
-- **NUMBERS:** manifest object size cap 8 KiB (repo convention) · unique install per user/plugin = exact invariant (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether installed plugins mirror modules (stored as `notes` rows with `pageType: "plugin"`) instead of a dedicated table — Amit (leaning dedicated table; §4 conflict 7 block-model authority is the same question).
+  /** What a screen passes in: one entry per installed plugin (the shape of a PluginView from plugins.list). */
+  export type PluginOverlayInput = {
+    pluginId: string;
+    enabled: boolean;
+    components: readonly string[];
+    actions: readonly string[];
+  };
+  /** Plugin ids per catalog name, in input order, without repeats. A name with no plugin has no key. */
+  export type PluginOverlay = {
+    readonly components: Readonly<Partial<Record<BlockComponentType, readonly string[]>>>;
+    readonly actions: Readonly<Partial<Record<BlockActionName, readonly string[]>>>;
+  };
+  export const EMPTY_PLUGIN_OVERLAY: PluginOverlay;
+  export function buildPluginOverlay(plugins: readonly PluginOverlayInput[], options: { plainMode: boolean }): PluginOverlay;
+  export function pluginsExtending(overlay: PluginOverlay, componentName: string): readonly string[];
+  ```
+  - `EMPTY_PLUGIN_OVERLAY = Object.freeze({ components: Object.freeze({}), actions: Object.freeze({}) })`.
+  - `buildPluginOverlay`: `options.plainMode` → return `EMPTY_PLUGIN_OVERLAY`. Otherwise walk `plugins` in order, skip `enabled === false`; a component name is kept only when it is in both `BLOCK_COMPONENT_TYPES` and `PLUGIN_COMPONENT_NAMES`, an action name only when it is in both `BLOCK_ACTION_NAMES` and `PLUGIN_ACTION_NAMES`; append the `pluginId` to that name's list unless already present. When no name was kept, return `EMPTY_PLUGIN_OVERLAY`; else return a new object whose every list, both maps and the object itself are `Object.freeze`d. The input array and its objects are never mutated.
+  - `pluginsExtending(overlay, name)` returns `overlay.components[name]` when `name` is one of `BLOCK_COMPONENT_TYPES` and that key exists, else a frozen empty array `[]`.
+  - Errors: none (unknown names are ignored, never thrown). No user-facing copy (the fallback banner belongs to the future renderer).
+- **TESTS:** (`const P = (pluginId: string, over: Partial<PluginOverlayInput> = {}): PluginOverlayInput => ({ pluginId, enabled: true, components: ["TaskBlock"], actions: ["setTaskDone"], ...over });`)
+  1. Given `[P("focus-timer")]` and `{ plainMode: true }` / When `buildPluginOverlay` runs / Then the result is `EMPTY_PLUGIN_OVERLAY` (`toBe`).
+  2. Given `[P("focus-timer")]` and `{ plainMode: false }` / Then `pluginsExtending(overlay, "TaskBlock")` equals `["focus-timer"]` and `overlay.actions.setTaskDone` equals `["focus-timer"]`.
+  3. Given `[P("focus-timer", { enabled: false })]` / Then the result is `EMPTY_PLUGIN_OVERLAY` and `pluginsExtending(result, "TaskBlock")` equals `[]`.
+  4. Given `[P("x", { components: ["Calendar", "PageMeta"], actions: ["navigate"] })]` (`PageMeta` is a catalog name but not a plugin name) / Then the result is `EMPTY_PLUGIN_OVERLAY` and `pluginsExtending(result, "Calendar")` equals `[]`.
+  5. Given `[P("a"), P("b", { components: ["TaskBlock", "TemplateBlock"] }), P("a")]` / Then `pluginsExtending(overlay, "TaskBlock")` equals `["a", "b"]` and `pluginsExtending(overlay, "TemplateBlock")` equals `["b"]`.
+  6. Given the two allowlists / Then every entry of `PLUGIN_COMPONENT_NAMES` is in `BLOCK_COMPONENT_TYPES` and every entry of `PLUGIN_ACTION_NAMES` is in `BLOCK_ACTION_NAMES` (drift guard between `@tempo/utils` and the catalog).
+  7. Given an overlay built from `[P("a")]` / Then `Object.isFrozen(overlay)`, `Object.isFrozen(overlay.components)` and `Object.isFrozen(overlay.components.TaskBlock)` are all `true`, and `tempoBlockCatalog.componentNames` (imported from `@tempo/ui/blocks/catalog`) still equals `[...BLOCK_COMPONENT_TYPES]`.
+  8. Given `const input = [P("a")]` and a `JSON.stringify(input)` snapshot / When `buildPluginOverlay(input, { plainMode: false })` runs / Then `JSON.stringify(input)` is unchanged; and `buildPluginOverlay([], { plainMode: false })` is `EMPTY_PLUGIN_OVERLAY`.
+- **NUMBERS:** 8 of 8 cases pass (exact). Allowlist ⊆ catalog (exact invariant, case 6). Lookup is O(1) per name; build is O(plugins × names) over at most `PLUGINS_PER_USER_MAX` (50, TFV2-0401a) inputs. Latency: n/a (pure, in memory).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend, and whether a plugin may add a new block component) — Amit.
 
-### TFV2-0401 — `convex/plugins.ts` install + resolve catalog extensions
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0400, TFV2-0398 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0400 and TFV2-0398.
-- **WHY:** PRD §5 module model (approve → live at once); TRD §4a (validation before install, fallback on failure); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** `plugins.install` validates a manifest, upserts the `plugins` row, and returns the resolved catalog extensions (components + actions) the plugin adds, all owner-scoped.
-- **SCOPE:** `convex/plugins.ts` · test `convex/plugins.test.ts`.
-- **MUTATES:** `plugins` rows (upsert); reads the catalog allowlist.
-- **STEPS:** 1) Graphify code-map of `convex/plugins.ts` (MISSING); 2) implement `install({ manifestText })` — parse (TFV2-0399), validate (TFV2-0398 against the catalog), then upsert the row keyed by `userId`+`pluginId`; 3) implement `list()` and `get({ pluginId })`; 4) implement the catalog-extension resolver that returns only `components`/`actions` names already known to the catalog (reject unknown names before install); 5) write the test file for every error case below.
-- **DONE:** `bun test convex/plugins.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not touch `convex/schema.ts` (table added in TFV2-0400); do not run plugin code in this ticket; do not read any secret; do not allow an unvalidated manifest to install.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `install({ manifestText }) => { pluginId }`; auth `requireUser`, owner only. Re-install of an existing `pluginId` updates `manifest` and `version`, keeps `enabled`. `list() => Plugin[]` returns only the caller's non-deleted rows, `enabled` first. `get({ pluginId }) => Plugin | null`. Errors: `not_a_plugin`, `invalid_manifest` (with issues), `unknown_component`, `unknown_action`, `plugin_too_large`. Limits: manifest ≤ 8 KiB; ≤ 24 components and ≤ 24 actions. No model call, no network.
-- **TESTS:** Given a valid manifest / When installed / Then a row exists and `list()` returns it. Given an unknown component name / Then `unknown_component` and no row. Given a re-install with a newer version / Then the same row updates `version` (no duplicate). Given a second user / When they `list()` / Then they see only their own rows. Given a non-owner `get` for another user's row / Then `null` (isolation). Given an oversized manifest / Then `plugin_too_large`.
-- **NUMBERS:** manifest ≤ 8 KiB, ≤ 24 components, ≤ 24 actions (repo convention) · install latency budget p95 ≤ 500 ms (web.dev; no external range applies to a pure DB mutation).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** catalog allowlist source (same as TFV2-0398) — Amit.
+### TFV2-0404 — Plugin sandbox enforcement (code modules run only in an isolated frame) — superseded by TFV2-0244
+- **Status:** superseded by TFV2-0244; not a build ticket.
 
-### TFV2-0402 — `convex/plugins.ts` enable/disable/uninstall lifecycle
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0401 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0401.
-- **WHY:** PRD §5 module RULES (off switch, one bad module never breaks a page); TRD §4a (`enabled: false` hides one module); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** `setEnabled` and `uninstall` mutate the `plugins` row (soft-delete for uninstall), with an idempotent fallback guarantee so a disabled or removed plugin never leaves a page broken.
-- **SCOPE:** `convex/plugins.ts` · test `convex/plugins.test.ts` (extend).
-- **MUTATES:** `plugins.enabled`, `plugins.deletedAt`.
-- **STEPS:** 1) Graphify code-map of `convex/plugins.ts` (from TFV2-0401); 2) add `setEnabled({ pluginId, enabled })` and `uninstall({ pluginId })` (soft-delete, `deletedAt`); 3) ensure `list()` excludes `deletedAt` rows and `get` returns the enabled state truthfully; 4) add a `plainMode` guard hook (if the user's `plainMode` is on, user-origin plugins are ignored by the resolver, matching TRD §4a); 5) write tests.
-- **DONE:** `bun test convex/plugins.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not hard-delete; do not disable the built-in fallback; do not touch `convex/schema.ts`, `convex/auth*`, `.env` or workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `setEnabled({ pluginId, enabled })` owner-scoped; errors `plugin_not_found`, `forbidden`. `uninstall({ pluginId })` sets `deletedAt` (soft), returns `{ pluginId }`; a second uninstall is a no-op. The render fallback: when a plugin is `enabled: false`, `deletedAt` set, or `plainMode` on, the page renders the built-in layout (the resolver returns an empty extension set) — never a broken page. No model call, no network.
-- **TESTS:** Given an installed plugin / When `setEnabled(false)` / Then `list()` shows it disabled and the resolver returns no extensions. Given `uninstall` / Then the row has `deletedAt` and `list()` omits it. Given `plainMode` on / Then `list()` still lists the row but the resolver treats it as disabled. Given uninstall twice / Then idempotent (no error). Given a non-owner / Then `forbidden`.
-- **NUMBERS:** off/on and uninstall are O(1) row updates (deterministic) · plain-mode semantics mirror TRD §4a (exact).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none (plain-mode semantics are fixed by TRD §4a).
+### TFV2-0405a — `plugins.grantPermissions`: store the permissions the person granted (`convex/plugins.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, CFG-046, TFV2-0397, TFV2-0401a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-022, CFG-046, TFV2-0397, TFV2-0401a.
+- **WHY:** TRD §7 rule 8 (nothing runs before the person approves it; never gets keys); PRD §5 RULES (accept/reject is law); PRD F-131 (confirmation before any external write); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16, §7 H. Old TFV2-0405 bundled `grantPermissions` and `assertPermission` in `convex/lib/plugin-permissions.ts`; a public mutation cannot live in `convex/lib`, so the mutation goes in `convex/plugins.ts` (this ticket) and the check becomes the lib helper `assertPluginPermission` (TFV2-0405b). The grant is stored in the new field `plugins.grantedPermissions` (CFG-046), not inside the stored manifest, so the manifest stays exactly what was validated. The call replaces the whole granted set, so granting fewer permissions revokes the rest and `[]` revokes all.
+- **GOAL:** `plugins.grantPermissions` replaces the granted permission set of the caller's live plugin with a subset of the permissions its manifest declares, in canonical order, proven by its own test block.
+- **SCOPE:** `convex/plugins.ts` · test: `convex/plugins.test.ts`.
+- **MUTATES:** `convex/plugins.ts` (edit: add `grantPermissions`; extend the `@tempo/utils` import with `PLUGIN_PERMISSIONS` and, when not already there, `type PluginManifest`) · `convex/plugins.test.ts` (edit: append one `describe` block) · `plugins.grantedPermissions` and `plugins.updatedAt` of the caller's row.
+- **STEPS:**
+  1. Code-map: `grep -n "async function pluginRow" convex/plugins.ts` prints it (TFV2-0401a); `grep -n "grantedPermissions" convex/schema.ts` prints the CFG-046 field; `grep -n "PLUGIN_PERMISSIONS" packages/utils/src/index.ts` prints it (TFV2-0397); `grep -n "export const grantPermissions" convex/plugins.ts` prints nothing. Any miss → `blocked: missing <id>`.
+  2. Add the SPEC `grantPermissions` after the last exported function in `convex/plugins.ts`; add `PLUGIN_PERMISSIONS` (and `type PluginManifest` if TFV2-0401b has not added it) to the existing `@tempo/utils` import.
+  3. Append `describe("TFV2-0405a plugins.grantPermissions", …)` with exactly the 8 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0405a"` → `8 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 8 test names.
+- **DO NOT:** grant a permission the manifest does not declare; write anything into `manifest`; merge with the old set (the call replaces it); write partially when one entry is refused; change `enabled`; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0405a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const grantPermissions = mutation({
+    args: { pluginId: v.string(), permissions: v.array(v.string()) },
+    returns: v.object({ granted: v.array(v.string()) }),
+    handler: async (ctx: MutationCtx, args: { pluginId: string; permissions: string[] }): Promise<{ granted: string[] }> => { … },
+  });
+  ```
+  Behaviour, in order: `const user = await requireUser(ctx); const row = await pluginRow(ctx, user._id, args.pluginId);` — `row === null || row.deletedAt !== undefined` → `throw new Error("Plugin not found")`. `const declared: readonly string[] = (row.manifest as PluginManifest).permissions;` — when any entry of `args.permissions` is not in `declared` → `throw new Error("Permission not declared by plugin")` with no write. `const granted = PLUGIN_PERMISSIONS.filter((p) => args.permissions.includes(p));` (removes repeats, canonical order). `await ctx.db.patch(row._id, { grantedPermissions: granted, updatedAt: Date.now() }); return { granted };`. A disabled plugin may still be granted (granting is not running).
+  - Errors (plain `Error`, one TESTS case each): `"Not authenticated"` — no identity (case 1); `"Plugin not found"` — no row (case 2), another person's row (case 3), uninstalled row (case 4); `"Permission not declared by plugin"` — any requested permission outside the manifest's `permissions` (case 5).
+  - Limits: one indexed `.unique()` read, one patch; `granted` has at most `PLUGIN_PERMISSIONS.length` (4) entries. No user-facing copy.
+- **TESTS:** (reuses the TFV2-0401a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(plugins.grantPermissions, ctx, { pluginId: "focus-timer", permissions: [] })` / Then it rejects with `"Not authenticated"`.
+  2. Given no rows / When A grants `["read_pages"]` / Then it rejects with `"Plugin not found"`.
+  3. Given `addPlugin(ctx, { userId: B })` only / When A grants `["read_pages"]` / Then it rejects with `"Plugin not found"` and B's row has no `grantedPermissions`.
+  4. Given `addPlugin(ctx, { deletedAt: 5 })` / When A grants `["read_pages"]` / Then it rejects with `"Plugin not found"`.
+  5. Given `addPlugin(ctx)` (manifest declares `["read_pages"]`) / When A grants `["read_pages", "web_request"]` / Then it rejects with `"Permission not declared by plugin"` and the row's `grantedPermissions` is still `undefined`.
+  6. Given `addPlugin(ctx)` / When A grants `["read_pages", "read_pages"]` / Then it returns `{ granted: ["read_pages"] }` and the row's `grantedPermissions` equals `["read_pages"]` and `updatedAt > 1`.
+  7. Given `addPlugin(ctx, { manifest: { ...VALID, permissions: ["read_pages", "web_request"] } })` / When A grants `["web_request", "read_pages"]` / Then it returns `{ granted: ["read_pages", "web_request"] }`.
+  8. Given `addPlugin(ctx, { grantedPermissions: ["read_pages"] })` / When A grants `[]` / Then it returns `{ granted: [] }` and the row's `grantedPermissions` equals `[]`.
+- **NUMBERS:** 8 of 8 cases pass (exact). Granted set ⊆ declared set (exact invariant, case 5). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-046 and CFG-022 (new: a dedicated `plugins` table vs `notes` rows; also CFG-021: listing categories and moderation) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
 
-### TFV2-0403 — Plugin catalog extension → module renderer registry (web)
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0401 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0401.
-- **WHY:** PRD §5 (data modules use only catalog components/actions; view modules change how a page type lays out its blocks); TRD §4a (validation against the catalog); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** An installed, enabled plugin's declared `components`/`actions` register into the same json-render catalog the built-in blocks use, so a plugin extends the renderer without any fork of the core registry.
-- **SCOPE:** `apps/web/components/blocks/registry.tsx` · test `apps/web/components/blocks/__tests__/registry.test.tsx`.
-- **MUTATES:** `apps/web` render registry only (no Convex, no schema).
-- **STEPS:** 1) Graphify code-map of the block registry (`apps/web/components/blocks/registry.tsx`, which maps `data-component` → React components); 2) add `registerPluginExtensions({ components, actions })` that merges the plugin's names into a derived map, refusing any name not already known to the catalog; 3) render pages through the merged map; 4) keep the built-in map immutable and always the fallback; 5) write the render test.
-- **DONE:** `bun test apps/web/components/blocks/__tests__/registry.test.tsx` → all pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** paste the test output and the `typecheck` exit code.
-- **DO NOT:** do not run plugin code in the app process (a code module stays in a sandbox — TFV2-0404); do not edit the catalog's core component map; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The registry exports `getComponent(name)` and `getAction(name)` that consult built-ins first, then the plugin overlay. A plugin's `components` may only re-skin or add block renderers that already exist in the catalog; it may not introduce a new primitive. Unknown names are ignored (never rendered). Copy (EN/HE) for the fallback banner when a plugin fails to render: `EN: "This plugin couldn't load, so we're showing the standard view." / HE: "התוסף לא נטען, אז אנחנו מציגים את התצוגה הרגילה."` with an Undo-free dismiss.
-- **TESTS:** Given a plugin declaring component `X` known to the catalog / When registered / Then `getComponent("X")` returns the plugin renderer. Given an unknown component `Y` / Then it is ignored and `getComponent("Y")` returns the built-in or null. Given a plugin disabled / Then the overlay is empty and the built-in renders. Given the built-in map / Then it is never mutated by a plugin.
-- **NUMBERS:** render must not exceed 250 ms per block pass and 60 fps scrolling (DESIGN.md §7) · overlay lookup O(1) (deterministic).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether a plugin may introduce a genuinely new block component or only re-skin existing ones — Amit.
+### TFV2-0405b — Plugin permission check `assertPluginPermission` (`convex/lib/pluginPermissions.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, CFG-046, TFV2-0397 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (internal helper, not a public function).
+- **WHEN:** after TFV2-0000a, CFG-022, CFG-046, TFV2-0397.
+- **WHY:** TRD §7 rule 8 (a plugin never exceeds what the person approved); PRD F-131 (confirmation before any external write, even when granted); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16, §7 H (split from old TFV2-0405). A permission counts only when it is both declared by the current manifest and in `grantedPermissions`, so an update that drops a declared permission also drops its grant. No plugin action path exists in code yet; every future one calls this helper first (named in Cross-range notes). It takes the caller's `userId` from a public function that already called `requireUser`, so it has no signed-out case of its own.
+- **GOAL:** `convex/lib/pluginPermissions.ts` exports `assertPluginPermission`, which throws unless the person's live, enabled plugin both declares and was granted the permission, and reports whether the use still needs a per-use confirmation, proven by its own test file.
+- **SCOPE:** `convex/lib/pluginPermissions.ts` · test: `convex/lib/pluginPermissions.test.ts`.
+- **MUTATES:** `convex/lib/pluginPermissions.ts` (new) · `convex/lib/pluginPermissions.test.ts` (new). Reads `plugins`; writes nothing.
+- **STEPS:**
+  1. Code-map: `test -e convex/lib/pluginPermissions.ts` fails; `grep -n "grantedPermissions\|by_userId_pluginId" convex/schema.ts` prints both (CFG-022, CFG-046); `grep -n "PLUGIN_CONFIRM_EACH_USE\|type PluginPermission" packages/utils/src/index.ts` prints both (TFV2-0397); `grep -n "unique:" convex/lib/testFakeCtx.ts` prints it (TFV2-0000a).
+  2. Create `convex/lib/pluginPermissions.ts` exactly as SPEC.
+  3. Create `convex/lib/pluginPermissions.test.ts` (`bun:test`, `makeFakeCtx` from `./testFakeCtx`) with exactly the 8 TESTS cases in `describe("TFV2-0405b assertPluginPermission", …)`.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/lib/pluginPermissions.test.ts` → `8 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus the lint and typecheck exit codes, pasted into the PR.
+- **DO NOT:** export a Convex `query`/`mutation`; call `requireUser` (the caller does); write to the database; treat `needsConfirmation: true` as permission to skip the confirm card; read `manifest` for grants; edit `convex/plugins.ts`, `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*` or `packages/**`; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0405b / evidence: <DONE command> -> <summary> / changed: convex/lib/pluginPermissions.ts, convex/lib/pluginPermissions.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  import { PLUGIN_CONFIRM_EACH_USE, type PluginManifest, type PluginPermission } from "@tempo/utils";
+  import type { Id } from "../_generated/dataModel";
+  import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-### TFV2-0404 — Plugin sandbox enforcement (code modules run only in an isolated frame)
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0403 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0403.
-- **WHY:** PRD §4.4 F-46 (code in a page runs only in a sandbox, never the app process, never with keys, only after approval); TRD §1 (browser widgets in `<iframe sandbox="allow-scripts">` via `postMessage`); TRD §7 rule 8; REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** Any plugin-supplied code block renders in a same-origin-less sandboxed iframe that can only reach the page through a strict `postMessage` protocol of catalog actions, with no access to Convex, cookies or keys.
-- **SCOPE:** `apps/web/components/blocks/PluginSandbox.tsx` · test `apps/web/components/blocks/__tests__/plugin-sandbox.test.tsx`.
-- **MUTATES:** `apps/web` UI only (no Convex, no schema, no env).
-- **STEPS:** 1) Graphify code-map of the existing code-module path (MISSING); 2) create `PluginSandbox.tsx` rendering `<iframe sandbox="allow-scripts" srcDoc=…>` with no `allow-same-origin`; 3) implement the `postMessage` allowlist — the frame may only emit the catalog actions declared in the manifest, and the parent echoes back an approved `{ok}` or `{denied}`; 4) block `fetch`, navigation and top-frame access inside the frame via the sandbox flags and a `Content-Security-Policy` meta; 5) write the render + message test.
-- **DONE:** `bun test apps/web/components/blocks/__tests__/plugin-sandbox.test.tsx` → all pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** paste the test output and the `typecheck` exit code.
-- **DO NOT:** do not add `allow-same-origin` or `allow-top-navigation`; do not pass a key, token or cookie into the frame; do not run untrusted code outside the frame; do not touch `convex/`, `.env`, workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The frame gets only `allow-scripts`; it is sandboxed with an origin-null context and a restrictive CSP meta (`default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'`). The message protocol is `{ kind: "action", action, payload, requestId }` → parent replies `{ kind: "action-result", requestId, ok, result }`. Any action outside the manifest's `actions` list is answered `{ ok: false, error: "denied" }`. A code module that never received approval renders the fallback card instead of the frame. Visible copy EN/HE: `EN: "This plugin runs in an isolated box. It can't see your other data." / HE: "התוסף הזה רץ בארגז חול מבודד. הוא לא יכול לראות את שאר הנתונים שלך."`
-- **TESTS:** Given an approved code module / When rendered / Then an iframe with `sandbox` containing `allow-scripts` and NOT `allow-same-origin` is present. Given an action outside the allowlist / When the frame posts it / Then the parent replies `denied`. Given an unapproved module / Then no iframe is mounted (fallback card). Given a disallowed `fetch` inside the frame / Then the CSP blocks it (asserted via the CSP meta string).
-- **NUMBERS:** no same-origin / no key access = absolute invariant (TRD §7 rule 8) · message round-trip ≤ 50 ms (target; deterministic within a page).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether server-side scripts use Vercel Sandbox for plugins too (PRD F-46 mentions it for page code) — Amit.
+  export type PluginPermissionCheck = { needsConfirmation: boolean };
 
-### TFV2-0405 — Plugin permissions model + user grant `convex/lib/plugin-permissions.ts`
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0400 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0400.
-- **WHY:** TRD §7 rule 8 (never runs before the user approves it; never gets keys); PRD §5 RULES (accept/reject is law; confirmation before any external write); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** Every permission a plugin declares is granted or denied by the user at install time and stored per plugin, and no plugin action can exceed its grant.
-- **SCOPE:** `convex/lib/plugin-permissions.ts` · test `convex/lib/plugin-permissions.test.ts`.
-- **MUTATES:** reads `plugins` (the stored grant); no new table (the grant rides on the `plugins.manifest`/`permissions` field).
-- **STEPS:** 1) Graphify code-map (MISSING); 2) implement `grantPermissions({ pluginId, grants })` and `assertPermission({ pluginId, permission })`; 3) store granted permissions on the `plugins` row (a `grantedPermissions` field added to the manifest object, additive — do NOT touch `convex/schema.ts`); 4) make every plugin action path call `assertPermission` before executing; 5) write the test file for every error case below.
-- **DONE:** `bun test convex/lib/plugin-permissions.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not add a new table; do not grant a permission the user denied; do not touch `convex/schema.ts`, `convex/auth*`, `.env` or workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `grantPermissions({ pluginId, grants: PluginPermission[] })` upserts the granted set (subset of the manifest's declared permissions only). `assertPermission({ pluginId, permission })` throws `permission_denied` if the permission is not in the granted set, `plugin_not_found` if no row. External-write permissions (`write_today`, `schedule_job`, `web_request`) always re-ask at use time (confirmation before any external write, PRD F-131), never silently granted. No permission grants access to another user's data or to any secret.
-- **TESTS:** Given a plugin declaring `read_pages` / When granted `read_pages` / Then `assertPermission` passes. Given a plugin granted nothing / When an action asserts `write_today` / Then `permission_denied`. Given a grant outside the declared set / Then rejected. Given a non-owner / When granting / Then `forbidden`. Given `web_request` / Then use-time confirmation is still required even when granted.
-- **NUMBERS:** grant set is a subset of the manifest (exact invariant) · permission enum content → `UNKNOWN` (Amit, same as TFV2-0397).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the permission enum and whether external-write re-ask is per-action or per-session — Amit.
+  export async function assertPluginPermission(
+    ctx: QueryCtx | MutationCtx,
+    userId: Id<"users">,
+    pluginId: string,
+    permission: PluginPermission,
+  ): Promise<PluginPermissionCheck>;
+  ```
+  Behaviour, in order: `const row = await ctx.db.query("plugins").withIndex("by_userId_pluginId", (q) => q.eq("userId", userId).eq("pluginId", pluginId)).unique();` — `row === null || row.deletedAt !== undefined` → `throw new Error("Plugin not found")`; `row.enabled === false` → `throw new Error("Plugin is turned off")`; `const declared = (row.manifest as PluginManifest).permissions; const granted = row.grantedPermissions ?? [];` — unless `declared.includes(permission) && granted.includes(permission)` → `throw new Error("Permission not granted")`; return `{ needsConfirmation: PLUGIN_CONFIRM_EACH_USE.includes(permission) }`.
+  - Errors (plain `Error`, one TESTS case each): `"Plugin not found"` — no row (case 1), uninstalled row (case 2), only another person's row with that id (case 8); `"Plugin is turned off"` — `enabled: false` (case 3); `"Permission not granted"` — granted but no longer declared (case 4), declared but not granted (case 5).
+  - Limits: one indexed `.unique()` read. No writes, no user-facing copy.
+- **TESTS:** (`const A = "users:a"; const B = "users:b"; const VALID = { id: "focus-timer", name: "Focus timer", version: "1.0.0", summary: "A calm timer card for your Today.", author: { name: "Dana Levi" }, permissions: ["read_pages", "web_request"], components: ["TaskBlock"], actions: ["setTaskDone"], minTempoVersion: "0.1.0" };` · `async function addPlugin(ctx: any, over: Record<string, unknown> = {}) { return ctx.db.insert("plugins", { userId: A, pluginId: "focus-timer", manifest: VALID, version: "1.0.0", source: "file", enabled: true, grantedPermissions: ["read_pages", "web_request"], createdAt: 1, updatedAt: 1, ...over }); }` · `const ctx = makeFakeCtx(A, [B]);` · `const check = (p: PluginPermission) => assertPluginPermission(ctx, A as Id<"users">, "focus-timer", p);`)
+  1. Given no rows / When `check("read_pages")` / Then it rejects with `"Plugin not found"`.
+  2. Given `addPlugin(ctx, { deletedAt: 5 })` / When `check("read_pages")` / Then it rejects with `"Plugin not found"`.
+  3. Given `addPlugin(ctx, { enabled: false })` / When `check("read_pages")` / Then it rejects with `"Plugin is turned off"`.
+  4. Given `addPlugin(ctx, { grantedPermissions: ["write_today"] })` (declared: `read_pages`, `web_request`) / When `check("write_today")` / Then it rejects with `"Permission not granted"`.
+  5. Given `addPlugin(ctx, { grantedPermissions: undefined })` / When `check("read_pages")` / Then it rejects with `"Permission not granted"`.
+  6. Given `addPlugin(ctx)` / When `check("read_pages")` / Then it resolves `{ needsConfirmation: false }`.
+  7. Given `addPlugin(ctx)` / When `check("web_request")` / Then it resolves `{ needsConfirmation: true }`.
+  8. Given `addPlugin(ctx, { userId: B })` only / When `check("read_pages")` for A / Then it rejects with `"Plugin not found"`.
+- **NUMBERS:** 8 of 8 cases pass (exact). Effective permission = declared ∩ granted (exact invariant, cases 4–5). Every `PLUGIN_CONFIRM_EACH_USE` permission returns `needsConfirmation: true` (case 7). Latency: one indexed read; p95 UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-046 and CFG-022 (new: a dedicated `plugins` table vs `notes` rows; also CFG-021: listing categories and moderation) and TFV2-0397 (new: the plugin permission set, which permissions need confirmation on every use, and the catalog names a plugin may extend) — Amit.
 
-### TFV2-0406 — `marketplaceListings` table in `convex/schema.ts`
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0400 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (convex-arch), lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0400.
-- **WHY:** PRD §4.4 F-45 (marketplace, authors keep 100%); PRD §5 (share through a marketplace); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** A global `marketplaceListings` table holds one published row per plugin — author, slug, manifest, current version, install count and moderation state — so search, detail and install all read one listing.
-- **SCOPE:** `convex/schema.ts` · `convex/MIGRATIONS.md` (log entry) · test `convex/schema.gen2.test.ts` (extend).
-- **MUTATES:** `marketplaceListings` table (new, global — not user-owned); moderation state field.
-- **STEPS:** 1) Graphify code-map of `convex/schema.ts` (no `marketplaceListings` — MISSING); 2) add the table per SPEC (owner is the author, but the table is world-readable, so no per-user `userId` isolation index — use `by_slug` and `by_authorId`); 3) log the additive change; 4) extend the schema test.
-- **DONE:** `bun test convex/schema.gen2.test.ts` → all pass; `bun run typecheck` → exit 0.
-- **EVIDENCE:** paste the test output and the `typecheck` exit code.
-- **DO NOT:** do not add other tables here; do not write search/publish functions (TFV2-0407/TFV2-0408); do not record a key; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `marketplaceListings` table: `slug` (unique, `^[a-z0-9][a-z0-9-]*$`), `authorId: v.id("users")`, `manifest` (object), `currentVersion` (semver), `status` (`"draft"` / `"published"` / `"under_review"` / `"rejected"`), `category` (`v.union(v.literal("planning","coach","learning","habits","wellbeing","other"))`), `installCount` (number, default 0), `createdAt`, `updatedAt`, `deletedAt?`. Indexes: `by_slug` (unique), `by_authorId`, `by_category`, `by_status`. The listing is public data (no `userId` owner column beyond `authorId`), but only the author and admins may mutate it.
-- **TESTS:** Given a valid listing / When the validator runs / Then it accepts. Given a duplicate `slug` / Then the unique index forbids it. Given a bad `status` value / Then rejected.
-- **NUMBERS:** install count is monotonic and increment-only (exact) · category list → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the category taxonomy and the moderation workflow (who reviews, what gates) — Amit.
+### TFV2-0406 — `marketplaceListings` table in `convex/schema.ts` — superseded by CFG-021
+- **Status:** superseded by CFG-021; not a build ticket.
 
-### TFV2-0407 — `convex/marketplace.ts` publish + validate listing
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0406, TFV2-0398 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0406 and TFV2-0398.
-- **WHY:** PRD §4.4 F-45 (authors publish to the marketplace); PRD §5 (preview + validate before anything goes live); TRD §4a (a module that fails validation never goes live); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** `marketplace.publish` validates a manifest, upserts a `marketplaceListings` row for the author, and sets it to `under_review` (never live by default), returning the listing slug.
-- **SCOPE:** `convex/marketplace.ts` · test `convex/marketplace.test.ts`.
-- **MUTATES:** `marketplaceListings` rows (upsert); no new tables.
-- **STEPS:** 1) Graphify code-map of `convex/marketplace.ts` (MISSING); 2) implement `publish({ manifestText, category, slug? })` — parse + validate (TFV2-0398/TFV2-0399), resolve the slug (author-supplied or derived from `id`), upsert the listing with `status: "under_review"`; 3) implement `unpublish({ slug })` (soft-delete, author only) and `getBySlug({ slug })`; 4) enforce one listing per `id` per author; 5) write the test file for every error case below.
-- **DONE:** `bun test convex/marketplace.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not set a listing `published` automatically (moderation is a person's step); do not touch `convex/schema.ts`; do not record a key; do not let a non-author edit a listing.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `publish({ manifestText, category, slug? }) => { slug }`; auth `requireUser`. Errors: `invalid_manifest`, `slug_taken` (unless it is the author's own listing), `invalid_category`, `not_a_plugin`. A re-publish updates `manifest`/`currentVersion` and resets `status` to `under_review`. `unpublish` soft-deletes and returns `{ slug }`. Only the author may mutate their own listing (and admins — the admin path is OPEN below). No model call, no network.
-- **TESTS:** Given a valid manifest / When published / Then a listing exists with `status: "under_review"`. Given an invalid manifest / Then `invalid_manifest` and no row. Given a duplicate slug by another author / Then `slug_taken`. Given a re-publish by the same author / Then the row updates and returns to `under_review`. Given a non-author `unpublish` / Then `forbidden`. Given an unknown category / Then `invalid_category`.
-- **NUMBERS:** listing count per author cap 100 (deterministic bound) · moderation workflow → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** who moderates a listing and what moves `under_review` → `published` (Amit); the admin mutation surface.
+### TFV2-0407a — `marketplace.publish`: submit a plugin listing for review (`convex/marketplace.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0398, TFV2-0399 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (this ticket creates `convex/marketplace.ts`).
+- **WHEN:** after TFV2-0000a, CFG-021, TFV2-0398, TFV2-0399.
+- **WHY:** PRD §4.4 F-45 (authors publish to a marketplace and keep 100%); PRD §5 (validate before anything goes live); TRD §4a (a module that fails validation never goes live); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16, §7 H. Old TFV2-0407 bundled `publish`, `unpublish` and `getBySlug`; split into TFV2-0407a/b/c. A listing never goes live from this call: every publish (new or update) sets `status: "under_review"`; who moves it to `"published"` is CFG-021's open moderation question, and no function in this group does it. A slug belongs to the author who first used it, even after they unpublish. Category values are checked by the `args` validator before the handler runs (Convex rejects an unknown literal), so the handler has no category error.
+- **GOAL:** `convex/marketplace.ts` exists and exports `MARKETPLACE_LIMITS`, `listingCategoryValidator` and the public mutation `publish`, which validates a plugin file and inserts or updates the author's listing as `under_review`, proven by its own test block.
+- **SCOPE:** `convex/marketplace.ts` · test: `convex/marketplace.test.ts`.
+- **MUTATES:** `convex/marketplace.ts` (new) · `convex/marketplace.test.ts` (new) · `marketplaceListings` rows authored by the caller (insert or patch). No schema, route or env change.
+- **STEPS:**
+  1. Code-map: `test -e convex/marketplace.ts` fails (MISSING); `grep -n "marketplaceListings: defineTable" convex/schema.ts` prints the CFG-021 table and `grep -n '"by_slug"\|"by_authorId"\|"by_status_category"' convex/schema.ts` shows its indexes; `grep -n "makeSignedOutCtx\|unique:" convex/lib/testFakeCtx.ts` prints both (TFV2-0000a); `grep -n "validatePluginManifest\|parsePlugin\|PLUGIN_ID_PATTERN" packages/utils/src/index.ts` prints all three (TFV2-0397–0399). Any miss → `blocked: missing <id>`.
+  2. Create `convex/marketplace.ts` with exactly the SPEC imports, constants, validator, private helper `listingBySlug` and `publish`.
+  3. Create `convex/marketplace.test.ts` with the shared fixtures in TESTS (reused by TFV2-0407b, 0407c, 0408) and `describe("TFV2-0407a marketplace.publish", …)` holding exactly the 10 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407a"` → `10 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 10 test names.
+- **DO NOT:** set `status: "published"` or `"rejected"` (moderation is not decided, CFG-021); let a non-author change a listing; reset `installCount`, `ratingAverage`, `ratingCount` or `createdAt` on an update; store the plugin body; read `users` (the public author name is `manifest.author.name`); use `ConvexError`; hard-delete; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or any other test file; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0407a / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:** new file `convex/marketplace.ts`:
+  ```ts
+  import { parsePlugin, PLUGIN_ID_PATTERN, type PluginManifest, validatePluginManifest } from "@tempo/utils";
+  import { type Infer, v } from "convex/values";
+  import type { Doc } from "./_generated/dataModel";
+  import { type MutationCtx, mutation, type QueryCtx } from "./_generated/server";
+  import { requireUser } from "./lib/requireUser";
 
-### TFV2-0408 — `convex/marketplace.ts` search/list/categories
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0406 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0406.
-- **WHY:** PRD §4.4 F-45 (browsable marketplace); REWRITE-PLAN-v2 §6 chunk 6.
-- **GOAL:** `marketplace.list` returns published listings with search, category filter, sort and bounded pagination, so the marketplace screen renders without an unbounded query.
-- **SCOPE:** `convex/marketplace.ts` · test `convex/marketplace.test.ts` (extend).
-- **MUTATES:** reads `marketplaceListings` only.
-- **STEPS:** 1) Graphify code-map of `convex/marketplace.ts` (from TFV2-0407); 2) implement `list({ query?, category?, sort?, cursor?, limit? })` returning only `published` listings; 3) search matches `name` + `summary` (case-insensitive substring); 4) sort by `installCount` or `updatedAt`; 5) use the repo's bounded/paginated helper for cursor + limit; 6) write tests.
-- **DONE:** `bun test convex/marketplace.test.ts` → all tests pass.
-- **EVIDENCE:** paste the test output (pass count).
-- **DO NOT:** do not return draft/under_review/rejected listings; do not run a model for search (substring only); do not touch `convex/schema.ts`.
-- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `list({ query?, category?, sort?, cursor?, limit? }) => { items: ListingSummary[]; hasMore: boolean; nextCursor: string | null }`. `ListingSummary` = `{ slug, name, summary, authorName, category, currentVersion, installCount, updatedAt }` (no raw manifest). `limit` defaults 24, max 100. Search is exact substring, never model-ranked. Sort `"popular"` (installCount desc) or `"recent"` (updatedAt desc), default popular. Non-`published` rows are excluded. Anyone (even signed-out) may read published listings.
-- **TESTS:** Given three published and one `under_review` listing / When `list()` / Then only the three published return. Given `query: "focus"` / Then only listings whose name or summary contain "focus" return. Given `category: "learning"` / Then only learning listings. Given `limit: 2` / Then 2 items and `hasMore` true, and the next cursor continues without repeats. Given `sort: "recent"` / Then newest `updatedAt` first.
-- **NUMBERS:** page size 24 default / 100 max (repo convention) · search latency p95 ≤ 200 ms (web.dev; substring over an indexed column).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** whether signed-out users may browse the marketplace (leaning yes) — Amit.
+  export const MARKETPLACE_LIMITS = { listingsPerAuthorMax: 100, slugMaxChars: 64 } as const;
+
+  export const listingCategoryValidator = v.union(
+    v.literal("planning"), v.literal("coach"), v.literal("learning"),
+    v.literal("habits"), v.literal("wellbeing"), v.literal("other"),
+  );
+  export type ListingCategory = Infer<typeof listingCategoryValidator>;
+
+  /** The one listing that owns a slug, in any status, unpublished or not; null when the slug is free. */
+  async function listingBySlug(ctx: QueryCtx | MutationCtx, slug: string): Promise<Doc<"marketplaceListings"> | null> {
+    return ctx.db.query("marketplaceListings").withIndex("by_slug", (q) => q.eq("slug", slug)).unique();
+  }
+
+  export const publish = mutation({
+    args: { manifestText: v.string(), category: listingCategoryValidator, slug: v.optional(v.string()) },
+    returns: v.object({ slug: v.string(), created: v.boolean() }),
+    handler: async (
+      ctx: MutationCtx,
+      args: { manifestText: string; category: ListingCategory; slug?: string },
+    ): Promise<{ slug: string; created: boolean }> => { … },
+  });
+  ```
+  Behaviour, in order:
+  1. `const user = await requireUser(ctx);`
+  2. `parsePlugin(args.manifestText)`: `error === "plugin_too_large"` → `throw new Error("Plugin file is too large")`; `error === "not_a_plugin"` → `throw new Error("Not a plugin file")`.
+  3. `validatePluginManifest(parsed.manifest)` fails → `throw new Error("Invalid plugin manifest")`. `const manifest = checked.manifest;`
+  4. `const slug = args.slug ?? manifest.id;` — `slug.length > MARKETPLACE_LIMITS.slugMaxChars || !PLUGIN_ID_PATTERN.test(slug)` → `throw new Error("Invalid slug")`.
+  5. `const existing = await listingBySlug(ctx, slug);` — `existing !== null && existing.authorId !== user._id` → `throw new Error("Slug is taken")` (also when that listing is unpublished).
+  6. `const mine = await ctx.db.query("marketplaceListings").withIndex("by_authorId", (q) => q.eq("authorId", user._id)).take(MARKETPLACE_LIMITS.listingsPerAuthorMax);` — when some row in `mine` has `deletedAt === undefined`, `slug !== slug` and `(row.manifest as PluginManifest).id === manifest.id` → `throw new Error("Plugin is already listed under another slug")`.
+  7. `existing === null && mine.length === MARKETPLACE_LIMITS.listingsPerAuthorMax` → `throw new Error("Listing limit reached")` (the cap counts every listing row the author has, unpublished ones included, because slugs stay owned).
+  8. `const now = Date.now(); const fields = { manifest, currentVersion: manifest.version, status: "under_review" as const, category: args.category, updatedAt: now };`
+  9. `existing` (the caller's) → `ctx.db.patch(existing._id, { ...fields, deletedAt: undefined })`, return `{ slug, created: false }`; else `ctx.db.insert("marketplaceListings", { authorId: user._id, slug, ...fields, installCount: 0, createdAt: now })`, return `{ slug, created: true }`.
+  - Auth: any signed-in, active person, acting as author of their own listings only.
+  - Errors (plain `Error`, exact messages, one TESTS case each): `"Not authenticated"` (case 1); `"Plugin file is too large"` (case 2); `"Not a plugin file"` (case 3); `"Invalid plugin manifest"` (case 4); `"Invalid slug"` (case 5); `"Slug is taken"` (case 7); `"Plugin is already listed under another slug"` (case 9); `"Listing limit reached"` (case 10).
+  - Limits: one `.unique()` read, one bounded `.take(100)` read, one write. No model call, no network, no user-facing copy.
+- **TESTS:** (`convex/marketplace.test.ts` shared fixtures, created here: `import { describe, expect, test } from "bun:test"; import { packPlugin } from "@tempo/utils"; import * as marketplace from "./marketplace"; import { makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` · `const A = "users:a"; const B = "users:b";` · `const VALID = { id: "focus-timer", name: "Focus timer", version: "1.0.0", summary: "A calm timer card for your Today.", author: { name: "Dana Levi" }, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], minTempoVersion: "0.1.0" };` · `const file = (over: Record<string, unknown> = {}) => packPlugin({ ...VALID, ...over }, "# Body\n");` · `async function addListing(ctx: any, over: Record<string, unknown> = {}) { return ctx.db.insert("marketplaceListings", { authorId: A, slug: "focus-timer", manifest: VALID, currentVersion: "1.0.0", status: "published", category: "planning", installCount: 0, createdAt: 1, updatedAt: 1, ...over }); }` · `const rows = (ctx: any) => ctx.db.query("marketplaceListings").collect();` · contexts `makeFakeCtx(A, [B])`)
+  1. Given `makeSignedOutCtx()` / When `run(marketplace.publish, ctx, { manifestText: file(), category: "planning" })` / Then it rejects with `"Not authenticated"`.
+  2. Given `manifestText: "x".repeat(1_048_577)` / Then it rejects with `"Plugin file is too large"` and `rows(ctx)` is empty.
+  3. Given `manifestText: "# not a plugin\n"` / Then it rejects with `"Not a plugin file"` and `rows(ctx)` is empty.
+  4. Given `file({ version: "1" })` / Then it rejects with `"Invalid plugin manifest"` and `rows(ctx)` is empty.
+  5. Given `slug: "Bad Slug"`, and separately `slug: "a".repeat(65)` / Then each rejects with `"Invalid slug"` and `rows(ctx)` is empty.
+  6. Given no rows / When A publishes `file()` with `category: "planning"` and no slug / Then it returns `{ slug: "focus-timer", created: true }` and the one row has `authorId: A`, `status: "under_review"`, `category: "planning"`, `currentVersion: "1.0.0"`, `installCount: 0`, `deletedAt: undefined`, `createdAt === updatedAt`, `manifest` equal to `VALID`.
+  7. Given `addListing(ctx, { authorId: B })` / When A publishes `file()` / Then it rejects with `"Slug is taken"` and B's row still has `status: "published"`, `updatedAt: 1`.
+  8. Given `addListing(ctx, { installCount: 7, deletedAt: 9 })` (A's, `published`) / When A publishes `file({ version: "1.1.0" })` with `category: "coach"` / Then it returns `{ slug: "focus-timer", created: false }`, `rows(ctx)` has length 1, and the row has `status: "under_review"`, `currentVersion: "1.1.0"`, `category: "coach"`, `installCount: 7`, `createdAt: 1`, `deletedAt: undefined`.
+  9. Given `addListing(ctx, { slug: "focus" })` (A's, manifest id `focus-timer`) / When A publishes `file()` with no slug / Then it rejects with `"Plugin is already listed under another slug"` and `rows(ctx)` has length 1.
+  10. Given 100 A listings from `addListing(ctx, { slug: "p" + i, manifest: { ...VALID, id: "p" + i } })` for `i` 0–99 / When A publishes `file()` / Then it rejects with `"Listing limit reached"` and `rows(ctx)` still has length 100.
+- **NUMBERS:** 10 of 10 cases pass (exact). `MARKETPLACE_LIMITS.listingsPerAuthorMax` = 100 listings per author (source: old TFV2-0407 "listing count per author cap 100"; case 10 seeds the cap). Slug ≤ 64 characters, grammar `PLUGIN_ID_PATTERN` (case 5). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-021 (new: the listing category list `planning`, `coach`, `learning`, `habits`, `wellbeing`, `other`, and the moderation workflow behind `status`) and TFV2-0398 (inherits TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0407b — `marketplace.unpublish`: take down the author's listing (`convex/marketplace.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0407a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-021, TFV2-0407a.
+- **WHY:** PRD §4.4 F-45 (authors control their listings); PRD F-131 (soft delete); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (missing, foreign or deleted row → `"<Thing> not found"`; other-user case tested), §7 H (split from old TFV2-0407). Publishing again later revives the same row (`publish`, TFV2-0407a case 8). Installed copies of the plugin are untouched: an install is the person's own `plugins` row.
+- **GOAL:** `marketplace.unpublish` soft-deletes the caller's own live listing by slug and refuses every other listing with `"Listing not found"`, proven by its own test block.
+- **SCOPE:** `convex/marketplace.ts` · test: `convex/marketplace.test.ts`.
+- **MUTATES:** `convex/marketplace.ts` (edit: add `unpublish`) · `convex/marketplace.test.ts` (edit: append one `describe` block) · `marketplaceListings.deletedAt` and `updatedAt` of the caller's listing.
+- **STEPS:**
+  1. Code-map: `grep -n "async function listingBySlug\|export const publish" convex/marketplace.ts` prints both (TFV2-0407a); `grep -n "export const unpublish" convex/marketplace.ts` prints nothing.
+  2. Add the SPEC `unpublish` after `publish`.
+  3. Append `describe("TFV2-0407b marketplace.unpublish", …)` with exactly the 5 TESTS cases, reusing the TFV2-0407a fixtures.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407b"` → `5 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DO NOT:** hard-delete; change `status`, `installCount` or the manifest; touch any `plugins` row; change `publish` or `listingBySlug`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0407b / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const unpublish = mutation({
+    args: { slug: v.string() },
+    returns: v.object({ slug: v.string() }),
+    handler: async (ctx: MutationCtx, args: { slug: string }): Promise<{ slug: string }> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx); const row = await listingBySlug(ctx, args.slug);` — `row === null || row.authorId !== user._id || row.deletedAt !== undefined` → `throw new Error("Listing not found")`; else `const now = Date.now(); await ctx.db.patch(row._id, { deletedAt: now, updatedAt: now }); return { slug: row.slug };`
+  - Errors (plain `Error`, one TESTS case each): `"Not authenticated"` (case 1); `"Listing not found"` — no listing with that slug (case 2), another author's listing (case 3), already unpublished (case 4).
+  - Limits: one `.unique()` read, one patch. No user-facing copy.
+- **TESTS:** (reuses the TFV2-0407a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(marketplace.unpublish, ctx, { slug: "focus-timer" })` / Then it rejects with `"Not authenticated"`.
+  2. Given no rows / When A unpublishes `"focus-timer"` / Then it rejects with `"Listing not found"`.
+  3. Given `addListing(ctx, { authorId: B })` / When A unpublishes / Then it rejects with `"Listing not found"` and B's row still has `deletedAt: undefined`.
+  4. Given `addListing(ctx, { deletedAt: 5 })` / When A unpublishes / Then it rejects with `"Listing not found"` and `deletedAt` is still `5`.
+  5. Given `addListing(ctx)` / When A unpublishes / Then it returns `{ slug: "focus-timer" }`, the row still exists, its `deletedAt` is a number equal to its `updatedAt`, and `status` is still `"published"`.
+- **NUMBERS:** 5 of 5 cases pass (exact). One indexed read and one write. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-021 (new: the listing category list and the moderation workflow behind `status`) and TFV2-0407a — Amit.
+
+### TFV2-0407c — `marketplace.getBySlug`: one listing's detail (`convex/marketplace.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a.
+- **WHY:** PRD §4.4 F-45; PRD §5 (the person sees what a module does and what it may touch before approving); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (every public function starts with `requireUser`, so the marketplace is read signed in); §7 H (split from old TFV2-0407). Everyone signed in sees `published` listings; an author also sees their own listing in any status (to follow its review). Unpublished listings are visible to no one. The public author name is the manifest's `author.name` (author-chosen, validated ≤ 80 characters); the account's `users.name`, `users.fullName` and `users.email` are never read or returned.
+- **GOAL:** `marketplace.getBySlug` returns a `ListingDetail` (no raw manifest) for a visible listing, else `null`, proven by its own test block.
+- **SCOPE:** `convex/marketplace.ts` · test: `convex/marketplace.test.ts`.
+- **MUTATES:** `convex/marketplace.ts` (edit: add `listingStatusValidator`, `listingDetailValidator`, `ListingDetail`, `getBySlug`; add `query` to the `./_generated/server` import when TFV2-0408 has not) · `convex/marketplace.test.ts` (edit: append one `describe` block). Reads `marketplaceListings`; writes nothing.
+- **STEPS:**
+  1. Code-map: `grep -n "async function listingBySlug\|export const listingCategoryValidator" convex/marketplace.ts` prints both (TFV2-0407a); `grep -n "export const getBySlug" convex/marketplace.ts` prints nothing.
+  2. Add the SPEC code after the last exported function; make sure `query` is in the existing `./_generated/server` import (TFV2-0408 may have added it).
+  3. Append `describe("TFV2-0407c marketplace.getBySlug", …)` with exactly the 6 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407c"` → `6 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DO NOT:** return `manifest`, `authorId`, `_id` or any `users` field; show a non-published listing to anyone but its author; show an unpublished listing at all; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0407c / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const listingStatusValidator = v.union(
+    v.literal("draft"), v.literal("under_review"), v.literal("published"), v.literal("rejected"),
+  );
+  export const listingDetailValidator = v.object({
+    slug: v.string(),
+    name: v.string(),
+    summary: v.string(),
+    description: v.union(v.string(), v.null()),
+    authorName: v.string(),
+    category: listingCategoryValidator,
+    status: listingStatusValidator,
+    currentVersion: v.string(),
+    installCount: v.number(),
+    ratingAverage: v.union(v.number(), v.null()),
+    ratingCount: v.number(),
+    permissions: v.array(v.string()),
+    components: v.array(v.string()),
+    actions: v.array(v.string()),
+    isAuthor: v.boolean(),
+    updatedAt: v.number(),
+  });
+  export type ListingDetail = Infer<typeof listingDetailValidator>;
+
+  export const getBySlug = query({
+    args: { slug: v.string() },
+    returns: v.union(listingDetailValidator, v.null()),
+    handler: async (ctx: QueryCtx, args: { slug: string }): Promise<ListingDetail | null> => { … },
+  });
+  ```
+  Behaviour: `const user = await requireUser(ctx); const row = await listingBySlug(ctx, args.slug);` — return `null` when `row === null`, `row.deletedAt !== undefined`, or `row.status !== "published" && row.authorId !== user._id`. Else, with `const m = row.manifest as PluginManifest;`, return `{ slug: row.slug, name: m.name, summary: m.summary, description: m.description ?? null, authorName: m.author.name, category: row.category, status: row.status, currentVersion: row.currentVersion, installCount: row.installCount, ratingAverage: row.ratingAverage ?? null, ratingCount: row.ratingCount ?? 0, permissions: [...m.permissions], components: [...m.components], actions: [...m.actions], isAuthor: row.authorId === user._id, updatedAt: row.updatedAt }`.
+  - Errors (one TESTS case each): `"Not authenticated"` — no identity (case 1).
+  - Limits: one `.unique()` read. No writes, no user-facing copy.
+- **TESTS:** (reuses the TFV2-0407a fixtures)
+  1. Given `makeSignedOutCtx()` / When `run(marketplace.getBySlug, ctx, { slug: "focus-timer" })` / Then it rejects with `"Not authenticated"`.
+  2. Given `addListing(ctx, { authorId: B, installCount: 3, updatedAt: 7 })` (published) / When A gets `"focus-timer"` / Then it returns exactly `{ slug: "focus-timer", name: "Focus timer", summary: "A calm timer card for your Today.", description: null, authorName: "Dana Levi", category: "planning", status: "published", currentVersion: "1.0.0", installCount: 3, ratingAverage: null, ratingCount: 0, permissions: ["read_pages"], components: ["TaskBlock"], actions: ["setTaskDone"], isAuthor: false, updatedAt: 7 }`.
+  3. Given `addListing(ctx, { authorId: B, status: "under_review" })` / When A gets it / Then it returns `null`.
+  4. Given `addListing(ctx, { status: "under_review" })` (A's own) / When A gets it / Then the result has `status: "under_review"` and `isAuthor: true`.
+  5. Given `addListing(ctx, { authorId: B, deletedAt: 5 })` (published, unpublished by its author) / When A gets it / Then it returns `null`.
+  6. Given no rows / When A gets `"focus-timer"` / Then it returns `null`.
+- **NUMBERS:** 6 of 6 cases pass (exact). One indexed read. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-021 (new: the listing category list and the moderation workflow behind `status`) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+
+### TFV2-0408 — `marketplace.list`: search, filter, sort and page published listings (`convex/marketplace.ts`) — OPEN
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a.
+- **WHY:** PRD §4.4 F-45 (a browsable marketplace); REWRITE-PLAN-v2 §6 chunk 6; CONVENTIONS §16 (signed-in read via `requireUser`; every list read bounded by a named constant). Search is a plain case-insensitive substring over name and summary, never model-ranked. Paging uses a numeric offset cursor over at most `MARKETPLACE_LIST.scanMax` published listings read from the `by_status_category` index, because the test fake ctx (`convex/lib/testFakeCtx.ts`) has no `.paginate()`; listings past the scan cap are not reachable through this query (named in NUMBERS).
+- **GOAL:** `marketplace.list` returns one page of published, live listings as `ListingSummary[]` with `hasMore` and `nextCursor`, filtered by query and category and sorted by popularity or recency, proven by its own test block.
+- **SCOPE:** `convex/marketplace.ts` · test: `convex/marketplace.test.ts`.
+- **MUTATES:** `convex/marketplace.ts` (edit: add `MARKETPLACE_LIST`, `listingSummaryValidator`, `ListingSummary`, `list`; add `query` to the `./_generated/server` import when TFV2-0407c has not) · `convex/marketplace.test.ts` (edit: append one `describe` block). Reads `marketplaceListings`; writes nothing.
+- **STEPS:**
+  1. Code-map: `grep -n "export const listingCategoryValidator\|export const publish" convex/marketplace.ts` prints both (TFV2-0407a); `grep -n "export const list " convex/marketplace.ts` prints nothing; `grep -n "async function addListing" convex/marketplace.test.ts` prints the fixture.
+  2. Add the SPEC code after the last exported function; make sure `query` is in the `./_generated/server` import.
+  3. Append `describe("TFV2-0408 marketplace.list", …)` with exactly the 11 TESTS cases.
+  4. Run DONE, then `bun run lint` and `bun run typecheck`.
+- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0408"` → `11 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
+- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 11 test names.
+- **DO NOT:** return `draft`, `under_review`, `rejected` or unpublished listings; return `manifest`, `authorId` or any `users` field; call a model or a search index for matching; use `.collect()` or `.paginate()`; sort with `localeCompare`; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0408 / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  export const MARKETPLACE_LIST = { defaultLimit: 24, maxLimit: 100, scanMax: 500, queryMaxChars: 100 } as const;
+
+  export const listingSummaryValidator = v.object({
+    slug: v.string(),
+    name: v.string(),
+    summary: v.string(),
+    authorName: v.string(),
+    category: listingCategoryValidator,
+    currentVersion: v.string(),
+    installCount: v.number(),
+    ratingAverage: v.union(v.number(), v.null()),
+    ratingCount: v.number(),
+    updatedAt: v.number(),
+  });
+  export type ListingSummary = Infer<typeof listingSummaryValidator>;
+
+  export const list = query({
+    args: {
+      query: v.optional(v.string()),
+      category: v.optional(listingCategoryValidator),
+      sort: v.optional(v.union(v.literal("popular"), v.literal("recent"))),
+      cursor: v.optional(v.string()),
+      limit: v.optional(v.number()),
+    },
+    returns: v.object({ items: v.array(listingSummaryValidator), hasMore: v.boolean(), nextCursor: v.union(v.string(), v.null()) }),
+    handler: async (
+      ctx: QueryCtx,
+      args: { query?: string; category?: ListingCategory; sort?: "popular" | "recent"; cursor?: string; limit?: number },
+    ): Promise<{ items: ListingSummary[]; hasMore: boolean; nextCursor: string | null }> => { … },
+  });
+  ```
+  Behaviour, in order:
+  1. `await requireUser(ctx);`
+  2. `const limit = args.limit ?? MARKETPLACE_LIST.defaultLimit;` — `!Number.isInteger(limit) || limit < 1 || limit > MARKETPLACE_LIST.maxLimit` → `throw new Error("Invalid limit")`.
+  3. `const offset = args.cursor === undefined ? 0 : Number(args.cursor)` after checking `/^(0|[1-9]\d{0,5})$/.test(args.cursor)`; a failing cursor → `throw new Error("Invalid cursor")`.
+  4. `const needle = (args.query ?? "").trim().toLowerCase();` — `needle.length > MARKETPLACE_LIST.queryMaxChars` → `throw new Error("Search is too long")`.
+  5. Read `ctx.db.query("marketplaceListings").withIndex("by_status_category", (q) => args.category === undefined ? q.eq("status", "published") : q.eq("status", "published").eq("category", args.category)).take(MARKETPLACE_LIST.scanMax)`.
+  6. Keep rows with `deletedAt === undefined`; when `needle !== ""`, keep rows whose `manifest.name.toLowerCase()` or `manifest.summary.toLowerCase()` includes `needle`.
+  7. Sort with plain comparisons (no `localeCompare`): `"popular"` (the default) = `installCount` descending, then `updatedAt` descending, then `slug` ascending; `"recent"` = `updatedAt` descending, then `slug` ascending.
+  8. `const page = sorted.slice(offset, offset + limit); const hasMore = offset + limit < sorted.length;` return `{ items: page.map(toSummary), hasMore, nextCursor: hasMore ? String(offset + limit) : null }`, where `toSummary(row)` with `const m = row.manifest as PluginManifest;` is `{ slug: row.slug, name: m.name, summary: m.summary, authorName: m.author.name, category: row.category, currentVersion: row.currentVersion, installCount: row.installCount, ratingAverage: row.ratingAverage ?? null, ratingCount: row.ratingCount ?? 0, updatedAt: row.updatedAt }`.
+  - Errors (plain `Error`, one TESTS case each): `"Not authenticated"` (case 1); `"Invalid limit"` (case 8); `"Invalid cursor"` (case 9); `"Search is too long"` (case 10).
+  - Limits: one bounded read of at most `MARKETPLACE_LIST.scanMax` (500) rows (case 11); a page holds at most 100 items. No writes, no user-facing copy.
+- **TESTS:** (reuses the TFV2-0407a fixtures; `const L = (slug: string, over: Record<string, unknown> = {}) => addListing(ctx, { authorId: B, slug, manifest: { ...VALID, id: slug, name: slug }, ...over });`)
+  1. Given `makeSignedOutCtx()` / When `run(marketplace.list, ctx, {})` / Then it rejects with `"Not authenticated"`.
+  2. Given `L("a", { installCount: 10 })`, `L("b", { installCount: 30 })`, `L("c", { installCount: 20 })`, `L("d", { status: "under_review" })`, `L("e", { deletedAt: 5 })` / When A lists `{}` / Then the item slugs are `["b", "c", "a"]`, `hasMore` is `false` and `nextCursor` is `null`.
+  3. Given `L("x", { manifest: { ...VALID, id: "x", name: "Focus timer" } })`, `L("y", { manifest: { ...VALID, id: "y", name: "Calm", summary: "Helps you focus on one thing." } })`, `L("z", { manifest: { ...VALID, id: "z", name: "Habits", summary: "Daily habits." } })` / When A lists `{ query: "  FOCUS " }` / Then the sorted item slugs are `["x", "y"]`.
+  4. Given `L("a", { category: "learning" })` and `L("b", { category: "planning" })` / When A lists `{ category: "learning" }` / Then the item slugs are `["a"]`.
+  5. Given `L("a", { installCount: 3 })`, `L("b", { installCount: 2 })`, `L("c", { installCount: 1 })` / When A lists `{ limit: 2 }` / Then the slugs are `["a", "b"]`, `hasMore` is `true`, `nextCursor` is `"2"`; When A lists `{ limit: 2, cursor: "2" }` / Then the slugs are `["c"]`, `hasMore` is `false`, `nextCursor` is `null`.
+  6. Given `L("a", { updatedAt: 10, installCount: 9 })`, `L("b", { updatedAt: 30 })`, `L("c", { updatedAt: 20 })` / When A lists `{ sort: "recent" }` / Then the slugs are `["b", "c", "a"]`; Given a fresh `makeFakeCtx(A, [B])` holding only `L("n", { installCount: 5, updatedAt: 1 })` and `L("m", { installCount: 5, updatedAt: 1 })` / When A lists `{}` / Then the slugs are `["m", "n"]` (slug tie-break).
+  7. Given `L("a", { installCount: 4, updatedAt: 7 })` / When A lists `{}` / Then `items[0]` equals `{ slug: "a", name: "a", summary: "A calm timer card for your Today.", authorName: "Dana Levi", category: "planning", currentVersion: "1.0.0", installCount: 4, ratingAverage: null, ratingCount: 0, updatedAt: 7 }` (no `manifest` or `authorId` key).
+  8. Given `limit: 0`, `limit: 101` and `limit: 1.5` / When A lists each / Then each rejects with `"Invalid limit"`.
+  9. Given `cursor: "abc"` and `cursor: "-1"` / When A lists each / Then each rejects with `"Invalid cursor"`.
+  10. Given `query: "a".repeat(101)` / When A lists / Then it rejects with `"Search is too long"`.
+  11. Given 501 published listings `L("p" + i)` for `i` 0–500 / When A lists `{ limit: 100, cursor: "400" }` / Then it returns 100 items, `hasMore` is `false` and `nextCursor` is `null` (only 500 rows were read).
+- **NUMBERS:** 11 of 11 cases pass (exact). Page size 24 by default, 1–100 allowed (source: old TFV2-0408 "page size 24 default / 100 max"; case 8). Scan cap `MARKETPLACE_LIST.scanMax` = 500 rows (code constant; case 11 seeds 501; a marketplace with more than 500 published listings needs a paginated design — not a gate now). Query ≤ 100 characters (case 10). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-021 (new: the listing category list `planning`, `coach`, `learning`, `habits`, `wellbeing`, `other`, and the moderation workflow behind `status`) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
 
 ### TFV2-0409 — Marketplace screen (web) `(tempo)/marketplace`
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0408 · **Folds-in:** none
@@ -28679,9 +31564,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** the permission plain-language copy list (which permissions exist and their EN/HE wording) — Amit (inherits TFV2-0397).
 
 ### TFV2-0411 — Plugin install flow (confirm + sandbox/permission notice) (web)
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0407, TFV2-0405 · **Folds-in:** none
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0407a, TFV2-0407b, TFV2-0407c, TFV2-0405a, TFV2-0405b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0407 and TFV2-0405.
+- **WHEN:** after TFV2-0407a, TFV2-0407b, TFV2-0407c and TFV2-0405a, TFV2-0405b.
 - **WHY:** PRD §5 (preview + Approve/Discard before a module goes live; accept/reject is law); TRD §4a (approval on the user's tap); TRD §7 rule 8 (never runs before the user approves); REWRITE-PLAN-v2 §6 chunk 6.
 - **GOAL:** Tapping Install opens a confirm sheet that lists the plugin's permissions and the sandbox notice, and only the user's Approve calls `plugins.install` and grants the chosen permissions.
 - **SCOPE:** `apps/web/components/marketplace/InstallConfirm.tsx` · test `apps/web/components/marketplace/__tests__/install-confirm.test.tsx`.
@@ -28698,9 +31583,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none (consent flow is fixed by PRD §5 / TRD §4a).
 
 ### TFV2-0412 — Marketplace reviews: `marketplaceReviews` table + rating mutation
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0406 · **Folds-in:** none
+- **Stage:** F · **Pass:** 1 · **Depends:** CFG-021 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (convex-arch), lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0406.
+- **WHEN:** after CFG-021.
 - **WHY:** PRD §4.4 F-45 (a usable marketplace needs trust signals); REWRITE-PLAN-v2 §6 chunk 6; TRD §1 (no raw DB clients).
 - **GOAL:** A `marketplaceReviews` table and `marketplace.rate` mutation let installers leave one star rating (1–5) and an optional short review per listing, owner-scoped and one-per-user-per-listing.
 - **SCOPE:** `convex/schema.ts` · `convex/marketplace.ts` (the `rate`/`listReviews` functions) · test `convex/marketplaceReviews.test.ts`.
@@ -28717,9 +31602,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** whether reviews require the reviewer to have installed the plugin, and moderation of review text — Amit.
 
 ### TFV2-0413 — Author profile + 100% revenue-split metadata (`convex/marketplace.ts`)
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0407 · **Folds-in:** none
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0407a, TFV2-0407b, TFV2-0407c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0407.
+- **WHEN:** after TFV2-0407a, TFV2-0407b, TFV2-0407c.
 - **WHY:** PRD §4.4 F-45 (authors keep 100%); REWRITE-PLAN-v2 §6 chunk 6.
 - **GOAL:** Each listing records its author's public profile and the payout-split record (100% to the author), so the marketplace shows authorship and the payout metadata exists without wiring a payment rail.
 - **SCOPE:** `convex/marketplace.ts` · test `convex/marketplace.test.ts` (extend).
@@ -28736,9 +31621,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** the payout rail (how authors actually receive their 100%) and whether it is Polar/RevenueCat or manual — Amit (PRD §4.4 F-45 names no rail; §4.2 prices are also open).
 
 ### TFV2-0414 — Plugin update/version check + apply (`convex/plugins.ts`)
-- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0401, TFV2-0407 · **Folds-in:** none
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0401a, TFV2-0401b, TFV2-0401c, TFV2-0407a, TFV2-0407b, TFV2-0407c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0401 and TFV2-0407.
+- **WHEN:** after TFV2-0401a, TFV2-0401b, TFV2-0401c and TFV2-0407a, TFV2-0407b, TFV2-0407c.
 - **WHY:** PRD §5 (hot reload / edits apply in place); REWRITE-PLAN-v2 §6 chunk 6 (marketplace must deliver updates).
 - **GOAL:** `plugins.checkUpdates` compares each installed plugin's version to its marketplace listing's `currentVersion`, and `update` applies a newer manifest to the existing row (no re-approval needed when permissions are unchanged).
 - **SCOPE:** `convex/plugins.ts` · test `convex/plugins.test.ts` (extend).

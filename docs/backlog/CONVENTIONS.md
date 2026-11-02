@@ -458,6 +458,19 @@ else; the SPEC quotes the exact line(s); the file counts toward the 3-file limit
   `TF-OSS-01` comment in `convex/schema.ts`). New tables follow the repo shape: `userId: v.id("users")`,
   `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`, index
   `by_userId_deletedAt` on `["userId", "deletedAt"]`.
+- **A new table with `userId` and `deletedAt`** must also be covered by account deletion, or
+  `convex/lib/accountDeletion.test.ts` fails typecheck and its coverage tests: its first index is
+  `.index("by_userId", ["userId"])` (then `by_userId_deletedAt`); the CFG ticket adds the one line
+  `  "<table>",` as the last entry of `USER_OWNED_TABLES` in `convex/lib/accountDeletion.ts` and one
+  `OWNED_FIXTURES` entry `<table>: fixture("owned-table-soft-delete", (userId) => ({ …required fields… })),`
+  in `convex/lib/accountDeletion.test.ts`. Its file set is `convex/schema.ts` ·
+  `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` · test
+  `convex/schema_<cfgid>_<table>.test.ts`, and DONE also runs `bun test convex/lib/accountDeletion.test.ts`.
+  A table with `userId` but no `deletedAt` (append-only) needs a lifecycle decision: the ticket is OPEN.
+- A CFG ticket that adds an index to `memories`, or a field or index to `conversations`, `notes`,
+  `chatRequests`, `pageOperations`, `pageOperationPayloads` or `pageProposals`, also updates the exact
+  expectation for that table in `convex/lib/accountDeletion.test.ts` (those tests pin the field and
+  index lists) and quotes the changed lines.
 - SPEC gives the exact `defineTable({…})` code (or the exact lines added to an existing table), every
   index with its exact name and field list, and the reading/writing tickets.
 - Test file: `convex/schema_<cfg id, lower case, no dash>_<table>.test.ts`, e.g. `convex/schema_cfg012_jobs.test.ts` (one per CFG ticket, so CFG tickets never share a file),
