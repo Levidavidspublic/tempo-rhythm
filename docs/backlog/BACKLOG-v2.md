@@ -49,6 +49,7 @@ The ticket count and the split map are listed below and updated after each range
 | TFV2-0138 … TFV2-0184 (range 4) | rewritten (merged) |
 | TFV2-0185 … TFV2-0231 (range 5) | rewritten (merged) |
 | TFV2-0232 … TFV2-0266b (range 6) | rewritten (merged) |
+| TFV2-0267 … TFV2-0313 (range 7) | rewritten (merged) |
 | TFV2-0001 … TFV2-0456 | being rewritten |
 <!-- rewrite-status:end -->
 
@@ -149,6 +150,26 @@ The ticket count and the split map are listed below and updated after each range
 - CFG-R6-3 (provisional) → CFG-038
 - CFG-R6-4 (provisional) → CFG-039
 - CFG-R6-5 (provisional) → CFG-040
+- TFV2-0267 → superseded by TFV2-0166b
+- TFV2-0269 → TFV2-0269a, TFV2-0269b, TFV2-0269c
+- TFV2-0270 → superseded by TFV2-0248a
+- TFV2-0274 → TFV2-0274a, TFV2-0274b
+- TFV2-0275 → TFV2-0275a, TFV2-0275b
+- TFV2-0276 → TFV2-0276a, TFV2-0276b
+- TFV2-0284 → TFV2-0284a (View: BillingView), TFV2-0284b (Route: /billing, OPEN)
+- TFV2-0285 → TFV2-0285a (View: TrialEndView), TFV2-0285b (Route: /billing/trial-end, OPEN)
+- TFV2-0286 → TFV2-0286a, TFV2-0286b, TFV2-0286c
+- TFV2-0287 → TFV2-0287a, TFV2-0287b
+- TFV2-0288 → TFV2-0288a, TFV2-0288b, TFV2-0288c
+- TFV2-0289 → TFV2-0289a, TFV2-0289b
+- TFV2-0290 → TFV2-0290a, TFV2-0290b, TFV2-0290c
+- TFV2-0291 → TFV2-0291a (View: AskFounderView, OPEN), TFV2-0291b (Route: /ask-founder, OPEN)
+- TFV2-0302 → superseded by TFV2-0303b (copy lives in each component's/screen's `COPY` constant, CONVENTIONS §11; no `apps/web/messages/*.json`, no `t()` dictionary).
+- TFV2-0303 → TFV2-0303a (Component: LandingFigures), TFV2-0303b (Screen: Landing).
+- TFV2-0308 → TFV2-0308a (View: ProfileView), TFV2-0308b (Route: /settings/profile)
+- TFV2-0309 → TFV2-0309c (kb-59 `next/navigation` mock prerequisite), TFV2-0309a (View: PreferencesView), TFV2-0309b (Route: /settings/preferences) — build order c → a → b
+- TFV2-0310 → TFV2-0310a (View: PrivacyView), TFV2-0310b (Route: /settings/privacy)
+- TFV2-0313 → TFV2-0313a (`public/sw.js`), TFV2-0313b (`public/offline.html`), TFV2-0313c (production registration + layout line)
 <!-- split-map:end -->
 
 ## Groundwork — test infrastructure and config lane (comes before Chunk 1)
@@ -19182,896 +19203,4570 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0267 — Profiles backend: profiles.setCoachDial
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0266.
-- **WHY:** PRD F-25; settings-prefs screen (`@actions profiles.setCoachDial`, debounced 400 ms).
-- **GOAL:** The coach dial (0–10) persists and injects into the coach system prompt.
-- **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
-- **MUTATES:** coach dial value — a `users` column added by config lane: Amit (see OPEN).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `setCoachDial({value: 0..10})` validates range and persists; 3) default for new users is 4; 4) run DONE.
-- **DONE:** `bun test convex/profiles.test.ts` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** change the prompt itself (chunk C owns the coach prompt); do not accept fractional values.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; value < 0 or > 10 → `"Dial must be 0 to 10"`; non-integer → `"Dial must be a whole number"`.
-- **TESTS:** Given value 7 · When `setCoachDial` · Then persisted. Given value 11 · Then `"Dial must be 0 to 10"`. Given -1 · Then error. Given no auth · Then `Not authenticated`.
-- **NUMBERS:** dial range 0–10 (PRD F-25; quiet 0–3, steady 4–7, push 8–10) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** where the coach dial value is stored (`users` column vs `preferences`) — Amit; either needs `convex/schema.ts` (config lane: Amit).
+### TFV2-0267 — Profiles backend: profiles.setCoachDial — superseded by TFV2-0166b
+- **Status:** superseded by TFV2-0166b; not a build ticket.
 
-### TFV2-0268 — Ask founder backend: askFounder.submit + queue
-- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #475
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first.
-- **WHY:** PRD F-110 (founder contact); ask-founder screen (`@actions askFounder.submit({subject, body, priority})`).
-- **GOAL:** A message to the founder is validated and queued with the user's name/email only.
-- **SCOPE:** `convex/askFounder.ts` + `convex/askFounder.test.ts`.
-- **MUTATES:** a founder-message queue row — the `feedback`/`askFounderQueue` table is added to `convex/schema.ts` by config lane: Amit (BACKEND-SCHEMA §7: `askFounderQueue` vs `feedback` name is UNKNOWN).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `submit({subject, body, priority:"low"|"medium"|"high"})` validates and inserts; 3) attach only name + email (nothing from pages/tasks/chats); 4) run DONE.
-- **DONE:** `bun test convex/askFounder.test.ts` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** attach page/task/chat content; do not send email in the mutation (defer to TFV2-0269).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → `Not authenticated`; blank subject → `"Subject is required"`; blank body → `"Message is required"`; invalid priority → `"Invalid priority"`. `subject` max 120 chars.
-- **TESTS:** Given valid fields · When `submit` · Then a queue row with subject/body/priority/email. Given blank subject · Then `"Subject is required"`. Given blank body · Then `"Message is required"`. Given invalid priority · Then `"Invalid priority"`. Given no auth · Then `Not authenticated`.
-- **NUMBERS:** subject max length 120 chars (ask-founder screen `maxlength="120"`) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the queue table name (`askFounderQueue` vs `feedback`, BACKEND-SCHEMA §7) and its schema — Amit; config lane: Amit (needs `convex/schema.ts`).
+### TFV2-0268 — Ask the founder: `askFounder.submit` (`convex/askFounder.ts`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-017 · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000a, CFG-017.
+- **WHY:** PRD F-110 (a person can write to the founder; a person reads every message); design `docs/design/v3/screens/web/ask-founder.html` (`@actions askFounder.submit({ subject, body, priority })`, "What gets sent: your name and email, nothing else"); CONVENTIONS §16 (one function, kind named, full signature, `requireUser`, every error tested), §18/§19 (the table comes from CFG-017, which is OPEN). Code truth: `convex/askFounder.ts` does not exist; `users` has `email: v.string()` and `name: v.optional(v.string())` (`convex/schema.ts` lines 19–24); `requireUser` (`convex/lib/requireUser.ts`) throws `"Not authenticated"`, `"User not found"`, `"This account is not active"`.
+- **GOAL:** A new public mutation `askFounder.submit` validates subject, body and priority and inserts one `askFounderQueue` row carrying only the caller's email and name (never page, task or chat content), returning the new row id.
+- **SCOPE:** `convex/askFounder.ts` · test: `convex/askFounder.test.ts`.
+- **MUTATES:** `convex/askFounder.ts` (new) · `convex/askFounder.test.ts` (new) · `askFounderQueue` rows (insert). No schema, env, route or cron change.
+- **STEPS:**
+  1. Code-map check: `test -e convex/askFounder.ts` fails (new file); `grep -n "askFounderQueue" convex/schema.ts` prints the CFG-017 table (if absent report `blocked: missing CFG-017`); `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts` prints a line (TFV2-0000a; if absent report `blocked: missing TFV2-0000a`); `grep -n "export async function requireUser" convex/lib/requireUser.ts` prints a line.
+  2. Create `convex/askFounder.ts` with the constants and the `submit` mutation exactly as SPEC.
+  3. Create `convex/askFounder.test.ts` with the 9 TESTS cases (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`).
+  4. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test convex/askFounder.test.ts` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary lines plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** read or attach any `notes`, `tasks`, `messages`, `conversations` or `memories` data; send email or call `fetch` (delivery is TFV2-0269c); schedule anything; log the subject or body; edit `convex/schema.ts`, `convex/crons.ts` or `convex/_generated/*`; touch `apps/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0268 / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```ts
+  // convex/askFounder.ts
+  import { v } from "convex/values";
+  import type { Id } from "./_generated/dataModel";
+  import { type MutationCtx, mutation } from "./_generated/server";
+  import { requireUser } from "./lib/requireUser";
 
-### TFV2-0269 — Ask founder backend: notify Amit (http action webhook)
+  export const SUBJECT_MAX_CHARS = 120;   // ask-founder.html subject input maxlength="120"
+  export const BODY_MAX_CHARS = 4000;     // proposed cap; see OPEN
+  export const PRIORITIES = ["low", "medium", "high"] as const;
+  export type FounderPriority = (typeof PRIORITIES)[number];
+
+  export const submit = mutation({
+    args: { subject: v.string(), body: v.string(), priority: v.string() },
+    returns: v.id("askFounderQueue"),
+    handler: async (
+      ctx: MutationCtx,
+      args: { subject: string; body: string; priority: string },
+    ): Promise<Id<"askFounderQueue">> => { /* rules below */ },
+  });
+  ```
+  Rules, in this order:
+  1. `const user = await requireUser(ctx);`
+  2. `subject = args.subject.trim()`; `subject === ""` → `throw new Error("Subject is required")`; `[...subject].length > SUBJECT_MAX_CHARS` → `throw new Error("Subject is too long")`.
+  3. `body = args.body.trim()`; `body === ""` → `throw new Error("Message is required")`; `[...body].length > BODY_MAX_CHARS` → `throw new Error("Message is too long")`.
+  4. `!(PRIORITIES as readonly string[]).includes(args.priority)` → `throw new Error("Invalid priority")` (`priority` is `v.string()` so this message, not a validator error, reaches the UI).
+  5. `const now = Date.now();` insert `{ userId: user._id, email: user.email, ...(user.name?.trim() ? { name: user.name.trim() } : {}), subject, body, priority: args.priority as FounderPriority, createdAt: now, updatedAt: now }` (no `notifiedAt`, no `deletedAt`) and return the id.
+  Length is counted in Unicode code points (`[...s].length`), so a Hebrew subject of 120 letters passes. Auth: any signed-in, active user. Limits: one row per call; no rate limit (see OPEN). p95 latency: UNKNOWN (no baseline).
+  Errors (each has exactly one TESTS case): `"Not authenticated"` (no identity), `"Subject is required"`, `"Subject is too long"`, `"Message is required"`, `"Message is too long"`, `"Invalid priority"`.
+- **TESTS:** (`bun:test`; each case builds its ctx, seeds with `ctx.db.insert` / `ctx.db.patch`, calls `run(submit, ctx, args)`)
+  1. Given `makeFakeCtx("users:1")` with the users row patched to `{ email: "maya@example.com", name: "Maya Ronen" }` / When `submit({ subject: "  Calendar idea ", body: "Could Today show tomorrow's first event?", priority: "medium" })` / Then it returns an id and `ctx.db.get(id)` has `userId: "users:1"`, `email: "maya@example.com"`, `name: "Maya Ronen"`, `subject: "Calendar idea"`, `body: "Could Today show tomorrow's first event?"`, `priority: "medium"`, numeric `createdAt === updatedAt`, and no `notifiedAt` key.
+  2. Given a user with no `name` / When a valid submit runs / Then the stored row has no `name` key (`"name" in row` is false).
+  3. Given `makeSignedOutCtx()` / When `submit` runs with valid args / Then it rejects with `"Not authenticated"`.
+  4. Given a signed-in user / When `subject: "   "` / Then it rejects with `"Subject is required"` and `ctx.db.query("askFounderQueue").collect()` resolves `[]`.
+  5. Given a signed-in user / When `subject` is `"א".repeat(121)` / Then it rejects with `"Subject is too long"`; and with `"א".repeat(120)` it resolves an id (boundary).
+  6. Given a signed-in user / When `body: ""` / Then it rejects with `"Message is required"`.
+  7. Given a signed-in user / When `body` is `"x".repeat(4001)` / Then it rejects with `"Message is too long"`.
+  8. Given a signed-in user / When `priority: "urgent"` / Then it rejects with `"Invalid priority"`.
+  9. Given a signed-in user (with `name`) who owns a `notes` row `{ userId: "users:1", title: "Private" }` / When a valid submit runs / Then `Object.keys(row).sort()` equals `["_creationTime", "_id", "body", "createdAt", "email", "name", "priority", "subject", "updatedAt", "userId"]` — nothing from other tables is attached.
+- **NUMBERS:** subject ≤ 120 code points (ask-founder.html `maxlength="120"`; test 5) · body ≤ 4,000 code points (proposed, OPEN; test 7) · 9 of 9 tests pass · p95 latency UNKNOWN (no baseline in this repo; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-017 (Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit. Own question: is a 4,000-character message cap with no per-user rate limit right? — Amit.
+
+### TFV2-0269a — Ask the founder: `askFounder.listUnnotified` (internal query) (`convex/askFounder.ts`) — OPEN
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0268.
-- **WHY:** ask-founder screen ("webhook notifies Amit privately").
-- **GOAL:** A queued founder message triggers a private notification to Amit (a person reads every message).
-- **SCOPE:** `convex/askFounder.ts` + `convex/askFounder.test.ts`.
-- **MUTATES:** none (delivery side-effect).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) an internal action/queue processor notifies Amit via the configured channel (names only); 3) do not log message bodies; 4) run DONE.
-- **DONE:** `bun test convex/askFounder.test.ts` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** print message content or keys; do not invent a channel (see OPEN).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend internal action. Error cases: notify failure → retry queue (idempotent), never drop the message. Delivery is fire-and-forget after the queue insert.
-- **TESTS:** Given a queued message · When processed (mocked notifier) · Then notifier called once with subject+email, never body. Given a notifier failure · Then row stays queued for retry. Given duplicate processing · Then notifier called once.
-- **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** the founder notification channel (email vs Slack vs other) — Amit.
+- **WHY:** ask-founder.html ("a person reads every message"; a private notice reaches Amit); CFG-017 adds index `by_notifiedAt` on `["notifiedAt"]` so a processor can read the rows not yet notified; CONVENTIONS §16 (one function per ticket; bounded reads with a named constant).
+- **GOAL:** An internal query returns at most `NOTIFY_BATCH` queued founder messages that have not been notified, oldest first, with only the fields the notifier needs (never the message body).
+- **SCOPE:** `convex/askFounder.ts` · test: `convex/askFounder.test.ts`.
+- **MUTATES:** `convex/askFounder.ts` (edit: add `NOTIFY_BATCH`, `FounderNotice`, `listUnnotified`) · `convex/askFounder.test.ts` (edit: add 3 cases). No data written.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const submit" convex/askFounder.ts` prints a line (TFV2-0268; if absent report `blocked: missing TFV2-0268`); `grep -n "by_notifiedAt" convex/schema.ts` prints the index.
+  2. Add `NOTIFY_BATCH`, `FounderNotice` and `listUnnotified` to `convex/askFounder.ts` exactly as SPEC (add `internalQuery` and `type QueryCtx` to the existing `./_generated/server` import).
+  3. Append the 3 TESTS cases to `convex/askFounder.test.ts` (the 9 cases of TFV2-0268 stay unchanged).
+  4. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test convex/askFounder.test.ts` → `12 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes.
+- **DO NOT:** return `body`; export it as a public `query`; change `submit`; edit `convex/schema.ts`; touch `apps/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269a / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const NOTIFY_BATCH = 20;
+  export type FounderNotice = { id: Id<"askFounderQueue">; email: string; name: string | null; subject: string; priority: FounderPriority; createdAt: number };
+  export const listUnnotified = internalQuery({
+    args: {},
+    returns: v.array(v.object({
+      id: v.id("askFounderQueue"), email: v.string(), name: v.union(v.string(), v.null()),
+      subject: v.string(), priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")), createdAt: v.number(),
+    })),
+    handler: async (ctx: QueryCtx): Promise<FounderNotice[]> => { /* rules below */ },
+  });
+  ```
+  Rules: `rows = await ctx.db.query("askFounderQueue").withIndex("by_notifiedAt", (q) => q.eq("notifiedAt", undefined)).take(NOTIFY_BATCH * 2)`; drop rows with `deletedAt !== undefined`; sort by `createdAt` ascending; keep the first `NOTIFY_BATCH`; map to `{ id: r._id, email: r.email, name: r.name ?? null, subject: r.subject, priority: r.priority, createdAt: r.createdAt }`. Auth: internal only (not callable from clients), no `requireUser`. Errors: none.
+- **TESTS:**
+  1. Given rows A (`createdAt: 2`, no `notifiedAt`), B (`createdAt: 1`, no `notifiedAt`), C (`createdAt: 0`, `notifiedAt: 5`) / When `run(listUnnotified, ctx, {})` / Then it returns exactly two items with ids `[B, A]` in that order and no item has a `body` key.
+  2. Given 21 un-notified rows / When it runs / Then it returns 20 items (bounded read).
+  3. Given an un-notified row with `deletedAt: 3` / When it runs / Then that row is not returned.
+- **NUMBERS:** batch ≤ `NOTIFY_BATCH` = 20 (code constant; test 2) · 12 of 12 tests pass · p95 latency UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
 
-### TFV2-0270 — Built-in module catalog (starter templates → built-in modules)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0234.
-- **WHY:** PRD F-43 ("built-in templates appear as built-in modules"); modules screen "Built in".
-- **GOAL:** The built-in templates are listed as built-in modules with a lock badge and no delete path.
-- **SCOPE:** `convex/lib/templateCatalog.ts` + `convex/lib/templateCatalog.test.ts`.
-- **MUTATES:** none (catalog read).
-- **STEPS:** 1) Graphify code-map check (`STARTER_TEMPLATES` EXISTS — verify); 2) map each of the 9 starters to a built-in module view `{id,name,does,kind,builtIn:true,on}`; 3) run DONE.
-- **DONE:** `bun test convex/lib/templateCatalog.test.ts` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** change starter bodies/copy; do not add a delete path.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Backend library. `builtInModules()` maps the 9 `STARTER_TEMPLATES` entries to `{id, name, does, kind, builtIn:true, on}`: Daily page, Weekly page, Monthly page, Meeting notes, Project brief, Reading notes, Journal, Task review, Project review. Each has a `does` string and `builtIn:true`. Copy EN/HE: `EN:"Daily page" / HE:"דף יומי"`; `EN:"Built-in" / HE:"מובנה"`.
-- **TESTS:** Given the catalog · When `builtInModules` · Then nine entries, all `builtIn:true`. Given a starter id · When mapped · Then no `delete` flag present.
-- **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** "Habits on Today" is not in `STARTER_TEMPLATES` — whether it is its own built-in module or a page-type flag — Amit.
-### TFV2-0271 — ModuleCard
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0248a · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0248.
-- **WHY:** components.md §2.13 (`ModuleCard`); modules screen.
-- **GOAL:** A card shows one module (icon, name, one-line "does", badges, on/off switch) with the word always present.
-- **SCOPE:** `apps/web/components/modules/ModuleCard.tsx` + `apps/web/components/modules/ModuleCard.css` (new, owns `.tp-module-card`) + `apps/web/app/e2e/components/module-card/page.tsx` (harness) · test: `tests/e2e/screens/module-card.spec.ts`.
-- **MUTATES:** `apps/web/components/modules/ModuleCard.tsx` (new), `apps/web/components/modules/ModuleCard.css` (new), `apps/web/app/e2e/components/module-card/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (ModuleCard MISSING; `ModulesScreen.tsx` EXISTS in `components/modules/` — realign to `modules.setEnabled`/`modules.list` per TFV2-0248). 2) Render `.tp-module-card` with `data-on`/`data-builtin`; classes in `ModuleCard.css`. 3) Switch calls `modules.setEnabled`; built-in shows a lock badge and no delete. 4) Create `apps/web/app/e2e/components/module-card/page.tsx` (client) rendering each state under `data-testid="module-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/module-card.spec.ts` navigating `/e2e/components/module-card` and `?lang=he`, asserting on/off/built-in + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-card.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** add a delete button for built-ins; do not use colour alone (badge + word).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Layout: `.tp-card` grid, icon `.tp-icon` at start, name as `<h3>` link to module-preview, `.tp-module-card__does` one line, badges row, `.tp-module-card__switch` with a `Switch`. Tokens: `--tp-space-3` gaps, `--tp-text-sm` meta. States: default (on/off), built-in (lock + `Built-in`), disabled-while-plain (switch `aria-disabled`). Copy EN/HE: `EN:"Built-in" / HE:"מובנה"`; `EN:"Made with the coach" / HE:"נוצר עם המאמן"`; `EN:"Made by you" / HE:"נוצר על ידך"`; `EN:"On" / HE:"פועל"`; `EN:"Off" / HE:"כבוי"`. RTL: logical properties; switch thumb flips via `[dir="rtl"]`. Screen reader: switch `aria-labelledby` the name, `aria-describedby` the "does". Breakpoints: card stacks full-width at 390, sits in auto-fill grid ≥768. Motion: switch 120 ms.
-- **TESTS:** Playwright: at 390 and 1280, EN and HE — given a user module, assert name/does/badges render; toggle the switch, assert `data-on` and the word flips On↔Off; given a built-in, assert the lock badge and that no delete control exists.
-- **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) · text ≥ 13 px (DESIGN.md §3) · motion ≤ 250 ms (DESIGN.md §7).
+### TFV2-0269b — Ask the founder: `askFounder.markNotified` (internal mutation) (`convex/askFounder.ts`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0269a · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0269a.
+- **WHY:** The notifier (TFV2-0269c) must never notify the same message twice; it stamps `notifiedAt` (CFG-017 field) after a successful send. CONVENTIONS §16.
+- **GOAL:** An internal mutation sets `notifiedAt` on one queued row only if it is not already set, and reports whether it changed it.
+- **SCOPE:** `convex/askFounder.ts` · test: `convex/askFounder.test.ts`.
+- **MUTATES:** `convex/askFounder.ts` (edit: add `markNotified`) · `convex/askFounder.test.ts` (edit: add 3 cases) · `askFounderQueue.notifiedAt` / `updatedAt` (patch).
+- **STEPS:**
+  1. Code-map check: `grep -n "export const listUnnotified" convex/askFounder.ts` prints a line (TFV2-0269a; if absent report `blocked: missing TFV2-0269a`).
+  2. Add `markNotified` exactly as SPEC (add `internalMutation` to the server import).
+  3. Append the 3 TESTS cases.
+  4. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test convex/askFounder.test.ts` → `15 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes.
+- **DO NOT:** delete or change any other field; make it public; touch `apps/**`, `convex/schema.ts`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269b / evidence: <DONE output> / changed: convex/askFounder.ts, convex/askFounder.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export const markNotified = internalMutation({
+    args: { id: v.id("askFounderQueue"), at: v.number() },
+    returns: v.object({ changed: v.boolean() }),
+    handler: async (ctx: MutationCtx, args: { id: Id<"askFounderQueue">; at: number }): Promise<{ changed: boolean }> => { /* rules */ },
+  });
+  ```
+  Rules: `row = await ctx.db.get(args.id)`; `row === null` → `throw new Error("Message not found")`; `row.notifiedAt !== undefined` → return `{ changed: false }` (idempotent; no write); else `await ctx.db.patch(args.id, { notifiedAt: args.at, updatedAt: args.at })` and return `{ changed: true }`. Auth: internal only. Errors: `"Message not found"` (one test).
+- **TESTS:**
+  1. Given an un-notified row / When `markNotified({ id, at: 1000 })` / Then it returns `{ changed: true }` and the row has `notifiedAt: 1000`, `updatedAt: 1000`.
+  2. Given a row with `notifiedAt: 500` / When `markNotified({ id, at: 1000 })` / Then it returns `{ changed: false }` and `notifiedAt` is still 500.
+  3. Given the id `"askFounderQueue:999"` that does not exist / When it runs / Then it rejects with `"Message not found"`.
+- **NUMBERS:** 15 of 15 tests pass · p95 latency UNKNOWN (no baseline; not a gate).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+
+### TFV2-0269c — Ask the founder: `askFounder.notifyQueued` (internal action) + cron line (`convex/askFounder.ts`, `convex/crons.ts`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0269b · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0269b.
+- **WHY:** ask-founder.html ("webhook notifies Amit privately"); PRD F-110. Code truth: email already goes out through Resend in `convex/lib/signInEmail.ts` (`RESEND_EMAILS_URL = "https://api.resend.com/emails"` line 23, exported `escapeHtml`, `Authorization: Bearer <key>`, never reads the error body); secret names in `factory/SLOTS.md` → Secrets: `AUTH_RESEND_KEY`, `RESEND_FROM_EMAIL`, `BETA_FOUNDER_EMAIL`. `convex/crons.ts` has one job today (`crons.interval("expire transient page payloads", { minutes: 5 }, internal.pageCleanup.runBatch, {})`). CONVENTIONS §17 (crons line), §16.
+- **GOAL:** Every 5 minutes an internal action sends Amit one private email per queued founder message (sender name, email, subject and priority — never the message text), then marks it notified; a failed send leaves the row queued for the next run.
+- **SCOPE:** `convex/askFounder.ts` · `convex/crons.ts` (one exact line, §17) · test: `convex/askFounder.test.ts`.
+- **MUTATES:** `convex/askFounder.ts` (edit: add `FOUNDER_NOTICE_SUBJECT_PREFIX`, `founderNoticeEmail`, `notifyQueued`) · `convex/crons.ts` (edit: one line) · `convex/askFounder.test.ts` (edit: add 5 cases) · outbound email to `BETA_FOUNDER_EMAIL` via Resend at runtime · `askFounderQueue.notifiedAt` (through `markNotified`). No env value is created or printed.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const markNotified\|export const listUnnotified" convex/askFounder.ts` prints both (if absent report `blocked: missing TFV2-0269b`); `grep -n "export const RESEND_EMAILS_URL\|export function escapeHtml" convex/lib/signInEmail.ts` prints both; `grep -n "crons.interval" convex/crons.ts` prints the existing job.
+  2. Add `FOUNDER_NOTICE_SUBJECT_PREFIX`, the exported pure helper `founderNoticeEmail` and the internal action `notifyQueued` to `convex/askFounder.ts` exactly as SPEC (import `internal` from `./_generated/api`, `internalAction` and `type ActionCtx` from `./_generated/server`, `RESEND_EMAILS_URL` and `escapeHtml` from `./lib/signInEmail`).
+  3. In `convex/crons.ts`, insert the SPEC line directly before `export default crons;`.
+  4. Append the 5 TESTS cases; tests replace `globalThis.fetch` with a recorder and restore it in `afterEach`, and set/restore the three env names with placeholder test strings (`"test-key"`, `"founder@example.com"`).
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test convex/askFounder.test.ts` → `20 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus typecheck and lint exit codes; `git diff convex/crons.ts` showing exactly one added line.
+- **DO NOT:** put the message body, any page/task/chat text or a key into the email, a log or an error; print or log env values; read the Resend error body; retry inside one run (the next tick retries); add a second cron line or change the existing one; edit `convex/lib/signInEmail.ts`, `convex/schema.ts`, `convex/http.ts`; touch `apps/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0269c / evidence: <DONE output> / changed: convex/askFounder.ts, convex/crons.ts, convex/askFounder.test.ts / unknowns: UNKNOWN: real Resend delivery (tests stub fetch) / notes for ticket sync`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  export const FOUNDER_NOTICE_SUBJECT_PREFIX = "Tempo · Ask the founder · ";
+  /** Pure: the email for one queued message. Never includes the message body. */
+  export function founderNoticeEmail(n: FounderNotice): { subject: string; text: string; html: string };
+  // subject = FOUNDER_NOTICE_SUBJECT_PREFIX + n.priority
+  // lines   = [`From: ${n.name ?? "(no name)"} <${n.email}>`, `Subject: ${n.subject}`, `Priority: ${n.priority}`, `Sent: ${new Date(n.createdAt).toISOString()}`, "Read it in the askFounderQueue table."]
+  // text    = lines.join("\n");   html = lines.map(escapeHtml).join("<br>")
+
+  export const notifyQueued = internalAction({
+    args: {},
+    returns: v.object({ sent: v.number(), failed: v.number(), skipped: v.boolean() }),
+    handler: async (ctx: ActionCtx): Promise<{ sent: number; failed: number; skipped: boolean }> => { /* rules */ },
+  });
+  ```
+  Rules: 1) `key = process.env.AUTH_RESEND_KEY`, `to = process.env.BETA_FOUNDER_EMAIL`, `from = process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>"` (same default as `convex/auth.ts`); `!key || !to` → return `{ sent: 0, failed: 0, skipped: true }` without reading the queue. 2) `notices = await ctx.runQuery(internal.askFounder.listUnnotified, {})`. 3) For each notice in order: build the email; `try { res = await fetch(RESEND_EMAILS_URL, { method: "POST", headers: { Authorization: \`Bearer ${key}\`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to, subject, text, html }) }) } catch { failed += 1; continue; }`; `!res.ok` → `failed += 1`, continue (body never read); ok → `await ctx.runMutation(internal.askFounder.markNotified, { id: notice.id, at: Date.now() })`, `sent += 1`. 4) Return `{ sent, failed, skipped: false }`. Never throws for a send failure.
+  Cron line (§17), inserted before `export default crons;`:
+  ```ts
+  crons.interval("notify founder of queued messages", { minutes: 5 }, internal.askFounder.notifyQueued, {});
+  ```
+  Auth: internal only (cron). Limits: ≤ `NOTIFY_BATCH` (20) emails per run. Errors: none thrown; failures are counted.
+- **TESTS:** (action ctx is a plain object `{ runQuery, runMutation }` whose functions record calls and return seeded values; `run(notifyQueued, ctx, {})` calls the handler)
+  1. Given `founderNoticeEmail({ id: "askFounderQueue:1", email: "maya@example.com", name: "Maya", subject: "<b>Hi</b>", priority: "high", createdAt: 0 })` / Then `subject === "Tempo · Ask the founder · high"`, `text` contains `"From: Maya <maya@example.com>"` and `"Subject: <b>Hi</b>"`, and `html` contains `"&lt;b&gt;Hi&lt;/b&gt;"` and not `"<b>"`.
+  2. Given env set and `runQuery` returning two notices, and `fetch` resolving `{ ok: true }` / When `notifyQueued` runs / Then `fetch` was called twice with URL `"https://api.resend.com/emails"`, each parsed body has `to === "founder@example.com"` and keys exactly `from, to, subject, text, html`, `runMutation` was called twice with the two ids in order, and it returns `{ sent: 2, failed: 0, skipped: false }`.
+  3. Given one notice and `fetch` resolving `{ ok: false, status: 500 }` / When it runs / Then `runMutation` was not called and it returns `{ sent: 0, failed: 1, skipped: false }` (row stays queued).
+  4. Given one notice and `fetch` rejecting / When it runs / Then it resolves `{ sent: 0, failed: 1, skipped: false }` and does not throw.
+  5. Given `BETA_FOUNDER_EMAIL` unset / When it runs / Then `runQuery` and `fetch` were never called and it returns `{ sent: 0, failed: 0, skipped: true }`.
+- **NUMBERS:** ≤ 20 emails per 5-minute run (`NOTIFY_BATCH`; cron interval 5 min, the same interval as the existing job) · notice reaches Resend ≤ 5 min after submit (delivery time after Resend UNKNOWN; not a gate) · 20 of 20 tests pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback`, and is this shape right?) — Amit. Own question: is a private email to `BETA_FOUNDER_EMAIL` through Resend (sender name, email, subject, priority; never the message text) the founder notification channel, or another one (Slack, an admin page)? — Amit.
+
+### TFV2-0270 — Built-in module catalog (starter templates → built-in modules) — superseded by TFV2-0248a
+- **Status:** superseded by TFV2-0248a; not a build ticket.
+
+### TFV2-0271 — Component: ModuleCard (`apps/web/components/modules/ModuleCard.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093.
+- **WHY:** `docs/design/v3/components.md` §2.13 (ModuleCard: icon, name, one-line "does", badges, on/off switch with the word always present; built-ins can be switched but never deleted); design `docs/design/v3/screens/web/modules.html` (`@component ModuleCard`, markup lines 140–152); tempo.css `@component ModuleCard` block (line 1268: `.tp-module-card`, `__icon`, `__name`, `__does`, `__meta`, `__switch`, `[data-on]`, `[data-builtin]`) and `@component Switch` block (line 1044: `.tp-switch`, `__track`, `__thumb`, `__state`) → CONVENTIONS §10 Case A. Code truth: today the cards are drawn inline in `apps/web/components/modules/ModulesScreen.tsx` (built-ins only, no switch); the row shape the screen will pass is range-6 `modules.list` → `{ moduleId: string; name: string; does: string; builtIn: boolean; madeByCoach: boolean; on: boolean }` (TFV2-0248a). Whether a built-in can be switched off is undecided (CFG-R6-2), so the card takes `canToggle` and never decides it.
+- **GOAL:** `ModuleCard` renders one module card (icon, name, "does" line, origin badge, and either an On/Off switch or an "Always on" badge) from props only, reporting a switch flip through `onToggle`, proven in the harness at both viewports and both languages.
+- **SCOPE:** `apps/web/components/modules/ModuleCard.tsx` · `apps/web/app/e2e/components/module-card/page.tsx` · test: `tests/e2e/screens/module-card.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModuleCard.tsx` (new) · `apps/web/app/e2e/components/module-card/page.tsx` (new) · `tests/e2e/screens/module-card.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component ModuleCard \|@component Switch " apps/web/app/tempo.css` prints lines 1268 and 1044; `test -e apps/web/components/modules/ModuleCard.tsx` fails (new); `grep -n "export function Badge" apps/web/components/layout/Badge.tsx` prints a line (TFV2-0093; if absent report `blocked: missing TFV2-0093 Badge`); `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (TFV2-0023b, TFV2-0000b). Read `apps/web/components/modules/ModulesScreen.tsx` (reference only; not edited).
+  2. Stylesheet: Case A — no `.css` file; use only the classes in SPEC.
+  3. Create `ModuleCard.tsx` (`"use client"`) exactly as SPEC, with the `COPY` constant at the top (CONVENTIONS §11).
+  4. Create the harness page with the four SPEC states, fixtures inline (CONVENTIONS §13), `onToggle` writing to `module-card-log`.
+  5. Create the spec with the CONVENTIONS §22 spec skeleton (`openHarness(page, "module-card", { lang })`) and the 6 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-card.spec.ts --reporter=line` → `24 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** call Convex, `fetch` or any hook other than `useLocale`; render a delete, remove or "…" menu control; add a link on the name (live modules have no detail page); show on/off by colour alone (the word is always rendered); add a stylesheet or edit `tempo.css`, `ModulesScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0271 / evidence: <DONE output> / changed: apps/web/components/modules/ModuleCard.tsx, apps/web/app/e2e/components/module-card/page.tsx, tests/e2e/screens/module-card.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type ModuleCardModule = { moduleId: string; name: string; does: string; builtIn: boolean; madeByCoach: boolean; on: boolean };
+  export type ModuleCardProps = {
+    module: ModuleCardModule;          // name/does already in the reader's language (the screen localises built-ins)
+    canToggle: boolean;                // false → no switch, an "Always on" badge instead
+    onToggle: (change: { moduleId: string; on: boolean }) => void;
+  };
+  export function ModuleCard({ module, canToggle, onToggle }: ModuleCardProps): JSX.Element;
+  ```
+  - **Copy** (`type CopyKey = "builtIn" | "coach" | "you" | "alwaysOn" | "on" | "off"`):
+    | key | EN | HE |
+    |---|---|---|
+    | builtIn | Built-in | מובנה |
+    | coach | Made with the coach | נוצר עם המאמן |
+    | you | Made by you | נוצר על ידך |
+    | alwaysOn | Always on | תמיד פועל |
+    | on | On | פועל |
+    | off | Off | כבוי |
+  - **Markup:** `nameId = "module-" + module.moduleId.replace(/[^a-zA-Z0-9_-]/g, "-")`. Root `<article className="tp-module-card" data-component="ModuleCard" data-on={String(module.on)} data-builtin={String(module.builtIn)}>` →
+    1. `<span className="tp-module-card__icon"><TpIcon name={module.builtIn ? "template" : "module"} /></span>`;
+    2. `<h3 className="tp-module-card__name" id={nameId} dir="auto">{module.name}</h3>`;
+    3. `<p className="tp-module-card__does" dir="auto" id={nameId + "-does"}>{module.does}</p>`;
+    4. `<div className="tp-module-card__meta">` with one origin badge — builtIn → `<Badge label={copy.builtIn} icon={<TpIcon name="lock" size="sm" />} />`; else madeByCoach → `<Badge label={copy.coach} icon={<TpIcon name="sparkle" size="sm" />} />`; else `<Badge label={copy.you} icon={<TpIcon name="edit" size="sm" />} />` — plus, when `!canToggle`, `<Badge label={copy.alwaysOn} tone="done" icon={<TpIcon name="check" size="sm" />} />`;
+    5. when `canToggle`: `<div className="tp-module-card__switch"><button type="button" className="tp-switch" role="switch" aria-checked={module.on} aria-labelledby={nameId} aria-describedby={nameId + "-does"} data-component="Switch" onClick={() => onToggle({ moduleId: module.moduleId, on: !module.on })}><span className="tp-switch__track" aria-hidden="true"><span className="tp-switch__thumb" /></span><span className="tp-switch__state">{module.on ? copy.on : copy.off}</span></button></div>`.
+    `TpIcon` from `@/components/tempo/TpIcon`, `Badge` from `@/components/layout/Badge` (TFV2-0093: `{ label: string; tone?: "neutral"|"done"|"info"|"caution"; icon?: ReactNode }`). The card is controlled: it never flips `data-on` itself.
+  - **Styling** (tempo.css, Case A): grid `auto minmax(0, 1fr) auto`, gap `--tp-space-1` `--tp-space-4`, padding `--tp-space-4`, `--tp-paper`, `1px solid var(--tp-line)`, radius `--tp-radius-lg`; icon box 40 px (`--tp-space-10`) on `--tp-sunken`; name `--tp-text-md` 600; does `--tp-text-sm` `--tp-ink-muted`; `[data-on="false"]` name goes `--tp-ink-muted`; switch track 44 × 24 px, `min-height: var(--tp-touch)` (44 px), thumb moves with `--tp-dur-fast` (120 ms); `[dir="rtl"]` mirrors the thumb (tempo.css line 1051). An ancestor with `data-plain="on"` greys non-built-in cards (line 1276).
+  - **States (harness order):** `default` (`{ moduleId: "m-water", name: "Water", does: "Adds a water tracker to Today, goal 6 glasses. No reminders.", builtIn: false, madeByCoach: true, on: true }`, `canToggle: true`), `off` (`{ moduleId: "m-wind", name: "Evening wind-down", does: "Adds a short wind-down checklist to the bottom of daily pages.", builtIn: false, madeByCoach: false, on: false }`, `canToggle: true`), `built-in` (`{ moduleId: "starter:daily-page", name: "Daily page", does: "A short outline for one day.", builtIn: true, madeByCoach: false, on: true }`, `canToggle: true`), `always-on` (same module as `built-in` with id `"starter:weekly-page"`, name "Weekly page", does "A few outcomes and a place for each day.", `canToggle: false`). Fixture names stay English in both languages (they are user data). Loading / empty / error / offline / disabled belong to the screen (TFV2-0275a).
+  - **RTL:** logical grid; the switch sits at inline-end; the thumb direction flips under `[dir="rtl"]`; names `dir="auto"`. **Keyboard / screen reader:** the switch is a native `button` with `role="switch"`, Space/Enter toggle it, its name is the module name (`aria-labelledby`) and its description the "does" line; the On/Off word is visible text inside it, so state is never colour alone. **Breakpoints:** one card layout at 390 / 768 / 1024 / 1280 (the screen's CardGrid decides columns). **Motion:** only the tempo.css switch transition (120 ms); reduced motion → instant.
+- **TESTS:** (CONVENTIONS §22 skeleton: `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only")`; each bullet runs in the viewport × language loop with `trackConsoleErrors` and `openHarness(page, "module-card", { lang })`, ending `expect(errors).toEqual([])`; the spec keeps its own EN/HE copy table; 6 × 4 = 24)
+  1. Given `module-card-default` / Then its `article[data-component="ModuleCard"]` has `data-on="true"` and `data-builtin="false"`, the `h3` reads "Water", a Badge reads `coach` for `lang`, the `role="switch"` button has `aria-checked="true"`, its accessible name is "Water", and its `.tp-switch__state` reads `on` for `lang`.
+  2. Given `module-card-default` / When the switch is clicked / Then `module-card-log` reads `onToggle:{"moduleId":"m-water","on":false}` and the card still has `data-on="true"` (controlled).
+  3. Given `module-card-off` / Then the card has `data-on="false"`, the switch has `aria-checked="false"` and state word `off` for `lang`, and a Badge reads `you`; When the switch is focused and Space is pressed / Then the log reads `onToggle:{"moduleId":"m-wind","on":true}`.
+  4. Given `module-card-built-in` / Then the card has `data-builtin="true"`, a Badge reads `builtIn` and contains `use[href="#i-lock"]`, and the section contains exactly 1 `button` (the switch; no delete control).
+  5. Given `module-card-always-on` / Then the section has no `[role="switch"]` and no `button`, and a Badge with `data-tone="done"` reads `alwaysOn` for `lang`.
+  6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="module-card-"]')` and `expectMotionBudget(page, '[data-testid^="module-card-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; switch 44 px tall; bullet 6) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens` passes) · non-text contrast of the switch track ≥ 3:1 (WCAG 2.2 SC 1.4.11; `--tp-line-control`) · state not by colour alone (WCAG 2.2 SC 1.4.1; bullets 1, 3) · motion ≤ 250 ms, 0 under reduced motion (DESIGN.md; CONVENTIONS §5; bullet 6) · 24 of 24 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0272 — ModuleSummary
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0271 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0271.
-- **WHY:** components.md §2.13 (`ModuleSummary`); module-preview screen.
-- **GOAL:** A "What this module does" card lists page types, adds, changes, runs, and the validation check.
-- **SCOPE:** `apps/web/components/modules/ModuleSummary.tsx` + `apps/web/components/modules/ModuleSummary.css` (new, owns `.tp-module-what`) + `apps/web/app/e2e/components/module-summary/page.tsx` (harness) · test: `tests/e2e/screens/module-summary.spec.ts`.
-- **MUTATES:** `apps/web/components/modules/ModuleSummary.tsx` (new), `apps/web/components/modules/ModuleSummary.css` (new), `apps/web/app/e2e/components/module-summary/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (ModuleSummary MISSING). 2) Render `.tp-module-what` with a `<dl>` of `.tp-what-row`; classes in `ModuleSummary.css`. 3) Show check passed/failed with word + icon (no colour alone). 4) Create `apps/web/app/e2e/components/module-summary/page.tsx` (client) rendering each state under `data-testid="module-summary-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/module-summary.spec.ts` navigating `/e2e/components/module-summary` and `?lang=he`, asserting rows + check-failed + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-summary.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use colour alone for pass/fail; do not show raw JSON.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{shapes, adds, changes, runs, checkOk}`. Layout: `.tp-module-what__title` + `<dl>`. Copy EN/HE: `EN:"What this module does" / HE:"מה המודול הזה עושה"`; `EN:"Page types" / HE:"סוגי דפים"`; `EN:"Adds" / HE:"מוסיף"`; `EN:"Changes" / HE:"משנה"`; `EN:"Runs" / HE:"מריץ"`; `EN:"Check" / HE:"בדיקה"`; `EN:"Passed. It only uses things Tempo can draw." / HE:"עבר. הוא משתמש רק במה ש־Tempo יודע לצייר."`; `EN:"Didn't pass. See the note above." / HE:"לא עבר. ראי את ההערה למעלה."`; `EN:"Stop it" / HE:"להפסיק"`. RTL: `dl` logical. States: default, check-failed.
-- **TESTS:** Given shapes/adds/changes/runs · When rendered · Then each `.tp-what-row` shows a label and value. Given `checkOk:false` · Then the failed row with alert icon. Playwright asserts both EN and HE at 390 and 1280.
-- **NUMBERS:** text ≥ 13 px · contrast 4.5:1 (WCAG 2.2 AA, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
+### TFV2-0272 — Component: ModuleSummary (`apps/web/components/modules/ModuleSummary.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.13 (ModuleSummary: plain-language "What this module does"; the check result in words); design `docs/design/v3/screens/web/module-preview.html` (`@component ModuleSummary`, "Check: Passed / Didn't pass", "Stop it"); tempo.css `@component ModuleSummary` block (line 1278: `.tp-module-what`, `__title`, `.tp-module-what dl`) → CONVENTIONS §10 Case A. Code truth: the draft the screen reads is range-6 `modules.getDraft` → `{ templateId; name; summary: string; body; validation: { ok: boolean; problems: ("link" | "script" | "view")[] } }` (TFV2-0246a). `summary` is one plain sentence made by code, not the design's four structured rows, so this card shows that sentence plus the check and the fixed "Stop it" line; it never shows raw JSON.
+- **GOAL:** `ModuleSummary` renders the "What this module does" card — the summary sentence, the check result (passed, or didn't pass with each problem in words, icon + word) and how to stop it — from props only.
+- **SCOPE:** `apps/web/components/modules/ModuleSummary.tsx` · `apps/web/app/e2e/components/module-summary/page.tsx` · test: `tests/e2e/screens/module-summary.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModuleSummary.tsx` (new) · `apps/web/app/e2e/components/module-summary/page.tsx` (new) · `tests/e2e/screens/module-summary.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component ModuleSummary " apps/web/app/tempo.css` prints line 1278; `test -e apps/web/components/modules/ModuleSummary.tsx` fails; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `ModuleSummary.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the three SPEC states (no callbacks, so no log element is needed; the page still renders `<output data-testid="module-summary-log" />` empty for the shared contract).
+  5. Create the spec with the §22 skeleton (`openHarness(page, "module-summary", { lang })`) and the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-summary.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** render the module `body` or any JSON; show pass/fail by colour alone; add buttons (Approve/Discard belong to the screen); add a stylesheet; edit `tempo.css` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0272 / evidence: <DONE output> / changed: apps/web/components/modules/ModuleSummary.tsx, apps/web/app/e2e/components/module-summary/page.tsx, tests/e2e/screens/module-summary.spec.ts / unknowns / notes for ticket sync: modules.getDraft returns one summary sentence, not the design's Page types/Adds/Changes/Runs rows`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type ModuleProblem = "link" | "script" | "view";
+  export type ModuleSummaryProps = { summary: string; checkOk: boolean; problems: ModuleProblem[] };
+  export function ModuleSummary({ summary, checkOk, problems }: ModuleSummaryProps): JSX.Element;
+  ```
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | What this module does | מה המודול הזה עושה |
+    | does | What it does | מה הוא עושה |
+    | check | Check | בדיקה |
+    | checkOk | Passed. It only uses things Tempo can draw. | עבר. הוא משתמש רק במה ש־Tempo יודע לצייר. |
+    | checkBad | Didn't pass, so it can't go live. | לא עבר, ולכן הוא לא יכול לעלות. |
+    | link | It links to a web address. | יש בו קישור לכתובת אינטרנט. |
+    | script | It tries to run code. | הוא מנסה להריץ קוד. |
+    | view | It asks for something Tempo can't draw. | הוא מבקש משהו ש־Tempo לא יודע לצייר. |
+    | stop | Stop it | להפסיק |
+    | stopValue | Switch it off in Modules, any time. Plain mode pauses it too. | אפשר לכבות אותו במודולים בכל רגע. גם מצב פשוט משהה אותו. |
+  - **Markup:** `<section className="tp-module-what" data-component="ModuleSummary" aria-labelledby="module-what-title">` → `<h3 className="tp-module-what__title" id="module-what-title"><TpIcon name="info" size="sm" /><span>{copy.title}</span></h3>` → `<dl>` with three rows, each `<div data-row="<does|check|stop>"><dt className="tp-muted tp-small">{label}</dt><dd style={{ margin: 0 }}>…</dd></div>`:
+    - `does`: `<dd dir="auto">{summary}</dd>`;
+    - `check`: `checkOk` → `<dd data-check="ok"><TpIcon name="check" size="sm" /> <span>{copy.checkOk}</span></dd>`; else `<dd data-check="failed"><TpIcon name="alert" size="sm" /> <span>{copy.checkBad}</span>{problems.length > 0 ? <ul>{problems.map((p) => <li key={p} data-problem={p}>{copy[p]}</li>)}</ul> : null}</dd>`;
+    - `stop`: `<dd>{copy.stopValue}</dd>`.
+  - **Styling** (tempo.css, Case A): card `--tp-ground`, `1px solid var(--tp-line)`, radius `--tp-radius-lg`, padding `--tp-space-4` `--tp-space-5`, gap `--tp-space-3`; title `--tp-text-md` 600; `dl` grid gap `--tp-space-2`; labels use the existing `.tp-muted` and `.tp-small` utility classes (`--tp-ink-muted`, `--tp-text-sm`). The only inline style is `margin: 0` on `dd`.
+  - **States (harness order):** `default` (`summary: "Adds a short wind-down checklist to the bottom of daily pages. Runs nothing."`, `checkOk: true`, `problems: []`), `check-failed` (`checkOk: false`, `problems: ["view"]`, same summary), `two-problems` (`checkOk: false`, `problems: ["link", "script"]`).
+  - **RTL:** logical layout; summary `dir="auto"`. **Keyboard / screen reader:** not interactive; a `dl` with labelled rows; the section is named by its heading; the check result is a word plus an icon (`aria-hidden` via TpIcon). **Breakpoints:** one column at all widths. **Motion:** none.
+- **TESTS:** (§22 skeleton; 4 × 4 = 16)
+  1. Given `module-summary-default` / Then the heading reads `title` for `lang`, `[data-row="does"] dd` reads the fixture summary and has `dir="auto"`, `[data-check="ok"]` reads `checkOk` for `lang` and contains `use[href="#i-check"]`, and `[data-row="stop"] dd` reads `stopValue`.
+  2. Given `module-summary-check-failed` / Then `[data-check="failed"]` contains `checkBad` and `use[href="#i-alert"]`, and exactly one `li[data-problem="view"]` reads `view` for `lang`.
+  3. Given `module-summary-two-problems` / Then it has `li[data-problem="link"]` and `li[data-problem="script"]` with their copy and no `[data-check="ok"]`.
+  4. Given the harness / Then no element text contains `{` (no JSON), and `expectDir(page, lang)` passes.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · result not by colour alone (WCAG 2.2 SC 1.4.1; bullets 1–2) · text ≥ 13 px (`--tp-text-xs` is the smallest token; labels use `--tp-text-sm` 15) · 16 of 16 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0273 — PlainModeBanner
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0247a, TFV2-0247b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0247a, TFV2-0247b.
-- **WHY:** components.md §2.13 (`PlainModeBanner`); modules screen.
-- **GOAL:** A banner says Plain mode is on, sets `html[data-plain]`, and explains built-ins still work.
-- **SCOPE:** `apps/web/components/modules/PlainModeBanner.tsx` + `apps/web/components/modules/PlainModeBanner.css` (new, owns `.tp-plain-banner`) + `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (harness) · test: `tests/e2e/screens/plain-mode-banner.spec.ts`.
-- **MUTATES:** `apps/web/components/modules/PlainModeBanner.tsx` (new), `apps/web/components/modules/PlainModeBanner.css` (new), `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (PlainModeBanner MISSING). 2) Render `.tp-notice[data-tone=info].tp-plain-banner`; classes in `PlainModeBanner.css`. 3) Set `document.documentElement.dataset.plain` when on. 4) Create `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (client) rendering each state under `data-testid="plain-mode-banner-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/plain-mode-banner.spec.ts` navigating `/e2e/components/plain-mode-banner` and `?lang=he`, asserting shown/hidden + `html[data-plain]` + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plain-mode-banner.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** disable built-in switches; do not hide content.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Copy EN/HE: `EN:"Plain mode is on." / HE:"מצב פשוט פועל."`; `EN:"Your own modules are paused, so Tempo looks the way it did on day one. Built-in pages and scheduled jobs work as usual. Turn it off to bring everything back as it was." / HE:"המודולים שלך מושהים, ו־Tempo נראה כמו ביום הראשון. הדפים המובנים והמשימות המתוזמנות עובדים כרגיל. כבי אותו כדי להחזיר הכול כמו שהיה."` States: hidden (off), shown (on). `role="status"` live region.
-- **TESTS:** Given on=true · Then banner shown and `html[data-plain]` set. Given on=false · Then hidden and attribute cleared. Playwright EN/HE at 390/1280.
-- **NUMBERS:** text ≥ 13 px · contrast 4.5:1 · motion ≤ 250 ms.
+### TFV2-0273 — Component: PlainModeBanner (`apps/web/components/modules/PlainModeBanner.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.13 (PlainModeBanner: says Plain mode is on and that built-ins and scheduled jobs still work); design `docs/design/v3/screens/web/modules.html` (markup line 113, copy `plain.bannerT` / `plain.bannerB`; HE `plain.bannerB` is gendered "כבי" and uses "משימות מתוזמנות", corrected to CONVENTIONS §12); tempo.css `@component PlainModeBanner` (line 1283: `.tp-plain-banner` + `.tp-notice[data-tone="info"]`) → Case A. The greying of user cards is driven by an ancestor `data-plain="on"` (tempo.css line 1276), which the Modules view sets on its own root (TFV2-0275a), so this component never writes to `document`.
+- **GOAL:** `PlainModeBanner` renders the info notice "Plain mode is on." with its explanation when `on` is true and renders nothing when it is false.
+- **SCOPE:** `apps/web/components/modules/PlainModeBanner.tsx` · `apps/web/app/e2e/components/plain-mode-banner/page.tsx` · test: `tests/e2e/screens/plain-mode-banner.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/PlainModeBanner.tsx` (new) · `apps/web/app/e2e/components/plain-mode-banner/page.tsx` (new) · `tests/e2e/screens/plain-mode-banner.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component PlainModeBanner " apps/web/app/tempo.css` prints line 1283; `test -e apps/web/components/modules/PlainModeBanner.tsx` fails; harness frame and helpers exist (TFV2-0023b, TFV2-0000b).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `PlainModeBanner.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the two states (`on`, `off`) and an empty `<output data-testid="plain-mode-banner-log" />`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "plain-mode-banner", { lang })`) with the 3 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plain-mode-banner.spec.ts --reporter=line` → `12 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** set `document.documentElement` attributes or any global state; render a switch (the Plain mode switch belongs to the screen); hide built-in content; add a stylesheet; touch `convex/**`, i18n files, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0273 / evidence: <DONE output> / changed: apps/web/components/modules/PlainModeBanner.tsx, apps/web/app/e2e/components/plain-mode-banner/page.tsx, tests/e2e/screens/plain-mode-banner.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type PlainModeBannerProps = { on: boolean };
+  export function PlainModeBanner({ on }: PlainModeBannerProps): JSX.Element | null;
+  ```
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | title | Plain mode is on. | מצב פשוט פועל. |
+    | body | Your own modules are paused, so Tempo looks the way it did on day one. Built-in pages and scheduled jobs work as usual. Turn it off to bring everything back as it was. | המודולים שלך מושהים, ו־Tempo נראה כמו ביום הראשון. הדפים המובנים והפעולות המתוזמנות עובדים כרגיל. אפשר לכבות אותו כדי להחזיר הכול כמו שהיה. |
+  - **Markup:** `on === false` → `null`. Else `<div className="tp-notice tp-plain-banner" data-tone="info" role="status" data-component="PlainModeBanner"><span className="tp-notice__icon"><TpIcon name="info" size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title">{copy.title}</span><span>{copy.body}</span></span></div>`.
+  - **Styling** (tempo.css): `.tp-notice[data-tone="info"]` → `--tp-info-wash` background, `--tp-info` icon, radius `--tp-radius-lg`, padding `--tp-space-3` `--tp-space-4`, text `--tp-text-sm`; `.tp-plain-banner` adds `margin-bottom: var(--tp-space-2)`.
+  - **States (harness order):** `on`, `off`.
+  - **RTL:** logical flex; the icon sits at inline-start. **Keyboard / screen reader:** not focusable; `role="status"` (polite) announces the title and body when it appears. **Breakpoints:** one row at all widths; text wraps. **Motion:** none.
+- **TESTS:** (§22 skeleton; 3 × 4 = 12)
+  1. Given `plain-mode-banner-on` / Then it contains one `[data-component="PlainModeBanner"]` with `role="status"`, `data-tone="info"`, class `tp-plain-banner`, `.tp-notice__title` reading `title` and the full `body` for `lang`, and `use[href="#i-info"]`.
+  2. Given `plain-mode-banner-off` / Then it contains no `[data-component="PlainModeBanner"]`.
+  3. Given the harness / Then `document.documentElement.dataset.plain` is `undefined` (no global write) and `expectDir(page, lang)` passes.
+- **NUMBERS:** text contrast ≥ 4.5:1 (`--tp-ink` on `--tp-info-wash`; WCAG 2.2 SC 1.4.3; tokens only) · text ≥ 13 px (`--tp-text-sm` 15) · 12 of 12 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0274 — ScheduledJobRow
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0252 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0252.
-- **WHY:** components.md §2.13 (`ScheduledJobRow`); modules screen.
-- **GOAL:** A row shows a job's name, schedule (mono, LTR), last run and an on/off switch.
-- **SCOPE:** `apps/web/components/modules/ScheduledJobRow.tsx` + `apps/web/components/modules/ScheduledJobRow.css` (new, owns `.tp-job-row`) + `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (harness) · test: `tests/e2e/screens/scheduled-job-row.spec.ts`.
-- **MUTATES:** `apps/web/components/modules/ScheduledJobRow.tsx` (new), `apps/web/components/modules/ScheduledJobRow.css` (new), `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (ScheduledJobRow MISSING). 2) Render `.tp-job-row` with `.tp-job-row__schedule` in `.tp-num`; classes in `ScheduledJobRow.css`. 3) Switch → `jobs.setEnabled`; a failed last run says plainly nothing changed. 4) Create `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (client) rendering each state under `data-testid="scheduled-job-row-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/scheduled-job-row.spec.ts` navigating `/e2e/components/scheduled-job-row` and `?lang=he`, asserting name/schedule/last-run/on-off + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/scheduled-job-row.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** show cron internals; do not allow deleting a job here.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{job:{id,name,scheduleText,lastRun{at,result,pageTitle},on}}`. Copy EN/HE: `EN:"Last ran today at" / HE:"רצה לאחרונה היום ב־"`; `EN:"didn't finish. Nothing was changed." / HE:"לא הסתיימה. שום דבר לא השתנה."`; `EN:"On" / HE:"פועל"`; `EN:"Off" / HE:"כבוי"`. Schedule uses `.tp-num`/`.tp-mono` (LTR isolate). States: default, on, off, failed-last-run.
-- **TESTS:** Playwright: assert name/schedule/last-run render in EN and HE at 390/1280; toggle switch → `data-on` flips; given a failed last run → the plain "didn't finish" copy, not JSON.
-- **NUMBERS:** target ≥ 24×24 px · schedule text LTR isolate · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0275 — Modules screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0271, TFV2-0272, TFV2-0273, TFV2-0274 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0271 … TFV2-0274.
-- **WHY:** modules.html; PRD F-43; components.md §2.13.
-- **GOAL:** The Modules screen lists plain mode, your modules, scheduled jobs and built-ins with every state working.
-- **SCOPE:** `apps/web/app/(tempo)/modules/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/modules.spec.ts`.
-- **MUTATES:** route `(tempo)/modules`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build the screen from ModuleCard/PlainModeBanner/ScheduledJobRow/Section/SettingsSection; 3) wire `modules.list`, `modules.getPlainMode`, `jobs.list`, `modules.setEnabled`, `modules.setPlainMode`, `jobs.setEnabled`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/modules`); 5) add the Playwright spec; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** edit `convex/`; do not render JSON; one `.tp-btn--primary` ("Ask the coach for a module").
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-10` section gap. States: default (plain switch + 3 sections), empty (no user modules/jobs; built-ins stay; kind copy + "Talk to the coach"), loading (5 skeleton rows), error ("Couldn't load your modules."), offline (banner, switches apply on reconnect), plain (`?plain=on`: banner + user switches disabled). Copy EN/HE (from modules.html): `EN:"Modules" / HE:"מודולים"`; `EN:"Your modules" / HE:"המודולים שלך"`; `EN:"Scheduled jobs" / HE:"משימות מתוזמנות"`; `EN:"Built in" / HE:"מובנים"`; `EN:"Plain mode" / HE:"מצב פשוט"`; `EN:"You haven't made a module yet." / HE:"עוד לא יצרת מודול."`; `EN:"Couldn't load your modules. Your pages are safe." / HE:"לא הצלחנו לטעון את המודולים."`; `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`. RTL: `dir` from locale; schedule `.tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
-- **TESTS:** Playwright EN and HE at 390 and 1280: default → assert three sections and plain switch; toggle a module switch → word flips and toast "turned on/off" with Undo; `?plain=on` → banner + user switches `aria-disabled`; `?state=empty` → kind empty state, built-ins visible; `?state=loading` → skeletons; `?state=error` → error copy + Retry; `?state=offline` → offline banner.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 (Core Web Vitals, https://web.dev/articles/vitals) · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0276 — Module preview screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0272 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0272.
-- **WHY:** module-preview.html; PRD F-41/F-42.
-- **GOAL:** A draft module is previewed on a real page; Approve goes live, Discard asks first, invalid never goes live.
-- **SCOPE:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/module-preview.spec.ts`.
-- **MUTATES:** route `(tempo)/modules/preview/[draftId]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/Card/CoachArtifact/ModuleSummary/Notice/MobileSheet; 3) wire `modules.getDraft`, `modules.approve`, `modules.discardDraft`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/modules/preview/[draftId]`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** let Approve work when validation failed; do not change pages on Discard.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split` (preview left, summary/decision right). States: default (read-only preview + summary + Approve/Discard), invalid (`?view=invalid`: notice + Approve disabled with reason + "Ask the coach to fix it"), approved (done notice + Undo 5 min), discarded (notice), empty ("There's nothing to preview here."), loading, error ("Couldn't load this preview. Nothing has changed."), offline (preview readable, Approve waits). Copy EN/HE (from module-preview.html): `EN:"New module · waiting for your approval" / HE:"מודול חדש · מחכה לאישור שלך"`; `EN:"Approve" / HE:"אישור"`; `EN:"Discard" / HE:"לוותר"`; `EN:"Discard this module?" / HE:"לוותר על המודול הזה?"`; `EN:"This module has a problem, so it can't go live." / HE:"יש במודול הזה בעיה, ולכן הוא לא יכול לעלות."`; `EN:"Read only" / HE:"לקריאה בלבד"`. Approve is the one primary. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: default → preview + summary render, Approve present; click Approve → live notice + Undo toast; open Discard sheet → cancel and confirm paths; `?view=invalid` → Approve `aria-disabled` + fix link; `?state=empty|loading|error|offline` each asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo window 5:00 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0277 — CoachArtifact (wrapper)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0253a, TFV2-0253b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0253a, TFV2-0253b.
-- **WHY:** components.md §2.2 (`CoachArtifact`); PRD F-28.
-- **GOAL:** A wrapper card for the four artifacts, drawn as a page block; the user never sees JSON.
-- **SCOPE:** `apps/web/components/blocks/CoachArtifact.tsx` + `apps/web/components/blocks/CoachArtifact.css` (new, owns `.tp-artifact`) + `apps/web/app/e2e/components/coach-artifact/page.tsx` (harness) · test: `tests/e2e/screens/coach-artifact.spec.ts`.
-- **MUTATES:** `apps/web/components/blocks/CoachArtifact.tsx` (new), `apps/web/components/blocks/CoachArtifact.css` (new), `apps/web/app/e2e/components/coach-artifact/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (CoachArtifact MISSING). 2) Render `.tp-artifact` (`__head/__kind/__title/__by/__body/__foot`); classes in `CoachArtifact.css`. 3) Dispatch by `kind` to Flashcard/Quiz/Checklist/Tracker (TFV2-0278…0281). 4) Create `apps/web/app/e2e/components/coach-artifact/page.tsx` (client) rendering each state under `data-testid="coach-artifact-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/coach-artifact.spec.ts` navigating `/e2e/components/coach-artifact` and `?lang=he`, asserting each kind + unknown-kind fallback + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-artifact.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** render raw JSON; do not invent a kind.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{kind, title, by, data}`. `kind` ∈ `flashcard|quiz|checklist|tracker`. Copy EN/HE: `EN:"Added by this module" / HE:"נוסף על ידי המודול"`. RTL logical; title `dir="auto"`. States: default; unknown kind → quiet fallback.
-- **TESTS:** Given kind=checklist · Then Checklist rendered. Given kind=flashcard · Then Flashcard. Given an unknown kind · Then fallback (no crash, no JSON).
-- **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0278 — Flashcard component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0277 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0277.
-- **WHY:** components.md §2.2 (`Flashcard`); PRD F-28.
-- **GOAL:** Flashcards flip by button (never hover) and step with a counter, announcing each face.
-- **SCOPE:** `apps/web/components/blocks/Flashcard.tsx` + `apps/web/components/blocks/Flashcard.css` (new, owns `.tp-flashcard`) + `apps/web/app/e2e/components/flashcard/page.tsx` (harness) · test: `tests/e2e/screens/flashcard.spec.ts`.
-- **MUTATES:** `apps/web/components/blocks/Flashcard.tsx` (new), `apps/web/components/blocks/Flashcard.css` (new), `apps/web/app/e2e/components/flashcard/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Flashcard MISSING). 2) Render `.tp-flashcard[data-side]` (`__face/__side/__text/__count`); classes in `Flashcard.css`. 3) `card-flip` button + `card-step` with `data-dir`; no hover flip. 4) Create `apps/web/app/e2e/components/flashcard/page.tsx` (client) rendering each state under `data-testid="flashcard-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/flashcard.spec.ts` navigating `/e2e/components/flashcard` and `?lang=he`, asserting flip/step/clamp + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/flashcard.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** flip on hover; do not persist a streak.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{cards:[{front,back}], index}`. Copy EN/HE: `EN:"Card {n} of {total}" / HE:"כרטיס {n} מתוך {total}"`; `EN:"Flip" / HE:"הפוך"`. Faces are buttons; `aria-pressed` reflects side. States: front, back. RTL logical; counter `.tp-num`. Motion 180 ms flip (transform only).
-- **TESTS:** Given 3 cards · When rendered · Then card 1 front shown. Click flip → back shown and announced. Click next → card 2, counter updated; at end, next disabled.
-- **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (180 ms flip, transform/opacity only).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0279 — Quiz component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0277 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0277.
-- **WHY:** components.md §2.2 (`Quiz`); PRD F-28.
-- **GOAL:** A quiz shows one question, scores an answer and shows feedback with a word and icon.
-- **SCOPE:** `apps/web/components/blocks/Quiz.tsx` + `apps/web/components/blocks/Quiz.css` (new, owns `.tp-quiz`) + `apps/web/app/e2e/components/quiz/page.tsx` (harness) · test: `tests/e2e/screens/quiz.spec.ts`.
-- **MUTATES:** `apps/web/components/blocks/Quiz.tsx` (new), `apps/web/components/blocks/Quiz.css` (new), `apps/web/app/e2e/components/quiz/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Quiz MISSING). 2) Render `.tp-quiz` (fieldset/legend) with `.tp-choice`; classes in `Quiz.css`. 3) `quiz-check` → `quizzes.answer`, feedback `data-result`; no re-answer after check. 4) Create `apps/web/app/e2e/components/quiz/page.tsx` (client) rendering each state under `data-testid="quiz-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/quiz.spec.ts` navigating `/e2e/components/quiz` and `?lang=he`, asserting right/wrong/disabled + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quiz.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use colour alone (icon + word); do not allow re-answer after check.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{question, options:[{id,text,correct}]}`. Copy EN/HE: `EN:"Right." / HE:"נכון."`; `EN:"Not quite. The answer is: {text}" / HE:"לא מדויק. התשובה היא: {text}"`; `EN:"Check" / HE:"בדיקה"`. `fieldset` + radio-group semantics. States: unanswered, checked-right, checked-wrong. RTL logical.
-- **TESTS:** Given a question · When a wrong option checked · Then "Not quite." + correct answer shown. When correct checked · Then "Right.". Check button disabled after answer.
-- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0280 — Checklist component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0277 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0277.
-- **WHY:** components.md §2.2 (`Checklist`); PRD F-28.
-- **GOAL:** A checklist toggles items and shows "2 of 5 done".
-- **SCOPE:** `apps/web/components/blocks/Checklist.tsx` + `apps/web/components/blocks/Checklist.css` (new, owns `.tp-checklist`) + `apps/web/app/e2e/components/checklist/page.tsx` (harness) · test: `tests/e2e/screens/checklist.spec.ts`.
-- **MUTATES:** `apps/web/components/blocks/Checklist.tsx` (new), `apps/web/components/blocks/Checklist.css` (new), `apps/web/app/e2e/components/checklist/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Checklist MISSING). 2) Render `.tp-checklist` with `.tp-checkbox` items; classes in `Checklist.css`. 3) change → `pages.updateBlock`, update `.tp-checklist__count`. 4) Create `apps/web/app/e2e/components/checklist/page.tsx` (client) rendering each state under `data-testid="checklist-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/checklist.spec.ts` navigating `/e2e/components/checklist` and `?lang=he`, asserting toggle + count + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/checklist.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** persist locally; do not show a streak.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{items:[{text,done}]}`. Copy EN/HE: `EN:"{done} of {total} done" / HE:"{done} מתוך {total} בוצעו"`. Checkboxes announce "done/not done". RTL logical; count `.tp-num`.
-- **TESTS:** Given 5 items, 2 done · Then count reads "2 of 5 done". Toggle item 3 → count "3 of 5 done". Toggle off → decrements.
-- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0281 — Tracker component
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0277 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0277.
-- **WHY:** components.md §2.2 (`Tracker`); PRD F-28.
-- **GOAL:** A tracker increments/decrements a value toward a goal and announces the new value.
-- **SCOPE:** `apps/web/components/blocks/Tracker.tsx` + `apps/web/components/blocks/Tracker.css` (new, owns `.tp-tracker`) + `apps/web/app/e2e/components/tracker/page.tsx` (harness) · test: `tests/e2e/screens/tracker.spec.ts`.
-- **MUTATES:** `apps/web/components/blocks/Tracker.tsx` (new), `apps/web/components/blocks/Tracker.css` (new), `apps/web/app/e2e/components/tracker/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Tracker MISSING). 2) Render `.tp-tracker` (`__value`); classes in `Tracker.css`. 3) `tracker` + `data-dir="inc/dec"` → `trackers.log`. 4) Create `apps/web/app/e2e/components/tracker/page.tsx` (client) rendering each state under `data-testid="tracker-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/tracker.spec.ts` navigating `/e2e/components/tracker` and `?lang=he`, asserting inc/dec/at-goal/at-zero + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tracker.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** go below 0; do not use colour alone.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{label, value, goal, unit}`. Copy EN/HE: `EN:"{value} {unit} of {goal}" / HE:"{value} {unit} מתוך {goal}"`; inc/dec buttons with `aria-label`. States: default, at-goal, at-zero (dec disabled). `.tp-num` for the value.
-- **TESTS:** Given value 4 goal 6 · When inc · Then 5. At 0 · Then dec disabled. At goal · Then inc disabled.
-- **NUMBERS:** target ≥ 24×24 px · value announced via live region.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0282 — TierCard
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0261a, TFV2-0261b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0261.
-- **WHY:** components.md §2.14 (`TierCard`); PRD F-110.
-- **GOAL:** A tier card shows name, price, features and a choose action; the current plan is marked.
-- **SCOPE:** `apps/web/components/billing/TierCard.tsx` + `apps/web/components/billing/TierCard.css` (new, owns `.tp-tier`) + `apps/web/app/e2e/components/tier-card/page.tsx` (harness) · test: `tests/e2e/screens/tier-card.spec.ts`.
-- **MUTATES:** `apps/web/components/billing/TierCard.tsx` (new), `apps/web/components/billing/TierCard.css` (new), `apps/web/app/e2e/components/tier-card/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (TierCard MISSING; `billing-plan/PlanCard.tsx` EXISTS — reuse or supersede, note in REPORT). 2) Render `.tp-tier[data-current]`; classes in `TierCard.css`. 3) choose → `billing.checkout({tier, interval})`. 4) Create `apps/web/app/e2e/components/tier-card/page.tsx` (client) rendering each state under `data-testid="tier-card-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/tier-card.spec.ts` navigating `/e2e/components/tier-card` and `?lang=he`, asserting current/choose + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tier-card.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** hide or collapse a tier; do not show a price that contradicts the OPEN (use the config value).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{tier:{name,price,per,desc,features[],current?}}`. Copy EN/HE: `EN:"Your plan" / HE:"המסלול שלך"`; `EN:"a month" / HE:"לחודש"`; `EN:"a year, two months free" / HE:"לשנה, חודשיים במתנה"`. Price uses `.tp-tier__amount.tp-num` (LTR). States: default, current (badge + no choose), disabled (early-access). Stacks on phone. RTL logical.
-- **TESTS:** Given a tier with current · Then "Your plan" badge, no choose button. Given a non-current tier · Then choose button present. Playwright EN/HE at 390/1280: all four tiers visible, never collapsed.
-- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** price values — Amit (REWRITE-PLAN §4 conflict 2).
-
-### TFV2-0283 — BillingNotice
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0282 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0282.
-- **WHY:** components.md §2.14 (`BillingNotice`); billing screen.
-- **GOAL:** A notice shows trial/conversion dates with a word and icon, never colour alone.
-- **SCOPE:** `apps/web/components/billing/BillingNotice.tsx` + `apps/web/components/billing/BillingNotice.css` (new, owns `.tp-notice`) + `apps/web/app/e2e/components/billing-notice/page.tsx` (harness) · test: `tests/e2e/screens/billing-notice.spec.ts`.
-- **MUTATES:** `apps/web/components/billing/BillingNotice.tsx` (new), `apps/web/components/billing/BillingNotice.css` (new), `apps/web/app/e2e/components/billing-notice/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (BillingNotice MISSING). 2) Render `.tp-notice` with tone/text; classes in `BillingNotice.css`. 3) Create `apps/web/app/e2e/components/billing-notice/page.tsx` (client) rendering each tone under `data-testid="billing-notice-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/billing-notice.spec.ts` navigating `/e2e/components/billing-notice` and `?lang=he`, asserting tones + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-notice.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent dates; do not use colour alone.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{tone, text}`. Copy EN/HE: `EN:"You were approved early, so you have Max." / HE:"אושרת מוקדם, אז יש לך Max."`. Tones: done/info/caution. `role="status"`.
-- **TESTS:** Given tone done · Then `.tp-notice[data-tone=done]` with icon + text. Playwright EN/HE.
-- **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0284 — Billing screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282, TFV2-0283 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0282, TFV2-0283.
-- **WHY:** billing.html; PRD F-110 ("Billing visible, never hidden").
-- **GOAL:** The Plan and billing screen shows the full price table, monthly/yearly switch and "before any charge" notices.
-- **SCOPE:** `apps/web/app/(tempo)/settings/billing/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/billing.spec.ts`.
-- **MUTATES:** route `(tempo)/settings/billing`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from TierCard/BillingNotice/Segmented/SettingRow; 3) wire `billing.getMine`, `billing.listTiers`, `billing.checkout`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/settings/billing`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** hide any tier; do not store/print card numbers; do not hard-code a price (use config; values UNKNOWN).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-8` gaps. States: default (4 tiers always visible + cycle switch + "Before any charge"), loading, error ("Couldn't load your plan."), offline (prices readable, change needs connection). Copy EN/HE (from billing.html): `EN:"Plan and billing" / HE:"מסלול ותשלום"`; `EN:"Every price, in full, all the time. No surprises." / HE:"כל מחיר, במלואו, כל הזמן. בלי הפתעות."`; `EN:"Plans" / HE:"מסלולים"`; `EN:"Monthly" / HE:"חודשי"`; `EN:"Yearly, two months free" / HE:"שנתי, חודשיים במתנה"`; `EN:"Before any charge" / HE:"לפני כל חיוב"`; `EN:"Payments go through Polar, a payment service. Tempo never sees your card number." / HE:"התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך."`. Monthly/yearly switch reveals yearly price + "two months free". RTL logical; prices `.tp-num`. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: assert 4 tier cards visible (never collapsed); switch to yearly → yearly prices + "two months free" appear; assert "Before any charge" lists 3 days/1 day/1 hour; `?state=loading|error|offline` each asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** price values — Amit.
-
-### TFV2-0285 — Trial end screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0284 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0284.
-- **WHY:** trial-end.html; PRD F-110.
-- **GOAL:** The trial-end screen says plainly what happens at conversion with three calm choices and a confirmation.
-- **SCOPE:** `apps/web/app/(bare)/billing/trial-end/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/trial-end.spec.ts`.
-- **MUTATES:** route `(bare)/billing/trial-end`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from AuthCard/Notice/StatusPanel; 3) wire `billing.getMine`, `billing.acknowledgeConversion`, `billing.cancel`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/billing/trial-end`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/trial-end.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** charge now; do not guilt-trip ("are you sure you want to lose…"); no guilt copy.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `Bare` + `AuthCard`. States: default (choose), continued (StatusPanel "You're all set"), cancelled ("Your trial is cancelled"), loading, error ("Couldn't load your trial details."), offline (choice sent when back). Copy EN/HE (from trial-end.html): `EN:"Your trial ends tomorrow" / HE:"הניסיון שלך מסתיים מחר"`; `EN:"Continue with Basic" / HE:"להמשיך עם Basic"`; `EN:"See every plan" / HE:"לראות את כל המסלולים"`; `EN:"Cancel before I'm charged" / HE:"לבטל לפני שיש חיוב"`; `EN:"Cancel your trial?" / HE:"לבטל את הניסיון?"`; `EN:"Yes, cancel my trial" / HE:"כן, לבטל את הניסיון"`. "Continue with Basic" is the one primary. RTL logical; price `.tp-num`.
-- **TESTS:** Playwright EN/HE at 390/1280: default → facts render; click Continue → done panel; click Cancel → inline confirm, then confirm → cancelled panel; `?state=loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price after trial `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** price after trial — Amit.
-
-### TFV2-0286 — Templates screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234, TFV2-0270 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0234, TFV2-0270.
-- **WHY:** templates.html; PRD F-04/F-06.
-- **GOAL:** The Templates screen lists built-ins and the user's templates with search, filter, use/edit/duplicate/delete.
-- **SCOPE:** `apps/web/app/(tempo)/templates/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/templates.spec.ts`.
-- **MUTATES:** route `(tempo)/templates`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Card/CardGrid/Badge/SortMenu/SearchInput/Segmented; 3) wire `templates.list`, `templates.remove`, `templates.restore`, `templates.duplicate`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** edit `convex/`; do not delete built-ins (no delete control).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `PageHeader` (two actions: "New template", "Ask the coach for a template" — one primary). States: default, empty (built-ins stay + "You haven't made a template yet."), loading (4 skeleton cards), error ("Couldn't load your templates."), offline. Copy EN/HE (from templates.html): `EN:"Templates" / HE:"תבניות"`; `EN:"Built-in" / HE:"מובנית"`; `EN:"Yours" / HE:"שלך"`; `EN:"Use" / HE:"שימוש"`; `EN:"Edit" / HE:"עריכה"`; `EN:"Duplicate" / HE:"שכפול"`; `EN:"Delete" / HE:"מחיקה"`; `EN:"Made with the coach" / HE:"נוצרה עם המאמן"`; `EN:"Made by you" / HE:"נוצרה על ידייך"`. Delete → soft delete + Undo 5 min. Search filters by name; segmented filter all/built-in/yours. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: default → built-ins + yours; search "moving" → only matching card; filter "Yours" → built-in section hidden; delete a card → hidden + Undo toast, Undo restores; `?state=empty|loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0287 — Template builder screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240a, TFV2-0240b, TFV2-0240c, TFV2-0240d, TFV2-0240e · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0240.
-- **WHY:** template-builder.html; PRD F-06/F-23.
-- **GOAL:** The builder edits a template as blocks with a live preview and a slash menu.
-- **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-builder.spec.ts`.
-- **MUTATES:** route `(bare)/templates/builder`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from PageEditor/Split/SlashMenu/BlockHandle/TemplatePreview; 3) wire `templates.get`, `templates.update`, `templates.insertBlock/moveBlock/duplicateBlock/removeBlock`, `templates.publish`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/builder`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** edit `convex/`; do not render JSON; block handles are buttons (never drag-only).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar` ("Saved" + "Save template"). `Split --even`: builder left, live preview right (below on phones). States: default, empty (brand-new, hint to name + type "/"), loading, error ("Couldn't open this template."), offline (keep editing). Copy EN/HE (from template-builder.html): `EN:"Template builder" / HE:"בניית תבנית"`; `EN:"Template name" / HE:"שם התבנית"`; `EN:"What it is for" / HE:"למה היא נועדה"`; `EN:"Save template" / HE:"שמירת התבנית"`; `EN:"Preview of the page it makes" / HE:"תצוגה מקדימה של הדף שייווצר"`; slash menu items (`EN:"Question" / HE:"שאלה"`, `EN:"Task" / HE:"משימה"`, `EN:"Time block" / HE:"בלוק זמן"`, `EN:"Energy check-in" / HE:"בדיקת אנרגיה"`, `EN:"Heading" / HE:"כותרת"`, `EN:"Bullet list" / HE:"רשימת נקודות"`). Slash menu: type "/", arrows, Enter, Esc. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: type "/" → slash menu; Enter adds a block and preview updates; rename updates preview title; "Save template" → toast; `?state=empty|loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0288 — Template run screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239a, TFV2-0239b, TFV2-0239c · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0239.
-- **WHY:** template-run.html; PRD F-06.
-- **GOAL:** Using a template walks one question at a time, autosaves, and "Make the page" applies it with Undo.
-- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-run.spec.ts`.
-- **MUTATES:** route `(bare)/templates/run/[id]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/TemplateRunStep/RunSteps/Card/StatusPanel; 3) wire `templates.get`, `templates.getRunDraft`, `templates.saveRunDraft`, `templates.apply`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/run/[id]`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** judge answers; do not require an answer (all optional).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar`; `Split` (step left, progress/gets right). States: default ("Step 2 of 4"), done (StatusPanel "Your Week 42 page is ready."), empty (no questions → "Make the page" at once), loading, error, offline (answers stay on device). Copy EN/HE (from template-run.html): `EN:"Step {n} of {total}" / HE:"שלב {n} מתוך {total}"`; `EN:"Next" / HE:"הבא"`; `EN:"Back" / HE:"חזרה"`; `EN:"Skip this one" / HE:"לדלג על זה"`; `EN:"Make the page" / HE:"ליצור את הדף"`; `EN:"Done" / HE:"בוצע"`; `EN:"Now" / HE:"עכשיו"`; `EN:"The page will get" / HE:"מה ייכנס לדף"`. "Make the page" is the one primary (last step). RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: step 1→Next→step 2 with progress chips Done/Now/Next; Skip leaves blank; last step "Make the page" → done panel + Undo; `?state=empty|loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0289 — Template editor screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235a, TFV2-0235b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0235a, TFV2-0235b.
-- **WHY:** template-editor.html (legacy form alternative).
-- **GOAL:** The form view edits a template's name, type, tags and sections with a summary on validation failure.
-- **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-editor.spec.ts`.
-- **MUTATES:** route `(tempo)/templates/editor/[id]`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Field/Select/Section/TemplateSectionRow/FormErrorSummary/Switch; 3) wire `templates.get`, `templates.update`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/editor/[id]`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** edit `convex/`; do not lose edits on validation failure.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow` + `PageHeader` (action "Open in the builder"). States: default, invalid (missing name → summary + field error), empty (no sections → "Add a section"), loading, error, offline. Copy EN/HE (from template-editor.html): `EN:"Edit template" / HE:"עריכת תבנית"`; `EN:"Name" / HE:"שם"`; `EN:"Page type" / HE:"סוג דף"`; `EN:"Tags" / HE:"תגיות"`; `EN:"Sections, in order" / HE:"קטעים, לפי הסדר"`; `EN:"Add a section" / HE:"הוספת קטע"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"One thing to fix before saving" / HE:"דבר אחד לתקן לפני השמירה"`; `EN:"Offer on new empty pages" / HE:"להציע בדפים ריקים חדשים"`. "Save changes" is the one primary. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: save with empty name → summary focused + field error; add/remove/move sections; "Open in the builder" link; `?state=empty|loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0290 — Template sketch screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241a, TFV2-0241b, TFV2-0241c, TFV2-0241d · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0241.
-- **WHY:** template-sketch.html; PRD F-23.
-- **GOAL:** A rough outline becomes a coach proposal the user can accept, edit or reject; nothing saves until Accept.
-- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/template-sketch.spec.ts`.
-- **MUTATES:** route `(tempo)/templates/sketch`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Textarea/ProposalCard/TypingIndicator/Notice; 3) wire `templates.getSketch`, `templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`, `coach.rejectProposal`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/templates/sketch`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** save before Accept; do not call a real model in e2e (mock the seam).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split --even` (outline left, coach answer right). States: default, thinking ("Coach is writing" typing indicator), stale (outline changed → "Out of date"), empty ("Nothing sketched yet."), loading, error ("The coach couldn't answer just now."), offline. Copy EN/HE (from template-sketch.html): `EN:"Sketch a template" / HE:"שרטוט תבנית"`; `EN:"Your outline" / HE:"המתווה שלך"`; `EN:"Turn into a template" / HE:"להפוך לתבנית"`; `EN:"Accept" / HE:"לאשר"`; `EN:"Edit in the builder" / HE:"לערוך בבנייה"`; `EN:"Reject" / HE:"לדחות"`; `EN:"Out of date" / HE:"לא מעודכן"`; `EN:"Coach is writing" / HE:"המאמן כותב"`. "Turn into a template" is the one primary. Accept → Undo 5 min. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: type outline → autosave ("Saved"); submit → proposal card; Accept → saved + Undo; change outline → "Out of date"; `?state=empty|loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0291 — Ask founder screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0268.
-- **WHY:** ask-founder.html; PRD F-110; #475 (T-SCR-25).
-- **GOAL:** A form sends a message to Amit with only name/email attached, with field validation and a calm confirmation.
-- **SCOPE:** `apps/web/app/(tempo)/ask-founder/page.tsx` + `apps/web/lib/e2eWiringRoutes.ts` (one exact line) + `tests/e2e/screens/ask-founder.spec.ts`.
-- **MUTATES:** route `(tempo)/ask-founder`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/Form/Field/Textarea/Radio/FormErrorSummary/Notice/StatusPanel; 3) wire `profiles.getMine`, `askFounder.submit`; 4) register the route in `apps/web/lib/e2eWiringRoutes.ts` (`E2E_WIRING_ROUTES`, one exact line) (`/ask-founder`); 5) add Playwright; 6) run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** attach page/task/chat content; do not email in the UI.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field error), sent (StatusPanel), loading, error ("Couldn't send your message."), offline (form stays, send waits). Copy EN/HE (from ask-founder.html): `EN:"Ask the founder" / HE:"לשאול את המייסד"`; `EN:"Amit builds Tempo and reads every message himself." / HE:"עמית בונה את Tempo וקורא כל הודעה בעצמו."`; `EN:"Subject" / HE:"נושא"`; `EN:"Message" / HE:"הודעה"`; `EN:"How soon does this matter?" / HE:"כמה מהר זה חשוב?"`; `EN:"Low" / HE:"נמוך"`; `EN:"Medium" / HE:"בינוני"`; `EN:"High" / HE:"גבוה"`; `EN:"What gets sent" / HE:"מה נשלח"`; `EN:"Send to Amit" / HE:"לשלוח לעמית"`; `EN:"Sent. Thank you, Maya." / HE:"נשלח. תודה, מאיה."`. "Send to Amit" is the one primary. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: empty submit → summary focused + 2 field errors; fill + send → sent panel with subject; offline → toast "will send when you're back"; `?state=loading|error` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · subject ≤ 120 chars.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0292 — Container (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first.
-- **WHY:** components.md §2.16 (`Container`, 1120 max).
-- **GOAL:** The marketing layout container caps content width at 1120 px.
-- **SCOPE:** `apps/web/components/marketing/Container.tsx` + `apps/web/components/marketing/Container.css` (new, owns `.tp-container`) + `apps/web/app/e2e/components/container/page.tsx` (harness) · test: `tests/e2e/screens/container.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/Container.tsx` (new), `apps/web/components/marketing/Container.css` (new), `apps/web/app/e2e/components/container/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Container MISSING). 2) Render `.tp-container` (max-width 1120, centered, logical padding); classes in `Container.css`. 3) Create `apps/web/app/e2e/components/container/page.tsx` (client) rendering content inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/container.spec.ts` asserting max-width 1120 at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/container.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** set colours/fonts here (layout only).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{children}`. Max-width 1120 px, `margin-inline:auto`, `padding-inline: var(--tp-space-4)`.
-- **TESTS:** Given content · Then it renders within `.tp-container` (max-width 1120).
-- **NUMBERS:** max-width 1120 px (components.md §2.16).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** body typeface value (Source Sans 3 vs Inter) — Amit (REWRITE-PLAN §4 conflict 5); use `--tp-*` tokens, not a named font.
-
-### TFV2-0293 — SiteHeader (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292, TFV2-0301 · **Folds-in:** #752
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292, TFV2-0301.
-- **WHY:** components.md §2.16 (`SiteHeader`); landing.html.
-- **GOAL:** The site header shows brand, section links, "Sign in" and the language switch; solid, not glass.
-- **SCOPE:** `apps/web/components/marketing/SiteHeader.tsx` + `apps/web/components/marketing/SiteHeader.css` (new, owns `.tp-site-header`) + `apps/web/app/e2e/components/site-header/page.tsx` (harness) · test: `tests/e2e/screens/site-header.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/SiteHeader.tsx` (new), `apps/web/components/marketing/SiteHeader.css` (new), `apps/web/app/e2e/components/site-header/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (SiteHeader MISSING). 2) Render `.tp-site-header` with `.tp-site-nav` + `LanguageSwitch` (TFV2-0301); classes in `SiteHeader.css`. 3) `aria-current` on the active link. 4) Create `apps/web/app/e2e/components/site-header/page.tsx` (client) rendering each state under `data-testid="site-header-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/site-header.spec.ts` navigating `/e2e/components/site-header` and `?lang=he`, asserting links + language switch + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-header.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use glass; do not copy Claude.ai wording.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{links, current, lang}`. Copy EN/HE: `EN:"What it is" / HE:"מה זה"`; `EN:"Pricing" / HE:"מחירים"`; `EN:"About" / HE:"אודות"`; `EN:"Sign in" / HE:"כניסה"`. Solid surface. RTL logical (nav order mirrors). `.tp-site-link--wide` hidden under 768.
-- **TESTS:** Given links · Then rendered with `aria-current` on active. Playwright EN/HE at 390/1280: brand + links + language switch visible; RTL flips order.
-- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** body typeface — Amit (conflict 5).
-### TFV2-0294 — Hero (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0293 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0293.
-- **WHY:** components.md §2.16 (`Hero`); landing.html.
-- **GOAL:** The hero states the product in one line with one primary action ("Ask to join").
-- **SCOPE:** `apps/web/components/marketing/Hero.tsx` + `apps/web/components/marketing/Hero.css` (new, owns `.tp-hero`) + `apps/web/app/e2e/components/hero/page.tsx` (harness) · test: `tests/e2e/screens/hero.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/Hero.tsx` (new), `apps/web/components/marketing/Hero.css` (new), `apps/web/app/e2e/components/hero/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Hero MISSING). 2) Render `.tp-hero` (eyebrow/title/lede/actions/note); classes in `Hero.css`. 3) One primary only (`Ask to join`). 4) Create `apps/web/app/e2e/components/hero/page.tsx` (client) rendering each state under `data-testid="hero-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/hero.spec.ts` navigating `/e2e/components/hero` and `?lang=he`, asserting one primary + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/hero.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent metrics; do not use glass.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{eyebrow, title, lede, primary, note}`. Copy EN/HE: `EN:"A starter for your brain" / HE:"סטרטר למוח שלך"`; `EN:"Tempo Flow — your brain's operating system" / HE:"Tempo Flow — מערכת ההפעלה של המוח שלך"`; `EN:"Ask to join" / HE:"בקשה להצטרף"`. `--tp-text-4xl` title. RTL logical.
-- **TESTS:** Given props · Then rendered; exactly one `.tp-btn--primary`. Playwright EN/HE at 390/1280.
-- **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** body/display typeface — Amit (conflict 5).
-
-### TFV2-0295 — FeatureRow (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292.
-- **WHY:** components.md §2.16 (`FeatureRow`); landing.html.
-- **GOAL:** A feature row pairs text with a figure built from real Tempo components; supports flip.
-- **SCOPE:** `apps/web/components/marketing/FeatureRow.tsx` + `apps/web/components/marketing/FeatureRow.css` (new, owns `.tp-feature`) + `apps/web/app/e2e/components/feature-row/page.tsx` (harness) · test: `tests/e2e/screens/feature-row.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/FeatureRow.tsx` (new), `apps/web/components/marketing/FeatureRow.css` (new), `apps/web/app/e2e/components/feature-row/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (FeatureRow MISSING). 2) Render `.tp-feature` (with `--flip`) with `__text` and `__figure`; classes in `FeatureRow.css`. 3) Figure uses real Tempo components (inert). 4) Create `apps/web/app/e2e/components/feature-row/page.tsx` (client) rendering each state under `data-testid="feature-row-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/feature-row.spec.ts` navigating `/e2e/components/feature-row` and `?lang=he`, asserting flip + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/feature-row.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use stock screenshots; figures must be real Tempo components.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{title, body, figure, flip?}`. Copy EN/HE (from landing.html): `EN:"Pages in plain Markdown" / HE:"דפים ב-Markdown פשוט"`; `EN:"Templates that do the setup for you" / HE:"תבניות שעושות את ההכנה בשבילך"`; `EN:"A coach with memory that can change the app" / HE:"מאמן עם זיכרון שיכול לשנות את האפליקציה"`. RTL flips order.
-- **TESTS:** Given flip · Then text and figure order reversed. Playwright EN/HE at 390/1280 (figure stacks above text under 768).
-- **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0296 — HowItWorks (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292.
-- **WHY:** components.md §2.16 (`HowItWorks`); landing.html.
-- **GOAL:** An ordered list of three steps ("Write. Talk. Say yes.") with numbers and copy.
-- **SCOPE:** `apps/web/components/marketing/HowItWorks.tsx` + `apps/web/components/marketing/HowItWorks.css` (new, owns `.tp-steps`) + `apps/web/app/e2e/components/how-it-works/page.tsx` (harness) · test: `tests/e2e/screens/how-it-works.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/HowItWorks.tsx` (new), `apps/web/components/marketing/HowItWorks.css` (new), `apps/web/app/e2e/components/how-it-works/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (HowItWorks MISSING). 2) Render `ol.tp-steps` (`.tp-step__num/__title/__body`); classes in `HowItWorks.css`. 3) Create `apps/web/app/e2e/components/how-it-works/page.tsx` (client) rendering each step under `data-testid="how-it-works-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/how-it-works.spec.ts` navigating `/e2e/components/how-it-works` and `?lang=he`, asserting 3 ordered steps + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/how-it-works.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent steps beyond the landing copy.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{steps:[{title, body}]}`. Copy EN/HE: `EN:"Write" / HE:"כותבים"`; `EN:"Talk" / HE:"מדברים"`; `EN:"Accept, with Undo" / HE:"מאשרים, עם ביטול"`. Numbers `.tp-num`.
-- **TESTS:** Given 3 steps · Then ordered list renders 1/2/3. Playwright EN/HE at 390/1280.
-- **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0297 — Quote (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292.
-- **WHY:** components.md §2.16 (`Quote`, fictional people only).
-- **GOAL:** A quote block renders a blockquote with a fictional byline.
-- **SCOPE:** `apps/web/components/marketing/Quote.tsx` + `apps/web/components/marketing/Quote.css` (new, owns `.tp-quote`) + `apps/web/app/e2e/components/quote/page.tsx` (harness) · test: `tests/e2e/screens/quote.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/Quote.tsx` (new), `apps/web/components/marketing/Quote.css` (new), `apps/web/app/e2e/components/quote/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Quote MISSING). 2) Render `figure.tp-quote` with `blockquote` + `figcaption`; classes in `Quote.css`. 3) Fictional people only. 4) Create `apps/web/app/e2e/components/quote/page.tsx` (client) rendering each state under `data-testid="quote-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/quote.spec.ts` navigating `/e2e/components/quote` and `?lang=he`, asserting blockquote + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quote.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use real people; no invented testimonials.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{text, by}`. Fictional people only (e.g. "Maya Ronen"). RTL logical; text `dir="auto"`.
-- **TESTS:** Given text/by · Then `blockquote` + `figcaption` render.
-- **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0298 — Pricing (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0282 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0282.
-- **WHY:** components.md §2.16 (`Pricing`, "same as billing"); landing.html pricing teaser.
-- **GOAL:** The landing pricing teaser reuses TierCard with always-visible prices and a join link.
-- **SCOPE:** `apps/web/components/marketing/Pricing.tsx` + `apps/web/components/marketing/Pricing.css` (new, owns `.tp-pricing`) + `apps/web/app/e2e/components/pricing/page.tsx` (harness) · test: `tests/e2e/screens/pricing.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/Pricing.tsx` (new), `apps/web/components/marketing/Pricing.css` (new), `apps/web/app/e2e/components/pricing/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (Pricing MISSING). 2) Reuse `TierCard` (TFV2-0282); classes in `Pricing.css`. 3) Link to `/sign-up`. 4) Create `apps/web/app/e2e/components/pricing/page.tsx` (client) rendering each state under `data-testid="pricing-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/pricing.spec.ts` navigating `/e2e/components/pricing` and `?lang=he`, asserting 4 tier cards + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pricing.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** hide a tier; do not hard-code prices (config value; UNKNOWN).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Copy EN/HE: `EN:"Clear prices. Always visible." / HE:"מחירים ברורים. תמיד גלויים."`; `EN:"Pay yearly and get two months free." / HE:"בתשלום שנתי מקבלים חודשיים חינם."`. RTL logical; prices `.tp-num`.
-- **TESTS:** Given the 4-tier config · Then 4 tier cards rendered. Playwright EN/HE at 390/1280.
-- **NUMBERS:** contrast 4.5:1 · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** price values — Amit.
-
-### TFV2-0299 — FAQ (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292.
-- **WHY:** components.md §2.16 (`FAQ`, native `details`, no JS).
-- **GOAL:** FAQ items use native `<details>` disclosure, no script.
-- **SCOPE:** `apps/web/components/marketing/FAQ.tsx` + `apps/web/components/marketing/FAQ.css` (new, owns `.tp-faq`) + `apps/web/app/e2e/components/faq/page.tsx` (harness) · test: `tests/e2e/screens/faq.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/FAQ.tsx` (new), `apps/web/components/marketing/FAQ.css` (new), `apps/web/app/e2e/components/faq/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (FAQ MISSING). 2) Render `.tp-faq > details > summary` + `.tp-faq__answer`; no JS; classes in `FAQ.css`. 3) Create `apps/web/app/e2e/components/faq/page.tsx` (client) rendering each item under `data-testid="faq-<state>"` inside the TFV2-0023a frame. 4) Add `tests/e2e/screens/faq.spec.ts` navigating `/e2e/components/faq` and `?lang=he`, asserting 6 `details` + native toggle + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 5) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/faq.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** add JS or an accordion library.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{items:[{q,a}]}`. Copy EN/HE (from landing.html): `EN:"Why do I have to ask to join?" / HE:"למה צריך לבקש להצטרף?"`; `EN:"Is there a password?" / HE:"יש סיסמה?"`; `EN:"Does it work in Hebrew?" / HE:"זה עובד בעברית?"`; `EN:"Can the coach change things without asking?" / HE:"המאמן יכול לשנות דברים בלי לשאול?"`; `EN:"What does Tempo remember about me?" / HE:"מה Tempo זוכר עליי?"`; `EN:"Is Tempo therapy?" / HE:"Tempo זה טיפול?"`. Native disclosure, icon `.tp-faq__icon`.
-- **TESTS:** Given 6 items · Then 6 `details` render. Playwright EN/HE: toggle a `details` open/closed natively.
-- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0300 — SiteFooter (marketing)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0023b, TFV2-0292, TFV2-0301 · **Folds-in:** #752
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0292, TFV2-0301.
-- **WHY:** components.md §2.16 (`SiteFooter`); landing.html.
-- **GOAL:** The footer holds Terms/Privacy/Contact/Changelog links, the language switch and the disclaimer.
-- **SCOPE:** `apps/web/components/marketing/SiteFooter.tsx` + `apps/web/components/marketing/SiteFooter.css` (new, owns `.tp-site-footer`) + `apps/web/app/e2e/components/site-footer/page.tsx` (harness) · test: `tests/e2e/screens/site-footer.spec.ts`.
-- **MUTATES:** `apps/web/components/marketing/SiteFooter.tsx` (new), `apps/web/components/marketing/SiteFooter.css` (new), `apps/web/app/e2e/components/site-footer/page.tsx` (new).
-- **STEPS:** 1) Graphify code-map (SiteFooter MISSING). 2) Render `.tp-site-footer` with links + `LanguageSwitch` (TFV2-0301); classes in `SiteFooter.css`. 3) Include the disclaimer. 4) Create `apps/web/app/e2e/components/site-footer/page.tsx` (client) rendering each state under `data-testid="site-footer-<state>"` inside the TFV2-0023a frame. 5) Add `tests/e2e/screens/site-footer.spec.ts` navigating `/e2e/components/site-footer` and `?lang=he`, asserting links + language switch + RTL at BOTH viewports `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`. 6) Run DONE.
-- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-footer.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** omit the disclaimer.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Copy EN/HE: `EN:"Terms" / HE:"תנאים"`; `EN:"Privacy" / HE:"פרטיות"`; `EN:"Contact" / HE:"יצירת קשר"`; `EN:"What's new" / HE:"מה חדש"`; `EN:"Tempo Flow. A coach, not a therapist." / HE:"Tempo Flow. מאמן, לא מטפל."`. RTL logical.
-- **TESTS:** Given links · Then rendered with language switch. Playwright EN/HE.
-- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0301 — LanguageSwitch
-- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #752
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first.
-- **WHY:** components.md §2.16 (`LanguageSwitch`); landing.html + settings-prefs; #752 (EN/HE switcher + RTL).
-- **GOAL:** A two-option switcher (English / עברית) sets the locale and flips the layout to RTL.
-- **SCOPE:** `apps/web/components/marketing/LanguageSwitch.tsx` + `apps/web/components/marketing/LanguageSwitch.test.tsx`.
-- **MUTATES:** none (sets locale cookie + `<html lang dir>`).
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-lang-switch` with `a[hreflang][lang]` for en/he; 3) on choose, set locale; `he` → `dir="rtl"`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/marketing/LanguageSwitch.test.tsx` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** use a dropdown that hides Hebrew; language names carry their own `lang`.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{current}`. Links: `<a hreflang="en" lang="en">EN</a>` / `<a hreflang="he" lang="he">עב</a>` (full names "English"/"עברית" in the footer variant). `aria-current` on current. Hebrew name wrapped `<span lang="he">`. RTL: the switch itself stays logical.
-- **TESTS:** Given current=en · Then EN link `aria-current`. Given current=he · Then `<html lang="he" dir="rtl">`. Playwright EN/HE at 390/1280.
-- **NUMBERS:** target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0302 — Landing EN/HE copy dictionaries (#751)
-- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first.
-- **WHY:** PRD F-70/F-71; TRD §5b (typed message files); #751 (landing copy → en/he dictionaries).
-- **GOAL:** Every landing string lives in typed `en` and `he` dictionaries with a missing-key fallback to English.
-- **SCOPE:** `apps/web/messages/en.json` + `apps/web/messages/he.json` + `apps/web/messages/index.ts`.
-- **MUTATES:** message dictionaries.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) write `en.json`/`he.json` with the full landing/about/changelog key set (from landing.html `TP_STRINGS`); 3) `index.ts` exports a typed `t(key, locale)` with English fallback for a missing Hebrew key; 4) run DONE.
-- **DONE:** `bun run typecheck` → no errors (typed keys resolve).
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** introduce an i18n library (typed files only, TRD §1); do not use a machine translation service.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Data ticket. Keys match the screens' `data-i18n` keys. A missing Hebrew key falls back to English (TRD §5b). Numbers/dates use `.tp-num` at render, not in the string.
-- **TESTS:** Given `t("hero.title","he")` · Then the Hebrew value. Given a key missing in `he` · Then English fallback. Given `t(...,"en")` · Then English.
-- **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0303 — Landing screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300 · **Folds-in:** #751, #752
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0293 … TFV2-0300.
-- **WHY:** landing.html; PRD F-70/F-71.
-- **GOAL:** The marketing home page assembles header, hero, features, how-it-works, voice, who-for, pricing teaser, FAQ and footer in EN and HE.
-- **SCOPE:** `apps/web/app/(marketing)/page.tsx` + `apps/web/e2e/landing.spec.ts`.
-- **MUTATES:** route `(marketing)/page`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) compose the screen from the marketing components; 3) wire the language switch (`?lang=en|he`); 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/landing.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent metrics; do not fetch (static); do not copy Claude.ai wording/logo.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `Marketing` (no shell). Sections in order: hero, "What it is" (3 FeatureRows), "How it works" (3 steps), live voice FeatureRow, "Who it's for" (2 cards), pricing teaser (4 tiers), FAQ, footer. States: default; empty/loading/error show the default page (nothing fetched); offline adds a banner. Copy EN/HE (from landing.html dictionaries). `?lang=he` → `dir="rtl"` and Hebrew copy. One primary "Ask to join". RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN and HE at 390 and 1280: assert hero title, "Ask to join", 4 tier cards, 6 FAQ items render; switch to Hebrew → `dir="rtl"` + Hebrew hero; offline banner shows; no fetch occurs.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · body typeface `UNKNOWN` (Amit — conflict 5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** body typeface — Amit (conflict 5).
-
-### TFV2-0304 — About screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0294, TFV2-0300 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0293, TFV2-0294, TFV2-0300.
-- **WHY:** about.html; PRD F-70.
-- **GOAL:** The About page tells why Tempo exists and five promises, ending with "Ask to join".
-- **SCOPE:** `apps/web/app/(marketing)/about/page.tsx` + `apps/web/e2e/about.spec.ts`.
-- **MUTATES:** route `(marketing)/about`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) compose header/hero/5 promise cards/footer; 3) add Playwright; 4) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/about.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent founding stories; do not copy wording.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout `Marketing`. Promise cards copy EN/HE: `EN:"Calm by default" / HE:"רגוע כברירת מחדל"`; `EN:"You decide" / HE:"אתה מחליט"`; `EN:"Everything can be undone" / HE:"הכול אפשר לבטל"`; `EN:"Prices you can always see" / HE:"מחירים שתמיד גלויים"`; `EN:"Your words stay yours" / HE:"המילים שלך נשארות שלך"`. States: default + offline banner.
-- **TESTS:** Playwright EN/HE at 390/1280: 5 promise cards + "Ask to join" render; Hebrew flips RTL.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** body typeface — Amit (conflict 5).
-
-### TFV2-0305 — Changelog screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0300, TFV2-0316 · **Folds-in:** #751
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0293, TFV2-0300, TFV2-0316.
-- **WHY:** changelog.html.
-- **GOAL:** The changelog lists entries (version, date, changes marked New/Better/Fixed) newest first.
-- **SCOPE:** `apps/web/app/(marketing)/changelog/page.tsx` + `apps/web/e2e/changelog.spec.ts`.
-- **MUTATES:** route `(marketing)/changelog`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) read `content/changelog/*.md` at build time; 3) render with `ChangelogEntry`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/changelog.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** show ticket numbers or code words; do not use colour alone (icon + word).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout `Marketing`. Copy EN/HE: `EN:"Version" / HE:"גרסה"`; `EN:"New" / HE:"חדש"`; `EN:"Better" / HE:"טוב יותר"`; `EN:"Fixed" / HE:"תוקן"`. Plain language only. States: default (built at deploy, so empty/loading/error show default) + offline banner.
-- **TESTS:** Playwright EN/HE at 390/1280: newest entry first, each change carries a word+icon.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
-
-### TFV2-0306 — SettingsSection
+### TFV2-0274a — Pure helper: cron schedule in words (`apps/web/lib/cronText.ts`)
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
 - **WHEN:** first.
-- **WHY:** components.md §2.9 (`SettingsSection`).
-- **GOAL:** A settings card with a title and optional description groups settings rows.
-- **SCOPE:** `apps/web/components/settings/SettingsSection.tsx` + `apps/web/components/settings/SettingsSection.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-settings-section` with `__head/__title/__desc`; 3) run DONE.
-- **DONE:** `bun run test -- apps/web/components/settings/SettingsSection.test.tsx` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** set colours here (`.tp-surface`).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{title, description?, children}`. `--tp-space-5` padding.
-- **TESTS:** Given title+rows · Then title and rows render. Playwright EN/HE.
-- **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
+- **WHY:** design `docs/design/v3/screens/web/modules.html` (job schedules read "Mon–Fri 08:00", "Sun 18:00", in the person's local time); range-6 `jobs.list` (TFV2-0252a) returns `cron: string` (a UTC five-field cron) and `timeZone: string` and no schedule text ("format cron in the UI"); TRD §5d (stored in UTC, shown in the person's zone); CONVENTIONS §6 (web lib test `apps/web/lib/*.test.ts`), §12 (Hebrew day letters with geresh; numbers in LTR isolates are the caller's job). Code truth: no cron formatter exists in `apps/web/lib/` (`grep -rn "cron" apps/web/lib` finds none).
+- **GOAL:** A pure function turns a UTC five-field cron plus an IANA time zone into short local schedule text in English or Hebrew, and returns `"<cron> UTC"` for any pattern it does not describe.
+- **SCOPE:** `apps/web/lib/cronText.ts` · test: `apps/web/lib/cronText.test.ts`.
+- **MUTATES:** `apps/web/lib/cronText.ts` (new) · `apps/web/lib/cronText.test.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/lib/cronText.ts` fails (new).
+  2. Create `apps/web/lib/cronText.ts` exactly as SPEC (no imports; uses only `Intl.DateTimeFormat`).
+  3. Create `apps/web/lib/cronText.test.ts` (`bun:test`) with the 9 TESTS cases.
+  4. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test apps/web/lib/cronText.test.ts` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary plus typecheck/lint exit codes.
+- **DO NOT:** add a cron library (no dependency change); read the browser clock or zone (the caller passes `nowMs` and `timeZone`); import React or Convex; touch other files.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0274a / evidence: <DONE output> / changed: apps/web/lib/cronText.ts, apps/web/lib/cronText.test.ts / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  export type CronLang = "en" | "he";
+  export const CRON_DAY_NAMES: Record<CronLang, readonly string[]> = {
+    en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    he: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"],
+  };
+  /** UTC five-field cron → local text at the zone offset in force at nowMs. */
+  export function describeCron(cron: string, timeZone: string, lang: CronLang, nowMs: number): string;
+  ```
+  Algorithm:
+  1. `fields = cron.trim().split(/\s+/)`; unless `fields.length === 5` → fallback. `[min, hour, dom, month, dow] = fields`. `min` must match `/^\d{1,2}$/` and be 0–59, `hour` `/^\d{1,2}$/` and 0–23, `month === "*"`; else fallback.
+  2. `utc = new Date(nowMs)`; `instant = Date.UTC(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), hour, min)`. Local parts: `new Intl.DateTimeFormat("en-GB", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(instant)`. `time = HH + ":" + mm` (two digits each). `shift` = (local calendar date − UTC calendar date of `instant`) in days, one of −1, 0, 1.
+  3. `dom === "*" && dow === "*"` → daily.
+  4. `dom === "*"` and `dow` matches `/^[0-7](-[0-7])?(,[0-7](-[0-7])?)*$/` → expand ranges and lists to a set of 0–6 (`7` → `0`; a range `a-b` with `a > b` → fallback); shift each day `(d + shift + 7) % 7`. Set size 7 → daily. Else sort ascending (0 = Sunday first); if the sorted days are consecutive and there are ≥ 3 → `names[first] + "–" + names[last]` (en dash U+2013); else `sorted.map((d) => names[d]).join(", ")`. Result `days + " " + time`.
+  5. `dow === "*"` and `dom` matches `/^\d{1,2}$/` with value 1–28 and `shift === 0` → monthly. Anything else → fallback.
+  Text: daily EN `"Every day " + time`, HE `"כל יום " + time`; weekly `days + " " + time` (both languages); monthly EN `"Day " + d + " of the month " + time`, HE `"ב־" + d + " בחודש " + time`; fallback `cron.trim() + " UTC"`. Never throws (an invalid `timeZone` makes `Intl` throw → catch → fallback).
+- **TESTS:** (`const NOW = Date.UTC(2026, 9, 12, 12, 0);` — 12 Oct 2026, Israel on UTC+3, New York on UTC−4)
+  1. `describeCron("0 5 * * *", "Asia/Jerusalem", "en", NOW)` → `"Every day 08:00"`; with `"he"` → `"כל יום 08:00"`.
+  2. `describeCron("0 5 * * 1-5", "Asia/Jerusalem", "en", NOW)` → `"Mon–Fri 08:00"`; with `"he"` → `"ב׳–ו׳ 08:00"`.
+  3. `describeCron("30 22 * * 0", "Asia/Jerusalem", "en", NOW)` → `"Mon 01:30"` (crosses local midnight).
+  4. `describeCron("0 15 * * 0,3", "UTC", "en", NOW)` → `"Sun, Wed 15:00"`.
+  5. `describeCron("0 6 1 * *", "UTC", "en", NOW)` → `"Day 1 of the month 06:00"`; with `"he"` → `"ב־1 בחודש 06:00"`.
+  6. `describeCron("0 22 1 * *", "Asia/Jerusalem", "en", NOW)` → `"0 22 1 * * UTC"` (monthly that crosses midnight falls back).
+  7. `describeCron("*/15 * * * *", "UTC", "en", NOW)` → `"*/15 * * * * UTC"`, and `describeCron("bad", "UTC", "en", NOW)` → `"bad UTC"`.
+  8. `describeCron("0 5 * * 0-6", "Asia/Jerusalem", "en", NOW)` → `"Every day 08:00"`.
+  9. `describeCron("0 9 * * 1-5", "America/New_York", "en", NOW)` → `"Mon–Fri 05:00"`, and `describeCron("0 9 * * 1-5", "Not/AZone", "en", NOW)` → `"0 9 * * 1-5 UTC"`.
+- **NUMBERS:** 9 of 9 tests pass (exact) · output covers every cron `jobs.scheduleJob` accepts as daily/weekday/weekly/monthly; others show the raw cron (no silent wrong time) · no performance number applies to a pure formatter (UNKNOWN, not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0307 — SettingRow
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0306.
-- **WHY:** components.md §2.9 (`SettingRow`).
-- **GOAL:** A settings row puts the label/help at the start and the control at the end.
-- **SCOPE:** `apps/web/components/settings/SettingRow.tsx` + `apps/web/components/settings/SettingRow.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-setting-row` with `__text` + `__control`; 3) support `--stack` and `data-tone=danger`; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/settings/SettingRow.test.tsx` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** invent controls; do not use colour alone (danger has word + icon).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{label, help?, control, stack?, tone?}`. RTL logical (label start, control end).
-- **TESTS:** Given label+switch · Then label at start, switch at end. Given `tone=danger` · Then danger styling. Playwright EN/HE.
-- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
+### TFV2-0274b — Component: ScheduledJobRow (`apps/web/components/modules/ScheduledJobRow.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.13 (ScheduledJobRow: name, schedule in mono LTR, last run, on/off switch; a run that didn't finish says plainly nothing changed); design `docs/design/v3/screens/web/modules.html` (markup lines 199–216; HE `j.billsLast` "תפעילי" is gendered, corrected to CONVENTIONS §12); tempo.css `@component ScheduledJobRow` (line 1286: `.tp-job-list`, `.tp-job-row`, `__name`, `__schedule` (mono, `direction: ltr; unicode-bidi: isolate`), `__last`, `__switch`) and `@component Switch` (line 1044) → Case A. Code truth: range-6 `jobs.list` (TFV2-0252a) rows are `{ jobId: Id<"jobs">; task: string; cron: string; timeZone: string; targetPageType; enabled: boolean; lastRunAt: number | null; lastRunResult: "ok" | "didnt_finish" | null; lastRunNoteId }` — no job name and no page title, so the row shows `task` as its name and no "wrote into …" text; the screen formats `scheduleText` with `describeCron` (TFV2-0274a).
+- **GOAL:** `ScheduledJobRow` renders one job as a list item (task, local schedule text, last-run line in plain words, and an On/Off switch) from props only, reporting a flip through `onToggle`.
+- **SCOPE:** `apps/web/components/modules/ScheduledJobRow.tsx` · `apps/web/app/e2e/components/scheduled-job-row/page.tsx` · test: `tests/e2e/screens/scheduled-job-row.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ScheduledJobRow.tsx` (new) · `apps/web/app/e2e/components/scheduled-job-row/page.tsx` (new) · `tests/e2e/screens/scheduled-job-row.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component ScheduledJobRow \|@component Switch " apps/web/app/tempo.css` prints lines 1286 and 1044; `test -e apps/web/components/modules/ScheduledJobRow.tsx` fails; harness frame and helpers exist.
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `ScheduledJobRow.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page: each state is `<section data-testid="scheduled-job-row-<state>"><ul className="tp-job-list"><ScheduledJobRow … /></ul></section>`; `onToggle` writes to `scheduled-job-row-log`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "scheduled-job-row", { lang })`) with the 6 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/scheduled-job-row.spec.ts --reporter=line` → `24 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** show the raw cron unless `scheduleText` already is it; show JSON, error codes or the word "failed"; add a delete control; call Convex or read the browser clock (`nowMs` is a prop); add a stylesheet; touch `convex/**`, i18n files, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0274b / evidence: <DONE output> / changed: apps/web/components/modules/ScheduledJobRow.tsx, apps/web/app/e2e/components/scheduled-job-row/page.tsx, tests/e2e/screens/scheduled-job-row.spec.ts / unknowns / notes for ticket sync: jobs.list has no page title, so "wrote into …" is not shown`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type ScheduledJob = { jobId: string; task: string; scheduleText: string; enabled: boolean; lastRunAt: number | null; lastRunResult: "ok" | "didnt_finish" | null };
+  export type ScheduledJobRowProps = {
+    job: ScheduledJob;
+    nowMs: number;      // decides "today"
+    timeZone: string;   // IANA zone from userPreferences.timeZone
+    onToggle: (change: { jobId: string; enabled: boolean }) => void;
+  };
+  export function ScheduledJobRow(props: ScheduledJobRowProps): JSX.Element;
+  ```
+  - **Copy:**
+    | key | EN | HE |
+    |---|---|---|
+    | never | Hasn't run yet. | עוד לא רצה. |
+    | ranToday | Last ran today at | רצה לאחרונה היום ב־ |
+    | ranOn | Last ran {date} at | רצה לאחרונה {date} ב־ |
+    | didntFinish | The last run, {date}, didn't finish. Nothing was changed. | ההרצה האחרונה, {date}, לא הסתיימה. שום דבר לא השתנה. |
+    | offUntil | It's off until you turn it back on. | היא כבויה עד שמפעילים אותה שוב. |
+    | on | On | פועל |
+    | off | Off | כבוי |
+  - **Dates:** `dayKey(ms) = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)`; `date = new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone }).format(lastRunAt)`; `time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(lastRunAt)`. Every date and time is wrapped in `<span className="tp-num">`.
+  - **Markup:** `nameId = "job-" + job.jobId.replace(/[^a-zA-Z0-9_-]/g, "-")`. `<li className="tp-job-row" data-component="ScheduledJobRow" data-on={String(job.enabled)}>` →
+    1. `<span className="tp-job-row__name" id={nameId} dir="auto">{job.task}</span>`;
+    2. `<span className="tp-job-row__schedule tp-num">{job.scheduleText}</span>`;
+    3. `<span className="tp-job-row__last" data-last={lastRunAt === null ? "never" : lastRunResult === "didnt_finish" ? "didnt-finish" : "ok"}>`: `never` → `{copy.never}`; `ok` and `dayKey(lastRunAt) === dayKey(nowMs)` → `{copy.ranToday} <span className="tp-num">{time}</span>`; `ok` otherwise → the `ranOn` text with `{date}` replaced by `<span className="tp-num">{date}</span>`, then `" "`, `<span className="tp-num">{time}</span>`; `didnt-finish` → `<TpIcon name="info" size="sm" /> ` + the `didntFinish` text with `{date}` as a `.tp-num` span, followed by `" " + copy.offUntil` only when `!job.enabled`. A `lastRunResult` of `null` with a non-null `lastRunAt` renders as `ok`.
+    4. `<span className="tp-job-row__switch"><button type="button" className="tp-switch" role="switch" aria-checked={job.enabled} aria-labelledby={nameId} data-component="Switch" onClick={() => onToggle({ jobId: job.jobId, enabled: !job.enabled })}><span className="tp-switch__track" aria-hidden="true"><span className="tp-switch__thumb" /></span><span className="tp-switch__state">{job.enabled ? copy.on : copy.off}</span></button></span>`.
+    Placeholders are split around `{date}` (`text.split("{date}")`) so the date can be its own element.
+  - **Styling** (tempo.css, Case A): row grid `minmax(0, 1fr) auto`, padding `--tp-space-3` `--tp-space-4`, bottom border `1px solid var(--tp-line)`; name 600; schedule `--tp-font-mono` `--tp-text-sm`, `direction: ltr; unicode-bidi: isolate`; last line `--tp-text-sm` `--tp-ink-muted`; switch as in TFV2-0271.
+  - **States (harness order; `NOW = Date.UTC(2026, 9, 12, 9, 0)`, `TZ = "Asia/Jerusalem"`):** `default` (`{ jobId: "j-plan", task: "Morning plan", scheduleText: "Mon–Fri 08:00", enabled: true, lastRunAt: Date.UTC(2026, 9, 12, 5, 0), lastRunResult: "ok" }` → today at 08:00), `earlier` (`{ jobId: "j-week", task: "Sunday week look-back", scheduleText: "Sun 18:00", enabled: true, lastRunAt: Date.UTC(2026, 9, 11, 15, 0), lastRunResult: "ok" }`), `didnt-finish` (`{ jobId: "j-bills", task: "Bills check", scheduleText: "Day 1 of the month 09:00", enabled: false, lastRunAt: Date.UTC(2026, 9, 1, 6, 0), lastRunResult: "didnt_finish" }`), `never` (`{ jobId: "j-new", task: "Friday tidy-up", scheduleText: "Fri 14:00", enabled: true, lastRunAt: null, lastRunResult: null }`). Fixture task names and schedule text stay as written in both languages (user data / formatter output).
+  - **RTL:** logical grid; the schedule stays an LTR isolate inside RTL; the switch sits at inline-end. **Keyboard / screen reader:** the switch is a native button named by the task; the On/Off word is inside it; the last-run line is plain text (no live region). **Breakpoints:** one row layout at all widths; the last-run line wraps. **Motion:** switch transition only (120 ms).
+- **TESTS:** (§22 skeleton; the spec computes expected dates in the page with `page.evaluate` using the same `Intl` options; 6 × 4 = 24)
+  1. Given `scheduled-job-row-default` / Then `li[data-component="ScheduledJobRow"]` has `data-on="true"`, `.tp-job-row__name` reads "Morning plan", `.tp-job-row__schedule` reads "Mon–Fri 08:00" and its computed `direction` is `ltr`, and `[data-last="ok"]` text equals `ranToday` for `lang` + " 08:00" (whitespace-normalised).
+  2. Given `scheduled-job-row-earlier` / Then `[data-last="ok"]` contains the expected `date` for 11 Oct 2026 in `Asia/Jerusalem` for `lang` and `18:00`, and does not contain `ranToday`.
+  3. Given `scheduled-job-row-didnt-finish` / Then `[data-last="didnt-finish"]` contains `use[href="#i-info"]`, the `didntFinish` text (with the expected date) and `offUntil` for `lang`, the switch has `aria-checked="false"` and word `off`, and the section text does not contain "failed" or "{".
+  4. Given `scheduled-job-row-never` / Then `[data-last="never"]` reads `never` for `lang`.
+  5. Given `scheduled-job-row-default` / When the switch is clicked / Then `scheduled-job-row-log` reads `onToggle:{"jobId":"j-plan","enabled":false}`; Given `didnt-finish` / When its switch is clicked / Then the log reads `onToggle:{"jobId":"j-bills","enabled":true}`.
+  6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="scheduled-job-row-"]')` and `expectMotionBudget(page, '[data-testid^="scheduled-job-row-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; switch 44 px; bullet 6) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · schedule is an LTR isolate (`direction: ltr`; bullet 1) · state not by colour alone (word On/Off; WCAG 2.2 SC 1.4.1) · motion ≤ 250 ms (bullet 6) · 24 of 24 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0308 — Settings profile screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0266 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0266.
-- **WHY:** settings-profile.html.
-- **GOAL:** The profile screen edits full name, call-me, Hebrew address, email and language with validation.
-- **SCOPE:** `apps/web/app/(tempo)/settings/profile/page.tsx` + `apps/web/e2e/settings-profile.spec.ts`.
-- **MUTATES:** route `(tempo)/settings/profile`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Form/Field/Radio/Select/EmailField/FormErrorSummary; 3) wire `profiles.getMine`, `profiles.update`, `auth.requestEmailChange`, `auth.signOut`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-profile.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** store a password (none exists); do not change email without the link flow.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field), loading, error ("Couldn't load your profile."), offline. Copy EN/HE (from settings-profile.html): `EN:"Profile" / HE:"פרופיל"`; `EN:"Full name" / HE:"שם מלא"`; `EN:"What should Tempo call you?" / HE:"איך ש־Tempo יקרא לך?"`; `EN:"How should Tempo speak to you in Hebrew?" / HE:"איך ש־Tempo ידבר אלייך בעברית?"`; `EN:"Feminine" / HE:"בלשון נקבה"`; `EN:"Masculine" / HE:"בלשון זכר"`; `EN:"Email" / HE:"אימייל"`; `EN:"Language" / HE:"שפה"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"Sign out" / HE:"יציאה"`. "Save changes" is the one primary. RTL logical; email `dir="ltr"`. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: save with blank name → summary + field error; email change → "We sent a link…"; sign out → toast; `?state=loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · email regex `name@example.com`.
+### TFV2-0275a — View: ModulesView (`apps/web/components/modules/ModulesView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0271, TFV2-0273, TFV2-0274b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0271, TFV2-0273, TFV2-0274b.
+- **WHY:** PRD F-43 (modules, Plain mode, built-ins as modules); design `docs/design/v3/screens/web/modules.html` (@flow: Plain mode, Your modules, Scheduled jobs, Built in; toast "<name> turned on/off" with Undo; HE dictionary corrected to CONVENTIONS §12 where gendered: "תאשרי", "שתזיזי", "שאת", "ספרי", "תראי", "נסי", "יצרת"); CONVENTIONS §9 (web component), §10 Case A (`.tp-settings-section`, `.tp-setting-row`, `.tp-section`, `.tp-cards`, `.tp-job-list`, `.tp-toast-region` in tempo.css; `.md-body` in `apps/web/app/v3/you.css` line 105), §11, §13, §22 (screen pattern: props-only View + route). Code truth: `apps/web/components/modules/ModulesScreen.tsx` is an honest placeholder with no backend; built-in rows from range-6 `modules.list` (TFV2-0248a) carry the catalog's English `name`/`description` and `moduleId` = `starter:<id>`, and "the screen shows its own localised names by id", so this View localises the nine built-ins from its own COPY (HE taken from `apps/web/lib/i18n-groups/starter-templates.ts`; `st.journal.desc` "שמת לב" is gendered and corrected). The existing `UndoToast` (`apps/web/components/habits/UndoToast.tsx`, props `{ title: string; undoUntilMs: number; onUndo: () => Promise<void>; onClose: () => void }`, `UNDO_WINDOW_MS = 300000`) is reused unchanged. Whether built-ins can be switched off is CFG-R6-2 (OPEN), so the View takes `canToggleBuiltIns`.
+- **GOAL:** `ModulesView` renders the whole Modules screen — header with "Ask the coach for a module", Plain mode switch and banner, Your modules (cards with switches, or the empty state), Scheduled jobs, Built in, Undo toasts, and the loading / error / offline / save-error states — from props alone.
+- **SCOPE:** `apps/web/components/modules/ModulesView.tsx` · `apps/web/app/e2e/components/modules-view/page.tsx` · test: `tests/e2e/screens/modules-view.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModulesView.tsx` (new) · `apps/web/app/e2e/components/modules-view/page.tsx` (new) · `tests/e2e/screens/modules-view.spec.ts` (new). No data, route list or schema change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/modules/ModulesView.tsx` fails; `grep -n "export function ModuleCard\|export function PlainModeBanner\|export function ScheduledJobRow" apps/web/components/modules/*.tsx` prints three lines (TFV2-0271, TFV2-0273, TFV2-0274b; if one is missing report `blocked: missing <id>`); `grep -n "export function UndoToast\|export const UNDO_WINDOW_MS" apps/web/components/habits/UndoToast.tsx` prints both; `test -e apps/web/components/layout/Notice.tsx && test -e apps/web/components/states/StateEmpty.tsx && test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx && test -e apps/web/components/states/StateOffline.tsx` succeeds; `grep -n "@component SettingsSection \|@component SettingRow " apps/web/app/tempo.css` prints lines 1097 and 1103.
+  2. Stylesheet: Case A — no `.css` file; classes only as listed in SPEC.
+  3. Create `ModulesView.tsx` (`"use client"`) exporting exactly the SPEC types and `ModulesView`, `COPY` and `BUILT_IN_COPY` constants at the top.
+  4. Build the markup exactly as SPEC "Layout" and the toggle/toast logic exactly as SPEC "Behaviour".
+  5. Create the harness page with the eight SPEC states in order, inline typed fixtures and the `modules-view-log` output (`<prop>:<JSON.stringify(firstArg ?? null)>`); `onToggleModule` writes the log then resolves.
+  6. Create the spec with the CONVENTIONS §22 skeleton (`openHarness(page, "modules-view", { lang })`) and the 11 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useShellSlots` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; render JSON or cron text the route did not format; show user modules while `plainMode` is true (range-6 `modules.list` omits them); render a delete control anywhere; write to `document`; add a stylesheet or edit `tempo.css`, `you.css`, `ModulesScreen.tsx`, `UndoToast.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0275a / evidence: <DONE output> / changed: apps/web/components/modules/ModulesView.tsx, apps/web/app/e2e/components/modules-view/page.tsx, tests/e2e/screens/modules-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ModuleCardModule } from "./ModuleCard";
+  import type { ScheduledJob } from "./ScheduledJobRow";
+  export type ModulesState = "default" | "loading" | "error";
+  export type ModulesViewProps = {
+    state: ModulesState;
+    online: boolean;
+    plainMode: boolean;
+    modules: ModuleCardModule[];       // modules.list order: user rows (builtIn false) and built-ins (builtIn true)
+    jobs: ScheduledJob[];              // scheduleText already formatted by the route (describeCron)
+    nowMs: number;
+    timeZone: string;
+    canToggleBuiltIns: boolean;
+    saveError: boolean;
+    onAskCoach?: () => void;           // absent → no "Ask the coach" / "Talk to the coach" buttons
+    onSetPlainMode: (on: boolean) => void;
+    onToggleModule: (change: { moduleId: string; on: boolean }) => Promise<void>; // rejects when the save failed
+    onToggleJob: (change: { jobId: string; enabled: boolean }) => void;
+    onRetry: () => void;
+  };
+  export function ModulesView(props: ModulesViewProps): JSX.Element;
+  ```
+  **Layout** (390 px base; classes exactly as listed): root `<div className="tp-page" data-component="PageLayout" data-view="ModulesView" data-plain={plainMode ? "on" : "off"}>`.
+  1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div>` + (when `state === "default" && onAskCoach`) `<div className="tp-pagehead__actions"><button type="button" className="tp-btn tp-btn--primary" onClick={onAskCoach}><TpIcon name="coach" size="sm" /><span>{ask}</span></button></div>` `</header>`. This is the only `.tp-btn--primary` on the screen.
+  2. `online === false` → `<StateOffline />` (default text) followed by `<p className="tp-help" data-offline-hint="">{offlineHint}</p>`, in every state.
+  3. `saveError` → `<Notice tone="caution" title={saveErrorCopy} live="alert" />`.
+  4. `loading` → `<StateLoading label={loading} rows={5} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `default` → `<div className="md-body">` with sections a–d:
+     a. Plain mode: `<section className="tp-settings-section tp-surface" aria-labelledby="md-plain-title" data-component="SettingsSection">` → `<PlainModeBanner on={plainMode} />` → `<div className="tp-setting-row" data-component="SettingRow"><div className="tp-setting-row__text"><h2 className="tp-setting-row__label" id="md-plain-title">{plainLabel}</h2><p className="tp-help" id="md-plain-help">{plainHelp}</p></div><div className="tp-setting-row__control"><button type="button" className="tp-switch" role="switch" aria-checked={plainMode} aria-labelledby="md-plain-title" aria-describedby="md-plain-help" data-component="Switch" data-plain-switch="" onClick={() => onSetPlainMode(!plainMode)}><span className="tp-switch__track" aria-hidden="true"><span className="tp-switch__thumb" /></span><span className="tp-switch__state">{plainMode ? on : off}</span></button></div></div>` `</section>`.
+     b. Your modules — rendered only when `!plainMode`: `<section className="tp-section" aria-labelledby="md-yours-title" data-component="Section"><div className="tp-section__head"><h2 className="tp-section__title" id="md-yours-title">{yours}</h2>` + (when `userModules.length > 0`) `<span className="tp-section__count">` the `yoursCount` copy with `{n}` = `userModules.length`, `{k}` = count with `on`, each number in `<span className="tp-num">` `</span>` `</div>`; then `userModules.length === 0` → `<StateEmpty title={emptyTitle} body={emptyBody} icon={<TpIcon name="module" size="lg" />} action={onAskCoach ? <button type="button" className="tp-btn tp-btn--secondary" onClick={onAskCoach}><TpIcon name="coach" size="sm" /><span>{talk}</span></button> : undefined} />`; else `<div className="tp-cards" role="list" data-component="CardGrid">` with one `<div role="listitem" key={moduleId}><ModuleCard module={m} canToggle onToggle={toggle} /></div>` per user module. `userModules = modules.filter((m) => !m.builtIn)`.
+     c. Scheduled jobs: `<section className="tp-section" aria-labelledby="md-jobs-title" data-component="Section"><div className="tp-section__head"><h2 className="tp-section__title" id="md-jobs-title">{jobsTitle}</h2></div><p className="tp-help">{jobsSub}</p>` then `jobs.length === 0` → `<p className="tp-muted" data-no-jobs="">{noJobs}</p>`; else `<ul className="tp-job-list">` with `<ScheduledJobRow key={jobId} job={j} nowMs={nowMs} timeZone={timeZone} onToggle={onToggleJob} />` each `</section>`.
+     d. Built in: `<section className="tp-section" aria-labelledby="md-builtin-title" data-component="Section"><div className="tp-section__head"><h2 className="tp-section__title" id="md-builtin-title">{builtInTitle}</h2></div><p className="tp-help">{canToggleBuiltIns ? builtInSubToggle : builtInSubFixed}</p><div className="tp-cards" role="list" data-component="CardGrid">` with one `<div role="listitem"><ModuleCard module={localise(m)} canToggle={canToggleBuiltIns} onToggle={toggle} /></div>` per built-in (`modules.filter((m) => m.builtIn)`, order kept). `localise(m)` = `{ ...m, name: BUILT_IN_COPY[lang][m.moduleId]?.name ?? m.name, does: BUILT_IN_COPY[lang][m.moduleId]?.does ?? m.does }`.
+  5. Toasts: when `toasts.length > 0`, `<div className="tp-toast-region">` with `<UndoToast key={t.moduleId} title={t.name + " " + (t.on ? turnedOn : turnedOff)} undoUntilMs={t.undoUntilMs} onUndo={() => undo(t)} onClose={() => closeToast(t.moduleId)} />` each.
+  **Behaviour:** local state `toasts: { moduleId: string; name: string; on: boolean; undoUntilMs: number }[]` (`useState`). `toggle(change)`: `await onToggleModule(change)`; on success replace any toast for that `moduleId` with `{ moduleId, name: <localised name of that module>, on: change.on, undoUntilMs: Date.now() + UNDO_WINDOW_MS }`; on rejection add no toast (the route shows `saveError`). `undo(t)`: `await onToggleModule({ moduleId: t.moduleId, on: !t.on })`, then `closeToast(t.moduleId)`; a rejection leaves the toast. `closeToast(id)` removes it.
+  **COPY** (`COPY: Record<Lang, Record<CopyKey, string>>`):
+  | key | EN | HE |
+  |---|---|---|
+  | title | Modules | מודולים |
+  | sub | Modules change how Tempo looks and what it does for you. Turn any of them off. Nothing new goes live until you approve it. | מודולים משנים איך Tempo נראה ומה הוא עושה בשבילך. אפשר לכבות כל אחד מהם. שום דבר חדש לא עולה בלי אישור שלך. |
+  | ask | Ask the coach for a module | לבקש מהמאמן מודול |
+  | offlineHint | Switches you flip now will apply as soon as you reconnect. | מתגים שמזיזים עכשיו יופעלו ברגע שהחיבור יחזור. |
+  | saveErrorCopy | That change didn't save. Try again when you want. | השינוי לא נשמר. אפשר לנסות שוב מתי שרוצים. |
+  | plainLabel | Plain mode | מצב פשוט |
+  | plainHelp | Pauses every module you or the coach made, in one tap. Useful on a hard day, or when something looks wrong. Nothing is deleted. | משהה בנגיעה אחת כל מודול שנוצר על ידך או על ידי המאמן. שימושי ביום קשה, או כשמשהו נראה לא נכון. שום דבר לא נמחק. |
+  | on | On | פועל |
+  | off | Off | כבוי |
+  | yours | Your modules | המודולים שלך |
+  | yoursCount | {n} modules, {k} on | {n} מודולים, {k} פועלים |
+  | emptyTitle | You haven't made a module yet. | עוד אין כאן מודולים משלך. |
+  | emptyBody | Tell the coach what you'd like Tempo to do, in your own words. For example: "add a water tracker to Today". You'll see exactly what it changes before it goes live. | אפשר לספר למאמן במילים שלך מה Tempo יעשה. למשל: ״להוסיף מעקב מים להיום״. לפני שמשהו עולה, רואים בדיוק מה ישתנה. |
+  | talk | Talk to the coach | לדבר עם המאמן |
+  | jobsTitle | Scheduled jobs | פעולות מתוזמנות |
+  | jobsSub | Things Tempo does on a schedule. Each run writes into a page. | דברים ש־Tempo עושה לפי לוח זמנים. כל הרצה נכתבת לתוך דף. |
+  | noJobs | No scheduled jobs yet. The coach can set one up when you ask. | עוד אין פעולות מתוזמנות. המאמן יכול להגדיר אחת כשמבקשים. |
+  | builtInTitle | Built in | מובנים |
+  | builtInSubToggle | Tempo's own page types. You can turn one off, but not delete it. | סוגי הדפים של Tempo עצמו. אפשר לכבות, אבל לא למחוק. |
+  | builtInSubFixed | Tempo's own page types. They're always on. | סוגי הדפים של Tempo עצמו. הם תמיד פועלים. |
+  | loading | Loading your modules | המודולים שלך בטעינה |
+  | error | Couldn't load your modules. | לא הצלחנו לטעון את המודולים. |
+  | turnedOn | turned on | הופעל |
+  | turnedOff | turned off | כובה |
+  **BUILT_IN_COPY** (`Record<Lang, Record<string, { name: string; does: string }>>`, keys = `moduleId`):
+  | moduleId | EN name · does | HE name · does |
+  |---|---|---|
+  | starter:daily-page | Daily page · A short outline for one day. | דף יומי · מתווה קצר ליום אחד. |
+  | starter:weekly-page | Weekly page · A few outcomes and a place for each day. | דף שבועי · כמה תוצאות חשובות ומקום לכל יום. |
+  | starter:monthly-page | Monthly page · A theme, four weeks, and open loops. | דף חודשי · נושא, ארבעה שבועות ועניינים פתוחים. |
+  | starter:meeting-notes | Meeting notes · People, purpose, notes, and next steps. | סיכום פגישה · משתתפים, מטרה, הערות והצעדים הבאים. |
+  | starter:project-brief | Project brief · Outcome, constraints, and a first step. | תקציר פרויקט · תוצאה, מגבלות וצעד ראשון. |
+  | starter:reading-notes | Reading notes · Source, ideas, and what to keep. | הערות קריאה · מקור, רעיונות ומה לשמור. |
+  | starter:journal | Journal · What happened, what you noticed, what you want next. | יומן · מה קרה, מה עלה לתשומת הלב ומה רוצים שיקרה הלאה. |
+  | starter:task-review | Task review · What is done, what is open, and one next step. | סקירת משימות · מה בוצע, מה עוד פתוח וצעד אחד קדימה. |
+  | starter:project-review | Project review · What moved, what is waiting, and when to look again. | סקירת פרויקט · מה התקדם, מה מחכה ומתי להסתכל שוב. |
+  Strings owned by composed components (not in this COPY): ModuleCard (TFV2-0271), PlainModeBanner (TFV2-0273), ScheduledJobRow (TFV2-0274b), StateError ("Your data is safe." / "המידע שלך שמור.", "Try again" / "לנסות שוב"), StateOffline (CONVENTIONS §12 offline line), Notice sr tone word, UndoToast ("You can undo for" / "אפשר לבטל עוד", "Undo" / "ביטול", "Dismiss" / "סגירה").
+  **States** (harness order; route fixture names match): `default` (plain off; user modules `{ moduleId: "m-water", name: "Water", does: "Adds a water tracker to Today, goal 6 glasses. No reminders.", builtIn: false, madeByCoach: true, on: true }` and `{ moduleId: "m-wind", name: "Evening wind-down", does: "Adds a short wind-down checklist to the bottom of daily pages.", builtIn: false, madeByCoach: false, on: false }`; built-ins `starter:daily-page`, `starter:weekly-page`, `starter:journal` with their EN catalog name/description and `on: true`; jobs `j-plan` and `j-week` exactly as the TFV2-0274b harness `default` and `earlier` fixtures; `nowMs = Date.UTC(2026, 9, 12, 9, 0)`, `timeZone = "Asia/Jerusalem"`, `canToggleBuiltIns: true`, `onAskCoach` present), `plain` (`plainMode: true`, modules = the three built-ins only), `empty` (no user modules, `jobs: []`), `loading`, `error`, `offline` (default data, `online: false`), `save-error` (default data, `saveError: true`), `always-on` (default data, `canToggleBuiltIns: false`). There is no disabled state: offline keeps every switch enabled (changes queue).
+  **RTL:** `dir` from `LocaleProvider`; logical tempo.css rules only; switches mirror; module names `dir="auto"`; numbers `.tp-num`. **Keyboard / screen reader:** Tab order = Ask the coach → Plain mode switch → each module switch → each job switch → each built-in switch → toast Undo → Dismiss; every switch is a `role="switch"` button named by its label; the save-error notice is `role="alert"`; the banner is `role="status"`. **Breakpoints:** one column at 390; `.tp-cards` auto-fills 280 px minimum columns from 768; the page sits in `.tp-page` max width at 1024 and 1280. **Motion:** only tempo.css switch/button transitions (≤ `--tp-dur-base` 180 ms); reduced motion → instant.
+- **TESTS:** (§22 skeleton: `openHarness(page, "modules-view", { lang })`, viewport × language loop, console errors `[]`; the spec keeps its own EN/HE copy table; 11 × 4 = 44)
+  1. Given `modules-view-default` / Then the `h1` reads `title`, one `.tp-btn--primary` reads `ask`, the root has `data-plain="off"`, `[data-plain-switch]` has `aria-checked="false"` and word `off`, `#md-yours-title`'s section holds 2 `[data-component="ModuleCard"]` and a count reading `yoursCount` with 2 and 1, the jobs list holds 2 `[data-component="ScheduledJobRow"]`, and the built-in section holds 3 ModuleCards whose first `h3` reads "Daily page" (HE "דף יומי").
+  2. Given `default` / When the switch of the "Water" card is clicked / Then the log reads `onToggleModule:{"moduleId":"m-water","on":false}` and a toast reads "Water " + `turnedOff`; When its Undo (HE "ביטול") is clicked / Then the log reads `onToggleModule:{"moduleId":"m-water","on":true}` and the toast is gone.
+  3. Given `default` / When `[data-plain-switch]` is clicked / Then the log reads `onSetPlainMode:true`; When the "Morning plan" job switch is clicked / Then the log reads `onToggleJob:{"jobId":"j-plan","enabled":false}`.
+  4. Given `modules-view-plain` / Then `[data-component="PlainModeBanner"]` is visible, `[data-plain-switch]` has `aria-checked="true"` and word `on`, `#md-yours-title` has count 0, the jobs and built-in sections are visible, and the root has `data-plain="on"`.
+  5. Given `modules-view-empty` / Then `[data-component="StateEmpty"]` shows `emptyTitle` and `emptyBody`, and `[data-no-jobs]` reads `noJobs`; When the `talk` button is clicked / Then the log reads `onAskCoach:null`.
+  6. Given `modules-view-loading` / Then `[data-component="StateLoading"]` contains `loading` and the section has no ModuleCard (no motion check: locked 1.4 s shimmer).
+  7. Given `modules-view-error` / Then it shows `error` and "Your data is safe." (HE "המידע שלך שמור."); When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
+  8. Given `modules-view-offline` / Then the CONVENTIONS §12 offline line and `[data-offline-hint]` reading `offlineHint` are visible, and every `[role="switch"]` in the section is enabled.
+  9. Given `modules-view-save-error` / Then a `role="alert"` element contains `saveErrorCopy`.
+  10. Given `modules-view-always-on` / Then the built-in section's help reads `builtInSubFixed`, its 3 cards contain no `[role="switch"]`, and each shows the "Always on" badge (HE "תמיד פועל").
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="modules-view-default"]')` and `expectMotionBudget(page, '[data-testid="modules-view-default"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens` passes) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · focus visible ≥ 2 px (WCAG 2.2 SC 2.4.7; global `:focus-visible`) · Undo window 5:00 (`UNDO_WINDOW_MS` = 300 000 ms, HARD_RULES §1; bullet 2) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0309 — Settings preferences screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0265a, TFV2-0265b, TFV2-0267 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0265a, TFV2-0265b, TFV2-0267.
-- **WHY:** settings-prefs.html.
-- **GOAL:** Preferences (theme, language, text size, reading font, coach dial, week start, notices) save on change with a "Saved" status.
-- **SCOPE:** `apps/web/app/(tempo)/settings/preferences/page.tsx` + `apps/web/e2e/settings-prefs.spec.ts`.
-- **MUTATES:** route `(tempo)/settings/preferences`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Segmented/Switch/Select/Dial; 3) wire `profiles.getPrefs`, `profiles.updatePrefs`, `profiles.setCoachDial`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-prefs.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** add a Save button (saves on change); do not make billing notices toggleable (locked).
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-prefs.html): `EN:"Preferences" / HE:"העדפות"`; `EN:"How Tempo looks" / HE:"איך Tempo נראה"`; `EN:"Theme" / HE:"ערכת צבעים"`; `EN:"Light" / HE:"בהירה"`; `EN:"Dark" / HE:"כהה"`; `EN:"Match this device" / HE:"כמו במכשיר"`; `EN:"Language" / HE:"שפה"`; `EN:"Text size" / HE:"גודל טקסט"`; `EN:"Reading font" / HE:"גופן קריאה"`; `EN:"Less motion" / HE:"פחות תנועה"`; `EN:"How the coach works" / HE:"איך המאמן עובד"`; `EN:"Week starts on" / HE:"השבוע מתחיל ביום"`; `EN:"Billing notices" / HE:"הודעות על תשלום"` (locked, always on). Coach dial 0–10 shows number + word (Quiet/Steady/Push). Reduced motion: "Follows device" badge, not a switch. RTL logical; billing notices switch `aria-disabled`. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: change theme → "Saved" + theme applied; language → layout flips RTL; dial slider → number+word update (debounced); billing switch is disabled; `?state=loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · dial 0–10 · debounce 400 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** week start default (Sunday vs Monday) — Amit (REWRITE-PLAN §4 conflict 10).
+### TFV2-0275b — Route: /modules — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0275a, TFV2-0274a, TFV2-0000b, TFV2-0000c, TFV2-0247a, TFV2-0247b, TFV2-0248a, TFV2-0248b, TFV2-0252a, TFV2-0252b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0275a, TFV2-0274a, TFV2-0000b, TFV2-0000c, TFV2-0247a, TFV2-0247b, TFV2-0248a, TFV2-0248b, TFV2-0252a, TFV2-0252b.
+- **WHY:** PRD F-43; design `docs/design/v3/screens/web/modules.html`; CONVENTIONS §9 (web screen), §14 (page is the only Convex caller; `?state=` fixtures; `useOnline`; time zone from `api.preferences.get`), §17 (wiring line), §22. Code truth: `apps/web/app/(tempo)/modules/page.tsx` renders the placeholder `ModulesScreen`; `/modules` is not in `E2E_WIRING_ROUTES` and not a core task route in `apps/web/proxy.ts`.
+- **GOAL:** `/modules` reads modules, Plain mode, scheduled jobs and preferences in `page.tsx`, formats each job's schedule with `describeCron`, renders `ModulesView`, writes switches through the three mutations, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/modules/page.tsx` · `apps/web/lib/e2e/fixtures/modules.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one exact line, §17) · test: `tests/e2e/screens/modules.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/modules/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/modules.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/modules.spec.ts` (new) · route `/modules` registered for the E2E bypass · runtime writes through `modules.setEnabled`, `modules.setPlainMode`, `jobs.setEnabled`. No schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const list\|export const getPlainMode\|export const setPlainMode\|export const setEnabled" convex/modules.ts` prints four lines and `grep -n "export const list\|export const setEnabled" convex/jobs.ts` prints two (range 6; if any is missing report `blocked: missing backend <function>`); `test -e apps/web/components/modules/ModulesView.tsx && test -e apps/web/lib/cronText.ts && test -e apps/web/lib/e2e/useE2EState.ts` succeeds; `grep -n '"/modules"' apps/web/lib/e2eWiringRoutes.ts` prints nothing.
+  2. Wiring (its own step, §17): in `apps/web/lib/e2eWiringRoutes.ts` insert the line `  "/modules",` as the last entry before `] as const;`.
+  3. Create `apps/web/lib/e2e/fixtures/modules.ts` exporting only `FIXTURES` (SPEC "Fixtures"), `import type` only.
+  4. Rewrite `page.tsx` exactly as SPEC "page.tsx".
+  5. Create `tests/e2e/screens/modules.spec.ts` (§22 route skeleton: `openScreen`, console filter) with the 9 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/modules.spec.ts --reporter=line` → `36 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line.
+- **DO NOT:** edit `ModulesView.tsx`, `ModulesScreen.tsx` (it stays, unimported — notes for ticket sync), `cronText.ts`, `convex/**`; contact Convex when `?state=` is forced; compute the zone from the browser; add any other wiring line; touch `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0275b / evidence: <DONE output> / changed: apps/web/app/(tempo)/modules/page.tsx, apps/web/lib/e2e/fixtures/modules.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/modules.spec.ts / unknowns / notes for ticket sync: ModulesScreen.tsx is no longer imported; delete it in a cleanup ticket`.
+- **SPEC:**
+  Convex functions (range 6; shapes as their tickets define):
+  ```ts
+  api.preferences.get     // query    {} → { …; timeZone: string; … }
+  api.modules.list        // query    {} → { moduleId: string; name: string; does: string; builtIn: boolean; madeByCoach: boolean; on: boolean }[]   (TFV2-0248a)
+  api.modules.getPlainMode// query    {} → boolean                                                                                            (TFV2-0247a)
+  api.jobs.list           // query    {} → { jobId: Id<"jobs">; task: string; cron: string; timeZone: string; targetPageType: …; enabled: boolean; lastRunAt: number | null; lastRunResult: "ok" | "didnt_finish" | null; lastRunNoteId: Id<"notes"> | null }[]  (TFV2-0252a)
+  api.modules.setEnabled  // mutation { moduleId: string; on: boolean } → null                                                               (TFV2-0248b)
+  api.modules.setPlainMode// mutation { on: boolean } → null                                                                                 (TFV2-0247b)
+  api.jobs.setEnabled     // mutation { jobId: Id<"jobs">; enabled: boolean } → null                                                       (TFV2-0252b)
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="modules-route"><Suspense fallback={null}><ModulesRoute /></Suspense></div>`. `ModulesRoute`: `forced = useE2EState()`, `online = useOnline()`; an error boundary class `ModulesBoundary` (same pattern as TFV2-0132b `HabitsBoundary`: a thrown query error renders `<ModulesView state="error" … onRetry={retry} />`, retry remounts the children with a new key); inside it `<ProfileReady fallback={<ModulesView state="loading" … />}><ModulesLive forced={forced} online={online} /></ProfileReady>`.
+  `ModulesLive`: `nowMs` = `Date.now()` refreshed every 60 000 ms; `prefs = useQuery(api.preferences.get, forced ? "skip" : {})`, `modules = useQuery(api.modules.list, forced ? "skip" : {})`, `plain = useQuery(api.modules.getPlainMode, forced ? "skip" : {})`, `jobs = useQuery(api.jobs.list, forced ? "skip" : {})`; mutations `setEnabled`, `setPlainMode`, `setJobEnabled`; `saveError` state. **Forced:** `fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error`; render `<ModulesView {...fixture} online={forced === "offline" ? false : online} onSetPlainMode={(on) => setForcedPlain(on)} onToggleModule={async () => {}} onToggleJob={() => {}} onRetry={() => {}} />` where `plainMode` comes from a local copy of the fixture so the switch flips locally; no Convex call. **Live:** `state` = `"loading"` while any query is `undefined`, else `"default"`; `jobsView = jobs.map((j) => ({ jobId: j.jobId, task: j.task, scheduleText: describeCron(j.cron, prefs.timeZone, lang, nowMs), enabled: j.enabled, lastRunAt: j.lastRunAt, lastRunResult: j.lastRunResult }))` (`lang` from `useLocale()`); `onToggleModule(change)` → `setSaveError(false); try { await setEnabled(change) } catch (e) { setSaveError(true); throw e }`; `onSetPlainMode(on)` → `setPlainMode({ on }).catch(() => setSaveError(true))`; `onToggleJob({ jobId, enabled })` → `setJobEnabled({ jobId: jobId as Id<"jobs">, enabled }).catch(() => setSaveError(true))`; `onAskCoach` = `shell?.coachAvailable ? shell.openCoach : undefined` (`useShellSlots()` from `@/components/tempo/ShellSlots`); `canToggleBuiltIns: true` (TFV2-0248b writes built-in switches); `timeZone: prefs.timeZone`.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/modules.ts`; `import type { ModulesViewProps } from "@/components/modules/ModulesView";` local `type ModulesFixture = Omit<ModulesViewProps, "onAskCoach" | "onSetPlainMode" | "onToggleModule" | "onToggleJob" | "onRetry">`): `export const FIXTURES: Record<"default" | "plain" | "empty" | "loading" | "error" | "offline" | "save-error", ModulesFixture>` with the same modules, jobs, `nowMs` and `timeZone` as the TFV2-0275a harness, copied verbatim; `loading`/`error` have empty arrays.
+  **Wiring line** (§17): `  "/modules",`.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0275a); this ticket adds no visible string.
+- **TESTS:** (route spec; both viewports × both languages; `openScreen(page, "/modules", { state, lang })`; each asserts `page.getByTestId("modules-route")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 9 × 4 = 36)
+  1. Given `?state=default` / Then the `h1` reads "Modules" (HE "מודולים") and 2 user ModuleCards and 2 ScheduledJobRows render.
+  2. Given `?state=plain` / Then the PlainModeBanner is visible and no `#md-yours-title` exists.
+  3. Given `?state=default` / When the Plain mode switch is clicked / Then it has `aria-checked="true"` and the banner appears (local forced effect; no Convex request).
+  4. Given `?state=empty` / Then "You haven't made a module yet." (HE "עוד אין כאן מודולים משלך.") is visible.
+  5. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached.
+  6. Given `?state=error` / Then "Couldn't load your modules." (HE "לא הצלחנו לטעון את המודולים.") and "Try again" are visible.
+  7. Given `?state=offline` / Then the CONVENTIONS §12 offline line is visible.
+  8. Given no `?state` (`page.goto(\`/modules?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `modules-route` is attached and `[data-component="StateLoading"]` is attached (placeholder Convex URL never resolves).
+  9. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="modules-route"]')` pass, and `measureVitals(page, \`/modules?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 9) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · INP ≤ 200 ms UNKNOWN locally (measured on preview, not a gate) · 36 of 36 pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0247a and TFV2-0248a (CFG-008 / CFG-011 / CFG-R6-2: where module `enabled` and `plainMode` are stored, and whether built-ins can be switched off) — Amit.
 
-### TFV2-0310 — Settings privacy screen
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0311 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0311.
-- **WHY:** settings-privacy.html.
-- **GOAL:** Privacy settings (usage data, export, delete account with 30-day grace) work end to end.
-- **SCOPE:** `apps/web/app/(tempo)/settings/privacy/page.tsx` + `apps/web/e2e/settings-privacy.spec.ts`.
-- **MUTATES:** route `(tempo)/settings/privacy`.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Switch/ConfirmDialog/Notice; 3) wire `profiles.updatePrefs`, `dsr.requestDataExport`, `dsr.requestAccountDeletion`, `dsr.cancelAccountDeletion`; 4) add Playwright; 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-privacy.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** delete immediately (30-day grace); do not share usage data by default.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-privacy.html): `EN:"Privacy" / HE:"פרטיות"`; `EN:"Help improve Tempo" / HE:"לעזור לשפר את Tempo"`; `EN:"Download a copy of everything" / HE:"להוריד עותק של הכול"`; `EN:"Request my copy" / HE:"לבקש עותק"`; `EN:"Leave Tempo" / HE:"לעזוב את Tempo"`; `EN:"Delete my account" / HE:"למחוק את החשבון שלי"`; `EN:"Delete your account?" / HE:"למחוק את החשבון שלך?"`; `EN:"Tick this to turn on the delete button." / HE:"סמני כאן כדי להפעיל את כפתור המחיקה."`; `EN:"Restore my account" / HE:"לשחזר את החשבון"`. Delete requires a tick before the button enables (ConfirmDialog). Usage data off by default. RTL logical. Motion ≤250 ms.
-- **TESTS:** Playwright EN/HE at 390/1280: usage-data switch off by default → on → toast; export → status line; delete → sheet requires tick → confirm → pending notice + Restore; restore → welcome back; `?state=loading|error|offline` asserted.
-- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · deletion grace 30 days.
+### TFV2-0276a — View: ModulePreviewView (`apps/web/components/modules/ModulePreviewView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0272 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0272.
+- **WHY:** PRD F-41/F-42 (a module goes live only after the person approves it; invalid modules never go live; Approve has a 5-minute Undo); design `docs/design/v3/screens/web/module-preview.html` (eyebrow, invalid notice, Approve / Discard, discard confirmation, live / discarded notices, empty / loading / error / offline; HE corrected to CONVENTIONS §12: "ויתרת", "תראי", "תרצי", "שתזיזי", and Discard = "דחייה" per the glossary); CONVENTIONS §9, §10 Case A (`.tp-page--wide`, `.tp-split`, `.tp-surface`, `.tp-notice`, `.mp-state` in `you.css` line 110), §11, §13, §22. Code truth: `apps/web/components/modules/ModulePreviewScreen.tsx` is a placeholder; range-6 `modules.getDraft` (TFV2-0246a) returns `{ templateId; name; summary; body; validation: { ok; problems } }` (no creation time, so the design's "The coach wrote this today at 21:04" is not shown); there is no un-install function, so Undo after Approve turns the module off (`modules.setEnabled({ on: false })` in the route). The page preview shows `body` as read-only text (the template body is Markdown text, not JSON).
+- **GOAL:** `ModulePreviewView` renders one draft module — its name, what it adds (read-only), the `ModuleSummary` card, Approve (blocked with a reason when invalid or offline) and Discard with an inline confirmation — plus the live / discarded results with Undo, and the empty / loading / error / offline / save-error states, from props alone.
+- **SCOPE:** `apps/web/components/modules/ModulePreviewView.tsx` · `apps/web/app/e2e/components/module-preview-view/page.tsx` · test: `tests/e2e/screens/module-preview-view.spec.ts`.
+- **MUTATES:** `apps/web/components/modules/ModulePreviewView.tsx` (new) · `apps/web/app/e2e/components/module-preview-view/page.tsx` (new) · `tests/e2e/screens/module-preview-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/modules/ModulePreviewView.tsx` fails; `grep -n "export function ModuleSummary" apps/web/components/modules/ModuleSummary.tsx` prints a line (TFV2-0272); `grep -n "export function UndoToast\|export const UNDO_WINDOW_MS" apps/web/components/habits/UndoToast.tsx` prints both; Notice and the four State components exist (range 3).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `ModulePreviewView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the seven SPEC states, inline fixtures, callbacks writing `<prop>:<JSON of first argument>` into `module-preview-view-log` and resolving (the `reject` state's `onApprove` rejects).
+  5. Create the spec (§22 skeleton, `openHarness(page, "module-preview-view", { lang })`) with the 10 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `fetch` or `useShellSlots`; let Approve call `onApprove` when `validation.ok` is false or `online` is false; render JSON; change anything on Discard before the confirmation; use a second `.tp-btn--primary`; add a stylesheet or edit `ModulePreviewScreen.tsx`, `UndoToast.tsx`, `tempo.css`, `you.css` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0276a / evidence: <DONE output> / changed: apps/web/components/modules/ModulePreviewView.tsx, apps/web/app/e2e/components/module-preview-view/page.tsx, tests/e2e/screens/module-preview-view.spec.ts / unknowns / notes for ticket sync: no creation time in modules.getDraft; preview shows the body as text, not rendered blocks`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  import type { ModuleProblem } from "./ModuleSummary";
+  export type ModuleDraft = { templateId: string; name: string; summary: string; body: string; validation: { ok: boolean; problems: ModuleProblem[] } };
+  export type ModulePreviewState = "default" | "empty" | "loading" | "error";
+  export type ModulePreviewViewProps = {
+    state: ModulePreviewState;
+    draft: ModuleDraft | null;          // non-null only in "default"
+    online: boolean;
+    saveError: boolean;
+    onApprove: (templateId: string) => Promise<void>;      // rejects when it did not go through
+    onUndoApprove: (templateId: string) => Promise<void>;
+    onDiscard: (templateId: string) => Promise<void>;
+    onAskCoachToFix?: () => void;
+    onRetry: () => void;
+  };
+  export function ModulePreviewView(props: ModulePreviewViewProps): JSX.Element;
+  ```
+  **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="ModulePreviewView">`.
+  1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text">` — `default`: `<p className="tp-small tp-muted" data-eyebrow="">{eyebrow}</p><h1 className="tp-pagehead__title" dir="auto">{draft.name}</h1><p className="tp-pagehead__sub">{sub}</p>`; other states: `<h1 className="tp-pagehead__title">{title}</h1>` `</div></header>`.
+  2. `!online` → `<StateOffline />` + `<p className="tp-help" data-offline-hint="">{offlineHint}</p>`.
+  3. `saveError` → `<Notice tone="caution" title={saveErrorCopy} live="alert" />`.
+  4. `loading` → `<StateLoading label={loading} rows={4} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `empty` → `<StateEmpty className="mp-state" title={emptyTitle} body={emptyBody} icon={<TpIcon name="module" size="lg" />} action={<a className="tp-btn tp-btn--secondary" href="/modules"><TpIcon name="module" size="sm" /><span>{back}</span></a>} />`.
+  5. `default`, `phase === "waiting"`: when `!draft.validation.ok` → `<Notice tone="caution" title={invalidTitle} body={invalidBody} action={onAskCoachToFix ? <button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" onClick={onAskCoachToFix}>{fix}</button> : undefined} />`. Then `<div className="tp-split" data-component="Split">`: (i) `<section className="tp-surface" aria-labelledby="mp-preview-title"><h2 className="tp-section__title" id="mp-preview-title">{previewTitle}</h2><span className="tp-badge" data-component="Badge"><TpIcon name="lock" size="sm" /><span>{readOnly}</span></span><div className="tp-small" dir="auto" style={{ whiteSpace: "pre-wrap" }} data-body="">{draft.body}</div></section>`; (ii) `<div className="tp-section">` → `<ModuleSummary summary={draft.summary} checkOk={draft.validation.ok} problems={draft.validation.problems} />` → decision row `<div className="tp-pagehead__actions">` with Approve `<button type="button" className="tp-btn tp-btn--primary" aria-disabled={blocked || undefined} aria-describedby={blocked ? "mp-blocked" : "mp-approve-help"} onClick={approve}><TpIcon name="check" size="sm" /><span>{approveCopy}</span></button>` and Discard `<button type="button" className="tp-btn tp-btn--secondary" aria-expanded={confirmOpen} aria-controls="mp-confirm" onClick={() => setConfirmOpen(true)}><TpIcon name="x" size="sm" /><span>{discard}</span></button>`, then `blocked` → `<p className="tp-help" id="mp-blocked" data-blocked="">{!draft.validation.ok ? blockedCopy : offlineBlocked}</p>` else `<p className="tp-help" id="mp-approve-help">{approveHelp}</p>` `</div>`. `blocked = !draft.validation.ok || !online`.
+     When `confirmOpen`: `<div className="tp-notice" data-tone="caution" role="alertdialog" aria-modal="false" aria-labelledby="mp-confirm-title" aria-describedby="mp-confirm-body" id="mp-confirm" data-confirm="">` → `<div className="tp-notice__text"><p className="tp-notice__title" id="mp-confirm-title">{confirmTitle}</p><p id="mp-confirm-body">{confirmBody with {name}}</p></div>` → `<div className="tp-notice__action"><button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" data-keep="">{keep}</button> <button type="button" className="tp-btn tp-btn--danger tp-btn--sm" data-confirm-discard="">{discard}</button></div>`; opening moves focus to the Keep button; Keep or Escape closes it and returns focus to Discard.
+  6. `phase === "live"` → `<Notice tone="done" title={liveTitle with {name}} body={liveBody} action={<a className="tp-btn tp-btn--secondary tp-btn--sm" href="/modules">{back}</a>} />` + `<div className="tp-toast-region"><UndoToast title={toastLive with {name}} undoUntilMs={liveUntil} onUndo={undoApprove} onClose={() => setLiveUntil(null)} /></div>` while `liveUntil !== null`. `phase === "undone"` → `<Notice tone="neutral" title={undoneCopy} action={back link} />`. `phase === "discarded"` → `<Notice tone="neutral" title={discardedTitle} body={discardedBody} action={back link} />`.
+  **Behaviour:** local state `phase: "waiting" | "live" | "undone" | "discarded"`, `confirmOpen`, `liveUntil: number | null`, `busy` ref. `approve()`: if `blocked` or busy → return (no callback); `try { await onApprove(draft.templateId); setPhase("live"); setLiveUntil(Date.now() + UNDO_WINDOW_MS) } catch { /* stays waiting; route shows saveError */ }`. `undoApprove()`: `await onUndoApprove(draft.templateId); setPhase("undone"); setLiveUntil(null)`. Confirm Discard: `try { await onDiscard(draft.templateId); setPhase("discarded") } catch { setConfirmOpen(false) }`.
+  **COPY:**
+  | key | EN | HE |
+  |---|---|---|
+  | title | Module preview | תצוגה מקדימה של מודול |
+  | eyebrow | New module · waiting for your approval | מודול חדש · מחכה לאישור שלך |
+  | sub | Nothing is live yet. | שום דבר עוד לא פעיל. |
+  | offlineHint | You can look at the preview. Approving waits until you reconnect. | אפשר להסתכל על התצוגה. האישור יחכה עד שהחיבור יחזור. |
+  | saveErrorCopy | That didn't go through. Nothing changed. Try again when you want. | זה לא עבר. שום דבר לא השתנה. אפשר לנסות שוב מתי שרוצים. |
+  | invalidTitle | This module has a problem, so it can't go live. | יש במודול הזה בעיה, ולכן הוא לא יכול לעלות. |
+  | invalidBody | Nothing on your pages has changed. The coach can fix it, or you can discard it. | שום דבר בדפים שלך לא השתנה. המאמן יכול לתקן אותו, או שאפשר לדחות אותו. |
+  | fix | Ask the coach to fix it | לבקש מהמאמן לתקן |
+  | previewTitle | What it adds to your pages | מה הוא מוסיף לדפים שלך |
+  | readOnly | Read only | לקריאה בלבד |
+  | approveCopy | Approve | אישור |
+  | discard | Discard | דחייה |
+  | approveHelp | Approve makes it live at once. You can undo for 5 minutes, and turn it off any time after. | אישור מפעיל אותו מיד. אפשר לבטל במשך 5 דקות, ולכבות בכל רגע אחר כך. |
+  | blockedCopy | Can't approve: this module didn't pass its check. | אי אפשר לאשר: המודול לא עבר את הבדיקה. |
+  | offlineBlocked | Approving waits until you reconnect. | האישור יחכה עד שהחיבור יחזור. |
+  | confirmTitle | Discard this module? | לדחות את המודול הזה? |
+  | confirmBody | "{name}" will be thrown away. Nothing on your pages changes. You can always ask the coach for it again. | ״{name}״ יימחק. שום דבר בדפים שלך לא משתנה. תמיד אפשר לבקש אותו שוב מהמאמן. |
+  | keep | Keep it for now | להשאיר בינתיים |
+  | liveTitle | {name} is live. | {name} פעיל. |
+  | liveBody | You'll see it on the next page it applies to. | הוא יופיע בדף הבא שהוא חל עליו. |
+  | toastLive | {name} is on | {name} פועל |
+  | undoneCopy | Undone. The module is off and nothing changed. | בוטל. המודול כבוי ושום דבר לא השתנה. |
+  | discardedTitle | Discarded. Nothing changed. | נדחה. שום דבר לא השתנה. |
+  | discardedBody | You can ask the coach for a different version whenever you like. | אפשר לבקש מהמאמן גרסה אחרת מתי שרוצים. |
+  | back | Back to Modules | חזרה למודולים |
+  | emptyTitle | There's nothing to preview here. | אין כאן מה להציג. |
+  | emptyBody | This module was already approved or discarded. Your modules are all in one place. | המודול הזה כבר אושר או נדחה. כל המודולים שלך נמצאים במקום אחד. |
+  | loading | Loading the preview | התצוגה המקדימה בטעינה |
+  | error | Couldn't load this preview. | לא הצלחנו לטעון את התצוגה. |
+  Composed components keep their own copy (ModuleSummary TFV2-0272, StateError, StateOffline, Notice sr word, UndoToast).
+  **States** (harness order): `default` (draft `{ templateId: "templates:7", name: "Evening wind-down", summary: "Adds a short wind-down checklist to the bottom of daily pages. Runs nothing.", body: "## Wind down\n- [ ] Phone on the charger in the kitchen\n- [ ] Write tomorrow's one thing\n- [ ] Lights low, ten pages of a book", validation: { ok: true, problems: [] } }`, `onAskCoachToFix` present), `invalid` (same draft, `validation: { ok: false, problems: ["view"] }`), `offline` (default draft, `online: false`), `save-error` (default draft, `saveError: true`), `empty` (`draft: null`), `loading`, `error`. `live` / `undone` / `discarded` are reached by clicking (tests 2–4). There is no other disabled state.
+  **RTL:** logical layout; the split stacks under 1024; name and body `dir="auto"`. **Keyboard / screen reader:** Approve is a native button; when blocked it is `aria-disabled="true"` (still focusable) and described by the reason; the confirmation is a non-modal `alertdialog` with focus moved into it and Escape to close; notices are `role="status"`, the save error `role="alert"`. **Breakpoints:** `.tp-split` is two columns from 1024 (`minmax(0, 1fr) minmax(0, var(--tp-coach-w))`), one column below (tempo.css media rule); 390 / 768 one column. **Motion:** tempo.css button transitions only.
+- **TESTS:** (§22 skeleton; 10 × 4 = 40)
+  1. Given `module-preview-view-default` / Then `[data-eyebrow]` reads `eyebrow`, the `h1` reads "Evening wind-down", `[data-body]` contains "Phone on the charger in the kitchen", `[data-component="ModuleSummary"]` is visible, exactly one `.tp-btn--primary` reads `approveCopy` with no `aria-disabled`, and `#mp-approve-help` reads `approveHelp`.
+  2. Given `default` / When Approve is clicked / Then the log reads `onApprove:"templates:7"`, a `data-tone="done"` notice reads `liveTitle` with "Evening wind-down", and a toast reads `toastLive`; When the toast's Undo (HE "ביטול") is clicked / Then the log reads `onUndoApprove:"templates:7"` and `undoneCopy` is visible.
+  3. Given `default` / When Discard is clicked / Then `[data-confirm]` (`role="alertdialog"`) shows `confirmTitle` and `confirmBody` with the name, and the Keep button is focused; When Escape is pressed / Then the dialog is gone, focus is on Discard and the log is empty.
+  4. Given `default` / When Discard then `[data-confirm-discard]` are clicked / Then the log reads `onDiscard:"templates:7"` and `discardedTitle` is visible.
+  5. Given `module-preview-view-invalid` / Then a caution Notice shows `invalidTitle` and the `fix` button, Approve has `aria-disabled="true"` and `aria-describedby="mp-blocked"`, `[data-blocked]` reads `blockedCopy`; When Approve is clicked / Then the log stays empty; When `fix` is clicked / Then the log reads `onAskCoachToFix:null`.
+  6. Given `module-preview-view-offline` / Then the §12 offline line and `offlineHint` are visible, `[data-body]` is visible, Approve has `aria-disabled="true"` and `[data-blocked]` reads `offlineBlocked`.
+  7. Given `module-preview-view-save-error` / Then a `role="alert"` contains `saveErrorCopy`.
+  8. Given `module-preview-view-empty` / Then `emptyTitle`, `emptyBody` and a link to `/modules` reading `back` are visible.
+  9. Given `module-preview-view-loading` and `module-preview-view-error` / Then the loading section contains `[data-component="StateLoading"]` with `loading`, and the error section shows `error`; When "Try again" is clicked / Then the log reads `onRetry:null`.
+  10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="module-preview-view-default"]')` and `expectMotionBudget(page, '[data-testid="module-preview-view-default"]')` pass.
+- **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS` 300 000 ms; HARD_RULES §1; test 2) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 10) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · motion ≤ 250 ms (test 10) · 40 of 40 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0311 — ConfirmDialog
+### TFV2-0276b — Route: /modules/preview/[draftId] — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0276a, TFV2-0275b, TFV2-0000b, TFV2-0000c, TFV2-0246a, TFV2-0246b, TFV2-0246c, TFV2-0248b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0276a, TFV2-0275b, TFV2-0000b, TFV2-0000c, TFV2-0246a, TFV2-0246b, TFV2-0246c, TFV2-0248b.
+- **WHY:** PRD F-41/F-42; design `docs/design/v3/screens/web/module-preview.html`; CONVENTIONS §9, §14, §17 (a route with children adds `"/<route>/(.*)"`), §22. Code truth: `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` renders the placeholder `ModulePreviewScreen`; TFV2-0275b adds `"/modules"` (this ticket depends on it so the two wiring lines land in order).
+- **GOAL:** `/modules/preview/[draftId]` reads the draft (`draftId` = template id) with `modules.getDraft`, renders `ModulePreviewView`, wires Approve / Undo / Discard, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` · `apps/web/lib/e2e/fixtures/module-preview.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one exact line, §17) · test: `tests/e2e/screens/module-preview.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/module-preview.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/module-preview.spec.ts` (new) · runtime writes through `modules.approve`, `modules.discardDraft`, `modules.setEnabled`.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const getDraft\|export const approve\|export const discardDraft\|export const setEnabled" convex/modules.ts` prints four lines (if any is missing report `blocked: missing backend <function>`); `grep -n '"/modules",' apps/web/lib/e2eWiringRoutes.ts` prints a line (TFV2-0275b); `test -e apps/web/components/modules/ModulePreviewView.tsx` succeeds.
+  2. Wiring (its own step, §17): insert `  "/modules/(.*)",` as the last entry before `] as const;`.
+  3. Create `apps/web/lib/e2e/fixtures/module-preview.ts` (SPEC "Fixtures").
+  4. Rewrite `page.tsx` exactly as SPEC.
+  5. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/module-preview.spec.ts --reporter=line` → `32 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes; `git diff apps/web/lib/e2eWiringRoutes.ts` showing one added line.
+- **DO NOT:** edit `ModulePreviewView.tsx` or `ModulePreviewScreen.tsx` (stays, unimported); contact Convex when forced; approve on page load; add another wiring line; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0276b / evidence: <DONE output> / changed: apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx, apps/web/lib/e2e/fixtures/module-preview.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/module-preview.spec.ts / unknowns / notes for ticket sync: ModulePreviewScreen.tsx is no longer imported`.
+- **SPEC:**
+  ```ts
+  api.modules.getDraft     // query    { templateId: Id<"templates"> } → { templateId: Id<"templates">; name: string; summary: string; body: string; validation: { ok: boolean; problems: ("link" | "script" | "view")[] } }  (TFV2-0246a; throws "Module not found" for a missing, foreign, live or deleted id)
+  api.modules.approve      // mutation { templateId: Id<"templates"> } → null   (TFV2-0246b; refuses an invalid draft)
+  api.modules.discardDraft // mutation { templateId: Id<"templates"> } → null   (TFV2-0246c)
+  api.modules.setEnabled   // mutation { moduleId: string; on: boolean } → null (TFV2-0248b; Undo after Approve = on: false)
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="module-preview-route"><Suspense fallback={null}><PreviewRoute /></Suspense></div>`. `PreviewRoute`: `forced = useE2EState()`, `online = useOnline()`, `draftId = useParams<{ draftId: string }>().draftId`; a boundary class `PreviewBoundary` that maps a thrown error whose message is `"Module not found"` to `<ModulePreviewView state="empty" draft={null} … />` and any other error to `state="error"` with a retry that remounts; inside `<ProfileReady fallback={<ModulePreviewView state="loading" … />}><PreviewLive … /></ProfileReady>`. `PreviewLive`: `draft = useQuery(api.modules.getDraft, forced ? "skip" : { templateId: draftId as Id<"templates"> })`; `state` = `draft === undefined ? "loading" : "default"`; handlers: `onApprove(id)` → `setSaveError(false); try { await approve({ templateId: id as Id<"templates"> }) } catch (e) { setSaveError(true); throw e }`; `onUndoApprove(id)` → `setEnabled({ moduleId: id, on: false })` with the same error handling; `onDiscard(id)` → `discardDraft({ templateId: id as Id<"templates"> })` with the same error handling; `onAskCoachToFix` = `shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks resolve without Convex (`async () => {}`), `online` forced `false` for `offline`.
+  **Fixtures:** `export const FIXTURES: Record<"default" | "invalid" | "offline" | "save-error" | "empty" | "loading" | "error", Omit<ModulePreviewViewProps, "onApprove" | "onUndoApprove" | "onDiscard" | "onAskCoachToFix" | "onRetry">>`, data copied verbatim from the TFV2-0276a harness.
+  **Wiring line:** `  "/modules/(.*)",`.
+  States, copy and behaviour are the View's (TFV2-0276a); no new visible string.
+- **TESTS:** (route spec; `openScreen(page, "/modules/preview/templates:7", { state, lang })`; console filter as in TFV2-0275b; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Evening wind-down" and an Approve button (HE "אישור") is enabled.
+  2. Given `?state=default` / When Approve is clicked / Then "Evening wind-down is live." (HE "Evening wind-down פעיל.") shows (forced handler, no Convex request).
+  3. Given `?state=invalid` / Then Approve has `aria-disabled="true"` and "Can't approve: this module didn't pass its check." (HE "אי אפשר לאשר: המודול לא עבר את הבדיקה.") shows.
+  4. Given `?state=empty` / Then "There's nothing to preview here." (HE "אין כאן מה להציג.") shows.
+  5. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached.
+  6. Given `?state=error` / Then "Couldn't load this preview." (HE "לא הצלחנו לטעון את התצוגה.") shows; Given `?state=offline` / Then the §12 offline line shows.
+  7. Given no `?state` (signed out under the bypass) / Then the URL does not match `/sign-in/`, `module-preview-route` is attached and `[data-component="StateLoading"]` is attached.
+  8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/modules/preview/templates:7?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0246a (CFG-008 / CFG-R6-3: where a module's draft `status` and `summary` are stored) — Amit.
+
+### TFV2-0277 — Component: CoachArtifact (`apps/web/components/blocks/CoachArtifact.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-28 (coach artifacts saved into a page as blocks; the person never sees JSON); `docs/design/v3/components.md` §2.2 (CoachArtifact: wrapper for Flashcard, Quiz, Checklist, Tracker; classes `.tp-artifact`, `__head`, `__kind`, `__title`, `__by`, `__body`, `__foot`); design `docs/design/v3/screens/web/page-blocks.html` lines 326–450 ("From the coach"); tempo.css `@component CoachArtifact` block (line 741) → CONVENTIONS §10 Case A; CONVENTIONS §11 (COPY), §12 (glossary), §13 (harness), §22 (spec skeleton, `TpIcon`). Design decision of this ticket: the wrapper takes the artifact body as a `children` slot and never imports Flashcard / Quiz / Checklist / Tracker (TFV2-0278…0281 come later in build order); the page-block renderer that reads a saved artifact composes `CoachArtifact` + the matching body component.
+- **GOAL:** `CoachArtifact` renders the artifact card head (kind icon + word, title, "Made by the coach") around any body passed as `children`, as a named region, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/blocks/CoachArtifact.tsx` · `apps/web/app/e2e/components/coach-artifact/page.tsx` · test: `tests/e2e/screens/coach-artifact.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/CoachArtifact.tsx` (new) · `apps/web/app/e2e/components/coach-artifact/page.tsx` (new) · `tests/e2e/screens/coach-artifact.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component CoachArtifact " apps/web/app/tempo.css` prints line 741; `test -e apps/web/components/blocks/CoachArtifact.tsx` fails (folder `apps/web/components/blocks/` does not exist yet; this ticket creates it); `grep -n '"card"\|"question"\|"checklist"\|"chart"' apps/web/components/tempo/TpIcon.tsx` prints the four icon names; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `CoachArtifact.tsx` (`"use client"`: it calls `useLocale` and `useId`) exporting exactly the SPEC types and function, `COPY` constant at the top.
+  4. Create the harness page with the five SPEC states in order, fixtures inline (CONVENTIONS §13). The component has no callbacks, so the page has no log element.
+  5. Create `tests/e2e/screens/coach-artifact.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "coach-artifact", { lang })`) and the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-artifact.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** import Flashcard, Quiz, Checklist or Tracker; parse or render artifact JSON; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; add a stylesheet or edit `apps/web/app/tempo.css`; edit `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0277 / evidence: <DONE output> / changed: apps/web/components/blocks/CoachArtifact.tsx, apps/web/app/e2e/components/coach-artifact/page.tsx, tests/e2e/screens/coach-artifact.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  export type CoachArtifactKind = "flashcards" | "quiz" | "checklist" | "tracker";
+  export type CoachArtifactProps = {
+    kind: CoachArtifactKind;
+    title: string;          // stored artifact title; "" shows copy.untitled
+    children: ReactNode;    // the body: a Flashcard / Quiz / Checklist / Tracker, which render their own .tp-artifact__body (+ .tp-artifact__foot)
+  };
+  export function CoachArtifact(props: CoachArtifactProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; values from `page-blocks.html` keys `art.*`):
+    | key | EN | HE |
+    |---|---|---|
+    | flashcards | Flashcards | כרטיסי לימוד |
+    | quiz | Quiz | בוחן |
+    | checklist | Checklist | רשימת סימון |
+    | tracker | Tracker | מעקב |
+    | by | Made by the coach | נוצר על ידי המאמן |
+    | untitled | Untitled | ללא כותרת |
+  - **Markup** (Case A, tempo.css line 741; `titleId = "art-" + useId()`): `<section className="tp-artifact" data-component="CoachArtifact" data-kind={kind} aria-labelledby={titleId}>` → `<div className="tp-artifact__head">` holding, in order, `<span className="tp-artifact__kind"><TpIcon name={ICON[kind]} size="sm" /><span>{copy[kind]}</span></span>`, `<span className="tp-artifact__title" id={titleId} dir="auto">{title.trim() === "" ? copy.untitled : title}</span>`, `<span className="tp-artifact__by">{copy.by}</span>`; then `{children}` directly after the head div. `ICON: Record<CoachArtifactKind, TpIconName> = { flashcards: "card", quiz: "question", checklist: "checklist", tracker: "chart" }` (`TpIcon`, `type TpIconName` from `@/components/tempo/TpIcon`).
+  - **Styling** (tempo.css, Case A; listed for review, not re-declared): card `--tp-paper`, `1px solid var(--tp-line)`, radius `--tp-radius-lg`; head flex-wrap gap `--tp-space-2`, padding `--tp-space-3` `--tp-space-4`, bottom border `--tp-line`; kind `--tp-text-xs` 600 `--tp-ink-muted`; title `--tp-text-sm` 600, grows; by `--tp-text-xs` `--tp-ink-muted`; body (child) padding `--tp-space-4`, gap `--tp-space-3`; foot (child) `--tp-ground`.
+  - **States (harness order):** `flashcards` (title "Talk key points"), `quiz` (title "Check the opening"), `checklist` (title "On the day"), `tracker` (title "Practice runs"), `untitled` (kind `checklist`, title `""`). In every state `children` = `<div className="tp-artifact__body"><p data-testid="coach-artifact-slot-<state>">Slot content</p></div>`. Loading / empty / error / offline / success / disabled: n/a — the wrapper has no data or actions of its own; the body component and the page that hosts the block own them.
+  - **Harness:** `/e2e/components/coach-artifact`, `"use client"`, imports only `CoachArtifact`, `type CoachArtifactProps` and React; each state is `<section data-testid="coach-artifact-<state>"><CoachArtifact … /></section>`.
+  - **RTL:** head is a logical flex row (kind at inline-start, by at inline-end after wrap); the title is `dir="auto"`. **Keyboard / screen reader:** not focusable; the `<section aria-labelledby>` is a region named by the title ("Talk key points, region"); the kind is a word next to a decorative icon (`aria-hidden` from TpIcon). **Breakpoints:** one layout at 390 / 768 / 1024 / 1280; the head wraps on narrow widths. **Motion:** none.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language, `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "coach-artifact", { lang })`, ends `expect(errors).toEqual([])`; the spec keeps its own `EXPECT` copy table; 4 × 4 = 16)
+  1. Given each of the sections `coach-artifact-flashcards`, `-quiz`, `-checklist`, `-tracker` / Then its `section[data-component="CoachArtifact"]` has `data-kind` = `flashcards` / `quiz` / `checklist` / `tracker`, `.tp-artifact__kind` contains the kind word for `lang` and a `use[href="#i-card"]` / `#i-question` / `#i-checklist` / `#i-chart`, `.tp-artifact__by` reads `by` for `lang`, and `coach-artifact-slot-<state>` is visible inside the section.
+  2. Given `coach-artifact-flashcards` / Then `getByRole("region", { name: "Talk key points" })` exists in that section and the title span has `dir="auto"` and the `id` the section's `aria-labelledby` names.
+  3. Given `coach-artifact-untitled` / Then the title reads `untitled` for `lang` ("Untitled" / "ללא כותרת") and the region is named with it.
+  4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="coach-artifact-"]')` and `expectMotionBudget(page, '[data-testid^="coach-artifact-"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; colours only from §5 tokens through tempo.css; `bun run scan:design-tokens` passes) · use of colour: the kind is a word, not colour or icon alone (WCAG 2.2 SC 1.4.1; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule, CONVENTIONS §5; bullet 4) · 16 of 16 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0278 — Component: Flashcard (`apps/web/components/blocks/Flashcard.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-28 (coach artifacts: flashcards); `docs/design/v3/components.md` §2.2 (Flashcard: `.tp-flashcard[data-side]`, `__face[data-face]`, `__side`, `__text`, `__count`; actions `card-flip`, `card-step` + `data-dir`; flip by **button**, never hover) and §3 actions table (`studyCards.review` is "later": no backend call here); design `docs/design/v3/screens/web/page-blocks.html` lines 331–358 and `docs/design/v3/tempo.js` `flipCard` / `stepCard` / `renderCard` (lines 498–522: stepping wraps around the deck, resets to the front, and the flip label switches "Show answer" ↔ "Show question"); tempo.css `@component Flashcard` block (line 750) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. The deck reaches the component already parsed (the page-block renderer maps the stored artifact to `cards`); this component never imports `convex/lib/artifacts.ts`.
+- **GOAL:** `Flashcard` shows one card of a deck at a time, flips it with a button (announcing and focusing the new face), steps through the deck with Previous / Next that wrap around, and reports flips and steps through callbacks, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/blocks/Flashcard.tsx` · `apps/web/app/e2e/components/flashcard/page.tsx` · test: `tests/e2e/screens/flashcard.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Flashcard.tsx` (new) · `apps/web/app/e2e/components/flashcard/page.tsx` (new) · `tests/e2e/screens/flashcard.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Flashcard " apps/web/app/tempo.css` prints line 750; `grep -n "tp-icon--back" apps/web/app/tempo.css` prints lines 577–578; `grep -n '"refresh"\|"chevron"' apps/web/components/tempo/TpIcon.tsx` prints both; `test -e apps/web/components/blocks/Flashcard.tsx` fails; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Flashcard.tsx` (`"use client"`: `useLocale`, `useState`, `useRef`, `useEffect`) exporting exactly the SPEC types and function, `COPY` at the top.
+  4. Implement the behaviour in SPEC "Behaviour" (local `index` and `side` state, wrap-around stepping, focus moves to the visible face after a flip).
+  5. Create the harness page with the four SPEC states in order, fixtures inline, callbacks writing to `flashcard-log` (CONVENTIONS §13).
+  6. Create `tests/e2e/screens/flashcard.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "flashcard", { lang })`) and the 7 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/flashcard.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** flip on hover or on a click on the card face; persist anything, keep a score or streak, or call `studyCards.review`; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0278 / evidence: <DONE output> / changed: apps/web/components/blocks/Flashcard.tsx, apps/web/app/e2e/components/flashcard/page.tsx, tests/e2e/screens/flashcard.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type FlashcardCard = { front: string; back: string };
+  export type FlashcardSide = "front" | "back";
+  export type FlashcardProps = {
+    cards: FlashcardCard[];
+    initialIndex?: number;                                              // default 0; clamped to 0 … cards.length - 1
+    onFlip?: (event: { index: number; side: FlashcardSide }) => void;  // side = the side now shown
+    onStep?: (event: { index: number }) => void;                        // index = the card now shown (0-based)
+  };
+  export function Flashcard(props: FlashcardProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; values from `page-blocks.html` keys `card.*`, HE already gender-neutral):
+    | key | EN | HE |
+    |---|---|---|
+    | question | Question | שאלה |
+    | answer | Answer | תשובה |
+    | card | Card | כרטיס |
+    | of | of | מתוך |
+    | prev | Previous card | הכרטיס הקודם |
+    | next | Next card | הכרטיס הבא |
+    | showAnswer | Show answer | הצגת התשובה |
+    | showQuestion | Show question | הצגת השאלה |
+    | empty | No cards in this set yet. | עדיין אין כרטיסים בערכה הזו. |
+  - **Markup, `cards.length > 0`** (Case A, tempo.css line 750 plus the `.tp-artifact__body` / `__foot` classes of line 741, exactly as the design nests them): `<div className="tp-flashcard" data-component="Flashcard" data-side={side}>` →
+    - `<div className="tp-artifact__body">` with two faces: `<div className="tp-flashcard__face" data-face="front" tabIndex={-1} ref={frontRef}><span className="tp-flashcard__side">{copy.question}</span><span className="tp-flashcard__text" dir="auto">{card.front}</span></div>` and the same with `data-face="back"`, `ref={backRef}`, `copy.answer`, `card.back` (`card = cards[index]`). Both faces are always rendered; tempo.css hides the inactive one with `display: none` (so it is out of the accessibility tree).
+    - `<div className="tp-artifact__foot">` with, in order: `<span className="tp-flashcard__count" aria-live="polite"><span>{copy.card}</span> <span className="tp-num">{index + 1}</span> <span>{copy.of}</span> <span className="tp-num">{cards.length}</span></span>`; `<button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" data-action="card-step" data-dir="prev" aria-label={copy.prev} disabled={cards.length < 2}><TpIcon name="chevron" size="sm" className="tp-icon--back" /></button>`; `<button type="button" className="tp-btn tp-btn--secondary" data-action="card-flip" aria-pressed={side === "back"}><TpIcon name="refresh" size="sm" /><span>{side === "back" ? copy.showQuestion : copy.showAnswer}</span></button>`; `<button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" data-action="card-step" data-dir="next" aria-label={copy.next} disabled={cards.length < 2}><TpIcon name="chevron" size="sm" flip /></button>`.
+  - **Markup, `cards.length === 0`:** `<div className="tp-flashcard" data-component="Flashcard" data-side="front"><div className="tp-artifact__body"><p className="tp-help">{copy.empty}</p></div></div>` — no foot, no buttons.
+  - **Behaviour:** `const [index, setIndex] = useState(() => Math.min(Math.max(0, Math.trunc(initialIndex ?? 0)), Math.max(0, cards.length - 1)))`; `const [side, setSide] = useState<FlashcardSide>("front")`; `const focusFace = useRef(false)`. Flip click: `next = side === "front" ? "back" : "front"`; `focusFace.current = true`; `setSide(next)`; `onFlip?.({ index, side: next })`. `useEffect(() => { if (!focusFace.current) return; focusFace.current = false; (side === "back" ? backRef : frontRef).current?.focus({ preventScroll: true }); }, [side])`. Step click with `dir = -1` (prev) or `+1` (next): `nextIndex = (index + dir + cards.length) % cards.length`; `setIndex(nextIndex)`; `setSide("front")`; `onStep?.({ index: nextIndex })`; focus stays on the step button. If `cards` changes length so that `index >= cards.length`, render with `Math.min(index, cards.length - 1)`.
+  - **Styling** (tempo.css, Case A): face min-height `calc(var(--tp-space-20) + var(--tp-space-12))` (128 px), padding `--tp-space-5`, radius `--tp-radius-md`, `--tp-ground`, centred text; side label `--tp-text-xs` 600 `--tp-ink-muted`; text `--tp-font-serif` `--tp-text-xl` `--tp-leading-snug`; count `--tp-text-sm` `--tp-ink-muted`, pushed to inline-start (`margin-inline-end: auto`); icon buttons `--tp-touch` (44 px) square; face entry animation `tp-pop` `--tp-dur-base` (180 ms) `--tp-ease-out` (opacity + transform only).
+  - **States (harness order):** `default` (cards = the three design cards: `{ front: "What is the one idea?", back: "Small plans beat big plans." }`, `{ front: "How do you open?", back: "With Monday morning: three tasks, not thirty." }`, `{ front: "What do you ask the room?", back: "What is one thing you could make smaller today?" }`), `last` (same three cards, `initialIndex: 2`), `single` (only the first card; Previous / Next disabled — the disabled state), `empty` (`cards: []`). Loading / error / offline / success: n/a — the card has no data of its own and nothing to save; the hosting page owns them. Fixture card text is data, identical in both languages.
+  - **Harness:** `/e2e/components/flashcard`, `"use client"`, imports only `Flashcard`, its types and React; each state is `<section data-testid="flashcard-<state>"><Flashcard … /></section>`; `onFlip` / `onStep` set the text of `<output data-testid="flashcard-log">` to `onFlip:<JSON.stringify(event)>` / `onStep:<JSON.stringify(event)>`.
+  - **RTL:** the foot is a logical flex row (count at inline-start); Previous uses `tp-icon--back` (points to inline-start in both directions, tempo.css 577–578) and Next uses `flip` (mirrored in RTL, tempo.css line 78), so both chevrons point along the reading direction; card text `dir="auto"`; numbers in `.tp-num`. **Keyboard / screen reader:** Tab order = Previous → flip → Next; flip is a toggle button (`aria-pressed`) whose visible label names the next action; after a flip focus moves to the newly shown face (`tabIndex={-1}`), so its side word and text are read; the counter is `aria-live="polite"` so stepping announces "Card 2 of 3"; the hidden face is `display: none`. **Breakpoints:** one layout at 390 / 768 / 1024 / 1280; the foot wraps on narrow widths. **Motion:** only the 180 ms `tp-pop` face entry and Stage 1 button transitions (`--tp-dur-fast`); reduced motion → `0.01ms` (tempo.css line 480).
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "flashcard", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
+  1. Given `flashcard-default` / Then `.tp-flashcard` has `data-side="front"`, the front face is visible with `question` for `lang` and "What is the one idea?", the back face is hidden, the count reads "Card 1 of 3" (HE "כרטיס 1 מתוך 3"), and the flip button is named `showAnswer` with `aria-pressed="false"`.
+  2. Given `flashcard-default` / When the flip button is clicked / Then `data-side="back"`, "Small plans beat big plans." is visible, the front face is hidden, the button is named `showQuestion` with `aria-pressed="true"`, the back face is focused (`toBeFocused`), and `flashcard-log` reads `onFlip:{"index":0,"side":"back"}`; When clicked again / Then `data-side="front"` and the log reads `onFlip:{"index":0,"side":"front"}`.
+  3. Given `flashcard-default` with the card flipped to the back / When the button named `next` is clicked / Then the count reads "Card 2 of 3" (HE "כרטיס 2 מתוך 3"), `data-side="front"`, the front text is "How do you open?", and the log reads `onStep:{"index":1}`.
+  4. Given `flashcard-last` / Then the count reads "Card 3 of 3"; When `next` is clicked / Then it reads "Card 1 of 3" and the log `onStep:{"index":0}`; When `prev` is clicked / Then it reads "Card 3 of 3" and the log `onStep:{"index":2}`.
+  5. Given `flashcard-single` / Then the `prev` and `next` buttons are disabled and the flip button is enabled; When flip is clicked / Then "Small plans beat big plans." is visible.
+  6. Given `flashcard-empty` / Then it shows `empty` for `lang` ("No cards in this set yet." / "עדיין אין כרטיסים בערכה הזו.") and contains no `button`.
+  7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="flashcard-default"]')` and `expectMotionBudget(page, '[data-testid="flashcard-default"]')` pass, and in `flashcard-default` the `prev` button's `svg` has class `tp-icon--back` and the `next` button's `svg` has class `tp-icon--flip`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; buttons 44 px; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` outline `--tp-focus-w` 2 px (WCAG 2.2 SC 2.4.7; tempo.css line 91) · motion: face entry 180 ms ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0279 — Component: Quiz (`apps/web/components/blocks/Quiz.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-28 (coach artifacts: quiz); `docs/design/v3/components.md` §2.2 (Quiz: `.tp-quiz[data-checked]` fieldset, `__q` legend, `.tp-choice[data-correct]`, `.tp-quiz__mark`, `.tp-quiz__feedback[data-result]`; feedback = icon + "Right." / "Not quite. The answer is: …"); design `docs/design/v3/screens/web/page-blocks.html` lines 361–388 and `docs/design/v3/tempo.js` `checkQuiz` (lines 536–553: no pick → "Pick one answer first."; after Check the correct option shows "The answer"); tempo.css `@component Quiz` block (line 763) on the Stage 1 `.tp-choice` / `.tp-radio` rules (line 1056) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. Saving the answer (`quizzes.answer` in the design notes) belongs to the page that hosts the block: this component reports the answer through `onCheck` and can show a saved answer through `answeredOptionId`; it never imports `convex/lib/artifacts.ts`.
+- **GOAL:** `Quiz` shows one question with radio options, checks the picked answer once (no re-answer), and shows the result as an icon plus words with the correct answer marked, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/blocks/Quiz.tsx` · `apps/web/app/e2e/components/quiz/page.tsx` · test: `tests/e2e/screens/quiz.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Quiz.tsx` (new) · `apps/web/app/e2e/components/quiz/page.tsx` (new) · `tests/e2e/screens/quiz.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Quiz \|@component Radio " apps/web/app/tempo.css` prints lines 763 and 1056; `grep -n "^\.tp-choice" apps/web/app/tempo.css` shows `.tp-choice`, `.tp-choice__text`, `.tp-choice__hint` (there is no `.tp-choice__label` class: do not use it); `test -e apps/web/components/blocks/Quiz.tsx` fails; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Quiz.tsx` (`"use client"`: `useLocale`, `useId`, `useState`) exporting exactly the SPEC types and function, `COPY` at the top.
+  4. Implement SPEC "Behaviour".
+  5. Create the harness page with the four SPEC states in order, fixtures inline, `onCheck` writing to `quiz-log` (CONVENTIONS §13).
+  6. Create `tests/e2e/screens/quiz.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "quiz", { lang })`) and the 7 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quiz.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** show the result by colour alone (always icon + words); allow a second answer after Check; reveal which option is correct before Check; keep a score; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact` or `apps/web/components/forms/Radio.tsx`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0279 / evidence: <DONE output> / changed: apps/web/components/blocks/Quiz.tsx, apps/web/app/e2e/components/quiz/page.tsx, tests/e2e/screens/quiz.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type QuizOption = { id: string; text: string; correct: boolean };
+  export type QuizProps = {
+    question: string;
+    options: QuizOption[];              // exactly one option has correct: true (the artifact parser guarantees it; the component does not validate)
+    answeredOptionId?: string | null;   // a saved answer: render already checked, with no onCheck call
+    disabled?: boolean;                 // read-only: radios and Check disabled, no feedback
+    onCheck?: (event: { optionId: string; correct: boolean }) => void;
+  };
+  export function Quiz(props: QuizProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; values from `page-blocks.html` keys `qz.*` / `quiz.*`, HE `quiz.pick` rewritten gender-neutral per CONVENTIONS §12):
+    | key | EN | HE |
+    |---|---|---|
+    | check | Check | בדיקה |
+    | mark | The answer | התשובה |
+    | right | Right. | נכון. |
+    | wrong | Not quite. The answer is: | לא בדיוק. התשובה היא: |
+    | pick | Pick one answer first. | קודם בוחרים תשובה אחת. |
+  - **Behaviour:** `name = "quiz-" + useId()`; state `picked: string | null` (initial `answeredOptionId ?? null`), `checked: boolean` (initial `answeredOptionId != null`), `pickError: boolean` (initial `false`). Changing a radio → `picked = option.id`, `pickError = false`. Check click: when `picked === null` → `pickError = true` (no callback); else `checked = true` and `onCheck?.({ optionId: picked, correct: options.find((o) => o.id === picked)?.correct === true })`. `answer = options.find((o) => o.correct)`. `result` = `checked` ? (picked option correct ? `"right"` : `"wrong"`) : (`pickError` ? `"pick"` : `null`).
+  - **Markup** (Case A; the component returns a fragment of the design's body + foot so it drops into `CoachArtifact` unchanged):
+    - `<div className="tp-artifact__body">` → `<fieldset className="tp-quiz" data-component="Quiz" data-checked={checked ? "true" : "false"} disabled={checked || disabled}>` with `<legend className="tp-quiz__q" dir="auto">{question}</legend>` and per option `<label className="tp-choice" data-correct={o.correct ? "true" : "false"}><input className="tp-radio" type="radio" name={name} value={o.id} checked={picked === o.id} onChange={() => pick(o.id)} /><span className="tp-choice__text"><span dir="auto">{o.text}</span></span><span className="tp-quiz__mark">{o.correct ? <><TpIcon name="check" size="sm" /><span>{copy.mark}</span></> : null}</span></label>` (tempo.css shows the mark only when `data-checked="true"`, so the correct option is never revealed early); then `<p className="tp-quiz__feedback" role="status" data-result={result === "right" ? "right" : "wrong"} hidden={result === null}>` holding `<TpIcon name={result === "right" ? "check" : "info"} size="sm" />` and `<span>` = `copy.right` (right) · `{copy.wrong} <span dir="auto">{answer?.text}</span>` (wrong) · `copy.pick` (pick).
+    - `<div className="tp-artifact__foot"><button type="button" className="tp-btn tp-btn--secondary" data-action="quiz-check" disabled={checked || disabled} onClick={check}><TpIcon name="check" size="sm" /><span>{copy.check}</span></button></div>`.
+  - **Styling** (tempo.css, Case A): question `--tp-font-serif` `--tp-text-lg`; option rows `.tp-choice` min-height `--tp-touch` (44 px), padding `--tp-space-2` `--tp-space-3`, `1px solid var(--tp-line)`, radius `--tp-radius-md`, `--tp-paper`; the picked row `--tp-line-control` border on `--tp-ground`; radio 22 px with a `--tp-ink` dot; mark `--tp-text-xs` 600 `--tp-done`; feedback padding `--tp-space-3` `--tp-space-4`, radius `--tp-radius-md`, right = `--tp-done-wash` with a `--tp-done` icon, wrong/pick = `--tp-sunken` with a `--tp-ink-muted` icon.
+  - **States (harness order):** `default` (unanswered), `answered-right` (`answeredOptionId: "a"`), `answered-wrong` (`answeredOptionId: "b"`), `disabled` (unanswered, `disabled: true`). Every state uses question "What should the room leave with?" and options `{ id: "a", text: "Small plans beat big plans", correct: true }`, `{ id: "b", text: "More slides make a stronger talk", correct: false }`, `{ id: "c", text: "Always start with the numbers", correct: false }` (fixture data, identical in both languages). `pick` (Check with nothing picked), `right` and `wrong` are reached by interaction in `default`. Loading / empty / error / offline / success: n/a — the host page owns data and saving.
+  - **Harness:** `/e2e/components/quiz`, `"use client"`, imports only `Quiz`, its types and React; each state is `<section data-testid="quiz-<state>"><Quiz … /></section>`; `onCheck` sets `<output data-testid="quiz-log">` to `onCheck:<JSON.stringify(event)>`.
+  - **RTL:** option rows are logical flex rows (radio at inline-start, mark at inline-end via `margin-inline-start: auto`); question, options and the answer inside feedback are `dir="auto"`. **Keyboard / screen reader:** native radio group inside a `fieldset` named by its `legend` (Tab enters at the picked radio, arrows move and pick); Check is a native button; feedback is `role="status"` so the result is announced; after Check the `fieldset` is `disabled`, so the radios are announced as unavailable. **Breakpoints:** one column at 390 / 768 / 1024 / 1280. **Motion:** only Stage 1 radio and button transitions (`--tp-dur-fast`, 120 ms); reduced motion → `0.01ms`.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "quiz", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
+  1. Given `quiz-default` / Then `getByRole("group", { name: "What should the room leave with?" })` holds 3 unchecked radios, `fieldset.tp-quiz` has `data-checked="false"`, no `.tp-quiz__mark` is visible, `.tp-quiz__feedback` is hidden, and the button named `check` ("Check" / "בדיקה") is enabled.
+  2. Given `quiz-default` / When `check` is clicked with nothing picked / Then a visible `role="status"` element reads `pick` for `lang`, `quiz-log` is empty, and the radios are enabled.
+  3. Given `quiz-default` / When the text "More slides make a stronger talk" is clicked and then `check` / Then `data-checked="true"`, the feedback has `data-result="wrong"` and reads `wrong` for `lang` followed by "Small plans beat big plans", the option "Small plans beat big plans" shows `mark` for `lang`, all 3 radios are disabled, `check` is disabled, and the log reads `onCheck:{"optionId":"b","correct":false}`.
+  4. Given `quiz-default` / When "Small plans beat big plans" is picked and `check` clicked / Then the feedback has `data-result="right"`, reads `right` for `lang`, contains `use[href="#i-check"]`, and the log reads `onCheck:{"optionId":"a","correct":true}`.
+  5. Given `quiz-answered-right` / Then radio `a` is checked, `data-checked="true"`, the feedback reads `right` and `check` is disabled; Given `quiz-answered-wrong` / Then radio `b` is checked and the feedback reads `wrong` + "Small plans beat big plans"; the log stays empty.
+  6. Given `quiz-disabled` / Then all 3 radios and `check` are disabled and the feedback is hidden.
+  7. Given the harness / Then `expectDir(page, lang)`, `expectMotionBudget(page, '[data-testid="quiz-default"]')` and `expectTargetSize(page, '[data-testid="quiz-default"] .tp-artifact__foot')` pass, and every `label.tp-choice` in `quiz-default` has a bounding box ≥ 24 px wide and ≥ 44 px tall (the label row is the target of the 22 px radio, see NUMBERS).
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum): the Check button via `expectTargetSize`, the radios via their whole clickable `label.tp-choice` row ≥ 44 px tall (the SC's equivalent-target exception; the 22 px box is locked in tempo.css); bullet 7 · use of colour: right / wrong are an icon plus words (WCAG 2.2 SC 1.4.1; bullets 3–4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · non-text contrast of radio borders ≥ 3:1 (`--tp-line-control`, WCAG 2.2 SC 1.4.11) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0280 — Component: Checklist (`apps/web/components/blocks/Checklist.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-28 (coach artifacts: checklist); `docs/design/v3/components.md` §2.2 (Checklist: `.tp-checklist`, `__item[data-done]`, `__text`, `__count` + `.tp-checkbox`; "2 of 5 done"); design `docs/design/v3/screens/web/page-blocks.html` lines 390–415 and `docs/design/v3/tempo.js` `syncChecklist` (lines 560–567); tempo.css `@component Checklist` block (line 776) on the Stage 1 `.tp-choice` / `.tp-checkbox` rules (line 1055) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. The component is controlled: the hosting page owns the items and saves a toggle (`pages.updateBlock` in the design notes); it never imports `convex/lib/artifacts.ts`.
+- **GOAL:** `Checklist` renders a list of native checkboxes with done items struck through and an "N of M done" count, reporting each toggle through `onToggle`, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/blocks/Checklist.tsx` · `apps/web/app/e2e/components/checklist/page.tsx` · test: `tests/e2e/screens/checklist.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Checklist.tsx` (new) · `apps/web/app/e2e/components/checklist/page.tsx` (new) · `tests/e2e/screens/checklist.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Checklist \|@component Checkbox " apps/web/app/tempo.css` prints lines 776 and 1055; `test -e apps/web/components/blocks/Checklist.tsx` fails; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Checklist.tsx` (`"use client"`: `useLocale`, `useId`) exporting exactly the SPEC types and function, `COPY` at the top. It keeps no copy of `items` in state.
+  4. Create the harness page with the four SPEC states in order (CONVENTIONS §13): each state renders a local, non-exported wrapper `function ChecklistState(props: { initial: ChecklistItem[]; disabled?: boolean })` that keeps `items` in `useState(props.initial)`, passes them to `Checklist`, and on `onToggle` updates the matching item and writes the call to `checklist-log`.
+  5. Create `tests/e2e/screens/checklist.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "checklist", { lang })`) and the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/checklist.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** keep its own copy of the items or persist them locally (`localStorage`, state that ignores new props); show a streak, percentage or praise; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact` or `apps/web/components/forms/Checkbox.tsx`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0280 / evidence: <DONE output> / changed: apps/web/components/blocks/Checklist.tsx, apps/web/app/e2e/components/checklist/page.tsx, tests/e2e/screens/checklist.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type ChecklistItem = { id: string; text: string; done: boolean };
+  export type ChecklistProps = {
+    items: ChecklistItem[];
+    disabled?: boolean;                                          // read-only: every checkbox disabled
+    onToggle: (event: { id: string; done: boolean }) => void;   // done = the new value
+  };
+  export function Checklist(props: ChecklistProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; `of` / `done` from `page-blocks.html` keys `checklist.of` / `checklist.done`):
+    | key | EN | HE |
+    |---|---|---|
+    | of | of | מתוך |
+    | done | done | בוצעו |
+    | empty | Nothing on this list yet. | עדיין אין כאן פריטים. |
+  - **Markup, `items.length > 0`** (Case A; a fragment of body + foot so it drops into `CoachArtifact`; `baseId = "cl-" + useId()`): `<div className="tp-artifact__body"><ul className="tp-checklist" role="list" data-component="Checklist">` with per item `i` `<li className="tp-checklist__item" data-done={item.done ? "true" : "false"} key={item.id}><label className="tp-choice" htmlFor={`${baseId}-${i}`}><input id={`${baseId}-${i}`} className="tp-checkbox" type="checkbox" checked={item.done} disabled={disabled} onChange={(e) => onToggle({ id: item.id, done: e.target.checked })} /><span className="tp-checklist__text" dir="auto">{item.text}</span></label></li>`; `</ul></div>`; then `<div className="tp-artifact__foot"><span className="tp-checklist__count" role="status"><span className="tp-num">{doneCount}</span> <span>{copy.of}</span> <span className="tp-num">{items.length}</span> <span>{copy.done}</span></span></div>` with `doneCount = items.filter((i) => i.done).length`.
+  - **Markup, `items.length === 0`:** `<div className="tp-artifact__body"><ul className="tp-checklist" role="list" data-component="Checklist" /><p className="tp-help">{copy.empty}</p></div>` — no foot.
+  - **Styling** (tempo.css, Case A): rows separated by `1px solid var(--tp-line)` (none after the last); row `.tp-choice` min-height `--tp-touch` (44 px), gap `--tp-space-3`; checkbox 22 px, `--tp-line-control` border, `--tp-done` fill with a `--tp-paper` tick when checked; done text `line-through` in `--tp-ink-subtle` with `--tp-ink-muted` text; count `--tp-text-sm` `--tp-ink-muted`.
+  - **States (harness order):** `default` (items `c1` "Slides on a USB stick and in email" done, `c2` "Charger and adapter" done, `c3` "Water bottle", `c4` "Leave at 13:15", `c5` "Text Dana when it's done"), `all-done` (`d1` "Charger and adapter", `d2` "Water bottle", `d3` "Leave at 13:15", all done), `empty` (`items: []`), `disabled` (the `default` items with `disabled: true`). Item text is fixture data, identical in both languages. Loading / error / offline / success: n/a — the host page owns data and saving.
+  - **Harness:** `/e2e/components/checklist`, `"use client"`, imports only `Checklist`, `type ChecklistItem` and React (`useState`); each state is `<section data-testid="checklist-<state>"><ChecklistState … /></section>`; a toggle sets `<output data-testid="checklist-log">` to `onToggle:<JSON.stringify(event)>`.
+  - **RTL:** rows are logical flex rows (box at inline-start); item text `dir="auto"`; the count numbers are `.tp-num` isolates. **Keyboard / screen reader:** native checkboxes (Tab to each, Space toggles), each named by its text and announced "checked" / "not checked"; the whole label row is clickable; the count is `role="status"`, so "3 of 5 done" is announced after a toggle. **Breakpoints:** one column at 390 / 768 / 1024 / 1280. **Motion:** only the Stage 1 checkbox transition (`--tp-dur-fast`, 120 ms); reduced motion → `0.01ms`.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "checklist", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
+  1. Given `checklist-default` / Then it holds 5 checkboxes, the first two checked, the first two `li.tp-checklist__item` have `data-done="true"` and the others `"false"`, and the `role="status"` count reads "2 of 5 done" (HE "2 מתוך 5 בוצעו").
+  2. Given `checklist-default` / When the text "Water bottle" is clicked / Then that checkbox is checked, its `li` has `data-done="true"`, the count reads "3 of 5 done" (HE "3 מתוך 5 בוצעו"), and `checklist-log` reads `onToggle:{"id":"c3","done":true}`.
+  3. Given `checklist-default` / When the checkbox named "Charger and adapter" is focused and Space is pressed / Then it is unchecked, the count reads "1 of 5 done" (HE "1 מתוך 5 בוצעו"), and the log reads `onToggle:{"id":"c2","done":false}`.
+  4. Given `checklist-all-done` / Then the count reads "3 of 3 done" (HE "3 מתוך 3 בוצעו") and every `li` has `data-done="true"`.
+  5. Given `checklist-empty` / Then it shows `empty` for `lang` and contains no checkbox and no `.tp-checklist__count`.
+  6. Given `checklist-disabled` / Then all 5 checkboxes are disabled; When the text "Water bottle" is clicked / Then the log stays empty and the count still reads "2 of 5 done" (HE "2 מתוך 5 בוצעו").
+  7. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid="checklist-default"]')` pass, and every `label.tp-choice` in `checklist-default` has a bounding box ≥ 24 px wide and ≥ 44 px tall (the label row is the target of the 22 px box, see NUMBERS).
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum), met by the whole clickable `label.tp-choice` row ≥ 44 px tall (the SC's equivalent-target exception; the 22 px box is locked in tempo.css); bullet 7 · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · non-text contrast of the box ≥ 3:1 (`--tp-line-control`, WCAG 2.2 SC 1.4.11) · done state is shown by the checked box plus strike-through and the count in words, not colour alone (WCAG 2.2 SC 1.4.1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0281 — Component: Tracker (`apps/web/components/blocks/Tracker.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-28 (coach artifacts: tracker); `docs/design/v3/components.md` §2.2 (Tracker: `.tp-tracker`, `__label`, `__name`, `__goal`, `__controls`, `__value`; `data-dir="inc / dec"`; announces the new value); design `docs/design/v3/screens/web/page-blocks.html` lines 417–440 ("Aim for 4 … Any number helps.") and `docs/design/v3/tempo.js` `stepTracker` (lines 573–578: never below 0, no cap at the goal, announces "<name>: <n>"); tempo.css `@component Tracker` block (line 784) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. The component is controlled: the hosting page owns the value and saves a step (`trackers.log({ blockId, delta })` in the design notes); it never imports `convex/lib/artifacts.ts`.
+- **GOAL:** `Tracker` shows a name, an optional goal line and a large value with One less / One more buttons (never below 0, no cap at the goal), announces the new value and reports each step through `onStep`, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/blocks/Tracker.tsx` · `apps/web/app/e2e/components/tracker/page.tsx` · test: `tests/e2e/screens/tracker.spec.ts`.
+- **MUTATES:** `apps/web/components/blocks/Tracker.tsx` (new) · `apps/web/app/e2e/components/tracker/page.tsx` (new) · `tests/e2e/screens/tracker.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Tracker " apps/web/app/tempo.css` prints line 784; `grep -n '"minus"\|"plus"' apps/web/components/tempo/TpIcon.tsx` prints both; `test -e apps/web/components/blocks/Tracker.tsx` fails; `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Tracker.tsx` (`"use client"`: `useLocale`, `useId`, `useState`) exporting exactly the SPEC types and function, `COPY` at the top.
+  4. Create the harness page with the four SPEC states in order (CONVENTIONS §13): each state renders a local, non-exported wrapper `function TrackerState(props: { name: string; initial: number; goal: number | null; disabled?: boolean })` that keeps `value` in `useState(props.initial)`, passes it to `Tracker`, and on `onStep` sets `value = event.value` and writes the call to `tracker-log`.
+  5. Create `tests/e2e/screens/tracker.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "tracker", { lang })`) and the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tracker.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** go below 0; cap the value at the goal or disable One more at the goal; show colour alone, a streak, a percentage or praise; keep the value in its own state; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react`, `@/convex/_generated/*` or `convex/lib/*`; import `CoachArtifact`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0281 / evidence: <DONE output> / changed: apps/web/components/blocks/Tracker.tsx, apps/web/app/e2e/components/tracker/page.tsx, tests/e2e/screens/tracker.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type TrackerProps = {
+    name: string;                 // stored tracker name
+    value: number;                // whole number ≥ 0 (the host passes what it saved)
+    goal: number | null;          // whole number ≥ 1, or null for no goal
+    disabled?: boolean;           // read-only: both buttons disabled
+    onStep: (event: { delta: 1 | -1; value: number }) => void;  // value = the new value
+  };
+  export function Tracker(props: TrackerProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; from `page-blocks.html` keys `tr.goal` / `tr.goal2` / `tr.dec` / `tr.inc`, with the artifact-specific "before Thursday" removed and the HE button labels made gender-neutral per CONVENTIONS §12):
+    | key | EN | HE |
+    |---|---|---|
+    | goal | Aim for {goal}. Any number helps. | כדאי לכוון ל־{goal}. כל מספר עוזר. |
+    | noGoal | Any number helps. | כל מספר עוזר. |
+    | dec | One less | פחות אחד |
+    | inc | One more | עוד אחד |
+    | announce | {name}: {value} | {name}: {value} |
+  - **Behaviour:** `nameId = "tr-" + useId()`; state `touched: boolean` (initial `false`). One less: when `value > 0` → `touched = true`, `onStep({ delta: -1, value: value - 1 })`. One more: `touched = true`, `onStep({ delta: 1, value: value + 1 })`. The live region text is `touched ? copy.announce.replace("{name}", name).replace("{value}", String(value)) : ""`, so it reads the value the host passes back after the step.
+  - **Markup** (Case A): `<div className="tp-artifact__body"><div className="tp-tracker" data-component="Tracker">` →
+    - `<span className="tp-tracker__label"><span className="tp-tracker__name" id={nameId} dir="auto">{name}</span><span className="tp-tracker__goal">{goalLine}</span></span>` where `goalLine` = `goal === null ? copy.noGoal : <>{before}<span className="tp-num">{goal}</span>{after}</>` with `[before, after] = copy.goal.split("{goal}")`;
+    - `<span className="tp-tracker__controls" role="group" aria-labelledby={nameId}>` with `<button type="button" className="tp-btn tp-btn--secondary tp-btn--icon" data-action="tracker" data-dir="dec" aria-label={copy.dec} disabled={disabled || value <= 0} onClick={dec}><TpIcon name="minus" size="sm" /></button>`, `<span className="tp-tracker__value tp-num">{value}</span>`, `<button type="button" className="tp-btn tp-btn--secondary tp-btn--icon" data-action="tracker" data-dir="inc" aria-label={copy.inc} disabled={disabled} onClick={inc}><TpIcon name="plus" size="sm" /></button>`;
+    - `<span className="tp-sr-only" aria-live="polite" data-testid="tracker-announce">{liveText}</span>`; then `</div></div>`.
+  - **Styling** (tempo.css, Case A): row flex-wrap gap `--tp-space-3` `--tp-space-4`; name 600; goal `--tp-text-sm` `--tp-ink-muted`; controls gap `--tp-space-2`; value `--tp-font-serif` `--tp-text-3xl`, min-width `--tp-space-12`, centred; buttons 44 × 44 (`--tp-touch`).
+  - **States (harness order):** `default` (name "Run-throughs", value 2, goal 4), `zero` (name "Run-throughs", value 0, goal 4 — One less disabled), `no-goal` (name "Glasses of water", value 3, goal null), `disabled` (name "Run-throughs", value 2, goal 4, `disabled: true`). Names are fixture data, identical in both languages. Loading / empty / error / offline / success: n/a — the host page owns data and saving.
+  - **Harness:** `/e2e/components/tracker`, `"use client"`, imports only `Tracker`, `type TrackerProps` and React (`useState`); each state is `<section data-testid="tracker-<state>"><TrackerState … /></section>`; a step sets `<output data-testid="tracker-log">` to `onStep:<JSON.stringify(event)>`.
+  - **RTL:** the row and controls are logical flex rows, so in Hebrew the label sits at the right and the − / + order mirrors with the reading direction; the goal number and the value are `.tp-num` isolates; the name is `dir="auto"`. **Keyboard / screen reader:** Tab order = One less → One more; both are native buttons named "One less" / "One more" inside a group named by the tracker name; after a step the polite live region reads "Run-throughs: 3". **Breakpoints:** one row at 768 and up; at 390 the controls wrap under the label when the name is long. **Motion:** only Stage 1 button transitions (`--tp-dur-fast`, 120 ms); reduced motion → `0.01ms`.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "tracker", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
+  1. Given `tracker-default` / Then `.tp-tracker__name` reads "Run-throughs", `.tp-tracker__value` reads "2", `.tp-tracker__goal` reads "Aim for 4. Any number helps." (HE "כדאי לכוון ל־4. כל מספר עוזר."), the buttons named `dec` and `inc` are enabled and contain `use[href="#i-minus"]` / `use[href="#i-plus"]`, and `getByRole("group", { name: "Run-throughs" })` exists.
+  2. Given `tracker-default` / When `inc` is clicked / Then the value reads "3", `tracker-log` reads `onStep:{"delta":1,"value":3}`, and `tracker-announce` reads "Run-throughs: 3".
+  3. Given `tracker-default` / When `dec` is clicked / Then the value reads "1" and the log reads `onStep:{"delta":-1,"value":1}`.
+  4. Given `tracker-default` / When `inc` is clicked three times / Then the value reads "5" (past the goal) and `inc` is still enabled.
+  5. Given `tracker-zero` / Then `dec` is disabled and `inc` enabled; When `inc` is clicked / Then the value reads "1" and `dec` becomes enabled.
+  6. Given `tracker-no-goal` / Then the goal line reads `noGoal` for `lang`; Given `tracker-disabled` / Then `dec` and `inc` are both disabled.
+  7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="tracker-default"]')` and `expectMotionBudget(page, '[data-testid="tracker-default"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; buttons 44 px; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · status messages: the new value is announced through a polite live region (WCAG 2.2 SC 4.1.3; bullet 2) · value floor 0, no ceiling (design `tempo.js` `stepTracker`; bullets 4–5) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0282 — Component: TierCard (`apps/web/components/billing/TierCard.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093.
+- **WHY:** PRD F-110 (billing visible, never hidden); `docs/design/v3/components.md` §2.14 (TierCard: `.tp-tiers`, `.tp-tier[data-current]`, `__head`, `__name`, `__desc`, `__price.od-nowrap`, `__amount`, `__per`, `__features`, `__cta`; never hidden or collapsed; stacks on phone) and §2.16 (Pricing on the landing page reuses it); design `docs/design/v3/screens/web/billing.html` lines 129–181 (tier copy); tempo.css `@component TierCard` block (line 1298) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. Q-02 (prices) does **not** block this component: price values arrive only through the `tier` prop (shape of `billing.listTiers`, TFV2-0261a) and are never written in the component. Code truth: `apps/web/components/billing-plan/PlanCard.tsx` draws a read-only tier card from hard-coded `TIERS` in `apps/web/lib/settings/billing.ts`; it stays in the repo, unimported once TFV2-0284b lands, and is not reused here (it reads `t()` keys and the hard-coded price table). The exported contract below is shared with the landing-page Pricing ticket (TFV2-0298) and must match it exactly.
+- **GOAL:** `TierCard` renders one plan tier (name, description, price for the chosen interval, what it includes, and either "Your plan", a Choose button or the trial note) from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/billing/TierCard.tsx` · `apps/web/app/e2e/components/tier-card/page.tsx` · test: `tests/e2e/screens/tier-card.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/TierCard.tsx` (new; creates the folder `apps/web/components/billing/`) · `apps/web/app/e2e/components/tier-card/page.tsx` (new) · `tests/e2e/screens/tier-card.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component TierCard " apps/web/app/tempo.css` prints line 1298; `grep -n "export function Badge" apps/web/components/layout/Badge.tsx` (TFV2-0093; if absent report `blocked: missing TFV2-0093 Badge`); `grep -n '"check"\|"bell"\|"phone"' apps/web/components/tempo/TpIcon.tsx` prints the three names; `test -e apps/web/components/billing/TierCard.tsx` fails; read `apps/web/components/billing-plan/PlanCard.tsx` (reference only; do not edit or import); `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `TierCard.tsx` (`"use client"`: `useLocale`, `useId`) exporting exactly the SPEC types and function, `COPY` at the top.
+  4. Create the harness page with the eight SPEC states in order, fixtures inline, `onChoose` writing to `tier-card-log` (CONVENTIONS §13).
+  5. Create `tests/e2e/screens/tier-card.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "tier-card", { lang })`) and the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tier-card.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** write any price, trial price or yearly discount number in the component (prices come only from `tier`); import `apps/web/lib/settings/billing.ts` or `PlanCard.tsx`; render the `.tp-tiers` grid (the caller does); hide, collapse or reorder a tier; call `billing.checkout`, `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; add a stylesheet or edit `apps/web/app/tempo.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0282 / evidence: <DONE output> / changed: apps/web/components/billing/TierCard.tsx, apps/web/app/e2e/components/tier-card/page.tsx, tests/e2e/screens/tier-card.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  // apps/web/components/billing/TierCard.tsx (exact shared contract; TFV2-0298 imports it)
+  export type TierId = "trial" | "basic" | "pro" | "max";
+  export type BillingInterval = "monthly" | "annual";
+  export type TierCardTier = { id: TierId; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null };
+  export type TierCardProps = { tier: TierCardTier; interval: BillingInterval; current: boolean; disabled?: boolean; onChoose?: (id: TierId) => void };
+  export function TierCard(props: TierCardProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; from `billing.html`, HE made gender-neutral per CONVENTIONS §12 (including `f.coach`); the trial line drops the hard-coded "$10" because prices are never written in copy):
+    | key | EN | HE |
+    |---|---|---|
+    | name_trial | Trial | ניסיון |
+    | name_basic | Basic | Basic |
+    | name_pro | Pro | Pro |
+    | name_max | Max | Max |
+    | desc_trial | Try everything in Basic first. | לנסות קודם את כל מה שיש ב־Basic. |
+    | desc_basic | Pages, plans and the coach in writing. | דפים, תוכניות והמאמן בכתב. |
+    | desc_pro | Talk it through out loud. | לדבר על זה בקול. |
+    | desc_max | The most time to talk. | הכי הרבה זמן לדבר. |
+    | perTrial | for 3 weeks | ל־3 שבועות |
+    | perMonth | a month | לחודש |
+    | perYear | a year, two months free | לשנה, חודשיים במתנה |
+    | noPrice | Price coming soon | המחיר יפורסם בקרוב |
+    | fBasicAll | Everything in Basic | כל מה שיש ב־Basic |
+    | fTrialThen | Then Basic, unless you choose otherwise | אחר כך Basic, אלא אם בוחרים אחרת |
+    | fTrialNote | We remind you 3 days, 1 day and 1 hour before it ends | נזכיר לך 3 ימים, יום אחד ושעה אחת לפני הסיום |
+    | fPages | Pages, templates, tasks and habits | דפים, תבניות, משימות והרגלים |
+    | fCoach | The coach in chat, with memory you control | המאמן בשיחה, עם זיכרון בשליטה שלך |
+    | fPtt | Push-to-talk voice messages | הודעות קוליות בלחיצה |
+    | fLive | Live voice calls with the coach, {n} minutes a day | שיחות קוליות חיות עם המאמן, {n} דקות ביום |
+    | yours | Your plan | המסלול שלך |
+    | choose | Choose {name} | לבחור {name} |
+    | trialCta | For new accounts only. | לחשבונות חדשים בלבד. |
+  - **Helpers (module-private):** `formatUsd(amount: number): string` = `new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: Number.isInteger(amount) ? 0 : 2, maximumFractionDigits: 2 }).format(amount)` in both languages (`"$10"`, `"$9.50"`; the amount is an LTR isolate). `withNums(text: string): ReactNode[]` = `text.split(/(\d+)/).map((part, i) => /^\d+$/.test(part) ? <span className="tp-num" key={i}>{part}</span> : part)` (digits inside Hebrew text become `.tp-num` isolates, CONVENTIONS §12).
+  - **Price:** trial → `amount = tier.monthlyPriceUsd`, `per = copy.perTrial` (for every `interval`); other tiers → `amount = interval === "monthly" ? tier.monthlyPriceUsd : tier.annualPriceUsd`, `per = interval === "monthly" ? copy.perMonth : copy.perYear`. `amount !== null` → `<p className="tp-tier__price od-nowrap"><span className="tp-tier__amount tp-num">{formatUsd(amount)}</span> <span className="tp-tier__per">{withNums(per)}</span></p>`; `amount === null` → `<p className="tp-tier__price"><span className="tp-tier__per">{copy.noPrice}</span></p>`.
+  - **Features** (each `<li><TpIcon name={icon} size="sm" /><span>{text}</span></li>` inside `<ul className="tp-tier__features">`): trial → `check` fBasicAll, `check` fTrialThen, `bell` `withNums(fTrialNote)`; basic → `check` fPages, `check` fCoach, `check` fPtt; pro and max → `check` fBasicAll, then, only when `tier.liveMinutesPerDay > 0`, `phone` with `before` + `<span className="tp-num od-nowrap">{tier.liveMinutesPerDay}</span>` + `after` where `[before, after] = copy.fLive.split("{n}")`.
+  - **Call to action:** `current` → no CTA (the head shows the badge); else trial → `<p className="tp-tier__cta tp-help">{copy.trialCta}</p>`; else `onChoose` set → `<button type="button" className="tp-btn tp-btn--secondary tp-btn--block tp-tier__cta" disabled={disabled} onClick={() => onChoose(tier.id)}>{copy.choose.replace("{name}", name)}</button>`; else nothing.
+  - **Markup** (Case A, tempo.css line 1298; `nameId = "tier-" + tier.id + "-" + useId()`, `name = copy["name_" + tier.id]`): `<article className="tp-tier" data-component="TierCard" data-tier={tier.id} data-current={current ? "true" : "false"} aria-labelledby={nameId}>` → `<div className="tp-tier__head"><h3 className="tp-tier__name" id={nameId}>{name}</h3>{current ? <Badge label={copy.yours} tone="done" icon={<TpIcon name="check" size="sm" />} /> : null}</div>`, `<p className="tp-tier__desc">{copy["desc_" + tier.id]}</p>`, the price, the features, the CTA. `Badge` from `@/components/layout/Badge` (TFV2-0093: `{ label: string; tone?: "neutral" | "done" | "info" | "caution"; icon?: ReactNode }`, renders `span.tp-badge[data-tone][data-component="Badge"]`); `TpIcon` from `@/components/tempo/TpIcon`.
+  - **Styling** (tempo.css, Case A): card flex column gap `--tp-space-4`, padding `--tp-space-5`, `--tp-paper`, `1px solid var(--tp-line-strong)`, radius `--tp-radius-lg`; current card border `--tp-ink` with an inset `--tp-ink` ring; name `--tp-font-serif` `--tp-text-xl`; desc `--tp-text-sm` `--tp-ink-muted`; amount `--tp-font-serif` `--tp-text-3xl` tabular, `direction: ltr`; per `--tp-text-sm` `--tp-ink-muted`; features `--tp-text-sm`, gap `--tp-space-2`, icons `--tp-done`; CTA pinned to the bottom (`margin-top: auto`). The caller's `.tp-tiers` grid is `repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 2.75)), 1fr))` (220 px minimum), so cards stack in one column at 390 px and sit four in a row at 1280 px; nothing is ever hidden.
+  - **States (harness order):** fixture tiers (harness data only, not product prices; real values come from `billing.listTiers`): `TRIAL = { id: "trial", liveMinutesPerDay: 0, monthlyPriceUsd: 1, annualPriceUsd: null }`, `BASIC = { id: "basic", liveMinutesPerDay: 0, monthlyPriceUsd: 10, annualPriceUsd: 100 }`, `PRO = { id: "pro", liveMinutesPerDay: 90, monthlyPriceUsd: 20, annualPriceUsd: 200 }`, `MAX = { id: "max", liveMinutesPerDay: 180, monthlyPriceUsd: 40, annualPriceUsd: 400 }`. `default` (BASIC, monthly, not current, `onChoose`), `annual` (BASIC, annual, not current, `onChoose`), `current` (MAX, monthly, current, `onChoose`), `trial` (TRIAL, monthly, not current, `onChoose`), `disabled` (PRO, monthly, not current, `disabled`, `onChoose`), `no-choose` (PRO, monthly, not current, no `onChoose`), `no-price` (PRO with `monthlyPriceUsd: null`, monthly, not current, `onChoose`), `grid` (`<div className="tp-tiers">` with TRIAL, BASIC, PRO, MAX, monthly, MAX current, `onChoose`). Loading / empty / error / offline: n/a — the screen owns them; `disabled` is the offline / busy look.
+  - **Harness:** `/e2e/components/tier-card`, `"use client"`, imports only `TierCard`, its types and React; each state is `<section data-testid="tier-card-<state>">…</section>`; `onChoose` sets `<output data-testid="tier-card-log">` to `onChoose:<JSON.stringify(id)>`.
+  - **RTL:** logical layout from tempo.css (badge after the name at inline-end, icons at inline-start of each feature); amount and numbers are LTR isolates; the yearly words stay words ("two months free"), never a struck-through number. **Keyboard / screen reader:** the article is named by its `h3`; Choose is a native button named "Choose Basic"; the badge is the word "Your plan" with a decorative icon. **Breakpoints:** 390 one column; 768 two per row; 1024 and 1280 four per row (grid rule above). **Motion:** only Stage 1 button transitions (`--tp-dur-fast`); reduced motion → `0.01ms`.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "tier-card", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
+  1. Given `tier-card-default` / Then its `article[data-component="TierCard"]` has `data-tier="basic"` and `data-current="false"`, the `h3` reads "Basic", the description reads `desc_basic` for `lang`, `.tp-tier__amount` reads "$10", `.tp-tier__per` reads `perMonth`, the 3 `li` read `fPages`, `fCoach`, `fPtt` for `lang`; When the button named "Choose Basic" (HE "לבחור Basic") is clicked / Then `tier-card-log` reads `onChoose:"basic"`.
+  2. Given `tier-card-annual` / Then `.tp-tier__amount` reads "$100" and `.tp-tier__per` reads `perYear` for `lang`.
+  3. Given `tier-card-current` / Then `data-current="true"`, a `[data-component="Badge"]` with `data-tone="done"` reads `yours` for `lang`, the section has no `button`, and the second `li` contains a `.tp-num` reading "180" and `use[href="#i-phone"]`.
+  4. Given `tier-card-trial` / Then the amount reads "$1", `.tp-tier__per` reads `perTrial` for `lang`, `.tp-tier__cta` reads `trialCta`, the section has no `button`, and the third `li` contains `use[href="#i-bell"]` and a `.tp-num` reading "3".
+  5. Given `tier-card-disabled` / Then the "Choose Pro" (HE "לבחור Pro") button is disabled and clicking it (`{ force: true }`) leaves the log empty; Given `tier-card-no-choose` / Then the section has no `button`; Given `tier-card-no-price` / Then `.tp-tier__per` reads `noPrice` for `lang` and there is no `.tp-tier__amount`.
+  6. Given `tier-card-grid` / Then 4 `article.tp-tier` are visible in the order trial, basic, pro, max (`data-tier`); at `mobile` each card's top is ≥ the previous card's bottom (stacked), at `desktop` all four tops are equal within 1 px (one row).
+  7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="tier-card-default"]')` and `expectMotionBudget(page, '[data-testid="tier-card-grid"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; Choose button 44 px tall, full width; bullet 7) · the current plan is a word, not only a border (WCAG 2.2 SC 1.4.1; bullet 3) · all 4 tiers visible at 390 and 1280 px, never collapsed (PRD F-110; bullet 6) · price values: none in this component (Q-02 open; values come from `billing.listTiers`) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0283 — Component: BillingNotice (`apps/web/components/billing/BillingNotice.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** PRD F-110 (billing visible; trial and conversion dates said plainly); `docs/design/v3/components.md` §2.14 (BillingNotice: `.tp-notice`, props `tone`, `text`; trial / conversion dates); design `docs/design/v3/screens/web/billing.html` lines 104–111 (early-access banner, star icon, region first on the page); tempo.css line 1312 (`BillingNotice = .tp-notice`, info for trial dates) and the `@component Notice` block (line 646) → CONVENTIONS §10 Case A; CONVENTIONS §11–§13, §22. Code truth: today `apps/web/components/billing-plan/BillingPlan.tsx` draws this banner inline as `section.tp-notice[data-component="BillingNotice"][aria-label="Current plan"]`; the storage-state spec `tests/e2e/feature-sweep.spec.ts:984` finds it with `getByRole("region", { name: "Current plan" })`, so the region name is kept. Design decision of this ticket: the notice owns its words (one `kind` per plan situation) so the billing screen passes facts, not sentences; dates arrive as props (the trial end date needs CFG-013 on the backend, which does not block this props-only component).
+- **GOAL:** `BillingNotice` renders the "current plan" banner for each plan situation (early access, no plan, a paid plan, the trial with or without its end date, a payment problem, cancelled with or without its end date) as an icon plus words, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/billing/BillingNotice.tsx` · `apps/web/app/e2e/components/billing-notice/page.tsx` · test: `tests/e2e/screens/billing-notice.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/BillingNotice.tsx` (new) · `apps/web/app/e2e/components/billing-notice/page.tsx` (new) · `tests/e2e/screens/billing-notice.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Notice \|BillingNotice = " apps/web/app/tempo.css` prints lines 646 and 1312; `grep -n '"star"\|"info"\|"alert"' apps/web/components/tempo/TpIcon.tsx` prints the three names; `test -e apps/web/components/billing/BillingNotice.tsx` fails; read `apps/web/components/billing-plan/BillingPlan.tsx` lines 37–50 (reference only; do not edit); `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `BillingNotice.tsx` (`"use client"`: `useLocale`) exporting exactly the SPEC types and function, `COPY` at the top.
+  4. Create the harness page with the eight SPEC states in order, fixtures inline (CONVENTIONS §13). No callbacks, so no log element.
+  5. Create `tests/e2e/screens/billing-notice.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "billing-notice", { lang })`) and the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-notice.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** invent or compute a date (only `endsAtMs` from props); use colour alone (every kind has an icon and a title in words); write a price; edit `BillingPlan.tsx` or i18n files; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; import `apps/web/components/layout/Notice.tsx` (its root is a live `role="status"` div, not the named region this banner must be); add a stylesheet or edit `apps/web/app/tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0283 / evidence: <DONE output> / changed: apps/web/components/billing/BillingNotice.tsx, apps/web/app/e2e/components/billing-notice/page.tsx, tests/e2e/screens/billing-notice.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type BillingNoticeProps =
+    | { kind: "early" }                                                   // approved during early access: Max included
+    | { kind: "none" }                                                    // no live plan
+    | { kind: "plan"; tier: "basic" | "pro" | "max" }                     // a live paid plan
+    | { kind: "trial"; endsAtMs: number | null; timeZone: string }       // on the trial; endsAtMs null = end date unknown
+    | { kind: "grace" }                                                   // status "grace": last payment did not go through
+    | { kind: "cancelled"; endsAtMs: number | null; timeZone: string };  // cancelled, access until endsAtMs (null = unknown)
+  export function BillingNotice(props: BillingNoticeProps): JSX.Element;
+  ```
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; early copy from `billing.html` `early.*`, HE rewritten gender-neutral per CONVENTIONS §12; region / plan / none / prices from the existing `set.billing.*` strings with the gendered HE `pricesBody` rewritten):
+    | key | EN | HE |
+    |---|---|---|
+    | region | Current plan | המסלול הנוכחי |
+    | earlyTitle | You were approved early, so you have Max. | החשבון שלך אושר מוקדם, אז יש לך Max. |
+    | earlyBody | Everyone approved during early access gets the top tier included. You don't need to choose anything below. The prices are here so you always know them. | בתקופת הגישה המוקדמת, כל חשבון שאושר מקבל את המסלול הגבוה ביותר. אין צורך לבחור כלום כאן למטה. המחירים מופיעים כאן כדי שיהיו תמיד גלויים. |
+    | noneTitle | You don't have a plan right now. | אין לך מסלול כרגע. |
+    | planTitle | Your plan is {tier}. | המסלול שלך הוא {tier}. |
+    | pricesBody | The prices are here so you always know them. | המחירים מופיעים כאן כדי שיהיו תמיד גלויים. |
+    | trialTitle | You're on the trial. | המסלול שלך הוא ניסיון. |
+    | trialEnds | It ends on {date}. We remind you 3 days, 1 day and 1 hour before. | הניסיון מסתיים ב־{date}. נזכיר לך 3 ימים, יום אחד ושעה אחת לפני. |
+    | trialNoDate | We remind you 3 days, 1 day and 1 hour before it ends. | נזכיר לך 3 ימים, יום אחד ושעה אחת לפני הסיום. |
+    | graceTitle | Your last payment didn't go through. | התשלום האחרון לא עבר. |
+    | graceBody | Your plan stays on for now. Nothing else changes until it's sorted. | המסלול נשאר פעיל בינתיים. שום דבר אחר לא משתנה עד שזה מסתדר. |
+    | cancelledTitle | Your plan is cancelled. | המסלול בוטל. |
+    | cancelledUntil | You keep it until {date}. Nothing more is charged. | הגישה נשארת עד {date}. שום דבר נוסף לא מחויב. |
+    | cancelledNoDate | You keep it until the end of the paid period. Nothing more is charged. | הגישה נשארת עד סוף התקופה ששולמה. שום דבר נוסף לא מחויב. |
+    `{tier}` is "Basic" / "Pro" / "Max" (Latin in both languages, from a module constant `TIER_NAME = { basic: "Basic", pro: "Pro", max: "Max" }`).
+  - **Per kind** (tone · icon · title · body): `early` → `done` · `star` · earlyTitle · earlyBody; `none` → `info` · `info` · noneTitle · pricesBody; `plan` → `info` · `info` · planTitle (tier filled) · pricesBody; `trial` → `info` · `info` · trialTitle · (`endsAtMs !== null` ? trialEnds : trialNoDate); `grace` → `caution` · `alert` · graceTitle · graceBody; `cancelled` → `info` · `info` · cancelledTitle · (`endsAtMs !== null` ? cancelledUntil : cancelledNoDate).
+  - **Rendering text:** a body with `{date}` is split on `"{date}"` and the date goes in `<span className="tp-num">{formatted}</span>`; every other run of digits in a body (the 3 / 1 / 1 of the reminder line) is wrapped by a module-private `withNums(text)` = `text.split(/(\d+)/).map((part, i) => /^\d+$/.test(part) ? <span className="tp-num" key={i}>{part}</span> : part)`. `formatted = new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(endsAtMs)`.
+  - **Markup** (Case A): `<section className="tp-notice" data-tone={tone} data-component="BillingNotice" data-kind={kind} aria-label={copy.region}><span className="tp-notice__icon"><TpIcon name={icon} size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title">{title}</span><span>{body}</span></span></section>`. Not a live region: it is the page's first, static summary.
+  - **Styling** (tempo.css line 646, Case A): flex gap `--tp-space-3`, padding `--tp-space-3` `--tp-space-4`, radius `--tp-radius-lg`; `info` → `--tp-info-wash` with a `--tp-info` icon; `caution` → `--tp-caution-wash` / `--tp-caution`; `done` → `--tp-done-wash` / `--tp-done`; text `--tp-text-sm`, title 600.
+  - **States (harness order):** `early` (`{ kind: "early" }`), `none` (`{ kind: "none" }`), `plan` (`{ kind: "plan", tier: "pro" }`), `trial` (`{ kind: "trial", endsAtMs: Date.UTC(2026, 9, 13, 6, 0), timeZone: "Asia/Jerusalem" }`), `trial-no-date` (`{ kind: "trial", endsAtMs: null, timeZone: "UTC" }`), `grace` (`{ kind: "grace" }`), `cancelled` (`{ kind: "cancelled", endsAtMs: Date.UTC(2026, 10, 1, 7, 30), timeZone: "Asia/Jerusalem" }`), `cancelled-no-date` (`{ kind: "cancelled", endsAtMs: null, timeZone: "UTC" }`). Loading / empty / error / offline / success / disabled: n/a — the screen decides which kind to show and owns its own states.
+  - **Harness:** `/e2e/components/billing-notice`, `"use client"`, imports only `BillingNotice`, `type BillingNoticeProps` and React; each state is `<section data-testid="billing-notice-<state>"><BillingNotice … /></section>`.
+  - **RTL:** logical flex row (icon at inline-start); dates and digits are `.tp-num` LTR isolates inside Hebrew. **Keyboard / screen reader:** not focusable; a region named "Current plan" ("המסלול הנוכחי") whose title and body are read in order; the situation is always in words, the icon is decorative. **Breakpoints:** one flex row at all widths; text wraps. **Motion:** none.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "billing-notice", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; expected dates are computed in the browser with `page.evaluate(([l, ms, tz]) => new Intl.DateTimeFormat(l, { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: tz }).format(ms), [lang === "he" ? "he-IL" : "en-GB", <ms>, "Asia/Jerusalem"] as const)`; 7 × 4 = 28)
+  1. Given `billing-notice-early` / Then `getByRole("region", { name: <region for lang> })` is visible with `data-component="BillingNotice"`, `data-kind="early"`, `data-tone="done"`, it contains `use[href="#i-star"]`, `.tp-notice__title` reads `earlyTitle` and the body reads `earlyBody` for `lang`.
+  2. Given `billing-notice-none` / Then the title reads `noneTitle` and the body `pricesBody`; Given `billing-notice-plan` / Then the title reads "Your plan is Pro." (HE "המסלול שלך הוא Pro.") and `data-tone="info"`.
+  3. Given `billing-notice-trial` / Then the title reads `trialTitle` and the body contains a `.tp-num` whose text equals the computed date for `Date.UTC(2026, 9, 13, 6, 0)`, and the body text starts with "It ends on" (HE "הניסיון מסתיים ב־").
+  4. Given `billing-notice-trial-no-date` / Then the body reads `trialNoDate` for `lang` and contains a `.tp-num` reading "3".
+  5. Given `billing-notice-grace` / Then `data-tone="caution"`, it contains `use[href="#i-alert"]`, and the title and body read `graceTitle` / `graceBody`.
+  6. Given `billing-notice-cancelled` / Then the title reads `cancelledTitle` and the body contains a `.tp-num` equal to the computed date for `Date.UTC(2026, 10, 1, 7, 30)`; Given `billing-notice-cancelled-no-date` / Then the body reads `cancelledNoDate`.
+  7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="billing-notice-"]')` and `expectMotionBudget(page, '[data-testid^="billing-notice-"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · use of colour: every kind is an icon plus a title in words (WCAG 2.2 SC 1.4.1; bullets 1–6) · motion: none (≤ 250 ms; bullet 7) · 28 of 28 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0284a — View: BillingView (`apps/web/components/billing/BillingView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0098, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0282, TFV2-0283 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0098, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0282, TFV2-0283.
+- **WHY:** PRD F-110 ("Billing visible, never hidden": every price in full, notices before any charge, cancel in one place); design `docs/design/v3/screens/web/billing.html` (@flow 1–5: banner first, Monthly / Yearly switch, four tier cards never collapsed, "Before any charge", Polar note); CONVENTIONS §9 (web component), §10 Case A (only existing tempo.css and `apps/web/app/v3/settings.css` classes: `.bl-body`, `.bl-cycle`, `.bl-tiers`, `.bl-steps`, `.bl-pad`, `.te-actions`), §11–§13, §22 (View/Route pair: the route TFV2-0284b is the only Convex caller). Route truth: the screen lives at `/billing` (`apps/web/app/(tempo)/billing/page.tsx`, already in `E2E_WIRING_ROUTES`), not `/settings/billing` as the design header says; today it renders `BillingPlan` (`apps/web/components/billing-plan/BillingPlan.tsx`), which calls `useQuery(api.users.getMyPlan)` and hard-codes prices, so it cannot be harness-tested. Q-02 does not block this View: prices arrive only through `tiers` props.
+- **GOAL:** `BillingView` renders the Plan and billing screen (header, offline note, current-plan banner, Monthly / Yearly switch, the four tier cards with Choose, "Before any charge", how you pay, cancel with an inline confirm, the founder link, and the loading / error / choosing / error / cancelled states) from props alone.
+- **SCOPE:** `apps/web/components/billing/BillingView.tsx` · `apps/web/app/e2e/components/billing-view/page.tsx` · test: `tests/e2e/screens/billing-view.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/BillingView.tsx` (new) · `apps/web/app/e2e/components/billing-view/page.tsx` (new) · `tests/e2e/screens/billing-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/billing/BillingView.tsx` fails; `grep -n "export function TierCard\|export type TierCardTier" apps/web/components/billing/TierCard.tsx` (TFV2-0282) and `grep -n "export function BillingNotice" apps/web/components/billing/BillingNotice.tsx` (TFV2-0283) print their exports; `test -e apps/web/components/layout/Notice.tsx && test -e apps/web/components/lists/Segmented.tsx && test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx && test -e apps/web/components/states/StateOffline.tsx` succeeds (else `blocked: missing <id>`); `grep -n "^\.bl-\|^\.te-actions" apps/web/app/v3/settings.css` prints the classes used; `grep -n "@component SettingsSection \|@component SettingRow " apps/web/app/tempo.css` prints lines 1097 and 1103; read `apps/web/components/billing-plan/BillingPlan.tsx` (reference only; do not edit).
+  2. Create `BillingView.tsx` (`"use client"`) exporting exactly the SPEC types and `BillingView`, `COPY` at the top.
+  3. Build the markup exactly as SPEC "Layout", composing `BillingNotice`, `TierCard`, `Segmented`, `Notice`, `StateLoading`, `StateError`, `StateOffline`, `TpIcon` and `Link`.
+  4. Implement the local `interval` state and the cancel confirm (SPEC "Behaviour").
+  5. Create the harness page with the nine SPEC states in order, inline typed fixtures and the `billing-view-log` output (CONVENTIONS §13).
+  6. Create `tests/e2e/screens/billing-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "billing-view", { lang })`) and the 10 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** write a price or discount number (prices come only from `tiers`); hide, collapse or reorder a tier; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*` / `@/lib/settings/billing`; import or edit `BillingPlan.tsx`, `PlanCard.tsx`, `SettingsScreen.tsx`; use `ConfirmDialog` or `SettingRow` components (TFV2-0311 / TFV2-0307 come later; this View uses their tempo.css classes directly); store or show card numbers; add a stylesheet or edit `apps/web/app/tempo.css` / `apps/web/app/v3/settings.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0284a / evidence: <DONE output> / changed: apps/web/components/billing/BillingView.tsx, apps/web/app/e2e/components/billing-view/page.tsx, tests/e2e/screens/billing-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { BillingNoticeProps } from "@/components/billing/BillingNotice";
+  import type { BillingInterval, TierCardTier, TierId } from "@/components/billing/TierCard";
+  export type BillingState = "default" | "loading" | "error";
+  export type PaidTierId = Exclude<TierId, "trial">;
+  export type BillingCancelState = "idle" | "busy" | "done" | "error";
+  export type BillingViewProps = {
+    state: BillingState;
+    online: boolean;
+    notice: BillingNoticeProps;        // shown in "default"
+    tiers: TierCardTier[];             // display order as given (billing.listTiers returns trial, basic, pro, max)
+    currentTierId: TierId | null;      // the card marked "Your plan"
+    canCancel: boolean;                // a live trial or plan that is not early access
+    choosing: PaidTierId | null;       // the checkout for this tier is opening
+    chooseError: boolean;              // the last checkout failed
+    cancelState: BillingCancelState;
+    onChoose: (choice: { tier: PaidTierId; interval: BillingInterval }) => void;
+    onCancel: () => void;
+    onRetry: () => void;
+  };
+  export function BillingView(props: BillingViewProps): JSX.Element;
+  ```
+  - **Layout** (390 px base; classes exactly as listed; no inline styles): root `<div className="tp-page" data-component="PageLayout" data-view="BillingView">`.
+    1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`.
+    2. `online === false` → `<StateOffline />` (default §12 text) followed by `<p className="tp-help">{copy.offlineBody}</p>`, in every state.
+    3. `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; nothing below renders in those two states.
+    4. `default` → `<div className="bl-body">` containing in order: (a) `<BillingNotice {...notice} />`; (b) when `chooseError` → `<Notice tone="danger" title={copy.chooseError} live="alert" />`; when `cancelState === "done"` → `<Notice tone="done" title={copy.cancelDone} live="status" />`; when `cancelState === "error"` → `<Notice tone="danger" title={copy.cancelError} live="alert" />`; (c) tiers section `<section className="tp-section bl-tiers" aria-labelledby="bl-tiers-title" data-component="Section"><div className="tp-section__head bl-cycle"><h2 className="tp-section__title" id="bl-tiers-title">{copy.tiers}</h2><Segmented label={copy.cycle} options={[{ value: "monthly", label: copy.monthly }, { value: "annual", label: copy.annual }]} value={interval} onChange={(v) => setBillingInterval(v === "annual" ? "annual" : "monthly")} /></div>` then, when `choosing !== null`, `<p className="tp-help" role="status">{copy.opening}</p>`, then `<div className="tp-tiers">{tiers.map((t) => <TierCard key={t.id} tier={t} interval={interval} current={currentTierId === t.id} disabled={!online || choosing !== null} onChoose={(id) => { if (id !== "trial") onChoose({ tier: id, interval }); }} />)}</div></section>`; (d) "Before any charge" `<section className="tp-settings-section" aria-labelledby="bl-charge-title" data-component="SettingsSection">` → `<div className="tp-settings-section__head"><h2 className="tp-settings-section__title" id="bl-charge-title">{copy.bcTitle}</h2><p className="tp-settings-section__desc">{copy.bcDesc}</p></div>`, `<div className="bl-pad"><ol className="bl-steps"><li><span className="tp-num">3</span> <span>{copy.bc3d}</span></li><li><span className="tp-num">1</span> <span>{copy.bc1d}</span></li><li><span className="tp-num">1</span> <span>{copy.bc1h}</span></li></ol><p className="tp-help">{copy.bcWhere}</p></div>`, then rows (each `<div className="tp-setting-row od-row" data-component="SettingRow"><div className="tp-setting-row__text"><span className="tp-setting-row__label">{label}</span><span className="tp-help">{help}</span></div><div className="tp-setting-row__control">{control}</div></div>`): pay row (`payLabel`, `payHelp`, control `<TpIcon name="lock" />`); when `canCancel`, cancel row (`cancelLabel`, `cancelHelp`, control `<button ref={cancelBtnRef} type="button" className="tp-btn tp-btn--danger-ghost" aria-expanded={confirmOpen} aria-controls="bl-cancel-confirm" disabled={!online || cancelState === "busy" || cancelState === "done"} onClick={openConfirm}>{copy.cancelBtn}</button>`) followed, when `confirmOpen`, by the inline confirm `<div className="tp-notice" data-tone="caution" id="bl-cancel-confirm" role="group" aria-labelledby="bl-cancel-title" data-component="Notice"><span className="tp-notice__icon"><TpIcon name="info" size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title" id="bl-cancel-title" tabIndex={-1} ref={confirmTitleRef}>{copy.cancelTitle}</span><span>{copy.cancelBody}</span><span className="te-actions"><button type="button" className="tp-btn tp-btn--danger" onClick={confirmCancel}>{copy.cancelYes}</button><button type="button" className="tp-btn tp-btn--ghost" onClick={closeConfirm}>{copy.cancelNo}</button></span></span></div>`; question row (`qLabel`, `qHelp`, control `<Link className="tp-btn tp-btn--ghost" href="/ask-founder"><span>{copy.qBtn}</span><TpIcon name="chevron" size="sm" flip /></Link>`); `</section>`; `</div>`.
+  - **Behaviour:** `const [interval, setBillingInterval] = useState<BillingInterval>("monthly")`; `const [confirmOpen, setConfirmOpen] = useState(false)`. `openConfirm` → `setConfirmOpen(true)` and, in an effect on `confirmOpen === true`, `confirmTitleRef.current?.focus()`. `closeConfirm` → `setConfirmOpen(false)` then `cancelBtnRef.current?.focus()`. `confirmCancel` → `setConfirmOpen(false)`, `onCancel()`. Imports: `Link` from `next/link`; `useEffect`, `useRef`, `useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `TpIcon` from `@/components/tempo/TpIcon`; `BillingNotice`, `TierCard` and their types from `@/components/billing/*`; `Notice` from `@/components/layout/Notice`; `Segmented` from `@/components/lists/Segmented` (TFV2-0098: `{ label; options: { value; label }[]; value; onChange: (value: string) => void; block? }`); `StateLoading` / `StateError` / `StateOffline` from `@/components/states/<Name>`.
+  - **Copy** (`COPY: Record<Lang, Record<CopyKey, string>>`; from `billing.html` and the existing `set.billing.*` strings, HE made gender-neutral per CONVENTIONS §12; cancel strings are new and follow the design note "asks first; access stays until the end of the paid period"):
+    | key | EN | HE |
+    |---|---|---|
+    | title | Plan and billing | מסלול ותשלום |
+    | sub | Every price, in full, all the time. No surprises. | כל מחיר, במלואו, כל הזמן. בלי הפתעות. |
+    | offlineBody | You can read the prices. Changing your plan needs a connection. | אפשר לקרוא את המחירים. כדי לשנות מסלול צריך חיבור. |
+    | loading | Loading your plan | טוענים את המסלול שלך |
+    | error | Couldn't load your plan. | לא הצלחנו לטעון את המסלול. |
+    | tiers | Plans | מסלולים |
+    | cycle | Billing period | תקופת חיוב |
+    | monthly | Monthly | חודשי |
+    | annual | Yearly, two months free | שנתי, חודשיים במתנה |
+    | opening | Opening the secure checkout… | פותחים תשלום מאובטח… |
+    | chooseError | Couldn't open the checkout. Nothing was charged. Try again in a moment. | לא הצלחנו לפתוח את התשלום. שום דבר לא חויב. אפשר לנסות שוב בעוד רגע. |
+    | bcTitle | Before any charge | לפני כל חיוב |
+    | bcDesc | When a trial or plan is about to turn into a payment, we tell you three times: | כשניסיון או מסלול עומדים להפוך לתשלום, נגיד לך שלוש פעמים: |
+    | bc3d | days before | ימים לפני |
+    | bc1d | day before | יום לפני |
+    | bc1h | hour before | שעה לפני |
+    | bcWhere | By email and here in Tempo. You can cancel from this page any time, in one step. | במייל וכאן ב־Tempo. אפשר לבטל מהדף הזה בכל רגע, בצעד אחד. |
+    | payLabel | How you pay | איך משלמים |
+    | payHelp | Payments go through Polar, a payment service. Tempo never sees your card number. | התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך. |
+    | cancelLabel | Cancel your plan | ביטול המסלול |
+    | cancelHelp | Access stays until the end of the paid period. | הגישה נשארת עד סוף התקופה ששולמה. |
+    | cancelBtn | Cancel plan | לבטל את המסלול |
+    | cancelTitle | Cancel your plan? | לבטל את המסלול? |
+    | cancelBody | Nothing more is charged. You keep your plan until the end of the paid period, and your pages stay saved. | שום דבר נוסף לא מחויב. המסלול נשאר עד סוף התקופה ששולמה, והדפים שלך נשמרים. |
+    | cancelYes | Yes, cancel my plan | כן, לבטל את המסלול |
+    | cancelNo | Go back | חזרה |
+    | cancelDone | Your plan is cancelled. Nothing more is charged. | המסלול בוטל. שום דבר נוסף לא מחויב. |
+    | cancelError | Couldn't cancel just now. Nothing changed. Try again in a moment. | לא הצלחנו לבטל כרגע. שום דבר לא השתנה. אפשר לנסות שוב בעוד רגע. |
+    | qLabel | A question about money? | שאלה על כסף? |
+    | qHelp | Ask Amit directly. A person reads every message. | אפשר לשאול את עמית ישירות. אדם קורא כל הודעה. |
+    | qBtn | Ask the founder | לשאול את המייסד |
+    Strings owned by composed components (not in this COPY): `TierCard` (tier names, prices' words, features, "Your plan", "Choose …"), `BillingNotice` (banner), `StateOffline` default "You're offline. Changes save when you're back." / "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.", `StateError` "Your data is safe." / "המידע שלך שמור." and "Try again" / "לנסות שוב", `Notice` sr tone words.
+  - **States (harness order; fixture `TIERS` = `[{ id: "trial", liveMinutesPerDay: 0, monthlyPriceUsd: 1, annualPriceUsd: null }, { id: "basic", liveMinutesPerDay: 0, monthlyPriceUsd: 10, annualPriceUsd: 100 }, { id: "pro", liveMinutesPerDay: 90, monthlyPriceUsd: 20, annualPriceUsd: 200 }, { id: "max", liveMinutesPerDay: 180, monthlyPriceUsd: 40, annualPriceUsd: 400 }]` — harness data, not product prices):** `default` (`state: "default"`, online, `notice: { kind: "early" }`, `currentTierId: "max"`, `canCancel: false`, `choosing: null`, `chooseError: false`, `cancelState: "idle"`), `plan` (as default with `notice: { kind: "plan", tier: "basic" }`, `currentTierId: "basic"`, `canCancel: true`), `loading` (`state: "loading"`), `error` (`state: "error"`), `offline` (default with `online: false`), `choosing` (plan with `choosing: "pro"`), `choose-error` (plan with `chooseError: true`), `cancelled` (plan with `notice: { kind: "cancelled", endsAtMs: null, timeZone: "UTC" }`, `cancelState: "done"`), `cancel-error` (plan with `cancelState: "error"`). `empty`: n/a — the price table always shows (design `@states`); `success` = `cancelled`; `disabled` = `offline` / `choosing`.
+  - **Harness:** `/e2e/components/billing-view`, `"use client"`, imports only `BillingView`, its types (and the `TierCardTier` / `BillingNoticeProps` types) and React; each state is `<section data-testid="billing-view-<state>">`; `onChoose`, `onCancel`, `onRetry` set `<output data-testid="billing-view-log">` to `<prop>:<JSON.stringify(firstArg ?? null)>`.
+  - **RTL:** `dir` from `LocaleProvider`; tempo.css / settings.css rules are logical, so cards, rows and the confirm mirror; prices and counts are `.tp-num` isolates. **Keyboard / screen reader:** Tab order = Segmented (arrow keys switch interval, TFV2-0098) → each card's Choose → Cancel plan → (confirm: Yes, Go back) → Ask the founder; opening the confirm moves focus to its title; Go back returns focus to Cancel plan; the confirm is a `role="group"` named "Cancel your plan?"; errors are `role="alert"`, the opening line and the done notice `role="status"`. **Breakpoints:** 390 one card per row; the tier grid goes to 2 and 4 per row per `.tp-tiers` (TFV2-0282); `.tp-page` in tempo.css handles 768 / 1024 / 1280. **Motion:** none of its own; component transitions ≤ `--tp-dur-base`; reduced motion → `0.01ms`.
+  - **Compat selectors:** the banner region named "Current plan" (`tests/e2e/feature-sweep.spec.ts:984`) comes from `BillingNotice`; that storage-state spec also asserts no button or link named /checkout|upgrade|pay/i — the View's controls are "Choose …", "Cancel plan", "Ask the founder" (none match).
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "billing-view", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; the spec keeps its own `EXPECT` copy table; 10 × 4 = 40)
+  1. Given `billing-view-default` / Then the `h1` reads `title` and the sub `sub` for `lang`, a `[data-component="BillingNotice"]` with `data-kind="early"` is first in `.bl-body`, 4 `article[data-component="TierCard"]` appear with `data-tier` trial, basic, pro, max in that order, the max card has `data-current="true"`, `getByRole("radiogroup", { name: <cycle> })` has `monthly` checked, and the basic card's amount reads "$10".
+  2. Given `billing-view-default` / When the radio named `annual` ("Yearly, two months free" / "שנתי, חודשיים במתנה") is clicked / Then the basic amount reads "$100", the pro amount "$200", and the trial amount still "$1".
+  3. Given `billing-view-plan` / When "Choose Pro" (HE "לבחור Pro") is clicked / Then `billing-view-log` reads `onChoose:{"tier":"pro","interval":"monthly"}`; When `annual` is selected and "Choose Max" (HE "לבחור Max") clicked / Then the log reads `onChoose:{"tier":"max","interval":"annual"}`.
+  4. Given `billing-view-default` / Then the section named `bcTitle` lists 3 items reading "3 days before", "1 day before", "1 hour before" (HE "3 ימים לפני", "1 יום לפני", "1 שעה לפני"), `payHelp` is visible, and the link named `qBtn` has `href="/ask-founder"`; the section has no button named `cancelBtn` (`canCancel: false`).
+  5. Given `billing-view-plan` / When `cancelBtn` is clicked / Then it has `aria-expanded="true"`, `getByRole("group", { name: <cancelTitle> })` is visible and its title is focused; When `cancelNo` is clicked / Then the group is gone and `cancelBtn` is focused; When `cancelBtn` and then `cancelYes` are clicked / Then the log reads `onCancel:null` and the group is gone.
+  6. Given `billing-view-cancelled` / Then a `role="status"` notice reads `cancelDone`, the banner has `data-kind="cancelled"`, and `cancelBtn` is disabled; Given `billing-view-cancel-error` / Then a `role="alert"` reads `cancelError`.
+  7. Given `billing-view-choosing` / Then a `role="status"` line reads `opening` and every "Choose …" button is disabled; Given `billing-view-choose-error` / Then a `role="alert"` reads `chooseError`.
+  8. Given `billing-view-offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and `offlineBody` are visible above 4 visible tier cards, and every "Choose …" button is disabled.
+  9. Given `billing-view-loading` / Then `[data-component="StateLoading"]` contains `loading` for `lang` and no TierCard exists; Given `billing-view-error` / Then it shows `error` and "Your data is safe."; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
+  10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="billing-view-plan"]')` and `expectMotionBudget(page, '[data-testid="billing-view-plan"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; `expectTargetSize`, bullet 10) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through tempo.css and components; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7) · all 4 tiers visible in every ready state, never collapsed (PRD F-110; bullets 1, 8) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 10) · 40 of 40 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0284b — Route: /billing (`apps/web/app/(tempo)/billing/page.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0284a, TFV2-0261a, TFV2-0262, TFV2-0263a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0284a, TFV2-0261a, TFV2-0262, TFV2-0263a.
+- **WHY:** PRD F-110; design `docs/design/v3/screens/web/billing.html`; CONVENTIONS §9 (web screen), §14 (page is the only Convex caller, `?state=` fixtures, `useOnline`, time zone from `api.preferences.get`), §22 (View/Route pair, spec skeleton). Route truth: the screen is `/billing` (`apps/web/app/(tempo)/billing/page.tsx`, already in `E2E_WIRING_ROUTES` — no wiring edit), not `/settings/billing`; the wiring spec `tests/e2e/wiring/settings-account.spec.ts` needs `data-testid="billing-page"` visible signed out. Data: `api.users.getMyPlan` (existing, `convex/users.ts` line 339) gives plan / status / early access; `billing.listTiers` (TFV2-0261a, OPEN on Q-02) gives the prices; `billing.checkout` (TFV2-0262, OPEN) opens Polar; `billing.cancel` (TFV2-0263a, OPEN) cancels.
+- **GOAL:** `/billing` reads the plan, the price table and preferences in `page.tsx`, renders `BillingView`, opens checkout and cancels through the billing functions, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/billing/page.tsx` · `apps/web/lib/e2e/fixtures/billing.ts` · test: `tests/e2e/screens/billing.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/billing"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/billing/page.tsx` (edit: whole file replaced; it no longer imports `BillingPlan` or `SettingsScreen`) · `apps/web/lib/e2e/fixtures/billing.ts` (new) · `tests/e2e/screens/billing.spec.ts` (new) · runtime: `subscriptionStates` row status set to `cancelled` through `billing.cancel` (live use only); checkout redirects the tab to the Polar URL. No schema, env or route-list change.
+- **STEPS:**
+  1. Code-map check: `grep -n '"/billing"' apps/web/lib/e2eWiringRoutes.ts` prints one line (already registered; no edit); read the current `page.tsx` (renders `SettingsScreen` + `BillingPlan` inside `div[data-testid="billing-page"]`); `grep -n "export const listTiers\|export const checkout\|export const cancel" convex/billing.ts` prints all three (else `blocked: missing backend billing.<fn>`); confirm `getMyPlan` in `convex/users.ts` and `currentTier`, `isEarlyAccess` in `apps/web/lib/settings/billing.ts`; `test -e apps/web/components/billing/BillingView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/billing.ts` exporting only `FIXTURES` (SPEC "Fixtures"), with `import type` only.
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. No E2E route step: `"/billing"` is already in `E2E_WIRING_ROUTES` (say so in the PR).
+  5. Create `tests/e2e/screens/billing.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen` and the console-error filter) and the 8 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing.spec.ts --reporter=line` → `32 passed`; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summary lines and the typecheck / lint exit codes in the PR.
+- **DO NOT:** hard-code a price (only `billing.listTiers`); import `BillingPlan`, `PlanCard`, `SettingsScreen` or `TIERS` / `tierPrice` / `formatUsd` from `apps/web/lib/settings/billing.ts`; edit `BillingView.tsx`, `BillingPlan.tsx`, `apps/web/lib/e2eWiringRoutes.ts` or i18n files; contact Convex when `?state=` is forced; store or print card numbers; open checkout in a new tab; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0284b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/billing/page.tsx, apps/web/lib/e2e/fixtures/billing.ts, tests/e2e/screens/billing.spec.ts / unknowns / notes for ticket sync: BillingPlan.tsx and PlanCard.tsx are no longer imported by any route; delete them in a cleanup ticket`.
+- **SPEC:**
+  Convex functions used:
+  ```ts
+  api.users.getMyPlan    // query    args {} → { plan: "none"|"trial"|"basic"|"pro"|"max"; status: "inactive"|"active"|"grace"|"cancelled"; label: string; betaAccess: "none"|"tester"|"founder"; entitlementTier: "none"|"basic"|"pro"|"max"|"god"; userType: "free"|"paid"; isBeta: boolean } | null   (existing)
+  api.preferences.get    // query    args {} → { …; timeZone: string; … }   (existing)
+  api.billing.listTiers  // query    args {} → { id: "trial"|"basic"|"pro"|"max"; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null }[]   (TFV2-0261a)
+  api.billing.checkout   // query    args { tier: "basic"|"pro"|"max"; interval: "monthly"|"annual" } → { url: string }   (TFV2-0262)
+  api.billing.cancel     // mutation args {} → null; throws "No active plan"   (TFV2-0263a)
+  ```
+  **page.tsx** (`"use client"`): imports `useConvex`, `useMutation`, `useQuery` from `convex/react`; `Component`, `Fragment`, `type ReactNode`, `Suspense`, `useState` from `react`; `BillingView`, `type BillingViewProps`, `type PaidTierId`, `type BillingCancelState` from `@/components/billing/BillingView`; `type BillingNoticeProps` from `@/components/billing/BillingNotice`; `type BillingInterval` from `@/components/billing/TierCard`; `ProfileReady` from `@/components/today/ProfileReady`; `api` from `@/convex/_generated/api`; `FIXTURES` from `@/lib/e2e/fixtures/billing`; `useE2EState` from `@/lib/e2e/useE2EState`; `currentTier`, `isEarlyAccess` from `@/lib/settings/billing`; `useOnline` from `@/lib/useOnline`.
+  - `const NOOP = { onChoose: () => {}, onCancel: () => {}, onRetry: () => {} } satisfies Pick<BillingViewProps, "onChoose" | "onCancel" | "onRetry">;` and `const LOADING = { ...FIXTURES.loading, ...NOOP };`.
+  - `export default function Page()` → `<div data-testid="billing-page"><Suspense fallback={null}><BillingRoute /></Suspense></div>`.
+  - `class BillingBoundary extends Component<{ online: boolean; children: ReactNode }, { failed: boolean; attempt: number }>`: `getDerivedStateFromError` → `{ failed: true }`; `retry = () => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }))`; render: failed → `<BillingView {...FIXTURES.error} online={this.props.online} {...NOOP} onRetry={this.retry} />`, else `<Fragment key={this.state.attempt}>{this.props.children}</Fragment>`.
+  - `function BillingRoute()`: `const forced = useE2EState(); const online = useOnline();` forced → `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error; return <BillingView {...fixture} {...NOOP} />;` (no query runs: `BillingLive` is not mounted). Else `<BillingBoundary online={online}><ProfileReady fallback={<BillingView {...LOADING} online={online} />}><BillingLive online={online} /></ProfileReady></BillingBoundary>`.
+  - `function BillingLive({ online })`: `plan = useQuery(api.users.getMyPlan, {})`, `prefs = useQuery(api.preferences.get, {})`, `tiers = useQuery(api.billing.listTiers, {})`, `convex = useConvex()`, `cancel = useMutation(api.billing.cancel)`; state `choosing: PaidTierId | null`, `chooseError: boolean`, `cancelState: BillingCancelState` (`"idle"`). Any of `plan`, `prefs`, `tiers` `undefined`, or `plan === null` → `<BillingView {...LOADING} online={online} />`. Else: `early = isEarlyAccess(plan)`; `live = plan.status === "active" || plan.status === "grace"`; `notice: BillingNoticeProps` = early → `{ kind: "early" }`; else `plan.plan !== "none" && plan.status === "grace"` → `{ kind: "grace" }`; else `plan.plan !== "none" && plan.status === "cancelled"` → `{ kind: "cancelled", endsAtMs: null, timeZone: prefs.timeZone }`; else `live && plan.plan === "trial"` → `{ kind: "trial", endsAtMs: null, timeZone: prefs.timeZone }`; else `live && plan.plan !== "none"` → `{ kind: "plan", tier: plan.plan }`; else `{ kind: "none" }` (`endsAtMs` stays `null` until a function returns the CFG-013 dates). Render `<BillingView state="default" online={online} notice={notice} tiers={tiers} currentTierId={currentTier(plan)} canCancel={!early && live && plan.plan !== "none"} choosing={choosing} chooseError={chooseError} cancelState={cancelState} onChoose={choose} onCancel={doCancel} onRetry={() => {}} />`.
+  - `choose({ tier, interval }: { tier: PaidTierId; interval: BillingInterval })`: `setChooseError(false); setChoosing(tier); try { const { url } = await convex.query(api.billing.checkout, { tier, interval }); window.location.assign(url); } catch { setChooseError(true); setChoosing(null); }` (same tab, per the design note).
+  - `doCancel()`: `setCancelState("busy"); try { await cancel({}); setCancelState("done"); } catch { setCancelState("error"); }` (`"No active plan"` and any other error both show `cancelError`).
+  **Fixtures** (`apps/web/lib/e2e/fixtures/billing.ts`; `import type { BillingViewProps } from "@/components/billing/BillingView";` and a local non-exported `type BillingFixture = Omit<BillingViewProps, "onChoose" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "plan" | "loading" | "error" | "offline" | "choosing" | "choose-error" | "cancelled" | "cancel-error", BillingFixture>` with the same nine entries and the same `TIERS` as the harness `apps/web/app/e2e/components/billing-view/page.tsx` (TFV2-0284a), copied verbatim (`loading` and `error` carry `notice: { kind: "none" }`, `tiers: []`, `currentTierId: null`, `canCancel: false`, `choosing: null`, `chooseError: false`, `cancelState: "idle"`, `online: true`).
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0284a); this ticket adds no visible string.
+- **TESTS:** (route spec; CONVENTIONS §22 skeleton; each case at both viewports and both languages; forced cases use `openScreen(page, "/billing", { state, lang })`; every case asserts `page.getByTestId("billing-page")` is visible and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Plan and billing" (HE "מסלול ותשלום") and 4 `article[data-component="TierCard"]` are visible, the max one with `data-current="true"`.
+  2. Given `?state=plan` / Then the banner has `data-kind="plan"` and the button named "Cancel plan" (HE "לבטל את המסלול") is visible.
+  3. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with "Loading your plan" (HE "טוענים את המסלול שלך").
+  4. Given `?state=error` / Then "Couldn't load your plan." (HE "לא הצלחנו לטעון את המסלול.") and "Try again" (HE "לנסות שוב") are visible.
+  5. Given `?state=offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and 4 tier cards are visible and every "Choose …" button is disabled.
+  6. Given `?state=cancelled` / Then a `role="status"` reads "Your plan is cancelled. Nothing more is charged." (HE "המסלול בוטל. שום דבר נוסף לא מחויב.").
+  7. Given no `?state` (`page.goto(\`/billing?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `billing-page` is visible and `[data-component="StateLoading"]` is attached (placeholder Convex URL: queries never resolve).
+  8. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="billing-page"]')` pass, and `measureVitals(page, \`/billing?state=default&lang=${lang}\`)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 8) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price values: from `billing.listTiers` only (Q-02 open) · 32 of 32 route cases and 4 of 4 wiring cases pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0261a (Q-02: prices and billing tiers shown to users), TFV2-0262 (Q-02: Polar product ids for checkout) and TFV2-0263a (new Q: must `billing.cancel` also cancel at Polar / RevenueCat, or only mark the row cancelled?) — Amit.
+
+### TFV2-0285a — View: TrialEndView (`apps/web/components/billing/TrialEndView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0052, TFV2-0056, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0052, TFV2-0056, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123.
+- **WHY:** PRD F-110 (trial end said plainly, no surprise charge); design `docs/design/v3/screens/web/trial-end.html` (@flow 1–5: say when the trial ends, what happens if nothing is done and the exact price after; three choices with "Continue with Basic" the one primary; cancel asks once, inline, no guilt; a calm confirmation and a way back to Today); CONVENTIONS §9 (web component), §10 Case A (tempo.css `.tp-auth`, `.tp-notice`, `.tp-setting-row`; `apps/web/app/v3/settings.css` `.te-confirm`, `.te-facts`, `.te-fact`, `.te-actions`), §11–§13, §22 (View/Route pair: TFV2-0285b is the only Convex caller). Code truth: `/billing/trial-end` (`apps/web/app/(bare)/billing/trial-end/page.tsx`) renders `TrialEnd` (`apps/web/components/billing-plan/TrialEnd.tsx`), which calls `useQuery(api.users.getMyPlan)`, hard-codes the Basic price and has no continue / cancel; this View replaces it. Prices and the end date arrive as props, so Q-02 and CFG-013 do not block this View.
+- **GOAL:** `TrialEndView` renders the trial-end card (title by how soon the trial ends, the facts with date and Basic price, Continue with Basic / See every plan / Cancel before I'm charged with an inline confirm, the continued and cancelled confirmations, the not-on-a-trial panel, and loading / error / offline / busy / action-error states) from props alone.
+- **SCOPE:** `apps/web/components/billing/TrialEndView.tsx` · `apps/web/app/e2e/components/trial-end-view/page.tsx` · test: `tests/e2e/screens/trial-end-view.spec.ts`.
+- **MUTATES:** `apps/web/components/billing/TrialEndView.tsx` (new) · `apps/web/app/e2e/components/trial-end-view/page.tsx` (new) · `tests/e2e/screens/trial-end-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/billing/TrialEndView.tsx` fails; `grep -n "export function AuthCard" apps/web/components/auth/AuthCard.tsx` (TFV2-0052) and `grep -n "export function StatusPanel" apps/web/components/auth/StatusPanel.tsx` (TFV2-0056) print their exports; `test -e apps/web/components/layout/Notice.tsx && test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx && test -e apps/web/components/states/StateOffline.tsx` succeeds (else `blocked: missing <id>`); `grep -n "^\.te-" apps/web/app/v3/settings.css` prints `.te-actions`, `.te-facts`, `.te-fact`, `.te-confirm`; read `apps/web/components/billing-plan/TrialEnd.tsx` (reference only; do not edit).
+  2. Create `TrialEndView.tsx` (`"use client"`) exporting exactly the SPEC types and `TrialEndView`, `COPY` at the top.
+  3. Build the markup exactly as SPEC "Layout", composing `AuthCard`, `StatusPanel`, `Notice`, `StateLoading`, `StateError`, `StateOffline`, `TpIcon` and `Link`.
+  4. Implement the cancel confirm and focus rules (SPEC "Behaviour").
+  5. Create the harness page with the eleven SPEC states in order, inline typed fixtures and the `trial-end-view-log` output (CONVENTIONS §13); each section wraps the View exactly as given (the View renders its own `.tp-auth` container).
+  6. Create `tests/e2e/screens/trial-end-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "trial-end-view", { lang })`) and the 10 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/trial-end-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** write a price or a trial length number other than the copy below ("three weeks"); compute "today" / "tomorrow" (the route passes `endsIn`); charge or call anything (only the callbacks); add guilt copy ("are you sure you want to lose…"); make more than one primary button; call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*` / `@/lib/settings/billing`; import or edit `TrialEnd.tsx` or `SettingsScreen.tsx`; use `ConfirmDialog` (TFV2-0311 comes later); add a stylesheet or edit `apps/web/app/tempo.css` / `apps/web/app/v3/settings.css`; edit i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0285a / evidence: <DONE output> / changed: apps/web/components/billing/TrialEndView.tsx, apps/web/app/e2e/components/trial-end-view/page.tsx, tests/e2e/screens/trial-end-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type TrialEndState = "default" | "not-trial" | "loading" | "error";
+  export type TrialEndsIn = "today" | "tomorrow" | "later";   // decided by the route from userPreferences.timeZone
+  export type TrialEndFacts = {
+    endsAtMs: number;                 // trial end instant
+    endsIn: TrialEndsIn;
+    timeZone: string;                 // IANA zone from userPreferences.timeZone
+    trialPriceUsd: number | null;     // from billing.listTiers (trial); null = unknown
+    basicMonthlyUsd: number | null;   // from billing.listTiers (basic monthly); null = unknown
+  };
+  export type TrialEndOutcome = "continued" | "cancelled";
+  export type TrialEndViewProps = {
+    state: TrialEndState;
+    online: boolean;
+    facts: TrialEndFacts | null;      // "default" with facts === null renders as "error"
+    outcome: TrialEndOutcome | null;  // set after a choice succeeded
+    busy: "continue" | "cancel" | null;
+    actionError: boolean;             // the last continue / cancel failed
+    onContinue: () => void;
+    onCancel: () => void;
+    onRetry: () => void;
+  };
+  export function TrialEndView(props: TrialEndViewProps): JSX.Element;
+  ```
+  - **Helpers (module-private):** `formatUsd(n)` = `new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }).format(n)`; `formatWhen(ms, timeZone, lang)` = `new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(ms)`; `fill(template, key, node)` splits the template on `"{" + key + "}"` and returns `[before, <span className="tp-num">{node}</span>, after]`.
+  - **Layout** (root `<div className="tp-auth" data-view="TrialEndView">` holding one `AuthCard`; classes exactly as listed):
+    - Every state starts the card's children with, when `online === false`, `<StateOffline />` (default §12 text) and `<p className="tp-help">{copy.offlineBody}</p>`.
+    - `loading` → `<AuthCard><StateLoading label={copy.loading} rows={3} /></AuthCard>`.
+    - `error` (or `default` with `facts === null`) → `<AuthCard><StateError what={copy.error} onRetry={onRetry} /><Link className="tp-btn tp-btn--ghost" href="/billing">{copy.plans}</Link></AuthCard>`.
+    - `not-trial` → `<AuthCard><StatusPanel tone="done" icon="check" title={copy.noneTitle} body={copy.noneBody} actions={<><Link className="tp-btn tp-btn--secondary" href="/today">{copy.today}</Link><Link className="tp-btn tp-btn--ghost" href="/billing">{copy.plans}</Link></>} /></AuthCard>`.
+    - `default` with `outcome === "continued"` → `<AuthCard><StatusPanel tone="done" icon="check" title={copy.contTitle} body={copy.contBody} focusTitleOnMount actions={<Link className="tp-btn tp-btn--secondary" href="/today">{copy.today}</Link>}><p className="tp-status-panel__body">{line}</p></StatusPanel></AuthCard>` where `line` = `basicMonthlyUsd !== null` ? `copy.contLine` with `{date}` and `{price}` each in `.tp-num` : `copy.contLineNoPrice` with `{date}` in `.tp-num`.
+    - `default` with `outcome === "cancelled"` → the same with `copy.canTitle`, `copy.canBody` and the line `copy.canLine` (`{date}` in `.tp-num`).
+    - `default` with `outcome === null` → `<AuthCard title={titleFor(endsIn)} foot={<><p>{copy.foot}</p><p><Link href="/ask-founder">{copy.ask}</Link></p></>}>` with children `<div className="te-confirm" id="te-choose">` holding, in order: (1) `<p className="tp-auth-card__lede">{trialPriceUsd !== null ? fill(copy.lede, "price", formatUsd(trialPriceUsd)) : copy.ledeNoPrice}</p>`; (2) `<dl className="te-facts">` with four `<div className="te-fact tp-setting-row"><dt className="tp-strong">{key}</dt><dd>{value}</dd></div>` rows: `kEnds` → `<span className="tp-num">{formatWhen(endsAtMs, timeZone, lang)}</span>`; `kThen` → `copy.vThen`; `kPrice` → `basicMonthlyUsd !== null ? <span className="od-nowrap"><span className="tp-num">{formatUsd(basicMonthlyUsd)}</span> <span>{copy.perMonth}</span></span> : copy.noPrice`; `kCancel` → `copy.vCancel`; (3) when `actionError` → `<Notice tone="danger" title={copy.actionError} live="alert" />`; (4) `<div className="te-actions">` with `<button type="button" className="tp-btn tp-btn--primary tp-btn--block" disabled={busy !== null} aria-busy={busy === "continue" ? "true" : undefined} onClick={onContinue}>{copy.continue}</button>`, `<Link className="tp-btn tp-btn--secondary tp-btn--block" href="/billing">{copy.plans}</Link>`, `<button ref={askRef} type="button" className="tp-btn tp-btn--danger-ghost tp-btn--block" aria-expanded={confirmOpen} aria-controls="te-cancel" disabled={busy !== null} onClick={openConfirm}>{copy.askCancel}</button>`; (5) when `confirmOpen`, `<div className="tp-notice" data-tone="caution" id="te-cancel" role="group" aria-labelledby="te-cancel-title" data-component="Notice"><span className="tp-notice__icon"><TpIcon name="info" size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title" id="te-cancel-title" tabIndex={-1} ref={confirmTitleRef}>{copy.cancelTitle}</span><span>{copy.cancelBody}</span><span className="te-actions"><button type="button" className="tp-btn tp-btn--danger" aria-busy={busy === "cancel" ? "true" : undefined} onClick={confirmCancel}>{copy.cancelYes}</button><button type="button" className="tp-btn tp-btn--ghost" onClick={closeConfirm}>{copy.cancelNo}</button></span></span></div>`.
+    - `titleFor`: `today` → `copy.titleToday`, `tomorrow` → `copy.titleTomorrow`, `later` → `copy.titleSoon`.
+  - **Behaviour:** `const [confirmOpen, setConfirmOpen] = useState(false)`; `openConfirm` → `setConfirmOpen(true)`, then an effect on `confirmOpen === true` focuses `confirmTitleRef`; `closeConfirm` → `setConfirmOpen(false)` then `askRef.current?.focus()`; `confirmCancel` → `setConfirmOpen(false)`, `onCancel()`. Imports: `Link` from `next/link`; `useEffect`, `useRef`, `useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `TpIcon` from `@/components/tempo/TpIcon`; `AuthCard` from `@/components/auth/AuthCard` (TFV2-0052: `{ title?; lede?; children; foot? }`, brand link "Tempo", `h1.tp-auth-card__title`, foot in `div.tp-auth-card__foot`); `StatusPanel` from `@/components/auth/StatusPanel` (TFV2-0056: `{ tone?; icon: "mail" | "check"; title; body; meta?; children?; actions?; focusTitleOnMount? }`, title is `h1.tp-status-panel__title`); `Notice` from `@/components/layout/Notice`; `StateLoading` / `StateError` / `StateOffline` from `@/components/states/<Name>`.
+  - **Copy** (`COPY: Record<Lang, Record<CopyKey, string>>`; from `trial-end.html`, HE rewritten gender-neutral per CONVENTIONS §12; the "$1" / "$10" in the design become `{price}` because prices are never written in copy):
+    | key | EN | HE |
+    |---|---|---|
+    | titleToday | Your trial ends today | הניסיון שלך מסתיים היום |
+    | titleTomorrow | Your trial ends tomorrow | הניסיון שלך מסתיים מחר |
+    | titleSoon | Your trial ends soon | הניסיון שלך מסתיים בקרוב |
+    | lede | You've had three weeks of Tempo for {price}. Here's exactly what happens next, so you can decide calmly. | היו לך שלושה שבועות של Tempo ב־{price}. הנה בדיוק מה קורה עכשיו, כדי שאפשר יהיה להחליט בנחת. |
+    | ledeNoPrice | Here's exactly what happens next, so you can decide calmly. | הנה בדיוק מה קורה עכשיו, כדי שאפשר יהיה להחליט בנחת. |
+    | kEnds | Trial ends | הניסיון מסתיים |
+    | kThen | If you do nothing | אם לא עושים כלום |
+    | vThen | Basic starts | מסלול Basic מתחיל |
+    | kPrice | Basic costs | Basic עולה |
+    | perMonth | a month | לחודש |
+    | noPrice | Price coming soon | המחיר יפורסם בקרוב |
+    | kCancel | Cancel | ביטול |
+    | vCancel | Any time, in one step | בכל רגע, בצעד אחד |
+    | continue | Continue with Basic | להמשיך עם Basic |
+    | plans | See every plan | לראות את כל המסלולים |
+    | askCancel | Cancel before I'm charged | לבטל לפני שיש חיוב |
+    | cancelTitle | Cancel your trial? | לבטל את הניסיון? |
+    | cancelBody | You won't be charged again. You can use Tempo until the trial ends, and your pages stay saved. | לא יהיו עוד חיובים. אפשר להשתמש ב־Tempo עד סוף הניסיון, והדפים שלך נשמרים. |
+    | cancelYes | Yes, cancel my trial | כן, לבטל את הניסיון |
+    | cancelNo | Go back | חזרה |
+    | actionError | That didn't go through. Nothing was charged. Try again in a moment. | זה לא עבר. שום דבר לא חויב. אפשר לנסות שוב בעוד רגע. |
+    | foot | Questions first? Ask Amit, the founder. A person reads every message. | יש שאלות קודם? אפשר לשאול את עמית, המייסד. אדם קורא כל הודעה. |
+    | ask | Ask the founder | לשאול את המייסד |
+    | contTitle | You're all set | הכול מסודר |
+    | contBody | Nothing is charged today. | היום שום דבר לא מחויב. |
+    | contLine | Basic starts on {date}, at {price} a month. One more reminder comes an hour before. | Basic מתחיל ב־{date}, ב־{price} לחודש. תזכורת נוספת תגיע שעה לפני. |
+    | contLineNoPrice | Basic starts on {date}. One more reminder comes an hour before. | Basic מתחיל ב־{date}. תזכורת נוספת תגיע שעה לפני. |
+    | canTitle | Your trial is cancelled | הניסיון שלך בוטל |
+    | canBody | You won't be charged again. | לא יהיו עוד חיובים. |
+    | canLine | You can keep using Tempo until {date}, and your pages stay saved. | אפשר להמשיך להשתמש ב־Tempo עד {date}, והדפים שלך נשמרים. |
+    | today | Back to Today | חזרה להיום |
+    | noneTitle | You're not on a trial | אין כרגע תקופת ניסיון בחשבון |
+    | noneBody | There's nothing to decide here. Your plan page shows every price. | אין כאן מה להחליט. בדף המסלול מופיע כל מחיר. |
+    | loading | Loading your trial details | טוענים את פרטי הניסיון |
+    | error | Couldn't load your trial details. | לא הצלחנו לטעון את פרטי הניסיון. |
+    | offlineBody | Your choice is sent as soon as you're back. Nothing is charged while you're offline. | הבחירה תישלח ברגע שהחיבור יחזור. שום דבר לא מחויב בזמן שאין חיבור. |
+    Strings owned by composed components: `AuthCard` brand "Tempo"; `StateOffline` default "You're offline. Changes save when you're back." / "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור."; `StateError` "Your data is safe." / "המידע שלך שמור." and "Try again" / "לנסות שוב"; `Notice` sr tone words.
+  - **States (harness order; `FACTS = { endsAtMs: Date.UTC(2026, 9, 13, 6, 0), endsIn: "tomorrow", timeZone: "Asia/Jerusalem", trialPriceUsd: 1, basicMonthlyUsd: 10 }` — harness data, not product prices; every state has `online: true`, `outcome: null`, `busy: null`, `actionError: false` unless listed):** `default` (`state: "default"`, `facts: FACTS`), `today` (FACTS with `endsIn: "today"`), `no-price` (FACTS with both prices `null`, `endsIn: "later"`), `offline` (default with `online: false`), `busy` (default with `busy: "continue"`), `action-error` (default with `actionError: true`), `continued` (default with `outcome: "continued"`), `cancelled` (default with `outcome: "cancelled"`), `not-trial` (`state: "not-trial"`, `facts: null`), `loading` (`state: "loading"`, `facts: null`), `error` (`state: "error"`, `facts: null`). `empty`: n/a (design `@states`); `success` = `continued` / `cancelled`; `disabled` = `busy`.
+  - **Harness:** `/e2e/components/trial-end-view`, `"use client"`, imports only `TrialEndView`, its types and React; each state is `<section data-testid="trial-end-view-<state>">`; `onContinue`, `onCancel`, `onRetry` set `<output data-testid="trial-end-view-log">` to `<prop>:null`. (`AuthCard` renders a `next/link` brand link; the harness frame provides the Next app context.)
+  - **RTL:** `.tp-auth` centres the card; fact rows are logical flex rows (key at inline-start); date and prices are `.tp-num` isolates. **Keyboard / screen reader:** Tab order = brand → Continue with Basic → See every plan → Cancel before I'm charged → (confirm: Yes, Go back) → Ask the founder; opening the confirm moves focus to its title, Go back returns focus to the Cancel button; the confirm is a `role="group"` named "Cancel your trial?"; after a choice the StatusPanel `h1` takes focus; errors are `role="alert"`. **Breakpoints:** the card is `min(100%, …)` wide (tempo.css `.tp-auth-card`), one column at 390 / 768 / 1024 / 1280. **Motion:** none of its own; button transitions `--tp-dur-fast`; reduced motion → `0.01ms`.
+- **TESTS:** (CONVENTIONS §22 skeleton: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; each bullet is one `test()` per viewport × language with `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "trial-end-view", { lang })`, ending `expect(errors).toEqual([])`; locators scoped to the state section; expected dates computed in the browser with `page.evaluate` and the SPEC `Intl.DateTimeFormat` options for `Date.UTC(2026, 9, 13, 6, 0)` in "Asia/Jerusalem"; the spec keeps its own `EXPECT` copy table; 10 × 4 = 40)
+  1. Given `trial-end-view-default` / Then the `h1` reads `titleTomorrow` for `lang`, the lede contains a `.tp-num` reading "$1", the `dl.te-facts` has 4 rows whose `dt` read `kEnds`, `kThen`, `kPrice`, `kCancel`, the first `dd` `.tp-num` equals the computed date, the price row reads "$10" and `perMonth`, and exactly one `.tp-btn--primary` exists, named `continue`.
+  2. Given `trial-end-view-default` / When `continue` is clicked / Then `trial-end-view-log` reads `onContinue:null`.
+  3. Given `trial-end-view-default` / When `askCancel` is clicked / Then it has `aria-expanded="true"`, `getByRole("group", { name: <cancelTitle> })` is visible and its title focused; When `cancelNo` is clicked / Then the group is gone and `askCancel` is focused; When `askCancel` then `cancelYes` are clicked / Then the log reads `onCancel:null`.
+  4. Given `trial-end-view-today` / Then the `h1` reads `titleToday`; Given `trial-end-view-no-price` / Then the `h1` reads `titleSoon`, the lede reads `ledeNoPrice` and the price row reads `noPrice`.
+  5. Given `trial-end-view-busy` / Then `continue` and `askCancel` are disabled and `continue` has `aria-busy="true"`; Given `trial-end-view-action-error` / Then a `role="alert"` reads `actionError`.
+  6. Given `trial-end-view-continued` / Then the `h1` reads `contTitle` and is focused, the body reads `contBody`, a line contains the computed date and "$10" in `.tp-num` spans, and the link named `today` has `href="/today"`; Given `trial-end-view-cancelled` / Then the `h1` reads `canTitle` and a line contains the computed date.
+  7. Given `trial-end-view-not-trial` / Then the `h1` reads `noneTitle`, and links named `today` (`/today`) and `plans` (`/billing`) exist; no `continue` button exists.
+  8. Given `trial-end-view-offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and `offlineBody` are visible and `continue` is enabled.
+  9. Given `trial-end-view-loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `trial-end-view-error` / Then it shows `error` and a link named `plans` to `/billing`; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
+  10. Given `trial-end-view-default` / Then `.tp-auth-card__foot` contains `foot` and a link named `ask` with `href="/ask-founder"`, and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="trial-end-view-default"] .te-actions')` and `expectMotionBudget(page, '[data-testid="trial-end-view-default"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; the three choice controls are full-width 44 px buttons; bullet 10) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through tempo.css and components; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7) · one primary action (design @flow 3; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 10) · 40 of 40 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0285b — Route: /billing/trial-end (`apps/web/app/(bare)/billing/trial-end/page.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0285a, CFG-013, TFV2-0261a, TFV2-0263a, TFV2-0263b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0285a, CFG-013, TFV2-0261a, TFV2-0263a, TFV2-0263b.
+- **WHY:** PRD F-110; design `docs/design/v3/screens/web/trial-end.html` (bare layout, reached from the 1-day notice); CONVENTIONS §9 (web screen), §14 (page is the only Convex caller, `?state=` fixtures, `useOnline`, "today" from `userPreferences.timeZone`), §17 (one wiring line), §22 (View/Route pair). Route truth: the page is `apps/web/app/(bare)/billing/trial-end/page.tsx` (bare layout with `ApprovalGate`, which passes straight through under the E2E bypass); `"/billing/trial-end"` is **not** in `E2E_WIRING_ROUTES` (the `"/billing"` entry matches only `/billing`), so this ticket registers it. Data: `api.users.getMyPlan` (existing) says whether the person is on the trial; `billing.listTiers` (TFV2-0261a, OPEN on Q-02) gives the trial and Basic prices; `billing.acknowledgeConversion` (TFV2-0263b, OPEN on CFG-014) records "Continue with Basic"; `billing.cancel` (TFV2-0263a, OPEN) cancels; the trial end instant is the `subscriptionStates.trialEndsAt` field of CFG-013 (OPEN), and no planned function returns it to the client yet.
+- **GOAL:** `/billing/trial-end` reads the plan, prices, trial end and preferences in `page.tsx`, decides today / tomorrow / later in the person's time zone, renders `TrialEndView`, records Continue and Cancel, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(bare)/billing/trial-end/page.tsx` · `apps/web/lib/e2e/fixtures/billing-trial-end.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one line) · test: `tests/e2e/screens/billing-trial-end.spec.ts`.
+- **MUTATES:** `apps/web/app/(bare)/billing/trial-end/page.tsx` (edit: whole file replaced; it no longer imports `TrialEnd` or `BareScreen`) · `apps/web/lib/e2e/fixtures/billing-trial-end.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line, route `/billing/trial-end` registered for the dev-only E2E bypass) · `tests/e2e/screens/billing-trial-end.spec.ts` (new) · runtime: `subscriptionStates` conversion consent written by `billing.acknowledgeConversion` and status `cancelled` by `billing.cancel` (live use only). No schema or env change.
+- **STEPS:**
+  1. Code-map check: read the current `page.tsx` (renders `BareScreen` + `TrialEnd`, `data-testid="trial-end-route"`); `grep -n '"/billing/trial-end"' apps/web/lib/e2eWiringRoutes.ts` prints nothing; `grep -n "export const listTiers\|export const cancel\|export const acknowledgeConversion" convex/billing.ts` prints all three (else `blocked: missing backend billing.<fn>`); find the query that returns `trialEndsAt` (the answer to this ticket's OPEN question; if none, report `blocked: missing backend trialEndsAt query`); confirm `isOnTrial` in `apps/web/lib/settings/billing.ts` and `addLocalDays` in `apps/web/lib/habits-view.ts`; `test -e apps/web/components/billing/TrialEndView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/billing-trial-end.ts` exporting only `FIXTURES` (SPEC "Fixtures"), with `import type` only.
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. Register the route: in `apps/web/lib/e2eWiringRoutes.ts` insert exactly the line `  "/billing/trial-end",` as the last entry before `] as const;` (CONVENTIONS §17); nothing else in that file changes.
+  5. Create `tests/e2e/screens/billing-trial-end.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen` and the console-error filter) and the 8 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/billing-trial-end.spec.ts --reporter=line` → `32 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary line, the one-line `git diff apps/web/lib/e2eWiringRoutes.ts`, and the typecheck / lint exit codes in the PR.
+- **DO NOT:** hard-code a price or the trial end (only `billing.listTiers` and the backend `trialEndsAt`); compute "today" from the browser zone instead of `preferences.timeZone`; charge or convert anything on page load; import `TrialEnd`, `BareScreen` or `TIERS` / `formatUsd` from `apps/web/lib/settings/billing.ts`; edit `TrialEndView.tsx`, `TrialEnd.tsx` or i18n files; add any other line to `e2eWiringRoutes.ts`; contact Convex when `?state=` is forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0285b / evidence: <DONE output> / changed: apps/web/app/(bare)/billing/trial-end/page.tsx, apps/web/lib/e2e/fixtures/billing-trial-end.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/billing-trial-end.spec.ts / unknowns / notes for ticket sync: TrialEnd.tsx is no longer imported by any route; delete it in a cleanup ticket`.
+- **SPEC:**
+  Convex functions used:
+  ```ts
+  api.users.getMyPlan               // query    args {} → { plan; status; …; isBeta: boolean } | null   (existing)
+  api.preferences.get               // query    args {} → { …; timeZone: string; … }   (existing)
+  api.billing.listTiers             // query    args {} → { id: "trial"|"basic"|"pro"|"max"; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null }[]   (TFV2-0261a)
+  api.billing.acknowledgeConversion // mutation args {} → null; throws "No active plan"   (TFV2-0263b)
+  api.billing.cancel                // mutation args {} → null; throws "No active plan"   (TFV2-0263a)
+  <trialEndsAt source>              // the query named in the answer to this ticket's OPEN question → trialEndsAt: number | null (CFG-013 field)
+  ```
+  **page.tsx** (`"use client"`): `export default function Page()` → `<main id="main" tabIndex={-1} data-testid="trial-end-route"><TpIconSprite /><Suspense fallback={null}><TrialEndRoute /></Suspense></main>` (`TpIconSprite` from `@/components/tempo/TpIcon`: the bare layout has no shell, so the page mounts the icon sprite). Same boundary pattern as TFV2-0284b: `class TrialEndBoundary` (failed → `<TrialEndView {...FIXTURES.error} online={this.props.online} {...NOOP} onRetry={this.retry} />`), `NOOP = { onContinue: () => {}, onCancel: () => {}, onRetry: () => {} }`, `LOADING = { ...FIXTURES.loading, ...NOOP }`.
+  - `function TrialEndRoute()`: `const forced = useE2EState(); const online = useOnline();` forced → `<TrialEndView {...(FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error)} {...NOOP} />` (no query runs); else `<TrialEndBoundary online={online}><ProfileReady fallback={<TrialEndView {...LOADING} online={online} />}><TrialEndLive online={online} /></ProfileReady></TrialEndBoundary>`.
+  - `function TrialEndLive({ online })`: `plan = useQuery(api.users.getMyPlan, {})`, `prefs = useQuery(api.preferences.get, {})`, `tiers = useQuery(api.billing.listTiers, {})`, `trialEndsAt` from the answering query, `ack = useMutation(api.billing.acknowledgeConversion)`, `cancel = useMutation(api.billing.cancel)`, `nowMs` = `Date.now()` refreshed every 60 000 ms; state `outcome: TrialEndOutcome | null`, `busy: "continue" | "cancel" | null`, `actionError: boolean`. Any query `undefined` or `plan === null` → `<TrialEndView {...LOADING} online={online} />`. `!isOnTrial(plan)` → `state: "not-trial"`, `facts: null`. On the trial with `trialEndsAt === null` → `state: "error"` (the end is unknown, so nothing is shown that could be wrong). Else `todayKey = localDateIn(prefs.timeZone, nowMs)`, `endKey = localDateIn(prefs.timeZone, trialEndsAt)` (`localDateIn` = `new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)`), `endsIn = endKey === todayKey ? "today" : endKey === addLocalDays(todayKey, 1) ? "tomorrow" : "later"`; `facts = { endsAtMs: trialEndsAt, endsIn, timeZone: prefs.timeZone, trialPriceUsd: tiers.find((t) => t.id === "trial")?.monthlyPriceUsd ?? null, basicMonthlyUsd: tiers.find((t) => t.id === "basic")?.monthlyPriceUsd ?? null }`.
+  - `onContinue`: `setActionError(false); setBusy("continue"); try { await ack({}); setOutcome("continued"); } catch { setActionError(true); } finally { setBusy(null); }`. `onCancel`: the same with `cancel({})` and `"cancelled"`. Any error message (including `"No active plan"`) shows `actionError`.
+  **Wiring line** (CONVENTIONS §17), inserted as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`:
+  ```ts
+    "/billing/trial-end",
+  ```
+  **Fixtures** (`apps/web/lib/e2e/fixtures/billing-trial-end.ts`; `import type { TrialEndViewProps } from "@/components/billing/TrialEndView";` and a local non-exported `type TrialEndFixture = Omit<TrialEndViewProps, "onContinue" | "onCancel" | "onRetry">`): `export const FIXTURES: Record<"default" | "today" | "no-price" | "offline" | "busy" | "action-error" | "continued" | "cancelled" | "not-trial" | "loading" | "error", TrialEndFixture>` with the same eleven entries and `FACTS` as the harness `apps/web/app/e2e/components/trial-end-view/page.tsx` (TFV2-0285a), copied verbatim.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0285a); this ticket adds no visible string.
+- **TESTS:** (route spec; CONVENTIONS §22 skeleton; each case at both viewports and both languages; forced cases use `openScreen(page, "/billing/trial-end", { state, lang })`; every case asserts `page.getByTestId("trial-end-route")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Your trial ends tomorrow" (HE "הניסיון שלך מסתיים מחר") and the button "Continue with Basic" (HE "להמשיך עם Basic") is visible.
+  2. Given `?state=default` / When "Cancel before I'm charged" (HE "לבטל לפני שיש חיוב") is clicked / Then the group named "Cancel your trial?" (HE "לבטל את הניסיון?") is visible.
+  3. Given `?state=continued` / Then the `h1` reads "You're all set" (HE "הכול מסודר"); Given `?state=cancelled` / Then it reads "Your trial is cancelled" (HE "הניסיון שלך בוטל").
+  4. Given `?state=not-trial` / Then the `h1` reads "You're not on a trial" (HE "אין כרגע תקופת ניסיון בחשבון").
+  5. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with "Loading your trial details" (HE "טוענים את פרטי הניסיון"); Given `?state=error` / Then "Couldn't load your trial details." (HE "לא הצלחנו לטעון את פרטי הניסיון.") is visible.
+  6. Given `?state=offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") is visible.
+  7. Given no `?state` (`page.goto(\`/billing/trial-end?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `trial-end-route` is attached and `[data-component="StateLoading"]` is attached (placeholder Convex URL: queries never resolve).
+  8. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="trial-end-route"] .te-actions')` pass, and `measureVitals(page, \`/billing/trial-end?state=default&lang=${lang}\`)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 8) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price after the trial: from `billing.listTiers` only (Q-02 open) · 32 of 32 route cases pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits CFG-013 (Add `renewsAt` and `trialEndsAt` to `subscriptionStates`, or drop them from the billing contract?), TFV2-0261a (Q-02: prices and billing tiers shown to users), TFV2-0263a (new Q: must `billing.cancel` also cancel at Polar / RevenueCat?) and TFV2-0263b (CFG-014: is conversion consent stored on `subscriptionStates` or as a `users` flag?); plus new: which query returns `trialEndsAt` to the client (no planned billing function returns it; `billing.getMine` has no date) — Amit.
+
+### TFV2-0286a — Component: TemplateCard gains Duplicate (`apps/web/components/templates-library/TemplateCard.tsx`)
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** first.
-- **WHY:** components.md §8 (`ConfirmDialog`); used by module-preview, settings-privacy, trial-end.
-- **GOAL:** A confirmation dialog with a title, one plain sentence and two buttons, where the destructive button is not the accent.
-- **SCOPE:** `apps/web/components/settings/ConfirmDialog.tsx` + `apps/web/components/settings/ConfirmDialog.test.tsx`.
-- **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render as a sheet (`tp-sheet`) on phone, centered dialog ≥768; 3) focus trap + Esc + focus return; 4) run DONE.
-- **DONE:** `bun run test -- apps/web/components/settings/ConfirmDialog.test.tsx` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** make the destructive button the accent; do not trap focus incorrectly.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** UI component. Props `{open, title, body, confirmLabel, cancelLabel, onConfirm, onCancel, tone}`. `role="alertdialog" aria-modal`. Destructive button is `.tp-btn--danger` (not primary). States: open, closed. RTL logical; focus returns to opener. Motion 240 ms.
-- **TESTS:** Given open · Then dialog shown with title/body/2 buttons, focus trapped. Esc closes. Given tone=danger · Then confirm is `.tp-btn--danger`, cancel `.tp-btn--secondary`. Playwright EN/HE at 390/1280.
-- **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (240 ms).
+- **WHY:** PRD F-04/F-06 (templates can be used, edited, duplicated, deleted); design `docs/design/v3/screens/web/templates.html` (card actions Use / Edit / Duplicate / Delete); CONVENTIONS §11 (a ticket that changes an existing component which reads `t("<key>")` keeps those keys and adds new strings in a `COPY` constant in the same file). Code truth: `apps/web/components/templates-library/TemplateCard.tsx` is already props-only (only `useLocale` and `next/link`), exports `TemplateCard`, `TemplateCardModel`, `TemplatePeriod`, `templatePath`, and renders Use / Edit / Delete (with a confirm step) but no Duplicate; its static-render test `apps/web/components/templates-library/TemplateCard.test.tsx` (bun, `renderToStaticMarkup` with mocked `useLocale` / `next/link`, helper `render(template, as)` at line 77) has 7 tests today. The Templates View (TFV2-0286b) needs the Duplicate action on every card.
+- **GOAL:** Every `TemplateCard` (built-in and user) shows a "Duplicate" button that calls a new `onDuplicate(templateId)` prop, with EN/HE copy in a local `COPY` constant, and the existing card behaviour and keys stay unchanged.
+- **SCOPE:** `apps/web/components/templates-library/TemplateCard.tsx` · test: `apps/web/components/templates-library/TemplateCard.test.tsx`.
+- **MUTATES:** `apps/web/components/templates-library/TemplateCard.tsx` (edit: one prop, one `COPY` constant, one button) · `apps/web/components/templates-library/TemplateCard.test.tsx` (edit: the `render` helper passes `onDuplicate() {}`; 2 cases added). No data.
+- **STEPS:**
+  1. Code-map check: `grep -n "type TemplateCardProps\|export function TemplateCard" apps/web/components/templates-library/TemplateCard.tsx` prints both; `grep -n "onDuplicate" apps/web/components/templates-library/TemplateCard.tsx` prints nothing; `bun test apps/web/components/templates-library/TemplateCard.test.tsx` → `7 pass` before the change.
+  2. In `TemplateCard.tsx` add `type CopyKey = "duplicate" | "duplicateName"` and the `COPY` constant from SPEC (import `type Lang` from `@/lib/i18n`), read `const { t, lang } = useLocale(); const copy = COPY[lang];`, add the optional `onDuplicate?: (templateId: string) => void` to `TemplateCardProps` and the button exactly as SPEC.
+  3. In the test file, add `onDuplicate() {}` to the props in `render`, and append the 2 TESTS cases.
+  4. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `bun test apps/web/components/templates-library/TemplateCard.test.tsx` → `9 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary before (7 pass) and after (9 pass), plus typecheck/lint exit codes.
+- **DO NOT:** change any existing `t("tpl.*")` key, label, class or order of the existing actions; edit `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; call Convex; edit `TemplatesLibrary.tsx` or its test; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0286a / evidence: <DONE output> / changed: apps/web/components/templates-library/TemplateCard.tsx, apps/web/components/templates-library/TemplateCard.test.tsx / unknowns / notes for ticket sync`; STEPS 1–4 with evidence.
+- **SPEC:**
+  ```ts
+  type TemplateCardProps = {
+    template: TemplateCardModel;
+    confirming: boolean;
+    deleting: boolean;
+    onAskDelete: (templateId: string) => void;
+    onConfirmDelete: (templateId: string) => void;
+    onCancelDelete: () => void;
+    onDuplicate?: (templateId: string) => void;  // new; button renders only when provided
+  };
+  const COPY: Record<Lang, Record<"duplicate" | "duplicateName", string>> = {
+    en: { duplicate: "Duplicate", duplicateName: "Duplicate {name}" },
+    he: { duplicate: "שכפול", duplicateName: "שכפול {name}" },
+  };
+  ```
+  The button is inserted in `.tpl-card__actions` directly after the Use link (before Edit), on every card, and only when `onDuplicate` is provided (so the unchanged `TemplatesLibrary.tsx`, which still mounts on `/templates` until TFV2-0286c and passes no `onDuplicate`, keeps typechecking and rendering as before):
+  `{onDuplicate ? <button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" data-duplicate="" aria-label={copy.duplicateName.replace("{name}", () => card.name.text)} onClick={() => onDuplicate(template.templateId)}><TpIcon name="plus" size="sm" /><span>{copy.duplicate}</span></button> : null}` — where `card` is the existing local result of `cardCopy(template, t)` renamed from `copy` (so it does not clash with the new `COPY` lookup). The button is not disabled while `deleting`.
+  RTL: the button sits in the existing logical flex row. Keyboard / screen reader: native button whose accessible name is "Duplicate <template name>". Breakpoints and motion: unchanged (tempo.css `.tp-btn` transitions).
+- **TESTS:** (static render through the existing `render(template, as)` helper, which now passes `onDuplicate() {}`)
+  1. Given the starter `starter:daily-page` and a user template `{ templateId: "templates:1", source: "user", name: "Moving week", periodType: "none", sections: [] }` / When each is rendered in `en` / Then each HTML contains exactly one `button` with `data-duplicate` and `aria-label="Duplicate Daily page"` / `aria-label="Duplicate Moving week"`, whose text is "Duplicate", placed after the Use link and before any Edit link.
+  2. Given the same user template rendered in `he` / Then the button text is "שכפול" and its `aria-label` is "שכפול Moving week"; and a card rendered by `renderToStaticMarkup` without `onDuplicate` contains no `data-duplicate` element.
+- **NUMBERS:** 9 of 9 tests pass · target size ≥ 24 × 24 CSS px (`.tp-btn--sm` is 36 px tall; WCAG 2.2 SC 2.5.8; checked in TFV2-0286b) · text contrast ≥ 4.5:1 (tokens only).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0312 — PWA manifest + icons
+### TFV2-0286b — View: TemplatesView (`apps/web/components/templates-library/TemplatesView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0286a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0286a.
+- **WHY:** PRD F-04/F-06; design `docs/design/v3/screens/web/templates.html`; CONVENTIONS §9, §10 Case A (`.tp-page--wide`, `.tp-pagehead`, `.tp-toolbar`, `.tp-search`, `.tp-segmented`/`.tp-seg__opt`, `.tp-section`, `.tp-cards`, `.tp-empty`, `.tp-toast-region` in tempo.css; `.tpl-list`, `.tpl-skel` in `apps/web/app/globals.css` lines 633–640), §11, §13, §22 (screen pattern). Code truth: `apps/web/components/templates-library/TemplatesLibrary.tsx` calls `useQuery(api.templates.list)`, `useMutation(api.templates.remove)` and `useShellSlots()`, so `/templates` cannot be forced into states; its markup (header, toolbar with search and a `role="radiogroup"` scope switch with arrow-key handling, two sections, delete confirm, skeleton) is the reference this View reproduces from props. `filterTemplates(templates, scope, query)` (`apps/web/lib/template-pages.ts`, pure) does the search and scope filter. Delete keeps the card's existing confirm step and then offers a 5-minute Undo (`UndoToast`, `apps/web/components/habits/UndoToast.tsx`, unchanged) that calls `onRestore` (range-6 `templates.restore`, TFV2-0236). The design's "Made with the coach" badge needs `templates.madeBy` (CFG-R6-3, OPEN) and is not shown.
+- **GOAL:** `TemplatesView` renders the Templates screen — header (New template, Ask the coach), search, All / Built-in / Yours filter, Built-in and Yours sections of `TemplateCard`s with Use / Edit / Duplicate / Delete, Undo after delete, a status line after duplicate, and the loading / error / offline / save-error / empty / no-match states — from props alone.
+- **SCOPE:** `apps/web/components/templates-library/TemplatesView.tsx` · `apps/web/app/e2e/components/templates-view/page.tsx` · test: `tests/e2e/screens/templates-view.spec.ts`.
+- **MUTATES:** `apps/web/components/templates-library/TemplatesView.tsx` (new) · `apps/web/app/e2e/components/templates-view/page.tsx` (new) · `tests/e2e/screens/templates-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/templates-library/TemplatesView.tsx` fails; `grep -n "onDuplicate" apps/web/components/templates-library/TemplateCard.tsx` prints a line (TFV2-0286a); `grep -n "export function filterTemplates" apps/web/lib/template-pages.ts` prints a line; `grep -n "export function UndoToast" apps/web/components/habits/UndoToast.tsx` prints a line; Notice / StateLoading / StateError / StateOffline exist (range 3). Read `TemplatesLibrary.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `TemplatesView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the seven SPEC states, inline fixtures, the `templates-view-log` output; `onDelete`, `onRestore`, `onDuplicate` write the log and resolve.
+  5. Create the spec (§22 skeleton, `openHarness(page, "templates-view", { lang })`) with the 11 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `useShellSlots` or `fetch`; render a delete control on built-in cards (TemplateCard already omits it); show a "Made with the coach" badge; edit `TemplateCard.tsx`, `TemplatesLibrary.tsx`, `UndoToast.tsx`, `template-pages.ts`, `globals.css`, `tempo.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0286b / evidence: <DONE output> / changed: apps/web/components/templates-library/TemplatesView.tsx, apps/web/app/e2e/components/templates-view/page.tsx, tests/e2e/screens/templates-view.spec.ts / unknowns / notes for ticket sync: "Made with the coach" badge waits for CFG-R6-3`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  import type { TemplateCardModel } from "./TemplateCard";
+  export type TemplatesState = "default" | "loading" | "error";
+  export type TemplatesViewProps = {
+    state: TemplatesState;
+    online: boolean;
+    templates: TemplateCardModel[];        // templates.list({ scope: "all" }) order: built-ins first, then the person's
+    saveError: boolean;
+    onAskCoach?: () => void;               // absent → no "Ask the coach for a template" button
+    onDelete: (templateId: string) => Promise<void>;     // rejects when it did not go through
+    onRestore: (templateId: string) => Promise<void>;
+    onDuplicate: (templateId: string) => Promise<void>;
+    onRetry: () => void;
+  };
+  export function TemplatesView(props: TemplatesViewProps): JSX.Element;
+  ```
+  **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="TemplatesView">`.
+  1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div><div className="tp-pagehead__actions"><a className="tp-btn tp-btn--secondary" href="/templates/builder"><TpIcon name="plus" size="sm" /><span>{newTemplate}</span></a>{onAskCoach ? <button type="button" className="tp-btn tp-btn--primary" onClick={onAskCoach}><TpIcon name="sparkle" size="sm" /><span>{ask}</span></button> : null}</div></header>`.
+  2. `!online` → `<StateOffline />`; `saveError` → `<Notice tone="caution" title={saveErrorCopy} live="alert" />`.
+  3. `loading` → `<StateLoading label={loading} rows={4} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `default` → the toolbar and sections below.
+  4. Toolbar (exactly the `TemplatesLibrary.tsx` markup): `<div className="tp-toolbar" data-component="Toolbar">` with the search box (`<label className="tp-sr-only" htmlFor="tpl-q">{search}</label>` + `<input className="tp-input" id="tpl-q" type="search" dir="auto" autoComplete="off" placeholder={search} />` inside `.tp-search.tp-toolbar__grow` / `.tp-search__box` / `.tp-search__icon` with `<TpIcon name="search" size="sm" />`) and `<div className="tp-segmented" role="radiogroup" aria-label={show} data-component="Segmented">` with three `<button type="button" role="radio" data-scope={s} className="tp-seg__opt" aria-checked={scope === s} tabIndex={scope === s ? 0 : -1}>` for `all` / `starter` / `mine` labelled `all` / `builtIn` / `yours`; ArrowRight/ArrowDown move forward, ArrowLeft/ArrowUp back, wrapping, mirrored for horizontal keys when the computed `direction` is `rtl`, and focus follows the choice.
+  5. `shown = filterTemplates(templates, scope, query)`; `builtIn = shown.filter((t) => t.source === "starter")`; `mine = shown.filter((t) => t.source === "user")`; `searching = query.trim() !== ""`. When `searching && shown.length === 0` → `<div className="tp-empty" data-component="EmptyState" data-no-match=""><p>{noMatch}</p><p className="tp-small">{noMatchHint}</p></div>`. Section Built-in (shown when `scope !== "mine" && !(searching && builtIn.length === 0)`) and section Yours (shown when `scope !== "starter" && !(searching && mine.length === 0)`): `<section className="tp-section" data-component="Section" aria-labelledby={id + "-h"}><div className="tp-section__head"><h2 className="tp-section__title" id={id + "-h"}>{title}</h2><span className="tp-section__count tp-num">{list.length}</span></div>` then either `<div className="tp-empty" data-component="EmptyState"><p>{emptyText}</p>{hint ? <p className="tp-small">{hint}</p> : null}</div>` or `<ul className="tp-cards tpl-list" data-component="CardGrid">` with `<li key={templateId}><TemplateCard template={t} confirming={pendingDeleteId === t.templateId} deleting={deletingId === t.templateId} onAskDelete={setPendingDeleteId} onConfirmDelete={confirmDelete} onCancelDelete={() => setPendingDeleteId(null)} onDuplicate={duplicate} /></li>`. Ids `tpl-builtin` / `tpl-mine`. Empty texts: Built-in → `emptyBuiltIn`; Yours → `emptyMine` + hint `emptyMineHint` (while searching both use `noMatch` + `noMatchHint`).
+  6. `<p className="tp-sr-only" role="status" data-status="">{status}</p>` (always rendered; text empty until a duplicate succeeds).
+  7. Toasts `<div className="tp-toast-region">` with `<UndoToast title={deleted with {name}} undoUntilMs={…} onUndo={() => restore(id)} onClose={…} />` per deleted template.
+  **Behaviour:** local state `scope`, `query`, `pendingDeleteId`, `deletingId`, `toasts: { templateId; name; undoUntilMs }[]`, `status`. `confirmDelete(id)`: `setDeletingId(id)`; `try { await onDelete(id); setPendingDeleteId(null); add toast { templateId: id, name: <the card's name>, undoUntilMs: Date.now() + UNDO_WINDOW_MS } } catch { /* card stays; route shows saveError */ } finally { setDeletingId(null) }`. `restore(id)`: `await onRestore(id)` then remove its toast. `duplicate(id)`: `try { await onDuplicate(id); setStatus(copied with {name}) } catch {}`. Changing scope clears `pendingDeleteId`. Names in toasts and status use the template's `name` as given.
+  **COPY:**
+  | key | EN | HE |
+  |---|---|---|
+  | title | Templates | תבניות |
+  | sub | Page shapes you can start from. Using one makes a new page you can change freely. | צורות דף להתחיל מהן. שימוש בתבנית יוצר דף חדש שאפשר לשנות בחופשיות. |
+  | newTemplate | New template | תבנית חדשה |
+  | ask | Ask the coach for a template | לבקש תבנית מהמאמן |
+  | search | Search templates | חיפוש תבניות |
+  | show | Show | הצגה |
+  | all | All | הכול |
+  | builtIn | Built-in | מובנות |
+  | yours | Yours | שלך |
+  | emptyBuiltIn | No built-in templates to show. | אין תבניות מובנות להצגה. |
+  | emptyMine | No templates of your own yet. | עוד אין כאן תבניות משלך. |
+  | emptyMineHint | New template starts a blank one you can shape. | ״תבנית חדשה״ פותחת תבנית ריקה לעיצוב. |
+  | noMatch | No templates match. | אין תבניות שמתאימות. |
+  | noMatchHint | Try another word or filter. | אפשר לנסות מילה או סינון אחרים. |
+  | deleted | {name} deleted | {name} נמחקה |
+  | copied | Made a copy of {name}. | נוצר עותק של {name}. |
+  | saveErrorCopy | That didn't go through. Your templates are as they were. | זה לא עבר. התבניות שלך נשארו כמו שהיו. |
+  | loading | Loading templates | התבניות בטעינה |
+  | error | Couldn't load your templates. | לא הצלחנו לטעון את התבניות. |
+  The card's own strings stay the existing `tpl.*` keys and TFV2-0286a's Duplicate copy; StateError / StateOffline / Notice / UndoToast keep theirs.
+  **States** (harness order): `default` (templates: `starter:daily-page` "Daily page" daily, sections `["Intention", "Schedule"]`; `starter:weekly-page` "Weekly page" weekly; user `{ templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", sections: ["Boxes", "Keys"] }`; user `{ templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", sections: [] }`; `onAskCoach` present), `empty` (the two starters only), `loading`, `error`, `offline` (default data, `online: false`), `save-error` (default data, `saveError: true`), `no-coach` (default data, no `onAskCoach`).
+  **RTL:** logical flex/grid; the radiogroup's horizontal arrows mirror in RTL; user text `dir="auto"` inside the card. **Keyboard / screen reader:** Tab order = New template → Ask the coach → search → the checked scope radio (one tab stop) → each card's actions; the status line announces duplicates politely; the save error is `role="alert"`. **Breakpoints:** `.tp-cards` auto-fill (280 px minimum) — one column at 390, two at 768, three from 1024 in `.tp-page--wide`. **Motion:** tempo.css button transitions only.
+- **TESTS:** (§22 skeleton; 11 × 4 = 44)
+  1. Given `templates-view-default` / Then the `h1` reads `title`, a link to `/templates/builder` reads `newTemplate`, one `.tp-btn--primary` reads `ask`, `#tpl-builtin-h`'s section holds 2 cards and `#tpl-mine-h`'s holds 2, and each count reads "2".
+  2. Given `default` / When "moving" is typed into `#tpl-q` / Then exactly one card is visible ("Moving week") and the Built-in section is hidden; When "zzz" is typed instead / Then `[data-no-match]` reads `noMatch`.
+  3. Given `default` / When the `yours` radio is clicked / Then it has `aria-checked="true"`, the Built-in section is hidden and 2 cards remain; When ArrowLeft is pressed (`en`) or ArrowRight (`he`) on it / Then the `builtIn` radio is checked and focused.
+  4. Given `default` / When "Delete Moving week" (HE "מחיקת Moving week") then "Confirm delete Moving week" (HE "אישור מחיקת Moving week") are clicked / Then the log reads `onDelete:"templates:1"` and a toast reads `deleted` with "Moving week"; When its Undo (HE "ביטול") is clicked / Then the log reads `onRestore:"templates:1"`.
+  5. Given `default` / When "Duplicate Daily page" (HE "שכפול דף יומי") is clicked / Then the log reads `onDuplicate:"starter:daily-page"` and `[data-status]` reads `copied` with the card's name.
+  6. Given `templates-view-empty` / Then the Yours section shows `emptyMine` and `emptyMineHint` and the Built-in section holds 2 cards.
+  7. Given `templates-view-loading` / Then `[data-component="StateLoading"]` contains `loading` and no `.tpl-card` is present.
+  8. Given `templates-view-error` / Then `error` and "Your data is safe." (HE "המידע שלך שמור.") are visible; When "Try again" is clicked / Then the log reads `onRetry:null`.
+  9. Given `templates-view-offline` / Then the CONVENTIONS §12 offline line and 4 cards are visible; Given `templates-view-save-error` / Then a `role="alert"` contains `saveErrorCopy`.
+  10. Given `templates-view-no-coach` / Then no button reads `ask` and the section has no `.tp-btn--primary`.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="templates-view-default"]')` and `expectMotionBudget(page, '[data-testid="templates-view-default"]')` pass.
+- **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; test 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (test 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0286c — Route: /templates
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0286b, TFV2-0000b, TFV2-0000c, TFV2-0236, TFV2-0237 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0286b, TFV2-0000b, TFV2-0000c, TFV2-0236, TFV2-0237.
+- **WHY:** PRD F-04/F-06; design `docs/design/v3/screens/web/templates.html`; CONVENTIONS §14, §22. Code truth: `apps/web/app/(tempo)/templates/page.tsx` (server page) renders `<div data-testid="templates-library-route"><ProfileReady><TemplatesLibrary /></ProfileReady></div>`; `"/templates"` is already in `E2E_WIRING_ROUTES` (no wiring edit); `tests/e2e/wiring/templates-onboarding.spec.ts` asserts the `templates-library-route` test id. `templates.list` (`{ scope?: "all" | "starter" | "mine" }`) and `templates.remove` (`{ templateId: Id<"templates"> }` → null) exist in `convex/templates.ts`; `templates.restore` and `templates.duplicate` come from TFV2-0236 / TFV2-0237. The draft-hiding change to `list` (TFV2-0234, OPEN) is not needed here: drafts, if any, simply appear until it lands.
+- **GOAL:** `/templates` reads `templates.list` in `page.tsx`, renders `TemplatesView`, wires delete / restore / duplicate, and renders a typed fixture for every forced `?state=`, keeping the `templates-library-route` test id.
+- **SCOPE:** `apps/web/app/(tempo)/templates/page.tsx` · `apps/web/lib/e2e/fixtures/templates.ts` · test: `tests/e2e/screens/templates.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/templates/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/templates.ts` (new) · `tests/e2e/screens/templates.spec.ts` (new) · runtime writes through `templates.remove`, `templates.restore`, `templates.duplicate`.
+- **STEPS:**
+  1. Code-map check: `grep -n '"/templates",' apps/web/lib/e2eWiringRoutes.ts` prints a line (no edit); `grep -n "export const list\|export const remove\|export const restore\|export const duplicate" convex/templates.ts` prints four lines (if `restore` or `duplicate` is missing report `blocked: missing backend <function>`); `test -e apps/web/components/templates-library/TemplatesView.tsx` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/templates.ts` (SPEC "Fixtures").
+  3. Rewrite `page.tsx` exactly as SPEC.
+  4. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` → `32 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplatesView.tsx`, `TemplatesLibrary.tsx` (stays, unimported) or its tests, `e2eWiringRoutes.ts`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0286c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/page.tsx, apps/web/lib/e2e/fixtures/templates.ts, tests/e2e/screens/templates.spec.ts / unknowns / notes for ticket sync: TemplatesLibrary.tsx is no longer imported`.
+- **SPEC:**
+  ```ts
+  api.templates.list      // query    { scope?: "all" | "starter" | "mine" } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[]; body: string; updatedAt?: number }[]
+  api.templates.remove    // mutation { templateId: Id<"templates"> } → null
+  api.templates.restore   // mutation { templateId: Id<"templates"> } → null   (TFV2-0236)
+  api.templates.duplicate // mutation { templateId: string } → Id<"templates">  (TFV2-0237)
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="templates-library-route"><Suspense fallback={null}><TemplatesRoute /></Suspense></div>`. `TemplatesRoute`: `forced = useE2EState()`, `online = useOnline()`, `shell = useShellSlots()`; boundary class (pattern of TFV2-0132b) → `state="error"` with remount retry; `<ProfileReady fallback={<TemplatesView state="loading" … />}><TemplatesLive … /></ProfileReady>`. `TemplatesLive`: `list = useQuery(api.templates.list, forced ? "skip" : { scope: "all" })`; `state = list === undefined ? "loading" : "default"`; `templates = list.map(({ templateId, source, name, description, periodType, sections }) => ({ templateId, source, name, description, periodType, sections }))`; handlers each `setSaveError(false)`, call the mutation (`remove({ templateId: id as Id<"templates"> })`, `restore({ templateId: id as Id<"templates"> })`, `duplicate({ templateId: id })`), and on rejection `setSaveError(true)` and rethrow; `onAskCoach = shell?.coachAvailable ? shell.openCoach : undefined`. **Forced:** `FIXTURES[forced] ?? FIXTURES.error`, callbacks `async () => {}`, `online` false for `offline`, no Convex call.
+  **Fixtures:** `export const FIXTURES: Record<"default" | "empty" | "loading" | "error" | "offline" | "save-error", Omit<TemplatesViewProps, "onAskCoach" | "onDelete" | "onRestore" | "onDuplicate" | "onRetry">>`, templates copied verbatim from the TFV2-0286b harness.
+  No new visible string; states and copy are the View's.
+- **TESTS:** (route spec; `openScreen(page, "/templates", { state, lang })`; each asserts `templates-library-route` is attached; console filter as TFV2-0275b; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Templates" (HE "תבניות") and 4 `.tpl-card` render.
+  2. Given `?state=default` / When "moving" is typed in `#tpl-q` / Then one card is visible.
+  3. Given `?state=empty` / Then "No templates of your own yet." (HE "עוד אין כאן תבניות משלך.") is visible.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached.
+  5. Given `?state=error` / Then "Couldn't load your templates." (HE "לא הצלחנו לטעון את התבניות.") is visible.
+  6. Given `?state=offline` / Then the §12 offline line is visible; Given `?state=save-error` / Then a `role="alert"` is visible.
+  7. Given no `?state` (signed out under the bypass) / Then the URL does not match `/sign-in/`, `templates-library-route` is attached and `[data-component="StateLoading"]` is attached.
+  8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 route cases and 6 of 6 wiring cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0287a — View: TemplateBuilderView (`apps/web/components/template-builder/TemplateBuilderView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
+- **WHY:** PRD F-06/F-23; design `docs/design/v3/screens/web/template-builder.html`; CONVENTIONS §9 (web component), §10 Case A, §11, §12, §13, §22 (screen pattern). Code truth: `apps/web/components/template-builder/TemplateBuilder.tsx` exports `TemplateBuilderScreen`, which calls `useQuery(api.templates.get)`, `useMutation(api.templates.create)`, `useMutation(api.templates.update)`, `useRouter`, `useTheme` and `useOnline` inside the component, so `/templates/builder` cannot be forced into states. Its markup (`BuilderFrame` glass top bar with back link, status, theme toggle and Save; `.tp-split.tp-split--even.bld-split` with the name/description fields, the empty hint and the props-only `TemplateBodyEditor` on the left and the `ReadView` live preview on the right) is the reference this View reproduces from props. Templates are Markdown edited in `TemplateBodyEditor` (slash menu + `{{day}}`/`{{weekday}}`/`{{week}}` tokens), so the OPEN block mutations TFV2-0240a–e are not used. The harness frame (TFV2-0023b) gives only `LocaleProvider`, so the theme comes in by props.
+- **GOAL:** `TemplateBuilderView` renders the template builder — top bar (back to Templates, status, theme toggle, Save template), offline banner, copy/sketch note, save error, saved note, name + description fields, empty-body hint, the Markdown body editor with slash menu, and the live preview of the page it makes — plus the loading, missing and error states, from props alone.
+- **SCOPE:** `apps/web/components/template-builder/TemplateBuilderView.tsx` · `apps/web/app/e2e/components/template-builder-view/page.tsx` · test: `tests/e2e/screens/template-builder-view.spec.ts`.
+- **MUTATES:** `apps/web/components/template-builder/TemplateBuilderView.tsx` (new) · `apps/web/app/e2e/components/template-builder-view/page.tsx` (new) · `tests/e2e/screens/template-builder-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/template-builder/TemplateBuilderView.tsx` fails; `grep -n "export function TemplateBodyEditor" apps/web/components/template-builder/TemplateBodyEditor.tsx` prints a line; `grep -n "export function ReadView" apps/web/components/editor/ReadView.tsx` prints a line; `grep -n "export function templatePageDraft" apps/web/lib/template-pages.ts` and `grep -n "export function dayTokens" apps/web/lib/editor/markdown-model.ts` print a line each; `test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx` succeeds (range 3). Read `TemplateBuilder.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file. Classes used: tempo.css `.tp-skip`, `.tp-mtopbar`, `.tp-glass`, `.tp-mtopbar__title`, `.tp-btn` (+ `--ghost`, `--icon`, `--primary`, `--secondary`, `--sm`), `.tp-icon--back`, `.tp-muted`, `.tp-small`, `.tp-topbar__hide-sm`, `.tp-app__main`, `.tp-sr-only`, `.tp-notice` (+ `__icon`, `__text`, `data-tone`), `.tp-offline`, `.tp-split`, `.tp-split--even`, `.tp-paper`, `.tp-page__body`, `.tp-field`, `.tp-label`, `.tp-label__opt`, `.tp-input`, `.tp-help`, `.tp-state` (+ `--empty`, `--error`, `__icon`, `__title`, `__body`, `__actions`), `.tp-page-content`, `.tp-slash-anchor`, `.tp-surface`, `.tp-eyebrow`, `.tp-page-title`; `apps/web/app/v3/extras.css` `.bld-top`, `.bld-top__end`, `.bld-main`, `.bld-split`, `.bld-fields`, `.bld-empty`, `.bld-flow`, `.bld-row`, `.bld-preview`, `.bld-preview__flow` (existing; not edited).
+  3. Create `TemplateBuilderView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the nine SPEC states, inline fixtures and the `template-builder-view-log` output; `onSave` writes `onSave:<JSON of the draft>` and resolves (rejects in `save-error`), `onToggleTheme` writes `onToggleTheme:null`, `onRetry` writes `onRetry:null`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "template-builder-view", { lang })`) with the 11 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `useRouter`, `useTheme`, `useOnline` or `fetch`; import `TemplateBuilder.tsx` (it stays, unimported once TFV2-0287b lands); edit `TemplateBodyEditor.tsx`, `ReadView.tsx`, `TemplateBuilder.tsx`, `TemplateBuilder.test.tsx`, `template-pages.ts`, `markdown-model.ts`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; render block handles or JSON; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0287a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateBuilderView.tsx, apps/web/app/e2e/components/template-builder-view/page.tsx, tests/e2e/screens/template-builder-view.spec.ts / unknowns / notes for ticket sync: TemplateBodyEditor's own slash-menu strings (t("slash.*")) are unchanged`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  import type { Lang } from "@/lib/i18n";
+  export type BuilderPeriod = "daily" | "weekly" | "monthly" | "none";
+  export type BuilderDraft = { name: string; description: string; periodType: BuilderPeriod; body: string };
+  export type TemplateBuilderState = "default" | "loading" | "missing" | "error";
+  export type TemplateBuilderViewProps = {
+    state: TemplateBuilderState;
+    online: boolean;
+    mode: "create" | "edit";               // edit = the person's own template (?id=); create = blank, ?from= copy or ?outline= sketch
+    note: "none" | "copy" | "sketch";      // which info line shows above the form (create mode only)
+    copyOfName: string;                    // the source template's name for note "copy"; "" otherwise
+    initial: BuilderDraft;                 // the draft as loaded; the View copies it into local state on mount (the route remounts with `key`)
+    exampleIso: string | null;             // the person's local "today" as YYYY-MM-DD, from the route; null → no preview yet
+    dark: boolean;                         // current resolved theme
+    onToggleTheme: () => void;
+    onSave: (draft: BuilderDraft) => Promise<void>;   // resolves when saved; rejects when it did not go through
+    onRetry: () => void;                   // state "error" only
+  };
+  export function TemplateBuilderView(props: TemplateBuilderViewProps): JSX.Element;
+  ```
+  Imports: `TemplateBodyEditor` from `./TemplateBodyEditor`; `ReadView` from `@/components/editor/ReadView`; `StateLoading` from `@/components/states/StateLoading`; `StateError` from `@/components/states/StateError`; `TpIcon`, `TpIconSprite` from `@/components/tempo/TpIcon`; `useLocale` from `@/components/providers/LocaleProvider`; `templatePageDraft` from `@/lib/template-pages`; `dayTokens` from `@/lib/editor/markdown-model`; `type Lang` from `@/lib/i18n`.
+  **Frame** (every state; the `(bare)` layout has no shell): root `<div data-component="TemplateBuilderView" data-view="TemplateBuilderView">` containing `<TpIconSprite />`; `<a className="tp-skip" href="#main">{skip}</a>`; `<header className="tp-mtopbar tp-glass bld-top" data-component="MobileTopBar">` with `<a className="tp-btn tp-btn--ghost" href="/templates"><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{back}</span></a>`, `<span className="tp-mtopbar__title">{title}</span>` and `<div className="bld-top__end">` holding, in order: the status `<output className="tp-muted tp-small tp-topbar__hide-sm" data-status="">{status}</output>` (only in `default` and only when `online`), the theme button `<button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" aria-pressed={dark} aria-label={dark ? themeLight : themeDark} onClick={onToggleTheme}><TpIcon name={dark ? "sun" : "moon"} /></button>`, and in `default` only the Save button `<button type="button" className="tp-btn tp-btn--primary tp-btn--sm" disabled={!canSave} onClick={save}><TpIcon name="check" size="sm" /><span>{pending ? saving : save}</span></button>`. Then `<main className="tp-app__main bld-main" id="main" tabIndex={-1}>` with `<h1 className="tp-sr-only">{title}</h1>`, then `!online` → the offline banner `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`, then the state body.
+  **State bodies:** `loading` → `<div className="tp-paper"><div className="tp-page__body"><StateLoading label={loading} rows={3} /></div></div>`. `error` → the same wrapper with `<StateError what={loadError} onRetry={onRetry} />`. `missing` → the same wrapper with `<div className="tp-state tp-state--error" role="alert" data-component="StateError" data-missing=""><span className="tp-state__icon"><TpIcon name="refresh" size="lg" /></span><h2 className="tp-state__title">{missing}</h2><p className="tp-state__body">{missingHint}</p><div className="tp-state__actions"><a className="tp-btn tp-btn--secondary" href="/templates">{backToTemplates}</a></div></div>`. `default` → the form below.
+  **Form (default):** in order: (1) `mode === "create" && note !== "none"` → `<p className="tp-notice" data-tone="info" data-note={note}><span className="tp-notice__text" dir="auto">{note === "copy" ? copyOf.replace("{name}", () => copyOfName) : fromSketch}</span></p>`; (2) `error` → `<p className="tp-notice" data-tone="caution" role="alert"><span className="tp-notice__text">{saveError}</span></p>`; (3) `notice` → `<output className="tp-notice" data-tone="info" data-saved=""><span className="tp-notice__icon"><TpIcon name="check" size="sm" /></span><span className="tp-notice__text">{savedNote}</span></output>`; (4) `<div className="tp-split tp-split--even bld-split" data-component="Split">` with the left `<article className="tp-paper" data-component="PageEditor" aria-labelledby="template-name-label"><div className="tp-page__body">` holding `<div className="bld-fields">` with the name field (`<div className="tp-field" data-component="Field"><label className="tp-label" id="template-name-label" htmlFor="template-name">{name}</label><input className="tp-input" id="template-name" type="text" dir="auto" required value={name} placeholder={namePh} onChange={…} /></div>`) and the description field (`<label className="tp-label" htmlFor="template-description"><span>{desc}</span> <span className="tp-label__opt">{opt}</span></label><input className="tp-input" id="template-description" type="text" dir="auto" aria-describedby="template-description-help" value={description} placeholder={descPh} onChange={…} /><p className="tp-help" id="template-description-help">{descHelp}</p>`); then, when `body.trim() === ""`, `<div className="tp-state tp-state--empty bld-empty" data-component="StateEmpty"><span className="tp-state__icon"><TpIcon name="template" size="lg" /></span><h2 className="tp-state__title">{emptyTitle}</h2><p className="tp-state__body">{emptyBody}</p><div className="tp-state__actions"><a className="tp-btn tp-btn--secondary" href="/templates/sketch"><TpIcon name="list" size="sm" /><span>{emptySketch}</span></a></div></div>`; then `<div className="tp-page-content bld-flow tp-slash-anchor" data-component="BlockList"><TemplateBodyEditor initialValue={initial.body} ariaLabel={bodyLabel} placeholder={bodyPh} onChange={setBody} /></div>`. The right `<section className="tp-surface bld-preview" data-component="TemplatePreview" aria-labelledby="pv-h">` holds `<div className="bld-row"><TpIcon name="page" size="sm" /><h2 className="tp-eyebrow" id="pv-h">{pvHead}</h2></div>`, then when `exampleIso` is not null `<p className="tp-muted tp-small" data-example="">{pvSub.replace("{day}", () => dayTokens(exampleIso, lang).title)}</p>` and `<div className="bld-preview__flow" id="pv-flow" aria-live="polite">` with `draft = templatePageDraft({ name, body }, { title: "", isoDate: exampleIso, lang })`: `<h3 className="tp-page-title" dir="auto">{draft.title}</h3>` then `draft.body.trim() ? <ReadView body={draft.body} labels={{ minutes, brokenBlock, template: templateLabel }} /> : <p className="tp-muted">{pvEmpty}</p>`.
+  **Behaviour:** local state `name`, `description`, `body` (from `initial`), `saved: BuilderDraft` (= `initial`), `pending`, `error: boolean`, `notice: boolean`. `dirty = name !== saved.name || description !== saved.description || body !== saved.body`; `canSave = name.trim() !== "" && !pending && (mode === "create" || dirty)`. Every field or body change clears `notice`. `save()`: return unless `canSave`; `setPending(true); setError(false); setNotice(false)`; `const draft = { name: name.trim(), description: description.trim(), periodType: initial.periodType, body }`; `try { await onSave(draft); setSaved({ ...initial, name, description, body }); setNotice(true); } catch { setError(true); } finally { setPending(false); }`. `status = mode === "edit" && !dirty ? saved : unsaved`. The body editor is uncontrolled after mount (`TemplateBodyEditor` takes `initialValue`).
+  **COPY** (`type CopyKey` = every key below; `const { lang } = useLocale(); const copy = COPY[lang];`):
+  | key | EN | HE |
+  |---|---|---|
+  | skip | Skip to the builder | דילוג לבנייה |
+  | back | Templates | תבניות |
+  | title | Template builder | בניית תבנית |
+  | saved | Saved | נשמר |
+  | unsaved | Not saved yet | עוד לא נשמר |
+  | save | Save template | שמירת התבנית |
+  | saving | Saving… | שומרים… |
+  | themeDark | Dark theme | ערכת צבעים כהה |
+  | themeLight | Light theme | ערכת צבעים בהירה |
+  | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+  | name | Template name | שם התבנית |
+  | namePh | Thursday talk prep | הכנה להרצאה ביום חמישי |
+  | desc | What it is for | למה היא נועדה |
+  | opt | optional | לא חובה |
+  | descPh | A calm page for the day before a talk | דף רגוע ליום שלפני הרצאה |
+  | descHelp | Shown under the name in Templates. | מופיע מתחת לשם בעמוד התבניות. |
+  | bodyLabel | Template outline | מתווה התבנית |
+  | bodyPh | Type / on a new line to add tasks, headings and lists. | כדי להוסיף משימות, כותרות ורשימות, מקלידים / בשורה חדשה. |
+  | copyOf | A copy of {name}. Change what you want, then save. | עותק של {name}. אפשר לשנות מה שרוצים ואז לשמור. |
+  | fromSketch | From your sketch. Change what you want, then save. | מהשרטוט שלך. אפשר לשנות מה שרוצים ואז לשמור. |
+  | emptyTitle | A blank template. | תבנית ריקה. |
+  | emptyBody | Give it a name, then type / on a new line to add tasks, headings and lists. | קודם נותנים לה שם, ואז מקלידים / בשורה חדשה כדי להוסיף משימות, כותרות ורשימות. |
+  | emptySketch | Sketch an outline instead | לשרטט קודם מתווה |
+  | loading | Loading this template | התבנית בטעינה |
+  | loadError | Couldn't open this template. | לא הצלחנו לפתוח את התבנית הזו. |
+  | missing | Couldn't find this template. | לא מצאנו את התבנית הזו. |
+  | missingHint | It may have been removed. Your other templates are safe. | ייתכן שהיא הוסרה. שאר התבניות שלך שמורות. |
+  | backToTemplates | Back to templates | חזרה לתבניות |
+  | saveError | Could not save this template. You can try again. | לא הצלחנו לשמור את התבנית. אפשר לנסות שוב. |
+  | savedNote | Template saved. It shows in Templates. | התבנית נשמרה. היא מופיעה בתבניות. |
+  | pvHead | Preview of the page it makes | תצוגה מקדימה של הדף שייווצר |
+  | pvSub | Updates as you edit. Example date: {day}. | מתעדכנת תוך כדי עריכה. תאריך לדוגמה: {day}. |
+  | pvEmpty | Nothing to preview yet. | עוד אין מה להציג. |
+  | minutes | min | דק׳ |
+  | brokenBlock | This part has a problem. The rest of your page is safe. | יש בעיה בחלק הזה. שאר הדף שלך שמור. |
+  | templateLabel | Template | תבנית |
+  StateLoading / StateError keep their own strings ("Your data is safe." / "המידע שלך שמור.", "Try again" / "לנסות שוב"); the slash menu inside `TemplateBodyEditor` keeps its existing `t("slash.*")` / `t("tb.slash.*")` strings.
+  **States** (harness order, each `<section data-testid="template-builder-view-<state>">`; all have `exampleIso: "2026-10-15"`, `dark: false`, `online: true` unless named): `default` (`mode: "edit"`, `note: "none"`, `copyOfName: ""`, `initial: { name: "Talk prep", description: "The day before a talk", periodType: "none", body: "# Talk prep\n\n## The one thing\n\n## Before the talk\n- [ ] Finish the slides\n" }`), `empty` (`mode: "create"`, `note: "none"`, `initial: { name: "", description: "", periodType: "none", body: "" }`), `copy` (`mode: "create"`, `note: "copy"`, `copyOfName: "Daily page"`, `initial: { name: "Daily page", description: "A short outline for one day.", periodType: "daily", body: "# Today\n\n## Intention\n" }`), `sketch` (`mode: "create"`, `note: "sketch"`, `initial: { name: "Morning check", description: "", periodType: "none", body: "# Morning check\n\n## Sleep\n" }`), `loading`, `missing`, `error`, `offline` (the `default` data, `online: false`), `save-error` (the `empty` data with `initial.name: "Reading log"`, and an `onSave` that rejects).
+  **RTL:** logical flex/grid only (existing classes); the back chevron mirrors through `.tp-icon--back`; user text `dir="auto"`. **Keyboard / screen reader:** Tab order = skip link → Templates → theme → Save → name → description → (empty: Sketch link) → body editor; the slash menu opens on "/" and takes Arrow/Enter/Esc (`TemplateBodyEditor`); the preview is `aria-live="polite"`; the save error is `role="alert"`; the page has one `h1` (sr-only). **Breakpoints:** `.tp-split--even` is one column at 390 px (preview below the editor) and two columns from 1024 px. **Motion:** tempo.css button transitions only.
+- **TESTS:** (§22 skeleton; 11 × 4 = 44)
+  1. Given `template-builder-view-default` / Then the section has exactly one `.tp-btn--primary` reading `save` (disabled), a link to `/templates` reading `back`, `#template-name` with value "Talk prep", `[data-status]` reading `saved`, and `#pv-flow h3` reading "Talk prep".
+  2. Given `default` / When "Talk prep 2" is filled into `#template-name` / Then `[data-status]` reads `unsaved`, `#pv-flow h3` reads "Talk prep 2", and Save is enabled; When Save is clicked / Then the log reads `onSave:{"name":"Talk prep 2","description":"The day before a talk","periodType":"none","body":"# Talk prep\n\n## The one thing\n\n## Before the talk\n- [ ] Finish the slides\n"}` and `[data-saved]` reads `savedNote`.
+  3. Given `empty` / Then `[data-component="StateEmpty"]` shows `emptyTitle`, `emptyBody` and a link to `/templates/sketch` reading `emptySketch`, Save is disabled, and `#pv-flow` shows `pvEmpty`.
+  4. Given `empty` / When the body editor (`[aria-label="<bodyLabel>"]`) is clicked and "/" is typed / Then a `[role="listbox"]` is visible inside the section; When Escape is pressed / Then it is hidden.
+  5. Given `empty` / When "## Plan" is typed into the body editor / Then the `StateEmpty` block is gone and `#pv-flow` contains a heading "Plan".
+  6. Given `copy` / Then `[data-note="copy"]` reads `copyOf` with "Daily page"; Given `sketch` / Then `[data-note="sketch"]` reads `fromSketch`.
+  7. Given `default` / Then `[data-example]` reads `pvSub` with the day "Thursday, 15 October" (EN) / "יום חמישי, 15 באוקטובר" (HE, the `he-IL` `dayTokens(…).title`); When the theme button (`aria-label` `themeDark`, `aria-pressed="false"`) is clicked / Then the log reads `onToggleTheme:null`.
+  8. Given `loading` / Then `[data-component="StateLoading"]` contains `loading` and no `#template-name` is present; Given `missing` / Then `[data-missing]` shows `missing`, `missingHint` and a link to `/templates` reading `backToTemplates`.
+  9. Given `error` / Then `loadError` and "Your data is safe." (HE "המידע שלך שמור.") are visible; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
+  10. Given `offline` / Then the CONVENTIONS §12 offline line is visible and `[data-status]` is absent; Given `save-error` / When Save is clicked / Then a `role="alert"` contains `saveError` and `#template-name` still has "Reading log".
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-builder-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-builder-view-default"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 11) · text contrast ≥ 4.5:1 (tokens only; WCAG 2.2 SC 1.4.3) · motion ≤ 250 ms (test 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0287b — Route: /templates/builder
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0287a, TFV2-0000b, TFV2-0000c, TFV2-0235b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0287a, TFV2-0000b, TFV2-0000c, TFV2-0235b.
+- **WHY:** PRD F-06/F-23; design `docs/design/v3/screens/web/template-builder.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(bare)/templates/builder/page.tsx` is a server page rendering `<div data-testid="template-builder-route"><ProfileReady><TemplateBuilderScreen fromId editId outline /></ProfileReady></div>` from `?from=`, `?id=`, `?outline=`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-builder-route` on `/templates/builder` and `/templates/builder?from=starter-1`. `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (`apps/web/lib/e2eWiringRoutes.ts` line 21), so no wiring edit. `templates.get` and `templates.create` exist in `convex/templates.ts` (`create` args `{ name, description?, periodType, body }`, unchanged by this ticket; TFV2-0235a, OPEN, only adds an optional `draft` arg this route never sends); `templates.update` is verified by TFV2-0235b. The mode rules are exactly `TemplateBuilderScreen`'s: `?id=` of the person's own template edits it; `?id=` of a starter or any `?from=` starts a copy; `?outline=` starts from `parseSketch(outline)` (`apps/web/lib/template-sketch.ts`, pure); otherwise blank. "Today" for the preview comes from `preferences.timeZone` (CONVENTIONS §22).
+- **GOAL:** `/templates/builder` reads `templates.get` and `preferences.get` in `page.tsx`, renders `TemplateBuilderView` in the right mode, saves through `templates.update` (edit) or `templates.create` (create, then goes to `/templates`), and renders a typed fixture for every forced `?state=`, keeping the `template-builder-route` test id.
+- **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` · `apps/web/lib/e2e/fixtures/template-builder.ts` · test: `tests/e2e/screens/template-builder.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
+- **MUTATES:** `apps/web/app/(bare)/templates/builder/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-builder.ts` (new) · `tests/e2e/screens/template-builder.spec.ts` (new) · runtime writes through `templates.update` (patch one `templates` row) and `templates.create` (insert one row).
+- **STEPS:**
+  1. Code-map check: `grep -n '"/templates/(.\*)",' apps/web/lib/e2eWiringRoutes.ts` prints a line (no edit); `grep -n "export const get\|export const create\|export const update" convex/templates.ts` prints three lines; `grep -n "export const get" convex/preferences.ts` prints a line; `test -e apps/web/components/template-builder/TemplateBuilderView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds; `grep -n "export function parseSketch" apps/web/lib/template-sketch.ts` prints a line.
+  2. Create `apps/web/lib/e2e/fixtures/template-builder.ts` (SPEC "Fixtures").
+  3. Rewrite `page.tsx` exactly as SPEC.
+  4. Create the spec (§22 route skeleton) with the 8 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-builder.spec.ts --reporter=line` → `32 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateBuilderView.tsx`, `TemplateBuilder.tsx` (stays, unimported) or `TemplateBuilder.test.tsx`, `template-sketch.ts`, `e2eWiringRoutes.ts`; call `templates.insertBlock`/`moveBlock`/`duplicateBlock`/`removeBlock`/`publish` (TFV2-0240a–e, OPEN, not used); send `draft` to `templates.create`; contact Convex when forced; compute "today" from the browser zone; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0287b / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/builder/page.tsx, apps/web/lib/e2e/fixtures/template-builder.ts, tests/e2e/screens/template-builder.spec.ts / unknowns / notes for ticket sync: TemplateBuilderScreen (TemplateBuilder.tsx) is no longer imported by a route; its bun test still runs`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.get       // query    { templateId: string } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[]; body: string; updatedAt?: number } | null
+  api.templates.create    // mutation { name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; body: string } → Id<"templates">   (existing; throws "Name is required")
+  api.templates.update    // mutation { templateId: Id<"templates">; name?: string; description?: string; periodType?: …; body?: string } → Id<"templates">   (TFV2-0235b; throws "Name is required", "Starter templates cannot be changed", "Template not found", "Access denied")
+  api.preferences.get     // query    {} → { …; timeZone: string; … }
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-builder-route"><Suspense fallback={null}><BuilderRoute /></Suspense></div>`. Module helpers: `EMPTY: BuilderDraft = { name: "", description: "", periodType: "none", body: "" }`; `localDateIn(timeZone, ms)` = `new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms)` (as TFV2-0132b); `NOOP = { onSave: async () => {}, onRetry: () => {} }`. `BuilderRoute`: `forced = useE2EState()`, `online = useOnline()`, `{ resolvedTheme, setTheme } = useTheme()` (`@/components/providers/ThemeProvider`), `dark = resolvedTheme === "dark"`, `onToggleTheme = () => setTheme(dark ? "light" : "dark")`; a `BuilderBoundary` class (pattern of TFV2-0132b: `getDerivedStateFromError` → `failed`; render failed → `<TemplateBuilderView state="error" {...FIXTURES.error} online={online} dark={dark} onToggleTheme={onToggleTheme} onSave={NOOP.onSave} onRetry={retry} />`, retry remounts children with a new `key`); inside it `<ProfileReady fallback={<TemplateBuilderView {...FIXTURES.loading} online={online} dark={dark} onToggleTheme={onToggleTheme} {...NOOP} />}><BuilderLive forced={forced} online={online} dark={dark} onToggleTheme={onToggleTheme} /></ProfileReady>`.
+  `BuilderLive`: `params = useSearchParams()`; `first = (k) => params.get(k) || undefined`; `editId = first("id")`, `fromId = first("from")`, `outline = first("outline")`, `sourceId = editId ?? fromId`; `template = useQuery(api.templates.get, forced || !sourceId ? "skip" : { templateId: sourceId })`; `prefs = useQuery(api.preferences.get, forced ? "skip" : {})`; `exampleIso = prefs ? localDateIn(prefs.timeZone, Date.now()) : null`; `router = useRouter()`; `create = useMutation(api.templates.create)`; `update = useMutation(api.templates.update)`.
+  **Live resolution** (in order): `sourceId && template === undefined` → `state: "loading"`; `sourceId && template === null` → `state: "missing"`; `template && editId !== undefined && template.source === "user"` → `mode: "edit"`, `note: "none"`, `key = "edit:" + template.templateId`; `template` (any other case) → `mode: "create"`, `note: "copy"`, `copyOfName: template.name`, `key = "copy:" + template.templateId`; else `sketch = outline ? parseSketch(outline) : null` → when not null `mode: "create"`, `note: "sketch"`, `initial: { ...EMPTY, name: sketch.name, body: sketch.body }`, `key = "sketch"`; else `mode: "create"`, `note: "none"`, `initial: EMPTY`, `key = "blank"`. A template's `initial` = `{ name, description: description ?? "", periodType, body }`. Render `<TemplateBuilderView key={key} state={…} online={online} mode={…} note={…} copyOfName={… ?? ""} initial={…} exampleIso={exampleIso} dark={dark} onToggleTheme={onToggleTheme} onSave={save} onRetry={() => {}} />`.
+  `save(draft)`: edit → `await update({ templateId: template.templateId as Id<"templates">, name: draft.name, description: draft.description, periodType: draft.periodType, body: draft.body })`; create → `await create({ name: draft.name, periodType: draft.periodType, body: draft.body, ...(draft.description ? { description: draft.description } : {}) })` then `router.push("/templates")`. A rejection propagates to the View (which shows its save error).
+  **Forced** (`forced !== null`): `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateBuilderView key={forced} {...fixture} online={forced === "offline" ? false : fixture.online} dark={dark} onToggleTheme={onToggleTheme} onSave={forced === "save-error" ? async () => { throw new Error("forced"); } : async () => {}} onRetry={() => {}} />`; no Convex call and no navigation.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-builder.ts`, `import type { TemplateBuilderViewProps } from "@/components/template-builder/TemplateBuilderView";` only): `export const FIXTURES: Record<"default" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateBuilderViewProps, "dark" | "onToggleTheme" | "onSave" | "onRetry">>` with the data of the TFV2-0287a harness states of the same names, copied verbatim (`exampleIso: "2026-10-15"`; `loading`/`missing`/`error` use `mode: "create"`, `note: "none"`, `copyOfName: ""`, the `empty` `initial`).
+  No new visible string; states and copy are the View's.
+- **TESTS:** (route spec; `openScreen(page, "/templates/builder", { state, lang })`; each asserts `template-builder-route` is attached; console filter `/example\.convex\.cloud|WebSocket/i` as TFV2-0132b; 8 × 4 = 32)
+  1. Given `?state=default` / Then the sr-only `h1` reads "Template builder" (HE "בניית תבנית"), `#template-name` has "Talk prep" and one `.tp-btn--primary` reads "Save template" (HE "שמירת התבנית").
+  2. Given `?state=default` / When "Talk prep 2" is filled into `#template-name` and Save is clicked / Then "Template saved. It shows in Templates." (HE "התבנית נשמרה. היא מופיעה בתבניות.") is visible and the URL still ends with `?state=default&lang=<lang>`.
+  3. Given `?state=empty` / Then "A blank template." (HE "תבנית ריקה.") is visible.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached; Given `?state=missing` / Then "Couldn't find this template." (HE "לא מצאנו את התבנית הזו.") is visible.
+  5. Given `?state=error` / Then "Couldn't open this template." (HE "לא הצלחנו לפתוח את התבנית הזו.") is visible.
+  6. Given `?state=offline` / Then the §12 offline line is visible; Given `?state=save-error` / When Save is clicked / Then a `role="alert"` contains "Could not save this template. You can try again." (HE "לא הצלחנו לשמור את התבנית. אפשר לנסות שוב.").
+  7. Given no `?state` (`page.goto(\`/templates/builder?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-builder-route` is attached, and `#template-name` is visible (blank create mode needs no query).
+  8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/builder?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 route cases and 6 of 6 wiring cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0288a — View: TemplateRunView (`apps/web/components/template-run/TemplateRunView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-run.html` (one question at a time, Back / Skip this one / Next, progress chips Done / Now / Next, "The page will get", done panel with Open the page + Undo 5:00, empty "No questions in this one."); CONVENTIONS §9, §10 Case A, §11, §12, §13, §22. Code truth: `apps/web/components/template-run/TemplateRun.tsx` calls `useQuery(api.templates.get)`, `useMutation(api.notes.create)` and `useRouter` itself and shows a one-step preview; the run screen becomes a step walk whose steps are the template's headings, exactly the keys `templates.apply` accepts (TFV2-0239c: answers keyed by heading text from `sectionsFromBody`, which is the `sections` array `templates.get` returns; blank answers allowed; each answer ≤ 4,000 characters, `RUN_ANSWER_MAX`). Undo after "Make the page" uses the shared `UndoToast` (`apps/web/components/habits/UndoToast.tsx`, `UNDO_WINDOW_MS` = 5 min, unchanged).
+- **GOAL:** `TemplateRunView` walks a template one step at a time — a "Page name" step, then one step per heading — with Back / Skip this one / Next, progress chips and a "The page will get" card, makes the page through `onMake`, then shows a done panel with Open the page and a 5-minute Undo; plus the no-questions, loading, missing, error, offline and make-error states, from props alone.
+- **SCOPE:** `apps/web/components/template-run/TemplateRunView.tsx` · `apps/web/app/e2e/components/template-run-view/page.tsx` · test: `tests/e2e/screens/template-run-view.spec.ts`.
+- **MUTATES:** `apps/web/components/template-run/TemplateRunView.tsx` (new) · `apps/web/app/e2e/components/template-run-view/page.tsx` (new) · `tests/e2e/screens/template-run-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/template-run/TemplateRunView.tsx` fails; `grep -n "export function UndoToast\|export const UNDO_WINDOW_MS" apps/web/components/habits/UndoToast.tsx` prints two lines; `test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx` succeeds; `grep -n "^.tp-run " apps/web/app/globals.css` prints a line; `grep -n "@component StatusPanel " apps/web/app/tempo.css` prints a line. Read `TemplateRun.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file. Classes used: globals.css `.tp-run`; tempo.css `.tp-skip`, `.tp-page`, `.tp-pagehead` (+ `__text`, `__title`, `__sub`, `__actions`), `.tp-eyebrow`, `.tp-split`, `.tp-card`, `.tp-card__title`, `.tp-form`, `.tp-form__actions`, `.tp-field`, `.tp-label`, `.tp-input`, `.tp-textarea`, `.tp-help`, `.tp-btn` (+ `--primary`, `--secondary`, `--ghost`), `.tp-chip`, `.tp-chip--done`, `.tp-muted`, `.tp-strong`, `.tp-small`, `.tp-num`, `.tp-notice` (+ `__icon`, `__text`, `data-tone`), `.tp-offline`, `.tp-state` (+ `--empty`, `__icon`, `__title`, `__body`, `__actions`), `.tp-status-panel` (+ `__icon`, `__title`, `__body`, `__actions`, `data-tone="done"`), `.tp-toast-region`.
+  3. Create `TemplateRunView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the eight SPEC states, inline fixtures and the `template-run-view-log` output; `onMake` writes `onMake:<JSON of { answers, title }>` and resolves `"notes:9"` (rejects in `make-error`); `onUndoMake` writes `onUndoMake:"notes:9"` and resolves; `onAnswer` (present only in `draft`) writes `onAnswer:<JSON of { step, answer }>`; `onRetry` writes `onRetry:null`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "template-run-view", { lang })`) with the 11 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `useRouter` or `fetch`; judge or require any answer; import `TemplateRun.tsx`, `ProposalBanner.tsx` or anything under `convex/`; edit `TemplateRun.tsx`, `TemplateRun.test.tsx`, `UndoToast.tsx`, `tempo.css`, `globals.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0288a / evidence: <DONE output> / changed: apps/web/components/template-run/TemplateRunView.tsx, apps/web/app/e2e/components/template-run-view/page.tsx, tests/e2e/screens/template-run-view.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type RunTemplate = { templateId: string; name: string; description?: string; sections: string[] };
+  export type TemplateRunState = "default" | "loading" | "missing" | "error";
+  export type TemplateRunViewProps = {
+    state: TemplateRunState;
+    online: boolean;
+    template: RunTemplate | null;                    // null unless state is "default"
+    initialAnswers: Record<string, string>;          // keyed by heading text; {} when there is no saved draft
+    onAnswer?: (step: string, answer: string) => void;   // absent → nothing autosaves and the "draft saves" line is hidden
+    onMake: (answers: Record<string, string>, title: string) => Promise<string>;  // resolves the new page id; rejects when it did not go through
+    onUndoMake: (noteId: string) => Promise<void>;
+    onRetry: () => void;                             // state "error" only
+  };
+  export const RUN_ANSWER_MAX_CHARS = 4000;          // same bound as RUN_ANSWER_MAX (TFV2-0239c); not imported from convex/
+  export function TemplateRunView(props: TemplateRunViewProps): JSX.Element;
+  ```
+  Imports: `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `StateLoading`, `StateError` from `@/components/states/…`; `TpIcon`, `TpIconSprite` from `@/components/tempo/TpIcon`; `useLocale`; `type Lang`.
+  **Steps model:** `headings = [...new Set(template.sections)]` (first occurrence order; `templates.apply` fills only the first heading of a name). Step index `0` is the page-name step; step `i ≥ 1` is `headings[i - 1]`. `total = headings.length + 1`.
+  **Layout:** root `<div className="tp-page tp-run" data-component="PageLayout" data-view="TemplateRunView">` with `<TpIconSprite />` (the `(bare)` layout has no shell) and `<a className="tp-skip" href="#main">{skip}</a>`, then `<main id="main" tabIndex={-1}>`. Inside: header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><span className="tp-eyebrow">{eyebrow}</span><h1 className="tp-pagehead__title" dir="auto">{template ? template.name : title}</h1>{template?.description ? <p className="tp-pagehead__sub" dir="auto">{template.description}</p> : null}</div><div className="tp-pagehead__actions"><a className="tp-btn tp-btn--ghost" href="/templates">{back}</a></div></header>`; then `!online` → `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`; then the state body.
+  **State bodies:** `loading` → `<StateLoading label={loading} rows={3} />`. `error` → `<StateError what={loadError} onRetry={onRetry} />`. `missing` → `<div className="tp-state tp-state--error" role="alert" data-component="StateError" data-missing=""><h2 className="tp-state__title">{missing}</h2><p className="tp-state__body">{missingHint}</p><div className="tp-state__actions"><a className="tp-btn tp-btn--secondary" href="/templates">{backToTemplates}</a></div></div>`. `default` → one of the three panels below.
+  **No questions** (`headings.length === 0` and not made): `<div className="tp-state tp-state--empty" data-component="StateEmpty"><span className="tp-state__icon"><TpIcon name="template" size="lg" /></span><h2 className="tp-state__title">{emptyTitle}</h2><p className="tp-state__body">{emptyBody}</p>` + the page-name field (as step 0 below) + `<div className="tp-state__actions"><button type="button" className="tp-btn tp-btn--primary" disabled={pending} onClick={make}>{pending ? making : makePage}</button><a className="tp-btn tp-btn--secondary" href={"/templates/builder?id=" + encodeURIComponent(template.templateId)}>{emptyEdit}</a></div></div>`.
+  **Walk** (headings present, not made): `<div className="tp-split" data-component="Split">` with
+  - left `<form className="tp-card tp-form" id="run-form" data-component="TemplateRunStep" noValidate onSubmit={next}>`: `<p className="tp-eyebrow" data-step-count="">{stepOf.replace("{n}", …).replace("{total}", …)}</p>` where both numbers are wrapped as `<span className="tp-num">` (render the string by splitting on the placeholders); `<h2 className="tp-card__title" id="step-q" tabIndex={-1} dir="auto">{step === 0 ? nameQuestion : headings[step - 1]}</h2>`; step 0 → `<div className="tp-field"><label className="tp-label" htmlFor="run-title">{pageName}</label><input className="tp-input" id="run-title" type="text" dir="auto" value={title} placeholder={template.name} aria-describedby="run-title-help" onChange={…} /><p className="tp-help" id="run-title-help">{pageNameHelp}</p></div>`; step ≥ 1 → `<div className="tp-field"><label className="tp-label" htmlFor="run-answer">{answerLabel}</label><textarea className="tp-textarea" id="run-answer" rows={4} dir="auto" maxLength={RUN_ANSWER_MAX_CHARS} value={answers[heading] ?? ""} aria-describedby="run-answer-help" onChange={…} /><p className="tp-help" id="run-answer-help">{answerHelp}</p></div>`; then `make-error` alert slot (`error` → `<p className="tp-notice" data-tone="caution" role="alert"><span className="tp-notice__text">{makeError}</span></p>`); then `<div className="tp-form__actions"><button type="button" className="tp-btn tp-btn--ghost" id="run-back" disabled={step === 0 || pending} onClick={goBack}>{backStep}</button>{step >= 1 ? <button type="button" className="tp-btn tp-btn--secondary" id="run-skip" disabled={pending} onClick={skip}>{skipStep}</button> : null}<button type="submit" className="tp-btn tp-btn--primary" id="run-next" disabled={pending}>{step === total - 1 ? (pending ? making : makePage) : nextStep}</button></div>`.
+  - right `<aside className="tp-card" aria-labelledby="steps-h" data-component="RunSteps">`: `<h2 className="tp-card__title" id="steps-h">{stepsHead}</h2><ol id="run-steps">` with one `<li data-i={i} aria-current={i === step ? "step" : undefined}><span className={i === step ? "tp-strong" : undefined} dir="auto">{i === 0 ? pageName : headings[i - 1]}</span> <span className={i < step ? "tp-chip tp-chip--done" : i === step ? "tp-chip" : "tp-chip tp-muted"}>{i < step ? done : i === step ? now : nextChip}</span></li>` per step; then `<h3 className="tp-card__title">{getsHead}</h3><ul data-gets="">` with one `<li dir="auto">{heading}</li>` per heading; then, only when `onAnswer` is provided, `<p className="tp-small tp-muted" data-draft-note="">{draftNote}</p>`.
+  **Done** (made): `<section className="tp-card tp-status-panel" data-tone="done" data-component="StatusPanel" aria-labelledby="done-h"><span className="tp-status-panel__icon"><TpIcon name="check" size="lg" /></span><h2 className="tp-status-panel__title" id="done-h" tabIndex={-1} dir="auto">{doneTitle.replace("{title}", () => madeTitle)}</h2><p className="tp-status-panel__body">{doneBody}</p><div className="tp-status-panel__actions"><a className="tp-btn tp-btn--primary" href={"/notes/" + encodeURIComponent(made.noteId)}>{openPage}</a><a className="tp-btn tp-btn--secondary" href="/templates">{backToTemplates}</a></div></section>` and `<div className="tp-toast-region"><UndoToast title={madeToast} undoUntilMs={made.undoUntilMs} onUndo={undoMake} onClose={() => setToastOpen(false)} /></div>` while `toastOpen`.
+  **Behaviour:** local state `step` (0), `title` (""), `answers` (copy of `initialAnswers`), `pending`, `error: boolean`, `made: { noteId: string; undoUntilMs: number; title: string } | null`, `toastOpen`. Focus moves to `#step-q` after each step change and to `#done-h` when made. `next(e)`: `e.preventDefault()`; `step ≥ 1` → `onAnswer?.(headings[step - 1], answers[heading] ?? "")`; `step < total - 1` → `setStep(step + 1)`; else `make()`. `skip()`: `setAnswers({ …, [heading]: "" })`, `onAnswer?.(heading, "")`, then as `next` (moves on or makes). `goBack()`: `setStep(step - 1)` (no save). `make()`: return if `pending`; `setPending(true); setError(false)`; `filled = Object.fromEntries(headings.map((h) => [h, (answers[h] ?? "").trim()]).filter(([, v]) => v !== ""))`; `try { const noteId = await onMake(filled, title.trim()); setMade({ noteId, undoUntilMs: Date.now() + UNDO_WINDOW_MS, title: title.trim() || template.name }); setToastOpen(true); } catch { setError(true); } finally { setPending(false); }`. `undoMake()`: `await onUndoMake(made.noteId)` then `setMade(null); setToastOpen(false); setStep(total - 1)` (answers kept); a rejection leaves the done panel and shows `<p className="tp-notice" data-tone="caution" role="alert" data-undo-error=""><span className="tp-notice__text">{undoError}</span></p>` inside it. `madeTitle` = `made.title`. Offline does not disable anything (Convex queues the write).
+  **COPY:**
+  | key | EN | HE |
+  |---|---|---|
+  | skip | Skip to the question | דילוג לשאלה |
+  | eyebrow | Using a template | שימוש בתבנית |
+  | title | Template | תבנית |
+  | back | Templates | תבניות |
+  | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+  | loading | Loading the template | התבנית בטעינה |
+  | loadError | Couldn't load this template. | לא הצלחנו לטעון את התבנית הזו. |
+  | missing | This template was not found | התבנית לא נמצאה |
+  | missingHint | It may have been removed. You can pick another one. | ייתכן שהיא הוסרה. אפשר לבחור תבנית אחרת. |
+  | backToTemplates | Back to templates | חזרה לתבניות |
+  | stepOf | Step {n} of {total} | שלב {n} מתוך {total} |
+  | nameQuestion | What should this page be called? | איך לקרוא לדף הזה? |
+  | pageName | Page name | שם הדף |
+  | pageNameHelp | Optional. Left empty, the page takes the template's name. | לא חובה. בלי שם, הדף יקבל את שם התבנית. |
+  | answerLabel | Your answer | התשובה שלך |
+  | answerHelp | Optional. It goes under this heading on the page. | לא חובה. התשובה תיכנס מתחת לכותרת הזו בדף. |
+  | backStep | Back | חזרה |
+  | skipStep | Skip this one | לדלג על זה |
+  | nextStep | Next | הבא |
+  | makePage | Make the page | ליצור את הדף |
+  | making | Making the page… | יוצרים את הדף… |
+  | makeError | Could not make the page. You can try again. | לא הצלחנו ליצור את הדף. אפשר לנסות שוב. |
+  | stepsHead | Steps | שלבים |
+  | done | Done | בוצע |
+  | now | Now | עכשיו |
+  | nextChip | Next | הבא |
+  | getsHead | The page will get | מה ייכנס לדף |
+  | draftNote | Your draft saves as you go. Leaving is safe. | הטיוטה נשמרת תוך כדי. אפשר לצאת בלי לאבד כלום. |
+  | emptyTitle | No questions in this one. | אין שאלות בתבנית הזו. |
+  | emptyBody | This template doesn't ask anything, so the page can be made straight away. | התבנית הזו לא שואלת כלום, אז אפשר ליצור את הדף מיד. |
+  | emptyEdit | Add questions in the builder | להוסיף שאלות בבנייה |
+  | doneTitle | Your page {title} is ready. | הדף {title} מוכן. |
+  | doneBody | Anything can be changed on the page. | אפשר לשנות הכול בדף עצמו. |
+  | openPage | Open the page | לפתוח את הדף |
+  | madeToast | Page made | הדף נוצר |
+  | undoError | Couldn't take the page back. You can delete it from Pages. | לא הצלחנו לבטל את יצירת הדף. אפשר למחוק אותו מהדפים. |
+  `UndoToast`, `StateLoading` and `StateError` keep their own strings ("Undo" / "ביטול", "Your data is safe." / "המידע שלך שמור.", "Try again" / "לנסות שוב").
+  **States** (harness order; `online: true`, `initialAnswers: {}`, no `onAnswer` unless named): `default` (`template: { templateId: "starter:weekly-page", name: "Weekly page", description: "A week in outcomes.", sections: ["Week", "Outcomes", "Days", "Outcomes"] }` → headings `Week`, `Outcomes`, `Days`, total 4), `no-questions` (`template: { templateId: "templates:5", name: "Blank", sections: [] }`), `draft` (the `default` template, `initialAnswers: { Outcomes: "Finish the talk" }`, `onAnswer` present), `make-error` (the `default` template, `onMake` rejects), `loading` (`template: null`), `missing` (`template: null`), `error` (`template: null`), `offline` (the `default` data, `online: false`).
+  **RTL:** logical layout only; step names and answers `dir="auto"`; numbers in `.tp-num`. **Keyboard / screen reader:** Enter in the name input submits Next; focus moves to the step question (`#step-q`) on each step and to `#done-h` when the page is made; the current step has `aria-current="step"`; the make error is `role="alert"`. **Breakpoints:** `.tp-split` stacks at 390 px (steps card below the form) and sits side by side from 1024 px. **Motion:** tempo.css button transitions only.
+- **TESTS:** (§22 skeleton; 11 × 4 = 44)
+  1. Given `template-run-view-default` / Then the `h1` reads "Weekly page", `[data-step-count]` reads `stepOf` with 1 and 4, `#step-q` reads `nameQuestion`, `#run-back` is disabled, `#run-skip` is absent, exactly one `.tp-btn--primary` reads `nextStep`, and `#run-steps` has 4 `li` (the first `aria-current="step"`, chip `now`).
+  2. Given `default` / When Next is clicked / Then `#step-q` reads "Week", is focused, the first `li` chip reads `done` with class `tp-chip--done`, and `#run-skip` is visible.
+  3. Given `default` / When Next, then "Rest" is typed in `#run-answer`, then Next, then Back are clicked / Then `#step-q` reads "Week" and `#run-answer` has "Rest".
+  4. Given `default` / When Next, "Rest" in `#run-answer`, Next, Skip this one, Skip this one are clicked (Skip on the last step makes the page) / Then the log reads `onMake:{"answers":{"Week":"Rest"},"title":""}`, `#done-h` reads `doneTitle` with "Weekly page", and a link to `/notes/notes%3A9` reads `openPage`.
+  5. Given the done panel of bullet 4 / When the toast's Undo (HE "ביטול") is clicked / Then the log reads `onUndoMake:"notes:9"`, the walk is back on step 4 of 4 (`#step-q` reads "Days") and Next's text reads `makePage`.
+  6. Given `default` / When "Week 42" is filled into `#run-title` and the page is made through Next ×4 / Then the log reads `onMake:{"answers":{},"title":"Week 42"}` and `#done-h` reads `doneTitle` with "Week 42".
+  7. Given `no-questions` / Then `emptyTitle` and `emptyBody` are visible, one `.tp-btn--primary` reads `makePage`, a link to `/templates/builder?id=templates%3A5` reads `emptyEdit`; When Make the page is clicked / Then the log reads `onMake:{"answers":{},"title":""}`.
+  8. Given `draft` / Then `[data-draft-note]` reads `draftNote`; When Next, Next are clicked / Then step 3 `#run-answer` has "Finish the talk"; When Next is clicked / Then the log reads `onAnswer:{"step":"Outcomes","answer":"Finish the talk"}`; and `default` has no `[data-draft-note]`.
+  9. Given `make-error` / When Next ×4 is clicked / Then a `role="alert"` reads `makeError` and the walk stays on step 4.
+  10. Given `loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `missing` / Then `[data-missing]` reads `missing`; Given `error` / When "Try again" is clicked / Then the log reads `onRetry:null`; Given `offline` / Then the CONVENTIONS §12 offline line is visible and Next is enabled.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-run-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-run-view-default"]')` pass.
+- **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullet 5) · answer ≤ 4,000 characters (`maxLength`, same as `RUN_ANSWER_MAX`) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0288b — Route: /templates/run/[id]
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0288a, TFV2-0000b, TFV2-0000c, TFV2-0239c · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0288a, TFV2-0000b, TFV2-0000c, TFV2-0239c.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-run.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(bare)/templates/run/[id]/page.tsx` is a server page rendering `<div data-testid="template-run-route"><ProfileReady><TemplateRun templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-run-route` on `/templates/run/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `routeParam` (`apps/web/lib/route-param.ts`) decodes a percent-encoded segment (`starter%3Adaily-page`). `templates.get` exists; `templates.apply` comes from TFV2-0239c (not OPEN); `notes.remove` exists (`convex/notes.ts` line 508, soft delete, `{ noteId: Id<"notes"> }` → `{ success: true; undoUntilMs: number }`, throws `"Note not found"`). Answers live in component state only here; the autosaved run draft is TFV2-0288c (OPEN).
+- **GOAL:** `/templates/run/[id]` reads `templates.get` in `page.tsx`, renders `TemplateRunView`, makes the page with `templates.apply`, takes it back with `notes.remove`, and renders a typed fixture for every forced `?state=`, keeping the `template-run-route` test id.
+- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/template-run.ts` · test: `tests/e2e/screens/template-run.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
+- **MUTATES:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-run.ts` (new) · `tests/e2e/screens/template-run.spec.ts` (new) · runtime writes through `templates.apply` (insert one `notes` row) and `notes.remove` (soft-delete that row on Undo).
+- **STEPS:**
+  1. Code-map check: `grep -n '"/templates/(.\*)",' apps/web/lib/e2eWiringRoutes.ts` prints a line (no edit); `grep -n "export const get\|export const apply " convex/templates.ts` prints two lines (if `apply` is missing report `blocked: missing backend templates.apply`); `grep -n "export const remove" convex/notes.ts` prints a line; `test -e apps/web/components/template-run/TemplateRunView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/template-run.ts` (SPEC "Fixtures").
+  3. Rewrite `page.tsx` exactly as SPEC.
+  4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → `28 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateRunView.tsx`, `TemplateRun.tsx` (stays, unimported), `TemplateRun.test.tsx`, `ProposalBanner.tsx`, `e2eWiringRoutes.ts`; call `templates.getRunDraft`/`saveRunDraft` (TFV2-0288c, OPEN) or `notes.create`; pass `onAnswer`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0288b / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/run/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-run.ts, tests/e2e/screens/template-run.spec.ts / unknowns / notes for ticket sync: TemplateRun.tsx and ProposalBanner.tsx are no longer imported by a route; their bun test still runs`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.get    // query    { templateId: string } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: …; sections: string[]; body: string; updatedAt?: number } | null
+  api.templates.apply  // mutation { templateId: string; answers: Record<string, string>; title?: string } → Id<"notes">   (TFV2-0239c; throws "Template not found", "Access denied", "Step not found", "Answer is too long", "Page body is too long")
+  api.notes.remove     // mutation { noteId: Id<"notes"> } → { success: true; undoUntilMs: number }   (existing; throws "Note not found")
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-run-route"><Suspense fallback={null}><RunRoute /></Suspense></div>`. `RunRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)` (`useParams` from `next/navigation`); `NOOP = { onMake: async () => "", onUndoMake: async () => {}, onRetry: () => {} }`; a `RunBoundary` class (pattern of TFV2-0132b) whose failed render is `<TemplateRunView state="error" online={online} template={null} initialAnswers={{}} {...NOOP} onRetry={retry} />` and which remounts its children with a new `key` on retry; inside it `<ProfileReady fallback={<TemplateRunView state="loading" online={online} template={null} initialAnswers={{}} {...NOOP} />}><RunLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
+  `RunLive`: `template = useQuery(api.templates.get, forced ? "skip" : { templateId })`; `apply = useMutation(api.templates.apply)`; `remove = useMutation(api.notes.remove)`; `state = template === undefined ? "loading" : template === null ? "missing" : "default"`; render `<TemplateRunView key={template?.templateId ?? "none"} state={state} online={online} template={template ? { templateId: template.templateId, name: template.name, description: template.description, sections: template.sections } : null} initialAnswers={{}} onMake={async (answers, title) => String(await apply({ templateId, answers, ...(title ? { title } : {}) }))} onUndoMake={async (noteId) => { await remove({ noteId: noteId as Id<"notes"> }); }} onRetry={() => {}} />`. Rejections propagate to the View.
+  **Forced:** `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateRunView {...fixture} online={forced === "offline" ? false : fixture.online} onMake={forced === "make-error" ? async () => { throw new Error("forced"); } : async () => "notes:forced"} onUndoMake={async () => {}} onRetry={() => {}} />`; no Convex call.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-run.ts`, `import type { TemplateRunViewProps } from "@/components/template-run/TemplateRunView";` only): `export const FIXTURES: Record<"default" | "no-questions" | "loading" | "missing" | "error" | "offline" | "make-error", Omit<TemplateRunViewProps, "onAnswer" | "onMake" | "onUndoMake" | "onRetry">>` with the data of the TFV2-0288a harness states of the same names, copied verbatim (`initialAnswers: {}` everywhere; `make-error` uses the `default` template).
+  No new visible string; states and copy are the View's.
+- **TESTS:** (route spec; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+  1. Given `?state=default` / Then the `h1` reads "Weekly page" and "Step 1 of 4" (HE "שלב 1 מתוך 4") is visible.
+  2. Given `?state=default` / When Next is clicked four times / Then "Your page Weekly page is ready." (HE "הדף Weekly page מוכן.") is visible and a link to `/notes/notes%3Aforced` reads "Open the page" (HE "לפתוח את הדף").
+  3. Given `?state=no-questions` / Then "No questions in this one." (HE "אין שאלות בתבנית הזו.") is visible.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached; Given `?state=missing` / Then "This template was not found" (HE "התבנית לא נמצאה") is visible.
+  5. Given `?state=error` / Then "Couldn't load this template." (HE "לא הצלחנו לטעון את התבנית הזו.") is visible; Given `?state=offline` / Then the §12 offline line is visible.
+  6. Given `?state=make-error` / When Next is clicked four times / Then a `role="alert"` contains "Could not make the page. You can try again." (HE "לא הצלחנו ליצור את הדף. אפשר לנסות שוב.").
+  7. Given no `?state` (`page.goto(\`/templates/run/abc123?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-run-route` is attached and `[data-component="StateLoading"]` is attached; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/run/starter%3Aweekly-page?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · INP UNKNOWN locally (not a gate) · 28 of 28 route cases and 6 of 6 wiring cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0288c — Route: /templates/run/[id] keeps a run draft (`apps/web/app/(bare)/templates/run/[id]/page.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0288b, TFV2-0239a, TFV2-0239b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0288b, TFV2-0239a, TFV2-0239b.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-run.html` (`@data templates.getRunDraft`, "Your draft saves as you go. Leaving is safe."); CONVENTIONS §14, §22. After TFV2-0288b the run keeps answers in component state only. `templates.saveRunDraft({ templateId, step, answer })` → `null` (TFV2-0239a; throws `"Step not found"`, `"Answer is too long"`, `"Template not found"`, `"Access denied"`) and `templates.getRunDraft({ templateId })` → `{ answers: Record<string, string>; updatedAt: number } | null` (TFV2-0239b) store them in `templateRunDrafts` (CFG-009). `TemplateRunView` (TFV2-0288a) already takes `initialAnswers` and calls the optional `onAnswer(step, answer)` each time a heading step is left with Next or Skip, and shows its draft line only when `onAnswer` is given.
+- **GOAL:** The run route loads the saved draft into `initialAnswers` and saves each answered step through `templates.saveRunDraft`, so leaving and reopening a run resumes the answers; forced `?state=draft` shows a resumed run without Convex.
+- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/template-run.ts` · test: `tests/e2e/screens/template-run-draft.spec.ts`.
+- **MUTATES:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` (edit: one query, one mutation, `onAnswer`) · `apps/web/lib/e2e/fixtures/template-run.ts` (edit: one `draft` entry) · `tests/e2e/screens/template-run-draft.spec.ts` (new) · runtime writes `templateRunDrafts` rows through `templates.saveRunDraft`.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const saveRunDraft\|export const getRunDraft" convex/templates.ts` prints two lines (else report `blocked: missing backend <function>`); `grep -n "onAnswer" apps/web/components/template-run/TemplateRunView.tsx` prints lines; `grep -n "templates.apply" "apps/web/app/(bare)/templates/run/[id]/page.tsx"` prints a line (TFV2-0288b).
+  2. In `page.tsx` `RunLive`, add the query, mutation, state rule and props exactly as SPEC; in the forced branch pass `onAnswer={() => {}}`.
+  3. In the fixtures file widen the key union with `"draft"` and add the SPEC entry.
+  4. Create the spec (§22 route skeleton) with the 3 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-run-draft.spec.ts --reporter=line` → `12 passed`; and `CI=1 bunx playwright test tests/e2e/screens/template-run.spec.ts --reporter=line` → `28 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateRunView.tsx`; save the page-name step (it is not a heading; `saveRunDraft` would throw `"Step not found"`); block the walk on a failed draft save; change the TFV2-0288b fixtures' existing entries; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0288c / evidence: <DONE outputs> / changed: apps/web/app/(bare)/templates/run/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-run.ts, tests/e2e/screens/template-run-draft.spec.ts / unknowns / notes for ticket sync`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.getRunDraft   // query    { templateId: string } → { answers: Record<string, string>; updatedAt: number } | null   (TFV2-0239b)
+  api.templates.saveRunDraft  // mutation { templateId: string; step: string; answer: string } → null                             (TFV2-0239a)
+  ```
+  In `RunLive`: `draft = useQuery(api.templates.getRunDraft, forced ? "skip" : { templateId })`; `saveDraft = useMutation(api.templates.saveRunDraft)`; `state` becomes `template === undefined || (template !== null && draft === undefined) ? "loading" : template === null ? "missing" : "default"`; the View gets `key={(template?.templateId ?? "none") + ":" + (draft?.updatedAt ?? 0)}` only on first load (keep the first non-undefined `draft` in a `useRef` so later `updatedAt` changes do not remount), `initialAnswers={firstDraft?.answers ?? {}}` and `onAnswer={(step, answer) => { void saveDraft({ templateId, step, answer }).catch(() => {}); }}`. Forced: `onAnswer={() => {}}`.
+  **Fixture added:** `draft`: the `default` entry with `initialAnswers: { Outcomes: "Finish the talk" }`.
+  No new visible string (the draft line is the View's `draftNote`).
+- **TESTS:** (route spec; `openScreen(page, "/templates/run/starter%3Aweekly-page", { state, lang })`; each asserts `template-run-route` is attached; console filter as TFV2-0132b; 3 × 4 = 12)
+  1. Given `?state=draft` / Then "Your draft saves as you go. Leaving is safe." (HE "הטיוטה נשמרת תוך כדי. אפשר לצאת בלי לאבד כלום.") is visible.
+  2. Given `?state=draft` / When Next is clicked twice / Then `#step-q` reads "Outcomes" and `#run-answer` has "Finish the talk".
+  3. Given `?state=default` / Then the draft line is still visible (forced mode passes `onAnswer`) and Next ×4 still reaches "Open the page" (HE "לפתוח את הדף").
+- **NUMBERS:** 12 of 12 draft cases and 28 of 28 TFV2-0288b cases pass · one `saveRunDraft` call per step left with Next or Skip.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0239a → CFG-009 (are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
+
+### TFV2-0289a — View: TemplateEditorView (`apps/web/components/template-builder/TemplateEditorView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0121, TFV2-0122.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-editor.html` (the plain form view: name, what it is for, page type, sections in order, "Open in the builder", error summary "One thing to fix before saving"); CONVENTIONS §9, §10 Case A, §11, §12, §13, §22. Code truth: `apps/web/components/template-builder/TemplateEditor.tsx` exports `TemplateEditorScreen`, which calls `useQuery(api.templates.get)`, `useMutation(api.templates.update)`, `useRouter` and `useOnline` itself; its `EditorForm` (sections split with the pure helpers `splitSections`, `joinSections`, `moveSection`, `removeSection`, `insertSection`, `renameSection`, `newSection`, `sectionKind` of `apps/web/lib/template-sections.ts`, read-only for starters, focus hand-off after add / move / remove, a 5-minute Undo for the last save and for a removed section) is the behaviour this View reproduces from props. The design's "Tags" field and "Offer on new empty pages" switch have no field on `templates` and are not shown. Undo uses the shared `UndoToast` (`apps/web/components/habits/UndoToast.tsx`, 5:00, unchanged).
+- **GOAL:** `TemplateEditorView` renders the template form — header with Open in the builder (or Make my own copy for a starter), name, description, page type, sections in order with rename / move up / move down / remove / add, Save changes with an error summary for an empty name, a save error, Undo toasts for a save and a removed section — plus loading, missing, error and offline states, from props alone.
+- **SCOPE:** `apps/web/components/template-builder/TemplateEditorView.tsx` · `apps/web/app/e2e/components/template-editor-view/page.tsx` · test: `tests/e2e/screens/template-editor-view.spec.ts`.
+- **MUTATES:** `apps/web/components/template-builder/TemplateEditorView.tsx` (new) · `apps/web/app/e2e/components/template-editor-view/page.tsx` (new) · `tests/e2e/screens/template-editor-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/template-builder/TemplateEditorView.tsx` fails; `grep -n "^export function" apps/web/lib/template-sections.ts` lists `splitSections`, `joinSections`, `moveSection`, `removeSection`, `insertSection`, `renameSection`, `newSection`, `sectionKind`; `grep -n "export function UndoToast" apps/web/components/habits/UndoToast.tsx` prints a line; `grep -n "@component FormErrorSummary " apps/web/app/tempo.css` prints a line; `grep -n "^.ed-" apps/web/app/v3/extras.css` prints the `.ed-*` rules. Read `TemplateEditor.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file. Classes used: tempo.css `.tp-page`, `.tp-page--narrow`, `.tp-pagehead` (+ `__text`, `__title`, `__sub`, `__actions`), `.tp-btn` (+ `--primary`, `--secondary`, `--ghost`, `--icon`, `--danger-ghost`), `.tp-notice` (+ `__icon`, `__text`, `data-tone`), `.tp-offline`, `.tp-error-summary`, `.tp-error-summary__title`, `.tp-form`, `.tp-form__actions`, `.tp-field`, `.tp-label`, `.tp-label__opt`, `.tp-input`, `.tp-textarea`, `.tp-select`, `.tp-select__input`, `.tp-select__icon`, `.tp-error-text`, `.tp-help`, `.tp-section` (+ `__head`, `__title`, `__count`), `.tp-num`, `.tp-state` (+ `--empty`, `--error`, `__icon`, `__title`, `__body`, `__actions`), `.tp-card`, `.tp-chip`, `.tp-toast-region`; `apps/web/app/v3/extras.css` `.ed-form`, `.ed-sections`, `.ed-section`, `.ed-section__kind`, `.ed-section__tools`, `.ed-row`, `.ed-up` (existing; not edited).
+  3. Create `TemplateEditorView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the eight SPEC states, inline fixtures and the `template-editor-view-log` output; `onSave` writes `onSave:<JSON of the draft>` and resolves (rejects in `save-error`); `onRetry` writes `onRetry:null`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "template-editor-view", { lang })`) with the 11 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `useRouter`, `useOnline` or `fetch`; import `TemplateEditor.tsx` or `TemplateBuilder.tsx`; change the words under a heading (only heading lines move, rename or go); lose typed values when the name is empty; add Tags or an "Offer on new empty pages" switch; edit `template-sections.ts`, `UndoToast.tsx`, `TemplateEditor.tsx`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0289a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateEditorView.tsx, apps/web/app/e2e/components/template-editor-view/page.tsx, tests/e2e/screens/template-editor-view.spec.ts / unknowns / notes for ticket sync: Tags and "Offer on new empty pages" (design) have no backend field`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type EditorPeriod = "daily" | "weekly" | "monthly" | "none";
+  export type EditorTemplate = { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: EditorPeriod; body: string };
+  export type EditorDraft = { name: string; description: string; periodType: EditorPeriod; body: string };
+  export type TemplateEditorState = "default" | "loading" | "missing" | "error";
+  export type TemplateEditorViewProps = {
+    state: TemplateEditorState;
+    online: boolean;
+    template: EditorTemplate | null;                  // null unless state is "default"; the route remounts with key={templateId}
+    onSave: (draft: EditorDraft) => Promise<void>;    // name and description already trimmed; rejects when it did not go through
+    onRetry: () => void;                              // state "error" only
+  };
+  export function TemplateEditorView(props: TemplateEditorViewProps): JSX.Element;
+  ```
+  Imports: the eight helpers and the types `SectionedBody`, `SectionKind`, `TemplateSection` from `@/lib/template-sections`; `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `StateLoading`, `StateError` from `@/components/states/…`; `TpIcon`; `useLocale`; `type Lang`.
+  **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="TemplateEditorView">`; `!online` → `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`; then by state: `loading` → `<StateLoading label={loading} rows={5} />`; `error` → `<StateError what={loadError} onRetry={onRetry} />`; `missing` → `<div className="tp-state tp-state--error" role="alert" data-component="StateError" data-missing=""><h1 className="tp-state__title">{missing}</h1><p className="tp-state__body">{missingHint}</p><div className="tp-state__actions"><a className="tp-btn tp-btn--secondary" href="/templates">{backToTemplates}</a></div></div>`; `default` → the form below (`readOnly = template.source === "starter"`, `id = encodeURIComponent(template.templateId)`).
+  1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{h1}</h1><p className="tp-pagehead__sub">{readOnly ? readOnlySub : sub}</p></div><div className="tp-pagehead__actions">` then `readOnly ? <a className="tp-btn tp-btn--primary" href={"/templates/builder?from=" + id}><TpIcon name="plus" size="sm" /><span>{copy}</span></a> : <a className="tp-btn tp-btn--secondary" href={"/templates/builder?id=" + id}><TpIcon name="template" size="sm" /><span>{openBuilder}</span></a>` `</div></header>`.
+  2. When `nameInvalid` (`invalid && name.trim() === ""`): `<div className="tp-error-summary" role="alert" tabIndex={-1} id="ed-errors" data-component="FormErrorSummary"><p className="tp-error-summary__title"><TpIcon name="alert" size="sm" />{errTitle}</p><ul><li><a href="#ed-name">{errName}</a></li></ul></div>`.
+  3. When `error`: `<p className="tp-notice" data-tone="caution" role="alert" data-save-error=""><span className="tp-notice__text">{saveError}</span></p>`.
+  4. `<form className="tp-form ed-form" id="ed-form" data-component="Form" noValidate onSubmit={submit}>` with: the name field (`<label className="tp-label" htmlFor="ed-name">{nameLabel}</label><input className="tp-input" id="ed-name" type="text" dir="auto" value={name} disabled={readOnly} aria-invalid={nameInvalid || undefined} aria-describedby={nameInvalid ? "ed-name-error" : undefined} onChange={…} />` + when invalid `<p className="tp-error-text" id="ed-name-error">{errName}</p>`); the description field (`<label className="tp-label" htmlFor="ed-desc"><span>{desc}</span> <span className="tp-label__opt">{opt}</span></label><textarea className="tp-textarea" id="ed-desc" rows={2} dir="auto" value={description} disabled={readOnly} onChange={…} />`); the page type (`<label className="tp-label" htmlFor="ed-type">{type}</label><div className="tp-select" data-component="Select"><select className="tp-select__input" id="ed-type" value={periodType} disabled={readOnly} onChange={…}>` with options `daily` → `ptDaily`, `weekly` → `ptWeekly`, `monthly` → `ptMonthly`, `none` → `ptNone` `</select><span className="tp-select__icon"><TpIcon name="down" size="sm" /></span></div>`); each field wrapped in `<div className="tp-field" data-component="Field">`.
+  5. Sections `<section className="tp-section" data-component="Section" aria-labelledby="sec-h"><div className="tp-section__head"><h2 className="tp-section__title" id="sec-h">{secHead}</h2><span className="tp-section__count tp-num">{count}</span></div>`; `count === 0` → `<div className="tp-state tp-state--empty" data-component="StateEmpty"><span className="tp-state__icon"><TpIcon name="list" size="lg" /></span><h3 className="tp-state__title">{emptyTitle}</h3><p className="tp-state__body">{emptyBody}</p></div>`; else `<p className="tp-help">{secHelp}</p><ol className="ed-sections" id="ed-sections" data-component="TemplateSectionRow">` with per section (index `i`, `label = section.title.trim() || newSectionTitle`): `<li className="tp-card ed-section" key={section.key}>` holding `<div className="tp-field"><label className="tp-label" htmlFor={key + "-t"}>{sTitle}</label><input className="tp-input" id={key + "-t"} type="text" dir="auto" value={section.title} placeholder={newSectionTitle} disabled={readOnly} onChange={(e) => setDoc((d) => renameSection(d, i, e.target.value))} /></div>`, `<div className="tp-field"><span className="tp-label">{holds}</span><span className="tp-chip ed-section__kind">{KIND[sectionKind(section)]}</span></div>` (KIND: `heading` → `kHeading`, `tasks` → `kTasks`, `text` → `kText`) and `<div className="ed-section__tools">` with three buttons: `id={key + "-up"}` `className="tp-btn tp-btn--ghost tp-btn--icon"` `aria-label={moveUp + ": " + label}` `disabled={readOnly || i === 0}` icon `<TpIcon name="chevron" size="sm" className="ed-up" />`; `id={key + "-down"}` same classes, `aria-label={moveDown + ": " + label}`, `disabled={readOnly || i === count - 1}`, icon `down`; remove `className="tp-btn tp-btn--danger-ghost tp-btn--icon"` `aria-label={removeLabel + ": " + label}` `disabled={readOnly}` icon `x`. Then, unless `readOnly`, `<div className="ed-row"><button type="button" className="tp-btn tp-btn--secondary" id="ed-add" onClick={add}><TpIcon name="plus" size="sm" /><span>{addLabel}</span></button></div>`. `</section>`.
+  6. Unless `readOnly`: `<div className="tp-form__actions"><button type="submit" className="tp-btn tp-btn--primary" disabled={pending}><TpIcon name="check" size="sm" /><span>{pending ? saving : saveLabel}</span></button><a className="tp-btn tp-btn--ghost" href="/templates">{cancel}</a></div>`. `</form>`.
+  7. When `savedUndo` or `removedUndo`: `<div className="tp-toast-region">` with `savedUndo ? <UndoToast title={savedToast} undoUntilMs={savedUndo.untilMs} onUndo={undoSave} onClose={() => setSavedUndo(null)} /> : null` then `removedUndo ? <UndoToast title={removedToast} undoUntilMs={removedUndo.untilMs} onUndo={async () => undoRemove()} onClose={() => setRemovedUndo(null)} /> : null`.
+  **Behaviour:** local state from `template`: `name`, `description` (`?? ""`), `periodType`, `doc = splitSections(template.body)`, `saved: EditorDraft` (the loaded values), `invalid`, `pending`, `error: boolean`, `savedUndo: { previous: EditorDraft; untilMs: number } | null`, `removedUndo: { section: TemplateSection; index: number; untilMs: number } | null`, `nextKey` ref (0), `focusTarget` ref (`string | null`). `current()` = `{ name: name.trim(), description: description.trim(), periodType, body: joinSections(doc, newSectionTitle) }`. `add()`: `nextKey += 1`; append `newSection("n" + nextKey)`; focus `"n" + nextKey + "-t"`. `move(i, delta)`: `setDoc(moveSection(doc, i, delta))`; focus the moved row's `-up`/`-down` button, or its title input when that button is now disabled. `remove(i)`: `setDoc(removeSection(doc, i))`; `setRemovedUndo({ section, index: i, untilMs: Date.now() + UNDO_WINDOW_MS })`; focus the next row's title, else the previous row's, else `#ed-add`. `undoRemove()`: `setDoc(insertSection(doc, index, section))`, focus its title, `setRemovedUndo(null)`. `submit(e)`: `e.preventDefault()`; return if `readOnly || pending`; empty `name.trim()` → `setInvalid(true)` and focus `#ed-errors` on the next frame, nothing typed is lost; else `setInvalid(false); setPending(true); setError(false); const draft = current(); try { await onSave(draft); setSavedUndo({ previous: saved, untilMs: Date.now() + UNDO_WINDOW_MS }); setSaved(draft); setRemovedUndo(null); } catch { setError(true); } finally { setPending(false); }`. `undoSave()`: `setPending(true); setError(false); try { await onSave(savedUndo.previous); load(savedUndo.previous); setSaved(savedUndo.previous); setSavedUndo(null); setRemovedUndo(null); } catch { setError(true); } finally { setPending(false); }` where `load(d)` sets the fields and `doc = splitSections(d.body, "u" + (++nextKey) + "-")`. Focus moves run in a `useEffect` after render, reading `focusTarget`.
+  **COPY:**
+  | key | EN | HE |
+  |---|---|---|
+  | h1 | Edit template | עריכת תבנית |
+  | sub | The plain form view. Prefer blocks and a live preview? Use the builder. | תצוגת הטופס הפשוטה. לבלוקים ותצוגה מקדימה חיה, אפשר לעבור לבנייה. |
+  | readOnlySub | This starter is read-only. Make a copy if you want to change it. | תבנית מובנית היא לקריאה בלבד. אפשר ליצור עותק כדי לשנות אותה. |
+  | openBuilder | Open in the builder | לפתוח בבנייה |
+  | copy | Make my own copy | ליצור עותק משלי |
+  | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+  | errTitle | One thing to fix before saving | דבר אחד לתקן לפני השמירה |
+  | errName | Give the template a name | צריך לתת לתבנית שם |
+  | saveError | Could not save this template. You can try again. | לא הצלחנו לשמור את התבנית. אפשר לנסות שוב. |
+  | nameLabel | Name | שם |
+  | desc | What it is for | למה היא נועדה |
+  | opt | optional | לא חובה |
+  | type | Page type | סוג דף |
+  | ptDaily | Daily page | דף יומי |
+  | ptWeekly | Weekly page | דף שבועי |
+  | ptMonthly | Monthly page | דף חודשי |
+  | ptNone | Note | פתק |
+  | secHead | Sections, in order | קטעים, לפי הסדר |
+  | secHelp | The words under each heading stay as they are. Edit them in the builder. | המילים מתחת לכל כותרת נשארות כמו שהן. אפשר לערוך אותן בבנייה. |
+  | sTitle | Section title | כותרת הקטע |
+  | holds | Holds | מכיל |
+  | kHeading | Heading | כותרת |
+  | kTasks | Tasks | משימות |
+  | kText | Text | טקסט |
+  | moveUp | Move up | הזזה למעלה |
+  | moveDown | Move down | הזזה למטה |
+  | removeLabel | Remove section | הסרת הקטע |
+  | addLabel | Add a section | הוספת קטע |
+  | newSectionTitle | New section | קטע חדש |
+  | saveLabel | Save changes | שמירת השינויים |
+  | saving | Saving… | שומרים… |
+  | cancel | Cancel | ביטול |
+  | emptyTitle | No sections yet. | עדיין אין קטעים. |
+  | emptyBody | A template is just a few sections in order. Start with one, like a heading or a short task list. | תבנית היא רק כמה קטעים לפי הסדר. אפשר להתחיל באחד, כמו כותרת או רשימת משימות קצרה. |
+  | loading | Loading the template | התבנית בטעינה |
+  | loadError | Couldn't load this template. | לא הצלחנו לטעון את התבנית הזו. |
+  | missing | This template was not found | התבנית לא נמצאה |
+  | missingHint | It may have been removed. Your other templates are safe. | ייתכן שהיא הוסרה. שאר התבניות שלך שמורות. |
+  | backToTemplates | Back to templates | חזרה לתבניות |
+  | savedToast | Template saved | התבנית נשמרה |
+  | removedToast | Section removed | הקטע הוסר |
+  `UndoToast`, `StateLoading` and `StateError` keep their own strings.
+  **States** (harness order; `online: true` unless named): `default` (`template: { templateId: "templates:1", source: "user", name: "Moving week", description: "Boxes, keys, utilities.", periodType: "weekly", body: "# Moving week\n\n## Boxes\n- [ ] Kitchen\n\n## Keys\nWho has which key.\n" }` → 3 sections: "Moving week" (heading), "Boxes" (tasks), "Keys" (text)), `starter` (`{ templateId: "starter:daily-page", source: "starter", name: "Daily page", description: "A short outline for one day.", periodType: "daily", body: "# Today\n\n## Intention\n" }`), `empty` (`{ templateId: "templates:2", source: "user", name: "Reading log", periodType: "none", body: "" }`), `save-error` (the `default` template, `onSave` rejects), `loading`, `missing`, `error` (`template: null` each), `offline` (the `default` data, `online: false`).
+  **RTL:** logical layout; the up chevron is rotated by `.ed-up`; user text `dir="auto"`. **Keyboard / screen reader:** every row control is a native button with the row's title in its name; focus never drops to `body` after add / move / remove; the error summary takes focus and links to `#ed-name`. **Breakpoints:** `.ed-section` grid from extras.css (one row of title / kind / tools; wraps on 390 px). **Motion:** tempo.css button transitions only.
+- **TESTS:** (§22 skeleton; 11 × 4 = 44)
+  1. Given `template-editor-view-default` / Then the `h1` reads `h1`, a link to `/templates/builder?id=templates%3A1` reads `openBuilder`, exactly one `.tp-btn--primary` reads `saveLabel`, `#ed-sections` has 3 `li`, the count reads "3" and the kind chips read `kHeading`, `kTasks`, `kText`.
+  2. Given `default` / When Save changes is clicked without edits / Then the log reads `onSave:{"name":"Moving week","description":"Boxes, keys, utilities.","periodType":"weekly","body":"# Moving week\n\n## Boxes\n- [ ] Kitchen\n\n## Keys\nWho has which key.\n"}` and a toast reads `savedToast`.
+  3. Given `default` / When `#ed-name` is cleared and Save changes is clicked / Then `#ed-errors` is focused and reads `errTitle` with a link `errName` to `#ed-name`, `#ed-name` has `aria-invalid="true"`, the description still reads "Boxes, keys, utilities.", and the log is empty.
+  4. Given `default` / When "Move down: Boxes" (HE "הזזה למטה: Boxes") is clicked and then Save changes / Then the logged body has `## Keys` before `## Boxes` and the moved row's Move down button is focused before saving.
+  5. Given `default` / When "Remove section: Keys" (HE "הסרת הקטע: Keys") is clicked / Then 2 rows remain, a toast reads `removedToast`, and the "Boxes" title input is focused; When that toast's Undo is clicked / Then 3 rows are back in the original order.
+  6. Given `default` / When Add a section is clicked, "Notes" is typed into the new focused title input and Save changes is clicked / Then the logged body's last non-empty line is `## Notes`, every earlier line is unchanged, and the logged `periodType` is `"weekly"`.
+  7. Given `default` / When Save changes, then the `savedToast` toast's Undo are clicked / Then the log's last entry is `onSave:` with the same draft (the version before the save) and the toast is gone.
+  8. Given `starter` / Then `readOnlySub` is visible, one `.tp-btn--primary` link to `/templates/builder?from=starter%3Adaily-page` reads `copy`, `#ed-name` is disabled, and no submit button or `#ed-add` is present.
+  9. Given `empty` / Then `emptyTitle` and `emptyBody` are visible and the count reads "0"; Given `save-error` / When Save changes is clicked / Then `[data-save-error]` reads `saveError` and no toast is shown.
+  10. Given `loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `missing` / Then `[data-missing]` reads `missing`; Given `error` / When "Try again" is clicked / Then the log reads `onRetry:null`; Given `offline` / Then the CONVENTIONS §12 offline line is visible.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-editor-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-editor-view-default"]')` pass.
+- **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullets 5 and 7) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0289b — Route: /templates/editor/[id]
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0289a, TFV2-0000b, TFV2-0000c, TFV2-0235b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0289a, TFV2-0000b, TFV2-0000c, TFV2-0235b.
+- **WHY:** PRD F-06; design `docs/design/v3/screens/web/template-editor.html`; CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` is a server page rendering `<div data-testid="template-editor-route"><ProfileReady><TemplateEditorScreen templateId={routeParam(id)} /></ProfileReady></div>`; `tests/e2e/wiring/templates-onboarding.spec.ts` asserts `template-editor-route` on `/templates/editor/abc123`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.get` exists; `templates.update` is verified by TFV2-0235b.
+- **GOAL:** `/templates/editor/[id]` reads `templates.get` in `page.tsx`, renders `TemplateEditorView`, saves through `templates.update`, and renders a typed fixture for every forced `?state=`, keeping the `template-editor-route` test id.
+- **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/template-editor.ts` · test: `tests/e2e/screens/template-editor.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-editor.ts` (new) · `tests/e2e/screens/template-editor.spec.ts` (new) · runtime writes through `templates.update` (patch one `templates` row).
+- **STEPS:**
+  1. Code-map check: `grep -n '"/templates/(.\*)",' apps/web/lib/e2eWiringRoutes.ts` prints a line (no edit); `grep -n "export const get\|export const update" convex/templates.ts` prints two lines; `test -e apps/web/components/template-builder/TemplateEditorView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/template-editor.ts` (SPEC "Fixtures").
+  3. Rewrite `page.tsx` exactly as SPEC.
+  4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-editor.spec.ts --reporter=line` → `28 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateEditorView.tsx`, `TemplateEditor.tsx` (stays, unimported) or `e2eWiringRoutes.ts`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0289b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/editor/[id]/page.tsx, apps/web/lib/e2e/fixtures/template-editor.ts, tests/e2e/screens/template-editor.spec.ts / unknowns / notes for ticket sync: TemplateEditor.tsx is no longer imported by a route`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.get     // query    { templateId: string } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[]; body: string; updatedAt?: number } | null
+  api.templates.update  // mutation { templateId: Id<"templates">; name?: string; description?: string; periodType?: …; body?: string } → Id<"templates">   (TFV2-0235b; throws "Name is required", "Starter templates cannot be changed", "Template not found", "Access denied")
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-editor-route"><Suspense fallback={null}><EditorRoute /></Suspense></div>`. `EditorRoute`: `forced = useE2EState()`, `online = useOnline()`, `templateId = routeParam(useParams<{ id: string }>().id)`; `NOOP = { onSave: async () => {}, onRetry: () => {} }`; an `EditorBoundary` class (pattern of TFV2-0132b) whose failed render is `<TemplateEditorView state="error" online={online} template={null} {...NOOP} onRetry={retry} />` and which remounts its children on retry; inside it `<ProfileReady fallback={<TemplateEditorView state="loading" online={online} template={null} {...NOOP} />}><EditorLive forced={forced} online={online} templateId={templateId} /></ProfileReady>`.
+  `EditorLive`: `template = useQuery(api.templates.get, forced ? "skip" : { templateId })`; `update = useMutation(api.templates.update)`; `state = template === undefined ? "loading" : template === null ? "missing" : "default"`; render `<TemplateEditorView key={template?.templateId ?? "none"} state={state} online={online} template={template ? { templateId: template.templateId, source: template.source, name: template.name, description: template.description, periodType: template.periodType, body: template.body } : null} onSave={async (draft) => { await update({ templateId: template!.templateId as Id<"templates">, name: draft.name, description: draft.description, periodType: draft.periodType, body: draft.body }); }} onRetry={() => {}} />`. A rejection propagates to the View.
+  **Forced:** `const fixture = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.error;` render `<TemplateEditorView key={forced} {...fixture} online={forced === "offline" ? false : fixture.online} onSave={forced === "save-error" ? async () => { throw new Error("forced"); } : async () => {}} onRetry={() => {}} />`; no Convex call.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-editor.ts`, `import type { TemplateEditorViewProps } from "@/components/template-builder/TemplateEditorView";` only): `export const FIXTURES: Record<"default" | "starter" | "empty" | "loading" | "missing" | "error" | "offline" | "save-error", Omit<TemplateEditorViewProps, "onSave" | "onRetry">>` with the data of the TFV2-0289a harness states of the same names, copied verbatim.
+  No new visible string; states and copy are the View's.
+- **TESTS:** (route spec; `openScreen(page, "/templates/editor/templates%3A1", { state, lang })`; each asserts `template-editor-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+  1. Given `?state=default` / Then the `h1` reads "Edit template" (HE "עריכת תבנית") and 3 `#ed-sections li` render.
+  2. Given `?state=default` / When `#ed-name` is cleared and "Save changes" (HE "שמירת השינויים") is clicked / Then "One thing to fix before saving" (HE "דבר אחד לתקן לפני השמירה") is visible and focused.
+  3. Given `?state=starter` / Then "Make my own copy" (HE "ליצור עותק משלי") is visible; Given `?state=empty` / Then "No sections yet." (HE "עדיין אין קטעים.") is visible.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached; Given `?state=missing` / Then "This template was not found" (HE "התבנית לא נמצאה") is visible.
+  5. Given `?state=error` / Then "Couldn't load this template." (HE "לא הצלחנו לטעון את התבנית הזו.") is visible; Given `?state=offline` / Then the §12 offline line is visible.
+  6. Given `?state=save-error` / When "Save changes" is clicked / Then a `role="alert"` contains "Could not save this template. You can try again." (HE "לא הצלחנו לשמור את התבנית. אפשר לנסות שוב.").
+  7. Given no `?state` (`page.goto(\`/templates/editor/abc123?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-editor-route` is attached and `[data-component="StateLoading"]` is attached; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/editor/templates%3A1?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · INP UNKNOWN locally (not a gate) · 28 of 28 route cases and 6 of 6 wiring cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0290a — View: TemplateSketchView (`apps/web/components/template-builder/TemplateSketchView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0121, TFV2-0122.
+- **WHY:** PRD F-23; design `docs/design/v3/screens/web/template-sketch.html` (outline on the left; the coach's answer on the right: TypingIndicator "Coach is writing", ProposalCard Accept / Edit in the builder / Reject, "Out of date" when the outline changes, Undo 5:00 after Accept, error "The coach couldn't answer just now."); HARD_RULES §1 (nothing saves until Accept); CONVENTIONS §9, §10 Case A, §11, §12, §13, §22. Code truth: `apps/web/components/template-builder/TemplateSketch.tsx` calls `useMutation(api.templates.create)` / `useMutation(api.templates.remove)` and drafts the template in code (`parseSketch`); the screen now asks the coach through the route (`templates.proposeTemplate`, TFV2-0241c, returns `{ kind: "template"; name; body; period: "daily" | "weekly" | "none" } | null`) and saves with `templates.createFromProposal` (TFV2-0241d), so the View receives both as callbacks. tempo.css has `@component ProposalCard variants` (`.tp-proposal[data-kind="template"]`, line 1155) and `@component TypingIndicator` (`.tp-typing`, line 1163; its dots loop 1.2 s, so no motion check runs on the thinking state). "Edit in the builder" keeps today's link `/templates/builder?outline=<outline>` (the builder's sketch path, TFV2-0287b), so the outline keeps the builder's `SKETCH_MAX_CHARS` (1,000) bound from `apps/web/lib/template-sketch.ts`.
+- **GOAL:** `TemplateSketchView` renders the sketch screen — outline form with hints, "Turn into a template", the coach's thinking indicator, the proposal card (name, page type, what it adds, what it changes) with Accept / Edit in the builder / Reject, "Out of date" when the outline changed, a 5-minute Undo after Accept, and the propose-failed, no-proposal, save-failed, loading and offline states — from props alone.
+- **SCOPE:** `apps/web/components/template-builder/TemplateSketchView.tsx` · `apps/web/app/e2e/components/template-sketch-view/page.tsx` · test: `tests/e2e/screens/template-sketch-view.spec.ts`.
+- **MUTATES:** `apps/web/components/template-builder/TemplateSketchView.tsx` (new) · `apps/web/app/e2e/components/template-sketch-view/page.tsx` (new) · `tests/e2e/screens/template-sketch-view.spec.ts` (new). No data.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/template-builder/TemplateSketchView.tsx` fails; `grep -n "@component ProposalCard variants\|@component TypingIndicator " apps/web/app/tempo.css` prints two lines; `grep -n "export const SKETCH_MAX_CHARS" apps/web/lib/template-sketch.ts` and `grep -n "export function splitSections" apps/web/lib/template-sections.ts` print a line each; `grep -n "export function UndoToast" apps/web/components/habits/UndoToast.tsx` prints a line; `test -e apps/web/components/layout/Notice.tsx && test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx` succeeds. Read `TemplateSketch.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file. Classes used: tempo.css `.tp-page`, `.tp-page--wide`, `.tp-pagehead` (+ `__text`, `__title`, `__sub`, `__actions`), `.tp-split`, `.tp-split--even`, `.tp-form`, `.tp-form__actions`, `.tp-surface`, `.tp-field`, `.tp-label`, `.tp-textarea`, `.tp-help`, `.tp-error-text`, `.tp-btn` (+ `--primary`, `--secondary`, `--ghost`, `--link`), `.tp-card`, `.tp-card__title`, `.tp-mono`, `.tp-muted`, `.tp-small`, `.tp-state` (+ `--empty`, `__icon`, `__title`, `__body`), `.tp-msg`, `.tp-msg__who`, `.tp-msg__text`, `.tp-typing`, `.tp-typing__dots`, `.tp-proposal` (+ `__head`, `__kind`, `__target`, `__what`, `__actions`, `__note`), `.tp-what-row`, `.tp-change__title`, `.tp-notice` (+ `__icon`, `__text`), `.tp-offline`, `.tp-toast-region`; `apps/web/app/v3/extras.css` `.sk-col`, `.sk-tips`, `.sk-outline` (existing; not edited).
+  3. Create `TemplateSketchView.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the eight SPEC states, inline fixtures and the `template-sketch-view-log` output; `onPropose` writes `onPropose:<JSON of the outline>`, `onAccept` writes `onAccept:<JSON of the proposal>` and resolves `"templates:7"`, `onUndoAccept` writes `onUndoAccept:"templates:7"` and resolves, `onOutlineChange` (present only in `prefilled`) writes `onOutlineChange:<JSON of the outline>`.
+  5. Create the spec (§22 skeleton, `openHarness(page, "template-sketch-view", { lang })`) with the 11 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes.
+- **DO NOT:** call Convex, `useAction`, `useMutation` or `fetch`; save anything before Accept; draft the template in code (`parseSketch` is not used here); import `TemplateSketch.tsx` or anything under `convex/`; run `expectMotionBudget` on a section showing the typing dots; edit `TemplateSketch.tsx`, `template-sketch.ts`, `template-sections.ts`, `UndoToast.tsx`, `tempo.css`, `extras.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0290a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateSketchView.tsx, apps/web/app/e2e/components/template-sketch-view/page.tsx, tests/e2e/screens/template-sketch-view.spec.ts / unknowns / notes for ticket sync`; STEPS 1–6 with evidence.
+- **SPEC:**
+  ```ts
+  export type SketchPeriod = "daily" | "weekly" | "none";
+  export type SketchProposal = { name: string; body: string; period: SketchPeriod };   // the proposeTemplate result without `kind`
+  export type TemplateSketchViewProps = {
+    state: "default" | "loading";          // "loading" only while a saved outline loads (TFV2-0290c)
+    online: boolean;
+    initialOutline: string;                // copied into local state on mount
+    draftStatus?: "saving" | "saved";      // outline autosave status (TFV2-0290c); absent → nothing shown
+    onOutlineChange?: (outline: string) => void;
+    onPropose: (outline: string) => Promise<SketchProposal | null>;   // null = the coach gave no usable template; rejects when the call failed
+    onAccept: (proposal: SketchProposal) => Promise<string>;          // resolves the new template id; rejects when it did not save
+    onUndoAccept: (templateId: string) => Promise<void>;
+  };
+  export function TemplateSketchView(props: TemplateSketchViewProps): JSX.Element;
+  ```
+  Imports: `Notice` from `@/components/layout/Notice`; `StateLoading`, `StateError` from `@/components/states/…`; `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `SKETCH_MAX_CHARS` from `@/lib/template-sketch`; `splitSections` from `@/lib/template-sections`; `TpIcon`; `useLocale`; `type Lang`.
+  **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="TemplateSketchView">`; `!online` → `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`; header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{h1}</h1><p className="tp-pagehead__sub">{sub}</p></div><div className="tp-pagehead__actions">{draftStatus ? <output className="tp-muted tp-small" data-draft-status="">{draftStatus === "saving" ? draftSaving : draftSaved}</output> : null}<a className="tp-btn tp-btn--ghost" href="/templates/builder"><TpIcon name="template" size="sm" /><span>{self}</span></a></div></header>`; `state === "loading"` → `<StateLoading label={loading} rows={4} />` and nothing else; else `<div className="tp-split tp-split--even" data-component="Split">` with two `.sk-col` columns:
+  - **Left:** `<form className="tp-form tp-surface" id="sk-form" data-component="Form" noValidate onSubmit={submit}><div className="tp-field" data-component="Field"><label className="tp-label" htmlFor="sk-outline">{label}</label><textarea className="tp-textarea sk-outline" id="sk-outline" rows={9} dir="auto" maxLength={SKETCH_MAX_CHARS} aria-describedby={needText ? "sk-help sk-error" : "sk-help"} aria-invalid={needText || undefined} placeholder={ph} value={outline} onChange={change} /><p className="tp-help" id="sk-help">{help}</p>{needText ? <p className="tp-error-text" id="sk-error">{needTextCopy}</p> : null}</div><div className="tp-form__actions"><button type="submit" className="tp-btn tp-btn--primary" disabled={phase === "thinking"}><TpIcon name="sparkle" size="sm" /><span>{go}</span></button></div></form>` then `<section className="tp-card" data-component="Card" aria-labelledby="tips-h"><h2 className="tp-card__title" id="tips-h">{tipsHead}</h2><ul className="sk-tips"><li><span className="tp-mono">{tipsW1}</span> <span>{tips1}</span></li><li><span className="tp-mono">{tipsW2}</span> <span>{tips2}</span></li><li>{tips3}</li></ul></section>`.
+  - **Right** (`<div className="sk-col" aria-live="polite">`), first match wins: `phase === "thinking"` → `<div className="tp-msg" data-component="CoachMessage"><span className="tp-msg__who">{coach}</span><p className="tp-typing" role="status" data-component="TypingIndicator"><span>{typing}</span><span className="tp-typing__dots" aria-hidden="true"><span /><span /><span /></span></p></div>`; `phase === "failed"` → `<StateError what={proposeError} onRetry={() => propose(lastOutline)} />`; `phase === "none"` → `<Notice tone="caution" title={noProposal} live="status" />`; `proposal === null` → `<div className="tp-state tp-state--empty" data-component="StateEmpty"><span className="tp-state__icon"><TpIcon name="list" size="lg" /></span><h2 className="tp-state__title">{emptyTitle}</h2><p className="tp-state__body">{emptyBody}</p></div>`; else the coach line `<div className="tp-msg" data-component="CoachMessage"><span className="tp-msg__who">{coach}</span><p className="tp-msg__text">{coachText}</p></div>` and the card `<section className="tp-proposal" data-kind="template" data-component="ProposalCard" data-status={proposal.status} aria-labelledby="sk-p-title"><div className="tp-proposal__head"><span className="tp-proposal__kind"><TpIcon name="template" size="sm" /><span>{kind}</span></span><strong id="sk-p-title" dir="auto">{p.name}</strong><span className="tp-proposal__target">{target}</span></div><dl className="tp-proposal__what">` with rows `<div className="tp-what-row"><dt>{whatName}</dt><dd><span className="tp-change__title" dir="auto">{p.name}</span></dd></div>`, `<div className="tp-what-row"><dt>{whatType}</dt><dd data-period="">{PERIOD[p.period]}</dd></div>` (PERIOD: `daily` → `ptDaily`, `weekly` → `ptWeekly`, `none` → `ptNone`), `<div className="tp-what-row"><dt>{whatAdds}</dt><dd data-adds="">{adds}</dd></div>` (`n = splitSections(p.body).sections.filter((s) => s.level >= 2).length`; `n === 0` → `addsNone`, `n === 1` → `addsOne`, else `addsMany.replace("{n}", String(n))`), `<div className="tp-what-row"><dt>{whatChanges}</dt><dd>{changes}</dd></div>` `</dl><div className="tp-proposal__actions"><button type="button" className="tp-btn tp-btn--secondary" id="sk-accept" disabled={pending || proposal.status !== "pending"} onClick={accept}><TpIcon name="check" size="sm" /><span>{pending ? saving : acceptLabel}</span></button><a className="tp-btn tp-btn--secondary" href={"/templates/builder?outline=" + encodeURIComponent(proposal.outline)}><TpIcon name="edit" size="sm" /><span>{edit}</span></a><button type="button" className="tp-btn tp-btn--ghost" disabled={pending || proposal.status !== "pending"} onClick={reject}><span>{rejectLabel}</span></button></div>` then notes: `accepted` → `<p className="tp-proposal__note" data-note="accepted"><TpIcon name="check" size="sm" /><span>{accepted}</span> <a className="tp-btn tp-btn--link" href="/templates">{openTemplates}</a></p>`; `rejected` → `<p className="tp-proposal__note" data-note="rejected"><span>{rejected}</span></p>`; `pending && undone` → `<p className="tp-proposal__note" data-note="undone"><span>{undone}</span></p>` `</section>`; then `stale` → `<div className="tp-notice" data-tone="info" data-component="Notice" data-stale=""><span className="tp-notice__icon"><TpIcon name="info" size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title">{staleTitle}</span> <span>{staleBody}</span></span></div>`; `error === "save"` → `<StateError what={saveError} onRetry={accept} />`; `error === "undo"` → `<Notice tone="caution" title={undoError} live="alert" />`.
+  - **Toasts:** when `undos.length > 0`, `<div className="tp-toast-region">` with one `<UndoToast key={u.templateId} title={accepted} undoUntilMs={u.untilMs} onUndo={() => undo(u)} onClose={() => dropUndo(u.templateId)} />` per entry.
+  **Behaviour:** local state `outline` (= `initialOutline`), `needText`, `phase: "idle" | "thinking" | "failed" | "none"`, `lastOutline`, `proposal: { p: SketchProposal; outline: string; status: "pending" | "accepted" | "rejected"; savedId: string | null; undone: boolean } | null`, `pending`, `error: "save" | "undo" | null`, `undos: { templateId: string; untilMs: number }[]`. `change(e)`: set `outline`, clear `needText`, `onOutlineChange?.(value)`. `stale = proposal !== null && proposal.status === "pending" && proposal.outline !== outline`. `submit(e)`: `e.preventDefault()`; `outline.trim() === ""` → `setNeedText(true)` and stop; else `propose(outline)`. `propose(text)`: `setLastOutline(text); setPhase("thinking"); setError(null)`; `try { const p = await onPropose(text); if (p) { setProposal({ p, outline: text, status: "pending", savedId: null, undone: false }); setPhase("idle"); focus #sk-accept after render } else { setProposal(null); setPhase("none"); } } catch { setPhase("failed"); }`. `accept()`: return unless `proposal?.status === "pending"` and not `pending`; `setPending(true); setError(null)`; `try { const id = await onAccept(proposal.p); setProposal({ ...proposal, status: "accepted", savedId: id, undone: false }); setUndos((u) => [...u, { templateId: id, untilMs: Date.now() + UNDO_WINDOW_MS }]); } catch { setError("save"); } finally { setPending(false); }`. `undo(u)`: `setError(null)`; `try { await onUndoAccept(u.templateId); dropUndo(u.templateId); proposal?.savedId === u.templateId → setProposal({ ...proposal, status: "pending", savedId: null, undone: true }); } catch { setError("undo"); }`. `reject()`: `pending` proposal → `status: "rejected"` (nothing is called). The outline is never cleared by Accept, Reject or Undo.
+  **COPY:**
+  | key | EN | HE |
+  |---|---|---|
+  | h1 | Sketch a template | שרטוט תבנית |
+  | sub | Write the rough shape in plain lines. The coach turns it into a template you can check before anything is saved. | כותבים את הצורה הכללית בשורות פשוטות. המאמן הופך אותה לתבנית שאפשר לבדוק לפני שמשהו נשמר. |
+  | self | Build it myself | לבנות לבד |
+  | draftSaving | Saving… | שומרים… |
+  | draftSaved | Saved | נשמר |
+  | offline | You're offline. Changes save when you're back. | אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור. |
+  | loading | Loading your sketch | השרטוט בטעינה |
+  | label | Your outline | המתווה שלך |
+  | ph | Thursday talk prep⏎The one thing I want to land (question)⏎Finish the last slides (tasks)⏎Send the deck to Dana (tasks)⏎Practice run | הכנה להרצאה ביום חמישי⏎הדבר האחד שחשוב לי שיעבור (שאלה)⏎לסיים את השקופיות האחרונות (משימות)⏎לשלוח את המצגת לדנה (משימות)⏎חזרה בקול |
+  | help | One line per part. The first line is the name. A word in brackets is a hint, not a rule. | שורה לכל חלק. השורה הראשונה היא השם. מילה בסוגריים היא רמז, לא חוק. |
+  | needTextCopy | Write at least one line first. The first line is the name. | קודם כותבים לפחות שורה אחת. השורה הראשונה היא השם. |
+  | go | Turn into a template | להפוך לתבנית |
+  | tipsHead | Hints the coach understands | רמזים שהמאמן מבין |
+  | tipsW1 | (tasks) | (משימות) |
+  | tips1 | becomes tasks you can tick | הופך למשימות שאפשר לסמן |
+  | tipsW2 | (question) | (שאלה) |
+  | tips2 | becomes a prompt you answer on the page | הופכת לשאלה שעונים עליה בדף |
+  | tips3 | A line with no hint becomes a section heading. | שורה בלי רמז הופכת לכותרת של קטע. |
+  | coach | Coach | המאמן |
+  | typing | Coach is writing | המאמן כותב |
+  | coachText | Here is your outline as a template. | הנה המתווה שלך כתבנית. |
+  | proposeError | The coach couldn't answer just now. | המאמן לא הצליח לענות כרגע. |
+  | noProposal | The coach couldn't make a template from this outline. Try adding a few lines. | המאמן לא הצליח ליצור תבנית מהמתווה הזה. אפשר להוסיף עוד כמה שורות. |
+  | emptyTitle | Nothing sketched yet. | עדיין לא שורטט כלום. |
+  | emptyBody | Write a few lines in the outline, even messy ones. The coach's draft will appear here for you to check. | כותבים כמה שורות במתווה, גם מבולגנות. הטיוטה של המאמן תופיע כאן לבדיקה. |
+  | kind | Template | תבנית |
+  | target | Saved to your templates | נשמרת בתבניות שלך |
+  | whatName | Name | שם |
+  | whatType | Page type | סוג דף |
+  | whatAdds | Adds | מוסיפה |
+  | whatChanges | Changes | משנה |
+  | ptDaily | Daily page | דף יומי |
+  | ptWeekly | Weekly page | דף שבועי |
+  | ptNone | Note | פתק |
+  | addsOne | 1 section | קטע אחד |
+  | addsMany | {n} sections | {n} קטעים |
+  | addsNone | Only the title, ready for you to fill in | רק הכותרת, מוכנה למילוי |
+  | changes | Nothing else. Your pages and other templates stay as they are. | שום דבר אחר. הדפים והתבניות האחרות שלך נשארים כמו שהם. |
+  | acceptLabel | Accept | אישור |
+  | saving | Saving… | שומרים… |
+  | edit | Edit in the builder | לערוך בבנייה |
+  | rejectLabel | Reject | דחייה |
+  | accepted | Saved to Templates. | נשמרה בתבניות. |
+  | openTemplates | Open Templates | לפתוח את התבניות |
+  | undone | Removed. Your outline is still here. | הוסרה. המתווה שלך עדיין כאן. |
+  | rejected | Rejected. Your outline is still here. | נדחתה. המתווה שלך עדיין כאן. |
+  | staleTitle | Out of date | לא מעודכן |
+  | staleBody | The outline changed. Turn it into a template again to see the new version. | המתווה השתנה. אפשר להפוך אותו לתבנית שוב כדי לראות את הגרסה החדשה. |
+  | saveError | Couldn't save this template just now. | לא הצלחנו לשמור את התבנית כרגע. |
+  | undoError | Could not remove it. You can delete it from Templates. | לא הצלחנו להסיר אותה. אפשר למחוק אותה מהתבניות. |
+  (`⏎` in `ph` is a line break, written `\n` in the constant.) `Notice`, `StateLoading`, `StateError` and `UndoToast` keep their own strings ("Your data is safe." / "המידע שלך שמור.", "Try again" / "לנסות שוב", "Undo" / "ביטול").
+  **States** (harness order; `state: "default"`, `online: true`, `initialOutline: ""`, `onPropose` resolves `PROPOSAL = { name: "Morning check", body: "# Morning check\n\n## Sleep\n\n## Mood\n", period: "daily" }` unless named): `default`, `prefilled` (`initialOutline: "Morning check\nSleep\nMood"`, `draftStatus: "saved"`, `onOutlineChange` present), `thinking` (`onPropose` returns a promise that never settles), `propose-error` (`onPropose` rejects), `no-proposal` (`onPropose` resolves `null`), `save-error` (`onAccept` rejects), `loading` (`state: "loading"`), `offline` (`online: false`).
+  **RTL:** logical layout; outline and names `dir="auto"`; hint words in `.tp-mono`. **Keyboard / screen reader:** Tab order = Build it myself → outline → Turn into a template → hints → (card) Accept → Edit in the builder → Reject; focus moves to Accept when a proposal arrives; the typing indicator is `role="status"` and its text carries the meaning; the right column is `aria-live="polite"`. **Breakpoints:** `.tp-split--even` stacks at 390 px (answer under the outline) and is two columns from 1024 px. **Motion:** tempo.css button transitions; the typing dots animate only without reduced motion (tempo.css rule).
+- **TESTS:** (§22 skeleton; 11 × 4 = 44)
+  1. Given `template-sketch-view-default` / Then the `h1` reads `h1`, exactly one `.tp-btn--primary` reads `go`, `#sk-outline` has `maxlength="1000"`, a link to `/templates/builder` reads `self`, and `[data-component="StateEmpty"]` reads `emptyTitle`.
+  2. Given `default` / When `go` is clicked with an empty outline / Then `#sk-error` reads `needTextCopy`, `#sk-outline` has `aria-invalid="true"`, and the log is empty.
+  3. Given `default` / When "Morning check⏎Sleep⏎Mood" (⏎ = a line break, typed with Enter) is typed and `go` is clicked / Then the log reads `onPropose:"Morning check\nSleep\nMood"`, `#sk-p-title` reads "Morning check", `[data-period]` reads `ptDaily`, `[data-adds]` reads `addsMany` with 2, and `#sk-accept` is focused.
+  4. Given the proposal of bullet 3 / When Accept is clicked / Then the log reads `onAccept:{"name":"Morning check","body":"# Morning check\n\n## Sleep\n\n## Mood\n","period":"daily"}`, `[data-note="accepted"]` reads `accepted` with a link to `/templates`, and a toast reads `accepted`; When the toast's Undo is clicked / Then the log reads `onUndoAccept:"templates:7"` and `[data-note="undone"]` reads `undone`.
+  5. Given the proposal of bullet 3 / When Reject is clicked / Then `[data-note="rejected"]` reads `rejected`, Accept is disabled, and `#sk-outline` still has the outline.
+  6. Given the proposal of bullet 3 / When "⏎Notes" is appended to `#sk-outline` / Then `[data-stale]` reads `staleTitle` and `staleBody`; and the Edit in the builder link's `href` is `/templates/builder?outline=Morning%20check%0ASleep%0AMood`.
+  7. Given `thinking` / When an outline is typed and `go` is clicked / Then `[data-component="TypingIndicator"]` (role `status`) reads `typing` and `go` is disabled.
+  8. Given `propose-error` / When an outline is typed and `go` is clicked / Then `proposeError` and "Your data is safe." are visible; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onPropose:` with the same outline; Given `no-proposal` / When the same is done / Then `noProposal` is visible.
+  9. Given `save-error` / When an outline is proposed and Accept is clicked / Then `saveError` is visible inside a `[data-component="StateError"]` and no toast is shown.
+  10. Given `prefilled` / Then `#sk-outline` has "Morning check⏎Sleep⏎Mood" and `[data-draft-status]` reads `draftSaved`; When "!" is typed at the end / Then the log reads `onOutlineChange:"Morning check\nSleep\nMood!"`; Given `loading` / Then `[data-component="StateLoading"]` contains `loading` and no `#sk-outline` is present; Given `offline` / Then the CONVENTIONS §12 offline line is visible.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-sketch-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-sketch-view-default"]')` pass (no click first, so no typing dots are shown).
+- **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullet 4) · outline ≤ 1,000 characters (`SKETCH_MAX_CHARS`; bullet 1; within `TEMPLATE_OUTLINE_MAX` = 2,000 of TFV2-0241c) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0290b — Route: /templates/sketch
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0290a, TFV2-0000b, TFV2-0000c, TFV2-0241c, TFV2-0241d · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0290a, TFV2-0000b, TFV2-0000c, TFV2-0241c, TFV2-0241d.
+- **WHY:** PRD F-23; design `docs/design/v3/screens/web/template-sketch.html`; HARD_RULES §1 (nothing saves until Accept; Undo 5:00); CONVENTIONS §14, §22 (route pattern; boundary + `ProfileReady` as TFV2-0132b). Code truth: `apps/web/app/(tempo)/templates/sketch/page.tsx` is a server page rendering `<div data-testid="template-sketch-route"><ProfileReady><TemplateSketch /></ProfileReady></div>`; `"/templates/(.*)"` is already in `E2E_WIRING_ROUTES` (no wiring edit). `templates.proposeTemplate` (action, TFV2-0241c) and `templates.createFromProposal` (TFV2-0241d) are not OPEN; `templates.remove` exists (`{ templateId: Id<"templates"> }` → `null`, soft delete). The outline lives in component state only here; outline autosave is TFV2-0290c (OPEN). e2e never calls the model: forced states use fixture callbacks and no Convex call.
+- **GOAL:** `/templates/sketch` wires `TemplateSketchView` to `templates.proposeTemplate`, `templates.createFromProposal` and `templates.remove` (Undo), and renders a typed fixture for every forced `?state=`, keeping the `template-sketch-route` test id.
+- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` · `apps/web/lib/e2e/fixtures/template-sketch.ts` · test: `tests/e2e/screens/template-sketch.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/templates/(.*)"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/templates/sketch/page.tsx` (edit: becomes a client page) · `apps/web/lib/e2e/fixtures/template-sketch.ts` (new) · `tests/e2e/screens/template-sketch.spec.ts` (new) · runtime: one model call per proposal through `proposeTemplate`; `createFromProposal` inserts one `templates` row on Accept; `templates.remove` soft-deletes it on Undo.
+- **STEPS:**
+  1. Code-map check: `grep -n '"/templates/(.\*)",' apps/web/lib/e2eWiringRoutes.ts` prints a line (no edit); `grep -n "export const proposeTemplate\|export const createFromProposal\|export const remove" convex/templates.ts` prints three lines (if one is missing report `blocked: missing backend <function>`); `test -e apps/web/components/template-builder/TemplateSketchView.tsx && test -e apps/web/lib/e2e/useE2EState.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/template-sketch.ts` (SPEC "Fixtures").
+  3. Rewrite `page.tsx` exactly as SPEC (keep the file's `@screen` header comment, changing `@mutations` to `templates.proposeTemplate (Turn into a template), templates.createFromProposal (Accept), templates.remove (Undo)`).
+  4. Create the spec (§22 route skeleton) with the 7 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateSketchView.tsx`, `TemplateSketch.tsx` (stays, unimported) or `e2eWiringRoutes.ts`; call `templates.create`, `templates.getSketch` or `templates.saveSketch` (TFV2-0290c, OPEN); call a model or Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0290b / evidence: <DONE output> / changed: apps/web/app/(tempo)/templates/sketch/page.tsx, apps/web/lib/e2e/fixtures/template-sketch.ts, tests/e2e/screens/template-sketch.spec.ts / unknowns / notes for ticket sync: TemplateSketch.tsx is no longer imported by a route`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.proposeTemplate     // action   { outline: string } → { kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" } | null   (TFV2-0241c; throws "Outline is required", "Outline is too long", auth/approval and model errors)
+  api.templates.createFromProposal  // mutation { name: string; body: string; period: "daily" | "weekly" | "none" } → Id<"templates">   (TFV2-0241d; throws "Proposal is invalid")
+  api.templates.remove              // mutation { templateId: Id<"templates"> } → null   (existing)
+  ```
+  **page.tsx:** `"use client"`; default export `<div data-testid="template-sketch-route"><Suspense fallback={null}><SketchRoute /></Suspense></div>`. `SketchRoute`: `forced = useE2EState()`, `online = useOnline()`; `NOOP = { onPropose: async () => null, onAccept: async () => "", onUndoAccept: async () => {} }`; no error boundary (the live path runs no query, only an action and mutations whose rejections the View handles); render `<ProfileReady fallback={<TemplateSketchView state="loading" online={online} initialOutline="" {...NOOP} />}><SketchLive forced={forced} online={online} /></ProfileReady>`.
+  `SketchLive` (live): `propose = useAction(api.templates.proposeTemplate)`; `createFromProposal = useMutation(api.templates.createFromProposal)`; `remove = useMutation(api.templates.remove)`; render `<TemplateSketchView state="default" online={online} initialOutline="" onPropose={async (outline) => { const r = await propose({ outline }); return r ? { name: r.name, body: r.body, period: r.period } : null; }} onAccept={async (p) => String(await createFromProposal({ name: p.name, body: p.body, period: p.period }))} onUndoAccept={async (id) => { await remove({ templateId: id as Id<"templates"> }); }} />`. Every rejection propagates to the View (which shows its own error state).
+  **Forced:** `const f = FIXTURES[forced as keyof typeof FIXTURES] ?? FIXTURES.default;` render `<TemplateSketchView state={f.state} online={forced === "offline" ? false : true} initialOutline={f.initialOutline} onPropose={f.propose === "fail" ? async () => { throw new Error("forced"); } : f.propose === "wait" ? () => new Promise<never>(() => {}) : async () => f.proposal} onAccept={f.acceptFails ? async () => { throw new Error("forced"); } : async () => "templates:forced"} onUndoAccept={async () => {}} />`; no Convex call.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/template-sketch.ts`, `import type { SketchProposal, TemplateSketchViewProps } from "@/components/template-builder/TemplateSketchView";` only): `export const FIXTURES: Record<"default" | "prefilled" | "thinking" | "propose-error" | "no-proposal" | "save-error" | "loading" | "offline", { state: TemplateSketchViewProps["state"]; initialOutline: string; propose: "ok" | "wait" | "fail"; proposal: SketchProposal | null; acceptFails: boolean }>`; every entry has `state: "default"`, `initialOutline: ""`, `propose: "ok"`, `proposal: { name: "Morning check", body: "# Morning check\n\n## Sleep\n\n## Mood\n", period: "daily" }`, `acceptFails: false`, except: `prefilled` (`initialOutline: "Morning check\nSleep\nMood"`), `thinking` (`propose: "wait"`), `propose-error` (`propose: "fail"`), `no-proposal` (`proposal: null`), `save-error` (`acceptFails: true`), `loading` (`state: "loading"`).
+  No new visible string; states and copy are the View's.
+- **TESTS:** (route spec; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; console filter as TFV2-0132b; 7 × 4 = 28)
+  1. Given `?state=default` / Then the `h1` reads "Sketch a template" (HE "שרטוט תבנית") and "Nothing sketched yet." (HE "עדיין לא שורטט כלום.") is visible.
+  2. Given `?state=prefilled` / When "Turn into a template" (HE "להפוך לתבנית") is clicked / Then the proposal card's title reads "Morning check"; When "Accept" (HE "אישור") is clicked / Then "Saved to Templates." (HE "נשמרה בתבניות.") is visible in the card and in a toast.
+  3. Given `?state=thinking` / When an outline is typed and "Turn into a template" is clicked / Then "Coach is writing" (HE "המאמן כותב") is visible.
+  4. Given `?state=propose-error` / When an outline is typed and submitted / Then "The coach couldn't answer just now." (HE "המאמן לא הצליח לענות כרגע.") is visible; Given `?state=no-proposal` / When the same is done / Then "The coach couldn't make a template from this outline. Try adding a few lines." (HE "המאמן לא הצליח ליצור תבנית מהמתווה הזה. אפשר להוסיף עוד כמה שורות.") is visible.
+  5. Given `?state=save-error` / When an outline is proposed and Accept is clicked / Then "Couldn't save this template just now." (HE "לא הצלחנו לשמור את התבנית כרגע.") is visible.
+  6. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached; Given `?state=offline` / Then the §12 offline line is visible.
+  7. Given no `?state` (`page.goto(\`/templates/sketch?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-sketch-route` is attached and `#sk-outline` is visible; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/sketch?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
+- **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · exactly 0 model calls in e2e (forced states never call Convex) · INP UNKNOWN locally (not a gate) · 28 of 28 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0290c — Route: /templates/sketch autosaves the outline (`apps/web/app/(tempo)/templates/sketch/page.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0290b, TFV2-0241a, TFV2-0241b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0290b, TFV2-0241a, TFV2-0241b.
+- **WHY:** PRD F-23; design `docs/design/v3/screens/web/template-sketch.html` ("Autosave — REAL: convex templates.saveSketch({ text }) (debounced)", top bar "Saved"); CONVENTIONS §14, §22. After TFV2-0290b the outline lives in component state only. `templates.saveSketch({ text })` → `null` (TFV2-0241a; throws `"Sketch is too long"` over 2,000 characters) and `templates.getSketch({})` → `{ text: string; updatedAt: number } | null` (TFV2-0241b) keep one live sketch per person (CFG-010). `TemplateSketchView` (TFV2-0290a) already takes `state: "loading"`, `initialOutline`, `draftStatus` and the optional `onOutlineChange`.
+- **GOAL:** The sketch route loads the saved outline into `initialOutline` (showing the loading state until it arrives), saves the outline 800 ms after typing stops through `templates.saveSketch`, and shows "Saving…" / "Saved"; forced `?state=prefilled` shows a saved outline without Convex.
+- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` · `apps/web/lib/e2e/fixtures/template-sketch.ts` · test: `tests/e2e/screens/template-sketch-draft.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/templates/sketch/page.tsx` (edit: one query, one mutation, debounce, `draftStatus`) · `apps/web/lib/e2e/fixtures/template-sketch.ts` (edit: one optional field `draftStatus` on the entry type, set on `prefilled`) · `tests/e2e/screens/template-sketch-draft.spec.ts` (new) · runtime writes one `templateSketches` row through `templates.saveSketch`.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const saveSketch\|export const getSketch" convex/templates.ts` prints two lines (else report `blocked: missing backend <function>`); `grep -n "draftStatus\|onOutlineChange" apps/web/components/template-builder/TemplateSketchView.tsx` prints lines; `grep -n "proposeTemplate" "apps/web/app/(tempo)/templates/sketch/page.tsx"` prints a line (TFV2-0290b).
+  2. In `page.tsx` `SketchLive`, add the query, mutation, debounce and props exactly as SPEC; in the forced branch pass `draftStatus={f.draftStatus}`.
+  3. In the fixtures file add `draftStatus?: "saving" | "saved"` to the entry type and `draftStatus: "saved"` to `prefilled`.
+  4. Create the spec (§22 route skeleton) with the 3 TESTS bullets.
+  5. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-sketch-draft.spec.ts --reporter=line` → `12 passed`; and `CI=1 bunx playwright test tests/e2e/screens/template-sketch.spec.ts --reporter=line` → `28 passed`.
+- **EVIDENCE:** both Playwright summaries plus typecheck and lint exit codes.
+- **DO NOT:** edit `TemplateSketchView.tsx`; save on every keystroke; save before the saved outline has loaded; save a proposal or a template here; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0290c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/sketch/page.tsx, apps/web/lib/e2e/fixtures/template-sketch.ts, tests/e2e/screens/template-sketch-draft.spec.ts / unknowns / notes for ticket sync`; STEPS 1–5 with evidence.
+- **SPEC:**
+  ```ts
+  api.templates.getSketch   // query    {} → { text: string; updatedAt: number } | null   (TFV2-0241b)
+  api.templates.saveSketch  // mutation { text: string } → null                          (TFV2-0241a; throws "Sketch is too long")
+  ```
+  In `SketchLive`: `const SKETCH_SAVE_DEBOUNCE_MS = 800;` (module level, not exported); `sketch = useQuery(api.templates.getSketch, forced ? "skip" : {})`; `saveSketch = useMutation(api.templates.saveSketch)`; `draftStatus` state (`"saving" | "saved" | undefined`); a timer ref. `state = sketch === undefined ? "loading" : "default"`; `initialOutline = sketch?.text ?? ""` with `key={sketch === undefined ? "loading" : "loaded"}` so the View mounts once with the loaded text. `onOutlineChange(text)`: clear the timer; `setDraftStatus("saving")`; start a `SKETCH_SAVE_DEBOUNCE_MS` timer that calls `saveSketch({ text })` and then `setDraftStatus("saved")`, or on rejection `setDraftStatus(undefined)`; the timer is cleared on unmount. Pass `draftStatus` and `onOutlineChange` to the View; the TFV2-0290b callbacks stay as they are.
+  No new visible string ("Saving…" / "Saved" are the View's `draftSaving` / `draftSaved`).
+- **TESTS:** (route spec; `openScreen(page, "/templates/sketch", { state, lang })`; each asserts `template-sketch-route` is attached; console filter as TFV2-0132b; 3 × 4 = 12)
+  1. Given `?state=prefilled` / Then `#sk-outline` has "Morning check⏎Sleep⏎Mood" (⏎ = a line break) and `[data-draft-status]` reads "Saved" (HE "נשמר").
+  2. Given `?state=default` / Then no `[data-draft-status]` is present.
+  3. Given no `?state` (signed out under the bypass) / Then `[data-component="StateLoading"]` is attached (the `getSketch` query never resolves against the placeholder Convex URL) and the URL does not match `/sign-in/`.
+- **NUMBERS:** one `saveSketch` call per 800 ms pause in typing (`SKETCH_SAVE_DEBOUNCE_MS`) · sketch ≤ 2,000 characters server-side (`SKETCH_TEXT_MAX`); the View's 1,000-character `maxLength` stays inside it · 12 of 12 draft cases and 28 of 28 TFV2-0290b cases pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0241a → CFG-010 (is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
+
+### TFV2-0306 — Component: SettingsSection (`apps/web/components/settings/SettingsSection.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.9 (SettingsSection: a card with a title and optional description that groups setting rows); designs `docs/design/v3/screens/web/settings-profile.html`, `settings-prefs.html`, `settings-privacy.html`, `ask-founder.html` (`@component SettingsSection`); tempo.css `@component SettingsSection` block (line 1097: `.tp-settings-section`, `__head`, `__title`, `__desc`) → CONVENTIONS §10 Case A. Code truth: today every settings screen writes this markup inline (`apps/web/components/settings/PrivacySettings.tsx`, `apps/web/components/notifications-preferences/PreferencesForm.tsx`, `apps/web/app/(tempo)/ask-founder/page.tsx`); no component exists. The old ticket's DONE (`bun run test -- <file>`) is wrong (CONVENTIONS §1); web components use the §9 harness + Playwright file set. CONVENTIONS §13 (harness), §22 (spec skeleton).
+- **GOAL:** `SettingsSection` renders a named `section` card with an `h2` title, an optional description and its rows, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/settings/SettingsSection.tsx` · `apps/web/app/e2e/components/settings-section/page.tsx` · test: `tests/e2e/screens/settings-section.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/SettingsSection.tsx` (new) · `apps/web/app/e2e/components/settings-section/page.tsx` (new) · `tests/e2e/screens/settings-section.spec.ts` (new). No data, route list, schema or env change (the harness route is registered by TFV2-0023a).
+- **STEPS:**
+  1. Code-map check: `grep -n "@component SettingsSection " apps/web/app/tempo.css` prints line 1097; `test -e apps/web/components/settings/SettingsSection.tsx` fails (new; the folder `apps/web/components/settings/` exists with other files that are not touched); `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds (else `blocked: missing TFV2-0023b` / `blocked: missing TFV2-0000b`).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `SettingsSection.tsx` (no hooks, no `"use client"`) exporting exactly the SPEC type and function.
+  4. Create the harness page (`"use client"`) with the two SPEC states in order, fixtures inline (CONVENTIONS §13). The component has no callbacks, so the page has no log element.
+  5. Create `tests/e2e/screens/settings-section.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "settings-section", { lang })`) and the 3 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-section.spec.ts --reporter=line` → `12 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** render rows itself (callers pass `SettingRow`s, TFV2-0307, as `children`); set colours, padding or borders inline; add a stylesheet or edit `apps/web/app/tempo.css`; edit the existing inline sections in `PrivacySettings.tsx`, `PreferencesForm.tsx` or `ask-founder/page.tsx`; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0306 / evidence: <DONE output> / changed: apps/web/components/settings/SettingsSection.tsx, apps/web/app/e2e/components/settings-section/page.tsx, tests/e2e/screens/settings-section.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```tsx
+  // apps/web/components/settings/SettingsSection.tsx
+  import type { ReactNode } from "react";
+  export type SettingsSectionProps = {
+    id: string;            // heading id = `${id}-title`
+    title: string;         // localised by the caller
+    desc?: string;         // localised by the caller
+    children?: ReactNode;  // SettingRow elements or any body (a dial, a form)
+  };
+  export function SettingsSection({ id, title, desc, children }: SettingsSectionProps): JSX.Element;
+  // <section className="tp-settings-section" aria-labelledby={`${id}-title`} data-component="SettingsSection">
+  //   <div className="tp-settings-section__head">
+  //     <h2 className="tp-settings-section__title" id={`${id}-title`}>{title}</h2>
+  //     {desc ? <p className="tp-settings-section__desc">{desc}</p> : null}
+  //   </div>
+  //   {children}
+  // </section>
+  ```
+  - **Copy:** none of its own (title and desc are supplied localised).
+  - **Styling** (tempo.css, unchanged): card `--tp-paper` background, `1px solid var(--tp-line)` border, `--tp-radius-lg`, `overflow: hidden`; head grid padding `--tp-space-4` `--tp-space-5`; title `--tp-font-serif` `--tp-text-lg` weight 500; desc `--tp-text-sm` `--tp-ink-muted`.
+  - **States (harness order):** `default` (`id: "ss-look"`, `title: "How Tempo looks"`, `desc: "Changes save as you go."`, children = two plain `<div className="tp-setting-row" data-testid="settings-section-row">Row one</div>` / `Row two` placeholders written inline in the harness), `no-desc` (`id: "ss-sign"`, `title: "Signing in"`, children one placeholder row `Row one`). Loading / empty / error / offline / success / disabled: n/a — a presentational container; the screen owns data states.
+  - **RTL:** block layout; the head text aligns to the inline start through `dir` from `LocaleProvider`; no physical properties. **Keyboard / screen reader:** not focusable; announced as a region named by its `h2`. **Breakpoints:** one layout at 390 / 768 / 1024 / 1280 (full width of its column). **Motion:** none.
+- **TESTS:** (CONVENTIONS §22 skeleton; each bullet runs at both viewports × both languages → 3 × 4 = 12)
+  1. Given `settings-section-default` / Then its `section[data-component="SettingsSection"]` has class `tp-settings-section` and `aria-labelledby="ss-look-title"`, `#ss-look-title` is an `h2` with text `How Tempo looks`, a `p.tp-settings-section__desc` reads `Changes save as you go.`, and the section holds 2 `[data-testid="settings-section-row"]` after the head.
+  2. Given `settings-section-no-desc` / Then `#ss-sign-title` is an `h2` with text `Signing in` and the section has 0 `.tp-settings-section__desc` elements.
+  3. Given the harness / Then `expectDir(page, lang)` passes, the computed `font-size` of `#ss-look-title` equals that of a probe element styled `font-size: var(--tp-text-lg)` (added with `page.evaluate`), and `expectMotionBudget(page, '[data-testid^="settings-section-"]')` passes.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; colours only from tempo.css tokens, `bun run scan:design-tokens` passes) · title size = `--tp-text-lg` (CONVENTIONS §5; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`, bullet 3) · 12 of 12 Playwright cases pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0307 — Component: SettingRow (`apps/web/components/settings/SettingRow.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.9 (SettingRow: label + helper at the inline start, control at the inline end; `--stack`; `[data-tone=danger]`); designs `settings-prefs.html`, `settings-privacy.html`, `settings-profile.html` (`@component SettingRow`); tempo.css `@component SettingRow` block (line 1103: `.tp-setting-row`, `__text`, `__label`, `__control`, `--stack`, `[data-tone="danger"]`) and the `.od-row` layout helper (tempo.css line 20) → CONVENTIONS §10 Case A. Code truth: rows are written inline today (for example `PrivacySettings.tsx`); the old dependency on TFV2-0306 is dropped (a row does not import the section). The old DONE (`bun run test -- <file>`) is wrong (CONVENTIONS §1). CONVENTIONS §13, §22.
+- **GOAL:** `SettingRow` renders one settings row (label with a stable id, optional help with a stable id, optional status line, and a control slot at the inline end), with stack and danger variants, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/settings/SettingRow.tsx` · `apps/web/app/e2e/components/setting-row/page.tsx` · test: `tests/e2e/screens/setting-row.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/SettingRow.tsx` (new) · `apps/web/app/e2e/components/setting-row/page.tsx` (new) · `tests/e2e/screens/setting-row.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component SettingRow " apps/web/app/tempo.css` prints line 1103; `grep -n "\.od-row " apps/web/app/tempo.css` prints line 20; `test -e apps/web/components/settings/SettingRow.tsx` fails (new); `test -e apps/web/app/e2e/components/layout.tsx && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `SettingRow.tsx` (no hooks, no `"use client"`) exactly as SPEC.
+  4. Create the harness page with the five SPEC states; each control is a plain button written inline in the page whose `onClick` writes `click:"<state>"` into `<output data-testid="setting-row-log">` (CONVENTIONS §13 log rule; the component itself has no callbacks).
+  5. Create `tests/e2e/screens/setting-row.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "setting-row", { lang })`) and the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/setting-row.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** render a control of its own (switches, selects and buttons come through `control`); show danger by colour alone (the caller's button carries a word and an icon; the row only tints the label); add a stylesheet or edit `tempo.css`; edit `apps/web/components/settings/controls.tsx` or any existing settings file; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0307 / evidence: <DONE output> / changed: apps/web/components/settings/SettingRow.tsx, apps/web/app/e2e/components/setting-row/page.tsx, tests/e2e/screens/setting-row.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```tsx
+  // apps/web/components/settings/SettingRow.tsx
+  import type { ReactNode } from "react";
+  export type SettingRowProps = {
+    id: string;          // label id = `${id}-label`, help id = `${id}-help`; the control uses them in aria-labelledby / aria-describedby
+    label: string;       // localised by the caller
+    help?: string;       // localised by the caller
+    status?: ReactNode;  // a live line under the help (export status, an error); the caller gives it its role
+    control: ReactNode;  // the switch / segmented / select / button
+    stack?: boolean;     // control wraps onto its own full-width line
+    tone?: "danger";     // destructive row: label in --tp-danger
+  };
+  export function SettingRow({ id, label, help, status, control, stack = false, tone }: SettingRowProps): JSX.Element;
+  // <div className={stack ? "tp-setting-row tp-setting-row--stack od-row" : "tp-setting-row od-row"} data-tone={tone} data-component="SettingRow">
+  //   <div className="tp-setting-row__text">
+  //     <span className="tp-setting-row__label" id={`${id}-label`}>{label}</span>
+  //     {help ? <span className="tp-help" id={`${id}-help`}>{help}</span> : null}
+  //     {status ?? null}
+  //   </div>
+  //   <div className="tp-setting-row__control">{control}</div>
+  // </div>
+  ```
+  - **Copy:** none of its own.
+  - **Styling** (tempo.css, unchanged): flex row, `align-items: center`, gap `--tp-space-3` `--tp-space-4`, min-height `calc(var(--tp-touch) + var(--tp-space-4))` (60 px), padding `--tp-space-3` `--tp-space-5`, top border `1px solid var(--tp-line)`; label weight 600; help `--tp-text-sm` `--tp-ink-muted`; `--stack` wraps and gives the control `flex: 1 1 100%`; `[data-tone="danger"]` label colour `--tp-danger`.
+  - **States (harness order; each control is `<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" aria-labelledby="<id>-label" aria-describedby={help ? "<id>-help" : undefined}>Change</button>` unless noted):** `default` (`id: "sr-a"`, `label: "Reading font"`), `help` (`id: "sr-b"`, `label: "Time zone"`, `help: "Where your day starts and ends."`), `stack` (`id: "sr-c"`, `label: "Theme"`, `help: "Light, dark or match this device."`, `stack`), `danger` (`id: "sr-d"`, `label: "Delete my account"`, `help: "Removes your pages, tasks and chats."`, `tone: "danger"`, control `<button type="button" className="tp-btn tp-btn--danger-ghost">` with an inline `<svg aria-hidden="true" width="16" height="16" />` and the word `Delete my account`), `status` (`id: "sr-e"`, `label: "Download a copy"`, `status: <span className="tp-help" role="status" data-testid="setting-row-status">Request sent.</span>`). Loading / empty / error / offline / disabled: n/a — the screen owns them; `danger` is the destructive variant.
+  - **RTL:** flex order follows `dir`: text at the inline start (right in Hebrew), control at the inline end. **Keyboard / screen reader:** the row is not focusable; the control is named by the label (`aria-labelledby`) and described by the help. **Breakpoints:** one row at 768 / 1024 / 1280; at 390 the non-stack row keeps the control beside the text (the text column shrinks, `min-width: 0`). **Motion:** none of its own.
+- **TESTS:** (CONVENTIONS §22 skeleton; 5 × 4 = 20)
+  1. Given `setting-row-default` / Then `[data-component="SettingRow"]` has classes `tp-setting-row` and `od-row`, `#sr-a-label` reads `Reading font`, the button inside `.tp-setting-row__control` has accessible name `Reading font`, and for `lang === "en"` the label's bounding box `x` is smaller than the button's, for `lang === "he"` it is larger.
+  2. Given `setting-row-help` / Then `#sr-b-help` reads `Where your day starts and ends.` and the button's `aria-describedby` is `sr-b-help`; When the button is clicked / Then `setting-row-log` reads `click:"help"`.
+  3. Given `setting-row-stack` / Then the row has class `tp-setting-row--stack` and the control's bounding box `y` is greater than the label's bounding box `y + height - 1` (the control sits on its own line).
+  4. Given `setting-row-danger` / Then the row has `data-tone="danger"`, the computed `color` of `#sr-d-label` equals that of a probe element styled `color: var(--tp-danger)`, and the button shows the visible text `Delete my account`.
+  5. Given `setting-row-status` / Then `[data-testid="setting-row-status"]` is inside `.tp-setting-row__text` with `role="status"`; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="setting-row-"]')` and `expectMotionBudget(page, '[data-testid^="setting-row-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px for controls in rows (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; `expectTargetSize`, bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · use of colour: danger rows carry the word on the button, not colour alone (WCAG 2.2 SC 1.4.1; bullet 4) · row min-height 60 px from tempo.css · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0311 — Component: ConfirmDialog (`apps/web/components/settings/ConfirmDialog.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §8 (ConfirmDialog candidate: a sheet with a title, one plain sentence and two buttons; `alert-dialog`, a sheet on phones; used for forget, discard, delete account and cancel plan; the destructive button is not the accent); design `docs/design/v3/screens/web/settings-privacy.html` (`#del-sheet`: `role="alertdialog"`, `aria-modal`, Close button, tick box that turns the delete button on, `Keep my account` / `Delete my account`). There is no `@component ConfirmDialog` block; it is composed from the existing `@component MobileSheet` classes (tempo.css line 1416: `.tp-sheet-scrim`, `.tp-sheet`, `__grabber`, `__head`, `__title`, `__body`, `__foot`; line 1476: from 768 px the sheet floats centred, `width: min(calc(100vw - var(--tp-space-8)), calc(var(--tp-space-20) * 7))`) plus `.tp-glass` (line 104) and the Stage 1 buttons (`.tp-btn--danger` line 585, `.tp-btn--primary`, `.tp-btn--secondary`, `.tp-btn--ghost`, `.tp-btn--icon`) → CONVENTIONS §10 Case A (classes exist; no stylesheet). Code truth: `apps/web/components/account/DeleteAccountCard.tsx` has a private sheet with its own focus trap (`FOCUSABLE` selector, Escape, body scroll lock); this ticket makes the reusable one and does not touch that file. The old DONE (`bun run test -- <file>`) is wrong (CONVENTIONS §1). CONVENTIONS §11 (COPY), §12 (glossary: Close = סגירה), §13, §22.
+- **GOAL:** `ConfirmDialog` renders a modal confirmation sheet (title, one sentence, optional extra content, Cancel and Confirm, a neutral or danger tone, a blocked Confirm, busy and error) that traps focus, closes on Escape and returns focus to the element that opened it, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/settings/ConfirmDialog.tsx` · `apps/web/app/e2e/components/confirm-dialog/page.tsx` · test: `tests/e2e/screens/confirm-dialog.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/ConfirmDialog.tsx` (new) · `apps/web/app/e2e/components/confirm-dialog/page.tsx` (new) · `tests/e2e/screens/confirm-dialog.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component MobileSheet " apps/web/app/tempo.css` prints line 1416; `grep -n "^\.tp-btn--danger " apps/web/app/tempo.css` prints line 585; `grep -n "min-width: 768px" apps/web/app/tempo.css` lists the line-1475 block holding the `.tp-sheet` rule; `grep -n '"x"\|"alert"' apps/web/components/tempo/TpIcon.tsx` shows both icon names; `test -e apps/web/components/settings/ConfirmDialog.tsx` fails; read `apps/web/components/account/DeleteAccountCard.tsx` lines 12–80 (reference for the focus trap; do not edit).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `ConfirmDialog.tsx` (`"use client"`: `useLocale`, `useEffect`, `useRef`) exactly as SPEC, `COPY` at the top.
+  4. Create the harness page with the four SPEC states; each section holds an opener `<button type="button" data-testid="confirm-dialog-<state>-open">Open</button>` and the dialog with `open` kept in `useState(false)`; `onConfirm` / `onCancel` write `onConfirm:null` / `onCancel:null` into `<output data-testid="confirm-dialog-log">` and `onCancel` also sets `open` to `false`.
+  5. Create `tests/e2e/screens/confirm-dialog.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "confirm-dialog", { lang })`) and the 7 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/confirm-dialog.spec.ts --reporter=line` → `28 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** make the destructive Confirm the accent (`tp-btn--primary` is for the neutral tone only); close on a scrim click or Escape while `busy`; use the native `disabled` attribute for a blocked Confirm (it must stay focusable and say why, via `aria-disabled` + `aria-describedby`); add a stylesheet or edit `tempo.css`; edit `DeleteAccountCard.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0311 / evidence: <DONE output> / changed: apps/web/components/settings/ConfirmDialog.tsx, apps/web/app/e2e/components/confirm-dialog/page.tsx, tests/e2e/screens/confirm-dialog.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```tsx
+  // apps/web/components/settings/ConfirmDialog.tsx ("use client")
+  import type { ReactNode, RefObject } from "react";
+  export type ConfirmDialogTone = "neutral" | "danger";
+  export type ConfirmDialogProps = {
+    id: string;                      // section id; title id `${id}-title`, sentence id `${id}-body`
+    open: boolean;
+    title: string;                   // localised by the caller
+    body: string;                    // the one plain sentence, localised
+    children?: ReactNode;            // extra content under the sentence (a list, a tick box)
+    confirmLabel: string;
+    cancelLabel: string;
+    tone: ConfirmDialogTone;
+    confirmBlocked?: boolean;        // Confirm stays visible and focusable but does nothing yet
+    confirmDescribedBy?: string;     // id of the hint that says how to unblock Confirm
+    busy?: boolean;                  // the confirmed action is running
+    busyLabel?: string;              // Confirm text while busy (default: confirmLabel)
+    error?: string;                  // last attempt failed; shown as an alert in the body
+    initialFocusRef?: RefObject<HTMLElement | null>; // focused on open and when a blocked Confirm is pressed
+    onConfirm: () => void;
+    onCancel: () => void;
+  };
+  export function ConfirmDialog(props: ConfirmDialogProps): JSX.Element | null;
+  ```
+  - **Markup** (`open === false` → `null`):
+    `<div className="tp-sheet-scrim" aria-hidden="true" data-testid={`${id}-scrim`} onClick={busy ? undefined : onCancel} />` then
+    `<section ref={sheetRef} className="tp-sheet tp-glass" id={id} role="alertdialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-body`} data-component="ConfirmDialog" data-tone={tone}>` containing
+    `<span className="tp-sheet__grabber" aria-hidden="true" />`;
+    `<div className="tp-sheet__head"><h2 className="tp-sheet__title" id={`${id}-title`}>{title}</h2><button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" aria-label={copy.close} onClick={onCancel} disabled={busy}><TpIcon name="x" /></button></div>`;
+    `<div className="tp-sheet__body"><p id={`${id}-body`} dir="auto">{body}</p>{children}{error ? <p className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{error}</span></p> : null}</div>`;
+    `<div className="tp-sheet__foot"><button ref={cancelRef} type="button" className="tp-btn tp-btn--secondary" onClick={onCancel} disabled={busy}>{cancelLabel}</button><button type="button" className={tone === "danger" ? "tp-btn tp-btn--danger" : "tp-btn tp-btn--primary"} aria-disabled={confirmBlocked || busy ? "true" : undefined} aria-describedby={confirmDescribedBy} aria-busy={busy ? "true" : undefined} onClick={onConfirmClick}>{busy ? (busyLabel ?? confirmLabel) : confirmLabel}</button></div>` `</section>`.
+  - **Behaviour:** `onConfirmClick`: if `busy` → nothing; else if `confirmBlocked` → `initialFocusRef?.current?.focus()` and nothing else; else `onConfirm()`. On `open` turning `true`: store `document.activeElement` in `returnRef`, set `document.body.style.overflow = "hidden"` (previous value kept), then focus `initialFocusRef?.current ?? cancelRef.current`. While open, one `keydown` listener on `document` (capture phase): `Escape` → `preventDefault()`, and `onCancel()` unless `busy`; `Tab` → keep focus inside the section, cycling between the first and last element matching `button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])`. On `open` turning `false` (or unmount while open): restore `body.style.overflow` and focus `returnRef.current` when it is still in the document.
+  - **Copy** (`COPY: Record<Lang, Record<"close", string>>`, CONVENTIONS §11): `close` EN "Close" / HE "סגירה" (the Close button's `aria-label`). Every other string is supplied localised.
+  - **Styling** (tempo.css, unchanged): scrim fixed, `--tp-scrim`, `tp-fade` over `--tp-dur-base` (180 ms); sheet fixed at the bottom on phones with `--tp-radius-xl` top corners and `tp-rise` over `--tp-dur-slow` (240 ms); from 768 px it floats centred, `bottom: var(--tp-space-6)`, all corners `--tp-radius-xl`; head padding `--tp-space-2` / `--tp-space-5`; title `--tp-font-serif` `--tp-text-lg`; body grid gap `--tp-space-3`; foot flex-wrap gap `--tp-space-2` with a `--tp-glass-line` top border. Danger Confirm = `.tp-btn--danger` (`--tp-danger-wash` background, `--tp-danger` text and border); neutral Confirm = `.tp-btn--primary` (`--tp-accent`).
+  - **States (harness order; each opens from its opener):** `neutral` (`id: "cd-discard"`, title "Discard this draft?", body "Your changes to this module are not saved.", confirm "Discard", cancel "Keep editing", tone `neutral`); `danger` (`id: "cd-delete"`, title "Delete your account?", body "This removes, right away:", children = `<label className="tp-choice"><input ref={tickRef} type="checkbox" className="tp-checkbox" id="cd-tick" aria-describedby="cd-need" checked={ticked} onChange={(e) => setTicked(e.target.checked)} /><span className="tp-choice__text"><span>I understand.</span><span className="tp-choice__hint" id="cd-need">Tick this to turn on the delete button.</span></span></label>` written inline in the harness, confirm "Delete my account", cancel "Keep my account", tone `danger`, `confirmBlocked={!ticked}`, `confirmDescribedBy="cd-need"`, `initialFocusRef={tickRef}`); `busy` (`id: "cd-busy"`, same texts as `neutral`, `busy`, `busyLabel: "Discarding…"`); `error` (`id: "cd-error"`, same texts as `neutral`, `error: "Couldn't discard. Nothing was changed, so you can try again."`). Closed is the default of every section. Loading / empty / offline: n/a (the caller decides when to open it).
+  - **RTL:** logical properties only in tempo.css; the Close button sits at the inline end of the head; the foot buttons flow from the inline start. **Keyboard / screen reader:** announced as an alert dialog named by its title and described by its sentence; focus starts on the tick box or Cancel (never on a destructive Confirm), Tab cycles inside, Escape cancels, focus returns to the opener. **Breakpoints:** bottom sheet at 390; centred floating card at 768 / 1024 / 1280. **Motion:** `tp-rise` 240 ms and `tp-fade` 180 ms; both instant under reduced motion (tempo.css line 480).
+- **TESTS:** (CONVENTIONS §22 skeleton; 7 × 4 = 28; each bullet first clicks the named opener)
+  1. Given `confirm-dialog-neutral-open` clicked / Then `role="alertdialog"` `#cd-discard` is visible, its accessible name is `Discard this draft?`, its `aria-describedby` target reads `Your changes to this module are not saved.`, the focused element is the `Keep editing` button, and the `Discard` button has class `tp-btn--primary`.
+  2. Given the neutral dialog open / When `Escape` is pressed / Then `#cd-discard` is gone, `confirm-dialog-log` reads `onCancel:null`, and the focused element is `[data-testid="confirm-dialog-neutral-open"]`.
+  3. Given the neutral dialog open / When focus is on `Discard` (the last element) and `Tab` is pressed / Then the Close button (`aria-label` `Close`, HE `סגירה`) is focused; When `Shift+Tab` is pressed / Then `Discard` is focused again.
+  4. Given `confirm-dialog-danger-open` clicked / Then `#cd-tick` is focused, `Delete my account` has classes `tp-btn--danger` and not `tp-btn--primary`, `Keep my account` has `tp-btn--secondary`, and `Delete my account` has `aria-disabled="true"` and `aria-describedby="cd-need"`; When `Delete my account` is clicked / Then the log is still empty and `#cd-tick` is focused; When `#cd-tick` is checked and `Delete my account` clicked / Then the log reads `onConfirm:null`.
+  5. Given `confirm-dialog-busy-open` clicked / Then the Confirm button reads `Discarding…` with `aria-busy="true"` and `aria-disabled="true"`, `Keep editing` and Close are `disabled`; When `Escape` is pressed / Then `#cd-busy` is still visible and the log is empty.
+  6. Given `confirm-dialog-error-open` clicked / Then a `role="alert"` paragraph inside `#cd-error` reads `Couldn't discard. Nothing was changed, so you can try again.`.
+  7. Given the neutral dialog open / Then `expectDir(page, lang)`, `expectTargetSize(page, "#cd-discard")` and `expectMotionBudget(page, "#cd-discard")` pass, and on the desktop viewport the dialog's bounding box does not touch the viewport's inline edges (left > 0 and right < 1280), on the mobile viewport its bottom equals the viewport height (844).
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; buttons ≥ 44 px `--tp-touch`; bullet 7) · focus order and trap (WCAG 2.2 SC 2.4.3 Focus Order, SC 2.1.2 No Keyboard Trap — Escape always leaves unless busy; bullets 2–3) · focus visible ≥ 2 px (`--tp-focus-w`, global `:focus-visible`, SC 2.4.7) · text contrast ≥ 4.5:1 (SC 1.4.3; tokens only) · motion ≤ 250 ms (`tp-rise` 240 ms; DESIGN.md; bullet 7) · 28 of 28 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0291a — View: AskFounderView (`apps/web/components/ask-founder/AskFounderView.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0111, TFV2-0113, TFV2-0114, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306 · **Folds-in:** #475 (T-SCR-25)
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0111, TFV2-0113, TFV2-0114, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306.
+- **WHY:** PRD F-110 (ask the founder: a message reaches Amit with only name and email attached); design `docs/design/v3/screens/web/ask-founder.html` (Your message: Subject ≤ 120 characters, Message, "How soon does this matter?" Low / Medium / High with Medium preselected, the "What gets sent" notice, "Send to Amit"; error summary on submit; Sent panel with "Write another" / "Back to Today"; offline: write now, send on reconnect); CONVENTIONS §9 (web component), §10 Case A, §11, §12, §13; §22 (spec skeleton, `TpIcon`, screen pattern: the route TFV2-0291b is the only Convex caller). Code truth: today `apps/web/app/(tempo)/ask-founder/page.tsx` shows only a `mailto:` link because no backend existed; the form's data shape follows the proposed `askFounderQueue` table (CFG-017: `subject`, `body`, `priority: "low" | "medium" | "high"`), which is OPEN.
+- **GOAL:** `AskFounderView` renders the Ask the founder screen (header, offline banner, the message form with validation and error summary, the "What gets sent" notice, sending / queued / failed feedback, the Sent panel, and loading / error / signed-out states) from props alone.
+- **SCOPE:** `apps/web/components/ask-founder/AskFounderView.tsx` · `apps/web/app/e2e/components/ask-founder-view/page.tsx` · test: `tests/e2e/screens/ask-founder-view.spec.ts`.
+- **MUTATES:** `apps/web/components/ask-founder/AskFounderView.tsx` (new; creates the folder) · `apps/web/app/e2e/components/ask-founder-view/page.tsx` (new) · `tests/e2e/screens/ask-founder-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/ask-founder/AskFounderView.tsx` fails (new); `grep -n "@component FormErrorSummary \|@component StatusPanel " apps/web/app/tempo.css` prints lines 1086 and 1331; `test -e apps/web/components/forms/Form.tsx && test -e apps/web/components/forms/TextInput.tsx && test -e apps/web/components/forms/Textarea.tsx && test -e apps/web/components/forms/Radio.tsx && test -e apps/web/components/layout/Notice.tsx && test -e apps/web/components/states/StateEmpty.tsx && test -e apps/web/components/states/StateLoading.tsx && test -e apps/web/components/states/StateError.tsx && test -e apps/web/components/states/StateOffline.tsx && test -e apps/web/components/settings/SettingsSection.tsx` succeeds (else `blocked: missing <ticket>` naming the absent one); read `apps/web/app/(tempo)/ask-founder/page.tsx` (reference only; TFV2-0291b replaces it).
+  2. Stylesheet: Case A — no `.css` file; only the classes in SPEC.
+  3. Create `AskFounderView.tsx` (`"use client"`) exporting exactly the SPEC types and `AskFounderView`, `COPY` at the top.
+  4. Build the markup exactly as SPEC "Layout" and the local form state exactly as SPEC "Behaviour".
+  5. Create the harness page with the eight SPEC states in order, inline typed fixtures, and the `ask-founder-view-log` output.
+  6. Create `tests/e2e/screens/ask-founder-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "ask-founder-view", { lang })`) and the 11 TESTS bullets; the spec keeps its own `EXPECT` copy table (it never imports the View).
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; attach page, task or chat content; send email from the UI or render a `mailto:` link; set `required` on the fields (native validation would block the error summary); add a stylesheet or edit `tempo.css`, `apps/web/app/v3/*.css`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0291a / evidence: <DONE output> / changed: apps/web/components/ask-founder/AskFounderView.tsx, apps/web/app/e2e/components/ask-founder-view/page.tsx, tests/e2e/screens/ask-founder-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type AskFounderPriority = "low" | "medium" | "high";
+  export type AskFounderDraft = { subject: string; body: string; priority: AskFounderPriority };
+  export type AskFounderState = "default" | "loading" | "error" | "signed-out";
+  export type AskFounderSending = "idle" | "sending" | "sent" | "failed";
+  export type AskFounderViewProps = {
+    state: AskFounderState;          // "error" = the person's details failed to load
+    online: boolean;
+    email: string;                   // shown in "What gets sent"; "" outside "default"
+    name: string | null;             // callMe ?? fullName; null → the Sent title has no name
+    sending: AskFounderSending;
+    sentSubject: string | null;      // the subject of the message just sent (Sent panel)
+    onSend: (draft: AskFounderDraft) => void;   // draft is trimmed; called only when valid
+    onWriteAnother: () => void;
+    onRetry: () => void;             // reload after "error"
+  };
+  export const ASK_FOUNDER_SUBJECT_MAX = 120;
+  export function AskFounderView(props: AskFounderViewProps): JSX.Element;
+  ```
+  - **Imports:** `useEffect`, `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `TpIcon` from `@/components/tempo/TpIcon`; `Form` from `@/components/forms/Form`; `TextInput` from `@/components/forms/TextInput`; `Textarea` from `@/components/forms/Textarea`; `Radio`, `RadioGroup` from `@/components/forms/Radio`; `Notice` from `@/components/layout/Notice`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `SettingsSection` from `@/components/settings/SettingsSection`.
+  - **Layout** (390 px base; classes exactly as listed): root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="AskFounderView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />` (default §12 line) in every state. 3) Body by `state`: `loading` → `<StateLoading label={copy.loading} rows={3} />`; `error` → `<StateError what={copy.loadError} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` with `sending === "sent"` → the **Sent panel**; `default` otherwise → the **form section**.
+  - **Form section:** `<SettingsSection id="af-msg" title={copy.sectionTitle}>` containing `<div className="sp-form">` (padding `--tp-space-5`, `apps/web/app/v3/settings.css`; there is no `af-*` class in the repo) which wraps `<Form label={copy.formLabel} onSubmit={submit} busy={sending === "sending"} actions={<button type="submit" className="tp-btn tp-btn--primary" data-component="Button" disabled={sending === "sending"}><TpIcon name="send" size="sm" /><span>{sending === "sending" ? copy.sending : copy.send}</span></button>}>` with, in order: (a) when `errors.length > 0`, `<div ref={summaryRef} className="tp-error-summary" role="alert" tabIndex={-1} data-component="FormErrorSummary"><h3 className="tp-error-summary__title"><TpIcon name="alert" size="sm" /><span>{errors.length === 1 ? copy.errOne : copy.errTwo}</span></h3><ul>{errors.map((e) => <li key={e}><a href={`#${e === "subject" ? "af-subject" : "af-body"}`}>{e === "subject" ? copy.subjectErr : copy.bodyErr}</a></li>)}</ul></div>`; (b) `<TextInput id="af-subject" label={copy.subject} help={copy.subjectHelp} value={draft.subject} onChange={…} maxLength={ASK_FOUNDER_SUBJECT_MAX} error={errors.includes("subject") ? copy.subjectErr : undefined} />`; (c) `<Textarea id="af-body" label={copy.body} help={copy.bodyHelp} rows={6} value={draft.body} onChange={…} error={errors.includes("body") ? copy.bodyErr : undefined} />`; (d) `<RadioGroup legend={copy.priority}>` with three `<Radio id={`af-pri-${p}`} name="priority" value={p} label={copy[p]} hint={copy[`${p}Hint`]} checked={draft.priority === p} onChange={…} />` for `low`, `medium`, `high`; (e) `<Notice tone="info" title={copy.noticeTitle} body={copy.noticeBody.replace("{email}", "\u2068" + email + "\u2069")} live="off" />` (the email sits in a Unicode first-strong isolate so it stays LTR inside Hebrew); (f) when `sending === "sending" && !online` → `<Notice tone="caution" title={copy.queued} live="status" />`; (g) when `sending === "failed"` → `<Notice tone="danger" title={copy.failedTitle} body={copy.failedBody} live="alert" />`.
+  - **Sent panel:** `<div className="tp-status-panel tp-surface" data-tone="done" data-component="StatusPanel"><span className="tp-status-panel__icon" aria-hidden="true"><TpIcon name="check" size="lg" /></span><h2 ref={sentTitleRef} className="tp-status-panel__title" tabIndex={-1}>{name ? copy.sentTitle.replace("{name}", name) : copy.sentTitlePlain}</h2><p className="tp-status-panel__body">{copy.sentBody}</p>{sentSubject ? <p className="tp-status-panel__meta" dir="auto">{sentSubject}</p> : null}<div className="tp-status-panel__actions"><button type="button" className="tp-btn tp-btn--secondary" data-component="Button" onClick={onWriteAnother}>{copy.another}</button><Link href="/today" className="tp-btn tp-btn--ghost" data-component="Button">{copy.today}</Link></div></div>`. (The page's only `h1` stays in the header, so the panel title is an `h2`.)
+  - **Behaviour:** local state `draft: AskFounderDraft` (initial `{ subject: "", body: "", priority: "medium" }`) and `errors: ("subject" | "body")[]` (initial `[]`). `submit()`: if `sending === "sending"` return; `subject = draft.subject.trim()`, `body = draft.body.trim()`; `next` = `"subject"` when `subject === ""`, then `"body"` when `body === ""`; if `next.length > 0` → `setErrors(next)` and, after render, `summaryRef.current?.focus()`; else `setErrors([])` and `onSend({ subject, body, priority: draft.priority })`. Typing into a field removes that field from `errors` once its trimmed value is not empty. When `sending` changes from any value other than `"sent"` to `"sent"` after the first render (a `useRef` holds the previous value; nothing happens on mount), focus `sentTitleRef`. When `sending` changes from `"sent"` to `"idle"` (Write another), reset `draft` to the initial value and focus `#af-subject`. `"failed"` keeps the draft so the person can press Send again.
+  - **Copy** (`COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; EN from the design, HE gender-neutral per §12):
+    | key | EN | HE |
+    |---|---|---|
+    | title | Ask the founder | לשאול את המייסד |
+    | sub | Amit builds Tempo and reads every message himself. Questions, ideas, something that feels off: all welcome. | עמית בונה את Tempo וקורא כל הודעה בעצמו. שאלות, רעיונות, משהו שמרגיש לא בסדר: הכול מתקבל בברכה. |
+    | sectionTitle | Your message | ההודעה שלך |
+    | formLabel | Message to Amit | הודעה לעמית |
+    | subject | Subject | נושא |
+    | subjectHelp | A few words is plenty, like "Voice call cut out". | כמה מילים מספיקות, כמו ״השיחה הקולית נקטעה״. |
+    | subjectErr | Add a few words so Amit knows what it's about. | כדאי להוסיף כמה מילים כדי שעמית יבין על מה מדובר. |
+    | body | Message | הודעה |
+    | bodyHelp | Write it however it comes out. Hebrew or English both work. | אפשר לכתוב איך שזה יוצא, בעברית או באנגלית. |
+    | bodyErr | Write your message here. One line is fine. | כאן כותבים את ההודעה. גם שורה אחת מספיקה. |
+    | priority | How soon does this matter? | כמה מהר זה חשוב? |
+    | low | Low | נמוך |
+    | lowHint | An idea or a thought. Whenever there's time. | רעיון או מחשבה. מתי שיש זמן. |
+    | medium | Medium | בינוני |
+    | mediumHint | Something is in the way, but I can work around it. | משהו מפריע, אבל אפשר להסתדר. |
+    | high | High | גבוה |
+    | highHint | I can't use Tempo, or something about money or my data is wrong. | אי אפשר להשתמש ב־Tempo, או שמשהו בתשלום או במידע שלי לא תקין. |
+    | noticeTitle | What gets sent | מה נשלח |
+    | noticeBody | Your message, plus your name and email so Amit can reply: {email}. Nothing from your pages, tasks or chats is attached. | ההודעה שלך, יחד עם השם והאימייל שלך כדי שעמית יוכל לענות: {email}. שום דבר מהדפים, מהמשימות או מהשיחות שלך לא מצורף. |
+    | send | Send to Amit | לשלוח לעמית |
+    | sending | Sending… | שולחים… |
+    | queued | You're offline. Your message will send when you're back. | אין חיבור כרגע. ההודעה תישלח כשהחיבור יחזור. |
+    | failedTitle | Couldn't send your message. | לא הצלחנו לשלוח את ההודעה. |
+    | failedBody | Your words are still here. Try again in a moment. | המילים שלך עדיין כאן. אפשר לנסות שוב בעוד רגע. |
+    | errOne | One thing needs a look before sending | דבר אחד צריך מבט לפני השליחה |
+    | errTwo | Two things need a look before sending | שני דברים צריכים מבט לפני השליחה |
+    | sentTitle | Sent. Thank you, {name}. | נשלח. תודה, {name}. |
+    | sentTitlePlain | Sent. Thank you. | נשלח. תודה. |
+    | sentBody | Amit will read it himself. If he replies, the answer comes to your email. | עמית יקרא את זה בעצמו. אם הוא יענה, התשובה תגיע למייל שלך. |
+    | another | Write another | לכתוב עוד הודעה |
+    | today | Back to Today | חזרה להיום |
+    | loading | Loading your details | הפרטים שלך בטעינה |
+    | loadError | Couldn't load your details. | לא הצלחנו לטעון את הפרטים שלך. |
+    | signedOutTitle | Sign in to write to Amit. | צריך להתחבר כדי לכתוב לעמית. |
+    | signIn | Sign in | התחברות |
+    Strings owned by composed components (not in this COPY): StateOffline "You're offline. Changes save when you're back." / "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור."; StateError "Your data is safe." / "המידע שלך שמור." and "Try again" / "לנסות שוב"; Notice's sr-only tone words; TextInput/Textarea "(optional)" (not used here).
+  - **States (harness order; fixtures inline, `email: "maya.ronen@example.com"`, `name: "Maya"` unless noted):** `default` (`state: "default"`, `online: true`, `sending: "idle"`, `sentSubject: null`), `loading` (`state: "loading"`, `email: ""`), `error` (`state: "error"`, `email: ""`), `signed-out` (`state: "signed-out"`, `email: ""`, `name: null`), `offline` (`state: "default"`, `online: false`, `sending: "sending"`), `sending` (`state: "default"`, `online: true`, `sending: "sending"`), `failed` (`state: "default"`, `sending: "failed"`), `sent` (`state: "default"`, `sending: "sent"`, `sentSubject: "Voice call cut out"`). Each in `<section data-testid="ask-founder-view-<state>">`; `onSend`, `onWriteAnother`, `onRetry` write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="ask-founder-view-log">`. Disabled state: the Send button while `sending`.
+  - **RTL:** `dir` from `LocaleProvider`; logical tempo.css rules only; user text fields `dir="auto"` (TextInput type text / Textarea); the email is isolated LTR; the radio column sits at the inline start. **Keyboard / screen reader:** Tab order = Subject → Message → the priority radios (one tab stop, arrows move) → Send; on a failed submit focus moves to the error summary (`role="alert"`, `tabIndex={-1}`) whose links jump to the fields; fields carry `aria-invalid` and their error through `aria-describedby` (TextInput/Textarea); the Sent title takes focus after sending. **Breakpoints:** one column at 390 / 768; `.tp-page--narrow` caps the width at `--tp-paper-max` (760 px) at 1024 / 1280. **Motion:** none of its own; button hover from tempo.css (≤ `--tp-dur-base`).
+- **TESTS:** (CONVENTIONS §22 skeleton; 11 × 4 = 44; EN/HE values from SPEC Copy)
+  1. Given `ask-founder-view-default` / Then the `h1` reads `title`, `#af-subject` is labelled `subject` with `maxlength="120"`, `#af-body` is labelled `body`, `#af-pri-medium` is checked, the Notice text contains `maya.ronen@example.com`, and the submit button reads `send` with class `tp-btn--primary`.
+  2. Given `default` / When the submit button is clicked with both fields empty / Then a `[data-component="FormErrorSummary"]` with `role="alert"` is focused, its title reads `errTwo`, it holds links with `href` `#af-subject` and `#af-body`, `#af-subject` has `aria-invalid="true"`, and `ask-founder-view-log` is empty.
+  3. Given `default` / When `Voice call cut out` is typed in `#af-subject` and submit clicked / Then the summary title reads `errOne` with one link `#af-body`; When `It stopped after a minute.` is typed in `#af-body`, `#af-pri-high` is checked and submit clicked / Then the log reads `onSend:{"subject":"Voice call cut out","body":"It stopped after a minute.","priority":"high"}` and no FormErrorSummary is present.
+  4. Given `default` / When `  Hi  ` is typed in `#af-subject` and `  Body  ` in `#af-body` and submit clicked / Then the log reads `onSend:{"subject":"Hi","body":"Body","priority":"medium"}`.
+  5. Given `ask-founder-view-sending` / Then the submit button is `disabled` and reads `sending`.
+  6. Given `ask-founder-view-offline` / Then `[data-component="StateOffline"]` reads the §12 offline line for `lang` and a Notice in the form reads `queued`.
+  7. Given `ask-founder-view-failed` / Then a `role="alert"` Notice contains `failedTitle` and `failedBody`, and the submit button is enabled.
+  8. Given `ask-founder-view-sent` / Then an `h2` reads `Sent. Thank you, Maya.` (HE `נשלח. תודה, Maya.`), `.tp-status-panel__meta` reads `Voice call cut out`, a link `today` has `href="/today"`, and no form is present; When `another` is clicked / Then the log reads `onWriteAnother:null`.
+  9. Given `ask-founder-view-loading` / Then `[data-component="StateLoading"]` contains the sr-only text `loading` and no form is present (no motion check: the shimmer is a locked 1.4 s loop, CONVENTIONS §22).
+  10. Given `ask-founder-view-error` / Then it shows `loadError` and "Your data is safe." / "המידע שלך שמור."; When `Try again` / `לנסות שוב` is clicked / Then the log reads `onRetry:null`. And given `ask-founder-view-signed-out` / Then a link `signIn` has `href="/sign-in"`.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="ask-founder-view-default"]')` and `expectMotionBudget(page, '[data-testid="ask-founder-view-default"]')` pass.
+- **NUMBERS:** subject ≤ 120 characters (design `maxlength="120"`; `ASK_FOUNDER_SUBJECT_MAX`; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 and control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only, `bun run scan:design-tokens` passes) · error identification in text (WCAG 2.2 SC 3.3.1; bullets 2–3) · focus visible ≥ 2 px (SC 2.4.7; global `:focus-visible`) · motion ≤ 250 ms (DESIGN.md; bullet 11) · 44 of 44 pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** new: the form's fields (Subject ≤ 120 characters, Message, priority Low / Medium / High) follow the proposed `askFounderQueue` shape of CFG-017, which is OPEN ("Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?"); confirm that shape (in particular that priority is part of the message) before this View is built — Amit.
+
+### TFV2-0291b — Route: /ask-founder — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0291a, TFV2-0000b, TFV2-0000c, TFV2-0266a, TFV2-0268 · **Folds-in:** #475 (T-SCR-25)
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0291a, TFV2-0000b, TFV2-0000c, TFV2-0266a, TFV2-0268.
+- **WHY:** PRD F-110; design `docs/design/v3/screens/web/ask-founder.html`; CONVENTIONS §9 (web screen file set), §14 (page is the only Convex caller, `?state=` fixtures, `useOnline`), §17 (one wiring line), §22 (spec skeleton, screen pattern). Code truth: `apps/web/app/(tempo)/ask-founder/page.tsx` today renders only a `mailto:amit@tempoflow.app` link with `data-testid="ask-founder-page"`; `"/ask-founder"` is **not** in `E2E_WIRING_ROUTES` (`apps/web/lib/e2eWiringRoutes.ts`), so this ticket registers it. Backend: `profiles.getMine` (TFV2-0266a) gives name and email; `askFounder.submit` (TFV2-0268, which writes the CFG-017 `askFounderQueue` table) is OPEN.
+- **GOAL:** `/ask-founder` reads the person's name and email, renders `AskFounderView`, sends the message with `askFounder.submit`, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/ask-founder/page.tsx` · `apps/web/lib/e2e/fixtures/ask-founder.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one exact line, §17) · test: `tests/e2e/screens/ask-founder.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/ask-founder/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/ask-founder.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/ask-founder.spec.ts` (new) · route `/ask-founder` registered for the dev-only E2E bypass · runtime: one `askFounderQueue` row per send through `askFounder.submit` (live use only).
+- **STEPS:**
+  1. Code-map check: read the current `apps/web/app/(tempo)/ask-founder/page.tsx`; `grep -n '"/ask-founder"' apps/web/lib/e2eWiringRoutes.ts` prints nothing; `grep -n "export const submit" convex/askFounder.ts` prints the `mutation` (else `blocked: missing backend askFounder.submit`); `grep -n "export const getMine" convex/profiles.ts` prints the `query` (else `blocked: missing backend profiles.getMine`); `test -e apps/web/components/ask-founder/AskFounderView.tsx && test -e apps/web/lib/e2e/useE2EState.ts && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/ask-founder.ts` exactly as SPEC "Fixtures".
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. E2E route step: in `apps/web/lib/e2eWiringRoutes.ts` insert the line `  "/ask-founder",` as the last entry before `] as const;` (nothing else in the file changes).
+  5. Create `tests/e2e/screens/ask-founder.spec.ts` with the CONVENTIONS §22 spec skeleton (route form: `openScreen(page, "/ask-founder", { state, lang })` plus the console-error filter) and the 8 TESTS bullets.
+  6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line` (the existing wiring specs stay green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/ask-founder.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries (screen spec and `tests/e2e/wiring`) and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** contact Convex when `?state=` is forced; keep or add a `mailto:` link; attach page, task or chat content to the message; edit `AskFounderView.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*` (the `set.founder.*` keys stay, unused by this route); change any other line of `e2eWiringRoutes.ts`; edit `proxy.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0291b / evidence: <DONE output> / changed: apps/web/app/(tempo)/ask-founder/page.tsx, apps/web/lib/e2e/fixtures/ask-founder.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/ask-founder.spec.ts / unknowns / notes for ticket sync: the set.founder.mail / set.founder.mailHelp i18n keys are no longer used`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  Convex functions used (all throw `"Not authenticated"` / `"User not found"` / `"This account is not active"` from `requireUser`, except `users.getProfile`, which returns `null` signed out):
+  ```ts
+  api.users.getProfile     // query    args {}  → user row + greetingName | null (existing)
+  api.profiles.getMine     // query    args {}  → { email: string; fullName: string | null; callMe: string | null; address: "fem" | "masc" | null; lang: "en" | "he" } (TFV2-0266a)
+  api.askFounder.submit    // mutation args { subject: string; body: string; priority: "low" | "medium" | "high" } → Id<"askFounderQueue"> (TFV2-0268)
+  ```
+  Any rejected `submit` (whatever its message) sets `sending` to `"failed"`; a thrown query reaches the boundary.
+  **page.tsx** (one file, in this order):
+  ```tsx
+  "use client";
+  import { useConvexAuth, useMutation, useQuery } from "convex/react";
+  import { Component, Fragment, type ReactNode, Suspense, useState } from "react";
+  import { AskFounderView, type AskFounderDraft, type AskFounderSending, type AskFounderViewProps } from "@/components/ask-founder/AskFounderView";
+  import { api } from "@/convex/_generated/api";
+  import { FIXTURES } from "@/lib/e2e/fixtures/ask-founder";
+  import { useE2EState } from "@/lib/e2e/useE2EState";
+  import { useOnline } from "@/lib/useOnline";
+
+  export type AskFounderFixture = Omit<AskFounderViewProps, "onSend" | "onWriteAnother" | "onRetry">;
+  export type AskFounderFixtureState = "default" | "loading" | "error" | "signed-out" | "offline" | "failed" | "sent";
+  const LOADING: AskFounderFixture = { state: "loading", online: true, email: "", name: null, sending: "idle", sentSubject: null };
+  const NOOP = { onSend: () => {}, onWriteAnother: () => {}, onRetry: () => {} } satisfies Partial<AskFounderViewProps>;
+
+  export default function Page() {
+    return (<div data-testid="ask-founder-page"><Suspense fallback={null}><AskFounderRoute /></Suspense></div>);
+  }
+  class AskFounderBoundary extends Component<{ online: boolean; children: ReactNode }, { failed: boolean; attempt: number }> {
+    // state = { failed: false, attempt: 0 }; static getDerivedStateFromError() { return { failed: true }; }
+    // retry = () => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }));
+    // render: failed → <AskFounderView {...LOADING} state="error" online={this.props.online} {...NOOP} onRetry={this.retry} />
+    //         else   → <Fragment key={this.state.attempt}>{this.props.children}</Fragment>
+  }
+  function AskFounderRoute() {
+    const forced = useE2EState();
+    const online = useOnline();
+    if (forced !== null) return <AskFounderForced forced={forced} />;
+    return (<AskFounderBoundary online={online}><AskFounderLive online={online} /></AskFounderBoundary>);
+  }
+  ```
+  **`AskFounderForced({ forced })`:** `const fixture = FIXTURES[forced as AskFounderFixtureState] ?? FIXTURES.error;` local `sending` / `sentSubject` start from the fixture; renders `<AskFounderView {...fixture} sending={sending} sentSubject={sentSubject} onSend={(d: AskFounderDraft) => { setSentSubject(d.subject); setSending("sent"); }} onWriteAnother={() => { setSentSubject(null); setSending("idle"); }} onRetry={() => {}} />`. No Convex hook is called in this component.
+  **`AskFounderLive({ online })`:** `const { isAuthenticated, isLoading } = useConvexAuth(); const profileRow = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip"); const ready = isAuthenticated && profileRow != null; const me = useQuery(api.profiles.getMine, ready ? {} : "skip"); const submit = useMutation(api.askFounder.submit); const [sending, setSending] = useState<AskFounderSending>("idle"); const [sentSubject, setSentSubject] = useState<string | null>(null);` `state` = `"signed-out"` when `!isLoading && !isAuthenticated`; `"loading"` when `!ready || me === undefined`; else `"default"`. Props: `email = me?.email ?? ""`, `name = me ? (me.callMe ?? me.fullName) : null`, `online`. `onSend(d)`: `setSending("sending"); submit({ subject: d.subject, body: d.body, priority: d.priority }).then(() => { setSentSubject(d.subject); setSending("sent"); }).catch(() => setSending("failed"));` (while offline the Convex client holds the mutation and sends it on reconnect, so the View shows `queued` until it resolves). `onWriteAnother()`: `setSentSubject(null); setSending("idle");`. `onRetry` comes from the boundary only (`() => {}` here).
+  **Fixtures** (`apps/web/lib/e2e/fixtures/ask-founder.ts`; only `import type { AskFounderFixture, AskFounderFixtureState } from "@/app/(tempo)/ask-founder/page";` and `export const FIXTURES: Record<AskFounderFixtureState, AskFounderFixture> = { … };`, nothing else exported): with `const ME = { email: "maya.ronen@example.com", name: "Maya" }` written inline in each entry — `default` `{ state: "default", online: true, email, name, sending: "idle", sentSubject: null }`; `loading` `{ state: "loading", online: true, email: "", name: null, sending: "idle", sentSubject: null }`; `error` same as loading with `state: "error"`; `signed-out` same as loading with `state: "signed-out"`; `offline` `{ state: "default", online: false, email, name, sending: "sending", sentSubject: null }`; `failed` `{ state: "default", online: true, email, name, sending: "failed", sentSubject: null }`; `sent` `{ state: "default", online: true, email, name, sending: "sent", sentSubject: "Voice call cut out" }`.
+  **Wiring line (§17):** `  "/ask-founder",` inserted as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0291a); this ticket adds no visible string. The wrapper keeps `data-testid="ask-founder-page"` (listed in `tests/e2e/feature-sweep.spec.ts:1160`'s route list, a storage-state spec that skips in CI).
+- **TESTS:** (route spec, CONVENTIONS §22: each bullet at both viewports × both languages; every case asserts `page.getByTestId("ask-founder-page")` is attached and ends with `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; copy values from TFV2-0291a's table, kept in the spec's own `EXPECT` constant; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Ask the founder" (HE "לשאול את המייסד"), the Notice contains `maya.ronen@example.com`, `#af-pri-medium` is checked, and `measureVitals(page, "/ask-founder?state=default&lang=" + lang)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+  2. Given `?state=default` / When `Voice call cut out` is typed in `#af-subject`, `It stopped after a minute.` in `#af-body` and "Send to Amit" (HE "לשלוח לעמית") clicked / Then an `h2` reads "Sent. Thank you, Maya." (HE "נשלח. תודה, Maya.") and is the focused element, and `.tp-status-panel__meta` reads `Voice call cut out`.
+  3. Given the Sent panel of bullet 2 / When "Write another" (HE "לכתוב עוד הודעה") is clicked / Then `#af-subject` is visible, empty and focused.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with the sr-only text "Loading your details" (HE "הפרטים שלך בטעינה").
+  5. Given `?state=error` / Then "Couldn't load your details." (HE "לא הצלחנו לטעון את הפרטים שלך.") and a "Try again" (HE "לנסות שוב") button are visible.
+  6. Given `?state=signed-out` / Then a link "Sign in" (HE "התחברות") with `href="/sign-in"` is visible.
+  7. Given `?state=offline` / Then the StateOffline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and the Notice "You're offline. Your message will send when you're back." (HE "אין חיבור כרגע. ההודעה תישלח כשהחיבור יחזור.") are visible.
+  8. Given `?state=failed` / Then a `role="alert"` element contains "Couldn't send your message." (HE "לא הצלחנו לשלוח את ההודעה.") and the "Send to Amit" button is enabled; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="ask-founder-page"]')` and `expectMotionBudget(page, '[data-testid="ask-founder-page"]')` pass.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`, bullet 1) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview; not a ticket gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · subject ≤ 120 characters (from the View) · backend p95 latency of `askFounder.submit`: UNKNOWN (no baseline; not a gate) · 32 of 32 pass.
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0268 (CFG-017: Table name `askFounderQueue` or `feedback` (BACKEND-SCHEMA §7), and is this shape right?) — Amit.
+
+### TFV2-0292 — Component: Container (`apps/web/components/marketing/Container.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (Container, `.tp-container`, 1120 max); tempo.css `@component Container` block (line 1344: `.tp-container { width: 100%; max-width: calc(var(--tp-space-20) * 14); margin-inline: auto; padding-inline: var(--tp-space-6); }`, and line 1483 inside `@media (max-width: 767px)`: `padding-inline: var(--tp-space-4)`) → CONVENTIONS §10 Case A. Code truth: no `Container` component exists; `apps/web/components/marketing-pages/MarketingChrome.tsx` and the three marketing pages write `className="tp-container"` by hand. The marketing screens (TFV2-0303b, TFV2-0304, TFV2-0305) use this component for their `<main>`.
+- **GOAL:** `Container` renders a `div` or `main` with `.tp-container` (max 1120 px, centred, logical padding) from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/Container.tsx` · `apps/web/app/e2e/components/container/page.tsx` · test: `tests/e2e/screens/container.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Container.tsx` (new) · `apps/web/app/e2e/components/container/page.tsx` (new) · `tests/e2e/screens/container.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Container " apps/web/app/tempo.css` prints line 1344; `grep -n "tp-container { padding-inline" apps/web/app/tempo.css` prints line 1483; `test -e apps/web/components/marketing/Container.tsx` fails; `grep -n "^.ab-main" apps/web/app/v3/extras.css` prints line 63 (used by the `main` harness state).
+  2. Stylesheet: Case A — no `.css` file; use only `.tp-container` (plus the caller's `className`).
+  3. Create `Container.tsx` exactly as SPEC (no hooks, no `"use client"`).
+  4. Create the harness page (`"use client"`) with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/container.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** add a stylesheet or inline style; set colours, fonts or a background (layout only); import another component; edit `MarketingChrome.tsx`, `LandingPage.tsx` or the marketing pages; touch `apps/web/app/tempo.css`, `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0292 / evidence: <DONE output> / changed: apps/web/components/marketing/Container.tsx, apps/web/app/e2e/components/container/page.tsx, tests/e2e/screens/container.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  export type ContainerProps = {
+    as?: "div" | "main";   // default "div"
+    id?: string;
+    className?: string;    // extra page-level class, appended after "tp-container"
+    tabIndex?: number;     // the marketing <main id="main" tabIndex={-1}> skip-link target
+    children: ReactNode;
+  };
+  export function Container({ as = "div", id, className, tabIndex, children }: ContainerProps): JSX.Element;
+  ```
+  - **Markup:** `const Tag = as;` → `<Tag id={id} tabIndex={tabIndex} className={className ? \`tp-container ${className}\` : "tp-container"} data-component="Container">{children}</Tag>`.
+  - **Copy:** none. The component has no visible strings of its own.
+  - **Styling** (tempo.css, Case A): `width: 100%`, `max-width: calc(var(--tp-space-20) * 14)` = 1120 px, `margin-inline: auto`, `padding-inline: var(--tp-space-6)` (24 px) at ≥ 768 px and `var(--tp-space-4)` (16 px) below 768 px. The app's preflight sets `box-sizing: border-box`, so the 1120 px include the padding.
+  - **States (harness order):** `default` — `<Container><p>Container content</p></Container>`; `main` — `<Container as="main" id="harness-main" tabIndex={-1} className="ab-main"><p>First block</p><p>Second block</p></Container>`. The harness text is a developer-only fixture on a dev-only route that 404s in production (TFV2-0023a); it is not product copy and has no Hebrew. Each state is `<section data-testid="container-<state>">…</section>`. No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (a static layout wrapper).
+  - **RTL:** only logical properties (`margin-inline`, `padding-inline`), so it mirrors with `dir`; children inherit the direction. **Keyboard / screen reader:** not focusable unless the caller passes `tabIndex={-1}` (the skip-link target, focusable by script only); `as="main"` gives the landmark. **Breakpoints:** 390 px: full width, 16 px padding; 768 px and up: 24 px padding; 1280 px: 1120 px wide, centred. **Motion:** none.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "container", { lang })`; each bullet runs at both viewports × both languages; 4 × 4 = 16):
+  1. Given `container-default` / Then its child `[data-component="Container"]` is a `DIV` whose `className` is exactly `"tp-container"`, and computed `max-width` is `"1120px"` and computed `margin-inline-start` equals computed `margin-inline-end`.
+  2. Given `container-default` / Then at desktop its bounding box width is 1120 (±0.5) and computed `padding-inline-start` is `"24px"`; at mobile its width equals the section's width (±0.5) and computed `padding-inline-start` is `"16px"`.
+  3. Given `container-main` / Then the element is a `MAIN` with `id="harness-main"`, attribute `tabindex="-1"`, `classList` containing both `tp-container` and `ab-main`, and computed `display` `"grid"`.
+  4. Given the harness / Then `expectDir(page, lang)` passes, the computed `direction` of `container-default`'s `p` is `"rtl"` for `he` and `"ltr"` for `en`, and `expectMotionBudget(page, '[data-testid^="container-"]')` passes.
+- **NUMBERS:** max width 1120 px (components.md §2.16; tempo.css `calc(var(--tp-space-20) * 14)`; bullets 1–2) · inline padding 24 px ≥ 768 px, 16 px below (tempo.css lines 1344, 1483; bullet 2) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule; CONVENTIONS §20; bullet 4) · 16 of 16 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0293 — Component: SiteHeader (`apps/web/components/marketing/SiteHeader.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (SiteHeader: solid, not glass; "Sign in" link); design `docs/design/v3/screens/web/landing.html`, `about.html`, `changelog.html` (same header on all three; About carries `aria-current="page"` on the About link); tempo.css `@component SiteHeader` block (line 1347: `.tp-site-header`, `__inner`, `__brand`, `.tp-site-nav`, `.tp-site-link`, `.tp-site-link[aria-current="page"]`) plus line 1486 (`.tp-site-link--wide { display: none; }` below 768 px) and `.tp-skip` (lines 96–101) → CONVENTIONS §10 Case A. Code truth: the header is drawn inline in `apps/web/components/marketing-pages/MarketingChrome.tsx` with `t("mk.*")` keys (HE "כניסה" for Sign in, which the §12 glossary replaces with "התחברות"); no props-only `SiteHeader` exists. The language switch is a slot (`languageSwitch: ReactNode`) so this ticket does not depend on the later LanguageSwitch ticket (TFV2-0301); the screens pass `<LanguageSwitch …/>` into it.
+- **GOAL:** `SiteHeader` renders the skip link, the "Tempo" brand, three section links (hidden below 768 px), "Sign in" and a language-switch slot, marking the current page, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/SiteHeader.tsx` · `apps/web/app/e2e/components/site-header/page.tsx` · test: `tests/e2e/screens/site-header.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/SiteHeader.tsx` (new) · `apps/web/app/e2e/components/site-header/page.tsx` (new) · `tests/e2e/screens/site-header.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component SiteHeader " apps/web/app/tempo.css` prints line 1347; `grep -n "tp-site-link--wide" apps/web/app/tempo.css` prints line 1486; `grep -n "^.tp-skip" apps/web/app/tempo.css` prints line 96; `test -e apps/web/components/marketing/SiteHeader.tsx` fails; read `apps/web/components/marketing-pages/MarketingChrome.tsx` lines 60–90 (reference only; do not edit).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `SiteHeader.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-header.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** use `.tp-glass` or any translucent surface; add a theme toggle, a brand image or a "Sign up" link (not in the v3 design); import `LanguageSwitch` or any other component (the switch arrives through the slot); call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; edit `MarketingChrome.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0293 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteHeader.tsx, apps/web/app/e2e/components/site-header/page.tsx, tests/e2e/screens/site-header.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  export type MarketingPage = "home" | "about" | "changelog";
+  export type SiteHeaderProps = {
+    current: MarketingPage;     // which marketing page is showing
+    languageSwitch: ReactNode;  // the screen passes <LanguageSwitch current={lang} onChoose={setLang} />
+  };
+  export function SiteHeader({ current, languageSwitch }: SiteHeaderProps): JSX.Element;
+  ```
+  - **Imports:** `Link` from `next/link`; `type ReactNode` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`. `const { lang } = useLocale(); const copy = COPY[lang];`
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
+    | key | EN | HE |
+    |---|---|---|
+    | skip | Skip to content | דילוג לתוכן |
+    | brand | Tempo | Tempo |
+    | nav | Main | ראשי |
+    | what | What it is | מה זה |
+    | pricing | Pricing | מחירים |
+    | about | About | אודות |
+    | signIn | Sign in | התחברות |
+  - **Markup:**
+    ```tsx
+    <header className="tp-site-header" data-component="SiteHeader">
+      <a className="tp-skip" href="#main">{copy.skip}</a>
+      <div className="tp-container tp-site-header__inner">
+        <Link className="tp-site-header__brand" href="/">{copy.brand}</Link>
+        <nav className="tp-site-nav" aria-label={copy.nav}>
+          <Link className="tp-site-link tp-site-link--wide" href="/#what">{copy.what}</Link>
+          <Link className="tp-site-link tp-site-link--wide" href="/#pricing">{copy.pricing}</Link>
+          <Link className="tp-site-link tp-site-link--wide" href="/about" aria-current={current === "about" ? "page" : undefined}>{copy.about}</Link>
+          <Link className="tp-site-link" href="/sign-in">{copy.signIn}</Link>
+          {languageSwitch}
+        </nav>
+      </div>
+    </header>
+    ```
+    `current === "home"` and `current === "changelog"` set no `aria-current` here (the changelog link lives in the footer, TFV2-0300).
+  - **Styling** (tempo.css, Case A): header `position: sticky; top: 0; z-index: 20`, background `--tp-ground` (solid), border-bottom `1px solid var(--tp-line)`; inner row flex, gap `--tp-space-4`, min-height `--tp-space-16` (64 px); brand `--tp-font-serif` `--tp-text-lg` weight 600 `--tp-ink`; nav `margin-inline-start: auto`, gap `--tp-space-1`; link min-height `--tp-touch` (44 px), padding `0 var(--tp-space-3)`, radius `--tp-radius-md`, `--tp-ink-muted` `--tp-text-sm` weight 600, `[aria-current="page"]` → `--tp-ink`, hover `--tp-hover`; `.tp-site-link--wide` hidden below 768 px; skip link translated off-screen until `:focus-visible`.
+  - **States (harness order):** `default` (`current="home"`), `about` (`current="about"`). Each is `<section data-testid="site-header-<state>"><SiteHeader current=… languageSwitch={<span data-testid="site-header-slot-<state>">LanguageSwitch slot</span>} /></section>` (the slot text is a developer-only stand-in, not product copy). No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static navigation; offline is the screen's banner).
+  - **RTL:** flex row and `margin-inline-start: auto` mirror with `dir`, so in Hebrew the brand sits at the right and the nav at the left; "Tempo" stays in Latin letters. **Keyboard / screen reader:** Tab order skip link → brand → visible nav links → Sign in → slot; the skip link becomes visible on focus and targets `#main`; `nav` is a named landmark (`copy.nav`); the current page link is announced as current (`aria-current="page"`). **Breakpoints:** below 768 px only brand, Sign in and the slot show; 768 px and up all links show; `.tp-container` caps the row at 1120 px. **Motion:** none added (`.tp-site-link` has no transition).
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "site-header", { lang })`; 5 × 4 = 20):
+  1. Given `site-header-default` / Then its `header[data-component="SiteHeader"]` contains a `nav` with `aria-label` = `EXPECT[lang].nav`, a brand link with text `Tempo` and `href="/"`, a link named `EXPECT[lang].signIn` with `href="/sign-in"`, and `site-header-slot-default` is the last child of that `nav`.
+  2. Given `site-header-default` / Then at desktop the links named `what`, `pricing`, `about` are visible with `href` `/#what`, `/#pricing`, `/about`; at mobile those three are hidden (`toBeHidden()`) while the Sign in link and the slot are visible.
+  3. Given `site-header-about` / Then the link with `href="/about"` has `aria-current="page"`; and `site-header-default` contains no element with an `aria-current` attribute.
+  4. Given the harness / When `page.keyboard.press("Tab")` is pressed once from the page start / Then the focused element is the `a.tp-skip` of `site-header-default` with text `EXPECT[lang].skip` and `href="#main"`, and its computed `transform` is `"none"`.
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="site-header-"]')` and `expectMotionBudget(page, '[data-testid^="site-header-"]')` pass, the `header` computed `position` is `"sticky"`, and at desktop the brand link's `x` is greater than the Sign in link's `x` for `he` and smaller for `en`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; links are 44 px tall; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; colours only from §5 tokens through tempo.css, `bun run scan:design-tokens` passes) · focus visible: outline `--tp-focus-w` 2 px (WCAG 2.2 SC 2.4.7; global `:focus-visible` in tempo.css) · bypass blocks: a skip link is the first focusable element (WCAG 2.2 SC 2.4.1; bullet 4) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; CONVENTIONS §20; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0294 — Component: Hero (`apps/web/components/marketing/Hero.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (Hero: `.tp-hero`, `__title`, `__lede`, `__actions`, `__note` + `.tp-eyebrow`; one primary); design `landing.html` (eyebrow, title, lede, primary "Ask to join", secondary "See how it works", note), `about.html` and `changelog.html` (eyebrow, title, lede, no actions); tempo.css `@component Hero` block (line 1356) plus lines 1484–1485 (below 768 px: padding-block `--tp-space-12` `--tp-space-10`, title `--tp-text-3xl`) and `.tp-eyebrow` (line 86) → CONVENTIONS §10 Case A. Code truth: `apps/web/app/about/page.tsx` and `changelog/page.tsx` write the hero markup inline; no `Hero` component exists. The hero's words differ per page, so all copy arrives through props and the component has no `COPY` of its own (the screens TFV2-0303b, TFV2-0304, TFV2-0305 own the strings).
+- **GOAL:** `Hero` renders the page's eyebrow, one `h1`, lede, at most one primary and one secondary link, and an optional note, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/Hero.tsx` · `apps/web/app/e2e/components/hero/page.tsx` · test: `tests/e2e/screens/hero.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Hero.tsx` (new) · `apps/web/app/e2e/components/hero/page.tsx` (new) · `tests/e2e/screens/hero.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Hero " apps/web/app/tempo.css` prints line 1356; `grep -n "tp-hero__title { font-size: var(--tp-text-3xl)" apps/web/app/tempo.css` prints line 1485; `test -e apps/web/components/marketing/Hero.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Hero.tsx` exactly as SPEC (no hooks, no `"use client"`).
+  4. Create the harness page (`"use client"`) with the three SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/hero.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** add metrics, counters, badges or "facts" rows; render more than one `.tp-btn--primary`; use glass; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; edit the marketing pages; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0294 / evidence: <DONE output> / changed: apps/web/components/marketing/Hero.tsx, apps/web/app/e2e/components/hero/page.tsx, tests/e2e/screens/hero.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type HeroAction = { href: string; label: string };
+  export type HeroProps = {
+    titleId: string;         // id of the h1; the section is aria-labelledby it
+    eyebrow?: string;
+    title: string;
+    lede: string;
+    primary?: HeroAction;    // the page's one primary action
+    secondary?: HeroAction;
+    note?: string;
+  };
+  export function Hero({ titleId, eyebrow, title, lede, primary, secondary, note }: HeroProps): JSX.Element;
+  ```
+  - **Imports:** `Link` from `next/link` only.
+  - **Markup:**
+    ```tsx
+    <section className="tp-hero" data-component="Hero" aria-labelledby={titleId}>
+      {eyebrow ? <span className="tp-eyebrow">{eyebrow}</span> : null}
+      <h1 className="tp-hero__title" id={titleId}>{title}</h1>
+      <p className="tp-hero__lede">{lede}</p>
+      {primary || secondary ? (
+        <div className="tp-hero__actions">
+          {primary ? <Link className="tp-btn tp-btn--primary" href={primary.href}>{primary.label}</Link> : null}
+          {secondary ? <Link className="tp-btn tp-btn--secondary" href={secondary.href}>{secondary.label}</Link> : null}
+        </div>
+      ) : null}
+      {note ? <p className="tp-hero__note">{note}</p> : null}
+    </section>
+    ```
+  - **Copy:** none built in; every visible string is a prop.
+  - **Styling** (tempo.css, Case A): grid, gap `--tp-space-6`, padding-block `--tp-space-20` `--tp-space-16` (below 768 px `--tp-space-12` `--tp-space-10`), max-width `--tp-paper-max`; title `--tp-font-serif` `--tp-text-4xl` (below 768 px `--tp-text-3xl`) weight 500, `--tp-leading-heading`, max-width 20ch; lede `--tp-text-lg` `--tp-ink-muted` max-width `--tp-measure`; actions flex-wrap gap `--tp-space-3`; note `--tp-text-sm` `--tp-ink-muted`; eyebrow `--tp-text-xs` uppercase in English, no transform under `:lang(he)`; buttons are Stage 1 `.tp-btn` (min-height `--tp-touch`).
+  - **States (harness order; fixtures inline; each `<section data-testid="hero-<state>">`):**
+    - `default` — `{ titleId: "hero-title-default", eyebrow: "A starter for your brain", title: "Tempo Flow — your brain's operating system", lede: "Notes, plans and a coach in one calm place. You write or talk. The coach remembers, paces you, and changes the app when you say yes.", primary: { href: "/sign-up", label: "Ask to join" }, secondary: { href: "#how", label: "See how it works" }, note: "We let people in a few at a time. You'll get an email when it's your turn." }`;
+    - `hebrew` — `{ titleId: "hero-title-hebrew", eyebrow: "סטרטר למוח שלך", title: "Tempo Flow — מערכת ההפעלה של המוח שלך", lede: "פתקים, תוכניות ומאמן במקום אחד ורגוע. כותבים או מדברים. המאמן זוכר, קובע קצב ומשנה את האפליקציה אחרי אישור.", primary: { href: "/sign-up", label: "בקשה להצטרף" }, secondary: { href: "#how", label: "איך זה עובד" }, note: "אנחנו מכניסים אנשים בהדרגה. נשלח מייל כשמגיע התור." }`;
+    - `minimal` — `{ titleId: "hero-title-minimal", eyebrow: "About Tempo", title: "A calm place for a busy brain", lede: "Tempo is an executive function aid for adults with ADHD, autism or learning disabilities. It is a coach, not a therapist or counselor." }`.
+    (Fixture text comes from the design files; it is test data here, the screens own the live strings.) No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static content).
+  - **RTL:** grid and flex follow `dir`; in Hebrew the primary link sits at the right, then the secondary; "Tempo Flow" stays in Latin letters. **Keyboard / screen reader:** native links in reading order primary → secondary; the section is a region named by the `h1`; exactly one `h1`. **Breakpoints:** 390 px: title `--tp-text-3xl`, actions wrap; 768 px and up: `--tp-text-4xl`. **Motion:** only Stage 1 button transitions (`--tp-dur-fast`).
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "hero", { lang })`; 4 × 4 = 16):
+  1. Given `hero-default` / Then `section[data-component="Hero"]` has `aria-labelledby="hero-title-default"`, which is the id of its only `h1`; the eyebrow, title, lede and note texts equal the fixture; the section has exactly one `.tp-btn--primary` (text "Ask to join", `href="/sign-up"`) and one `.tp-btn--secondary` (text "See how it works", `href="#how"`).
+  2. Given `hero-minimal` / Then it has an eyebrow, an `h1` and a lede, and no `.tp-hero__actions` and no `.tp-hero__note`.
+  3. Given `hero-default` / Then the `h1` computed `font-size` equals `getComputedStyle(document.documentElement).getPropertyValue("--tp-text-4xl").trim()` at desktop and `--tp-text-3xl` at mobile.
+  4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="hero-"]')` and `expectMotionBudget(page, '[data-testid^="hero-"]')` pass, and in `hero-hebrew` the primary link's `x` is greater than the secondary link's `x` for `he` and smaller for `en` (both on one row at desktop; at mobile both still fit one row at 390 px — assert the same comparison).
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; buttons 44 px; bullet 4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · one primary action per hero (components.md §2.16; bullet 1) · title size = `--tp-text-4xl` / `--tp-text-3xl` (CONVENTIONS §5 tokens, not raw px; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 4) · 16 of 16 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0295 — Component: FeatureRow (`apps/web/components/marketing/FeatureRow.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (FeatureRow: `.tp-feature`, `--flip`, `__text`, `__title`, `__body`, `__figure`; the figure is built from real Tempo components); design `landing.html` (three rows under "What it is" with `h3` titles, the second flipped; the "Live voice" row with an eyebrow, an `h2` title and flip; every figure is `inert`); tempo.css `@component FeatureRow` block (line 1363) plus lines 1472–1473 (below 1024 px: one column, flip order reset) → CONVENTIONS §10 Case A. Code truth: no `FeatureRow` component exists (the current landing, `components/marketing-pages/LandingPage.tsx`, uses Tailwind cards from an older design). The figure arrives as a `ReactNode` prop; the landing figures are TFV2-0303a.
+- **GOAL:** `FeatureRow` renders a text column (optional eyebrow, `h2`/`h3` title, body) beside an inert figure slot, flipping order on wide screens when asked, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/FeatureRow.tsx` · `apps/web/app/e2e/components/feature-row/page.tsx` · test: `tests/e2e/screens/feature-row.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/FeatureRow.tsx` (new) · `apps/web/app/e2e/components/feature-row/page.tsx` (new) · `tests/e2e/screens/feature-row.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component FeatureRow " apps/web/app/tempo.css` prints line 1363; `grep -n "tp-feature--flip .tp-feature__figure { order: 0; }" apps/web/app/tempo.css` prints line 1473; `test -e apps/web/components/marketing/FeatureRow.tsx` fails; `grep -n '"react"' apps/web/package.json` shows React 19 (the `inert` boolean prop is supported).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `FeatureRow.tsx` exactly as SPEC (no hooks, no `"use client"`).
+  4. Create the harness page (`"use client"`) with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/feature-row.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** render images, screenshots or stock art; import any figure or other component (figures come through `figure`); make the figure focusable or interactive; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0295 / evidence: <DONE output> / changed: apps/web/components/marketing/FeatureRow.tsx, apps/web/app/e2e/components/feature-row/page.tsx, tests/e2e/screens/feature-row.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  export type FeatureRowProps = {
+    titleId: string;
+    eyebrow?: string;
+    title: string;
+    body: string;
+    figure: ReactNode;        // an illustration built from real Tempo component classes (TFV2-0303a)
+    flip?: boolean;           // default false
+    headingLevel?: 2 | 3;     // default 3
+  };
+  export function FeatureRow({ titleId, eyebrow, title, body, figure, flip = false, headingLevel = 3 }: FeatureRowProps): JSX.Element;
+  ```
+  - **Markup:** `const Heading = headingLevel === 2 ? "h2" : "h3";`
+    ```tsx
+    <div className={flip ? "tp-feature tp-feature--flip" : "tp-feature"} data-component="FeatureRow" data-flip={flip ? "true" : "false"}>
+      <div className="tp-feature__text">
+        {eyebrow ? <span className="tp-eyebrow">{eyebrow}</span> : null}
+        <Heading className="tp-feature__title" id={titleId}>{title}</Heading>
+        <p className="tp-feature__body">{body}</p>
+      </div>
+      <figure className="tp-feature__figure" inert>{figure}</figure>
+    </div>
+    ```
+  - **Copy:** none built in; every visible string is a prop.
+  - **Styling** (tempo.css, Case A): two equal columns `repeat(2, minmax(0, 1fr))`, gap `--tp-space-10`, padding-block `--tp-space-12`, border-top `1px solid var(--tp-line)`; `--flip` puts the figure first (`order: -1`); below 1024 px one column, gap `--tp-space-6`, flip reset (`order: 0`, so the text is always above the figure on phones and tablets); title `--tp-font-serif` `--tp-text-2xl` weight 500; body `--tp-ink-muted`, max-width `--tp-measure`; figure `--tp-paper`, radius `--tp-radius-xl`, `--tp-shadow-card`, padding `--tp-space-6`.
+  - **States (harness order; fixtures inline; each `<section data-testid="feature-row-<state>">`):**
+    - `default` — `{ titleId: "fr-title-default", title: "Pages in plain Markdown", body: "Every note, plan and list is a page you own. Tasks, habits and time blocks sit right inside the text. You can export everything as Markdown files.", figure: <p data-testid="feature-row-figure-default">Figure <a href="#figure-link" data-testid="feature-row-figure-link">link</a></p> }`;
+    - `flip` — `{ titleId: "fr-title-flip", eyebrow: "What it is", title: "Templates that do the setup for you", body: "Start a daily page, a weekly review or a project with one choice. Ask the coach for a new template and it builds one with you.", figure: <p data-testid="feature-row-figure-flip">Figure</p>, flip: true, headingLevel: 2 }`.
+    (Fixture text from `landing.html`, test data only; the figure stand-ins and the link inside are developer-only.) No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static content).
+  - **RTL:** the grid follows `dir`: in Hebrew the first column is at the right, so a non-flipped row shows the text at the right and the figure at the left; flipped rows reverse that. **Keyboard / screen reader:** the figure is `inert` (not focusable and hidden from assistive technology, because it is an illustration whose meaning the text already gives); the heading level fits the page outline (`h3` under a section `h2`, `h2` when the row is the section). **Breakpoints:** below 1024 px stacked (text, then figure); 1024 px and up two columns. **Motion:** none.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "feature-row", { lang })`; 5 × 4 = 20):
+  1. Given `feature-row-default` / Then `[data-component="FeatureRow"]` has `data-flip="false"` and class list without `tp-feature--flip`, contains an `h3` with `id="fr-title-default"` and the fixture title, the body text, and a `figure.tp-feature__figure` that has the `inert` attribute.
+  2. Given `feature-row-flip` / Then it has `data-flip="true"`, class `tp-feature--flip`, an `h2` with `id="fr-title-flip"`, and a `.tp-eyebrow` with text "What it is" before the heading.
+  3. Given both states / Then at desktop, for `feature-row-default` the `.tp-feature__text` box `x` is smaller than the figure's `x` for `en` and greater for `he`, and for `feature-row-flip` the comparison is reversed; at mobile, in both states the text box's `y` is smaller than the figure's `y`.
+  4. Given `feature-row-default` / When `page.evaluate` calls `.focus()` on `feature-row-figure-link` / Then `document.activeElement` is not that link (inert).
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="feature-row-"] .tp-feature__text')` and `expectMotionBudget(page, '[data-testid^="feature-row-"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · reading order matches visual order on phones: text above figure (WCAG 2.2 SC 1.3.2; bullet 3) · decorative figure not focusable (WCAG 2.2 SC 2.4.3; bullet 4) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0296 — Component: HowItWorks (`apps/web/components/marketing/HowItWorks.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (HowItWorks: `ol.tp-steps`, `.tp-step`, `__num`, `__title`, `__body`); design `landing.html` ("Write. Talk. Say yes." — three steps, the number `aria-hidden`); tempo.css `@component HowItWorks` block (line 1371) → CONVENTIONS §10 Case A. Code truth: no `HowItWorks` component exists. The step words arrive through props (the landing screen TFV2-0303b owns them), so the component has no `COPY`.
+- **GOAL:** `HowItWorks` renders an ordered list of steps, each with a visual number, title and body, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/HowItWorks.tsx` · `apps/web/app/e2e/components/how-it-works/page.tsx` · test: `tests/e2e/screens/how-it-works.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/HowItWorks.tsx` (new) · `apps/web/app/e2e/components/how-it-works/page.tsx` (new) · `tests/e2e/screens/how-it-works.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component HowItWorks " apps/web/app/tempo.css` prints line 1371; `test -e apps/web/components/marketing/HowItWorks.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `HowItWorks.tsx` exactly as SPEC (no hooks, no `"use client"`).
+  4. Create the harness page (`"use client"`) with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/how-it-works.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** add steps, icons or progress indicators; let screen readers read the number twice (the `ol` already numbers); add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0296 / evidence: <DONE output> / changed: apps/web/components/marketing/HowItWorks.tsx, apps/web/app/e2e/components/how-it-works/page.tsx, tests/e2e/screens/how-it-works.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type HowItWorksStep = { title: string; body: string };
+  export type HowItWorksProps = { steps: HowItWorksStep[]; labelledBy?: string }; // labelledBy = id of the section heading
+  export function HowItWorks({ steps, labelledBy }: HowItWorksProps): JSX.Element;
+  ```
+  - **Markup:** `<ol className="tp-steps" data-component="HowItWorks" aria-labelledby={labelledBy}>{steps.map((step, index) => <li className="tp-step" key={step.title}><span className="tp-step__num" aria-hidden="true">{index + 1}</span><h3 className="tp-step__title">{step.title}</h3><p className="tp-step__body">{step.body}</p></li>)}</ol>`.
+  - **Copy:** none built in; every visible string is a prop. Digits inside a Hebrew `body` are the caller's to isolate (the landing screen wraps them in U+2066/U+2069, TFV2-0303b).
+  - **Styling** (tempo.css, Case A): list reset, grid gap `--tp-space-6`, `repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 3)), 1fr))` (240 px tracks); step grid gap `--tp-space-2`; number `--tp-font-serif` `--tp-text-3xl` `--tp-ink-subtle`, `direction: ltr; unicode-bidi: isolate`, `justify-self: start`; title `--tp-font-sans` `--tp-text-lg` weight 600; body `--tp-ink-muted`.
+  - **States (harness order; fixtures inline; each `<section data-testid="how-it-works-<state>"><h2 id="hiw-head-<state>">Steps</h2><HowItWorks labelledBy="hiw-head-<state>" steps={…} /></section>`; the `h2` text is a developer-only label):**
+    - `default` — `[{ title: "Write", body: "Dump what's in your head onto a page. Messy is fine. Tempo helps sort it later." }, { title: "Talk", body: "Type or speak to the coach. It knows your pages and helps you pick one next step." }, { title: "Accept, with Undo", body: "The coach suggests a change. You accept, edit or reject it. Changed your mind? Undo for 5 minutes." }]`;
+    - `hebrew` — `[{ title: "כותבים", body: "שופכים לדף את מה שבראש. מבולגן זה בסדר. Tempo עוזר לסדר אחר כך." }, { title: "מדברים", body: "מקלידים או מדברים עם המאמן. הוא מכיר את הדפים שלך ועוזר לבחור צעד אחד הבא." }, { title: "מאשרים, עם ביטול", body: "המאמן מציע שינוי. מאשרים, עורכים או דוחים. שינוי בתוכניות? אפשר לבטל במשך \u20665\u2069 דקות." }]`.
+    (Fixture text from `landing.html`, made gender-neutral; test data only.) No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static content).
+  - **RTL:** the grid follows `dir`, so step 1 is at the right in Hebrew; the number is an LTR isolate at inline-start. **Keyboard / screen reader:** nothing focusable; the `ol` announces "list, 3 items" and its own numbering, the visual number is `aria-hidden`; each step title is an `h3`; the list is named by the section heading. **Breakpoints:** 390 px: one column; 768 px: one or two columns as width allows; 1024 px and up: three columns in one row. **Motion:** none.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "how-it-works", { lang })`; 4 × 4 = 16):
+  1. Given `how-it-works-default` / Then `ol[data-component="HowItWorks"]` has `aria-labelledby="hiw-head-default"` and 3 `li.tp-step`; their `.tp-step__num` texts are `"1"`, `"2"`, `"3"`, each with `aria-hidden="true"`; their `h3` texts are "Write", "Talk", "Accept, with Undo".
+  2. Given `how-it-works-hebrew` / Then the three `h3` texts are "כותבים", "מדברים", "מאשרים, עם ביטול" and the third body, with U+2066/U+2069 removed, ends "אפשר לבטל במשך 5 דקות.".
+  3. Given `how-it-works-default` / Then at desktop the three `li` boxes share one `y` (±1) and their `x` increases for `en` and decreases for `he`; at mobile each `li`'s `y` is greater than the previous one's; the `.tp-step__num` computed `direction` is `"ltr"` in both languages.
+  4. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="how-it-works-"]')` pass.
+- **NUMBERS:** text contrast ≥ 4.5:1 for title and body (WCAG 2.2 SC 1.4.3; §5 tokens); the number uses `--tp-ink-subtle` and is decorative (`aria-hidden`), at `--tp-text-3xl` (large text) · info and relationships: an ordered list conveys sequence (WCAG 2.2 SC 1.3.1; bullet 1) · motion ≤ 250 ms (DESIGN.md; bullet 4) · 16 of 16 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0297 — Component: Quote (`apps/web/components/marketing/Quote.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (Quote: `figure.tp-quote` > `blockquote` + `figcaption`; fictional people only); tempo.css `@component Quote` block (line 1378: "fictional people only, no invented metrics") → CONVENTIONS §10 Case A. Code truth: no `Quote` component exists, and no v3 screen design (`landing.html`, `about.html`, `changelog.html`) places a quote, so no screen in this range renders one. The component carries no words of its own: the quote text and byline arrive through props, and choosing any real quote text or byline is Amit's (CONVENTIONS §11/§19) — the screen ticket that first places a Quote is OPEN with that question; this component ticket is not.
+- **GOAL:** `Quote` renders one quotation and its byline as a `figure` from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/Quote.tsx` · `apps/web/app/e2e/components/quote/page.tsx` · test: `tests/e2e/screens/quote.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Quote.tsx` (new) · `apps/web/app/e2e/components/quote/page.tsx` (new) · `tests/e2e/screens/quote.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component Quote " apps/web/app/tempo.css` prints line 1378; `test -e apps/web/components/marketing/Quote.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Quote.tsx` exactly as SPEC (no hooks, no `"use client"`).
+  4. Create the harness page (`"use client"`) with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 3 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/quote.spec.ts --reporter=line` → `12 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** write a testimonial, a real or invented person's name, a rating or a metric anywhere (component or harness); place the Quote on any screen; add built-in copy; call Convex, `fetch` or any hook; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0297 / evidence: <DONE output> / changed: apps/web/components/marketing/Quote.tsx, apps/web/app/e2e/components/quote/page.tsx, tests/e2e/screens/quote.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type QuoteProps = { text: string; by: string };
+  export function Quote({ text, by }: QuoteProps): JSX.Element;
+  ```
+  - **Markup:** `<figure className="tp-quote" data-component="Quote"><blockquote dir="auto">{text}</blockquote><figcaption dir="auto">{by}</figcaption></figure>`.
+  - **Copy:** none built in; both strings are props.
+  - **Styling** (tempo.css, Case A): figure margin 0, grid `justify-items: center`, gap `--tp-space-4`, padding-block `--tp-space-16`, `text-align: center`; blockquote margin 0, `--tp-font-serif` `--tp-text-2xl`, `--tp-leading-snug`, max-width 32ch; figcaption `--tp-text-sm` `--tp-ink-muted`.
+  - **States (harness order; fixtures inline; each `<section data-testid="quote-<state>">`):** `default` — `{ text: "Harness sample text. Not a real quote.", by: "Harness sample" }`; `hebrew` — `{ text: "טקסט לדוגמה בלבד. זה לא ציטוט אמיתי.", by: "דוגמה" }`. These are developer-only fixtures on a dev-only route that 404s in production (TFV2-0023a), deliberately not a person or a testimonial. No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static content).
+  - **RTL:** `dir="auto"` on both parts, so Hebrew text runs right to left even inside an English page; the block is centred, so mirroring changes nothing else. **Keyboard / screen reader:** nothing focusable; `blockquote` is announced as a quotation and `figcaption` names the figure. **Breakpoints:** one centred column at all widths; max 32ch. **Motion:** none.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "quote", { lang })`; 3 × 4 = 12):
+  1. Given `quote-default` / Then `figure[data-component="Quote"]` contains exactly one `blockquote` with the fixture text and `dir="auto"`, and one `figcaption` with "Harness sample" and `dir="auto"`.
+  2. Given `quote-hebrew` / Then the `blockquote` computed `direction` is `"rtl"` in both `lang` runs (auto direction from its Hebrew text), and `quote-default`'s `blockquote` computed `direction` is `"ltr"` in both runs.
+  3. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="quote-"]')` pass, and the `figure` computed `text-align` is `"center"`.
+- **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · language of parts handled by `dir="auto"` (WCAG 2.2 SC 1.3.2; bullet 2) · motion ≤ 250 ms (DESIGN.md; bullet 3) · 12 of 12 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0298 — Component: Pricing (`apps/web/components/marketing/Pricing.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0282 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0282.
+- **WHY:** `docs/design/v3/components.md` §2.16 (Pricing = `.tp-tiers` of TierCard, "same as billing"); design `landing.html` pricing teaser (4 tiers Trial, Basic, Pro, Max with no choose buttons, then "Pay yearly and get two months free." and an "Ask to join" link `tp-btn tp-btn--link` to sign-up); tempo.css `@component TierCard` block (line 1298: `.tp-tiers` grid `repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 2.75)), 1fr))`) and the comment "Pricing on marketing = TierCard grid (.tp-tiers)" (line 1382) → CONVENTIONS §10 Case A. TierCard is TFV2-0282 (`apps/web/components/billing/TierCard.tsx`): `export type TierId = "trial" | "basic" | "pro" | "max"; export type BillingInterval = "monthly" | "annual"; export type TierCardTier = { id: TierId; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null }; export type TierCardProps = { tier: TierCardTier; interval: BillingInterval; current: boolean; disabled?: boolean; onChoose?: (id: TierId) => void };` root `<article className="tp-tier" data-component="TierCard" data-tier={tier.id} data-current="true|false">`, no choose button when `onChoose` is undefined, a `null` amount shows "Price coming soon" / "המחיר יפורסם בקרוב", and the caller renders the `.tp-tiers` grid. Price values are never hard-coded here (Q-02): they arrive through `tiers`. "Two months free" is only true when the annual price is ten monthly prices, so the note shows only then.
+- **GOAL:** `Pricing` renders the tier cards in one `.tp-tiers` grid, shows the yearly note only when every paid tier's annual price equals ten monthly prices, and ends with one "Ask to join" link, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/Pricing.tsx` · `apps/web/app/e2e/components/pricing/page.tsx` · test: `tests/e2e/screens/pricing.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/Pricing.tsx` (new) · `apps/web/app/e2e/components/pricing/page.tsx` (new) · `tests/e2e/screens/pricing.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component TierCard " apps/web/app/tempo.css` prints line 1298; `grep -n "export function TierCard\|export type TierCardTier\|export type BillingInterval" apps/web/components/billing/TierCard.tsx` prints all three (TFV2-0282; if absent report `blocked: missing TFV2-0282 TierCard`); `test -e apps/web/components/marketing/Pricing.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `Pricing.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the three SPEC states, fixtures inline (CONVENTIONS §13). The harness imports `Pricing` and `type TierCardTier` only (TierCard renders inside Pricing).
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pricing.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** write a price, a currency amount or a minutes number in `Pricing.tsx`; hide, collapse or reorder a tier; pass `onChoose` or `current={true}` to TierCard (the teaser has no choose buttons); edit `TierCard.tsx`; show the yearly note when the rule in SPEC is false; call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0298 / evidence: <DONE output> / changed: apps/web/components/marketing/Pricing.tsx, apps/web/app/e2e/components/pricing/page.tsx, tests/e2e/screens/pricing.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import { type BillingInterval, TierCard, type TierCardTier } from "@/components/billing/TierCard";
+  export type PricingProps = {
+    tiers: TierCardTier[];      // in display order; the landing passes billing.listTiers' result
+    interval: BillingInterval;  // the landing passes "monthly"
+    joinHref: string;           // the landing passes "/sign-up"
+  };
+  export function Pricing({ tiers, interval, joinHref }: PricingProps): JSX.Element;
+  /** True only when at least one paid tier exists and every tier whose id is not "trial" has non-null prices with Math.round(annualPriceUsd * 100) === Math.round(monthlyPriceUsd * 1000). */
+  export function showsAnnualNote(tiers: TierCardTier[]): boolean;
+  ```
+  - **Imports:** the TierCard line above; `Link` from `next/link`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`.
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
+    | key | EN | HE |
+    |---|---|---|
+    | annual | Pay yearly and get two months free. | בתשלום שנתי מקבלים חודשיים חינם. |
+    | join | Ask to join | בקשה להצטרף |
+  - **Markup:**
+    ```tsx
+    <div className="tp-section" data-component="Pricing">
+      <div className="tp-tiers">
+        {tiers.map((tier) => <TierCard key={tier.id} tier={tier} interval={interval} current={false} />)}
+      </div>
+      {showsAnnualNote(tiers) ? <p className="tp-small tp-muted">{copy.annual}</p> : null}
+      <Link className="tp-btn tp-btn--link" href={joinHref}>{copy.join}</Link>
+    </div>
+    ```
+  - **Styling** (tempo.css, Case A): wrapper `.tp-section` (grid, gap `--tp-space-3`); grid `.tp-tiers` gap `--tp-space-4`, 220 px minimum tracks (`calc(var(--tp-space-20) * 2.75)`), `align-items: stretch`; note `--tp-text-sm` `--tp-ink-muted`; link `.tp-btn--link` (min-height `--tp-touch`, underlined `--tp-ink`). Card styling belongs to TierCard.
+  - **States (harness order; fixtures inline, typed `TierCardTier[]`; each `<section data-testid="pricing-<state>"><Pricing tiers={…} interval="monthly" joinHref="/sign-up" /></section>`; the numbers are harness test data, never product prices):**
+    - `default` — `[{ id: "trial", liveMinutesPerDay: 180, monthlyPriceUsd: 1, annualPriceUsd: null }, { id: "basic", liveMinutesPerDay: 30, monthlyPriceUsd: 10, annualPriceUsd: 100 }, { id: "pro", liveMinutesPerDay: 90, monthlyPriceUsd: 20, annualPriceUsd: 200 }, { id: "max", liveMinutesPerDay: 180, monthlyPriceUsd: 40, annualPriceUsd: 400 }]` (note shown);
+    - `no-note` — the same, but basic `annualPriceUsd: 96` (note hidden);
+    - `coming-soon` — all four with `monthlyPriceUsd: null, annualPriceUsd: null` (note hidden; each TierCard shows its coming-soon line).
+    No callbacks, so no log element. `loading` / `error` / `offline` belong to the screen (TFV2-0303b); `empty` (no tiers) is never passed by the screen; `disabled` / `success`: n/a.
+  - **RTL:** the grid follows `dir`, so Trial sits at the right in Hebrew; amounts are LTR isolates inside TierCard (`.tp-tier__amount`). **Keyboard / screen reader:** only the join link is focusable; each card is an `article` (TierCard). **Breakpoints:** 390 px: one card per row; 768 px: as many 220 px tracks as fit; 1024 px and up: all four on one row. **Motion:** only the Stage 1 link/button transition (`--tp-dur-fast`).
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "pricing", { lang })`; the spec holds `EXPECT: Record<"en" | "he", { annual: string; join: string; soon: string }>` with `soon` = "Price coming soon" / "המחיר יפורסם בקרוב"; 5 × 4 = 20):
+  1. Given `pricing-default` / Then `[data-component="Pricing"] .tp-tiers` contains 4 `[data-component="TierCard"]` whose `data-tier` values in order are `trial`, `basic`, `pro`, `max`, every one with `data-current="false"`, and the grid contains no `button`.
+  2. Given `pricing-default` / Then a paragraph with `EXPECT[lang].annual` is visible, and a link named `EXPECT[lang].join` has `href="/sign-up"` and class `tp-btn--link`.
+  3. Given `pricing-no-note` and `pricing-coming-soon` / Then neither contains the text `EXPECT[lang].annual`; `pricing-coming-soon` contains `EXPECT[lang].soon` exactly 4 times.
+  4. Given `pricing-default` / Then at desktop the 4 cards share one `y` (±1) and their `x` increases for `en` and decreases for `he`; at mobile each card's `y` is greater than the previous card's.
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="pricing-"]')` and `expectMotionBudget(page, '[data-testid^="pricing-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; link 44 px; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · all 4 tiers always visible, never collapsed (components.md §2.16 "Prices always visible"; bullet 1) · price values: UNKNOWN until Q-02 (none in this file; the harness numbers are test data) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0299 — Component: FAQ (`apps/web/components/marketing/FAQ.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (FAQ: `.tp-faq` > `details` > `summary` + `.tp-faq__icon` + `.tp-faq__answer`; native, no JS); design `landing.html` (six questions); tempo.css `@component FAQ` block (line 1384: summary min-height `calc(var(--tp-touch) + var(--tp-space-4))`, icon rotates 180° on `[open]` with `--tp-dur-fast`) → CONVENTIONS §10 Case A. Code truth: no `FAQ` component exists. Question and answer words arrive through props (the landing screen TFV2-0303b owns them).
+- **GOAL:** `FAQ` renders each question as a native `<details>` disclosure with a chevron and an answer, with no script and no state, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/FAQ.tsx` · `apps/web/app/e2e/components/faq/page.tsx` · test: `tests/e2e/screens/faq.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/FAQ.tsx` (new) · `apps/web/app/e2e/components/faq/page.tsx` (new) · `tests/e2e/screens/faq.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component FAQ " apps/web/app/tempo.css` prints line 1384; `grep -n '"down":' apps/web/components/tempo/TpIcon.tsx` prints the `down` icon; `test -e apps/web/components/marketing/FAQ.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `FAQ.tsx` exactly as SPEC (no hooks, no `"use client"`, no event handlers).
+  4. Create the harness page (`"use client"`) with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/faq.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** add `onClick`, `onToggle`, `useState` or any script; use an accordion library or ARIA accordion roles; open an item by default; add built-in copy; call Convex or `fetch`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0299 / evidence: <DONE output> / changed: apps/web/components/marketing/FAQ.tsx, apps/web/app/e2e/components/faq/page.tsx, tests/e2e/screens/faq.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type FaqItem = { id: string; q: string; a: string };
+  export type FAQProps = { items: FaqItem[] };
+  export function FAQ({ items }: FAQProps): JSX.Element;
+  ```
+  - **Imports:** `TpIcon` from `@/components/tempo/TpIcon` only.
+  - **Markup:** `<div className="tp-faq" data-component="FAQ">{items.map((item) => <details key={item.id} data-faq-id={item.id}><summary><span>{item.q}</span><TpIcon name="down" className="tp-faq__icon" /></summary><p className="tp-faq__answer">{item.a}</p></details>)}</div>`.
+  - **Copy:** none built in; every visible string is a prop.
+  - **Styling** (tempo.css, Case A): list border-top `1px solid var(--tp-line)`; each `details` border-bottom `1px solid var(--tp-line)`; summary flex, space-between, gap `--tp-space-4`, min-height `calc(var(--tp-touch) + var(--tp-space-4))` (60 px), padding-block `--tp-space-3`, weight 600, `list-style: none` (no native marker); icon `--tp-ink-muted`, `transition: transform var(--tp-dur-fast) var(--tp-ease-out)`, `rotate(180deg)` when open (reduced motion → 0.01ms, tempo.css line 480); answer `--tp-ink-muted`, max-width `--tp-measure`, padding-bottom `--tp-space-4`.
+  - **States (harness order; fixtures inline; each `<section data-testid="faq-<state>">`):**
+    - `default` — `[{ id: "join", q: "Why do I have to ask to join?", a: "We let people in a few at a time so we can listen and fix things fast. Ask with your email and we'll write when you're in." }, { id: "password", q: "Is there a password?", a: "No. You sign in with a link we email you. Nothing to remember." }, { id: "hebrew", q: "Does it work in Hebrew?", a: "Yes. The app, the coach and live voice work in English and Hebrew, right to left or left to right." }]`;
+    - `hebrew` — `[{ id: "join", q: "למה צריך לבקש להצטרף?", a: "אנחנו מכניסים אנשים בהדרגה כדי להקשיב ולתקן מהר. מבקשים עם כתובת המייל, ונכתוב כשאפשר להיכנס." }, { id: "password", q: "יש סיסמה?", a: "לא. נכנסים עם קישור שאנחנו שולחים במייל. אין מה לזכור." }, { id: "hebrew", q: "זה עובד בעברית?", a: "כן. האפליקציה, המאמן והשיחה הקולית עובדים בעברית ובאנגלית, מימין לשמאל או משמאל לימין." }]`.
+    (Fixture text from `landing.html`, made gender-neutral; test data only.) Each item has two states of its own, `closed` (default) and `open` (native). No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static content).
+  - **RTL:** summary flex follows `dir`, so in Hebrew the question is at the right and the chevron at the left; the chevron is symmetric, no flip. **Keyboard / screen reader:** each `summary` is a native disclosure button: Tab focuses it, Enter or Space toggles it, the screen reader announces expanded/collapsed; the icon is `aria-hidden` (TpIcon). **Breakpoints:** one column at all widths; answer max `--tp-measure`. **Motion:** the chevron rotation, 120 ms, instant under reduced motion.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "faq", { lang })`; 5 × 4 = 20):
+  1. Given `faq-default` / Then `[data-component="FAQ"]` holds 3 `details`, none with the `open` attribute; each `summary` text equals its fixture question, contains `svg.tp-faq__icon` with `use[href="#i-down"]`, and each `.tp-faq__answer` is hidden.
+  2. Given `faq-default` / When the first `summary` is clicked / Then that `details` has `open` and its answer is visible; When it is clicked again / Then `open` is gone and the answer is hidden.
+  3. Given `faq-hebrew` / When its first `summary` is focused with `.focus()` and Enter is pressed / Then that `details` is open; When Space is pressed / Then it is closed.
+  4. Given `faq-default` with the first item open / Then that item's `.tp-faq__icon` computed `transform` is not `"none"`, and a closed item's icon computed `transform` is `"none"`.
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="faq-"]')` and `expectMotionBudget(page, '[data-testid^="faq-"]')` pass, and every `summary` box is at least 44 px tall.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; summaries 60 px; bullet 5) · keyboard operable (WCAG 2.2 SC 2.1.1; bullet 3) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion: chevron 120 ms ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; CONVENTIONS §20; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0300 — Component: SiteFooter (`apps/web/components/marketing/SiteFooter.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0293 · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0293.
+- **WHY:** `docs/design/v3/components.md` §2.16 (SiteFooter: `.tp-site-footer`, `__inner`, `__links`, `__small`; includes the language switch); design `landing.html`, `about.html`, `changelog.html` (Terms, Privacy, Contact, What's new, the long language switch, "Tempo Flow. A coach, not a therapist."); tempo.css `@component SiteFooter` block (line 1393) → CONVENTIONS §10 Case A. Code truth: the footer is drawn inline in `apps/web/components/marketing-pages/MarketingChrome.tsx` with `t("mk.*")` keys; `/terms`, `/privacy` and `/contact` routes exist (`apps/web/app/terms`, `privacy`, `contact`). It reuses the `MarketingPage` type from SiteHeader (TFV2-0293). The language switch is a slot so this ticket does not depend on the later LanguageSwitch ticket (TFV2-0301).
+- **GOAL:** `SiteFooter` renders the four footer links (marking What's new on the changelog page), a language-switch slot and the "coach, not a therapist" line, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/SiteFooter.tsx` · `apps/web/app/e2e/components/site-footer/page.tsx` · test: `tests/e2e/screens/site-footer.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/SiteFooter.tsx` (new) · `apps/web/app/e2e/components/site-footer/page.tsx` (new) · `tests/e2e/screens/site-footer.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component SiteFooter " apps/web/app/tempo.css` prints line 1393; `grep -n "export type MarketingPage" apps/web/components/marketing/SiteHeader.tsx` prints the type (TFV2-0293; if absent report `blocked: missing TFV2-0293 SiteHeader`); `ls apps/web/app/terms apps/web/app/privacy apps/web/app/contact` lists three `page.tsx`; `test -e apps/web/components/marketing/SiteFooter.tsx` fails; read `MarketingChrome.tsx` lines 104–132 (reference only; do not edit).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `SiteFooter.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the two SPEC states, fixtures inline (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 4 TESTS bullets; the spec keeps its own `EXPECT` copy table.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/site-footer.spec.ts --reporter=line` → `16 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** omit or reword the "coach, not a therapist" line; add a licence line, an e-mail address, social links or a status line (not in the v3 design); import `LanguageSwitch` or any component (the switch arrives through the slot); call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; edit `MarketingChrome.tsx` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0300 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteFooter.tsx, apps/web/app/e2e/components/site-footer/page.tsx, tests/e2e/screens/site-footer.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  import type { MarketingPage } from "./SiteHeader";
+  export type SiteFooterProps = {
+    current: MarketingPage;
+    languageSwitch: ReactNode;  // the screen passes <LanguageSwitch current={lang} long onChoose={setLang} />
+  };
+  export function SiteFooter({ current, languageSwitch }: SiteFooterProps): JSX.Element;
+  ```
+  - **Imports:** `Link` from `next/link`; `type ReactNode` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `type MarketingPage` from `./SiteHeader`.
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
+    | key | EN | HE |
+    |---|---|---|
+    | nav | Footer | קישורים בתחתית הדף |
+    | terms | Terms | תנאים |
+    | privacy | Privacy | פרטיות |
+    | contact | Contact | יצירת קשר |
+    | changelog | What's new | מה חדש |
+    | small | Tempo Flow. A coach, not a therapist. | Tempo Flow. מאמן, לא מטפל. |
+  - **Markup:**
+    ```tsx
+    <footer className="tp-site-footer" data-component="SiteFooter">
+      <div className="tp-container tp-site-footer__inner">
+        <nav className="tp-site-footer__links" aria-label={copy.nav}>
+          <Link className="tp-site-link" href="/terms">{copy.terms}</Link>
+          <Link className="tp-site-link" href="/privacy">{copy.privacy}</Link>
+          <Link className="tp-site-link" href="/contact">{copy.contact}</Link>
+          <Link className="tp-site-link" href="/changelog" aria-current={current === "changelog" ? "page" : undefined}>{copy.changelog}</Link>
+        </nav>
+        {languageSwitch}
+        <p className="tp-site-footer__small">{copy.small}</p>
+      </div>
+    </footer>
+    ```
+  - **Styling** (tempo.css, Case A): footer border-top `1px solid var(--tp-line)`, padding-block `--tp-space-10`, margin-top `--tp-space-16`; inner flex-wrap, `space-between`, gap `--tp-space-4` `--tp-space-6`; links flex-wrap gap `--tp-space-1`, each `.tp-site-link` (44 px tall, `--tp-ink-muted`, `[aria-current="page"]` → `--tp-ink`); small line `--tp-text-sm` `--tp-ink-muted`; solid surface (no glass).
+  - **States (harness order):** `default` (`current="home"`), `changelog` (`current="changelog"`). Each is `<section data-testid="site-footer-<state>"><SiteFooter current=… languageSwitch={<span data-testid="site-footer-slot-<state>">LanguageSwitch slot</span>} /></section>` (slot text is a developer-only stand-in). No callbacks, so no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (static navigation).
+  - **RTL:** flex rows follow `dir`, so in Hebrew Terms is at the right and the row reads right to left; "Tempo Flow" stays in Latin letters. **Keyboard / screen reader:** Tab order Terms → Privacy → Contact → What's new → slot; `nav` is a named landmark (`copy.nav`); the current page link is announced as current. **Breakpoints:** 390 px: links, switch and line wrap onto separate rows; 1024 px and up: one row when it fits. **Motion:** none added.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "site-footer", { lang })`; 4 × 4 = 16):
+  1. Given `site-footer-default` / Then `footer[data-component="SiteFooter"]` has a `nav` with `aria-label` = `EXPECT[lang].nav` holding 4 links in order with names `terms`, `privacy`, `contact`, `changelog` from `EXPECT[lang]` and `href` `/terms`, `/privacy`, `/contact`, `/changelog`; `site-footer-slot-default` is inside `.tp-site-footer__inner`; `.tp-site-footer__small` text equals `EXPECT[lang].small`.
+  2. Given `site-footer-changelog` / Then the `/changelog` link has `aria-current="page"`; and `site-footer-default` has no element with an `aria-current` attribute.
+  3. Given `site-footer-default` / Then at desktop the Terms link's `x` is smaller than the What's new link's `x` for `en` and greater for `he`.
+  4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="site-footer-"]')` and `expectMotionBudget(page, '[data-testid^="site-footer-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; links 44 px; bullet 4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion ≤ 250 ms (DESIGN.md; bullet 4) · 16 of 16 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0301 — Component: LanguageSwitch (`apps/web/components/marketing/LanguageSwitch.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** `docs/design/v3/components.md` §2.16 (LanguageSwitch: `.tp-lang-switch` > `a[hreflang][lang][aria-current]`; English / עברית) and §6 (language names carry their own `lang`); design `landing.html` (header: short "EN" / "עב"; footer: long "English" / "עברית"; links `?lang=en|he`); tempo.css `@component LanguageSwitch` block (line 1399: links min-height `calc(var(--tp-touch) - var(--tp-space-2))` = 36 px, `[aria-current="true"]` raised) → CONVENTIONS §10 Case A. Code truth: `apps/web/components/marketing-pages/MarketingChrome.tsx` exports a `LanguageSwitch` that calls `useLocale().setLang` itself and reads `t("mk.lang")`; it stays (the old `LandingPage.tsx` and the KB-73 browser suite still use it). This ticket adds a props-only replacement for the new marketing screens: the choice is reported through `onChoose`, and the screen passes `useLocale().setLang` (LocaleProvider applies `<html lang dir>` and stores `localStorage["tempo-lang"]`). The old ticket's bun render test is replaced by the harness + Playwright form (CONVENTIONS §9).
+- **GOAL:** `LanguageSwitch` renders two language links (short or long names), marks the current one, and reports a choice through `onChoose` without navigating, from props only, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/LanguageSwitch.tsx` · `apps/web/app/e2e/components/language-switch/page.tsx` · test: `tests/e2e/screens/language-switch.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/LanguageSwitch.tsx` (new) · `apps/web/app/e2e/components/language-switch/page.tsx` (new) · `tests/e2e/screens/language-switch.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "@component LanguageSwitch " apps/web/app/tempo.css` prints line 1399; `test -e apps/web/components/marketing/LanguageSwitch.tsx` fails; read `MarketingChrome.tsx` lines 11–42 (reference only; do not edit or delete it).
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `LanguageSwitch.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the three SPEC states, fixtures inline (CONVENTIONS §13); `onChoose` writes `onChoose:<JSON>` into `<output data-testid="language-switch-log">`.
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/language-switch.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** call `setLang`, write `localStorage` or navigate inside the component (the screen decides through `onChoose`); use a `<select>` or a menu that hides Hebrew; translate the language names; edit or delete `MarketingChrome.tsx`; call Convex, `fetch` or any hook other than `useLocale`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0301 / evidence: <DONE output> / changed: apps/web/components/marketing/LanguageSwitch.tsx, apps/web/app/e2e/components/language-switch/page.tsx, tests/e2e/screens/language-switch.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { Lang } from "@/lib/i18n";
+  export type LanguageSwitchProps = {
+    current: Lang;
+    long?: boolean;                    // false (default): "EN" / "עב" (header); true: "English" / "עברית" (footer)
+    onChoose: (lang: Lang) => void;    // the screen passes useLocale().setLang
+  };
+  export function LanguageSwitch({ current, long = false, onChoose }: LanguageSwitchProps): JSX.Element;
+  ```
+  - **Imports:** `type MouseEvent` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`.
+  - **Copy** (one `COPY: Record<Lang, Record<"label", string>>`, CONVENTIONS §11): `label` — EN "Language" / HE "שפה". The language names are fixed, not translated, and each link carries its own `lang`: `NAMES = { en: { short: "EN", long: "English" }, he: { short: "עב", long: "עברית" } } as const`.
+  - **Markup:** `const pick = (next: Lang) => (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); onChoose(next); };`
+    ```tsx
+    // biome-ignore lint/a11y/useSemanticElements: the v3 LanguageSwitch is a labelled group of two links, not a form field set
+    <div className="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label={copy.label}>
+      {(["en", "he"] as const).map((code) => (
+        <a key={code} href={`?lang=${code}`} hrefLang={code} lang={code} aria-current={current === code ? "true" : undefined} onClick={pick(code)}>
+          {long ? NAMES[code].long : NAMES[code].short}
+        </a>
+      ))}
+    </div>
+    ```
+    Choosing the current language still calls `onChoose` (harmless; the provider keeps the same value). The `href` stays a working no-script fallback (`LocaleProvider` reads `?lang=`).
+  - **Styling** (tempo.css, Case A): inline-flex, gap `--tp-space-1`, padding `--tp-space-1`, background `--tp-sunken`, radius `--tp-radius-md`; links min-height 36 px, padding `0 var(--tp-space-3)`, radius `--tp-radius-sm`, `--tp-text-sm` weight 600 `--tp-ink-muted`; `[aria-current="true"]` → `--tp-paper` background, `--tp-ink`, `--tp-shadow-whisper`.
+  - **States (harness order; each `<section data-testid="language-switch-<state>">`):** `default` (`current: "en"`), `hebrew` (`current: "he"`), `long` (`current: "en", long: true`). The harness `onChoose` handler sets `<output data-testid="language-switch-log">` text to `` `onChoose:${JSON.stringify(lang)}` ``. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (two static links).
+  - **RTL:** inline-flex follows `dir`, so in Hebrew "EN" is at the right; each name keeps its own `lang`. **Keyboard / screen reader:** two native links in a group named "Language" / "שפה"; Enter on a link chooses it; the current one is announced as current (`aria-current="true"`); each name is read in its own language (`lang`). **Breakpoints:** same size at all widths. **Motion:** none.
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "language-switch", { lang })`; 5 × 4 = 20):
+  1. Given `language-switch-default` / Then its `[data-component="LanguageSwitch"]` has `role="group"` and `aria-label` = `EXPECT[lang].label`, and holds two links: first text "EN", `href="?lang=en"`, `hreflang="en"`, `lang="en"`, `aria-current="true"`; second text "עב", `href="?lang=he"`, `hreflang="he"`, `lang="he"`, no `aria-current`.
+  2. Given `language-switch-hebrew` / Then the "עב" link has `aria-current="true"` and the "EN" link has none.
+  3. Given `language-switch-long` / Then the link texts are "English" and "עברית".
+  4. Given `language-switch-default` / When the "עב" link is clicked / Then `language-switch-log` reads `onChoose:"he"`, `page.url()` is unchanged, and `<html lang>` is still `lang` (the component did not switch the language itself).
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="language-switch-"]')` and `expectMotionBudget(page, '[data-testid^="language-switch-"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; links 36 px; bullet 5) · language of parts: each name has its own `lang` (WCAG 2.2 SC 3.1.2; bullet 1) · current state not by colour alone: `aria-current` plus raised surface (WCAG 2.2 SC 1.4.1) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0302 — Landing EN/HE copy dictionaries — superseded by TFV2-0303b
+- **Status:** superseded by TFV2-0303b; not a build ticket.
+
+### TFV2-0303a — Component: LandingFigures (`apps/web/components/marketing/LandingFigures.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
+- **WHY:** design `docs/design/v3/screens/web/landing.html` — the four FeatureRow figures are illustrations "built from real Tempo components": two TaskRows ("Today"), three ListRows ("Templates"), a pending task ProposalCard, and a LiveTranscript + CallActionConfirm; components.md §2.16 ("Figure uses real Tempo components"). Split from the old Landing screen ticket TFV2-0303 so the screen stays one unit. The figures reuse the Stage 1/2 classes already in tempo.css (`.tp-task-row` line 283, `.tp-check` line 295, `.tp-list` / `.tp-list-row` line 842, `.tp-proposal` line 398, `.tp-proposal__kind` line 1156, `.tp-change` line 403, `.tp-call__transcript` / `.tp-call-line` line 1202, `.tp-call-action` line 1226, `.tp-btn` line 121) → CONVENTIONS §10 Case A. Code truth: the props-only TaskRow, ProposalCard, LiveTranscript and CallActionConfirm components are later or not-yet-rewritten tickets (TFV2-0213 in range 5, TFV2-0378 and TFV2-0384 in range 8), so this ticket draws inert copies with the same classes instead of importing them (an inert illustration needs no behaviour). The figure checkbox follows the existing pattern in `apps/web/components/projects/ProjectDetailScreen.tsx` line 331 (a `button.tp-check` with `role="checkbox"`). FeatureRow (TFV2-0295) wraps each figure in `<figure inert>`.
+- **GOAL:** `LandingFigures.tsx` exports four inert landing illustrations (`PagesFigure`, `TemplatesFigure`, `CoachFigure`, `VoiceFigure`) with all their words in EN and HE, proven in the harness at both viewports and in both languages.
+- **SCOPE:** `apps/web/components/marketing/LandingFigures.tsx` · `apps/web/app/e2e/components/landing-figures/page.tsx` · test: `tests/e2e/screens/landing-figures.spec.ts`.
+- **MUTATES:** `apps/web/components/marketing/LandingFigures.tsx` (new) · `apps/web/app/e2e/components/landing-figures/page.tsx` (new) · `tests/e2e/screens/landing-figures.spec.ts` (new). No data, route or schema change.
+- **STEPS:**
+  1. Code-map check: `grep -n "^.tp-task-row {\|^.tp-check {\|^.tp-proposal {\|^.tp-change {" apps/web/app/tempo.css` prints lines 283, 295, 398, 403; `grep -n "@component ListRow \|@component LiveTranscript \|@component CallActionConfirm " apps/web/app/tempo.css` prints lines 842, 1202, 1226; read `apps/web/components/projects/ProjectDetailScreen.tsx` lines 329–345 (reference for the check button); `test -e apps/web/components/marketing/LandingFigures.tsx` fails.
+  2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
+  3. Create `LandingFigures.tsx` (`"use client"`) exactly as SPEC.
+  4. Create the harness page with the four SPEC states (CONVENTIONS §13).
+  5. Create the spec with the §22 spec skeleton and the 5 TESTS bullets; the spec keeps its own `EXPECT` copy table.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/landing-figures.spec.ts --reporter=line` → `20 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** import TaskRow, ListRow, ProposalCard, VoiceCall or any other component except `TpIcon`; add `onClick` or any behaviour; call Convex, `fetch` or any hook other than `useLocale` / `useId`; add images or screenshots; add a stylesheet; edit `LandingPage.tsx`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0303a / evidence: <DONE output> / changed: apps/web/components/marketing/LandingFigures.tsx, apps/web/app/e2e/components/landing-figures/page.tsx, tests/e2e/screens/landing-figures.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  export function PagesFigure(): JSX.Element;      // "Today" + two task rows
+  export function TemplatesFigure(): JSX.Element;  // "Templates" + three list rows
+  export function CoachFigure(): JSX.Element;      // one pending task proposal
+  export function VoiceFigure(): JSX.Element;      // three transcript lines + an action confirmation
+  ```
+  - **Imports:** `useId` from `react`; `TpIcon` from `@/components/tempo/TpIcon`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`. Each function starts `const { lang } = useLocale(); const copy = COPY[lang];`.
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; `{n}` is replaced as stated in Markup):
+    | key | EN | HE |
+    |---|---|---|
+    | today | Today | היום |
+    | task1 | Reply to Noa about Thursday | לענות לנועה לגבי יום חמישי |
+    | task2 | Draft {n} slides | לכתוב {n} שקפים |
+    | min | min | דק׳ |
+    | templates | Templates | תבניות |
+    | row1 | Daily page | דף יומי |
+    | row1Meta | Next up, tasks, energy | הצעד הבא, משימות, אנרגיה |
+    | row2 | Weekly review | סיכום שבועי |
+    | row2Meta | What went well, what moves | מה הלך טוב, מה זז |
+    | row3 | Project | פרויקט |
+    | row3Meta | Status, next step, notes | מצב, הצעד הבא, פתקים |
+    | kindTask | Task | משימה |
+    | proposalTitle | 1 change to Today | שינוי אחד ב״היום״ |
+    | add | Add | הוספה |
+    | proposalTask | Call the bank | להתקשר לבנק |
+    | accept | Accept | אישור |
+    | edit | Edit | עריכה |
+    | reject | Reject | דחייה |
+    | you | You | אני |
+    | coach | Coach | המאמן |
+    | line1 | I'm already behind and it's only nine. | אני כבר בפיגור וזה רק תשע. |
+    | line2 | Let's pick one thing. What feels heaviest? | נבחר דבר אחד. מה הכי כבד? |
+    | line3 | Calling the bank. | להתקשר לבנק. |
+    | action | Added “call the bank” to Today | ״להתקשר לבנק״ נוסף ל״היום״ |
+    | undo | Undo | ביטול |
+  - **Markup** (minutes and counts are `<span className="tp-num">`; `task2` renders as `const [before, after] = copy.task2.split("{n}");` → `{before}<span className="tp-num">3</span>{after}`):
+    - `PagesFigure` → `<div className="tp-section" data-component="LandingFigure" data-figure="pages"><span className="tp-eyebrow">{copy.today}</span><ul className="tp-list" role="list">` then two rows, each `<li className="tp-task-row" data-component="TaskRow" data-done={done ? "true" : undefined}>` with `{/* biome-ignore lint/a11y/useSemanticElements: the v3 TaskRow check is a button with checkbox semantics (tp-check) */}<button className="tp-check" type="button" role="checkbox" aria-checked={done} aria-labelledby={titleId} tabIndex={-1}><span className="tp-check__box"><TpIcon name="check" /></span></button><span className="tp-task-row__body"><span className="tp-task-row__title" id={titleId}>{title}</span><span className="tp-task-row__meta"><span><span className="tp-num">{minutes}</span> {copy.min}</span></span></span>`; row 1: `task1`, done, 5 minutes; row 2: `task2` with 3, not done, 25 minutes; `titleId` = `` `${useId()}-t1` `` / `-t2` (one `useId()` call per figure).
+    - `TemplatesFigure` → `<div className="tp-section" data-component="LandingFigure" data-figure="templates"><span className="tp-eyebrow">{copy.templates}</span><ul className="tp-list" role="list">` then three `<li><div className="tp-list-row"><span className="tp-list-row__icon" aria-hidden="true"><TpIcon name={icon} /></span><span className="tp-list-row__body"><span className="tp-list-row__title">{title}</span><span className="tp-list-row__meta">{meta}</span></span></div></li>` with (`today`, row1, row1Meta), (`calendar-grid`, row2, row2Meta), (`folder`, row3, row3Meta).
+    - `CoachFigure` → `<section className="tp-proposal" data-component="ProposalCard" data-status="pending" data-figure="coach" aria-labelledby={titleId}><div className="tp-proposal__head"><span className="tp-proposal__kind"><TpIcon name="task" size="sm" /><span>{copy.kindTask}</span></span><strong id={titleId}>{copy.proposalTitle}</strong></div><ul className="tp-proposal__changes" role="list"><li className="tp-change" data-op="add"><span className="tp-change__sign"><TpIcon name="plus" size="sm" /><span>{copy.add}</span></span><span className="tp-change__body"><span className="tp-change__title">{copy.proposalTask}</span><span className="tp-change__detail"><span className="tp-num">10</span> {copy.min}</span></span></li></ul><div className="tp-proposal__actions"><span className="tp-btn tp-btn--secondary"><TpIcon name="check" size="sm" /><span>{copy.accept}</span></span><span className="tp-btn tp-btn--secondary"><TpIcon name="edit" size="sm" /><span>{copy.edit}</span></span><span className="tp-btn tp-btn--ghost">{copy.reject}</span></div></section>` (the "buttons" are `span`s: an illustration has no actions).
+    - `VoiceFigure` → `<div className="tp-section" data-component="LandingFigure" data-figure="voice"><ol className="tp-call__transcript" data-component="LiveTranscript">` three `<li className="tp-call-line" data-who={who}><span className="tp-call-line__who">{who === "you" ? copy.you : copy.coach}</span><span className="tp-call-line__text" dir="auto">{text}</span></li>` with (you, line1), (coach, line2), (you, line3); then `</ol><div className="tp-call-action" data-component="CallActionConfirm"><span className="tp-call-action__icon"><TpIcon name="check" size="sm" /></span><span className="tp-call-action__text">{copy.action}</span><span className="tp-btn tp-btn--ghost tp-btn--sm"><TpIcon name="undo" size="sm" /><span>{copy.undo}</span></span></div></div>`.
+  - **Styling** (tempo.css, Case A, no new rules): wrappers `.tp-section` (grid, gap `--tp-space-3`); task rows 48 px min-height, check 44 × 44 with a 22 px box filled `--tp-done` when `aria-checked="true"`, done title struck through; list rows 56 px; proposal `--tp-paper` with `--tp-line-strong` border and `--tp-radius-lg`; add sign `--tp-done-wash` / `--tp-done`; transcript `--tp-text-xs` speaker labels; action row `--tp-done` icon.
+  - **States (harness order; each `<section data-testid="landing-figures-<state>">` renders one figure):** `pages` (`<PagesFigure />`), `templates` (`<TemplatesFigure />`), `coach` (`<CoachFigure />`), `voice` (`<VoiceFigure />`). No props and no callbacks, so no fixtures and no log element. `loading` / `empty` / `error` / `offline` / `success` / `disabled`: n/a (fixed illustrations).
+  - **RTL:** all layouts are logical grids/flex from tempo.css; in Hebrew the check sits at the right of each task, icons at the right of list rows; numbers are `.tp-num` LTR isolates; transcript text is `dir="auto"`. **Keyboard / screen reader:** on the landing page every figure sits inside FeatureRow's `<figure inert>`, so nothing in it is focusable or announced; in the harness the check buttons have `tabIndex={-1}` and are never in the Tab order. **Breakpoints:** fill the figure width at all sizes; the transcript caps at 60ch. **Motion:** only the check box colour transition (`--tp-dur-fast`).
+- **TESTS:** the §22 spec skeleton (`openHarness(page, "landing-figures", { lang })`; the spec holds its own `EXPECT: Record<"en" | "he", …>` with the SPEC copy; 5 × 4 = 20):
+  1. Given `landing-figures-pages` / Then it shows the eyebrow `today`, two `li[data-component="TaskRow"]` with titles `task1` and `task2` (with "{n}" replaced by "3") for `lang`; the first has `data-done="true"` and its `.tp-check` has `aria-checked="true"` and `tabindex="-1"`, the second `aria-checked="false"`; the meta texts read "5 " + `min` and "25 " + `min`.
+  2. Given `landing-figures-templates` / Then 3 `.tp-list-row` show titles `row1`, `row2`, `row3` and metas `row1Meta`, `row2Meta`, `row3Meta`, with icons `use[href="#i-today"]`, `#i-calendar-grid`, `#i-folder` in order.
+  3. Given `landing-figures-coach` / Then `section[data-component="ProposalCard"]` has `data-status="pending"`, `aria-labelledby` pointing at the `strong` with `proposalTitle`; one `.tp-change[data-op="add"]` with `add`, `proposalTask` and "10 " + `min`; the actions row shows `accept`, `edit`, `reject` and contains no `button`.
+  4. Given `landing-figures-voice` / Then `ol[data-component="LiveTranscript"]` has 3 `.tp-call-line` with `data-who` `you`, `coach`, `you`, speaker labels `you`, `coach`, `you` and texts `line1`, `line2`, `line3`, each text `dir="auto"`; `[data-component="CallActionConfirm"]` shows `action` and `undo`.
+  5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="landing-figures-"]')` and `expectMotionBudget(page, '[data-testid^="landing-figures-"]')` pass, and pressing Tab 3 times from the page start never focuses a `.tp-check`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; check buttons 44 px; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens through tempo.css) · done state not by colour alone: check mark plus strike-through (WCAG 2.2 SC 1.4.1; bullet 1) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0303b — Screen: Landing (`/`, `apps/web/app/page.tsx`) — OPEN
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0261a, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300, TFV2-0301, TFV2-0303a · **Folds-in:** #751, #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0261a, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300, TFV2-0301, TFV2-0303a.
+- **WHY:** design `docs/design/v3/screens/web/landing.html` (`@layout Marketing`; header, hero with one primary "Ask to join", "What it is" ×3 FeatureRows, "How it works" ×3 steps, live voice FeatureRow, "Who it's for" ×2 cards, pricing teaser ×4 tiers, FAQ ×6, footer; `@states default | empty | loading | error | offline` — "empty, loading and error show the default page; offline adds a banner"); PRD F-70/F-71; CONVENTIONS §9 (marketing routes use the screen set with their real path), §14, §22. Code truth: `apps/web/app/page.tsx` today is a server component that exports `generateMetadata` (from `apps/web/lib/landing-copy.ts`) and renders `LandingPage` (`apps/web/components/marketing-pages/LandingPage.tsx`, an older Tailwind design with a theme toggle, beta pricing and a founder letter); both files stay in the repo (the KB-73 browser suite `tests/unit/kb-73.test.tsx` renders `LandingPage` directly, and `apps/web/lib/landing-copy.test.ts` tests the copy). `/` is in `PUBLIC_ROUTE_PATTERNS` (`apps/web/lib/rootEntry.ts`) and `decideEntryRedirect` returns `null` for a signed-out `/`, so the Playwright server (placeholder Convex, signed out) already renders it: no `E2E_WIRING_ROUTES` line is needed, and the third file slot holds the client body instead (a `"use client"` file cannot export `generateMetadata`). The old ticket's `apps/web/app/(marketing)/page.tsx` and `apps/web/e2e/landing.spec.ts` paths were wrong; the old copy-dictionary ticket TFV2-0302 is superseded by this one (copy lives in `COPY` constants, CONVENTIONS §11). The `.ld-*` layout rules of `landing.html` were never ported, so the screen uses the About layout classes in `apps/web/app/v3/extras.css` (`.ab-main` line 63, `.ab-block` 64, `.ab-prose` 65, `.ab-principles` 66). Prices come from `billing.listTiers` (TFV2-0261a, OPEN on Q-02; as specified there it calls `requireUser`, so a signed-out visitor would get "Not authenticated" — see OPEN), whose rows match `TierCardTier` (`{ id: "trial" | "basic" | "pro" | "max"; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null }`).
+- **GOAL:** `/` shows the v3 landing page in English and Hebrew, built only from the marketing components, with live tier prices in the pricing teaser and every state forceable, without the old Tailwind landing.
+- **SCOPE:** `apps/web/app/page.tsx` · `apps/web/components/marketing/LandingScreen.tsx` · `apps/web/lib/e2e/fixtures/landing.ts` · test: `tests/e2e/screens/landing.spec.ts`. (`e2eWiringRoutes.ts` is not in scope: `/` is public and needs no wiring line.)
+- **MUTATES:** `apps/web/app/page.tsx` (edit: whole file replaced) · `apps/web/components/marketing/LandingScreen.tsx` (new) · `apps/web/lib/e2e/fixtures/landing.ts` (new) · `tests/e2e/screens/landing.spec.ts` (new) · route `/` now renders `LandingScreen`. Reads `billing.listTiers` (live use only); writes nothing.
+- **STEPS:**
+  1. Code-map check: read the current `apps/web/app/page.tsx` and `apps/web/lib/rootEntry.ts` (`"/"` in `PUBLIC_ROUTE_PATTERNS`); `grep -n "export const listTiers" convex/billing.ts` (TFV2-0261a; if absent report `blocked: missing backend billing.listTiers`); confirm the component exports: `Container` (TFV2-0292), `SiteHeader` (0293), `Hero` (0294), `FeatureRow` (0295), `HowItWorks` (0296), `Pricing` (0298), `FAQ` (0299), `SiteFooter` (0300), `LanguageSwitch` (0301), `PagesFigure` / `TemplatesFigure` / `CoachFigure` / `VoiceFigure` (0303a) in `apps/web/components/marketing/`, `Card` in `apps/web/components/primitives/Card.tsx` (TFV2-0034), `StateOffline` in `apps/web/components/states/StateOffline.tsx` (TFV2-0123), `useE2EState` in `apps/web/lib/e2e/useE2EState.ts` (TFV2-0000c).
+  2. Create `LandingScreen.tsx` per SPEC.
+  3. Create `apps/web/lib/e2e/fixtures/landing.ts` per SPEC.
+  4. Replace `apps/web/app/page.tsx` per SPEC.
+  5. No E2E route step: `/` is public (say so in the PR).
+  6. Create the spec with the 7 TESTS bullets.
+  7. Run DONE, then `bun test apps/web/lib/landing-copy.test.ts` (unchanged file, must stay green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/landing.spec.ts --reporter=line` → `28 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, the `landing-copy.test.ts` result and the typecheck/lint exit codes in the PR.
+- **DO NOT:** delete or edit `LandingPage.tsx`, `MarketingChrome.tsx`, `apps/web/lib/landing-copy.ts`, `ThemeToggle.tsx` or `tests/unit/kb-73.test.tsx`; edit `apps/web/lib/e2eWiringRoutes.ts`, `apps/web/lib/rootEntry.ts` or `apps/web/proxy.ts`; hard-code any price, trial length in a component, metric, user count or testimonial; add a Quote; add a second `.tp-btn--primary`; add a stylesheet or new classes; fetch anything other than `billing.listTiers`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0303b / evidence: <DONE output> / changed: apps/web/app/page.tsx, apps/web/components/marketing/LandingScreen.tsx, apps/web/lib/e2e/fixtures/landing.ts, tests/e2e/screens/landing.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  - **`apps/web/app/page.tsx`** (server component, whole file):
+    ```tsx
+    import type { Metadata } from "next";
+    import { Suspense } from "react";
+    import { LandingScreen } from "@/components/marketing/LandingScreen";
+    import { isLang, type Lang } from "@/lib/i18n";
+    const META: Record<Lang, Metadata> = {
+      en: { title: "Tempo Flow — your brain's operating system", description: "Notes, plans and a coach in one calm place. You write or talk. The coach remembers, paces you, and changes the app when you say yes." },
+      he: { title: "Tempo Flow — מערכת ההפעלה של המוח שלך", description: "פתקים, תוכניות ומאמן במקום אחד ורגוע. כותבים או מדברים. המאמן זוכר, קובע קצב ומשנה את האפליקציה אחרי אישור." },
+    };
+    type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+    export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+      const { lang } = await searchParams;
+      return META[isLang(lang) ? lang : "en"];
+    }
+    export default function Page(): JSX.Element {
+      return <Suspense fallback={null}><LandingScreen /></Suspense>;
+    }
+    ```
+  - **`LandingScreen.tsx`** (`"use client"`). Imports: `useQuery` from `convex/react`; `api` from `@/convex/_generated/api`; `useEffect` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `TpIconSprite` from `@/components/tempo/TpIcon`; `type TierCardTier` from `@/components/billing/TierCard`; `Card` from `@/components/primitives/Card`; `StateOffline` from `@/components/states/StateOffline`; `Container`, `SiteHeader`, `Hero`, `FeatureRow`, `HowItWorks`, `Pricing`, `FAQ`, `SiteFooter`, `LanguageSwitch`, and `PagesFigure`, `TemplatesFigure`, `CoachFigure`, `VoiceFigure` from `./<Name>` / `./LandingFigures`; `FIXTURES` from `@/lib/e2e/fixtures/landing`.
+    ```ts
+    export type LandingState = "default" | "empty" | "loading" | "error" | "offline" | "prices-loading";
+    export type LandingView = { online: boolean; tiers: TierCardTier[] | null }; // null = prices still loading
+    export function LandingScreen(): JSX.Element;
+    ```
+    Body: `const forced = useE2EState(); const liveOnline = useOnline(); const { lang, setLang } = useLocale(); const copy = COPY[lang]; const liveTiers = useQuery(api.billing.listTiers, forced !== null ? "skip" : {});` `const key: LandingState = forced !== null && forced in FIXTURES ? (forced as LandingState) : "default";` `const view: LandingView = forced !== null ? FIXTURES[key] : { online: liveOnline, tiers: liveTiers ?? null };` `useEffect(() => { document.title = copy.docTitle; }, [copy.docTitle]);` (the server picks the title from `?lang=` only; this follows a saved choice). Every rendered copy string passes through `const isolate = (text: string): string => text.replace(/\d+/g, (digits) => \`\u2066${digits}\u2069\`);` so digits are LTR isolates inside Hebrew (CONVENTIONS §12).
+  - **Page structure** (in order):
+    ```tsx
+    <div data-testid="landing-screen" data-state={forced === null ? "live" : key}>
+      <TpIconSprite />
+      <SiteHeader current="home" languageSwitch={<LanguageSwitch current={lang} onChoose={setLang} />} />
+      <Container as="main" id="main" tabIndex={-1} className="ab-main">
+        {view.online ? null : <div data-testid="landing-offline"><StateOffline text={copy.offline} /></div>}
+        <Hero titleId="hero-title" eyebrow={copy.heroEyebrow} title={copy.heroTitle} lede={copy.heroLede}
+          primary={{ href: "/sign-up", label: copy.join }} secondary={{ href: "#how", label: copy.how }} note={copy.heroNote} />
+        <section className="ab-block" id="what" aria-labelledby="what-title">
+          <div className="ab-prose"><span className="tp-eyebrow">{copy.whatEyebrow}</span><h2 className="tp-h2" id="what-title">{copy.whatTitle}</h2></div>
+          <FeatureRow titleId="f1-title" title={copy.f1Title} body={copy.f1Body} figure={<PagesFigure />} />
+          <FeatureRow titleId="f2-title" title={copy.f2Title} body={copy.f2Body} figure={<TemplatesFigure />} flip />
+          <FeatureRow titleId="f3-title" title={copy.f3Title} body={copy.f3Body} figure={<CoachFigure />} />
+        </section>
+        <section className="ab-block" id="how" aria-labelledby="how-title">
+          <div className="ab-prose"><span className="tp-eyebrow">{copy.howEyebrow}</span><h2 className="tp-h2" id="how-title">{copy.howTitle}</h2></div>
+          <HowItWorks labelledBy="how-title" steps={[{ title: copy.s1Title, body: copy.s1Body }, { title: copy.s2Title, body: copy.s2Body }, { title: copy.s3Title, body: isolate(copy.s3Body) }]} />
+        </section>
+        <section className="ab-block" id="voice" aria-labelledby="voice-title">
+          <FeatureRow titleId="voice-title" headingLevel={2} eyebrow={copy.voiceEyebrow} title={copy.voiceTitle} body={copy.voiceBody} figure={<VoiceFigure />} flip />
+        </section>
+        <section className="ab-block" id="who" aria-labelledby="who-title">
+          <div className="ab-prose"><span className="tp-eyebrow">{copy.whoEyebrow}</span><h2 className="tp-h2" id="who-title">{copy.whoTitle}</h2></div>
+          <ul className="ab-principles">
+            <li><Card as="div" title={copy.who1Title}><p>{copy.who1Body}</p></Card></li>
+            <li><Card as="div" title={copy.who2Title}><p>{copy.who2Body}</p></Card></li>
+          </ul>
+        </section>
+        <section className="ab-block" id="pricing" aria-labelledby="pricing-title">
+          <div className="ab-prose"><span className="tp-eyebrow">{copy.priceEyebrow}</span><h2 className="tp-h2" id="pricing-title">{copy.priceTitle}</h2><p className="tp-muted">{isolate(copy.priceLede)}</p></div>
+          {view.tiers === null
+            ? <p className="tp-muted" role="status" data-testid="landing-prices-loading">{copy.priceLoading}</p>
+            : <Pricing tiers={view.tiers} interval="monthly" joinHref="/sign-up" />}
+        </section>
+        <section className="ab-block" id="faq" aria-labelledby="faq-title">
+          <div className="ab-prose"><h2 className="tp-h2" id="faq-title">{copy.faqTitle}</h2></div>
+          <FAQ items={(["q1", "q2", "q3", "q4", "q5", "q6"] as const).map((id, i) => ({ id, q: copy[id], a: isolate(copy[(["a1", "a2", "a3", "a4", "a5", "a6"] as const)[i]]) }))} />
+        </section>
+      </Container>
+      <SiteFooter current="home" languageSwitch={<LanguageSwitch current={lang} long onChoose={setLang} />} />
+    </div>
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/landing.ts` contains only `import type { LandingState, LandingView } from "@/components/marketing/LandingScreen";`, one non-exported `const TIERS: NonNullable<LandingView["tiers"]> = [{ id: "trial", liveMinutesPerDay: 180, monthlyPriceUsd: 1, annualPriceUsd: null }, { id: "basic", liveMinutesPerDay: 30, monthlyPriceUsd: 10, annualPriceUsd: 100 }, { id: "pro", liveMinutesPerDay: 90, monthlyPriceUsd: 20, annualPriceUsd: 200 }, { id: "max", liveMinutesPerDay: 180, monthlyPriceUsd: 40, annualPriceUsd: 400 }];` (test data, not product prices) and `export const FIXTURES: Record<LandingState, LandingView> = { default: { online: true, tiers: TIERS }, empty: { online: true, tiers: TIERS }, loading: { online: true, tiers: TIERS }, error: { online: true, tiers: TIERS }, offline: { online: false, tiers: TIERS }, "prices-loading": { online: true, tiers: null } };`.
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>` in `LandingScreen.tsx`, CONVENTIONS §11; EN from `landing.html`, HE from its `TP_STRINGS` made gender-neutral per §12):
+    | key | EN | HE |
+    |---|---|---|
+    | docTitle | Tempo Flow — your brain's operating system | Tempo Flow — מערכת ההפעלה של המוח שלך |
+    | offline | You're offline. This page still works. Asking to join needs a connection. | אין חיבור כרגע. הדף עדיין עובד. כדי לבקש להצטרף צריך חיבור. |
+    | heroEyebrow | A starter for your brain | סטרטר למוח שלך |
+    | heroTitle | Tempo Flow — your brain's operating system | Tempo Flow — מערכת ההפעלה של המוח שלך |
+    | heroLede | Notes, plans and a coach in one calm place. You write or talk. The coach remembers, paces you, and changes the app when you say yes. | פתקים, תוכניות ומאמן במקום אחד ורגוע. כותבים או מדברים. המאמן זוכר, קובע קצב ומשנה את האפליקציה אחרי אישור. |
+    | join | Ask to join | בקשה להצטרף |
+    | how | See how it works | איך זה עובד |
+    | heroNote | We let people in a few at a time. You'll get an email when it's your turn. | אנחנו מכניסים אנשים בהדרגה. נשלח מייל כשמגיע התור. |
+    | whatEyebrow | What it is | מה זה |
+    | whatTitle | Three simple parts that work together | שלושה חלקים פשוטים שעובדים יחד |
+    | f1Title | Pages in plain Markdown | דפים ב־Markdown פשוט |
+    | f1Body | Every note, plan and list is a page you own. Tasks, habits and time blocks sit right inside the text. You can export everything as Markdown files. | כל פתק, תוכנית ורשימה הם דף שלך. משימות, הרגלים ובלוקי זמן יושבים בתוך הטקסט. אפשר לייצא הכול כקובצי Markdown. |
+    | f2Title | Templates that do the setup for you | תבניות שעושות את ההכנה בשבילך |
+    | f2Body | Start a daily page, a weekly review or a project with one choice. Ask the coach for a new template and it builds one with you. | פותחים דף יומי, סיכום שבועי או פרויקט בבחירה אחת. מבקשים מהמאמן תבנית חדשה, והוא בונה אותה יחד. |
+    | f3Title | A coach with memory that can change the app | מאמן עם זיכרון שיכול לשנות את האפליקציה |
+    | f3Body | The coach reads your pages and remembers what matters, so you don't repeat yourself. It can add a task, fill a template or build a new one. It always shows you the exact change first. | המאמן קורא את הדפים שלך וזוכר את מה שחשוב, כך שלא צריך לחזור על אותם דברים. הוא יכול להוסיף משימה, למלא תבנית או לבנות חדשה. הוא תמיד מראה קודם את השינוי המדויק. |
+    | howEyebrow | How it works | איך זה עובד |
+    | howTitle | Write. Talk. Say yes. | כותבים. מדברים. מאשרים. |
+    | s1Title | Write | כותבים |
+    | s1Body | Dump what's in your head onto a page. Messy is fine. Tempo helps sort it later. | שופכים לדף את מה שבראש. מבולגן זה בסדר. Tempo עוזר לסדר אחר כך. |
+    | s2Title | Talk | מדברים |
+    | s2Body | Type or speak to the coach. It knows your pages and helps you pick one next step. | מקלידים או מדברים עם המאמן. הוא מכיר את הדפים שלך ועוזר לבחור צעד אחד הבא. |
+    | s3Title | Accept, with Undo | מאשרים, עם ביטול |
+    | s3Body | The coach suggests a change. You accept, edit or reject it. Changed your mind? Undo for 5 minutes. | המאמן מציע שינוי. מאשרים, עורכים או דוחים. שינוי בתוכניות? אפשר לבטל במשך 5 דקות. |
+    | voiceEyebrow | Live voice | שיחה קולית |
+    | voiceTitle | Talk it through, hands free | מדברים על זה, בלי ידיים |
+    | voiceBody | Start a call with the coach and just talk, in English or Hebrew. Cut in whenever you want. Every spoken reply is also written down, so you can read it back later. | פותחים שיחה עם המאמן ופשוט מדברים, בעברית או באנגלית. אפשר לקטוע מתי שרוצים. כל תשובה מדוברת נכתבת גם כטקסט, כדי שאפשר יהיה לקרוא שוב אחר כך. |
+    | whoEyebrow | Who it's for | למי זה מתאים |
+    | whoTitle | Built for brains that work differently | בנוי למוחות שעובדים אחרת |
+    | who1Title | For adults with ADHD, autism or learning disabilities | למבוגרים עם ADHD, אוטיזם או לקויות למידה |
+    | who1Body | If starting, switching or remembering is the hard part, Tempo is for you. It paces you and gives gentle reminders in your own words. | אם להתחיל, לעבור בין דברים או לזכור זה החלק הקשה, Tempo בשבילך. הוא קובע קצב ונותן תזכורות עדינות במילים שלך. |
+    | who2Title | A coach, not a therapist | מאמן, לא מטפל |
+    | who2Body | Tempo helps you plan and get things done. It does not treat any condition. If things get very hard, it stops coaching and shows real places to get help. | Tempo עוזר לתכנן ולעשות. הוא לא מטפל באף מצב. אם נהיה ממש קשה, הוא מפסיק לאמן ומראה מקומות אמיתיים לקבל עזרה. |
+    | priceEyebrow | Pricing | מחירים |
+    | priceTitle | Clear prices. Always visible. | מחירים ברורים. תמיד גלויים. |
+    | priceLede | Start with a 3-week trial. We remind you 3 days, 1 day and 1 hour before it ends. | מתחילים בתקופת ניסיון של 3 שבועות. נזכיר 3 ימים, יום אחד ושעה אחת לפני שהיא נגמרת. |
+    | priceLoading | Loading prices… | המחירים בטעינה… |
+    | faqTitle | Questions | שאלות |
+    | q1 | Why do I have to ask to join? | למה צריך לבקש להצטרף? |
+    | a1 | We let people in a few at a time so we can listen and fix things fast. Ask with your email and we'll write when you're in. | אנחנו מכניסים אנשים בהדרגה כדי להקשיב ולתקן מהר. מבקשים עם כתובת המייל, ונכתוב כשאפשר להיכנס. |
+    | q2 | Is there a password? | יש סיסמה? |
+    | a2 | No. You sign in with a link we email you. Nothing to remember. | לא. נכנסים עם קישור שאנחנו שולחים במייל. אין מה לזכור. |
+    | q3 | Does it work in Hebrew? | זה עובד בעברית? |
+    | a3 | Yes. The app, the coach and live voice work in English and Hebrew, right to left or left to right. | כן. האפליקציה, המאמן והשיחה הקולית עובדים בעברית ובאנגלית, מימין לשמאל או משמאל לימין. |
+    | q4 | Can the coach change things without asking? | המאמן יכול לשנות דברים בלי לשאול? |
+    | a4 | No. It shows you the exact change first. You accept, edit or reject it, and you can undo for 5 minutes. | לא. הוא מראה קודם את השינוי המדויק. מאשרים, עורכים או דוחים, ואפשר לבטל במשך 5 דקות. |
+    | q5 | What does Tempo remember about me? | מה Tempo זוכר עליי? |
+    | a5 | Only what helps the coach help you. You can see every memory, forget any of them, and export them all as Markdown. | רק מה שעוזר למאמן לעזור לך. אפשר לראות כל זיכרון, לשכוח כל אחד מהם ולייצא הכול כ־Markdown. |
+    | q6 | Is Tempo therapy? | Tempo זה טיפול? |
+    | a6 | No. Tempo is a coach for planning and doing. It is not a therapist or counselor. | לא. Tempo הוא מאמן לתכנון ולעשייה. הוא לא מטפל ולא יועץ. |
+    The header, footer, pricing, figure and language-switch strings belong to those components (TFV2-0293, 0300, 0298, 0303a, 0301); TierCard words belong to TFV2-0282.
+  - **States:** `default`, `empty`, `loading`, `error` (all four render the full page: nothing on the page is a list the visitor owns, so there is no empty/error variant; design `@states`), `offline` (full page plus `landing-offline` banner; live: `useOnline()` false), `prices-loading` (full page with `landing-prices-loading` in place of the tier grid; live: `listTiers` still `undefined`). Testids: `landing-screen` (root, `data-state`), `landing-offline`, `landing-prices-loading`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`, then `localStorage["tempo-lang"]`); every component mirrors through logical properties; digits are U+2066/U+2069 isolates; "Tempo" stays Latin. Keyboard: skip link → header links → language switch → hero primary → secondary → pricing join link → FAQ summaries → footer links → footer switch; figures are inert; one `h1` (hero), `h2` per section, `h3` per feature/step. Choosing a language in either switch calls `setLang`, so the page re-renders in place with `<html lang dir>` updated and the choice stored. Breakpoints: 390 px base, components handle 768/1024/1280 (`.tp-feature` stacks below 1024, `.tp-site-link--wide` hides below 768, `.tp-tiers` 4-up at 1024+). Motion: none added by the screen; component transitions ≤ 250 ms and instant under reduced motion.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openScreen(page, "/", { state, lang })`, and at the end `await expectDir(page, lang)` and, after dropping messages matching `/example\.convex\.cloud|WebSocket/i`, `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` with the SPEC copy it asserts and compares texts after `s.replace(/[\u2066\u2069]/g, "")`; test names include `vpName` and `lang` (7 × 4 = 28).
+  1. Given state `default` / Then the `h1` text is `heroTitle`, the page has exactly one `.tp-btn--primary` (text `join`, `href="/sign-up"`), the hero secondary link has `href="#how"`, `document.title` equals `docTitle`, `landing-offline` is absent; `expectTargetSize` and `expectMotionBudget` on `[data-testid="landing-screen"]` pass and `measureVitals(page, "/?state=default&lang=" + lang)` gives LCP ≤ 2500 and CLS ≤ 0.1.
+  2. Given state `default` / Then the ids of `main#main > section.ab-block` are, in order, `what`, `how`, `voice`, `who`, `pricing`, `faq`; `#what` holds 3 `[data-component="FeatureRow"]`, `#voice` 1, `#how` an `ol[data-component="HowItWorks"]` with 3 `li`, `#who` 2 `[data-component="Card"]`, `#faq` 6 `details`, and every `.tp-feature__figure` has `inert`.
+  3. Given state `default` / Then `#pricing` holds 4 `[data-component="TierCard"]` with `data-tier` `trial`, `basic`, `pro`, `max` in order, the Pricing annual note text (EN "Pay yearly and get two months free." / HE "בתשלום שנתי מקבלים חודשיים חינם.") is visible, and the pricing join link has `href="/sign-up"`.
+  4. Given each of the states `empty`, `loading`, `error` in turn (one test that opens all three) / Then the `h1` is `heroTitle`, 4 TierCards are present and `landing-offline` is absent.
+  5. Given state `offline` / Then `landing-offline` contains `[data-component="StateOffline"]` with text `offline` and `role="status"`, and the `h1` and 4 TierCards are still visible.
+  6. Given state `prices-loading` / Then `landing-prices-loading` shows `priceLoading` with `role="status"` and there is no `[data-component="TierCard"]`.
+  7. Given state `default` / When the header `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` is the other language, `<html dir>` is its direction, and the `h1` text is the other language's `heroTitle`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; `expectMotionBudget`) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components; `bun run scan:design-tokens` passes) · one primary action (components.md §2.16; bullet 1) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · price values: UNKNOWN until Q-02 (none in the screen; fixture numbers are test data).
+- **GATES:** n/a — OPEN (not buildable until Amit answers).
+- **OPEN:** inherits TFV2-0261a (Q-02: prices and billing tiers shown to users, including the 3-week trial and the 3-day / 1-day / 1-hour reminders the pricing lede promises) — Amit. Q-01: Voice stage — is live voice Gen 1 or later? (the "Live voice" section, `a3` and the voice figure promise live voice on the public page; if it is later, the section and those words come out) — Amit. New: the landing is public and signed out, but `billing.listTiers` as TFV2-0261a specifies it starts with `await requireUser(ctx)` and throws "Not authenticated" for visitors — should `listTiers` answer signed-out callers (drop `requireUser`), or should the landing read the tiers from a static, non-Convex constant shared with `BILLING_TIERS` (and in which file)? — Amit.
+
+### TFV2-0304 — Screen: About (`/about`, `apps/web/app/about/page.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0034, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301.
+- **WHY:** design `docs/design/v3/screens/web/about.html` (`@layout Marketing`; same header and footer as the landing; hero "A calm place for a busy brain"; "Why it exists" ×3 paragraphs; "What we promise" ×5 cards; "What Tempo is not" + one primary "Ask to join"; `@states default | empty | loading | error | offline` — nothing is fetched, offline adds a banner); PRD F-70; CONVENTIONS §9 (marketing route, screen set with its real path), §14, §22. Code truth: `apps/web/app/about/page.tsx` exists (`"use client"`, `MarketingChrome` + `t("ab.*")` / `t("mk.*")` keys from `apps/web/lib/i18n-groups/extras.ts`); its Hebrew uses the slash form "את/ה מחליטים" and "את/ה גרים", which CONVENTIONS §12 replaces with gender-neutral wording, so this ticket replaces the page and keeps its words in a `COPY` constant (the `ab.*` keys stay in the i18n file, unused; it is not edited). `/about` is not in `PUBLIC_ROUTE_PATTERNS` (`apps/web/lib/rootEntry.ts`) nor in `E2E_WIRING_ROUTES`, so under the Playwright server a signed-out request is redirected to `/sign-in`; this ticket registers `"/about"` (dev-only bypass). Whether `/about` becomes public in production is not decided here (the page's own header comment calls the public-route list an open owner decision) and `rootEntry.ts` is not touched. The old ticket's `apps/web/app/(marketing)/about/page.tsx` and `apps/web/e2e/about.spec.ts` paths were wrong.
+- **GOAL:** `/about` shows the v3 About page in English and Hebrew, built from the marketing components with gender-neutral Hebrew, with every state forceable and the route registered for the E2E bypass.
+- **SCOPE:** `apps/web/app/about/page.tsx` · `apps/web/lib/e2e/fixtures/about.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/about.spec.ts`.
+- **MUTATES:** `apps/web/app/about/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/about.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/about.spec.ts` (new) · route `/about` registered for the dev-only E2E bypass. Reads and writes no data.
+- **STEPS:**
+  1. Code-map check: read the current `apps/web/app/about/page.tsx`; `grep -n '"/about"' apps/web/lib/e2eWiringRoutes.ts apps/web/lib/rootEntry.ts` prints nothing; confirm the exports `Container` (TFV2-0292), `SiteHeader` (0293), `Hero` (0294), `SiteFooter` (0300), `LanguageSwitch` (0301) in `apps/web/components/marketing/`, `Card` in `apps/web/components/primitives/Card.tsx` (TFV2-0034), `StateOffline` in `apps/web/components/states/StateOffline.tsx` (TFV2-0123), `useE2EState` in `apps/web/lib/e2e/useE2EState.ts` (TFV2-0000c); `grep -n "^.ab-" apps/web/app/v3/extras.css` prints lines 63–67.
+  2. Create `apps/web/lib/e2e/fixtures/about.ts` per SPEC.
+  3. Replace `apps/web/app/about/page.tsx` per SPEC.
+  4. Named step — register the route: insert `  "/about",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else in that file.
+  5. Create the spec with the 6 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/about.spec.ts --reporter=line` → `24 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **DO NOT:** add `"/about"` to `PUBLIC_ROUTE_PATTERNS` or edit `rootEntry.ts` / `proxy.ts`; delete or edit `MarketingChrome.tsx` or `apps/web/lib/i18n*`; add a founding story, a founder quote, a team list, numbers or testimonials beyond the SPEC copy; add a second `.tp-btn--primary`; add a stylesheet or new classes; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0304 / evidence: <DONE output> / changed: apps/web/app/about/page.tsx, apps/web/lib/e2e/fixtures/about.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/about.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  - **Route:** `"use client"`; imports `Link` from `next/link`; `Suspense`, `useEffect` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `TpIconSprite` from `@/components/tempo/TpIcon`; `Card` from `@/components/primitives/Card`; `StateOffline` from `@/components/states/StateOffline`; `Container`, `SiteHeader`, `Hero`, `SiteFooter`, `LanguageSwitch` from `@/components/marketing/<Name>`; `FIXTURES` from `@/lib/e2e/fixtures/about`.
+    ```ts
+    export type AboutState = "default" | "empty" | "loading" | "error" | "offline";
+    export type AboutView = { online: boolean };
+    export default function Page(): JSX.Element; // <Suspense fallback={null}><AboutScreen /></Suspense>
+    ```
+    `AboutScreen`: `const forced = useE2EState(); const liveOnline = useOnline(); const { lang, setLang } = useLocale(); const copy = COPY[lang];` `const key: AboutState = forced !== null && forced in FIXTURES ? (forced as AboutState) : "default";` `const online = forced !== null ? FIXTURES[key].online : liveOnline;` `useEffect(() => { document.title = copy.docTitle; }, [copy.docTitle]);` Every rendered copy string with digits passes through `const isolate = (text: string): string => text.replace(/\d+/g, (digits) => \`\u2066${digits}\u2069\`);` (only `p3Body` has one).
+  - **Page structure:**
+    ```tsx
+    <div data-testid="about-screen" data-state={forced === null ? "live" : key}>
+      <TpIconSprite />
+      <SiteHeader current="about" languageSwitch={<LanguageSwitch current={lang} onChoose={setLang} />} />
+      <Container as="main" id="main" tabIndex={-1} className="ab-main">
+        {online ? null : <div data-testid="about-offline"><StateOffline text={copy.offline} /></div>}
+        <Hero titleId="ab-title" eyebrow={copy.heroEyebrow} title={copy.heroTitle} lede={copy.heroLede} />
+        <section className="ab-block" aria-labelledby="why-title">
+          <h2 className="tp-h2" id="why-title">{copy.whyTitle}</h2>
+          <div className="ab-prose"><p>{copy.why1}</p><p>{copy.why2}</p><p>{copy.why3}</p></div>
+        </section>
+        <section className="ab-block" aria-labelledby="pr-title">
+          <h2 className="tp-h2" id="pr-title">{copy.prTitle}</h2>
+          <ul className="ab-principles">
+            {([1, 2, 3, 4, 5] as const).map((n) => (
+              <li key={n}><Card as="div" title={copy[`p${n}Title`]}><p>{isolate(copy[`p${n}Body`])}</p></Card></li>
+            ))}
+          </ul>
+        </section>
+        <section className="ab-block" aria-labelledby="not-title">
+          <h2 className="tp-h2" id="not-title">{copy.notTitle}</h2>
+          <div className="ab-prose"><p>{copy.not1}</p></div>
+          <div><Link className="tp-btn tp-btn--primary" href="/sign-up">{copy.join}</Link></div>
+        </section>
+      </Container>
+      <SiteFooter current="about" languageSwitch={<LanguageSwitch current={lang} long onChoose={setLang} />} />
+    </div>
+    ```
+    `CopyKey` includes the template-literal keys `p1Title` … `p5Title` and `p1Body` … `p5Body` listed below.
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/about.ts` contains only `import type { AboutState, AboutView } from "@/app/about/page";` and `export const FIXTURES: Record<AboutState, AboutView> = { default: { online: true }, empty: { online: true }, loading: { online: true }, error: { online: true }, offline: { online: false } };`.
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; EN from `about.html`, HE gender-neutral per §12):
+    | key | EN | HE |
+    |---|---|---|
+    | docTitle | About · Tempo | אודות · Tempo |
+    | offline | You're offline. This page still works. Asking to join needs a connection. | אין חיבור כרגע. הדף עדיין עובד. כדי לבקש להצטרף צריך חיבור. |
+    | heroEyebrow | About Tempo | אודות Tempo |
+    | heroTitle | A calm place for a busy brain | מקום רגוע למוח עסוק |
+    | heroLede | Tempo is an executive function aid for adults with ADHD, autism or learning disabilities. It is a coach, not a therapist or counselor. | Tempo הוא כלי עזר לתפקודים ניהוליים למבוגרים עם ADHD, אוטיזם או לקויות למידה. הוא מאמן, לא מטפל ולא יועץ. |
+    | whyTitle | Why it exists | למה הוא קיים |
+    | why1 | Most planners are made for brains that already start, switch and remember on their own. When that is the hard part, a long list just becomes one more thing to feel bad about. | רוב המתכננים בנויים למוחות שכבר מתחילים, עוברים בין דברים וזוכרים לבד. כשזה החלק הקשה, רשימה ארוכה הופכת לעוד דבר להרגיש רע בגללו. |
+    | why2 | Tempo started as a tool its maker needed for his own brain. It keeps your notes and plans as simple pages, and adds a coach that remembers, paces you, and nudges you in your own words. | Tempo התחיל ככלי שהיוצר שלו היה צריך בשביל המוח שלו. הוא שומר את הפתקים והתוכניות כדפים פשוטים, ומוסיף מאמן שזוכר, קובע קצב ומזכיר במילים שלך. |
+    | why3 | The coach can also change the app itself: add a task, fill a template, or build a new one. It never does this without showing you first. | המאמן יכול גם לשנות את האפליקציה עצמה: להוסיף משימה, למלא תבנית או לבנות חדשה. הוא אף פעם לא עושה את זה בלי להראות קודם. |
+    | prTitle | What we promise | מה אנחנו מבטיחים |
+    | p1Title | Calm by default | רגוע כברירת מחדל |
+    | p1Body | No streaks, no badges, no red numbers. One next step at a time. | בלי רצפים, בלי תגים, בלי מספרים אדומים. צעד אחד בכל פעם. |
+    | p2Title | You decide | ההחלטה שלך |
+    | p2Body | The coach suggests. You accept, edit or reject. Nothing changes behind your back. | המאמן מציע. מאשרים, עורכים או דוחים. שום דבר לא משתנה מאחורי הגב. |
+    | p3Title | Everything can be undone | אפשר לבטל הכול |
+    | p3Body | Every change shows an Undo for 5 minutes. | כל שינוי מציג אפשרות ביטול למשך 5 דקות. |
+    | p4Title | Prices you can always see | מחירים שתמיד רואים |
+    | p4Body | No hidden plans. We remind you before a trial ends. | אין מסלולים נסתרים. נזכיר לפני שתקופת הניסיון נגמרת. |
+    | p5Title | Your words stay yours | המילים שלך נשארות שלך |
+    | p5Body | See everything Tempo remembers, forget any of it, and export it all as Markdown. | רואים כל מה ש־Tempo זוכר, שוכחים כל דבר ומייצאים הכול כ־Markdown. |
+    | notTitle | What Tempo is not | מה Tempo לא |
+    | not1 | Tempo is not therapy and does not treat any condition. If you go three nights without sleep, or things feel like a crisis, Tempo stops coaching and shows real places to get help where you live. | Tempo הוא לא טיפול ולא מטפל באף מצב. אם עברו שלושה לילות בלי שינה, או שמרגיש כמו משבר, Tempo מפסיק לאמן ומראה מקומות אמיתיים לקבל עזרה באזור המגורים. |
+    | join | Ask to join | בקשה להצטרף |
+    Header, footer and language-switch strings belong to TFV2-0293, TFV2-0300 and TFV2-0301.
+  - **States:** `default`, `empty`, `loading`, `error` (all render the full page; nothing is fetched — design `@states`), `offline` (full page plus `about-offline`; live: `useOnline()` false). Testids: `about-screen` (root, `data-state`), `about-offline`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider` (`?lang=`, then `localStorage["tempo-lang"]`); the components mirror through logical properties; "Tempo" and "ADHD" stay Latin; the 5 is an isolate. Keyboard: skip link → header links (About is `aria-current="page"`) → header switch → "Ask to join" → footer links → footer switch; one `h1`, three `h2`. Choosing a language calls `setLang` (in place, stored on the device). Breakpoints: 390 px base; `.ab-principles` cards are 280 px tracks (`calc(var(--tp-space-20) * 3.5)`), so one per row on phones and up to three per row at 1024+; `.tp-site-link--wide` hides below 768. Motion: none added by the screen.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test` and `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and whose first statement is `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openScreen(page, "/about", { state, lang })`, and at the end `await expectDir(page, lang)` and, after dropping messages matching `/example\.convex\.cloud|WebSocket/i`, `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` with the SPEC copy it asserts and compares texts after `s.replace(/[\u2066\u2069]/g, "")`; test names include `vpName` and `lang` (6 × 4 = 24).
+  1. Given state `default` / Then `page.url()` still ends with `/about?state=default&lang=<lang>` (no redirect to `/sign-in`), the `h1` text is `heroTitle`, the eyebrow `heroEyebrow`, `document.title` equals `docTitle`, `about-offline` is absent; `expectTargetSize` and `expectMotionBudget` on `[data-testid="about-screen"]` pass and `measureVitals(page, "/about?state=default&lang=" + lang)` gives LCP ≤ 2500 and CLS ≤ 0.1.
+  2. Given state `default` / Then `main#main > section.ab-block` has 3 sections whose `h2` texts are `whyTitle`, `prTitle`, `notTitle`; the first holds 3 paragraphs `why1`–`why3`; `ul.ab-principles` holds 5 `li`, each with a `[data-component="Card"]` whose `.tp-card__title` is `p1Title` … `p5Title` and paragraph `p1Body` … `p5Body` in order.
+  3. Given state `default` / Then the page has exactly one `.tp-btn--primary` (text `join`, `href="/sign-up"`), and the header link with `href="/about"` has `aria-current="page"`.
+  4. Given each of the states `empty`, `loading`, `error` in turn (one test that opens all three) / Then the `h1` is `heroTitle`, 5 Cards are present and `about-offline` is absent.
+  5. Given state `offline` / Then `about-offline` contains `[data-component="StateOffline"]` with text `offline` and `role="status"`, and the `h1` and 5 Cards are still visible.
+  6. Given state `default` / When the footer `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` and `<html dir>` switch to the other language and the `h1` text is the other language's `heroTitle`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 1) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components; `bun run scan:design-tokens` passes) · one primary action (components.md §2.16; bullet 3) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0305 — Screen: Changelog (`/changelog`, `apps/web/app/changelog/page.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0093, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0093, TFV2-0123, TFV2-0292, TFV2-0293, TFV2-0294, TFV2-0300, TFV2-0301.
+- **WHY:** design `docs/design/v3/screens/web/changelog.html` (`@layout Marketing`; newest entry first; each entry a version, a date and changes marked with an icon and a word — New, Better or Fixed, never colour alone; plain language, no ticket numbers; ends with "Want to try it?" + one primary "Ask to join"; `@states default | empty | loading | error | offline` — built at deploy time, so empty/loading/error show the default page, offline adds a banner); CONVENTIONS §9, §14, §22. Code truth: the entries are not Markdown files (the old ticket's `content/changelog/*.md` does not exist); they live in `apps/web/lib/changelog.ts` — `export type ChangeKind = "new" | "better" | "fixed"; export type ChangelogEntry = { version: string; date: string; changes: readonly { kind: ChangeKind; text: MessageKey }[] }; export const CHANGELOG: readonly ChangelogEntry[]; export function sortedEntries(entries): ChangelogEntry[]` (newest first by date, then version) `; export function changelogDate(isoDate: string, lang: "en" | "he"): string` (tested by `apps/web/lib/changelog.test.ts`), with each change text a `t()` key (`cl.c01a` … `cl.c01f` in `apps/web/lib/i18n-groups/extras.ts`, already gender-neutral in Hebrew). This ticket keeps that data and its `t()` keys (CONVENTIONS §11: existing keys stay) and moves the page chrome to a `COPY` constant (the existing `cl.offline.body` HE "את/ה קוראים עותק שמור" is a slash form §12 replaces). The current `apps/web/app/changelog/page.tsx` uses `MarketingChrome` and a raw `span.tp-badge`; this ticket replaces it with the marketing components and `Badge` (TFV2-0093, `apps/web/components/layout/Badge.tsx`: `{ label: string; tone?: "neutral" | "done" | "info" | "caution"; icon?: ReactNode }`). The old dependency on a `ChangelogEntry` component (TFV2-0316, a later range) is dropped: the entry markup is page-level, using the `.cl-*` classes in `apps/web/app/v3/extras.css` (lines 70–77). `/changelog` is not public and not in `E2E_WIRING_ROUTES`, so this ticket registers it for the dev-only bypass; making it public in production is not decided here.
+- **GOAL:** `/changelog` lists every entry of `CHANGELOG` newest first, each change marked with an icon and a word, in English and Hebrew, with every state forceable and the route registered for the E2E bypass.
+- **SCOPE:** `apps/web/app/changelog/page.tsx` · `apps/web/lib/e2e/fixtures/changelog.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/changelog.spec.ts`.
+- **MUTATES:** `apps/web/app/changelog/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/changelog.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/changelog.spec.ts` (new) · route `/changelog` registered for the dev-only E2E bypass. Reads and writes no data.
+- **STEPS:**
+  1. Code-map check: read the current `apps/web/app/changelog/page.tsx` and `apps/web/lib/changelog.ts` (exports above); `grep -n '"/changelog"' apps/web/lib/e2eWiringRoutes.ts apps/web/lib/rootEntry.ts` prints nothing; confirm `Badge` in `apps/web/components/layout/Badge.tsx` (TFV2-0093), `StateOffline` (TFV2-0123), `Container`, `SiteHeader`, `Hero`, `SiteFooter`, `LanguageSwitch` in `apps/web/components/marketing/` (TFV2-0292/0293/0294/0300/0301), `useE2EState` (TFV2-0000c); `grep -n "^.cl-" apps/web/app/v3/extras.css` prints lines 70–77.
+  2. Create `apps/web/lib/e2e/fixtures/changelog.ts` per SPEC.
+  3. Replace `apps/web/app/changelog/page.tsx` per SPEC.
+  4. Named step — register the route: insert `  "/changelog",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else in that file.
+  5. Create the spec with the 7 TESTS bullets.
+  6. Run DONE, then `bun test apps/web/lib/changelog.test.ts` (unchanged, must stay green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/changelog.spec.ts --reporter=line` → `28 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summary, the `changelog.test.ts` result, the typecheck/lint exit codes and the one-line `git diff` of `e2eWiringRoutes.ts` in the PR.
+- **DO NOT:** add, edit or reorder entries in `apps/web/lib/changelog.ts` or the `cl.*` keys; copy the design file's sample versions 0.2–0.4 (they describe work that is not in the app); show ticket or PR numbers; mark a change by colour alone; edit `rootEntry.ts`, `proxy.ts`, `MarketingChrome.tsx` or i18n files; add a second `.tp-btn--primary`; add a stylesheet; call Convex or `fetch`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** `status / ticket: TFV2-0305 / evidence: <DONE output> / changed: apps/web/app/changelog/page.tsx, apps/web/lib/e2e/fixtures/changelog.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/changelog.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  - **Route:** `"use client"`; imports `Link` from `next/link`; `Suspense`, `useEffect` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `TpIcon`, `TpIconSprite`, `type TpIconName` from `@/components/tempo/TpIcon`; `Badge`, `type BadgeTone` from `@/components/layout/Badge`; `StateOffline` from `@/components/states/StateOffline`; `Container`, `SiteHeader`, `Hero`, `SiteFooter`, `LanguageSwitch` from `@/components/marketing/<Name>`; `CHANGELOG`, `type ChangeKind`, `changelogDate`, `sortedEntries` from `@/lib/changelog`; `FIXTURES` from `@/lib/e2e/fixtures/changelog`.
+    ```ts
+    export type ChangelogState = "default" | "empty" | "loading" | "error" | "offline";
+    export type ChangelogView = { online: boolean };
+    export default function Page(): JSX.Element; // <Suspense fallback={null}><ChangelogScreen /></Suspense>
+    const KIND: Record<ChangeKind, { label: "kindNew" | "kindBetter" | "kindFixed"; icon: TpIconName; flip: boolean; tone: BadgeTone }> = {
+      new: { label: "kindNew", icon: "sparkle", flip: false, tone: "info" },
+      better: { label: "kindBetter", icon: "arrow", flip: true, tone: "neutral" },
+      fixed: { label: "kindFixed", icon: "check", flip: false, tone: "done" },
+    };
+    ```
+    `ChangelogScreen`: `const forced = useE2EState(); const liveOnline = useOnline(); const { lang, setLang, t } = useLocale(); const copy = COPY[lang];` `const key: ChangelogState = forced !== null && forced in FIXTURES ? (forced as ChangelogState) : "default";` `const online = forced !== null ? FIXTURES[key].online : liveOnline;` `useEffect(() => { document.title = copy.docTitle; }, [copy.docTitle]);`
+  - **Page structure:**
+    ```tsx
+    <div data-testid="changelog-screen" data-state={forced === null ? "live" : key}>
+      <TpIconSprite />
+      <SiteHeader current="changelog" languageSwitch={<LanguageSwitch current={lang} onChoose={setLang} />} />
+      <Container as="main" id="main" tabIndex={-1} className="cl-main">
+        {online ? null : <div data-testid="changelog-offline"><StateOffline text={copy.offline} /></div>}
+        <Hero titleId="cl-title" eyebrow={copy.heroEyebrow} title={copy.heroTitle} lede={copy.heroLede} />
+        <ol className="cl-list" data-testid="changelog-list">
+          {sortedEntries(CHANGELOG).map((entry) => {
+            const headId = `v${entry.version.replace(/\W/g, "-")}`;
+            return (
+              <li key={entry.version}>
+                <article className="cl-entry" aria-labelledby={headId} data-component="ChangelogEntry" data-version={entry.version}>
+                  <div className="cl-entry__head">
+                    <h2 className="tp-h2" id={headId}><span>{copy.version}</span> <span className="tp-num">{entry.version}</span></h2>
+                    <time className="tp-muted tp-num" dateTime={entry.date}>{changelogDate(entry.date, lang)}</time>
+                  </div>
+                  <ul className="cl-changes">
+                    {entry.changes.map((change) => {
+                      const kind = KIND[change.kind];
+                      return (
+                        <li className="cl-change" key={change.text} data-kind={change.kind}>
+                          <Badge label={copy[kind.label]} tone={kind.tone} icon={<TpIcon name={kind.icon} size="sm" flip={kind.flip} />} />
+                          <span>{t(change.text)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </article>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="cl-foot">
+          <p className="tp-muted">{copy.footLede}</p>
+          <Link className="tp-btn tp-btn--primary" href="/sign-up">{copy.join}</Link>
+        </div>
+      </Container>
+      <SiteFooter current="changelog" languageSwitch={<LanguageSwitch current={lang} long onChoose={setLang} />} />
+    </div>
+    ```
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/changelog.ts` contains only `import type { ChangelogState, ChangelogView } from "@/app/changelog/page";` and `export const FIXTURES: Record<ChangelogState, ChangelogView> = { default: { online: true }, empty: { online: true }, loading: { online: true }, error: { online: true }, offline: { online: false } };`. (The entries are static code, not fetched, so no state changes them.)
+  - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; change texts come from `t(change.text)`):
+    | key | EN | HE |
+    |---|---|---|
+    | docTitle | What's new · Tempo | מה חדש · Tempo |
+    | offline | You're offline. You're reading a saved copy. | אין חיבור כרגע. זה עותק שמור של הדף. |
+    | heroEyebrow | Changelog | יומן שינויים |
+    | heroTitle | What's new in Tempo | מה חדש ב־Tempo |
+    | heroLede | Small, steady changes. Newest first. | שינויים קטנים ויציבים. החדש ביותר ראשון. |
+    | version | Version | גרסה |
+    | kindNew | New | חדש |
+    | kindBetter | Better | שיפור |
+    | kindFixed | Fixed | תוקן |
+    | footLede | Want to try it? | רוצים לנסות? |
+    | join | Ask to join | בקשה להצטרף |
+    Header, footer and language-switch strings belong to TFV2-0293, TFV2-0300 and TFV2-0301.
+  - **States:** `default`, `empty`, `loading`, `error` (all render the full page — the entries ship with the build; design `@states`), `offline` (full page plus `changelog-offline`; live: `useOnline()` false). Testids: `changelog-screen` (root, `data-state`), `changelog-offline`, `changelog-list`.
+  - **RTL / keyboard / breakpoints / motion:** RTL: `<html dir>` and `lang` come from `LocaleProvider`; versions and dates are `.tp-num` LTR isolates; the Better arrow flips in RTL (`flip`, components.md §6); badges carry icon + word. Keyboard: skip link → header → header switch → "Ask to join" → footer links (What's new is `aria-current="page"`) → footer switch; one `h1`, one `h2` per entry. Breakpoints: 390 px base; `.cl-list` max `--tp-measure`; `.cl-change` wraps. Motion: none added.
+- **TESTS:** each case is one Playwright `test` in a file that imports `test`, `expect` from `@playwright/test`, `VIEWPORTS`, `openScreen`, `expectDir`, `trackConsoleErrors`, `expectTargetSize`, `expectMotionBudget`, `measureVitals` from `../helpers/harness`, and `CHANGELOG`, `changelogDate`, `sortedEntries` from `../../../apps/web/lib/changelog` (that file has only a type import, so Playwright loads it without the app's path aliases); first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`. Every case runs inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`: `await page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openScreen(page, "/changelog", { state, lang })`, and at the end `await expectDir(page, lang)` and, after dropping messages matching `/example\.convex\.cloud|WebSocket/i`, `expect(errors).toEqual([])`. The spec holds its own `EXPECT: Record<"en" | "he", …>` with the SPEC copy it asserts; test names include `vpName` and `lang` (7 × 4 = 28).
+  1. Given state `default` / Then `page.url()` still ends with `/changelog?state=default&lang=<lang>` (no redirect), the `h1` text is `heroTitle`, `document.title` equals `docTitle`, `changelog-offline` is absent; `expectTargetSize` and `expectMotionBudget` on `[data-testid="changelog-screen"]` pass and `measureVitals(page, "/changelog?state=default&lang=" + lang)` gives LCP ≤ 2500 and CLS ≤ 0.1.
+  2. Given state `default` / Then `changelog-list` holds `CHANGELOG.length` `article[data-component="ChangelogEntry"]` whose `data-version` values equal `sortedEntries(CHANGELOG).map((e) => e.version)` in order; their `time` `datetime` values are in non-increasing order; the first `time` text equals `changelogDate(sortedEntries(CHANGELOG)[0].date, lang)`; the first `h2` text equals `` `${EXPECT[lang].version} ${sortedEntries(CHANGELOG)[0].version}` ``.
+  3. Given state `default` / Then the first entry has `sortedEntries(CHANGELOG)[0].changes.length` `li.cl-change` whose `data-kind` values match that entry's kinds in order; each holds a `[data-component="Badge"]` with the word for its kind (`kindNew` / `kindBetter` / `kindFixed`), `data-tone` `info` / `neutral` / `done`, and a `use` with `href` `#i-sparkle` / `#i-arrow` / `#i-check`; each change's text span is non-empty and does not match `/#\d+/`.
+  4. Given state `default` / Then the page has exactly one `.tp-btn--primary` (text `join`, `href="/sign-up"`) after the `footLede` paragraph, and the footer link with `href="/changelog"` has `aria-current="page"`.
+  5. Given each of the states `empty`, `loading`, `error` in turn (one test that opens all three) / Then the `h1` is `heroTitle`, the entry count is `CHANGELOG.length` and `changelog-offline` is absent.
+  6. Given state `offline` / Then `changelog-offline` contains `[data-component="StateOffline"]` with text `offline` and `role="status"`, and the entries are still visible.
+  7. Given state `default` / When the header `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` and `<html dir>` switch, the `h1` text is the other language's `heroTitle`, and the first `time` text equals `changelogDate(<first date>, <other language>)`.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 1) · use of colour: every change kind has an icon and a word (WCAG 2.2 SC 1.4.1; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 1) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0308a — View: ProfileView (`apps/web/components/settings/ProfileView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0111, TFV2-0113, TFV2-0115, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0111, TFV2-0113, TFV2-0115, TFV2-0118, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307.
+- **WHY:** design `docs/design/v3/screens/web/settings-profile.html` (About you: Full name, "What should Tempo call you?", Hebrew address Feminine / Masculine, Email, Language, Save changes / Undo my edits, error summary; Signing in: Sign out on this device); CONVENTIONS §9 (web component), §10 Case A, §11, §12, §13, §22 (screen pattern). Decision (verify vs replace, made honestly): the current screen (`apps/web/app/(tempo)/settings/profile/page.tsx` → `SettingsScreen` + `apps/web/components/account/ProfileForm.tsx`) calls Convex inside its components, uses `users.getProfile` / `users.updateMyProfile` (no call-me or address fields), reads gendered Hebrew from `apps/web/lib/i18n-groups/settings.ts` ("מי את בשביל Tempo", "הוסיפי שם") and cannot be forced into states, so it is replaced by the §22 pair: this props-only View, then the route TFV2-0308b, which reads `profiles.getMine` (TFV2-0266a, fields from CFG-016). Email change has no backend (`auth.requestEmailChange` does not exist), so the email is shown read-only with that said in its help text.
+- **GOAL:** `ProfileView` renders the profile screen (header, offline banner, the About you form with validation, error summary, Undo my edits, saving / saved / save-failed feedback, the Sign out row, and loading / error / signed-out states) from props alone.
+- **SCOPE:** `apps/web/components/settings/ProfileView.tsx` · `apps/web/app/e2e/components/profile-view/page.tsx` · test: `tests/e2e/screens/profile-view.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/ProfileView.tsx` (new) · `apps/web/app/e2e/components/profile-view/page.tsx` (new) · `tests/e2e/screens/profile-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/settings/ProfileView.tsx` fails (new); `grep -n "^\.sp-body\|^\.sp-form" apps/web/app/v3/settings.css` prints both rules; `test -e` succeeds for `apps/web/components/forms/Form.tsx`, `TextInput.tsx`, `Select.tsx`, `Radio.tsx`, `apps/web/components/states/StateEmpty.tsx`, `StateLoading.tsx`, `StateError.tsx`, `StateOffline.tsx`, `apps/web/components/settings/SettingsSection.tsx`, `SettingRow.tsx` (else `blocked: missing <ticket>`); read `apps/web/components/account/ProfileForm.tsx` (reference only; not edited).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `ProfileView.tsx` (`"use client"`) exporting exactly the SPEC types and `ProfileView`, `COPY` at the top.
+  4. Build the markup exactly as SPEC "Layout" and the draft logic exactly as SPEC "Behaviour".
+  5. Create the harness page with the nine SPEC states in order, inline typed fixtures and the `profile-view-log` output.
+  6. Create `tests/e2e/screens/profile-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "profile-view", { lang })`) and the 13 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/profile-view.spec.ts --reporter=line` → `52 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useAuthActions` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; make the email editable or offer a password; show a placeholder name such as "User"; edit `ProfileForm.tsx`, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `apps/web/app/v3/settings.css`; set `required` on the inputs (native validation would block the error summary); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0308a / evidence: <DONE output> / changed: apps/web/components/settings/ProfileView.tsx, apps/web/app/e2e/components/profile-view/page.tsx, tests/e2e/screens/profile-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type ProfileAddress = "fem" | "masc";
+  export type ProfileLang = "en" | "he";
+  export type ProfileData = { email: string; fullName: string; callMe: string; address: ProfileAddress | null; lang: ProfileLang };
+  export type ProfileDraft = { fullName: string; callMe: string; address: ProfileAddress | null; lang: ProfileLang };
+  export type ProfileState = "default" | "loading" | "error" | "signed-out";
+  export type ProfileSave = "idle" | "saving" | "saved" | "failed";
+  export type ProfileSignOut = "idle" | "signing-out" | "failed";
+  export type ProfileViewProps = {
+    state: ProfileState;
+    online: boolean;
+    profile: ProfileData;            // stored values; "" for a missing name
+    save: ProfileSave;
+    signOut: ProfileSignOut;
+    onSave: (draft: ProfileDraft) => void;   // trimmed; called only when valid
+    onSignOut: () => void;
+    onRetry: () => void;
+  };
+  export function ProfileView(props: ProfileViewProps): JSX.Element;
+  ```
+  - **Imports:** `useEffect`, `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `Form`, `TextInput`, `Select`, `Radio` + `RadioGroup` from `@/components/forms/<Name>`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `SettingsSection`, `SettingRow` from `@/components/settings/<Name>`.
+  - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="ProfileView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />` in every state. 3) Body: `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` → `<div className="sp-body">` with two sections:
+    - `<SettingsSection id="sp-about" title={copy.about} desc={copy.aboutDesc}>` → `<div className="sp-form"><Form label={copy.formLabel} onSubmit={submit} busy={save === "saving"} actions={actions}>` holding, in order: the error summary (same markup as below), `<TextInput id="sp-name" label={copy.name} value={draft.fullName} onChange={…} autoComplete="name" error={errors.includes("fullName") ? copy.nameErr : undefined} />`, `<TextInput id="sp-call" label={copy.call} help={copy.callHelp} value={draft.callMe} onChange={…} autoComplete="nickname" error={errors.includes("callMe") ? copy.callErr : undefined} />`, `<RadioGroup legend={copy.addr} hint={copy.addrHelp}>` with `<Radio id="sp-addr-fem" name="address" value="fem" label={copy.fem} checked={draft.address === "fem"} onChange={…} />` and `<Radio id="sp-addr-masc" … value="masc" label={copy.masc} … />`, `<TextInput id="sp-email" type="email" label={copy.email} help={copy.emailHelp} value={profile.email} onChange={() => {}} disabled />`, `<Select id="sp-lang" label={copy.lang} help={copy.langHelp} value={draft.lang} options={[{ value: "en", label: "English" }, { value: "he", label: "עברית" }]} onChange={(v) => setDraft({ …draft, lang: v === "he" ? "he" : "en" })} />`, then the save feedback: `save === "failed"` → `<p className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{copy.saveError}</span></p>`.
+    - `actions` = `<button type="submit" className="tp-btn tp-btn--primary" data-component="Button" disabled={!dirty || save === "saving"} aria-busy={save === "saving" ? "true" : undefined}>{save === "saving" ? copy.saving : copy.save}</button>` + (when `dirty`) `<button type="button" className="tp-btn tp-btn--ghost" data-component="Button" onClick={reset}>{copy.reset}</button>` + (when `save === "saved" && !dirty`) `<output className="tp-help">{copy.saved}</output>`.
+    - Error summary (when `errors.length > 0`, first child of the Form): `<div ref={summaryRef} className="tp-error-summary" role="alert" tabIndex={-1} data-component="FormErrorSummary"><h3 className="tp-error-summary__title"><TpIcon name="alert" size="sm" /><span>{errors.length === 1 ? copy.errOne : copy.errTwo}</span></h3><ul>{errors.map((e) => <li key={e}><a href={e === "fullName" ? "#sp-name" : "#sp-call"}>{e === "fullName" ? copy.nameErr : copy.callErr}</a></li>)}</ul></div>`.
+    - `<SettingsSection id="sp-sign" title={copy.signTitle}>` → `<SettingRow id="sp-so" label={copy.soLabel} help={copy.soHelp} status={signOut === "failed" ? <p className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{copy.soError}</span></p> : undefined} control={<button type="button" className="tp-btn tp-btn--secondary" data-component="Button" aria-describedby="sp-so-help" disabled={signOut === "signing-out"} onClick={onSignOut}><TpIcon name="logout" size="sm" /><span>{signOut === "signing-out" ? copy.signingOut : copy.soBtn}</span></button>} />`.
+  - **Behaviour:** `fromProfile(p) = { fullName: p.fullName, callMe: p.callMe, address: p.address, lang: p.lang }`; local `draft` starts as `fromProfile(profile)`; `dirty` = any of the four fields differs from `profile`; a `useEffect` on `[profile.fullName, profile.callMe, profile.address, profile.lang]` sets `draft = fromProfile(profile)` when not `dirty` (fresh data after a save). `submit()`: if `save === "saving"` return; `fullName = draft.fullName.trim()`, `callMe = draft.callMe.trim()`; `errors` = `"fullName"` when `fullName === ""`, then `"callMe"` when `callMe === ""`; any error → `setErrors(…)` and focus `summaryRef` after render; else `setErrors([])` and `onSave({ fullName, callMe, address: draft.address, lang: draft.lang })`. Typing removes that field's error once its trimmed value is not empty. `reset()`: `draft = fromProfile(profile)`, `errors = []`, focus `#sp-name`.
+  - **Copy** (`COPY`, CONVENTIONS §11; HE gender-neutral per §12, replacing the gendered repo strings):
+    | key | EN | HE |
+    |---|---|---|
+    | title | Profile | פרופיל |
+    | sub | Who you are to Tempo. Change anything, any time. | מה Tempo יודע עליך. אפשר לשנות הכול, בכל רגע. |
+    | about | About you | הפרטים שלך |
+    | aboutDesc | Only you and the coach see this. | רק לך ולמאמן יש גישה לזה. |
+    | formLabel | Your profile | הפרופיל שלך |
+    | name | Full name | שם מלא |
+    | nameErr | Add a name. Your first name is enough. | צריך להוסיף שם. מספיק שם פרטי. |
+    | call | What should Tempo call you? | באיזה שם Tempo ישתמש? |
+    | callHelp | The coach uses this name. A nickname is fine. | המאמן משתמש בשם הזה. אפשר גם כינוי. |
+    | callErr | Add the name you'd like to hear. | צריך להוסיף את השם שרוצים לשמוע. |
+    | addr | How should Tempo speak to you in Hebrew? | באיזו לשון Tempo ידבר בעברית? |
+    | fem | Feminine | בלשון נקבה |
+    | masc | Masculine | בלשון זכר |
+    | addrHelp | Hebrew changes words for each. English stays the same. | בעברית המילים משתנות לפי הבחירה. באנגלית שום דבר לא משתנה. |
+    | email | Email | אימייל |
+    | emailHelp | You sign in with a link sent here. There is no password. Changing your email here isn't available yet. | הכניסה היא עם קישור שנשלח לכאן. אין סיסמה. עוד אי אפשר לשנות כאן את האימייל. |
+    | lang | Language | שפה |
+    | langHelp | For the app and the coach. Hebrew reads right to left. | לאפליקציה ולמאמן. עברית נקראת מימין לשמאל. |
+    | save | Save changes | שמירת השינויים |
+    | saving | Saving… | שומרים… |
+    | reset | Undo my edits | ביטול העריכות |
+    | saved | Saved | נשמר |
+    | saveError | Couldn't save your profile. What you typed is still here, so try again. | לא הצלחנו לשמור את הפרופיל. מה שנכתב עדיין כאן, אפשר לנסות שוב. |
+    | errOne | One thing needs a look before saving | דבר אחד צריך מבט לפני השמירה |
+    | errTwo | Two things need a look before saving | שני דברים צריכים מבט לפני השמירה |
+    | signTitle | Signing in | כניסה לחשבון |
+    | soLabel | Sign out on this device | התנתקות במכשיר הזה |
+    | soHelp | Your pages stay safe. Sign back in with a link to your email. | הדפים שלך נשארים שמורים. אפשר להתחבר שוב עם קישור למייל. |
+    | soBtn | Sign out | התנתקות |
+    | signingOut | Signing out… | מתנתקים… |
+    | soError | Couldn't sign out. Try again in a moment. | לא הצלחנו להתנתק. אפשר לנסות שוב בעוד רגע. |
+    | loading | Loading your profile | הפרופיל שלך בטעינה |
+    | error | Couldn't load your profile. | לא הצלחנו לטעון את הפרופיל. |
+    | signedOutTitle | Sign in to see your profile. | צריך להתחבר כדי לראות את הפרופיל. |
+    | signIn | Sign in | התחברות |
+    Language option labels are the language's own name in both locales: "English" and "עברית". Strings owned by composed components: StateOffline / StateError / TextInput "(optional)" as in TFV2-0120…0123 / 0113.
+  - **States (harness order; `PROFILE = { email: "maya.ronen@example.com", fullName: "Maya Ronen", callMe: "Maya", address: "fem", lang: "en" }` unless noted; `save: "idle"`, `signOut: "idle"`, `online: true`):** `default`, `loading` (`state: "loading"`), `error` (`state: "error"`), `signed-out` (`state: "signed-out"`), `offline` (`online: false`), `saving` (`save: "saving"`), `saved` (`save: "saved"`), `save-failed` (`save: "failed"`), `sign-out-failed` (`signOut: "failed"`). Each in `<section data-testid="profile-view-<state>">`; callbacks write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="profile-view-log">`. Disabled: Save while not dirty or saving; Sign out while signing out; the email field always.
+  - **RTL:** `dir` from `LocaleProvider`; logical classes only; names `dir="auto"` (TextInput type text); the email input `dir="ltr"` (TextInput rule). **Keyboard / screen reader:** Tab order = Full name → call-me → the address radios → Language → Save → Undo my edits → Sign out (the disabled email is skipped); errors via the summary (`role="alert"`, focused) and `aria-invalid` + `aria-describedby` on the fields; the radio group is named by its legend and described by its hint. **Breakpoints:** one column at 390 / 768; `.tp-page--narrow` caps at 760 px at 1024 / 1280. **Motion:** none of its own.
+- **TESTS:** (CONVENTIONS §22 skeleton; 13 × 4 = 52; EN/HE from SPEC Copy)
+  1. Given `profile-view-default` / Then the `h1` reads `title`; `#sp-name` has value `Maya Ronen`, `#sp-call` `Maya`, `#sp-addr-fem` is checked, `#sp-email` is `disabled` with value `maya.ronen@example.com` and `dir="ltr"`, `#sp-lang` has value `en`; the `save` button is `disabled` and no `reset` button exists.
+  2. Given `default` / When `#sp-name` is filled with `Maya R.` / Then `save` is enabled and `reset` is visible; When `save` is clicked / Then `profile-view-log` reads `onSave:{"fullName":"Maya R.","callMe":"Maya","address":"fem","lang":"en"}`.
+  3. Given `default` / When `#sp-name` and `#sp-call` are cleared and `save` clicked / Then a focused `[data-component="FormErrorSummary"]` reads `errTwo` with links `#sp-name` and `#sp-call`, `#sp-name` has `aria-invalid="true"`, and the log is empty.
+  4. Given `default` / When `#sp-name` is filled with `X` and `reset` clicked / Then `#sp-name` has value `Maya Ronen`, `reset` is gone and `#sp-name` is focused.
+  5. Given `default` / When `#sp-lang` selects `he`, `#sp-addr-masc` is checked and `save` clicked / Then the log reads `onSave:{"fullName":"Maya Ronen","callMe":"Maya","address":"masc","lang":"he"}`.
+  6. Given `profile-view-saving` after `#sp-call` is filled with `M` / Then the submit button reads `saving` and is `disabled`.
+  7. Given `profile-view-saved` / Then an `output.tp-help` reads `saved`.
+  8. Given `profile-view-save-failed` / Then a `role="alert"` element reads `saveError`.
+  9. Given `default` / When `soBtn` is clicked / Then the log reads `onSignOut:null`; and given `profile-view-sign-out-failed` / Then a `role="alert"` element inside `[data-component="SettingRow"]` reads `soError`.
+  10. Given `profile-view-loading` / Then `[data-component="StateLoading"]` contains the sr-only `loading` and no form is present.
+  11. Given `profile-view-error` / Then it shows `error`; When `Try again` / `לנסות שוב` is clicked / Then the log reads `onRetry:null`. Given `profile-view-signed-out` / Then a link `signIn` has `href="/sign-in"`.
+  12. Given `profile-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and `#sp-name` is enabled.
+  13. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="profile-view-default"]')` and `expectMotionBudget(page, '[data-testid="profile-view-default"]')` pass.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 13) · text contrast ≥ 4.5:1, control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only, `bun run scan:design-tokens` passes) · error identification (WCAG 2.2 SC 3.3.1; bullet 3) · labels or instructions (SC 3.3.2; every field labelled) · motion ≤ 250 ms (DESIGN.md; bullet 13) · 52 of 52 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0308b — Route: /settings/profile
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0308a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0266a, TFV2-0266b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0308a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0266a, TFV2-0266b.
+- **WHY:** design `docs/design/v3/screens/web/settings-profile.html`; CONVENTIONS §9 (web screen), §14, §22 (screen pattern, spec skeleton). Code truth: `apps/web/app/(tempo)/settings/profile/page.tsx` (server page) renders `SettingsScreen` + `ProfileForm` inside `<div data-testid="settings-profile" className="tp-page tp-page--narrow">`; `tests/e2e/wiring/settings-account.spec.ts` asserts `data-testid="settings-profile"` is visible signed out; `"/settings/profile"` is already in `E2E_WIRING_ROUTES` (no wiring edit). Backend: `profiles.getMine` (TFV2-0266a), `profiles.update` (TFV2-0266b; language is saved separately through `preferences.update({ locale })`, verified by TFV2-0265a); sign-out uses `useAuthActions().signOut` from `@convex-dev/auth/react` (as `ProfileForm.tsx` does today).
+- **GOAL:** `/settings/profile` reads the profile in `page.tsx`, renders `ProfileView`, saves name / call-me / address with `profiles.update` and the language with `preferences.update`, signs out, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/settings/profile/page.tsx` · `apps/web/lib/e2e/fixtures/settings-profile.ts` · test: `tests/e2e/screens/settings-profile.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/settings/profile"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/settings/profile/page.tsx` (edit: whole file replaced; becomes a client page) · `apps/web/lib/e2e/fixtures/settings-profile.ts` (new) · `tests/e2e/screens/settings-profile.spec.ts` (new) · runtime writes through existing functions: `users` fields `fullName` / `callMe` / `address` (`profiles.update`), `userPreferences.locale` (`preferences.update`) — live use only. No schema, env or route-list change.
+- **STEPS:**
+  1. Code-map check: `grep -n '"/settings/profile"' apps/web/lib/e2eWiringRoutes.ts` prints one line (already registered; no edit); read the current `page.tsx` and `tests/e2e/wiring/settings-account.spec.ts`; `grep -n "export const getMine\|export const update" convex/profiles.ts` prints both (else `blocked: missing backend profiles.getMine` / `profiles.update`); `grep -n "export const update" convex/preferences.ts` prints the mutation; `test -e apps/web/components/settings/ProfileView.tsx && test -e apps/web/lib/e2e/useE2EState.ts && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/settings-profile.ts` exactly as SPEC "Fixtures".
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. No E2E route step: `"/settings/profile"` is already in `E2E_WIRING_ROUTES` (say so in the PR).
+  5. Create `tests/e2e/screens/settings-profile.spec.ts` with the CONVENTIONS §22 spec skeleton (route form) and the 9 TESTS bullets.
+  6. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-profile.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** both Playwright summaries and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** edit `apps/web/lib/e2eWiringRoutes.ts`, `ProfileView.tsx`, `apps/web/components/account/ProfileForm.tsx` or its test, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; import `ProfileForm` or `SettingsScreen`; call `users.updateMyProfile`; contact Convex when `?state=` is forced; change the email; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0308b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/settings/profile/page.tsx, apps/web/lib/e2e/fixtures/settings-profile.ts, tests/e2e/screens/settings-profile.spec.ts / unknowns / notes for ticket sync: components/account/ProfileForm.tsx is no longer imported by any route (its unit test still runs); delete it in a cleanup ticket`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  Convex functions used (`requireUser` errors `"Not authenticated"` / `"User not found"` / `"This account is not active"`; `users.getProfile` returns `null` instead):
+  ```ts
+  api.users.getProfile    // query    {} → user row + greetingName | null (existing)
+  api.profiles.getMine    // query    {} → { email: string; fullName: string | null; callMe: string | null; address: "fem" | "masc" | null; lang: "en" | "he" } (TFV2-0266a)
+  api.profiles.update     // mutation { fullName?: string; callMe?: string; address?: "fem" | "masc" } → null (TFV2-0266b)
+  api.preferences.update  // mutation { locale?: "en" | "he"; … } → null (existing; TFV2-0265a)
+  ```
+  Any rejected mutation (whatever its message) sets the matching feedback to `"failed"`; a thrown query reaches the boundary.
+  **page.tsx:**
+  ```tsx
+  "use client";
+  import { useAuthActions } from "@convex-dev/auth/react";
+  import { useConvexAuth, useMutation, useQuery } from "convex/react";
+  import { useRouter } from "next/navigation";
+  import { Component, Fragment, type ReactNode, Suspense, useState } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { ProfileView, type ProfileData, type ProfileDraft, type ProfileSave, type ProfileSignOut, type ProfileViewProps } from "@/components/settings/ProfileView";
+  import { api } from "@/convex/_generated/api";
+  import { FIXTURES } from "@/lib/e2e/fixtures/settings-profile";
+  import { useE2EState } from "@/lib/e2e/useE2EState";
+  import { useOnline } from "@/lib/useOnline";
+
+  export type ProfileFixture = Omit<ProfileViewProps, "onSave" | "onSignOut" | "onRetry">;
+  export type ProfileFixtureState = "default" | "loading" | "error" | "signed-out" | "offline" | "saved" | "save-failed" | "sign-out-failed";
+  const EMPTY_PROFILE: ProfileData = { email: "", fullName: "", callMe: "", address: null, lang: "en" };
+  const NOOP = { onSave: () => {}, onSignOut: () => {}, onRetry: () => {} } satisfies Partial<ProfileViewProps>;
+
+  export default function Page() {
+    return (<div data-testid="settings-profile"><Suspense fallback={null}><ProfileRoute /></Suspense></div>);
+  }
+  class ProfileBoundary extends Component<{ online: boolean; children: ReactNode }, { failed: boolean; attempt: number }> {
+    // state = { failed: false, attempt: 0 }; static getDerivedStateFromError() { return { failed: true }; }
+    // retry = () => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }));
+    // render: failed → <ProfileView state="error" online={this.props.online} profile={EMPTY_PROFILE} save="idle" signOut="idle" {...NOOP} onRetry={this.retry} />
+    //         else   → <Fragment key={this.state.attempt}>{this.props.children}</Fragment>
+  }
+  function ProfileRoute() {
+    const forced = useE2EState();
+    const online = useOnline();
+    if (forced !== null) return <ProfileForced forced={forced} />;
+    return (<ProfileBoundary online={online}><ProfileLive online={online} /></ProfileBoundary>);
+  }
+  ```
+  **`ProfileForced({ forced })`:** `const fixture = FIXTURES[forced as ProfileFixtureState] ?? FIXTURES.error;` local `profile`, `save`, `signOut` start from the fixture; `onSave(d: ProfileDraft)` → `setProfile({ ...profile, ...d }); setSave("saved");`; `onSignOut()` → `setSignOut("signing-out")`; `onRetry` → nothing. No Convex hook in this component.
+  **`ProfileLive({ online })`:** `const { isAuthenticated, isLoading } = useConvexAuth(); const profileRow = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip"); const ready = isAuthenticated && profileRow != null; const me = useQuery(api.profiles.getMine, ready ? {} : "skip"); const update = useMutation(api.profiles.update); const updatePrefs = useMutation(api.preferences.update); const { signOut } = useAuthActions(); const router = useRouter(); const { setLang } = useLocale(); const [save, setSave] = useState<ProfileSave>("idle"); const [signOutState, setSignOutState] = useState<ProfileSignOut>("idle");` `state` = `"signed-out"` when `!isLoading && !isAuthenticated`; `"loading"` when `!ready || me === undefined`; else `"default"`. `profile` = `me ? { email: me.email, fullName: me.fullName ?? "", callMe: me.callMe ?? "", address: me.address, lang: me.lang } : EMPTY_PROFILE`. `onSave(d)`: `setSave("saving"); try { await update(d.address ? { fullName: d.fullName, callMe: d.callMe, address: d.address } : { fullName: d.fullName, callMe: d.callMe }); if (me && d.lang !== me.lang) { await updatePrefs({ locale: d.lang }); setLang(d.lang); } setSave("saved"); } catch { setSave("failed"); }`. `onSignOut()`: `setSignOutState("signing-out"); signOut().then(() => router.push("/sign-in")).catch(() => setSignOutState("failed"));`.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/settings-profile.ts`; only `import type { ProfileFixture, ProfileFixtureState } from "@/app/(tempo)/settings/profile/page";` and `export const FIXTURES: Record<ProfileFixtureState, ProfileFixture> = { … };`): profile `{ email: "maya.ronen@example.com", fullName: "Maya Ronen", callMe: "Maya", address: "fem", lang: "en" }` written inline; `default` `{ state: "default", online: true, profile, save: "idle", signOut: "idle" }`; `loading` / `error` / `signed-out` `{ state: "<name>", online: true, profile: { email: "", fullName: "", callMe: "", address: null, lang: "en" }, save: "idle", signOut: "idle" }`; `offline` = default with `online: false`; `saved` = default with `save: "saved"`; `save-failed` = default with `save: "failed"`; `sign-out-failed` = default with `signOut: "failed"`.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0308a); this ticket adds no visible string. The wrapper keeps `data-testid="settings-profile"` (wiring spec).
+- **TESTS:** (route spec, CONVENTIONS §22; each bullet at both viewports × both languages; every case asserts `page.getByTestId("settings-profile")` is visible and ends with the filtered console-error check `expect(errors.filter((m) => !/example\.convex\.cloud|WebSocket/i.test(m))).toEqual([])`; copy from TFV2-0308a in the spec's own `EXPECT`; 9 × 4 = 36)
+  1. Given `?state=default` / Then the `h1` reads "Profile" (HE "פרופיל"), `#sp-name` has value `Maya Ronen`, and `measureVitals(page, "/settings/profile?state=default&lang=" + lang)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+  2. Given `?state=default` / When `#sp-call` is filled with `Mai` and "Save changes" (HE "שמירת השינויים") clicked / Then `output.tp-help` reads "Saved" (HE "נשמר") and `#sp-call` has value `Mai`.
+  3. Given `?state=default` / When "Sign out" (HE "התנתקות") is clicked / Then the button reads "Signing out…" (HE "מתנתקים…") and is `disabled`.
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with the sr-only "Loading your profile" (HE "הפרופיל שלך בטעינה").
+  5. Given `?state=error` / Then "Couldn't load your profile." (HE "לא הצלחנו לטעון את הפרופיל.") and "Try again" (HE "לנסות שוב") are visible.
+  6. Given `?state=signed-out` / Then a link "Sign in" (HE "התחברות") with `href="/sign-in"` is visible.
+  7. Given `?state=offline` / Then the offline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and `#sp-name` are visible.
+  8. Given `?state=save-failed` / Then a `role="alert"` element contains "Couldn't save your profile. What you typed is still here, so try again." (HE "לא הצלחנו לשמור את הפרופיל. מה שנכתב עדיין כאן, אפשר לנסות שוב.").
+  9. Given `?state=sign-out-failed` / Then a `role="alert"` element contains "Couldn't sign out. Try again in a moment." (HE "לא הצלחנו להתנתק. אפשר לנסות שוב בעוד רגע."); and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-profile"]')`, `expectMotionBudget(page, '[data-testid="settings-profile"]')` pass.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`, bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only; not a gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 9) · motion ≤ 250 ms (DESIGN.md; bullet 9) · backend p95 of `profiles.update`: UNKNOWN (no baseline; not a gate) · existing wiring spec 4 of 4 · 36 of 36 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0309c — Test fixture: kb-59 `next/navigation` mock gains `useSearchParams` (`tests/unit/kb-59.test.tsx`)
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md` (test-only prerequisite of TFV2-0309b; precedent: TFV2-0136c, a prerequisite test edit).
 - **WHEN:** first.
-- **WHY:** PRD F-120 (web PWA); TRD §1.
-- **GOAL:** The PWA has a manifest with name, icons and theme colour so it installs.
-- **SCOPE:** `apps/web/app/manifest.ts` + `apps/web/public/icons/` + `apps/web/app/icon.svg`.
-- **MUTATES:** PWA manifest/icon assets.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) emit a manifest (name, short name, start URL, display standalone, background/theme colour from `--tp-ground`/`--tp-accent`); 3) add 192/512 icons + maskable; 4) run DONE.
-- **DONE:** `bun run typecheck` → no errors.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** reference a CDN icon; do not set a live URL.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** Data/asset ticket. Manifest fields only (no keys).
-- **TESTS:** none beyond typecheck (static manifest).
-- **NUMBERS:** icon sizes 192/512 px (PWA install criteria) · pass = exact.
+- **WHY:** the browser suite `tests/unit/kb-59.test.tsx` (26 cases, part of `bun run test`) bundles the real `apps/web/app/(tempo)/settings/preferences/page.tsx` with Bun and replaces `next/navigation` by a one-line mock (line 86: `const router={push(){},replace(){}};export const useRouter=()=>router;`). TFV2-0309b rewrites that page to the CONVENTIONS §14 pattern, which calls `useE2EState()` (TFV2-0000c) and therefore imports `useSearchParams` from `next/navigation`; with the current mock the bundle has no such export and every kb-59 case would fail for a reason unrelated to the behaviour it checks. The mock of `tests/unit/kb-64.test.tsx` line 48 already exports `useSearchParams=()=>new URLSearchParams()`. This ticket only completes the mock; it removes, skips or loosens no assertion (CONVENTIONS §7 D, TICKET-STANDARD gate 8).
+- **GOAL:** kb-59's `next/navigation` mock also exports `useSearchParams`, returning the fixture page's real query string, and all 26 kb-59 cases still pass.
+- **SCOPE:** test: `tests/unit/kb-59.test.tsx` (one line).
+- **MUTATES:** `tests/unit/kb-59.test.tsx` (edit: line 86 only). No app code, data, route, schema or env change.
+- **STEPS:**
+  1. Code-map check: `grep -n "export const useRouter" tests/unit/kb-59.test.tsx` prints line 86 with exactly `` `const router={push(){},replace(){}};export const useRouter=()=>router;` ``; `grep -c "useSearchParams" tests/unit/kb-59.test.tsx` prints `0`.
+  2. Run `bun run test:browser tests/unit/kb-59.test.tsx` and keep the summary (expect `26 pass`, `0 fail`) as the before evidence.
+  3. Replace line 86's template string with exactly `` `const router={push(){},replace(){}};export const useRouter=()=>router;export const useSearchParams=()=>new URLSearchParams(location.search);` `` (only the added `export const useSearchParams=…;` differs; the trailing comma after the template literal stays).
+  4. Run DONE.
+- **DONE:** `bun run test:browser tests/unit/kb-59.test.tsx` → `26 pass`, `0 fail` (before and after the edit).
+- **EVIDENCE:** the before and after `bun test` summaries and the one-line diff, pasted into the PR.
+- **DO NOT:** change any other line of `kb-59.test.tsx` (names, assertions, fixture backend, build options); edit `scripts/test-suites.ts`, any other test, `playwright.config.ts` or app code; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0309c / evidence: <DONE output before and after> / changed: tests/unit/kb-59.test.tsx / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:** One-line change in the string written to the fixture's `navigation.ts`:
+  ```diff
+  -      `const router={push(){},replace(){}};export const useRouter=()=>router;`
+  +      `const router={push(){},replace(){}};export const useRouter=()=>router;export const useSearchParams=()=>new URLSearchParams(location.search);`
+  ```
+  The fixture page is opened at `/?lang=<en|he>&theme=<light|dark>&mode=<caller|gallery>` and never carries `state`, so `useE2EState()` returns `null` there and the page runs live against kb-59's fake backend exactly as before. Errors: none (test-only). Limits: none.
+- **TESTS:**
+  - Given the edited mock / When `bun run test:browser tests/unit/kb-59.test.tsx` runs against today's preferences page (which does not import `useSearchParams`) / Then all 26 named cases in `names` report `{ pass: true }` (`26 pass`, `0 fail`) — the mock addition changes nothing yet.
+  - Given TFV2-0309b later merged / When the same command runs / Then it still reports `26 pass` (that ticket's DONE re-runs it).
+- **NUMBERS:** kb-59 cases passing = 26 of 26 before and after (exact; the suite's own count in `names`) · lines changed = 1 (scope guard).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0313 — PWA service worker + offline page
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0312 · **Folds-in:** none
-- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0312.
-- **WHY:** PRD F-120; offline states across screens.
-- **GOAL:** A service worker caches the shell so the app opens offline and shows the offline banner, never a dead page.
-- **SCOPE:** `apps/web/app/sw.ts` + `apps/web/app/offline/page.tsx` + `apps/web/e2e/offline.spec.ts`.
-- **MUTATES:** service worker + offline route.
-- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) register a service worker that precaches the app shell; 3) an `/offline` route renders the offline state; 4) add Playwright (network emulation); 5) run DONE.
-- **DONE:** `CI=1 bunx playwright test apps/web/e2e/offline.spec.ts --reporter=line` → all pass.
-- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
-- **DO NOT:** cache user data/keys; do not break authenticated routes.
-- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
-- **SPEC:** PWA. Precaches static shell only (never Convex data or user content). Offline copy EN/HE: `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`
-- **TESTS:** Playwright: go offline → shell still loads with the offline banner; online → banner clears.
-- **NUMBERS:** shell precache size budget · `UNKNOWN` (Amit — no budget set).
+### TFV2-0309a — View: PreferencesView (`apps/web/components/settings/PreferencesView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307.
+- **WHY:** design `docs/design/v3/screens/web/settings-prefs.html` (How Tempo looks: theme, language, text size, reading font, less motion; How the coach works: the 0–10 dial; Your week and notices; billing notices locked on; no Save button, "Saved." in the header); CONVENTIONS §9, §10 Case A, §11, §12, §13, §14 (week start and time zone come from `userPreferences`, passed as props), §22 (screen pattern). Decision (verify vs replace): the current screen (`SettingsScreen` + `apps/web/components/notifications-preferences/PreferencesForm.tsx`) works and is covered by `PreferencesForm.test.tsx` and the browser suite `tests/unit/kb-59.test.tsx`, but its components call Convex, it cannot be forced into states, and its Hebrew strings are gendered (`set.prefs.saveError` "נסי שוב", `set.dial.label` "כמה שהמאמן ידחוף?"); it is replaced by the §22 pair (this View, then TFV2-0309b, with TFV2-0309c preparing kb-59). What the design shows but has no backend stays out, as in `PreferencesForm.tsx` today: the "weekly page" and "founder replies" switches. The existing props-only controls of `apps/web/components/settings/controls.tsx` are reused: `SettingsSwitch` (`{ id?: string; checked: boolean; onChange?: (next: boolean) => void; labelledBy: string; describedBy?: string; locked?: boolean }`, a `button[role=switch]` with the visible word from i18n keys `set.on` / `set.off` = "On" / "פועל", "Off" / "כבוי") and `Segmented<T extends string>` (`{ options: readonly { value: T; label: ReactNode; icon?: TpIconName; lang?: string }[]; value: T; onChange: (next: T) => void; labelledBy?: string; label?: string }`, a radiogroup with one tab stop). They take `aria-labelledby`, which fits a SettingRow label; the range-3 `Switch` / `Select` (TFV2-0116 / 0115) render their own visible label and would duplicate it inside a row. The coach dial is TFV2-0119 `Dial`.
+- **GOAL:** `PreferencesView` renders the preferences screen (header with a live status line, offline banner, the three sections with every control, a save-error alert, a slot for extra sections such as the coach web-search setting, and loading / error / signed-out states) from props alone, reporting each change through one callback.
+- **SCOPE:** `apps/web/components/settings/PreferencesView.tsx` · `apps/web/app/e2e/components/preferences-view/page.tsx` · test: `tests/e2e/screens/preferences-view.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/PreferencesView.tsx` (new) · `apps/web/app/e2e/components/preferences-view/page.tsx` (new) · `tests/e2e/screens/preferences-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/settings/PreferencesView.tsx` fails (new); `grep -n "export function SettingsSwitch\|export function Segmented" apps/web/components/settings/controls.tsx` prints both; `grep -n "^\.pr-body\|^\.pr-dial" apps/web/app/v3/settings.css` prints both; `grep -n "@component Select " apps/web/app/tempo.css` prints line 1039 (`.tp-select`, `__input`, `__icon`); `test -e` succeeds for `apps/web/components/forms/Dial.tsx`, `apps/web/components/layout/Badge.tsx`, the four `apps/web/components/states/State*.tsx`, `apps/web/components/settings/SettingsSection.tsx`, `SettingRow.tsx` (else `blocked: missing <ticket>`).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `PreferencesView.tsx` (`"use client"`) exporting exactly the SPEC types and `PreferencesView`, `COPY` at the top.
+  4. Build the markup exactly as SPEC "Layout".
+  5. Create the harness page with the seven SPEC states in order, inline typed fixtures and the `preferences-view-log` output.
+  6. Create `tests/e2e/screens/preferences-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "preferences-view", { lang })`) and the 10 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/preferences-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useTheme` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; apply the theme, language, text size or font itself (the route does); add a Save button; make billing notices switchable; render switches for the weekly page or founder replies (no backend field); edit `controls.tsx`, `PreferencesForm.tsx`, `SettingsScreen.tsx`, `CoachWebSearchSetting.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `settings.css`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0309a / evidence: <DONE output> / changed: apps/web/components/settings/PreferencesView.tsx, apps/web/app/e2e/components/preferences-view/page.tsx, tests/e2e/screens/preferences-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  import type { ReactNode } from "react";
+  export type PrefsTheme = "light" | "dark" | "system";
+  export type PrefsLang = "en" | "he";
+  export type PrefsTextSize = "s" | "m" | "l";
+  export type PrefsWeekStart = 0 | 1 | 6;
+  export type PrefsData = {
+    theme: PrefsTheme; lang: PrefsLang; textSize: PrefsTextSize; readingFont: boolean;
+    dial: number;                 // 0–10, what the slider shows now (the route debounces the save)
+    weekStartsOn: PrefsWeekStart; timeZone: string; timeZones: string[];  // timeZones includes timeZone
+    emailReminders: boolean; inAppNotifications: boolean;
+  };
+  export type PrefsChange =
+    | { key: "theme"; value: PrefsTheme } | { key: "lang"; value: PrefsLang }
+    | { key: "textSize"; value: PrefsTextSize } | { key: "readingFont"; value: boolean }
+    | { key: "weekStartsOn"; value: PrefsWeekStart } | { key: "timeZone"; value: string }
+    | { key: "emailReminders"; value: boolean } | { key: "inAppNotifications"; value: boolean };
+  export type PrefsState = "default" | "loading" | "error" | "signed-out";
+  export type PreferencesViewProps = {
+    state: PrefsState;
+    online: boolean;
+    data: PrefsData;
+    status: string;               // the header status line ("Saved." or ""); spoken politely
+    saveError: boolean;           // the last change did not save
+    extra?: ReactNode;            // more sections after the View's own (rendered in "default" and "loading")
+    onChange: (change: PrefsChange) => void;
+    onDial: (value: number) => void;   // every slider move
+    onRetry: () => void;
+  };
+  export function PreferencesView(props: PreferencesViewProps): JSX.Element;
+  ```
+  - **Imports:** `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `SettingsSwitch`, `Segmented` from `@/components/settings/controls`; `SettingsSection`, `SettingRow` from `@/components/settings/<Name>`; `Dial` from `@/components/forms/Dial`; `Badge` from `@/components/layout/Badge`; the four State components.
+  - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="PreferencesView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p><output className="tp-help">{status}</output></div></header>` — the `output` is always rendered (empty when `status === ""`). 2) `online === false` → `<StateOffline />`. 3) Body: `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `loading` → `<div className="pr-body"><StateLoading label={copy.loading} rows={5} />{extra}</div>`; `default` → `<div className="pr-body">` with, in order: `saveError` → `<p className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{copy.saveError}</span></p>`; the three sections; `{extra}`.
+  - **Section "look"** `<SettingsSection id="pr-look" title={copy.look}>`: `<SettingRow id="pr-theme" label={copy.theme} stack control={<Segmented<PrefsTheme> labelledBy="pr-theme-label" value={data.theme} onChange={(v) => onChange({ key: "theme", value: v })} options={[{ value: "light", label: copy.light, icon: "sun" }, { value: "dark", label: copy.dark, icon: "moon" }, { value: "system", label: copy.system }]} />} />`; `<SettingRow id="pr-lang" label={copy.lang} help={copy.langHelp} stack control={<Segmented<PrefsLang> labelledBy="pr-lang-label" value={data.lang} onChange={(v) => onChange({ key: "lang", value: v })} options={[{ value: "en", label: "English", lang: "en" }, { value: "he", label: "עברית", lang: "he" }]} />} />`; `<SettingRow id="pr-size" label={copy.size} help={copy.sizeHelp} stack control={<Segmented<PrefsTextSize> labelledBy="pr-size-label" value={data.textSize} onChange={(v) => onChange({ key: "textSize", value: v })} options={[{ value: "s", label: copy.sizeS }, { value: "m", label: copy.sizeM }, { value: "l", label: copy.sizeL }]} />} />`; `<SettingRow id="pr-dys" label={copy.dys} help={copy.dysHelp} control={<SettingsSwitch id="pr-dys-switch" checked={data.readingFont} onChange={(v) => onChange({ key: "readingFont", value: v })} labelledBy="pr-dys-label" describedBy="pr-dys-help" />} />`; `<SettingRow id="pr-motion" label={copy.motion} help={copy.motionHelp} control={<Badge label={copy.motionBadge} tone="info" icon={<TpIcon name="info" size="sm" />} />} />`.
+  - **Section "coach"** `<SettingsSection id="pr-coach" title={copy.coach} desc={copy.coachDesc}>`: `<div className="pr-dial"><Dial id="pr-dial" label={copy.dialLabel} value={data.dial} onChange={onDial} /><p className="tp-help" id="pr-dial-help">{copy.dialHelp}</p></div>`.
+  - **Section "week"** `<SettingsSection id="pr-week" title={copy.week}>`: `<SettingRow id="pr-ws" label={copy.weekStart} help={copy.weekHelp} stack control={select} />` where `select` = `<div className="tp-select" data-component="Select"><select id="pr-ws-select" className="tp-select__input" aria-labelledby="pr-ws-label" aria-describedby="pr-ws-help" value={String(data.weekStartsOn)} onChange={(e) => onChange({ key: "weekStartsOn", value: e.target.value === "0" ? 0 : e.target.value === "6" ? 6 : 1 })}><option value="0">{copy.sun}</option><option value="1">{copy.mon}</option><option value="6">{copy.sat}</option></select><span className="tp-select__icon" aria-hidden="true"><TpIcon name="down" /></span></div>`; `<SettingRow id="pr-tz" label={copy.tz} help={copy.tzHelp} stack control={…the same markup with id "pr-tz-select", aria-labelledby "pr-tz-label", aria-describedby "pr-tz-help", value={data.timeZone}, one <option value={z}>{z}</option> per data.timeZones, onChange → { key: "timeZone", value: e.target.value }…} />`; `<SettingRow id="pr-email" label={copy.email} help={copy.emailHelp} control={<SettingsSwitch id="pr-email-switch" checked={data.emailReminders} onChange={(v) => onChange({ key: "emailReminders", value: v })} labelledBy="pr-email-label" describedBy="pr-email-help" />} />`; `<SettingRow id="pr-inapp" label={copy.inApp} help={copy.inAppHelp} control={<SettingsSwitch id="pr-inapp-switch" checked={data.inAppNotifications} onChange={(v) => onChange({ key: "inAppNotifications", value: v })} labelledBy="pr-inapp-label" describedBy="pr-inapp-help" />} />`; `<SettingRow id="pr-billing" label={copy.billing} help={copy.billingHelp} control={<SettingsSwitch id="pr-billing-switch" checked locked labelledBy="pr-billing-label" describedBy="pr-billing-help" />} />`.
+  - **Copy** (`COPY`, CONVENTIONS §11; EN from `apps/web/lib/i18n-groups/settings.ts` `set.prefs.*`, HE gender-neutral per §12):
+    | key | EN | HE |
+    |---|---|---|
+    | title | Preferences | העדפות |
+    | sub | Make Tempo comfortable to read and to use. Changes save as you go. | כדי ש־Tempo יהיה נוח לקריאה ולשימוש. השינויים נשמרים תוך כדי. |
+    | look | How Tempo looks | איך Tempo נראה |
+    | theme | Theme | ערכת צבעים |
+    | light | Light | בהירה |
+    | dark | Dark | כהה |
+    | system | Match this device | כמו במכשיר |
+    | lang | Language | שפה |
+    | langHelp | Hebrew turns the layout right to left. | בעברית הפריסה עוברת לימין לשמאל. |
+    | size | Text size | גודל טקסט |
+    | sizeHelp | Changes text everywhere in Tempo. | משנה את הטקסט בכל Tempo. |
+    | sizeS | Small | קטן |
+    | sizeM | Medium | בינוני |
+    | sizeL | Large | גדול |
+    | dys | Reading font | גופן קריאה |
+    | dysHelp | A font made for easier reading, with more space between letters. Helpful with dyslexia. | גופן שנבנה לקריאה קלה יותר, עם יותר רווח בין האותיות. עוזר עם דיסלקציה. |
+    | motion | Less motion | פחות תנועה |
+    | motionHelp | Tempo follows your device. When "Reduce motion" is on in your system settings, animations stop and words carry the meaning. | Tempo עוקב אחרי המכשיר. כשהאפשרות ״הפחתת תנועה״ פועלת בהגדרות המערכת, האנימציות נעצרות והמילים נושאות את המשמעות. |
+    | motionBadge | Follows device | לפי המכשיר |
+    | coach | How the coach works | איך המאמן עובד |
+    | coachDesc | This is the starting point for every new chat. You can still change it inside a chat. | זו נקודת ההתחלה לכל שיחה חדשה. אפשר עדיין לשנות את זה בתוך שיחה. |
+    | dialLabel | How much should the coach push? | כמה המאמן ידחוף? |
+    | dialHelp | Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans. | שקט: המאמן מחכה לבקשה. יציב: בדיקות עדינות. דחיפה: יותר תזכורות ותוכניות נחרצות יותר. |
+    | week | Your week and notices | השבוע וההתראות |
+    | weekStart | Week starts on | השבוע מתחיל ביום |
+    | weekHelp | Used by the calendar and your weekly page. | משמש את לוח השנה ואת הדף השבועי. |
+    | sun | Sunday | ראשון |
+    | mon | Monday | שני |
+    | sat | Saturday | שבת |
+    | tz | Time zone | אזור זמן |
+    | tzHelp | Where your day starts and ends. | איפה היום שלך מתחיל ונגמר. |
+    | email | Email reminders | תזכורות במייל |
+    | emailHelp | Reminders can also arrive by email. | תזכורות יכולות להגיע גם במייל. |
+    | inApp | Notices in Tempo | התראות בתוך Tempo |
+    | inAppHelp | Short notices inside Tempo, in Notifications. | התראות קצרות בתוך Tempo, בעמוד ההתראות. |
+    | billing | Billing notices | התראות חיוב |
+    | billingHelp | Stays on, so a charge never surprises you. Nothing is charged during early access, and these notices aren't built yet. | נשאר פועל, כדי שחיוב אף פעם לא יפתיע. בזמן הגישה המוקדמת לא מחויב כלום, וההתראות האלה עוד לא נבנו. |
+    | saveError | That change didn't save. Try again in a moment. | השינוי לא נשמר. אפשר לנסות שוב בעוד רגע. |
+    | loading | Loading your preferences | ההעדפות שלך בטעינה |
+    | error | Couldn't load your preferences. | לא הצלחנו לטעון את ההעדפות. |
+    | signedOutTitle | Sign in to see your preferences. | צריך להתחבר כדי לראות את ההעדפות. |
+    | signIn | Sign in | התחברות |
+    Language option labels are "English" and "עברית" in both locales. Strings owned by composed components: `SettingsSwitch` On / Off (`set.on`, `set.off`); `Dial` "Quiet / Steady / Push", "of 10", value text (TFV2-0119); `Badge` none; State components as in TFV2-0120…0123. Time zone option labels are IANA names, shown as given.
+  - **States (harness order; `DATA = { theme: "light", lang: "en", textSize: "m", readingFont: false, dial: 4, weekStartsOn: 1, timeZone: "Asia/Jerusalem", timeZones: ["Asia/Jerusalem", "Europe/London", "UTC"], emailReminders: true, inAppNotifications: true }`, `online: true`, `status: ""`, `saveError: false`, `extra = <div data-testid="preferences-view-extra">Coach web search</div>` unless noted):** `default`, `loading` (`state: "loading"`), `error` (`state: "error"`), `signed-out` (`state: "signed-out"`), `offline` (`online: false`), `saved` (`status: "Saved."`), `save-error` (`saveError: true`). Each in `<section data-testid="preferences-view-<state>">`; `onChange`, `onDial`, `onRetry` write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="preferences-view-log">`. Disabled: the billing switch (`aria-disabled="true"`, always on).
+  - **RTL:** `dir` from `LocaleProvider`; rows put text at the inline start; Segmented arrows follow `dir` (controls.tsx); the Dial range runs right-to-left in Hebrew (TFV2-0119). **Keyboard / screen reader:** each Segmented is one tab stop with arrow keys; switches are buttons with `role="switch"`; selects are native; every control is named by its row label (`aria-labelledby`) and described by its help; the status `output` is a polite live region; the save error is `role="alert"`. **Breakpoints:** one column at 390 / 768; stacked rows put the control under the text; `.tp-page--narrow` caps at 760 px at 1024 / 1280. **Motion:** switch thumb and button transitions from tempo.css (`--tp-dur-fast`); instant under reduced motion.
+- **TESTS:** (CONVENTIONS §22 skeleton; 10 × 4 = 40; EN/HE from SPEC Copy; every locator scoped to its section)
+  1. Given `preferences-view-default` / Then the `h1` reads `title`; the section titles read `look`, `coach`, `week` in that order; the radio `light` has `aria-checked="true"`, the radio `English` has `aria-checked="true"`, the radio `sizeM` has `aria-checked="true"`; `#pr-dial` has value `4` and `[data-dial-word]` reads "Steady" / "יציב"; `#pr-ws-select` has value `1`, `#pr-tz-select` value `Asia/Jerusalem`; `#pr-billing-switch` has `aria-checked="true"` and `aria-disabled="true"`; the Badge reads `motionBadge`; `[data-testid="preferences-view-extra"]` follows the `week` section; the header `output` is empty.
+  2. Given `default` / When the radio `dark` is clicked / Then `preferences-view-log` reads `onChange:{"key":"theme","value":"dark"}`; When the radio `עברית` is clicked / Then it reads `onChange:{"key":"lang","value":"he"}`.
+  3. Given `default` / When the radio `sizeL` is clicked / Then the log reads `onChange:{"key":"textSize","value":"l"}`.
+  4. Given `default` / When `#pr-dial` is filled with `7` / Then the log reads `onDial:7`.
+  5. Given `default` / When `#pr-dys-switch` is clicked / Then the log reads `onChange:{"key":"readingFont","value":true}`; When `#pr-billing-switch` is clicked / Then the log still reads that same text (no call).
+  6. Given `default` / When `#pr-ws-select` selects `0` / Then the log reads `onChange:{"key":"weekStartsOn","value":0}`; When `#pr-tz-select` selects `UTC` / Then it reads `onChange:{"key":"timeZone","value":"UTC"}`; When `#pr-email-switch` is clicked / Then it reads `onChange:{"key":"emailReminders","value":false}`.
+  7. Given `preferences-view-saved` / Then `.tp-pagehead output` reads `Saved.`; and given `preferences-view-save-error` / Then a `role="alert"` paragraph reads `saveError`.
+  8. Given `preferences-view-loading` / Then `[data-component="StateLoading"]` holds the sr-only `loading` and `[data-testid="preferences-view-extra"]` is present; given `preferences-view-error` / Then it shows `error`, has no `preferences-view-extra`, and When `Try again` / `לנסות שוב` is clicked / Then the log reads `onRetry:null`.
+  9. Given `preferences-view-signed-out` / Then a link `signIn` has `href="/sign-in"`; given `preferences-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and `#pr-dys-switch` is visible.
+  10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="preferences-view-default"]')` and `expectMotionBudget(page, '[data-testid="preferences-view-default"]')` pass.
+- **NUMBERS:** dial range 0–10 (PRD F-25; `coach.setDial` accepts only integers 0–10, TFV2-0166b; bullet 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 10) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only) · status messages announced without focus (WCAG 2.2 SC 4.1.3; `output` live region, bullet 7) · motion ≤ 250 ms (DESIGN.md; bullet 10) · 40 of 40 pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** shell cache size budget — Amit.
+- **OPEN:** none.
+
+### TFV2-0309b — Route: /settings/preferences
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0309c, TFV2-0309a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0166a, TFV2-0166b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0309c, TFV2-0309a, TFV2-0000b, TFV2-0000c, TFV2-0265a, TFV2-0166a, TFV2-0166b.
+- **WHY:** design `docs/design/v3/screens/web/settings-prefs.html`; CONVENTIONS §9 (web screen), §14 (only the page calls Convex; week start / time zone from `userPreferences`), §22. Code truth: `apps/web/app/(tempo)/settings/preferences/page.tsx` (server page) renders `SettingsScreen` + `PreferencesForm` inside `<div data-testid="settings-preferences">`; `SettingsScreen` appends `<CoachWebSearchSetting />` (`apps/web/components/coach/CoachWebSearchSetting.tsx`, which has its own error boundary and reads `preferences.get` and `coach.webSearchStatus` itself) and provides `SettingsStatusContext` (`apps/web/components/settings/status.tsx`) whose announcements fill the header `output` ("Saved."). The browser suite `tests/unit/kb-59.test.tsx` (26 cases) renders this page with a fake backend and asserts `#pref-coach-web-search`, `.tp-pagehead output` = "Saved.", the `h1` font, and no extra operations — so the new page keeps the web-search section in the tree whenever the profile is ready (also while preferences load), keeps the header mounted when the profile gate drops, and provides `SettingsStatusContext` itself. TFV2-0309c already added `useSearchParams` to kb-59's `next/navigation` mock. `tests/e2e/wiring/settings-account.spec.ts` asserts `data-testid="settings-preferences"` is visible; `"/settings/preferences"` is already in `E2E_WIRING_ROUTES` (no wiring edit). Behaviour parity with `PreferencesForm.tsx`: theme / reading font through `useTheme()`, text size device-local (`apps/web/lib/settings/textSize.ts`), language saved then applied, dial saved 400 ms after the slider stops (`DIAL_SAVE_DELAY_MS` there), a browser without its own language adopting the account's.
+- **GOAL:** `/settings/preferences` reads preferences and the coach dial in `page.tsx`, renders `PreferencesView` with the coach web-search section as `extra`, saves every change at once (dial debounced), announces "Saved." in the header, and renders a typed fixture for every forced `?state=`, while kb-59 stays 26 of 26.
+- **SCOPE:** `apps/web/app/(tempo)/settings/preferences/page.tsx` · `apps/web/lib/e2e/fixtures/settings-preferences.ts` · test: `tests/e2e/screens/settings-preferences.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/settings/preferences"` is already registered.)
+- **MUTATES:** `apps/web/app/(tempo)/settings/preferences/page.tsx` (edit: whole file replaced; becomes a client page) · `apps/web/lib/e2e/fixtures/settings-preferences.ts` (new) · `tests/e2e/screens/settings-preferences.spec.ts` (new) · runtime writes through existing mutations: `userPreferences` (`preferences.update`), `coachSettings.dial` (`coach.setDial`) — live use only; device-local `localStorage["tempo-text-size"]` and the `<html data-text-size|data-theme|data-dyslexia>` attributes. No schema, env or route-list change.
+- **STEPS:**
+  1. Code-map check: `grep -n '"/settings/preferences"' apps/web/lib/e2eWiringRoutes.ts` prints one line; `grep -c "useSearchParams" tests/unit/kb-59.test.tsx` prints `1` (TFV2-0309c; else `blocked: missing TFV2-0309c`); read the current `page.tsx`, `apps/web/components/settings/SettingsScreen.tsx` (the `announce` function, lines 60–75), `apps/web/components/notifications-preferences/PreferencesForm.tsx` (behaviour reference) and `apps/web/components/coach/CoachWebSearchSetting.tsx` (exports `CoachWebSearchSetting`); `test -e apps/web/components/settings/PreferencesView.tsx && test -e apps/web/lib/e2e/useE2EState.ts && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/settings-preferences.ts` exactly as SPEC "Fixtures".
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. No E2E route step: `"/settings/preferences"` is already in `E2E_WIRING_ROUTES` (say so in the PR).
+  5. Create `tests/e2e/screens/settings-preferences.spec.ts` with the CONVENTIONS §22 spec skeleton (route form) and the 8 TESTS bullets.
+  6. Run DONE, then `bun test apps/web/components/notifications-preferences/PreferencesForm.test.tsx` (unchanged component, stays green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-preferences.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run test:browser tests/unit/kb-59.test.tsx` → `26 pass`, `0 fail`; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the three test summaries and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** edit `e2eWiringRoutes.ts`, `PreferencesView.tsx`, `PreferencesForm.tsx` or its test, `SettingsScreen.tsx`, `status.tsx`, `CoachWebSearchSetting.tsx`, `controls.tsx`, `tests/unit/kb-59.test.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; import `PreferencesForm` or `SettingsScreen`; render `CoachWebSearchSetting` when `?state=` is forced or before the profile is ready; call any mutation on mount; export anything from `page.tsx` other than the default component and types (Next.js page export rule); contact Convex when `?state=` is forced; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0309b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/settings/preferences/page.tsx, apps/web/lib/e2e/fixtures/settings-preferences.ts, tests/e2e/screens/settings-preferences.spec.ts / unknowns / notes for ticket sync: PreferencesForm.tsx is no longer imported by any route (its unit test still runs); SettingsScreen's PREFERENCES_TITLE branch is now unused`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  Convex functions used (`requireUser` errors as usual; `users.getProfile` returns `null` signed out):
+  ```ts
+  api.users.getProfile    // query    {} → user row + greetingName | null (existing)
+  api.preferences.get     // query    {} → { theme: "system"|"light"|"dark"; locale: "en"|"he"; weekStartsOn: 0|1|6; timeZone: string; emailReminders: boolean; inAppNotifications: boolean; coachWebSearch: boolean; analyticsOptIn: boolean } (TFV2-0265a / 0265b)
+  api.preferences.update  // mutation { theme?; locale?; weekStartsOn?; timeZone?; emailReminders?; inAppNotifications?; … } → null; throws "Time zone is required" for a blank zone (TFV2-0265a)
+  api.coach.getSettings   // query    {} → { dial: number; taskLoad: number; panicUntil: number | null; acceptedStreak: number } (TFV2-0166a)
+  api.coach.setDial       // mutation { dial: number } → { success: true }; throws "The dial is a whole number from 0 to 10." (TFV2-0166b)
+  ```
+  Any rejected mutation (whatever its message) sets `saveError`; a thrown query reaches the boundary.
+  **page.tsx** (in this order):
+  ```tsx
+  "use client";
+  import { useConvexAuth, useMutation, useQuery } from "convex/react";
+  import { Component, Fragment, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+  import { CoachWebSearchSetting } from "@/components/coach/CoachWebSearchSetting";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { useTheme } from "@/components/providers/ThemeProvider";
+  import { PreferencesView, type PrefsChange, type PrefsData, type PreferencesViewProps } from "@/components/settings/PreferencesView";
+  import { SettingsStatusContext } from "@/components/settings/status";
+  import { api } from "@/convex/_generated/api";
+  import { FIXTURES } from "@/lib/e2e/fixtures/settings-preferences";
+  import { useE2EState } from "@/lib/e2e/useE2EState";
+  import { LANG_STORAGE_KEY } from "@/lib/i18n";
+  import { clampDial } from "@/lib/settings/dial";
+  import { applyTextSize, readTextSize, TEXT_SIZE_STORAGE_KEY, type TextSize } from "@/lib/settings/textSize";
+  import { useOnline } from "@/lib/useOnline";
+
+  export type PreferencesFixture = Omit<PreferencesViewProps, "status" | "extra" | "onChange" | "onDial" | "onRetry"> & { saved: boolean };
+  export type PreferencesFixtureState = "default" | "loading" | "error" | "signed-out" | "offline" | "saved" | "save-error";
+  const DIAL_SAVE_DELAY_MS = 400;
+  const EMPTY_DATA: PrefsData = { theme: "system", lang: "en", textSize: "m", readingFont: false, dial: 4, weekStartsOn: 1, timeZone: "UTC", timeZones: ["UTC"], emailReminders: true, inAppNotifications: true };
+  function listTimeZones(current: string): string[] { /* Intl.supportedValuesOf("timeZone") in try/catch (→ [] on error); prepend current when missing — same as PreferencesForm.tsx */ }
+
+  export default function Page() {
+    return (<div data-testid="settings-preferences"><Suspense fallback={null}><PreferencesRoute /></Suspense></div>);
+  }
+  /** Clear, then set after 50 ms, so the same "Saved." is spoken again (SettingsScreen's announce). */
+  function useAnnounce(): { status: string; announce: (text: string) => void } { /* useState(""), useRef<number | null> timer, useCallback announce, clear the timer on unmount */ }
+  class PreferencesBoundary extends Component<{ online: boolean; status: string; children: ReactNode }, { failed: boolean; attempt: number }> {
+    // state = { failed: false, attempt: 0 }; static getDerivedStateFromError() { return { failed: true }; }
+    // retry = () => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }));
+    // render: failed → <PreferencesView state="error" online={this.props.online} data={EMPTY_DATA} status={this.props.status} saveError={false} onChange={() => {}} onDial={() => {}} onRetry={this.retry} />
+    //         else   → <Fragment key={this.state.attempt}>{this.props.children}</Fragment>
+  }
+  function PreferencesRoute() {
+    const forced = useE2EState();
+    const online = useOnline();
+    const { status, announce } = useAnnounce();
+    return (
+      <SettingsStatusContext.Provider value={announce}>
+        {forced !== null
+          ? <PreferencesForced forced={forced} status={status} announce={announce} />
+          : <PreferencesBoundary online={online} status={status}><PreferencesLive online={online} status={status} announce={announce} /></PreferencesBoundary>}
+      </SettingsStatusContext.Provider>
+    );
+  }
+  ```
+  **`PreferencesForced({ forced, status, announce })`:** `const { t } = useLocale(); const fixture = FIXTURES[forced as PreferencesFixtureState] ?? FIXTURES.error;` local `data` starts as `fixture.data`; `useEffect(() => { if (fixture.saved) announce(t("set.saved")); }, [])` (once on mount). Renders `<PreferencesView state={fixture.state} online={fixture.online} data={data} status={status} saveError={fixture.saveError} onChange={(c: PrefsChange) => { setData((d) => ({ ...d, [c.key]: c.value })); announce(t("set.saved")); }} onDial={(v) => { setData((d) => ({ ...d, dial: clampDial(v) })); announce(t("set.saved")); }} onRetry={() => {}} />` — no `extra`, no Convex hook, no theme / language / storage side effects.
+  **`PreferencesLive({ online, status, announce })`:**
+  1) Hooks: `const { t, lang, setLang } = useLocale(); const { theme, setTheme, dyslexia, setDyslexia } = useTheme(); const { isAuthenticated, isLoading } = useConvexAuth(); const profileRow = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip"); const ready = isAuthenticated && profileRow != null; const prefs = useQuery(api.preferences.get, ready ? {} : "skip"); const coach = useQuery(api.coach.getSettings, ready ? {} : "skip"); const updatePreferences = useMutation(api.preferences.update); const setDial = useMutation(api.coach.setDial);` local state `overrides: Partial<{ theme; locale; weekStartsOn; timeZone; emailReminders; inAppNotifications }>` (`{}`), `textSize: TextSize` (`"m"`), `dialDraft: number | null` (`null`), `saveError: boolean` (`false`); refs `dialTimer`, `dialPending`, `setDialRef`.
+  2) Effects (copied from `PreferencesForm.tsx`): on mount `setTextSize(readTextSize(document.documentElement.getAttribute("data-text-size")))`; when `prefs?.locale` differs from `lang` and neither `localStorage[LANG_STORAGE_KEY]` nor a `?lang=` param exists → `setLang(prefs.locale)`; on unmount clear `dialTimer` and, when `dialPending.current !== null`, `void setDialRef.current({ dial: dialPending.current }).catch(() => {})`.
+  3) `state` = `"signed-out"` when `!isLoading && !isAuthenticated`; `"loading"` when `!ready || prefs === undefined || coach === undefined`; else `"default"`. `shownLang = overrides.locale ?? lang`; `timeZone = overrides.timeZone ?? prefs?.timeZone ?? "UTC"`; `const timeZones = useMemo(() => listTimeZones(timeZone), [timeZone])` (called on every render, before any branch); `data: PrefsData = { theme, lang: shownLang, textSize, readingFont: dyslexia, dial: dialDraft ?? clampDial(coach?.dial), weekStartsOn: overrides.weekStartsOn ?? prefs?.weekStartsOn ?? 1, timeZone, timeZones, emailReminders: overrides.emailReminders ?? prefs?.emailReminders ?? true, inAppNotifications: overrides.inAppNotifications ?? prefs?.inAppNotifications ?? true }`.
+  4) `saved()` = `setSaveError(false); announce(t("set.saved"))`. `save(patch, onSaved?)`: add `patch` to `overrides`; `try { await updatePreferences(patch); onSaved?.(); saved(); } catch { setSaveError(true); } finally { drop each key of patch from overrides whose value still equals patch's }`.
+  5) `onChange(c)`: `theme` → `setTheme(c.value); void save({ theme: c.value })`; `lang` → if `c.value !== shownLang`: `void save({ locale: c.value }, () => setLang(c.value))`; `textSize` → `setTextSize(c.value); applyTextSize(document.documentElement, c.value);` then `localStorage.removeItem(TEXT_SIZE_STORAGE_KEY)` for `"m"`, else `localStorage.setItem(TEXT_SIZE_STORAGE_KEY, c.value)` (both in `try/catch`), then `saved()`; `readingFont` → `setDyslexia(c.value); saved()`; `weekStartsOn` / `timeZone` / `emailReminders` / `inAppNotifications` → `void save({ [c.key]: c.value })`.
+  6) `onDial(raw)`: `next = clampDial(raw); setDialDraft(next); dialPending.current = next;` clear and restart `dialTimer` with `DIAL_SAVE_DELAY_MS`; when it fires: `dialTimer.current = null; dialPending.current = null; setDial({ dial: next }).then(() => { setDialDraft((c) => (c === next ? null : c)); saved(); }).catch(() => { setDialDraft((c) => (c === next ? null : c)); setSaveError(true); });`.
+  7) Render `<PreferencesView state={state} online={online} data={data} status={status} saveError={saveError} extra={ready ? <CoachWebSearchSetting /> : null} onChange={onChange} onDial={onDial} onRetry={() => {}} />`.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/settings-preferences.ts`; only `import type { PreferencesFixture, PreferencesFixtureState } from "@/app/(tempo)/settings/preferences/page";` and `export const FIXTURES: Record<PreferencesFixtureState, PreferencesFixture> = { … };`): data `{ theme: "light", lang: "en", textSize: "m", readingFont: false, dial: 4, weekStartsOn: 1, timeZone: "Asia/Jerusalem", timeZones: ["Asia/Jerusalem", "Europe/London", "UTC"], emailReminders: true, inAppNotifications: true }` written inline; `default` `{ state: "default", online: true, data, saveError: false, saved: false }`; `loading` / `error` / `signed-out` = default with that `state`; `offline` = default with `online: false`; `saved` = default with `saved: true`; `save-error` = default with `saveError: true`.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0309a); the only string the route adds is the existing i18n key `set.saved` ("Saved." / "נשמר."), the same text `CoachWebSearchSetting` announces.
+- **TESTS:** (route spec, CONVENTIONS §22; both viewports × both languages; every case asserts `page.getByTestId("settings-preferences")` is visible and ends with the filtered console-error check; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Preferences" (HE "העדפות"), `#pref-coach-web-search` is not present (forced mode renders no web-search section), and `measureVitals(page, "/settings/preferences?state=default&lang=" + lang)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+  2. Given `?state=default` / When the radio "Dark" (HE "כהה") is clicked / Then it has `aria-checked="true"` and `.tp-pagehead output` reads "Saved." (HE "נשמר.").
+  3. Given `?state=default` / When `#pr-dial` is filled with `9` / Then `[data-dial-word]` reads "Push" (HE "דחיפה") and `.tp-pagehead output` reads "Saved." (HE "נשמר.").
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with the sr-only "Loading your preferences" (HE "ההעדפות שלך בטעינה").
+  5. Given `?state=error` / Then "Couldn't load your preferences." (HE "לא הצלחנו לטעון את ההעדפות.") and "Try again" (HE "לנסות שוב") are visible.
+  6. Given `?state=signed-out` / Then a link "Sign in" (HE "התחברות") with `href="/sign-in"` is visible.
+  7. Given `?state=offline` / Then the offline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and `#pr-dys-switch` are visible; and given `?state=saved` / Then `.tp-pagehead output` reads "Saved." (HE "נשמר.").
+  8. Given `?state=save-error` / Then a `role="alert"` element reads "That change didn't save. Try again in a moment." (HE "השינוי לא נשמר. אפשר לנסות שוב בעוד רגע."); and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-preferences"]')`, `expectMotionBudget(page, '[data-testid="settings-preferences"]')` pass.
+- **NUMBERS:** dial save debounce 400 ms (design settings-prefs.html; `DIAL_SAVE_DELAY_MS`, same as `PreferencesForm.tsx`) · dial 0–10 (PRD F-25; TFV2-0166b) · LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · kb-59 26 of 26, wiring 4 of 4, screen spec 32 of 32 · backend p95: UNKNOWN (no baseline; not a gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0310a — View: PrivacyView (`apps/web/components/settings/PrivacyView.tsx`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307, TFV2-0311 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0306, TFV2-0307, TFV2-0311.
+- **WHY:** design `docs/design/v3/screens/web/settings-privacy.html` (Usage data switch, off by default; Your data: export + privacy policy; Leave Tempo: delete with a confirmation sheet whose delete button stays off until the tick box is checked); CONVENTIONS §9, §10 Case A, §11, §12, §13, §22. Decision (verify vs replace, against the real backend): the design's `dsr.requestDataExport`, `dsr.requestAccountDeletion` and `dsr.cancelAccountDeletion` do **not** exist in `convex/` (no `dsr` module), so this screen uses what exists, exactly as the current `apps/web/components/settings/PrivacySettings.tsx` + `apps/web/components/account/DeleteAccountCard.tsx` do: export shows "Not available yet" (no button), deletion is `users.deleteMyAccount` (removes data right away; signing in again within 30 days reopens an empty account — the repo copy `set.privacy.dsTip`), and there is no pending-deletion notice or Restore. What changes: the usage-data switch becomes real (`userPreferences.analyticsOptIn`, CFG-015, read/written through TFV2-0265b), the screen becomes a props-only View (the current components call Convex and cannot be forced into states) and the Hebrew becomes gender-neutral (the repo strings say "סמני", "נסי", "תפעילי"). The confirmation is `ConfirmDialog` (TFV2-0311). The tick box is written inline (not `Checkbox`, TFV2-0117) because `ConfirmDialog.initialFocusRef` needs a ref on the input and `Checkbox` takes none.
+- **GOAL:** `PrivacyView` renders the privacy screen (header, offline banner, usage-data switch with its saved / failed line, export "Not available yet", privacy-policy link, Leave Tempo row with the delete confirmation, deleting / failed / signed-out-after-delete feedback, and loading / error / signed-out states) from props alone.
+- **SCOPE:** `apps/web/components/settings/PrivacyView.tsx` · `apps/web/app/e2e/components/privacy-view/page.tsx` · test: `tests/e2e/screens/privacy-view.spec.ts`.
+- **MUTATES:** `apps/web/components/settings/PrivacyView.tsx` (new) · `apps/web/app/e2e/components/privacy-view/page.tsx` (new) · `tests/e2e/screens/privacy-view.spec.ts` (new). No data, route list, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/components/settings/PrivacyView.tsx` fails (new); `ls convex | grep -i dsr` prints nothing (no DSR backend; if a `dsr` module now exists, stop and report `blocked: question — dsr backend appeared; rewrite this ticket against it?`); `grep -n "export const deleteMyAccount" convex/users.ts` prints the mutation; `grep -n "^\.pv-body\|^\.pv-list" apps/web/app/v3/settings.css` prints both; `test -e` succeeds for `apps/web/components/settings/ConfirmDialog.tsx`, `SettingsSection.tsx`, `SettingRow.tsx`, `apps/web/components/layout/Notice.tsx`, `Badge.tsx` and the four State components (else `blocked: missing <ticket>`); read `PrivacySettings.tsx` and `DeleteAccountCard.tsx` (reference only).
+  2. Stylesheet: Case A — no `.css` file.
+  3. Create `PrivacyView.tsx` (`"use client"`) exporting exactly the SPEC types and `PrivacyView`, `COPY` at the top.
+  4. Build the markup exactly as SPEC "Layout".
+  5. Create the harness page with the eleven SPEC states in order (the `deleting` and `delete-failed` sections keep `deletion` in `useState`, see SPEC), inline typed fixtures and the `privacy-view-log` output.
+  6. Create `tests/e2e/screens/privacy-view.spec.ts` with the CONVENTIONS §22 spec skeleton (`openHarness(page, "privacy-view", { lang })`) and the 11 TESTS bullets.
+  7. Run DONE, then `bun run typecheck` and `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/privacy-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary line plus the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
+- **DO NOT:** call `useQuery`, `useMutation`, `useAction`, `useAuthActions` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; offer an export button, a pending-deletion notice or a Restore button (no backend); promise a 30-day grace that keeps the data; turn usage data on by default; make the delete button the accent; edit `PrivacySettings.tsx`, `DeleteAccountCard.tsx`, `accountDeleted.ts`, `controls.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; add a stylesheet or edit `tempo.css` / `settings.css`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0310a / evidence: <DONE output> / changed: apps/web/components/settings/PrivacyView.tsx, apps/web/app/e2e/components/privacy-view/page.tsx, tests/e2e/screens/privacy-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
+- **SPEC:**
+  ```ts
+  export type PrivacyState = "default" | "loading" | "error" | "signed-out";
+  export type PrivacyAnalyticsNotice = "on" | "off" | "failed" | null;
+  export type PrivacyDeletion = "idle" | "deleting" | "failed" | "signed-out-failed";
+  export type PrivacyViewProps = {
+    state: PrivacyState;
+    online: boolean;
+    analyticsOptIn: boolean;              // false unless the person turned it on
+    analyticsNotice: PrivacyAnalyticsNotice;
+    deletion: PrivacyDeletion;            // "signed-out-failed" = the account is deleted but signing out failed
+    onAnalytics: (on: boolean) => void;
+    onDelete: () => void;                 // only after the tick box is checked and Delete pressed
+    onSignOutRetry: () => void;
+    onRetry: () => void;
+  };
+  export function PrivacyView(props: PrivacyViewProps): JSX.Element;
+  ```
+  - **Imports:** `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `SettingsSwitch` from `@/components/settings/controls`; `SettingsSection`, `SettingRow`, `ConfirmDialog` from `@/components/settings/<Name>`; `Notice`, `Badge` from `@/components/layout/<Name>`; the four State components.
+  - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="PrivacyView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />`. 3) Body: `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` with `deletion === "signed-out-failed"` → `<Notice tone="danger" title={copy.deletedSignOut} live="alert" action={<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" data-component="Button" onClick={onSignOutRetry}>{copy.signOutRetry}</button>} />` and nothing else; `default` otherwise → `<div className="pv-body">` with three sections, then the dialog:
+    - `<SettingsSection id="pv-usage" title={copy.usage}>` → `<SettingRow id="pv-an" label={copy.anLabel} help={`${copy.anHelp} ${copy.anLater}`} status={notice} control={<SettingsSwitch id="pv-an-switch" checked={analyticsOptIn} onChange={onAnalytics} labelledBy="pv-an-label" describedBy="pv-an-help" />} />` where `notice` = `"on"` → `<span className="tp-help" role="status">{copy.anOn}</span>`, `"off"` → `<span className="tp-help" role="status">{copy.anOff}</span>`, `"failed"` → `<span className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{copy.anError}</span></span>`, `null` → nothing.
+    - `<SettingsSection id="pv-data" title={copy.data}>` → `<SettingRow id="pv-ex" label={copy.exLabel} help={copy.exHelp} stack control={<Badge label={copy.notYet} icon={<TpIcon name="clock" size="sm" />} />} />` and `<SettingRow id="pv-pol" label={copy.polLabel} help={copy.polHelp} control={<Link href="/privacy" className="tp-btn tp-btn--ghost" data-component="Button" aria-describedby="pv-pol-help"><span>{copy.polBtn}</span><TpIcon name="chevron" size="sm" flip /></Link>} />`.
+    - `<SettingsSection id="pv-leave" title={copy.leave}>` → `<SettingRow id="pv-del-row" label={copy.delLabel} help={copy.delHelp} stack tone="danger" control={<button type="button" className="tp-btn tp-btn--danger-ghost" data-component="Button" aria-controls="pv-del" aria-expanded={open} aria-describedby="pv-del-row-help" onClick={() => setOpen(true)}><TpIcon name="x" size="sm" /><span>{copy.delBtn}</span></button>} />`.
+    - `<ConfirmDialog id="pv-del" open={open} title={copy.dsTitle} body={copy.dsBody} tone="danger" confirmLabel={copy.dsConfirm} cancelLabel={copy.dsKeep} confirmBlocked={!ticked} confirmDescribedBy="pv-ds-need" busy={deletion === "deleting"} busyLabel={copy.deleting} error={deletion === "failed" ? copy.delError : undefined} initialFocusRef={tickRef} onConfirm={onDelete} onCancel={close}>` with children `<ul className="pv-list"><li>{copy.dsL1}</li><li>{copy.dsL2}</li><li>{copy.dsL3}</li></ul><p className="tp-help">{copy.dsTip}</p><label className="tp-choice" data-component="Checkbox"><input ref={tickRef} id="pv-ds-ok" type="checkbox" className="tp-checkbox" checked={ticked} onChange={(e) => setTicked(e.target.checked)} aria-describedby="pv-ds-need" /><span className="tp-choice__text"><span>{copy.dsOk}</span><span className="tp-choice__hint" id="pv-ds-need">{copy.dsNeed}</span></span></label>`.
+  - **Behaviour:** local `open` (`false`), `ticked` (`false`), `tickRef = useRef<HTMLInputElement | null>(null)`. `close()`: if `deletion === "deleting"` return; `setOpen(false); setTicked(false)`. The dialog stays open while `deletion` is `"deleting"` or `"failed"` (the person can try again or Keep). `onDelete` is passed straight to `onConfirm` (ConfirmDialog already ignores it while blocked or busy).
+  - **Copy** (`COPY`, CONVENTIONS §11; EN from the repo keys `set.privacy.*` and the design, HE gender-neutral per §12):
+    | key | EN | HE |
+    |---|---|---|
+    | title | Privacy | פרטיות |
+    | sub | Your data is yours. Take it with you, or take it away. | המידע שלך שייך לך. אפשר לקחת אותו איתך, או למחוק אותו. |
+    | usage | Usage data | נתוני שימוש |
+    | anLabel | Help improve Tempo | לעזור לשפר את Tempo |
+    | anHelp | Shares which buttons and screens get used, so Amit can see what's confusing. Never what you write or say. Off unless you turn it on. | משתף באילו כפתורים ומסכים משתמשים, כדי שעמית יראה מה מבלבל. אף פעם לא את מה שכותבים או אומרים. כבוי, אלא אם מפעילים אותו. |
+    | anLater | Tempo doesn't collect usage data yet. Your choice is kept for when it does. | Tempo עוד לא אוסף נתוני שימוש. הבחירה שלך נשמרת לזמן שזה יתחיל. |
+    | anOn | Thank you. Usage data is on. | תודה. נתוני השימוש פועלים. |
+    | anOff | Usage data is off. | נתוני השימוש כבויים. |
+    | anError | That change didn't save. Try again in a moment. | השינוי לא נשמר. אפשר לנסות שוב בעוד רגע. |
+    | data | Your data | המידע שלך |
+    | exLabel | Download a copy of everything | להוריד עותק של הכול |
+    | exHelp | Your pages, tasks, habits, chats and memories, in one ZIP file. This isn't ready yet. | הדפים, המשימות, ההרגלים, השיחות והזיכרונות שלך, בקובץ ZIP אחד. זה עוד לא מוכן. |
+    | notYet | Not available yet | עוד לא זמין |
+    | polLabel | Privacy policy | מדיניות הפרטיות |
+    | polHelp | The full details, in plain words. | כל הפרטים, במילים פשוטות. |
+    | polBtn | Read it | לקריאה |
+    | leave | Leave Tempo | לעזוב את Tempo |
+    | delLabel | Delete my account | למחוק את החשבון שלי |
+    | delHelp | Your pages, tasks, habits, chats and settings are removed, and your plan ends. Signing in again within 30 days reopens the account, but what was removed doesn't come back. | הדפים, המשימות, ההרגלים, השיחות וההגדרות שלך נמחקים, והמסלול שלך מסתיים. כניסה מחדש תוך 30 יום פותחת שוב את החשבון, אבל מה שנמחק לא חוזר. |
+    | delBtn | Delete my account | למחוק את החשבון שלי |
+    | dsTitle | Delete your account? | למחוק את החשבון שלך? |
+    | dsBody | This removes, right away: | זה מוחק, מיד: |
+    | dsL1 | Your pages, tasks, habits and plans | הדפים, המשימות, ההרגלים והתוכניות שלך |
+    | dsL2 | Your chats with the coach and what Tempo remembers | השיחות שלך עם המאמן ומה ש־Tempo זוכר |
+    | dsL3 | Your plan. Nothing more is charged. | המסלול שלך. לא יהיו עוד חיובים. |
+    | dsTip | Signing in again within 30 days reopens the account, empty: the pages, tasks and chats removed here don't come back. | כניסה מחדש תוך 30 יום פותחת שוב את החשבון, ריק: הדפים, המשימות והשיחות שנמחקו כאן לא חוזרים. |
+    | dsOk | I understand. Delete my account now. | הבנתי. למחוק את החשבון שלי עכשיו. |
+    | dsNeed | Tick this to turn on the delete button. | צריך לסמן כאן כדי להפעיל את כפתור המחיקה. |
+    | dsKeep | Keep my account | להשאיר את החשבון |
+    | dsConfirm | Delete my account | למחוק את החשבון שלי |
+    | deleting | Deleting… | מוחקים… |
+    | delError | Couldn't delete the account. Nothing was removed, so you can try again. | לא הצלחנו למחוק את החשבון. שום דבר לא נמחק, אפשר לנסות שוב. |
+    | deletedSignOut | Your account is deleted. Signing out didn't finish. | החשבון שלך נמחק. ההתנתקות לא הושלמה. |
+    | signOutRetry | Sign out | התנתקות |
+    | loading | Loading your privacy settings | הגדרות הפרטיות שלך בטעינה |
+    | error | Couldn't load your privacy settings. | לא הצלחנו לטעון את הגדרות הפרטיות. |
+    | signedOutTitle | Sign in to see your privacy settings. | צריך להתחבר כדי לראות את הגדרות הפרטיות. |
+    | signIn | Sign in | התחברות |
+    Strings owned by composed components: `SettingsSwitch` On / Off; `ConfirmDialog` Close (`סגירה`); Notice tone words; State components as in TFV2-0120…0123.
+  - **States (harness order; base props `{ state: "default", online: true, analyticsOptIn: false, analyticsNotice: null, deletion: "idle" }`):** `default`; `analytics-on` (`analyticsOptIn: true`, `analyticsNotice: "on"`); `analytics-error` (`analyticsNotice: "failed"`); `deleting` (starts `deletion: "idle"`; its `onDelete` writes the log and sets the section's `deletion` to `"deleting"`); `delete-failed` (same, sets `"failed"`); `signed-out-failed` (`deletion: "signed-out-failed"`); `loading`; `error`; `signed-out`; `offline` (`online: false`); `analytics-off` (`analyticsOptIn: false`, `analyticsNotice: "off"`). Each in `<section data-testid="privacy-view-<state>">`; callbacks write `<prop>:<JSON.stringify(firstArg ?? null)>` into `<output data-testid="privacy-view-log">`. Disabled: Delete (blocked) until the tick; Delete and Keep while deleting.
+  - **RTL:** `dir` from `LocaleProvider`; rows text at the inline start; the policy chevron flips (`flip`); the dialog follows ConfirmDialog. **Keyboard / screen reader:** the switch is `role="switch"` named by its label and described by its help; the usage line is `role="status"` (or `role="alert"` on failure); the delete opener has `aria-controls` / `aria-expanded`; the dialog moves focus to the tick box, whose hint describes the blocked Delete; Escape or Keep closes and focus returns to the opener. **Breakpoints:** one column at 390 / 768; `.tp-page--narrow` at 1024 / 1280; the dialog is a bottom sheet on phones and a centred card from 768. **Motion:** only the dialog's 240 ms rise and the switch's 120 ms transition; instant under reduced motion.
+- **TESTS:** (CONVENTIONS §22 skeleton; 11 × 4 = 44; EN/HE from SPEC Copy; every locator scoped to its section)
+  1. Given `privacy-view-default` / Then the `h1` reads `title`; section titles read `usage`, `data`, `leave`; `#pv-an-switch` has `aria-checked="false"` and its description contains `anLater`; a Badge reads `notYet` and no export button exists; a link `polBtn` has `href="/privacy"`; the button `delBtn` has class `tp-btn--danger-ghost` and `aria-expanded="false"`.
+  2. Given `default` / When `#pv-an-switch` is clicked / Then `privacy-view-log` reads `onAnalytics:true`; given `privacy-view-analytics-on` / Then its switch has `aria-checked="true"` and a `role="status"` line reads `anOn`; given `privacy-view-analytics-off` / Then a `role="status"` line reads `anOff`.
+  3. Given `privacy-view-analytics-error` / Then a `role="alert"` element reads `anError`.
+  4. Given `default` / When `delBtn` is clicked / Then `role="alertdialog"` `#pv-del` is visible and named `dsTitle`, it lists 3 items (`dsL1`, `dsL2`, `dsL3`), `#pv-ds-ok` is focused and `dsConfirm` in the dialog has `aria-disabled="true"`; When `dsConfirm` is clicked / Then the log is empty; When `#pv-ds-ok` is checked and `dsConfirm` clicked / Then the log reads `onDelete:null`.
+  5. Given `default` with the dialog open / When `dsKeep` is clicked / Then `#pv-del` is gone, the opener `delBtn` is focused, and reopening shows `#pv-ds-ok` unchecked.
+  6. Given `privacy-view-deleting` / When `delBtn` is clicked, `#pv-ds-ok` checked and `dsConfirm` clicked / Then the confirm button reads `deleting` with `aria-busy="true"`; When `Escape` is pressed / Then `#pv-del` is still visible.
+  7. Given `privacy-view-delete-failed` / When the same three actions run / Then a `role="alert"` inside `#pv-del` reads `delError` and the dialog stays open.
+  8. Given `privacy-view-signed-out-failed` / Then a `role="alert"` Notice reads `deletedSignOut`, no `usage` section exists, and When `signOutRetry` is clicked / Then the log reads `onSignOutRetry:null`.
+  9. Given `privacy-view-loading` / Then `[data-component="StateLoading"]` holds the sr-only `loading`; given `privacy-view-error` / Then it shows `error` and `Try again` / `לנסות שוב` writes `onRetry:null`; given `privacy-view-signed-out` / Then a link `signIn` has `href="/sign-in"`.
+  10. Given `privacy-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and the `delBtn` button is visible.
+  11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="privacy-view-default"]')` and `expectMotionBudget(page, '[data-testid="privacy-view-default"]')` pass.
+- **NUMBERS:** usage data off by default (design; CFG-015 "missing means false"; bullet 1) · destructive action needs an explicit tick (design; bullet 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · status messages (WCAG 2.2 SC 4.1.3; bullet 2) · text contrast ≥ 4.5:1 (SC 1.4.3; tokens only) · motion ≤ 250 ms (DESIGN.md; bullet 11) · 44 of 44 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0310b — Route: /settings/privacy
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0310a, TFV2-0000b, TFV2-0000c, TFV2-0265b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web screen lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0310a, TFV2-0000b, TFV2-0000c, TFV2-0265b.
+- **WHY:** design `docs/design/v3/screens/web/settings-privacy.html`; CONVENTIONS §9 (web screen), §14, §17, §22. Code truth: `apps/web/app/(tempo)/settings/privacy/page.tsx` (server page) renders `SettingsScreen` + `PrivacySettings` inside `<div data-testid="settings-privacy">`; `"/settings/privacy"` is **not** in `E2E_WIRING_ROUTES`, so this ticket registers it. Backend that exists: `users.deleteMyAccount` (`mutation`, `{}` → `{ success: true; deletedCount: number }`, `convex/users.ts`); the sign-out-after-delete helper `signOutDeletedAccount(signOut, leave)` and `useDeletedAccountState()` (`"none" | "signingOut" | "signOutFailed"`, a module store that survives the profile gate) in `apps/web/components/settings/accountDeleted.ts`; `preferences.get` / `preferences.update` with `analyticsOptIn` (TFV2-0265b, field from CFG-015). No `dsr.*` functions exist (see TFV2-0310a).
+- **GOAL:** `/settings/privacy` reads the usage-data choice in `page.tsx`, renders `PrivacyView`, saves the switch with `preferences.update({ analyticsOptIn })`, deletes the account with `users.deleteMyAccount` then signs out, and renders a typed fixture for every forced `?state=`.
+- **SCOPE:** `apps/web/app/(tempo)/settings/privacy/page.tsx` · `apps/web/lib/e2e/fixtures/settings-privacy.ts` · `apps/web/lib/e2eWiringRoutes.ts` (one exact line, §17) · test: `tests/e2e/screens/settings-privacy.spec.ts`.
+- **MUTATES:** `apps/web/app/(tempo)/settings/privacy/page.tsx` (edit: whole file replaced; becomes a client page) · `apps/web/lib/e2e/fixtures/settings-privacy.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/settings-privacy.spec.ts` (new) · route `/settings/privacy` registered for the dev-only E2E bypass · runtime writes through existing mutations: `userPreferences.analyticsOptIn`, the account soft delete of `users.deleteMyAccount` (live use only).
+- **STEPS:**
+  1. Code-map check: `grep -n '"/settings/privacy"' apps/web/lib/e2eWiringRoutes.ts` prints nothing; read the current `page.tsx`, `apps/web/components/settings/accountDeleted.ts` and `apps/web/components/account/DeleteAccountCard.tsx` lines 80–110 (delete then sign out); `grep -n "analyticsOptIn" convex/preferences.ts` prints the `get` return field and the `update` arg (else `blocked: missing backend preferences analyticsOptIn (TFV2-0265b)`); `test -e apps/web/components/settings/PrivacyView.tsx && test -e apps/web/lib/e2e/useE2EState.ts && test -e tests/e2e/helpers/harness.ts` succeeds.
+  2. Create `apps/web/lib/e2e/fixtures/settings-privacy.ts` exactly as SPEC "Fixtures".
+  3. Replace `page.tsx` exactly as SPEC "page.tsx".
+  4. E2E route step: insert `  "/settings/privacy",` in `apps/web/lib/e2eWiringRoutes.ts` as the last entry before `] as const;` (nothing else changes).
+  5. Create `tests/e2e/screens/settings-privacy.spec.ts` with the CONVENTIONS §22 spec skeleton (route form) and the 8 TESTS bullets.
+  6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line`, `bun test apps/web/components/settings/accountDeleted.test.ts` (unchanged, stays green), `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-privacy.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the Playwright summaries (screen spec and `tests/e2e/wiring`), the `accountDeleted.test.ts` summary and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** call any `dsr.*` function or invent one; edit `PrivacyView.tsx`, `PrivacySettings.tsx`, `DeleteAccountCard.tsx`, `accountDeleted.ts`, `SettingsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; import `PrivacySettings` or `SettingsScreen`; contact Convex or sign out when `?state=` is forced; change any other line of `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0310b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/settings/privacy/page.tsx, apps/web/lib/e2e/fixtures/settings-privacy.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/settings-privacy.spec.ts / unknowns / notes for ticket sync: PrivacySettings.tsx and DeleteAccountCard.tsx are no longer imported by any route; delete them in a cleanup ticket`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  Convex functions used:
+  ```ts
+  api.users.getProfile       // query    {} → user row + greetingName | null (existing)
+  api.preferences.get        // query    {} → { …; analyticsOptIn: boolean } (TFV2-0265b)
+  api.preferences.update     // mutation { analyticsOptIn?: boolean; … } → null (TFV2-0265b)
+  api.users.deleteMyAccount  // mutation {} → { success: true; deletedCount: number } (existing; throws requireUser errors)
+  ```
+  Any rejected mutation (whatever its message) maps to the View's `"failed"` values; a thrown query reaches the boundary.
+  **page.tsx:**
+  ```tsx
+  "use client";
+  import { useAuthActions } from "@convex-dev/auth/react";
+  import { useConvexAuth, useMutation, useQuery } from "convex/react";
+  import { useRouter } from "next/navigation";
+  import { Component, Fragment, type ReactNode, Suspense, useState } from "react";
+  import { signOutDeletedAccount, useDeletedAccountState } from "@/components/settings/accountDeleted";
+  import { PrivacyView, type PrivacyAnalyticsNotice, type PrivacyDeletion, type PrivacyViewProps } from "@/components/settings/PrivacyView";
+  import { api } from "@/convex/_generated/api";
+  import { FIXTURES } from "@/lib/e2e/fixtures/settings-privacy";
+  import { useE2EState } from "@/lib/e2e/useE2EState";
+  import { useOnline } from "@/lib/useOnline";
+
+  export type PrivacyFixture = Omit<PrivacyViewProps, "onAnalytics" | "onDelete" | "onSignOutRetry" | "onRetry">;
+  export type PrivacyFixtureState = "default" | "loading" | "error" | "signed-out" | "offline" | "analytics-on" | "signed-out-failed";
+  const NOOP = { onAnalytics: () => {}, onDelete: () => {}, onSignOutRetry: () => {}, onRetry: () => {} } satisfies Partial<PrivacyViewProps>;
+
+  export default function Page() {
+    return (<div data-testid="settings-privacy"><Suspense fallback={null}><PrivacyRoute /></Suspense></div>);
+  }
+  class PrivacyBoundary extends Component<{ online: boolean; children: ReactNode }, { failed: boolean; attempt: number }> {
+    // state = { failed: false, attempt: 0 }; static getDerivedStateFromError() { return { failed: true }; }
+    // retry = () => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }));
+    // render: failed → <PrivacyView state="error" online={this.props.online} analyticsOptIn={false} analyticsNotice={null} deletion="idle" {...NOOP} onRetry={this.retry} />
+    //         else   → <Fragment key={this.state.attempt}>{this.props.children}</Fragment>
+  }
+  function PrivacyRoute() {
+    const forced = useE2EState();
+    const online = useOnline();
+    if (forced !== null) return <PrivacyForced forced={forced} />;
+    return (<PrivacyBoundary online={online}><PrivacyLive online={online} /></PrivacyBoundary>);
+  }
+  ```
+  **`PrivacyForced({ forced })`:** `const fixture = FIXTURES[forced as PrivacyFixtureState] ?? FIXTURES.error;` local `analyticsOptIn`, `analyticsNotice`, `deletion` start from the fixture; `onAnalytics(on)` → `setAnalyticsOptIn(on); setAnalyticsNotice(on ? "on" : "off")`; `onDelete()` → `setDeletion("deleting")`; `onSignOutRetry`, `onRetry` → nothing. No Convex hook, no sign-out, no navigation.
+  **`PrivacyLive({ online })`:** `const { isAuthenticated, isLoading } = useConvexAuth(); const profileRow = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip"); const ready = isAuthenticated && profileRow != null; const prefs = useQuery(api.preferences.get, ready ? {} : "skip"); const updatePreferences = useMutation(api.preferences.update); const deleteMyAccount = useMutation(api.users.deleteMyAccount); const { signOut } = useAuthActions(); const router = useRouter(); const deleted = useDeletedAccountState(); const [override, setOverride] = useState<boolean | null>(null); const [analyticsNotice, setAnalyticsNotice] = useState<PrivacyAnalyticsNotice>(null); const [deletion, setDeletion] = useState<PrivacyDeletion>("idle");` `leave = () => router.push("/sign-in")`. `state` and `deletion` shown: when `deleted === "signOutFailed"` → `state = "default"`, `deletion = "signed-out-failed"` (the profile is gone, the notice must still show); else `state` = `"signed-out"` when `!isLoading && !isAuthenticated`, `"loading"` when `!ready || prefs === undefined`, else `"default"`. `analyticsOptIn = override ?? prefs?.analyticsOptIn ?? false`. `onAnalytics(on)`: `setOverride(on); setAnalyticsNotice(null); updatePreferences({ analyticsOptIn: on }).then(() => setAnalyticsNotice(on ? "on" : "off")).catch(() => setAnalyticsNotice("failed")).finally(() => setOverride(null));`. `onDelete()`: `if (deletion === "deleting") return; setDeletion("deleting"); try { await deleteMyAccount({}); } catch { setDeletion("failed"); return; } await signOutDeletedAccount(signOut, leave);` (a failed sign-out sets the module state to `"signOutFailed"`, which the line above turns into the notice). `onSignOutRetry()`: `void signOutDeletedAccount(signOut, leave)`.
+  **Fixtures** (`apps/web/lib/e2e/fixtures/settings-privacy.ts`; only `import type { PrivacyFixture, PrivacyFixtureState } from "@/app/(tempo)/settings/privacy/page";` and `export const FIXTURES: Record<PrivacyFixtureState, PrivacyFixture> = { … };`): `default` `{ state: "default", online: true, analyticsOptIn: false, analyticsNotice: null, deletion: "idle" }`; `loading` / `error` / `signed-out` = default with that `state`; `offline` = default with `online: false`; `analytics-on` = default with `analyticsOptIn: true, analyticsNotice: "on"`; `signed-out-failed` = default with `deletion: "signed-out-failed"`.
+  **Wiring line (§17):** `  "/settings/privacy",` as the last entry before `] as const;`.
+  States, copy, RTL, keyboard, breakpoints and motion are the View's (TFV2-0310a); this ticket adds no visible string. The wrapper keeps `data-testid="settings-privacy"`.
+- **TESTS:** (route spec, CONVENTIONS §22; both viewports × both languages; every case asserts `page.getByTestId("settings-privacy")` is visible and ends with the filtered console-error check; 8 × 4 = 32)
+  1. Given `?state=default` / Then the `h1` reads "Privacy" (HE "פרטיות"), `#pv-an-switch` has `aria-checked="false"`, and `measureVitals(page, "/settings/privacy?state=default&lang=" + lang)` returns `lcpMs ≤ 2500` and `cls ≤ 0.1`.
+  2. Given `?state=default` / When `#pv-an-switch` is clicked / Then it has `aria-checked="true"` and a `role="status"` line reads "Thank you. Usage data is on." (HE "תודה. נתוני השימוש פועלים.").
+  3. Given `?state=default` / When "Delete my account" (HE "למחוק את החשבון שלי") is clicked, `#pv-ds-ok` checked and the dialog's "Delete my account" clicked / Then that button reads "Deleting…" (HE "מוחקים…") with `aria-busy="true"`, and the URL is still `/settings/privacy` (forced mode never signs out).
+  4. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached with the sr-only "Loading your privacy settings" (HE "הגדרות הפרטיות שלך בטעינה").
+  5. Given `?state=error` / Then "Couldn't load your privacy settings." (HE "לא הצלחנו לטעון את הגדרות הפרטיות.") and "Try again" (HE "לנסות שוב") are visible.
+  6. Given `?state=signed-out` / Then a link "Sign in" (HE "התחברות") with `href="/sign-in"` is visible.
+  7. Given `?state=offline` / Then the offline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") is visible; and given `?state=analytics-on` / Then `#pv-an-switch` has `aria-checked="true"`.
+  8. Given `?state=signed-out-failed` / Then a `role="alert"` element reads "Your account is deleted. Signing out didn't finish." (HE "החשבון שלך נמחק. ההתנתקות לא הושלמה.") with a "Sign out" (HE "התנתקות") button; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-privacy"]')`, `expectMotionBudget(page, '[data-testid="settings-privacy"]')` pass.
+- **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · usage data default off (CFG-015) · account restore window 30 days = the existing `ACCOUNT_RESTORE_GRACE_MS` (`convex/lib/accountDeletion.ts`; copy only, not changed here) · backend p95: UNKNOWN (no baseline; not a gate) · 32 of 32 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0312 — PWA: web app manifest + icons (`apps/web/app/manifest.ts`)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-120 (web PWA); TRD §1. Code truth (checked on `integration`): no `apps/web/app/manifest*`, no `apps/web/public/icons/` and no `apps/web/public/sw*` exist; `apps/web/app/layout.tsx` sets `metadata.title` "Tempo Flow — your brain's operating system" and `viewport.themeColor` light `#F3EEE4` / dark `#161412` (the `--tp-ground` values of `docs/design/v3/tokens.css` lines 25 and 125). Next.js 16 serves `app/manifest.ts` (a `MetadataRoute.Manifest` default export) at `/manifest.webmanifest` and adds `<link rel="manifest">` to every page by itself, so **no dependency and no `next.config.ts` change is needed** (no config lane). `apps/web/proxy.ts`'s matcher skips paths ending in `.webmanifest`, `.svg`, `.js` and `.html`, so the manifest and the icons are reachable signed out. `bun run scan:design-tokens` counts raw 6-digit hex literals in `apps/web/app/**/*.ts`, so the manifest writes its colours as `rgb()`; `.svg` files are not scanned. The old ticket's DONE (`bun run typecheck` only) proved nothing; this one checks what the server actually serves.
+- **GOAL:** the web app serves a valid manifest (name, short name, start URL, standalone display, ground colours, an `any` and a `maskable` icon) at `/manifest.webmanifest`, every page links it, and both icons are served.
+- **SCOPE:** `apps/web/app/manifest.ts` · `apps/web/public/icons/icon.svg` · `apps/web/public/icons/icon-maskable.svg` · test: `tests/e2e/screens/pwa-manifest.spec.ts`.
+- **MUTATES:** `apps/web/app/manifest.ts` (new) · `apps/web/public/icons/icon.svg` (new; creates the folder) · `apps/web/public/icons/icon-maskable.svg` (new) · `tests/e2e/screens/pwa-manifest.spec.ts` (new) · new public routes `/manifest.webmanifest`, `/icons/icon.svg`, `/icons/icon-maskable.svg`. No dependency, config, schema or env change.
+- **STEPS:**
+  1. Code-map check: `ls apps/web/app | grep -i manifest` prints nothing; `test -d apps/web/public/icons` fails; `grep -n "webmanifest" apps/web/proxy.ts` prints the matcher line; `grep -n "themeColor" -A3 apps/web/app/layout.tsx` shows `#F3EEE4` / `#161412`.
+  2. Create `apps/web/app/manifest.ts` exactly as SPEC.
+  3. Create the two SVG files exactly as SPEC (byte-for-byte content given).
+  4. Create `tests/e2e/screens/pwa-manifest.spec.ts`: imports `{ test, expect }` from `@playwright/test`; first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; the 3 TESTS bullets, each run **once** (no viewport / language loop: nothing visual is asserted).
+  5. Run DONE, then `bun run scan:design-tokens`, `bun run typecheck`, `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/pwa-manifest.spec.ts --reporter=line` → `3 passed`, 0 failed; `bun run scan:design-tokens` → exit 0.
+- **EVIDENCE:** the Playwright summary, the scan output and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** add a dependency (`next-pwa`, `workbox-*`, …) or touch `package.json`, `bun.lock`, `next.config.ts`; edit `apps/web/app/layout.tsx` (Next injects the link itself; theme-colour meta is TFV2-0314's); reference an icon on a CDN or a live URL; write hex colours in `manifest.ts`; add a service worker (TFV2-0313a); touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0312 / evidence: <DONE output> / changed: apps/web/app/manifest.ts, apps/web/public/icons/icon.svg, apps/web/public/icons/icon-maskable.svg, tests/e2e/screens/pwa-manifest.spec.ts / unknowns: installability in Chrome is not checked locally (Playwright contexts are incognito; Chrome reports "in-incognito") / notes for ticket sync`; list STEPS 1–5 each with its evidence.
+- **SPEC:**
+  ```ts
+  // apps/web/app/manifest.ts
+  import type { MetadataRoute } from "next";
+
+  /** Web app manifest (PRD F-120). Colours are the light --tp-ground (#F3EEE4), written as rgb() for scan:design-tokens. */
+  export default function manifest(): MetadataRoute.Manifest {
+    return {
+      id: "/",
+      name: "Tempo Flow",
+      short_name: "Tempo",
+      description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
+      start_url: "/today",
+      scope: "/",
+      display: "standalone",
+      background_color: "rgb(243, 238, 228)",
+      theme_color: "rgb(243, 238, 228)",
+      icons: [
+        { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+        { src: "/icons/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+      ],
+    };
+  }
+  ```
+  `apps/web/public/icons/icon.svg` (rounded square in `--tp-accent` `#A3461F` with a white "T" built from two rectangles; no text node, so it renders the same everywhere):
+  ```xml
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" rx="112" fill="#A3461F"/><rect x="136" y="128" width="240" height="56" rx="8" fill="#FFFFFF"/><rect x="228" y="128" width="56" height="256" rx="8" fill="#FFFFFF"/></svg>
+  ```
+  `apps/web/public/icons/icon-maskable.svg` (full-bleed square; the "T" stays inside the central 80 % safe zone, x and y 102–410):
+  ```xml
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" fill="#A3461F"/><rect x="160" y="168" width="192" height="44" rx="6" fill="#FFFFFF"/><rect x="234" y="168" width="44" height="176" rx="6" fill="#FFFFFF"/></svg>
+  ```
+  Each SVG file is exactly that one line plus a trailing newline. Auth rule: public (static assets, no user data). Errors: none. Limits: two icons, no raster files.
+- **TESTS:** (each bullet runs once; uses the Playwright `request` fixture or `page` against the local `webServer`)
+  1. Given the dev server / When `request.get("/manifest.webmanifest")` / Then the status is 200, the `content-type` header contains `application/manifest+json`, and the parsed JSON deep-equals `{ id: "/", name: "Tempo Flow", short_name: "Tempo", description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.", start_url: "/today", scope: "/", display: "standalone", background_color: "rgb(243, 238, 228)", theme_color: "rgb(243, 238, 228)", icons: [ { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }, { src: "/icons/icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" } ] }`.
+  2. Given the manifest / When each icon `src` is requested / Then each answers 200 with a `content-type` containing `image/svg+xml`, and each body starts with `<svg` and contains `viewBox="0 0 512 512"`.
+  3. Given `page.goto("/")` (a public route) / Then `head link[rel="manifest"]` exists with `href` `/manifest.webmanifest` (Next.js may append a query string; the spec compares `new URL(href, page.url()).pathname`).
+- **NUMBERS:** manifest fields required for installability present: `name`/`short_name`, `start_url`, `display: "standalone"`, icons with a scalable (`sizes: "any"`) and a `maskable` entry (web.dev "What does it take to be installable?", https://web.dev/articles/install-criteria; bullet 1) · maskable safe zone = central 80 % (W3C Web App Manifest, "maskable" purpose, https://www.w3.org/TR/appmanifest/#icon-masks; maskable "T" spans 160–352 × 168–344 inside 102–410) · Chrome installability check: UNKNOWN locally (incognito contexts), check on preview · raw hex in `apps/web/app`: unchanged (`scan:design-tokens` exit 0) · 3 of 3 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0313a — PWA: service worker with an offline fallback (`apps/web/public/sw.js`)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-120 (web PWA: never a dead page offline); the old TFV2-0313 (service worker + offline page + registration in one ticket, `apps/web/app/sw.ts`, OPEN on a cache budget) was more than one unit and could not work as written: Next.js does not compile `app/sw.ts` into a worker, and a precache of the app shell needs the build's hashed asset list (a `next-pwa` / `workbox` dependency = config lane). Decision: a dependency-free, hand-written worker in `apps/web/public/` (served as-is at `/sw.js`; `apps/web/proxy.ts`'s matcher skips `.js` paths) that precaches **only** the static offline page and answers a failed page navigation with it. It never caches pages, API responses or Convex traffic: Tempo's HTML embeds the signed-in session state from `ConvexAuthNextjsServerProvider` (`apps/web/app/layout.tsx`), so caching pages would store credentials. Split: this ticket = the worker; TFV2-0313b = the offline page; TFV2-0313c = registration. Because no asset list is precached, the old OPEN "shell cache size budget" no longer applies (the cache holds one small HTML file).
+- **GOAL:** `apps/web/public/sw.js` installs a cache `tempo-offline-v1` holding `/offline.html`, drops older `tempo-offline-*` caches on activate, passes every page navigation to the network and falls back to the cached `/offline.html` only when the network fails, proven by a unit test that runs the real file against fakes.
+- **SCOPE:** `apps/web/public/sw.js` · test: `apps/web/lib/pwa/serviceWorker.test.ts`.
+- **MUTATES:** `apps/web/public/sw.js` (new) · `apps/web/lib/pwa/serviceWorker.test.ts` (new; creates `apps/web/lib/pwa/`) · new public URL `/sw.js` (not registered by anything until TFV2-0313c). No dependency, config, schema or env change.
+- **STEPS:**
+  1. Code-map check: `ls apps/web/public` shows no `sw.js` and no `offline.html`; `grep -n "js(?!on)" apps/web/proxy.ts` prints the matcher line that skips `.js` paths; `grep -rn "serviceWorker" apps/web --include=*.ts --include=*.tsx -l` prints nothing.
+  2. Create `apps/web/public/sw.js` exactly as SPEC (plain JavaScript, no imports, no build step).
+  3. Create `apps/web/lib/pwa/serviceWorker.test.ts` with the 6 TESTS cases using the loader in SPEC.
+  4. Run DONE, then `bun run lint` (if Biome reports `sw.js`, fix the reported formatting only; the logic stays as SPEC).
+- **DONE:** `bun test apps/web/lib/pwa/serviceWorker.test.ts` → `6 pass`, `0 fail`.
+- **EVIDENCE:** the `bun test` summary and the lint exit code, pasted into the PR.
+- **DO NOT:** cache any request other than `/offline.html` (no `cache.put`, no runtime caching of `/_next/*`, pages, `/api/*` or Convex URLs); call `clients.claim()`; intercept non-navigation requests; register the worker anywhere (TFV2-0313c); create `offline.html` (TFV2-0313b); add `next-pwa`, `workbox-*` or any dependency; edit `next.config.ts` or `proxy.ts`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313a / evidence: <DONE output> / changed: apps/web/public/sw.js, apps/web/lib/pwa/serviceWorker.test.ts / unknowns / notes for ticket sync: the old "shell cache size budget" OPEN is moot (one cached file)`; list STEPS 1–4 each with its evidence.
+- **SPEC:**
+  ```js
+  // apps/web/public/sw.js
+  /* Tempo service worker (TFV2-0313a): offline fallback page only. It never caches pages or data. */
+  const CACHE = "tempo-offline-v1";
+  const OFFLINE_URL = "/offline.html";
+
+  self.addEventListener("install", (event) => {
+    event.waitUntil(
+      caches
+        .open(CACHE)
+        .then((cache) => cache.add(new Request(OFFLINE_URL, { cache: "reload" })))
+        .then(() => self.skipWaiting()),
+    );
+  });
+
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.filter((key) => key.startsWith("tempo-offline-") && key !== CACHE).map((key) => caches.delete(key)))),
+    );
+  });
+
+  self.addEventListener("fetch", (event) => {
+    if (event.request.mode !== "navigate") return;
+    event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL).then((cached) => cached || Response.error())));
+  });
+  ```
+  **Test loader** (in the test file): `const src = readFileSync(join(import.meta.dir, "../../public/sw.js"), "utf8");` and a `load(fakes)` helper that builds `handlers: Record<string, (event: unknown) => void>`, a fake `self = { addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting: mock(async () => {}) }`, a fake `caches = { open, keys, delete, match }` (each a `mock` from `bun:test`), a fake `fetch`, `class FakeRequest { constructor(public url: string, public init?: { cache?: string }) {} }` and `const FakeResponse = { error: () => ({ type: "error" }) }`, then runs `new Function("self", "caches", "fetch", "Request", "Response", src)(self, caches, fetch, FakeRequest, FakeResponse)`. A fake event is `{ request?: { mode: string }, waitUntil(p) { this.p = p; }, respondWith(p) { this.r = p; } }`; tests `await` `event.p` / `event.r`. Auth: none (static asset). Errors: a failed navigation never throws to the page; with no cached page it answers `Response.error()`. Limits: one cached file, one cache name.
+- **TESTS:** (bun:test; `describe("sw.js", …)`)
+  1. Given the loaded worker / When the `install` handler runs with a fake event / Then `caches.open` was called with `"tempo-offline-v1"`, the opened cache's `add` received one `FakeRequest` whose `url` is `"/offline.html"` and `init.cache` is `"reload"`, and `self.skipWaiting` was called once after `add` resolved.
+  2. Given `caches.keys` resolves `["tempo-offline-v0", "tempo-offline-v1", "other-app"]` / When `activate` runs / Then `caches.delete` was called exactly once, with `"tempo-offline-v0"`.
+  3. Given a fetch event with `request.mode === "image"` / When `fetch` runs / Then `respondWith` was not called and the fake `fetch` was not called.
+  4. Given a navigation event and a fake `fetch` resolving `{ ok: true, id: "net" }` / When `fetch` runs / Then `respondWith` was called and its promise resolves to that same object, and `caches.match` was not called.
+  5. Given a navigation event, a fake `fetch` rejecting `new TypeError("Failed to fetch")` and `caches.match("/offline.html")` resolving `{ id: "offline" }` / When `fetch` runs / Then the `respondWith` promise resolves to `{ id: "offline" }` and `caches.match` was called with `"/offline.html"`.
+  6. Given a navigation event, a rejecting `fetch` and `caches.match` resolving `undefined` / When `fetch` runs / Then the `respondWith` promise resolves to `{ type: "error" }`.
+- **NUMBERS:** cached entries = exactly 1 (`/offline.html`; bullet 1) · stale caches removed on activate (bullet 2) · non-navigation requests untouched (bullet 3) · precache size: one static HTML file (TFV2-0313b; no budget needed, replacing the old UNKNOWN) · 6 of 6 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0313b — PWA: static offline page (`apps/web/public/offline.html`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0313a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0000b, TFV2-0313a.
+- **WHY:** PRD F-120; the worker of TFV2-0313a answers a failed navigation with `/offline.html`. It must be a static, self-contained file: a Next route (`app/offline/page.tsx`) would pass through the auth proxy (redirect to `/sign-in` when signed out), would embed session state in its HTML, and needs hashed JS/CSS that are not cached. `apps/web/proxy.ts`'s matcher skips `.html` paths, so `/offline.html` is public. Because the page cannot load `tokens.css` or `tempo.css`, it declares the few `--tp-*` custom properties it uses inline, with the exact values of `docs/design/v3/tokens.css` (light lines 25–36, dark lines 125–136), and uses only those variables in its rules. Language follows the app's rule (`apps/web/lib/i18n.ts` `resolveLang`: `?lang=` → `localStorage["tempo-lang"]` → English; `dirFor("he") === "rtl"`).
+- **GOAL:** `/offline.html` tells the person, in English or Hebrew with the right direction, that the page needs a connection and their data is safe, reloads by itself when the connection returns or on "Try again", and is what the worker shows when a navigation fails offline.
+- **SCOPE:** `apps/web/public/offline.html` · test: `tests/e2e/screens/offline-page.spec.ts`.
+- **MUTATES:** `apps/web/public/offline.html` (new) · `tests/e2e/screens/offline-page.spec.ts` (new) · new public URL `/offline.html`. No dependency, config, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/public/offline.html` fails; `test -e apps/web/public/sw.js` succeeds (else `blocked: missing TFV2-0313a`); `grep -n "html?" apps/web/proxy.ts` prints the matcher line; `grep -n "LANG_STORAGE_KEY = " apps/web/lib/i18n.ts` prints `"tempo-lang"`.
+  2. Create `apps/web/public/offline.html` exactly as SPEC.
+  3. Create `tests/e2e/screens/offline-page.spec.ts` with the CONVENTIONS §22 spec skeleton but opening the page with `page.goto("/offline.html?lang=" + lang)` (it is not a harness or a screen route), the 4 looped TESTS bullets and the 2 "once" bullets.
+  4. Run DONE, then `bun run lint`.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/offline-page.spec.ts --reporter=line` → `18 passed`, 0 failed.
+- **EVIDENCE:** the Playwright summary and the lint exit code, pasted into the PR.
+- **DO NOT:** load any external file (no stylesheet, script, font or image URL; everything inline); include user data or account details; use colours other than the inline `--tp-*` values listed; auto-reload on a timer (only on `online` or the button); create a Next route `/offline`; edit `sw.js`, `proxy.ts` or `layout.tsx`; touch `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313b / evidence: <DONE output> / changed: apps/web/public/offline.html, tests/e2e/screens/offline-page.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
+- **SPEC:** the whole file, exactly:
+  ```html
+  <!doctype html>
+  <html lang="en" dir="ltr">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo · Offline</title>
+  <style>
+  :root { --tp-ground: #F3EEE4; --tp-paper: #FBF9F4; --tp-ink: #1B1916; --tp-ink-muted: #57514A; --tp-line-control: #877C6B; --tp-accent: #A3461F; }
+  @media (prefers-color-scheme: dark) { :root { --tp-ground: #161412; --tp-paper: #201D1A; --tp-ink: #F2ECE2; --tp-ink-muted: #B5AC9F; --tp-line-control: #7F7669; --tp-accent: #EE9468; } }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--tp-ground); color: var(--tp-ink); font-family: Georgia, "Times New Roman", serif; }
+  main { max-width: 34rem; padding: 32px 24px; display: grid; gap: 16px; text-align: center; }
+  h1 { margin: 0; font-size: 30px; font-weight: 500; line-height: 1.2; }
+  p { margin: 0; color: var(--tp-ink-muted); font-family: system-ui, sans-serif; font-size: 17px; line-height: 1.6; }
+  button { justify-self: center; min-height: 44px; padding-inline: 20px; border: 1px solid var(--tp-line-control); border-radius: 10px; background: var(--tp-paper); color: var(--tp-ink); font: 600 15px system-ui, sans-serif; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--tp-accent); outline-offset: 2px; }
+  </style>
+  </head>
+  <body>
+  <main>
+  <h1 id="off-title">You're offline.</h1>
+  <p id="off-body">Tempo needs a connection to open this page. Your data is safe. This page reloads by itself when the connection is back.</p>
+  <button type="button" id="off-retry">Try again</button>
+  </main>
+  <script>
+  (function () {
+    var COPY = {
+      en: { doc: "Tempo · Offline", title: "You're offline.", body: "Tempo needs a connection to open this page. Your data is safe. This page reloads by itself when the connection is back.", retry: "Try again" },
+      he: { doc: "Tempo · אין חיבור", title: "אין חיבור כרגע.", body: "Tempo צריך חיבור כדי לפתוח את הדף הזה. המידע שלך שמור. הדף ייטען מחדש מעצמו כשהחיבור יחזור.", retry: "לנסות שוב" }
+    };
+    var param = new URLSearchParams(location.search).get("lang");
+    var stored = null;
+    try { stored = localStorage.getItem("tempo-lang"); } catch (e) { stored = null; }
+    var lang = param === "en" || param === "he" ? param : stored === "en" || stored === "he" ? stored : "en";
+    var copy = COPY[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
+    document.title = copy.doc;
+    document.getElementById("off-title").textContent = copy.title;
+    document.getElementById("off-body").textContent = copy.body;
+    document.getElementById("off-retry").textContent = copy.retry;
+    document.getElementById("off-retry").addEventListener("click", function () { location.reload(); });
+    window.addEventListener("online", function () { location.reload(); });
+  })();
+  </script>
+  </body>
+  </html>
+  ```
+  **Copy** (EN / HE, gender-neutral; "Your data is safe." and "Try again" are the §12 glossary entries): document title "Tempo · Offline" / "Tempo · אין חיבור"; heading "You're offline." / "אין חיבור כרגע."; body "Tempo needs a connection to open this page. Your data is safe. This page reloads by itself when the connection is back." / "Tempo צריך חיבור כדי לפתוח את הדף הזה. המידע שלך שמור. הדף ייטען מחדש מעצמו כשהחיבור יחזור."; button "Try again" / "לנסות שוב". (The §12 offline banner line "Changes save when you're back" is not used here: on this page nothing is being edited.) **States:** one page; `online` event / button → reload. **RTL:** `dir="rtl"` for Hebrew; centred text, logical `padding-inline`. **Keyboard / screen reader:** one native button (Tab, Enter, Space), visible 2 px focus ring; the `h1` names the page. **Breakpoints:** one centred column, max 34rem, at 390 / 768 / 1024 / 1280. **Motion:** none.
+- **TESTS:** (bullets 1–4 run at both viewports × both languages after `page.goto("/offline.html?lang=" + lang)`, starting `const errors = trackConsoleErrors(page)` and ending `expect(errors).toEqual([])`; bullets 5–6 run once)
+  1. Given the page / Then `expectDir(page, lang)` passes, the `h1` reads "You're offline." (HE "אין חיבור כרגע."), `#off-body` reads the SPEC body for `lang`, the button reads "Try again" (HE "לנסות שוב"), and `document.title` is "Tempo · Offline" (HE "Tempo · אין חיבור").
+  2. Given the page / When "Try again" is clicked / Then a new `load` event fires (`await Promise.all([page.waitForEvent("load"), button.click()])`).
+  3. Given the page / When `window.dispatchEvent(new Event("online"))` runs / Then a new `load` event fires.
+  4. Given the page / Then `expectTargetSize(page, "main")` and `expectMotionBudget(page, "main")` pass, and after `Tab` the button has a computed `outline-width` of `2px`.
+  5. (once) Given `localStorage["tempo-lang"] = "he"` set on `/offline.html` and the page reloaded without `?lang=` / Then `<html lang="he" dir="rtl">` and the `h1` reads "אין חיבור כרגע.".
+  6. (once) Given `page.goto("/")`, then `await page.evaluate(async () => { await navigator.serviceWorker.register("/sw.js"); await navigator.serviceWorker.ready; })` / When `await context.setOffline(true)` and `await page.goto("/sign-in")` / Then the `h1` reads "You're offline." (the worker answered the failed navigation with the cached page); finally `await context.setOffline(false)`.
+- **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; button 44 px; bullet 4) · focus visible 2 px (WCAG 2.2 SC 2.4.7; bullet 4) · text contrast ≥ 4.5:1: ink `#1B1916` on ground `#F3EEE4` and ink-muted `#57514A` on ground, the `docs/design/v3/tokens.css` pairs the app already uses (WCAG 2.2 SC 1.4.3) · motion 0 (bullet 4) · 18 of 18 pass.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0313c — PWA: register the service worker in production (`apps/web/lib/pwa/registerServiceWorker.ts`)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0313a, TFV2-0313b · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0313a, TFV2-0313b.
+- **WHY:** PRD F-120. TFV2-0313a/b ship `/sw.js` and `/offline.html`; nothing registers the worker yet. Decision: register it from the root layout **only when `NODE_ENV === "production"`**. Under `next dev` (the Playwright `webServer`) a registered worker would sit in front of every navigation of every e2e spec (Playwright's `page.route` does not see requests a service worker handles) and would outlive hot reloads; the worker's own behaviour is already proven in dev by TFV2-0313a (unit) and TFV2-0313b bullet 6 (it registers the worker itself). Code truth: `apps/web/app/layout.tsx` imports `Providers`, `LocaleProvider`, `ThemeProvider` and renders `<body className="antialiased" suppressHydrationWarning><ThemeProvider><LocaleProvider><Providers>{children}</Providers></LocaleProvider></ThemeProvider></body>`; `layout.tsx` is a shared root file with no CONVENTIONS §17 entry, so this ticket names its two exact lines. TFV2-0314 (install prompt + meta, a later range) also edits `layout.tsx`.
+- **GOAL:** in a production build every page registers `/sw.js` (scope `/`) once after hydration; in development and in browsers without service workers nothing is registered; the decision is a pure, unit-tested function.
+- **SCOPE:** `apps/web/lib/pwa/registerServiceWorker.ts` · `apps/web/components/pwa/ServiceWorkerRegister.tsx` · `apps/web/app/layout.tsx` (two exact lines) · test: `apps/web/lib/pwa/registerServiceWorker.test.ts`.
+- **MUTATES:** `apps/web/lib/pwa/registerServiceWorker.ts` (new) · `apps/web/components/pwa/ServiceWorkerRegister.tsx` (new; creates the folder) · `apps/web/app/layout.tsx` (edit: one import line + one element line) · `apps/web/lib/pwa/registerServiceWorker.test.ts` (new) · runtime: a service-worker registration in production browsers. No dependency, config, schema or env change.
+- **STEPS:**
+  1. Code-map check: `test -e apps/web/public/sw.js && test -e apps/web/public/offline.html` succeeds (else `blocked: missing TFV2-0313a` / `TFV2-0313b`); `grep -n "ServiceWorker" apps/web/app/layout.tsx` prints nothing; `grep -n '<body className="antialiased" suppressHydrationWarning>' apps/web/app/layout.tsx` prints one line; `grep -n 'import { themeInitScript } from "@/lib/theme-script";' apps/web/app/layout.tsx` prints one line.
+  2. Create `registerServiceWorker.ts` exactly as SPEC.
+  3. Create `ServiceWorkerRegister.tsx` exactly as SPEC.
+  4. Edit `layout.tsx`: insert `import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";` on the line after `import { ThemeProvider } from "@/components/providers/ThemeProvider";`, and insert `          <ServiceWorkerRegister />` as the first child of `<body …>` (the line before `<ThemeProvider>`). Nothing else in the file changes.
+  5. Create `registerServiceWorker.test.ts` with the 5 TESTS cases.
+  6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring --reporter=line` (dev mode registers nothing, the wiring specs stay green), `bun run lint`.
+- **DONE:** `bun test apps/web/lib/pwa/registerServiceWorker.test.ts` → `5 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the `bun test` summary, the wiring Playwright summary, and the typecheck / lint exit codes, pasted into the PR.
+- **DO NOT:** register in development or behind a query flag; register any path other than `/sw.js` or a scope other than `/`; unregister existing workers; add `theme-color` / `apple-mobile-web-app-*` meta or an install prompt (TFV2-0314); change any other line of `layout.tsx`; edit `sw.js` or `offline.html`; touch `package.json`, `next.config.ts`, `convex/**`, `.github/**`, `.env*`.
+- **REPORT:** AGENTS.md format — `status / ticket: TFV2-0313c / evidence: <DONE output> / changed: apps/web/lib/pwa/registerServiceWorker.ts, apps/web/components/pwa/ServiceWorkerRegister.tsx, apps/web/app/layout.tsx, apps/web/lib/pwa/registerServiceWorker.test.ts / unknowns: production registration is checked on preview, not locally / notes for ticket sync: TFV2-0314 must keep the ServiceWorkerRegister line in layout.tsx`; list STEPS 1–6 each with its evidence.
+- **SPEC:**
+  ```ts
+  // apps/web/lib/pwa/registerServiceWorker.ts — pure (no React, no Next)
+  export type SwRegistrationResult = "registered" | "skipped" | "failed";
+  export type SwContainerLike = { register: (scriptUrl: string, options: { scope: string }) => Promise<unknown> };
+  export const SERVICE_WORKER_URL = "/sw.js";
+  /** Registers /sw.js (scope "/") only in production and only when the browser has service workers. Never throws. */
+  export async function registerServiceWorker(env: { NODE_ENV?: string }, container: SwContainerLike | undefined): Promise<SwRegistrationResult> {
+    if (env.NODE_ENV !== "production" || container === undefined) return "skipped";
+    try {
+      await container.register(SERVICE_WORKER_URL, { scope: "/" });
+      return "registered";
+    } catch {
+      return "failed";
+    }
+  }
+  ```
+  ```tsx
+  // apps/web/components/pwa/ServiceWorkerRegister.tsx
+  "use client";
+  import { useEffect } from "react";
+  import { registerServiceWorker } from "@/lib/pwa/registerServiceWorker";
+
+  /** Mounted once in the root layout; renders nothing. */
+  export function ServiceWorkerRegister(): null {
+    useEffect(() => {
+      const container = typeof navigator !== "undefined" && "serviceWorker" in navigator ? navigator.serviceWorker : undefined;
+      void registerServiceWorker({ NODE_ENV: process.env.NODE_ENV }, container);
+    }, []);
+    return null;
+  }
+  ```
+  `layout.tsx` additions (exact):
+  ```diff
+   import { ThemeProvider } from "@/components/providers/ThemeProvider";
+  +import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+  …
+           <body className="antialiased" suppressHydrationWarning>
+  +          <ServiceWorkerRegister />
+             <ThemeProvider>
+  ```
+  Copy: none (renders nothing). States: registered / skipped / failed (returned, never shown; a failed registration leaves the app working online). Auth: none. Errors: none thrown (a rejected `register` returns `"failed"`).
+- **TESTS:** (bun:test; the fake container is `{ register: mock(async () => ({})) }`)
+  1. Given `env = { NODE_ENV: "development" }` and a fake container / When `registerServiceWorker` runs / Then it returns `"skipped"` and `register` was not called.
+  2. Given `env = { NODE_ENV: "test" }` / When it runs / Then it returns `"skipped"` and `register` was not called.
+  3. Given `env = { NODE_ENV: "production" }` and a fake container / When it runs / Then it returns `"registered"` and `register` was called once with `("/sw.js", { scope: "/" })`.
+  4. Given `env = { NODE_ENV: "production" }` and `container = undefined` / When it runs / Then it returns `"skipped"`.
+  5. Given `env = { NODE_ENV: "production" }` and `register` rejecting `new Error("SecurityError")` / When it runs / Then it resolves `"failed"` (no throw).
+- **NUMBERS:** registrations per page load ≤ 1 (one `useEffect` with `[]` in the root layout) · development registrations = 0 (bullets 1–2) · existing wiring specs unchanged (all pass) · 5 of 5 pass · production behaviour on preview: UNKNOWN until checked there (not a ticket gate).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
 
 ### TFV2-0314 — PWA install prompt + meta
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0312 · **Folds-in:** none

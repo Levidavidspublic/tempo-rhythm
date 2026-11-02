@@ -197,7 +197,7 @@ It is a shared file: **no build ticket edits it.** Every web component ticket sa
     `(min-width: 1024px)`, `(min-width: 1280px)`.
 - Screens never get a stylesheet: a screen composes components and uses only their classes plus the
   existing shell classes (`TempoShell`, `.tp-page`, `.tp-pagehead`, `.tp-section`).
-- Mobile uses NativeWind `className` strings in the component file; no separate stylesheet.
+- Mobile v3 code styles with the palette from `usePrefs().colors` (`apps/mobile/components/v3/prefs.tsx`) in React Native `style` objects inside the component file, as `apps/mobile/components/v3/*.tsx` does today; no separate stylesheet.
 
 ## 11. Copy and locale rule
 
