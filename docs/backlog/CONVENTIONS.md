@@ -540,3 +540,50 @@ Build tickets copy this line exactly:
 
 CFG tickets add `· 11 config lane: built by Amit or a convex-arch run only.` `OPEN` tickets write only
 `n/a — OPEN (not buildable until Amit answers).`
+
+## 22. Shared code facts and the standard spec skeleton (UI tickets cite these instead of a preamble)
+
+Every ticket must stand alone as one GitHub issue. A ticket never relies on a range preamble or a
+"shared facts" block in the backlog; it cites a section here, or writes the fact inline.
+
+**The standard spec skeleton** (a ticket may write "the §22 spec skeleton"):
+- The spec imports `{ test, expect }` from `@playwright/test` and the helpers it uses from
+  `../helpers/harness` (TFV2-0000b). Its first statement is
+  `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`.
+- Every TESTS bullet becomes one `test()` per combination inside
+  `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const) { … }`,
+  named `"<bullet name> · ${vpName} · ${lang}"`, each calling `page.setViewportSize(vp)` and then
+  `openHarness(page, "<id>", { lang })` (component) or `openScreen(page, "<route>", { state, lang })`
+  (screen). A spec with k bullets therefore reports `4×k passed`; a bullet that the ticket marks
+  "once" runs a single time and adds 1.
+- Every test starts `const errors = trackConsoleErrors(page);` and ends `expect(errors).toEqual([])` for
+  harness specs. Screen (route) specs first drop messages matching
+  `/example\.convex\.cloud|WebSocket/i` (the placeholder Convex URL under the Playwright `webServer`
+  cannot connect), then assert `[]`.
+- In a harness page every state section is stacked, so every locator is scoped to its section:
+  `page.getByTestId("<id>-<state>").locator(…)`.
+
+**Code facts (read from `integration`):**
+- Icons: `TpIcon` from `@/components/tempo/TpIcon`, props `{ name: string; size?: "sm" | "md" | "lg"; flip?: boolean; className?: string }`,
+  renders `<svg class="tp-icon" aria-hidden="true"><use href="#i-<name>"/></svg>`. The sprite
+  (`TpIconSprite`) is not mounted in the harness: specs assert the `use[href="#i-<name>"]` element.
+- `apps/web/app/tempo.css`: the global focus ring is `:focus-visible` (line 91,
+  `var(--tp-focus-w) solid var(--tp-accent)`); the skeleton shimmer `.tp-skeleton` is a 1.4 s
+  infinite loop (line 465), so no spec runs `expectMotionBudget` on a `loading` section; reduced motion
+  sets every duration to `0.01ms` (line 480).
+- Page-level classes for v3 screens live in `apps/web/app/v3/*.css` (`habits.css`, `goals.css`,
+  `you.css`, `settings.css`, `extras.css`, `coach-chat.css`), imported globally by `globals.css`; a
+  screen or View may use them and never edits them.
+- `useOnline()` (`apps/web/lib/useOnline.ts`) starts `true` and follows `online`/`offline` events.
+- `ProfileReady` (`apps/web/components/today/ProfileReady.tsx`, props `{ children: ReactNode; fallback?: ReactNode }`)
+  mounts children only once `users.getProfile` returns a row; signed out under the E2E bypass it
+  renders children as they are. Routes wrap their data component in it because every query calls
+  `requireUser`.
+- Dates in Views are formatted with
+  `Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { …, timeZone: "UTC" })` over
+  `new Date(Date.UTC(y, m - 1, d, 12))` of a `YYYY-MM-DD` key, so output never depends on the test
+  machine's zone. "Today" is computed by the route from `userPreferences.timeZone`, never by a View.
+- Screen pattern for an existing screen whose components call Convex: an `a` ticket builds a
+  props-only View component (web component kind, harness + spec), a `b` ticket replaces the route
+  `page.tsx` to feed it (screen kind, fixtures + wiring line + spec). The old screen component stays
+  in the repo, unimported, unless a ticket deletes it by name.
