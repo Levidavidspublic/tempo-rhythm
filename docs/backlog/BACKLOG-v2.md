@@ -14843,6 +14843,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** inherits TFV2-0174a (Q-14: Embedding model and vector dimension.; Q-12: HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted?); inherits TFV2-0183a (Q-14: Embedding model and vector dimension.); inherits TFV2-0184a (Q-14: Embedding model and vector dimension.) — Amit.
 
 ### TFV2-0185 — Memory: Hebrew embedding eval script (`scripts/embedding-eval.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -14852,7 +14853,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `scripts/embedding-eval.ts` (new) · `tests/unit/embedding_eval.test.ts` (new). No table, env, route or schema change. No dataset file is committed (Amit's notes are private; he passes the path at run time).
 - **STEPS:** 1) Code-map check: `ls scripts | grep -i embed` (no output); read `tests/unit/reviewEvaluator.test.ts` lines 1–6 (how a script is imported from a unit test) and `convex/lib/ai_router.ts` lines 35–37 (DeepInfra base URL style; do not import it — it is Convex code). 2) Create `scripts/embedding-eval.ts` with exactly the SPEC exports, no dependency imports (Bun built-ins and `fetch` only). Put the CLI in `if (import.meta.main) { … }` so importing the file runs nothing. 3) Create `tests/unit/embedding_eval.test.ts` (`import { describe, expect, test } from "bun:test"; import { … } from "../../scripts/embedding-eval";`) with the 12 TESTS cases; every network case passes a stub `fetchImpl` and the fake key `"test-key"`. 4) Run DONE.
 - **DONE:** `bun test tests/unit/embedding_eval.test.ts` → `12 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR. The real run (`bun scripts/embedding-eval.ts <dataset.json>`) is Amit's and is reported as `UNKNOWN: real eval run (needs Amit's dataset and DEEPINFRA_API_KEY)`.
+- **EVIDENCE:** the summary of `bun test tests/unit/embedding_eval.test.ts` pasted into the PR. The real run (`bun scripts/embedding-eval.ts <dataset.json>`) is Amit's and is reported as `UNKNOWN: real eval run (needs Amit's dataset and DEEPINFRA_API_KEY)`.
 - **DO NOT:** run the CLI against DeepInfra (paid API; Amit runs it); print, log or put the key, a request body or a response body in any message; commit a dataset or any note text; import `convex/**`; add a dependency; lock a model anywhere (no change to `convex/lib/ai_router.ts`); touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0185 / evidence: <DONE output> / changed: scripts/embedding-eval.ts, tests/unit/embedding_eval.test.ts / unknowns: real eval run / notes for ticket sync` (AGENTS.md format); list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -14898,7 +14899,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given question `"מה אני אוהב?"` / When `queryText` runs for each model / Then Qwen gives `"Instruct: Given a question, retrieve the note that answers it\nQuery:מה אני אוהב?"`, e5 gives the same with `"Query: "` (one space), bge-m3 gives `"מה אני אוהב?"`.
   7. Given `{ notes: [{ id: "n1", text: "Likes tea" }], questions: [{ question: "Tea?", lang: "en", noteId: "n1", extra: 1 }] }` / When `parseDataset` runs / Then it returns `{ notes: [{ id: "n1", text: "Likes tea" }], questions: [{ question: "Tea?", lang: "en", noteId: "n1" }] }`.
   8. Given `null`; a question with `lang: "fr"`; two notes with id `"n1"`; a question with `noteId: "n9"` / When `parseDataset` runs on each / Then it throws, in order, `"Dataset must have notes and questions arrays."`, `"Dataset has an invalid note or question."`, `"Note ids must be unique."`, `"A question points at a missing note."`.
-  9. Given 65 texts and a stub that answers each request with `{ data: input.map(() => ({ embedding: [3, 4, ...Array(4094).fill(0)] })) }` / When `embedAll("BAAI/bge-m3", texts, "test-key", stub)` runs / Then the stub was called twice (batches of 64 and 1), each with `DEEPINFRA_EMBEDDINGS_URL`, header `Authorization: "Bearer test-key"` and body `{ model: "BAAI/bge-m3", input: <that batch> }`, and the result has 65 vectors of length 1024 starting `0.6, 0.8`.
+  9. Given 65 texts and a stub that answers each request with `{ data: input.map(() => ({ embedding: [3, 4, ...Array(4094).fill(0)] })) }` / When `embedAll("BAAI/bge-m3", texts, "test-key", stub)` runs / Then the stub was called twice (batches of 64 and 1), each with `DEEPINFRA_EMBEDDINGS_URL`, header `Authorization: "Bearer test-key"` and body `{ model: "BAAI/bge-m3", input: <that batch> }`, and the result has 65 vectors of length 1024 starting `0.6, 0.8`; and given exactly 64 texts / Then the stub was called once (`EVAL_BATCH` = 64 fits one request).
   10. Given a stub returning HTTP 500 / When `embedAll` runs / Then it rejects with `"DeepInfra embeddings failed: HTTP 500"` and the message does not contain `"test-key"`; given a stub returning one vector for two texts / Then it rejects with `"DeepInfra embeddings returned the wrong count"`.
   11. Given notes `A`, `B`, `C`, `D` (texts `"Note A"`…`"Note D"`), questions `{ question: "QA", lang: "he", noteId: "A" }`, `{ question: "QB", lang: "en", noteId: "B" }`, `{ question: "QX", lang: "en", noteId: "A" }`, and a stub that returns 1,024-length vectors by exact input text — `"Note A"`…`"Note D"` → one-hot at index 0…3, `"QA"` → one-hot 0, `"QB"` → one-hot 1, `"QX"` → `0.1` at 0, `0.5` at 1, `0.4` at 2, `0.3` at 3 (so its top 3 are B, C, D) / When `evaluateModel("BAAI/bge-m3", dataset, "test-key", stub)` runs / Then it returns `{ model: "BAAI/bge-m3", he: 1, en: 0.5, all: 2 / 3 }` and the stub's first request held the four note texts, the second the three question texts.
   12. Given `[{ model: "BAAI/bge-m3", he: 0.85, en: 0.9, all: 0.875 }]` / When `formatResults` runs / Then it equals `"model | he | en | all\nBAAI/bge-m3 | 0.85 | 0.90 | 0.88"`.
@@ -14907,6 +14908,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0186a — Life graph: `lifeGraph.upsertEntity` (creates `convex/lifeGraph.ts` + its test)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-002 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-002.
@@ -14914,9 +14916,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.upsertEntity` (mutation) creates one of the caller's entities, or updates the caller's live entity with the same name (case-insensitive), with cleaned aliases, under a cap of 500 live entities.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (new) · `convex/lifeGraph.test.ts` (new) · `entities` rows (insert, patch).
-- **STEPS:** 1) Code-map check: `grep -n "entities: defineTable" convex/schema.ts` (from CFG-002; if missing report `blocked: missing CFG-002`); `ls convex/lifeGraph.ts` (absent); read `requireUser` (`convex/lib/requireUser.ts`) and `titleKey` (`packages/utils/src/wiki-links.ts` line 155; `convex/notes.ts` line 9 shows the import `from "@tempo/utils"`). 2) Create `convex/lifeGraph.ts` with the imports `import { titleKey } from "@tempo/utils"; import { v } from "convex/values"; import type { Id } from "./_generated/dataModel"; import { mutation } from "./_generated/server"; import type { MutationCtx } from "./_generated/server"; import { requireUser } from "./lib/requireUser";`, the shared constants and validators, and `upsertEntity`, exactly as SPEC. 3) Create `convex/lifeGraph.test.ts` importing `{ afterEach, describe, expect, spyOn, test } from "bun:test"`, `* as lifeGraph from "./lifeGraph"` and `{ makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx"`, with `describe("lifeGraph.upsertEntity", …)` holding the 8 TESTS cases (`Date.now` spied per case, restored in `afterEach`). Later life-graph tickets append their own `describe` blocks. 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "entities: defineTable" convex/schema.ts` (from CFG-002; if missing report `blocked: missing CFG-002`); `ls convex/lifeGraph.ts` (absent); read `requireUser` (`convex/lib/requireUser.ts`) and `titleKey` (`packages/utils/src/wiki-links.ts` line 155; `convex/notes.ts` line 9 shows the import `from "@tempo/utils"`). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "entities: defineTable" convex/schema.ts`; `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts`; `grep -n "export async function requireUser" convex/lib/requireUser.ts`; `grep -n "export function titleKey" packages/utils/src/wiki-links.ts`. 2) Create `convex/lifeGraph.ts` with the imports `import { titleKey } from "@tempo/utils"; import { v } from "convex/values"; import type { Id } from "./_generated/dataModel"; import { mutation } from "./_generated/server"; import type { MutationCtx } from "./_generated/server"; import { requireUser } from "./lib/requireUser";`, the shared constants and validators, and `upsertEntity`, as written in SPEC. 3) Create `convex/lifeGraph.test.ts` importing `{ afterEach, describe, expect, spyOn, test } from "bun:test"`, `* as lifeGraph from "./lifeGraph"` and `{ makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx"`, with the §16 `rejection` helper declared once at the top of the file and `describe("lifeGraph.upsertEntity", …)` holding the 8 TESTS cases (`Date.now` spied per case, restored in `afterEach`). Later life-graph tickets append their own `describe` blocks. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `8 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** infer entities from text or call a model (TFV2-0187d); create edges; hard-delete; read across users; touch `convex/schema.ts`, `convex/memory.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0186a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format); list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -14933,20 +14935,26 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Order: `const user = await requireUser(ctx);` → `name = args.name.trim()`; empty → `new Error("Give it a name.")` → `raw = args.aliases ?? []`; `raw.length > ALIAS_MAX` → `new Error("Add up to 20 other names.")` → if `name.length > NAME_MAX` or any `alias.trim().length > NAME_MAX` → `new Error("Keep each name to 200 characters or fewer.")` → `aliases` = each alias trimmed, empty ones dropped, ones whose `titleKey` equals `titleKey(name)` dropped, duplicates by `titleKey` dropped (first kept, input order). `live = await ctx.db.query("entities").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).take(ENTITY_MAX)`; `existing = live.find((e) => titleKey(e.name) === titleKey(name))`. Existing → `ctx.db.patch(existing._id, { kind: args.kind, name, aliases, updatedAt: now })` (aliases are replaced by the given list) and return `existing._id`. Else `live.length >= ENTITY_MAX` → `new Error("Keep up to 500 people, projects, goals, places and habits.")`; else insert `{ userId: user._id, kind: args.kind, name, aliases, createdAt: now, updatedAt: now }` and return its id. `now = Date.now()`. Errors: `"Not authenticated"` (from `requireUser`, plus its `"User not found"` / `"This account is not active"`), `"Give it a name."`, `"Add up to 20 other names."`, `"Keep each name to 200 characters or fewer."`, `"Keep up to 500 people, projects, goals, places and habits."`. English only (CONVENTIONS §11; the UI maps them).
-- **TESTS:** (helper `seedEntity(ctx, userId, name, extra = {})` inserts `{ userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `titleKey(title: string): string` (`packages/utils/src/wiki-links.ts` line 155, existing, exported from `@tempo/utils`): `title.trim().toLowerCase()`; `titleKey("  Dana ")` → `"dana"`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });`; `rejection`: the CONVENTIONS §16 standard helper, declared once at the top of `convex/lifeGraph.test.ts` by this ticket: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`; "rejects with X" below means `expect(await rejection(<the call>)).toBe(X)`)
   1. Given `makeSignedOutCtx()` / When `upsertEntity({ kind: "person", name: "Dana" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given `makeFakeCtx("users:1")` / When it runs with `name: "   "` / Then it rejects with `"Give it a name."` and no `entities` row exists.
-  3. Given 21 aliases / When it runs / Then it rejects with `"Add up to 20 other names."`.
-  4. Given `name: "x".repeat(201)` / Then it rejects with `"Keep each name to 200 characters or fewer."`; and given `name: "Dana", aliases: ["y".repeat(201)]` / Then the same error.
+  3. Given 21 aliases / When it runs / Then it rejects with `"Add up to 20 other names."`; and given 20 distinct aliases `"a0"`…`"a19"` with `name: "Dana"` / Then it resolves and the row has 20 aliases.
+  4. Given `name: "x".repeat(201)` / Then it rejects with `"Keep each name to 200 characters or fewer."`; and given `name: "Dana", aliases: ["y".repeat(201)]` / Then the same error; and given `name: "x".repeat(200)` / Then it resolves and the row's `name` has length 200.
   5. Given `Date.now` = `7000` / When `upsertEntity({ kind: "person", name: "  Dana ", aliases: [" manager ", "", "dana", "Manager"] })` runs / Then the returned id's row equals `{ userId: "users:1", kind: "person", name: "Dana", aliases: ["manager"], createdAt: 7000, updatedAt: 7000 }` plus `_id`, `_creationTime`.
   6. Given that row and `Date.now` = `8000` / When `upsertEntity({ kind: "project", name: "DANA", aliases: ["boss"] })` runs / Then it returns the same id, there is still one `entities` row, and it has `kind: "project"`, `name: "DANA"`, `aliases: ["boss"]`, `createdAt: 7000`, `updatedAt: 8000`.
   7. Given a `users:1` entity "Dana" with `deletedAt: 5` and a `users:2` entity "Dana" / When `users:1` upserts "Dana" / Then a new id is returned, its row has `userId: "users:1"` and no `deletedAt`, and the two seeded rows are unchanged.
-  8. Given 500 live entities `"E0"`…`"E499"` of `users:1` / When it upserts `"New"` / Then it rejects with `"Keep up to 500 people, projects, goals, places and habits."`; and upserting `"e0"` returns the id of `"E0"`.
+  8. Given 500 live entities `"E0"`…`"E499"` of `users:1` / When it upserts `"New"` / Then it rejects with `"Keep up to 500 people, projects, goals, places and habits."`; and upserting `"e0"` returns the id of `"E0"`; and given 499 live entities `"E0"`…`"E498"` / When it upserts `"New"` / Then it returns a new id and 500 live rows exist.
 - **NUMBERS:** ≤ 500 live entities per person and ≤ 500 rows read (`ENTITY_MAX`; bounded read per CONVENTIONS §20; test 8); names ≤ 200 characters (`NAME_MAX`; test 4); ≤ 20 aliases (`ALIAS_MAX`; test 3); 8 of 8 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0186b — Life graph: `lifeGraph.listEntities`
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a.
@@ -14954,9 +14962,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.listEntities` (query) returns all of the caller's live entities, optionally one kind, sorted by name (case-insensitive).
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `entityValidator`, `listEntities`; add `query` and `QueryCtx` to the `./_generated/server` imports) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `entities`; writes nothing.
-- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a: `ENTITY_MAX`, `entityKindValidator`, `EntityKind`, `titleKey` import). 2) Add `entityValidator` and `listEntities` exactly as SPEC. 3) Append `describe("lifeGraph.listEntities", …)` with the 5 TESTS cases. 4) Run DONE.
-- **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 5 new cases passing (13 pass in total with TFV2-0186a's 8).
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a: `ENTITY_MAX`, `entityKindValidator`, `EntityKind`, `titleKey` import). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "entities: defineTable" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add `entityValidator` and `listEntities` as written in SPEC. 3) Append `describe("lifeGraph.listEntities", …)` with the 5 TESTS cases. 4) Run DONE.
+- **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 5 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** return another user's or a deleted entity; return `userId` or `deletedAt`; change `upsertEntity` or its `describe` block.
 - **REPORT:** `status / ticket: TFV2-0186b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -14971,7 +14979,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; rows = `by_userId_deletedAt` (`eq userId`, `eq deletedAt undefined`) `.take(ENTITY_MAX)`; keep `row.deletedAt === undefined` and, when `args.kind` is given, `row.kind === args.kind`; sort by `titleKey(name)` ascending (plain `<` / `>` comparison, no locale), equal keys by `createdAt` ascending; map to `{ _id, kind, name, aliases, createdAt, updatedAt }`. Errors: `"Not authenticated"` only.
-- **TESTS:** (same `seedEntity` helper as TFV2-0186a)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `titleKey(title: string): string` (`packages/utils/src/wiki-links.ts` line 155, existing, exported from `@tempo/utils`): `title.trim().toLowerCase()`; `titleKey("  Dana ")` → `"dana"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - from `convex/lifeGraph.ts` (TFV2-0186a): `export const ENTITY_MAX = 500;`, `export const entityKindValidator = v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"));`, `export type EntityKind = "person" | "project" | "goal" | "place" | "habit";`, the `titleKey` import.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });`)
   1. Given `makeSignedOutCtx()` / When `listEntities({})` runs / Then it rejects with `"Not authenticated"`.
   2. Given entities "Zed" (person), "dana" (person), "Ana" (project) / When `listEntities({})` runs / Then names are `["Ana", "dana", "Zed"]`.
   3. Given the same rows / When `listEntities({ kind: "person" })` runs / Then names are `["dana", "Zed"]`.
@@ -14982,6 +14997,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0186c — Life graph: `lifeGraph.forgetEntity` — OPEN
+- **STATUS:** open — Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the answer for memories also apply to life-graph entities?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a.
@@ -14989,9 +15005,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.forgetEntity` (mutation) soft-deletes one of the caller's live entities; its edges stay and readers skip edges whose other end is deleted.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `forgetEntity`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `entities` rows (patch `deletedAt`, `updatedAt`).
-- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a) and `forget` in `convex/memory.ts` lines 158–172 (the pattern copied here). 2) Add `forgetEntity` exactly as SPEC. 3) Append `describe("lifeGraph.forgetEntity", …)` with the 4 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a) and `forget` in `convex/memory.ts` (line 159; the same owner check and soft-delete patch). 2) Add `forgetEntity` as written in SPEC. 3) Append `describe("lifeGraph.forgetEntity", …)` with the 4 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** hard-delete; patch or delete edges; touch another user's entity; change other functions.
 - **REPORT:** `status / ticket: TFV2-0186c / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15003,16 +15019,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; row missing, `userId !== user._id`, or `deletedAt !== undefined` → `new Error("Entity not found")`; else `ctx.db.patch(id, { deletedAt: now, updatedAt: now })` and return `{ success: true as const }`. Errors: `"Not authenticated"`, `"Entity not found"`.
-- **TESTS:**
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });`; rejections read with `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.)
   1. Given `makeSignedOutCtx()` / When `forgetEntity` runs / Then it rejects with `"Not authenticated"`.
   2. Given a live entity of `users:1` / When it runs / Then it returns `{ success: true }` and the row has `deletedAt: 9000`, `updatedAt: 9000`.
   3. Given an entity of `users:2` / When `users:1` runs it / Then it rejects with `"Entity not found"` and the row has no `deletedAt`.
   4. Given an entity of `users:1` with `deletedAt: 5` / When it runs / Then it rejects with `"Entity not found"` and `deletedAt` stays `5`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Restorable window: follows Q-08. p95 latency: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-08: `forget` — soft delete with 30-day grace or complete hard delete; does the answer for memories also apply to life-graph entities? — Amit.
+- **OPEN:** Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the answer for memories also apply to life-graph entities? — Amit.
 
 ### TFV2-0187a — Life graph: `lifeGraph.extractEdges` (links the person wrote → `extracted` edges, no model)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -15020,9 +15037,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.extractEdges` (mutation) makes the caller's `extracted` edges from one page match the page's current `[[links]]`: it inserts missing ones and soft-deletes ones whose link is gone, and returns how many of each.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `EXTRACT_LINK_MAX`, `PAGE_EDGE_SCAN`, `EXTRACTED_RELATION`, `extractEdges`; add `findWikiLinks` to the `@tempo/utils` import) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `edges` rows (insert; patch `deletedAt`, `updatedAt`). Reads `notes`, `entities`.
-- **STEPS:** 1) Code-map check: `grep -n "by_userId_sourceNoteId\|sourceNoteId" convex/schema.ts` (from CFG-034; if missing report `blocked: missing CFG-034`); read `findWikiLinks` and `titleKey` (`packages/utils/src/wiki-links.ts` lines 137–158) and the note owner check in `convex/notes.ts` lines 477–480 (`"Note not found"`). 2) Add the constants and `extractEdges` exactly as SPEC. 3) Append `describe("lifeGraph.extractEdges", …)` with the 8 TESTS cases (`Date.now` spied per case). 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "by_userId_sourceNoteId\|sourceNoteId" convex/schema.ts` (from CFG-034; if missing report `blocked: missing CFG-034`); read `findWikiLinks` and `titleKey` (`packages/utils/src/wiki-links.ts` lines 137–158) and the note owner check in `convex/notes.ts` lines 477–480 (`"Note not found"`). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "edges: defineTable" convex/schema.ts`; `grep -n "by_userId_sourceNoteId" convex/schema.ts`; `grep -n "export function findWikiLinks" packages/utils/src/wiki-links.ts`; `grep -n "export function titleKey" packages/utils/src/wiki-links.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add the constants and `extractEdges` as written in SPEC. 3) Append `describe("lifeGraph.extractEdges", …)` with the 8 TESTS cases (`Date.now` spied per case). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 8 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** call a model or write `origin: "inferred"`; create entities; touch edges of other pages or `inferred` edges; hard-delete; edit `convex/notes.ts` (wiring is a later ticket); write a second link parser.
 - **REPORT:** `status / ticket: TFV2-0187a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15043,7 +15060,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Each existing edge whose `fromEntityId !== pageEntity` or whose `toEntityId` is not in `wanted` → `patch(edge._id, { deletedAt: now, updatedAt: now })`, `removed += 1`.
   6. Each id in `wanted` with no remaining existing edge `pageEntity → id` → insert `{ userId: user._id, fromEntityId: pageEntity, toEntityId: id, relation: EXTRACTED_RELATION, origin: "extracted", confidence: 1, sourceNoteId: args.noteId, createdAt: now, updatedAt: now }`, `created += 1`.
   Errors: `"Not authenticated"`, `"Note not found"`.
-- **TESTS:** (helpers: `seedEntity` from TFV2-0186a; `seedNote(ctx, userId, title, body, extra = {})` inserts `{ userId, title, body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1, ...extra }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - table `edges` (CFG-003): `userId: v.id("users")`, `fromEntityId: v.id("entities")`, `toEntityId: v.id("entities")`, `relation: v.string()`, `origin: v.union(v.literal("extracted"), v.literal("inferred"))`, `confidence: v.number()` (writers keep it in [0, 1]), `sourceMemoryId: v.optional(v.id("memories"))`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_fromEntityId` `["userId", "fromEntityId"]`, `by_userId_toEntityId` `["userId", "toEntityId"]`. CFG-034 adds `confirmedAt: v.optional(v.number())`, `sourceNoteId: v.optional(v.id("notes"))` and index `by_userId_sourceNoteId` `["userId", "sourceNoteId"]`.
+  - table `notes` (existing, `convex/schema.ts`): required `userId: v.id("users")`, `title: v.string()`, `body: v.string()`, `pinned: v.boolean()`, `periodType` (union of `"daily"`, `"weekly"`, `"monthly"`, `"none"`), `createdAt`, `updatedAt`; optional `deletedAt`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `titleKey(title: string): string` (`packages/utils/src/wiki-links.ts` line 155, existing, exported from `@tempo/utils`): `title.trim().toLowerCase()`; `titleKey("  Dana ")` → `"dana"`.
+  - `findWikiLinks(body: string): WikiLink[]` (`packages/utils/src/wiki-links.ts` line 137, existing; `WikiLink = { title: string; from: number; to: number }`): every `[[Title]]` / `[[Title|shown]]` outside code spans and Tempo fences, `title` trimmed; `findWikiLinks("Met [[Dana]] and [[manager]]").map((l) => l.title)` → `["Dana", "manager"]`; ``findWikiLinks("`[[Dana]]`")`` → `[]`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - from `convex/lifeGraph.ts` (TFV2-0186a): `export const ENTITY_MAX = 500;` and the imports `titleKey` (from `"@tempo/utils"`), `mutation`, `MutationCtx`, `Id`, `v`, `requireUser`.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedNote = (ctx: any, userId: string, title: string, body: string, extra: Record<string, unknown> = {}) => ctx.db.insert("notes", { userId, title, body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1, ...extra });`)
   1. Given `makeSignedOutCtx()` / When `extractEdges({ noteId: "notes:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given a note of `users:2`, and separately a note of `users:1` with `deletedAt: 5` / When `users:1` runs it on each / Then each rejects with `"Note not found"`.
   3. Given entities "Thursday talk" (project) and "Dana" (aliases `["manager"]`) and a page titled "thursday talk" with body `"Met [[Dana]] and [[manager]] about [[Slides]]"`, `Date.now` = `7000` / When it runs / Then it returns `{ created: 1, removed: 0 }` and the one `edges` row equals `{ userId: "users:1", fromEntityId: <Thursday talk>, toEntityId: <Dana>, relation: "links to", origin: "extracted", confidence: 1, sourceNoteId: <page>, createdAt: 7000, updatedAt: 7000 }` plus `_id`, `_creationTime`.
@@ -15057,16 +15084,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0187b — Life graph: `lifeGraph.inferInputs` (internal query: one page + the caller's entities)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a.
-- **WHY:** TRD §5c (`inferred` edges are model-guessed); part of old TFV2-0187. The guessing action (TFV2-0187d) has no `ctx.db`, so it reads the page and the person's entities through this internal query, run with the action's identity (`requireUser` works there, as `memory.recallScope` does in TFV2-0174b). It is a plain read, needed whatever Q-06 decides about how guesses are saved.
+- **WHY:** TRD §5c (`inferred` edges are model-guessed); part of old TFV2-0187. The guessing action (TFV2-0187d) has no `ctx.db`, so it reads the page and the person's entities through this internal query, run with the action's identity (`ctx.runQuery` from an action passes the caller's auth identity, so `requireUser` works there). It is a plain read, needed whatever Q-06 decides about how guesses are saved.
 - **GOAL:** `lifeGraph.inferInputs` (internalQuery) returns the caller's user id, the page's title, its body cut to 8,000 characters, and the caller's live entities, refusing a missing or foreign page.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `INFER_BODY_MAX`, `inferInputsValidator`, `inferInputs`; add `internalQuery` to the server import) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `notes`, `entities`; writes nothing.
-- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a: `ENTITY_MAX`, `entityKindValidator`). 2) Add the constant, validator and `inferInputs` exactly as SPEC. 3) Append `describe("lifeGraph.inferInputs", …)` with the 4 TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `convex/lifeGraph.ts` (TFV2-0186a: `ENTITY_MAX`, `entityKindValidator`). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "entities: defineTable" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add the constant, validator and `inferInputs` as written in SPEC. 3) Append `describe("lifeGraph.inferInputs", …)` with the 4 TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** export it as a public `query`; return another user's rows; call a model; change other functions.
 - **REPORT:** `status / ticket: TFV2-0187b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15085,16 +15113,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; note missing, foreign or deleted → `new Error("Note not found")`; `body = note.body.slice(0, INFER_BODY_MAX)`; entities = caller's live rows (`by_userId_deletedAt`, `.take(ENTITY_MAX)`, keep `deletedAt === undefined`) in scan order mapped to `{ _id, kind, name, aliases }`; returns `{ userId: user._id, title: note.title, body, entities }`. Errors: `"Not authenticated"`, `"Note not found"`.
-- **TESTS:** (helpers `seedEntity`, `seedNote` as in TFV2-0186a / TFV2-0187a)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - table `notes` (existing, `convex/schema.ts`): required `userId: v.id("users")`, `title: v.string()`, `body: v.string()`, `pinned: v.boolean()`, `periodType` (union of `"daily"`, `"weekly"`, `"monthly"`, `"none"`), `createdAt`, `updatedAt`; optional `deletedAt`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - from `convex/lifeGraph.ts` (TFV2-0186a): `export const ENTITY_MAX = 500;`, `export const entityKindValidator = v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"));`.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedNote = (ctx: any, userId: string, title: string, body: string, extra: Record<string, unknown> = {}) => ctx.db.insert("notes", { userId, title, body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1, ...extra });`)
   1. Given `makeSignedOutCtx()` / When `inferInputs({ noteId: "notes:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given a note of `users:2` / When `users:1` runs it / Then it rejects with `"Note not found"`.
   3. Given a page "Week" with body `"Dana again"`, live entities "Dana" (person, aliases `["manager"]`) and "Gym" (habit) of `users:1`, a deleted entity of `users:1` and an entity of `users:2` / When it runs / Then it returns `{ userId: "users:1", title: "Week", body: "Dana again", entities: [{ _id: <Dana>, kind: "person", name: "Dana", aliases: ["manager"] }, { _id: <Gym>, kind: "habit", name: "Gym", aliases: [] }] }`.
-  4. Given a body of 8,001 `"a"` / When it runs / Then `body.length` is 8000.
+  4. Given a body of 8,001 `"a"` / When it runs / Then `body.length` is 8000; and given a body of exactly 8,000 `"a"` / Then `body.length` is 8000 (unchanged).
 - **NUMBERS:** body ≤ 8,000 UTF-16 units (`INFER_BODY_MAX`, test 4); ≤ 500 entity rows read (`ENTITY_MAX`); 4 of 4 cases pass. p95 latency: UNKNOWN.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0187c — Life graph: `lifeGraph.saveInferredEdges` (internal mutation: store model guesses) — OPEN
+- **STATUS:** open — Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May model-guessed links be stored directly as `inferred` edges marked as guesses (PRD F-54), or must every AI-made write go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -15102,9 +15138,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.saveInferredEdges` (internalMutation) stores up to 20 valid guessed edges for one person and page as `origin: "inferred"`, skipping invalid ones and pairs that already have a live edge.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `INFER_EDGE_MAX`, `RELATION_MAX`, `PAIR_EDGE_SCAN`, `saveInferredEdges`; add `internalMutation` to the server import) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `edges` rows (insert).
-- **STEPS:** 1) Code-map check: `grep -n "sourceNoteId" convex/schema.ts` (CFG-034; else `blocked: missing CFG-034`); read `convex/lifeGraph.ts`. 2) Add the constants and `saveInferredEdges` exactly as SPEC. 3) Append `describe("lifeGraph.saveInferredEdges", …)` with the 6 TESTS cases (`Date.now` spied to `7000`). 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "sourceNoteId" convex/schema.ts` (CFG-034; else `blocked: missing CFG-034`); read `convex/lifeGraph.ts`. 2) Add the constants and `saveInferredEdges` as written in SPEC. 3) Append `describe("lifeGraph.saveInferredEdges", …)` with the 6 TESTS cases (`Date.now` spied to `7000`). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** write `origin: "extracted"`; make it public; overwrite or delete an existing edge; set `confirmedAt`; call a model here.
 - **REPORT:** `status / ticket: TFV2-0187c / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15123,8 +15159,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `edges.length > INFER_EDGE_MAX` → `new Error("Save up to 20 guessed links at a time.")`. For each edge in order, skip (`skipped += 1`) when: `relation.trim()` is empty or longer than `RELATION_MAX`; `confidence` is not finite or outside `[0, 1]`; `fromEntityId === toEntityId`; either entity is missing, deleted or not `args.userId`'s; or a live edge `from → to` already exists (`by_userId_fromEntityId`, `eq userId`, `eq fromEntityId`, `.take(PAIR_EDGE_SCAN)`, any origin, including one inserted earlier in this call). Else insert `{ userId, fromEntityId, toEntityId, relation: relation.trim(), origin: "inferred", confidence, sourceNoteId: args.noteId, createdAt: now, updatedAt: now }`, `created += 1`. Internal only (no `requireUser`: the calling action ran the AI gate). Errors: `"Save up to 20 guessed links at a time."`.
-- **TESTS:** (entities A, B, C of `users:1`; `seedNote` page P)
-  1. Given 21 edges / When it runs / Then it rejects with `"Save up to 20 guessed links at a time."` and no edge exists.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedNote = (ctx: any, userId: string, title: string, body: string, extra: Record<string, unknown> = {}) => ctx.db.insert("notes", { userId, title, body, pinned: false, periodType: "none", createdAt: 1, updatedAt: 1, ...extra });`; entities A, B, C = `seedEntity(ctx, "users:1", "A")`, `"B"`, `"C"`; page P = `seedNote(ctx, "users:1", "P", "")`; an existing edge is `ctx.db.insert("edges", { userId: "users:1", fromEntityId: A, toEntityId: B, relation: "links to", origin: "extracted", confidence: 1, createdAt: 1, updatedAt: 1 })`; rejections read with `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.)
+  1. Given 21 edges / When it runs / Then it rejects with `"Save up to 20 guessed links at a time."` and no edge exists; and given 20 edges A → B (one valid, 19 repeats) / Then it resolves `{ created: 1, skipped: 19 }`.
   2. Given `[{ fromEntityId: A, toEntityId: B, relation: " works with ", confidence: 0.7 }]` / When it runs / Then `{ created: 1, skipped: 0 }` and the row equals `{ userId: "users:1", fromEntityId: A, toEntityId: B, relation: "works with", origin: "inferred", confidence: 0.7, sourceNoteId: P, createdAt: 7000, updatedAt: 7000 }` plus `_id`, `_creationTime`.
   3. Given edges with confidence `1.5`, with confidence `Number.NaN`, and with relation `"   "` / When it runs / Then `{ created: 0, skipped: 3 }`.
   4. Given an edge A → A, and an edge A → X where X is an entity of `users:2` / When it runs for `users:1` / Then `{ created: 0, skipped: 2 }`.
@@ -15132,9 +15168,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given the same guess A → C twice in one call / When it runs / Then `{ created: 1, skipped: 1 }`.
 - **NUMBERS:** ≤ 20 guesses per call (`INFER_EDGE_MAX`, test 1); `confidence` in [0, 1] (CFG-003 rule, test 3); relation ≤ 60 characters (`RELATION_MAX`); ≤ 100 edges read per entity (`PAIR_EDGE_SCAN`); 6 of 6 cases pass. p95 latency: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-06: may model-guessed links be stored directly as `inferred` edges marked as guesses (PRD F-54), or must every AI-made write go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")? — Amit.
+- **OPEN:** Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May model-guessed links be stored directly as `inferred` edges marked as guesses (PRD F-54), or must every AI-made write go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")? — Amit.
 
 ### TFV2-0187d — Life graph: `lifeGraph.inferEdges` (action: the model guesses links on one page) — OPEN
+- **STATUS:** open — inherits TFV2-0187c (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May model-guessed links be stored directly as `inferred` edges marked as guesses (PRD F-54), or must every AI-made write go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0187b, TFV2-0187c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0187b, TFV2-0187c.
@@ -15142,9 +15179,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.inferEdges` (action) runs the AI gate, asks the text model which of the caller's entities a page implies are linked, and saves the valid guesses as `inferred` edges.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `INFER_SYSTEM_PROMPT`, `inferEdgesWith`, `inferEdges`; add `action`, `ActionCtx`, `internal`, `requireApprovedForAi`, `callLLM` and type `AiMessage` imports) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Writes `edges` through `saveInferredEdges`.
-- **STEPS:** 1) Code-map check: read `requireApprovedForAi` (`convex/lib/aiGate.ts`), `callLLM` / `AiCallOptions` / `AiMessage` (`convex/lib/ai_router.ts` lines 8–24, 140), `inferInputs` and `saveInferredEdges`. 2) Add the prompt constant, `inferEdgesWith` and `inferEdges` exactly as SPEC. 3) Append `describe("lifeGraph.inferEdges", …)` with the 8 TESTS cases calling `inferEdgesWith` with stubs (`spyOn(console, "error")` where named). 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `requireApprovedForAi` (`convex/lib/aiGate.ts`), `callLLM` / `AiCallOptions` / `AiMessage` (`convex/lib/ai_router.ts` lines 8–24, 140), `inferInputs` and `saveInferredEdges`. 2) Add the prompt constant, `inferEdgesWith` and `inferEdges` as written in SPEC. 3) Append `describe("lifeGraph.inferEdges", …)` with the 8 TESTS cases calling `inferEdgesWith` with stubs (`spyOn(console, "error")` where named). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 8 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** call the real provider in tests; log page text, model output or provider error text; write edges except through `saveInferredEdges`; skip the gate; change `callLLM`.
 - **REPORT:** `status / ticket: TFV2-0187d / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15167,7 +15204,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Order: `await deps.gate()`; `input = await deps.inputs()`; `input.entities.length < 2` → `{ created: 0, skipped: 0 }` with no model call; messages = `[{ role: "system", content: INFER_SYSTEM_PROMPT }, { role: "user", content: <lines> }]` where lines are `Items:`, then one line per entity `` `[${i}] ${name} (${kind}${aliases.length ? "; also " + aliases.join(", ") : ""})` ``, then an empty line, `` `Page: ${title}` ``, `body`, joined with `"\n"`; `text = await deps.complete(messages)`; `JSON.parse(text)`; on a parse error or when `links` is not an array → `console.error("infer_parse_failed")` and `{ created: 0, skipped: 0 }`; keep items whose `from` and `to` are integers indexing `entities` and whose `relation` is a string and `confidence` a number; first `INFER_EDGE_MAX`; map to `GuessedEdge` with entity ids; none left → `{ created: 0, skipped: 0 }` with no save; else `return deps.save({ userId: input.userId, noteId: args.noteId, edges })`. Errors: from the gate `"Not authenticated"` and `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`; `"Note not found"` from `inferInputs`; provider errors from `callLLM` (`AiAuthError`, `AiRateLimitedError`, `AiContextTooLargeError`, `AiUpstreamError`) propagate. Runtime model: `resolveAiModel()` (Q-03). The prompt is internal (never shown), English only.
-- **TESTS:** (stub inputs: `{ userId: "users:1", title: "Week", body: "Dana runs the Thursday talk", entities: [Dana (person, aliases ["manager"]), Talk (project), Gym (habit)] }`)
+- **TESTS:** (rejections read with `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`. Stub inputs: `{ userId: "users:1", title: "Week", body: "Dana runs the Thursday talk", entities: [Dana (person, aliases ["manager"]), Talk (project), Gym (habit)] }`)
   1. Given a gate stub that rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."` / When it runs / Then it rejects with that message and `inputs` and `complete` were not called.
   2. Given inputs with one entity / When it runs / Then `{ created: 0, skipped: 0 }` and `complete` was not called.
   3. Given the stub inputs and `complete` returning `'{"links":[{"from":0,"to":1,"relation":"runs","confidence":0.8}]}'` and a save stub returning `{ created: 1, skipped: 0 }` / When it runs / Then it returns `{ created: 1, skipped: 0 }`, save got `{ userId: "users:1", noteId, edges: [{ fromEntityId: <Dana>, toEntityId: <Talk>, relation: "runs", confidence: 0.8 }] }`, and the user message equals `"Items:\n[0] Dana (person; also manager)\n[1] Talk (project)\n[2] Gym (habit)\n\nPage: Week\nDana runs the Thursday talk"`.
@@ -15178,9 +15215,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given an inputs stub that rejects with `"Note not found"` / When it runs / Then it rejects with `"Note not found"` and `complete` was not called.
 - **NUMBERS:** ≤ 20 guesses saved per page (`INFER_EDGE_MAX`, test 6); one model call per run, `maxTokens` 800; 8 of 8 cases pass. Provider p95 latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0187c (Q-06: may model-guessed links be stored directly as `inferred` edges marked as guesses, or must every AI-made write go through a confirm / edit / reject proposal first?) — Amit.
+- **OPEN:** inherits TFV2-0187c (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May model-guessed links be stored directly as `inferred` edges marked as guesses (PRD F-54), or must every AI-made write go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?) — Amit.
 
 ### TFV2-0188a — Life graph: `lifeGraph.confirmEdge` (a guess becomes "You confirmed this")
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -15188,9 +15226,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.confirmEdge` (mutation) stamps `confirmedAt` on one of the caller's live inferred edges, once; written links and already-confirmed guesses are left unchanged.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `confirmEdge`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `edges` rows (patch `confirmedAt`, `updatedAt`).
-- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034; else `blocked: missing CFG-034`); read `convex/lifeGraph.ts`. 2) Add `confirmEdge` exactly as SPEC. 3) Append `describe("lifeGraph.confirmEdge", …)` with the 6 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034; else `blocked: missing CFG-034`); read `convex/lifeGraph.ts`. Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "edges: defineTable" convex/schema.ts`; `grep -n "confirmedAt" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add `confirmEdge` as written in SPEC. 3) Append `describe("lifeGraph.confirmEdge", …)` with the 6 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** change `origin`, `confidence` or `relation`; clear `confirmedAt` (a confirmed edge never turns back into a guess); touch another user's edge.
 - **REPORT:** `status / ticket: TFV2-0188a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15202,7 +15240,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; row missing, `userId !== user._id` or `deletedAt !== undefined` → `new Error("Edge not found")`; `origin === "extracted"` or `confirmedAt !== undefined` → return `null` with no write; else `patch(id, { confirmedAt: now, updatedAt: now })`, return `null`. Errors: `"Not authenticated"`, `"Edge not found"`.
-- **TESTS:** (helper `seedEdge(ctx, userId, from, to, extra = {})` inserts `{ userId, fromEntityId: from, toEntityId: to, relation: "works with", origin: "inferred", confidence: 0.6, createdAt: 1, updatedAt: 1, ...extra }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `edges` (CFG-003): `userId: v.id("users")`, `fromEntityId: v.id("entities")`, `toEntityId: v.id("entities")`, `relation: v.string()`, `origin: v.union(v.literal("extracted"), v.literal("inferred"))`, `confidence: v.number()` (writers keep it in [0, 1]), `sourceMemoryId: v.optional(v.id("memories"))`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_fromEntityId` `["userId", "fromEntityId"]`, `by_userId_toEntityId` `["userId", "toEntityId"]`. CFG-034 adds `confirmedAt: v.optional(v.number())`, `sourceNoteId: v.optional(v.id("notes"))` and index `by_userId_sourceNoteId` `["userId", "sourceNoteId"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedEdge = (ctx: any, userId: string, from: string, to: string, extra: Record<string, unknown> = {}) => ctx.db.insert("edges", { userId, fromEntityId: from, toEntityId: to, relation: "works with", origin: "inferred", confidence: 0.6, createdAt: 1, updatedAt: 1, ...extra });`; `from` and `to` are the ids of `seedEntity(ctx, "users:1", "Dana")` and `seedEntity(ctx, "users:1", "Talk")`)
   1. Given `makeSignedOutCtx()` / When `confirmEdge({ edgeId: "edges:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given a live inferred edge of `users:1` / When it runs / Then it returns `null` and the row has `confirmedAt: 9000`, `updatedAt: 9000`, `origin: "inferred"`, `confidence: 0.6`.
   3. Given an inferred edge with `confirmedAt: 5` / When it runs / Then `confirmedAt` stays `5` and `updatedAt` stays `1`.
@@ -15214,6 +15257,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0188b — Life graph: `lifeGraph.listEdges` (one entity's links, each marked written, guess or confirmed)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -15221,9 +15265,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.listEdges` (query) returns the caller's live edges that start or end at one of the caller's live entities, newest first, each with its direction, the entity on the other end, its origin and whether it counts as confirmed.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `EDGE_LIST_SCAN`, `listedEdgeValidator`, `listEdges`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `entities`, `edges`; writes nothing.
-- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034); read `convex/lifeGraph.ts`. 2) Add the constant, validator and `listEdges` exactly as SPEC. 3) Append `describe("lifeGraph.listEdges", …)` with the 6 TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034); read `convex/lifeGraph.ts`. Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "edges: defineTable" convex/schema.ts`; `grep -n "confirmedAt" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add the constant, validator and `listEdges` as written in SPEC. 3) Append `describe("lifeGraph.listEdges", …)` with the 6 TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** follow edges more than one hop; return another user's rows or a deleted edge or entity; write anything.
 - **REPORT:** `status / ticket: TFV2-0188b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15246,7 +15290,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; entity missing, foreign or deleted → `new Error("Entity not found")`; `out` = `by_userId_fromEntityId` (`eq userId`, `eq fromEntityId: entityId`) `.take(EDGE_LIST_SCAN)`, `in` = `by_userId_toEntityId` likewise; keep `deletedAt === undefined`; for each, `other = await ctx.db.get(<the other end>)`, skip when missing, deleted or not the caller's; `confirmed = origin === "extracted" || confirmedAt !== undefined`; sort `createdAt` descending (equal values: `out` before `in`, then read order). Errors: `"Not authenticated"`, `"Entity not found"`.
-- **TESTS:** (entities Dana, Talk, Gym of `users:1`; `seedEdge` as in TFV2-0188a)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - table `edges` (CFG-003): `userId: v.id("users")`, `fromEntityId: v.id("entities")`, `toEntityId: v.id("entities")`, `relation: v.string()`, `origin: v.union(v.literal("extracted"), v.literal("inferred"))`, `confidence: v.number()` (writers keep it in [0, 1]), `sourceMemoryId: v.optional(v.id("memories"))`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_fromEntityId` `["userId", "fromEntityId"]`, `by_userId_toEntityId` `["userId", "toEntityId"]`. CFG-034 adds `confirmedAt: v.optional(v.number())`, `sourceNoteId: v.optional(v.id("notes"))` and index `by_userId_sourceNoteId` `["userId", "sourceNoteId"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - from `convex/lifeGraph.ts` (TFV2-0186a): `export const entityKindValidator = v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"));`.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedEdge = (ctx: any, userId: string, from: string, to: string, extra: Record<string, unknown> = {}) => ctx.db.insert("edges", { userId, fromEntityId: from, toEntityId: to, relation: "works with", origin: "inferred", confidence: 0.6, createdAt: 1, updatedAt: 1, ...extra });`; Dana = `seedEntity(ctx, "users:1", "Dana")`, Talk = `seedEntity(ctx, "users:1", "Talk", { kind: "project" })`, Gym = `seedEntity(ctx, "users:1", "Gym", { kind: "habit" })`; an extracted edge passes `{ origin: "extracted", confidence: 1 }` in `extra`)
   1. Given `makeSignedOutCtx()` / When `listEdges({ entityId: "entities:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given an entity of `users:2`, and separately an entity of `users:1` with `deletedAt: 5` / When `users:1` lists each / Then each rejects with `"Entity not found"`.
   3. Given an extracted edge Dana → Talk (`createdAt: 10`) and an inferred edge Gym → Dana (`createdAt: 20`) / When `listEdges({ entityId: Dana })` runs / Then it returns two items: first `{ direction: "in", other: { _id: Gym, name: "Gym", kind: "habit" }, origin: "inferred", confirmed: false, createdAt: 20, … }`, then `{ direction: "out", other: { _id: Talk, name: "Talk", kind: "project" }, origin: "extracted", confirmed: true, createdAt: 10, … }`.
@@ -15258,6 +15309,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0189 — Life graph: `lifeGraph.graphNeighbors` (one entity and the entities one link away)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -15265,9 +15317,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.graphNeighbors` (query) returns one of the caller's live entities and each distinct live entity sharing a live edge with it (one hop), sorted by name, each marked `guessed` when every link to it is an unconfirmed guess.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `NEIGHBOR_EDGE_SCAN`, `graphNeighbors`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `entities`, `edges`; writes nothing.
-- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034); read `convex/lifeGraph.ts` (`entityKindValidator`, `titleKey` import). 2) Add the constant and `graphNeighbors` exactly as SPEC. 3) Append `describe("lifeGraph.graphNeighbors", …)` with the 6 TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "confirmedAt" convex/schema.ts` (CFG-034); read `convex/lifeGraph.ts` (`entityKindValidator`, `titleKey` import). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "edges: defineTable" convex/schema.ts`; `grep -n "confirmedAt" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add the constant and `graphNeighbors` as written in SPEC. 3) Append `describe("lifeGraph.graphNeighbors", …)` with the 6 TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** traverse more than one hop; return another user's or a deleted row; write anything.
 - **REPORT:** `status / ticket: TFV2-0189 / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15283,7 +15335,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; entity missing, foreign or deleted → `new Error("Entity not found")`; read live edges out (`by_userId_fromEntityId`) and in (`by_userId_toEntityId`), each `.take(NEIGHBOR_EDGE_SCAN)`, keep `deletedAt === undefined`; group by the other end's id; an edge counts as confirmed when `origin === "extracted" || confirmedAt !== undefined`; `guessed` = no confirmed edge in that group; load each other end with `ctx.db.get`, skip missing, deleted or foreign; sort by `titleKey(name)` ascending (plain comparison). Errors: `"Not authenticated"`, `"Entity not found"`.
-- **TESTS:** (entities Dana (person), Talk "Thursday talk" (project), Slides (project) of `users:1`; `seedEdge` as in TFV2-0188a)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `entities` (CFG-002): `userId: v.id("users")`, `kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))`, `name: v.string()`, `aliases: v.array(v.string())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_kind` `["userId", "kind"]`.
+  - table `edges` (CFG-003): `userId: v.id("users")`, `fromEntityId: v.id("entities")`, `toEntityId: v.id("entities")`, `relation: v.string()`, `origin: v.union(v.literal("extracted"), v.literal("inferred"))`, `confidence: v.number()` (writers keep it in [0, 1]), `sourceMemoryId: v.optional(v.id("memories"))`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`, `by_userId_fromEntityId` `["userId", "fromEntityId"]`, `by_userId_toEntityId` `["userId", "toEntityId"]`. CFG-034 adds `confirmedAt: v.optional(v.number())`, `sourceNoteId: v.optional(v.id("notes"))` and index `by_userId_sourceNoteId` `["userId", "sourceNoteId"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `titleKey(title: string): string` (`packages/utils/src/wiki-links.ts` line 155, existing, exported from `@tempo/utils`): `title.trim().toLowerCase()`; `titleKey("  Dana ")` → `"dana"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - from `convex/lifeGraph.ts` (TFV2-0186a): `export const entityKindValidator = v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"));` and the `titleKey` import.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedEntity = (ctx: any, userId: string, name: string, extra: Record<string, unknown> = {}) => ctx.db.insert("entities", { userId, kind: "person", name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });` `const seedEdge = (ctx: any, userId: string, from: string, to: string, extra: Record<string, unknown> = {}) => ctx.db.insert("edges", { userId, fromEntityId: from, toEntityId: to, relation: "works with", origin: "inferred", confidence: 0.6, createdAt: 1, updatedAt: 1, ...extra });`; Dana = `seedEntity(ctx, "users:1", "Dana")`, Talk = `seedEntity(ctx, "users:1", "Thursday talk", { kind: "project" })`, Slides = `seedEntity(ctx, "users:1", "Slides", { kind: "project" })`; an extracted edge passes `{ origin: "extracted", confidence: 1 }` in `extra`)
   1. Given `makeSignedOutCtx()` / When `graphNeighbors({ entityId: "entities:1" })` runs / Then it rejects with `"Not authenticated"`.
   2. Given an entity of `users:2` / When `users:1` runs it / Then it rejects with `"Entity not found"`.
   3. Given extracted edges Dana → Talk and Talk → Slides / When `graphNeighbors({ entityId: Talk })` runs / Then `entity.name` is `"Thursday talk"` and neighbor names are `["Dana", "Slides"]`, both `guessed: false`.
@@ -15295,6 +15355,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0190a — Reflect: `lifeGraph.reflectInputs` (internal query: one person's recent memories, if approved)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a.
@@ -15302,9 +15363,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.reflectInputs` (internalQuery) returns, for one user id, whether that person is approved and active and, if so, their 50 newest live memories as `{ _id, content }` with content cut to 300 characters.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `REFLECT_SCAN`, `REFLECT_INPUT_MAX`, `REFLECT_CONTENT_MAX`, `reflectInputsValidator`, `reflectInputs`; import `isApproved` from `./lib/approval` and `isInactiveAccount` from `./lib/accountDeletion`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `users`, `memories`; writes nothing.
-- **STEPS:** 1) Code-map check: read `isApproved` / `approvalStatusOf` (`convex/lib/approval.ts` lines 71–117: a user with no `approvalStatus` and `_creationTime` before `APPROVAL_GATE_EPOCH_MS` counts as approved, which is how the fake ctx's seeded users read) and `isInactiveAccount` (`convex/lib/accountDeletion.ts` line 58). 2) Add the constants, validator and `reflectInputs` exactly as SPEC. 3) Append `describe("lifeGraph.reflectInputs", …)` with the 5 TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `isApproved` / `approvalStatusOf` (`convex/lib/approval.ts` lines 71–117: a user with no `approvalStatus` and `_creationTime` before `APPROVAL_GATE_EPOCH_MS` counts as approved, which is how the fake ctx's seeded users read) and `isInactiveAccount` (`convex/lib/accountDeletion.ts` line 58). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "memories: defineTable" convex/schema.ts`; `grep -n "export function isApproved" convex/lib/approval.ts`; `grep -n "export function isInactiveAccount" convex/lib/accountDeletion.ts`. 2) Add the constants, validator and `reflectInputs` as written in SPEC. 3) Append `describe("lifeGraph.reflectInputs", …)` with the 5 TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** make it public; return memories of an unapproved, revoked or inactive person; return `metadata`, `embedding` or other fields; call a model.
 - **REPORT:** `status / ticket: TFV2-0190a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15323,17 +15384,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `user = await ctx.db.get(args.userId)`; missing, `isInactiveAccount(user)` or `!isApproved(user)` → `{ approved: false, memories: [] }`; else rows = `memories` `by_userId_deletedAt` (`eq userId`, `eq deletedAt undefined`) `.take(REFLECT_SCAN)`, keep `deletedAt === undefined`, sort `createdAt` descending, first `REFLECT_INPUT_MAX`, map to `{ _id, content: content.slice(0, REFLECT_CONTENT_MAX) }`; return `{ approved: true, memories }`. Internal only (no `requireUser`; a cron calls it). No errors.
-- **TESTS:** (helper `seedMemory(ctx, userId, content, extra = {})` inserts `{ userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt: 1, ...extra }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `memories` (existing, `convex/schema.ts` line 228): `userId: v.id("users")`, `content: v.string()`, `sector` (union of `"semantic"`, `"episodic"`, `"procedural"`, `"emotional"`, `"general"`), `salience: v.number()`, `decayRate: v.number()`, `lastAccessed: v.number()`, `accessCount: v.number()`, `metadata: v.optional(v.any())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; index `by_userId_deletedAt` `["userId", "deletedAt"]`.
+  - `isApproved(user)` (`convex/lib/approval.ts` line 112, existing; `user` has optional `email`, `role`, `approvalStatus: "pending" | "approved" | "revoked"`, `_creationTime`): admins → `true`; else `approvalStatus === "approved"` when it is set; else `(_creationTime ?? 0) < APPROVAL_GATE_EPOCH_MS` — so a fake-ctx user `{ _id, email }` is approved and one patched to `approvalStatus: "pending"` is not.
+  - `isInactiveAccount(user: { deletedAt?: number; isActive?: boolean }): boolean` (`convex/lib/accountDeletion.ts` line 58, existing): `deletedAt !== undefined || isActive === false`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedMemory = (ctx: any, userId: string, content: string, extra: Record<string, unknown> = {}) => ctx.db.insert("memories", { userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt: 1, ...extra });`; a user is changed with `ctx.db.patch("users:1", <the named field>)`)
   1. Given `makeFakeCtx("users:1")` with memories created at 10, 30, 20 / When `reflectInputs({ userId: "users:1" })` runs / Then `{ approved: true, memories: [<30>, <20>, <10>] }` as `{ _id, content }` only.
   2. Given `users:1` patched to `approvalStatus: "pending"` / When it runs / Then `{ approved: false, memories: [] }`.
   3. Given `users:1` patched to `isActive: false` / When it runs / Then `{ approved: false, memories: [] }`; and for an id with no `users` row, the same.
   4. Given a soft-deleted memory of `users:1` and a memory of `users:2` / When it runs for `users:1` / Then `memories` is `[]` and `approved` is `true`.
-  5. Given 51 memories, one with 301 characters / When it runs / Then 50 memories return and no `content` is longer than 300.
+  5. Given 51 memories, one with 301 characters / When it runs / Then 50 memories return and no `content` is longer than 300; and given exactly 50 memories, one with exactly 300 characters / Then 50 return and that one's `content` has length 300.
 - **NUMBERS:** ≤ 500 rows read, ≤ 50 memories returned, ≤ 300 characters each (named constants; bounded per CONVENTIONS §20; test 5); 5 of 5 cases pass. p95 latency: UNKNOWN.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0190b — Reflect: `lifeGraph.saveObservation` (internal mutation: store one observation) — OPEN
+- **STATUS:** open — Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, TFV2-0003, CFG-004 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, TFV2-0003, CFG-004.
@@ -15341,9 +15408,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.saveObservation` (internalMutation) stores one observation for a person when its text is clean and 1–300 characters and at least 3 of that person's live memories support it, and returns `null` (stores nothing) for unknown memories, blaming text or a repeat.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `OBSERVATION_TEXT_MAX`, `REFLECT_MIN_MEMORIES`, `OBSERVATION_MEMORY_MAX`, `OBSERVATION_SCAN`, `saveObservation`; import `containsShame` from `./lib/shameWords`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `observations` rows (insert).
-- **STEPS:** 1) Code-map check: `grep -n "observations: defineTable" convex/schema.ts` (CFG-004; else `blocked: missing CFG-004`); `ls convex/lib/shameWords.ts` (TFV2-0003; else `blocked: missing TFV2-0003`). 2) Add the constants and `saveObservation` exactly as SPEC. 3) Append `describe("lifeGraph.saveObservation", …)` with the 7 TESTS cases (`Date.now` spied to `7000`). 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "observations: defineTable" convex/schema.ts` (CFG-004; else `blocked: missing CFG-004`); `ls convex/lib/shameWords.ts` (TFV2-0003; else `blocked: missing TFV2-0003`). 2) Add the constants and `saveObservation` as written in SPEC. 3) Append `describe("lifeGraph.saveObservation", …)` with the 7 TESTS cases (`Date.now` spied to `7000`). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 7 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** make it public; store an observation citing another person's or a deleted memory; store fewer than 3 supporting ids; call a model here.
 - **REPORT:** `status / ticket: TFV2-0190b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15359,7 +15426,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `text = args.text.trim()`; empty or `text.length > OBSERVATION_TEXT_MAX` → `new Error("Observation text must be 1 to 300 characters.")`; `ids` = distinct `memoryIds` in order; `ids.length < REFLECT_MIN_MEMORIES` → `new Error("An observation needs at least 3 memories.")`; `ids.length > OBSERVATION_MEMORY_MAX` → `new Error("An observation can cite at most 20 memories.")`; `containsShame(text).found` → `null`; any id whose row is missing, deleted or not `args.userId`'s → `null`; a live observation of `args.userId` (`by_userId_deletedAt`, `.take(OBSERVATION_SCAN)`) whose `text.trim().toLowerCase()` equals `text.toLowerCase()` → `null`; else insert `{ userId: args.userId, text, memoryIds: ids, createdAt: now, updatedAt: now }` and return its id. Internal only. Errors: the three above.
-- **TESTS:** (`seedMemory` as in TFV2-0190a; M1, M2, M3 live memories of `users:1`)
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedMemory = (ctx: any, userId: string, content: string, extra: Record<string, unknown> = {}) => ctx.db.insert("memories", { userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt: 1, ...extra });`; M1, M2, M3 = `seedMemory(ctx, "users:1", "m1")`, `"m2"`, `"m3"`; rejections read with `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.)
   1. Given `text: "   "`, and separately `text: "x".repeat(301)` / When it runs / Then each rejects with `"Observation text must be 1 to 300 characters."`.
   2. Given `memoryIds: [M1, M2, M2]` / When it runs / Then it rejects with `"An observation needs at least 3 memories."`.
   3. Given 21 distinct live memory ids / When it runs / Then it rejects with `"An observation can cite at most 20 memories."`.
@@ -15369,9 +15436,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a live observation "gym slips after late nights" of `users:1` / When it saves `"Gym slips after late nights"` / Then it returns `null` and there is still one row.
 - **NUMBERS:** ≥ 3 and ≤ 20 supporting memories (`REFLECT_MIN_MEMORIES`, `OBSERVATION_MEMORY_MAX`; tests 2–3); text ≤ 300 characters (test 1); ≤ 500 rows read (`OBSERVATION_SCAN`); 7 of 7 cases pass. p95 latency: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-06: may the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")? — Amit.
+- **OPEN:** Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")? — Amit.
 
 ### TFV2-0190c — Reflect: `lifeGraph.reflectForUser` (internal action: the model finds patterns in one person's memories) — OPEN
+- **STATUS:** open — inherits TFV2-0190b (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0190a, TFV2-0190b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0190a, TFV2-0190b.
@@ -15379,9 +15447,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.reflectForUser` (internalAction) asks the text model for up to 5 patterns, each supported by at least 3 of one approved person's recent memories, and saves them through `saveObservation`, returning how many were stored.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `REFLECT_MAX_PER_RUN`, `REFLECT_SYSTEM_PROMPT`, `reflectForUserWith`, `reflectForUser`; add `internalAction` to the server import, `callLLM` and type `AiMessage` imports if not present) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Writes `observations` through `saveObservation`.
-- **STEPS:** 1) Code-map check: read `callLLM` (`convex/lib/ai_router.ts` line 140), `reflectInputs`, `saveObservation`. 2) Add the constants, `reflectForUserWith` and `reflectForUser` exactly as SPEC. 3) Append `describe("lifeGraph.reflectForUser", …)` with the 6 TESTS cases calling `reflectForUserWith` with stubs. 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `callLLM` (`convex/lib/ai_router.ts` line 140), `reflectInputs`, `saveObservation`. 2) Add the constants, `reflectForUserWith` and `reflectForUser` as written in SPEC. 3) Append `describe("lifeGraph.reflectForUser", …)` with the 6 TESTS cases calling `reflectForUserWith` with stubs. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** call the real provider in tests; log memory text, model output or provider error text; run for an unapproved person; write except through `saveObservation`; run per message (the nightly fan-out is TFV2-0190d).
 - **REPORT:** `status / ticket: TFV2-0190c / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15411,9 +15479,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given 7 valid observations and a save stub returning `null` for the second / When it runs / Then save was called 5 times and the result is `{ created: 4 }`.
 - **NUMBERS:** ≤ 5 observations per person per run (`REFLECT_MAX_PER_RUN`, test 6); ≥ 3 supporting memories each (test 5); one model call per person per night, `maxTokens` 800; 6 of 6 cases pass. Provider p95 latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0190b (Q-06: may the nightly reflect store model-made observations directly, or must each go through a confirm / edit / reject proposal first?) — Amit.
+- **OPEN:** inherits TFV2-0190b (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?) — Amit.
 
 ### TFV2-0190d — Reflect: `lifeGraph.reflectNightly` (internal mutation) + the nightly cron line — OPEN
+- **STATUS:** open — inherits TFV2-0190c (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0190c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0190c.
@@ -15421,9 +15490,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** Every night at 02:00 UTC, `lifeGraph.reflectNightly` (internalMutation) schedules `reflectForUser` for up to 500 live, approved, active people, and `convex/crons.ts` registers it.
 - **SCOPE:** `convex/lifeGraph.ts` · `convex/crons.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `REFLECT_USERS_MAX`, `REFLECT_SPACING_MS`, `reflectNightly`) · `convex/crons.ts` (edit: one line, §17) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · Convex cron schedule on next deploy; schedules internal actions.
-- **STEPS:** 1) Code-map check: read `convex/crons.ts` (16 lines, one `crons.interval` line) and the fake `scheduler.runAfter` recorder (TFV2-0000a, `ctx.scheduler.calls`). 2) Add the constants and `reflectNightly` to `convex/lifeGraph.ts` exactly as SPEC. 3) In `convex/crons.ts`, add exactly `crons.daily("nightly reflect", { hourUTC: 2, minuteUTC: 0 }, internal.lifeGraph.reflectNightly, {});` on its own line after the existing `crons.interval(…)` line and before `export default crons;`; change nothing else (the file comment stays). 4) Append `describe("lifeGraph.reflectNightly", …)` with the 4 TESTS cases. 5) Run DONE, then `bun run typecheck` (the cron line must type-check against `internal.lifeGraph.reflectNightly`).
+- **STEPS:** 1) Code-map check: read `convex/crons.ts` (16 lines, one `crons.interval` line) and the fake `scheduler.runAfter` recorder (TFV2-0000a, `ctx.scheduler.calls`). 2) Add the constants and `reflectNightly` to `convex/lifeGraph.ts` as written in SPEC. 3) In `convex/crons.ts`, add exactly `crons.daily("nightly reflect", { hourUTC: 2, minuteUTC: 0 }, internal.lifeGraph.reflectNightly, {});` on its own line after the last existing `crons.…` line and before `export default crons;`; change nothing else (the file comment stays). 4) Append `describe("lifeGraph.reflectNightly", …)` with the 4 TESTS cases. 5) Run DONE, then `bun run typecheck` (the cron line must type-check against `internal.lifeGraph.reflectNightly`).
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 4 new cases passing; `bun run typecheck` → exit code 0.
-- **EVIDENCE:** both outputs pasted into the PR, plus `git diff convex/crons.ts` showing the one added line.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` and the `bun run typecheck` exit code pasted into the PR, plus `git diff convex/crons.ts` showing the one added line.
 - **DO NOT:** run reflect inside this mutation; schedule for pending, revoked, deleted or inactive accounts; edit the existing cron line or the comment; add a second cron.
 - **REPORT:** `status / ticket: TFV2-0190d / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/crons.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15439,14 +15508,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   `users = await ctx.db.query("users").withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined)).take(REFLECT_USERS_MAX)`; keep `!isInactiveAccount(u) && isApproved(u)`; for the k-th kept user (0-based) `await ctx.scheduler.runAfter(k * REFLECT_SPACING_MS, internal.lifeGraph.reflectForUser, { userId: u._id })`; return `{ scheduled }`. Internal only. No errors. Cron line (`convex/crons.ts`): `crons.daily("nightly reflect", { hourUTC: 2, minuteUTC: 0 }, internal.lifeGraph.reflectNightly, {});`.
 - **TESTS:**
   1. Given `makeFakeCtx("users:1", ["users:2"])` (both approved by default) / When `reflectNightly({})` runs / Then it returns `{ scheduled: 2 }` and `ctx.scheduler.calls` has `delayMs` `[0, 1000]` and `args` `[{ userId: "users:1" }, { userId: "users:2" }]`.
-  2. Given `users:2` patched to `approvalStatus: "pending"` and a third user `users:3` patched to `isActive: false` / When it runs / Then `{ scheduled: 1 }` for `users:1` only.
+  2. Given `makeFakeCtx("users:1", ["users:2", "users:3"])`, `users:2` patched to `approvalStatus: "pending"` and `users:3` patched to `isActive: false` / When it runs / Then `{ scheduled: 1 }` for `users:1` only.
   3. Given `users:2` patched to `deletedAt: 5` / When it runs / Then `users:2` is not scheduled.
-  4. Given 501 users (`makeFakeCtx("users:0", <500 more ids>)`) / When it runs / Then `{ scheduled: 500 }`.
+  4. Given 501 users (`makeFakeCtx("users:0", <500 more ids>)`) / When it runs / Then `{ scheduled: 500 }`; and given exactly 500 users / Then `{ scheduled: 500 }` and the last call's `delayMs` is `499000`.
 - **NUMBERS:** ≤ 500 people per night (`REFLECT_USERS_MAX`, test 4; above Tempo's sign-up cap, Q-04); runs spaced 1,000 ms; cron at 02:00 UTC daily; 4 of 4 cases pass. p95 latency: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0190c (Q-06: may the nightly reflect store model-made observations directly, or must each go through a confirm / edit / reject proposal first?) — Amit.
+- **OPEN:** inherits TFV2-0190c (Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: May the nightly reflect store model-made observations directly (PRD F-55: shown and deletable), or must each go through a confirm / edit / reject proposal first (HARD_RULES §1, "AI changes")?) — Amit.
 
 ### TFV2-0191a — Reflect: `lifeGraph.listObservations`
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-004 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-004.
@@ -15454,9 +15524,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.listObservations` (query) returns the caller's live observations, newest first, at most 100.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `OBSERVATION_LIST_MAX`, `observationValidator`, `listObservations`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `observations`; writes nothing.
-- **STEPS:** 1) Code-map check: `grep -n "observations: defineTable" convex/schema.ts` (CFG-004; else `blocked: missing CFG-004`). 2) Add the constant, validator and `listObservations` exactly as SPEC. 3) Append `describe("lifeGraph.listObservations", …)` with the 5 TESTS cases. 4) Run DONE.
+- **STEPS:** 1) Code-map check: `grep -n "observations: defineTable" convex/schema.ts` (CFG-004; else `blocked: missing CFG-004`). Relies-on checks (each prints at least one line; if one prints nothing or differs, stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "observations: defineTable" convex/schema.ts`; `grep -n "async function rejection" convex/lifeGraph.test.ts`. 2) Add the constant, validator and `listObservations` as written in SPEC. 3) Append `describe("lifeGraph.listObservations", …)` with the 5 TESTS cases. 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** return another user's or a deleted observation; return `userId`, `updatedAt` or `deletedAt`; write anything.
 - **REPORT:** `status / ticket: TFV2-0191a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15470,17 +15540,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; rows = `by_userId_deletedAt` (`eq userId`, `eq deletedAt undefined`) `.order("desc").take(OBSERVATION_LIST_MAX)` (newest by creation time); keep `deletedAt === undefined`; sort `createdAt` descending; map to `{ _id, text, memoryIds, createdAt }`. Errors: `"Not authenticated"` only.
-- **TESTS:** (helper `seedObservation(ctx, userId, text, createdAt, extra = {})` inserts `{ userId, text, memoryIds: [], createdAt, updatedAt: createdAt, ...extra }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `observations` (CFG-004): `userId: v.id("users")`, `text: v.string()`, `memoryIds: v.array(v.id("memories"))`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; indexes `by_userId` `["userId"]`, `by_userId_deletedAt` `["userId", "deletedAt"]`.
+  - `requireUser(ctx: QueryCtx | MutationCtx)` (`convex/lib/requireUser.ts` line 51, existing): returns the caller's `users` row; throws `"Not authenticated"` (no identity), `"User not found"`, `"This account is not active"`.
+  - `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedObservation = (ctx: any, userId: string, text: string, createdAt: number, extra: Record<string, unknown> = {}) => ctx.db.insert("observations", { userId, text, memoryIds: [], createdAt, updatedAt: createdAt, ...extra });`)
   1. Given `makeSignedOutCtx()` / When `listObservations({})` runs / Then it rejects with `"Not authenticated"`.
   2. Given observations created at 10 ("A") and 20 ("B") / When it runs / Then texts are `["B", "A"]`.
   3. Given a `users:1` observation with `deletedAt: 5` and a `users:2` observation / When `users:1` runs it / Then `[]`.
-  4. Given 101 observations / When it runs / Then 100 return.
+  4. Given 101 observations of `users:1` (`createdAt` 1…101) / When it runs / Then 100 return; and given exactly 100 / Then 100 return.
   5. Given one observation / When it runs / Then the item's keys sorted are exactly `["_id", "createdAt", "memoryIds", "text"]`.
 - **NUMBERS:** ≤ 100 rows read and returned (`OBSERVATION_LIST_MAX`, test 4; bounded per CONVENTIONS §20); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0191b — Reflect: `lifeGraph.forgetObservation` — OPEN
+- **STATUS:** open — Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the answer for memories also apply to observations?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-004 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-004.
@@ -15488,9 +15564,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `lifeGraph.forgetObservation` (mutation) soft-deletes one of the caller's live observations.
 - **SCOPE:** `convex/lifeGraph.ts` · test: `convex/lifeGraph.test.ts`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `forgetObservation`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `observations` rows (patch `deletedAt`, `updatedAt`).
-- **STEPS:** 1) Code-map check: read `forgetEntity` (TFV2-0186c) or `forget` in `convex/memory.ts` lines 158–172 (same pattern). 2) Add `forgetObservation` exactly as SPEC. 3) Append `describe("lifeGraph.forgetObservation", …)` with the 4 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
+- **STEPS:** 1) Code-map check: read `forget` in `convex/memory.ts` (line 159; the same owner check and soft-delete patch). 2) Add `forgetObservation` as written in SPEC. 3) Append `describe("lifeGraph.forgetObservation", …)` with the 4 TESTS cases (`Date.now` spied to `9000`). 4) Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail` with the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** hard-delete; touch the supporting memories; touch another user's observation.
 - **REPORT:** `status / ticket: TFV2-0191b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15502,16 +15578,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; row missing, foreign or `deletedAt !== undefined` → `new Error("Observation not found")`; else `patch(id, { deletedAt: now, updatedAt: now })`, return `{ success: true as const }`. Errors: `"Not authenticated"`, `"Observation not found"`.
-- **TESTS:** (`seedObservation` as in TFV2-0191a)
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedObservation = (ctx: any, userId: string, text: string, createdAt: number, extra: Record<string, unknown> = {}) => ctx.db.insert("observations", { userId, text, memoryIds: [], createdAt, updatedAt: createdAt, ...extra });`; rejections read with `rejection(p: unknown): Promise<string>` — the CONVENTIONS §16 standard helper at the top of `convex/lifeGraph.test.ts` (created by TFV2-0186a): returns the rejection's `message`, throws `"expected a rejection"` when `p` resolves; "rejects with X" means `expect(await rejection(<the call>)).toBe(X)`.)
   1. Given `makeSignedOutCtx()` / When `forgetObservation` runs / Then it rejects with `"Not authenticated"`.
   2. Given a live observation of `users:1` / When it runs / Then `{ success: true }` and the row has `deletedAt: 9000`, `updatedAt: 9000`.
   3. Given an observation of `users:2` / When `users:1` runs it / Then it rejects with `"Observation not found"` and the row has no `deletedAt`.
   4. Given an observation of `users:1` with `deletedAt: 5` / When it runs / Then it rejects with `"Observation not found"` and `deletedAt` stays `5`.
 - **NUMBERS:** 4 of 4 cases pass (exact). p95 latency: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-08: `forget` — soft delete with 30-day grace or complete hard delete; does the answer for memories also apply to observations? — Amit.
+- **OPEN:** Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the answer for memories also apply to observations? — Amit.
 
 ### TFV2-0192 — Memory import: preview in the browser — `readImport` (verify + tests, `apps/web/lib/you/memory.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -15519,9 +15596,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `readImport` is proven to preview JSON and Claude exports, cap at 300 items with stable ids, measure the 1 MB limit in UTF-8 bytes, mark duplicates case- and space-insensitively, and read nothing from text containing a NUL character.
 - **SCOPE:** `apps/web/lib/you/memory.ts` (read; unchanged) · test: `apps/web/lib/you/memory.test.ts`.
 - **MUTATES:** `apps/web/lib/you/memory.test.ts` (edit: append one `describe` block). `apps/web/lib/you/memory.ts` unchanged.
-- **STEPS:** 1) Code-map check: read `readImport`, `MAX_IMPORT_BYTES` and `ImportItem` (`apps/web/lib/you/memory.ts` lines 40–80) and `parseMemoryExport` (`convex/lib/memoryImport.ts` lines 233–259). 2) Append `describe("readImport (preview edge cases)", …)` with the 6 TESTS cases, importing nothing new beyond the file's existing import list. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **STEPS:** 1) Code-map check: read `readImport`, `MAX_IMPORT_BYTES` and `ImportItem` (`apps/web/lib/you/memory.ts` lines 44–80; `readImport` at line 64) and `parseMemoryExport` (`convex/lib/memoryImport.ts` line 116; `MAX_ITEMS = 300` at line 3). 2) Append `describe("readImport (preview edge cases)", …)` with the 6 TESTS cases, importing nothing new beyond the file's existing import list. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test apps/web/lib/you/memory.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test apps/web/lib/you/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `apps/web/lib/you/memory.ts`, `convex/lib/memoryImport.ts` or any Convex file; add a server preview function; edit the existing `describe` blocks.
 - **REPORT:** `status / ticket: TFV2-0192 / evidence: <DONE output> / changed: apps/web/lib/you/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15535,7 +15612,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `readImport('["Likes tea", "likes tea", "Uses dark mode"]', "grok", [])` / Then `{ ok: true, items: [{ id: "item-0", text: "Likes tea", choice: "keep", duplicate: false }, { id: "item-1", text: "Uses dark mode", choice: "keep", duplicate: false }] }`.
   2. Given `JSON.stringify([{ conversations_memory: "# Work\n- Prefers focus time" }])` with source `"claude"` / Then `items.map((i) => i.text)` equals `["Work: Prefers focus time"]`.
-  3. Given 350 lines `"memory 0"`…`"memory 349"` / Then `items` has length 300 and the last item's `id` is `"item-299"`.
+  3. Given 350 lines `"memory 0"`…`"memory 349"` / Then `items` has length 300 and the last item's `id` is `"item-299"`; and given exactly 300 lines `"memory 0"`…`"memory 299"` / Then `items` has length 300.
   4. Given `"é".repeat(MAX_IMPORT_BYTES / 2)` (exactly 1 MiB in UTF-8) / Then `ok` is `true`; and given the same text plus `"x"` / Then `{ ok: false, reason: "too-large" }`.
   5. Given text `"- Likes tea"` and `existing` `["  LIKES TEA "]` / Then the one item has `duplicate: true`.
   6. Given `"Likes tea\u0000"` / Then `{ ok: true, items: [] }`.
@@ -15544,6 +15621,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0193 — Memory import: save the kept items — `memoryImport.saveReviewed` (verify + tests)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -15551,9 +15629,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `memoryImport.saveReviewed` is proven to refuse signed-out callers, more than 300 items and more than 1 MB, to clean each item, skip junk and the caller's live duplicates, and to store each new item with its source and import time, returning the new ids.
 - **SCOPE:** `convex/memoryImport.ts` (read; unchanged) · test: `convex/memoryImport.test.ts`.
 - **MUTATES:** `convex/memoryImport.test.ts` (edit: one import line + one appended `describe` block). `convex/memoryImport.ts` unchanged.
-- **STEPS:** 1) Code-map check: read `saveReviewed` (`convex/memoryImport.ts` lines 61–118: `MAX_REVIEWED_ITEMS = 300`, `MAX_IMPORT_BYTES = 1024 * 1024`, `cleanImportItem`) and the top of `convex/memoryImport.test.ts` (tabs; local `makeFakeCtx`, `run`). 2) Add the line `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run as runFn } from "./lib/testFakeCtx";` after the existing imports. 3) Append `describe("memoryImport.saveReviewed", …)` with the 7 TESTS cases using `makeSharedCtx`, `makeSignedOutCtx` and `runFn(memoryImport.saveReviewed, ctx, args)`; `Date.now` spied where named and restored after each case. 4) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
+- **STEPS:** 1) Code-map check: read `saveReviewed` (`convex/memoryImport.ts` lines 61–118: `MAX_REVIEWED_ITEMS = 300`, `MAX_IMPORT_BYTES = 1024 * 1024`, `cleanImportItem`) and the top of `convex/memoryImport.test.ts` (tabs; local `makeFakeCtx`, `run`). 2) Add the line `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run as runFn } from "./lib/testFakeCtx";` after the existing imports. 3) Append `describe("memoryImport.saveReviewed", …)` with the 7 TESTS cases using `makeSharedCtx`, `makeSignedOutCtx` and `runFn(memoryImport.saveReviewed, ctx, args)`, and the CONVENTIONS §16 `rejection` helper declared inside this `describe` block as `const rejection = async (p: unknown): Promise<string> => { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); };` ("rejects with X" = `expect(await rejection(runFn(memoryImport.saveReviewed, ctx, args))).toBe(X)`); `Date.now` spied where named and restored after each case. 4) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/memoryImport.test.ts` → `0 fail` with the 7 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/memoryImport.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memoryImport.ts`, `convex/lib/memoryImport.ts` or `convex/memoryUndo.test.ts`; change the existing `describe` blocks or the local helpers; add a new commit function.
 - **REPORT:** `status / ticket: TFV2-0193 / evidence: <DONE output> / changed: convex/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15565,9 +15643,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Behaviour (existing code): `requireUser`; `items.length > 300` → `new Error("Save up to 300 items at a time.")`; `utf8ByteLength(items.join("\n")) > 1048576` → `new Error("That memory import is too large. Keep it under 1 MB.")`; the caller's live memories' `content.trim().toLocaleLowerCase()` form the known set; for each item `cleanImportItem(item)` (bullet removed, spaces collapsed, ≤ 1,000 characters, `null` when shorter than 3 or with no letter/digit); `null` or a known key → `skipped += 1`; else insert `{ userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: now, accessCount: 0, metadata: { source, importedAt: now }, createdAt: now, updatedAt: now }` and add the key. Returns `{ added: memoryIds.length, skipped, memoryIds }`. Errors: `"Not authenticated"`, `"Save up to 300 items at a time."`, `"That memory import is too large. Keep it under 1 MB."`. Known gap (not changed here): the duplicate read is an unbounded `.collect()` of the caller's live memories; noted for ticket sync.
-- **TESTS:**
+- **TESTS:** (seeded memories: `ctx.db.insert("memories", { userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt: 1 })`, plus `deletedAt: 5` on the soft-deleted one)
   1. Given `makeSignedOutCtx()` / When `saveReviewed({ source: "claude", items: ["Likes tea"] })` runs / Then it rejects with `"Not authenticated"` and no `memories` row exists.
-  2. Given `makeSharedCtx("users:1")` and 301 items / When it runs / Then it rejects with `"Save up to 300 items at a time."` and no row exists.
+  2. Given `makeSharedCtx("users:1")` and 301 items / When it runs / Then it rejects with `"Save up to 300 items at a time."` and no row exists; and given exactly 300 items `"item 0"`…`"item 299"` / Then it resolves `{ added: 300, skipped: 0 }`.
   3. Given items `["x".repeat(524288), "x".repeat(524288)]` (joined: 1,048,577 bytes) / When it runs / Then it rejects with `"That memory import is too large. Keep it under 1 MB."`; and given `["x".repeat(524287), "y".repeat(524288)]` (joined: exactly 1,048,576 bytes) / Then it resolves `{ added: 2, skipped: 0 }` with two ids.
   4. Given `Date.now` = `7000` / When `saveReviewed({ source: "claude", items: ["  Works   from home "] })` runs / Then it returns `{ added: 1, skipped: 0, memoryIds: [id] }` and the row equals `{ userId: "users:1", content: "Works from home", sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 7000, accessCount: 0, metadata: { source: "claude", importedAt: 7000 }, createdAt: 7000, updatedAt: 7000 }` plus `_id`, `_creationTime`.
   5. Given a live memory `"Likes tea"` of `users:1`, a soft-deleted memory `"Lives in Haifa"` of `users:1` and a memory `"Has a dog"` of `users:2` / When it saves `["LIKES TEA", "Lives in Haifa", "Has a dog"]` / Then `{ added: 2, skipped: 1 }` and the two new rows hold `"Lives in Haifa"` and `"Has a dog"` for `users:1`.
@@ -15581,16 +15659,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0181a; not a build ticket.
 
 ### TFV2-0195a — Memory: `memory.decayForUser` (internal mutation: daily salience decay for one person)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171.
 - **WHY:** PRD F-50 (memories fade when unused); `memories.decayRate` (0.01, set by `memory.remember` and `memoryImport.saveReviewed`). Old TFV2-0195 bundled a decay function and its cron; split per CONVENTIONS §7 H (this ticket and TFV2-0195b). The legacy user-run action `memories.decayMemories` (`convex/memories.ts` line 186) is not reused: it calls `memories.updateSalience`, which also resets `lastAccessed` and bumps `accessCount`, so decaying would mark memories as used, and it compounds `decayRate * daysSinceAccess` on every run. Rule chosen here, because it runs once a day: each run multiplies `salience` by `(1 - decayRate)` for memories not accessed in the last 24 hours, never below 0.1, and writes only `salience` (`updatedAt` orders lists, `lastAccessed` means use). `convex/memory.test.ts` comes from TFV2-0171.
 - **GOAL:** `memory.decayForUser` (internalMutation) lowers the salience of one person's live memories that were not accessed in the last day by one day's `decayRate`, floored at 0.1, touching no other field.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
-- **MUTATES:** `convex/memory.ts` (edit: add `DAY_MS`, `SALIENCE_FLOOR`, `DECAY_SCAN`, `decayForUser`; add `internalMutation` to the `./_generated/server` import if it is not there yet) · `convex/memory.test.ts` (edit: append one `describe` block) · `memories.salience` (patch).
-- **STEPS:** 1) Code-map check: read `convex/memory.ts` imports and `remember` (lines 1–6, 87–112) and `decayMemories` in `convex/memories.ts` lines 186–220 (do not edit or call it). 2) Add the constants and `decayForUser` exactly as SPEC. 3) Append `describe("memory.decayForUser", …)` with the 5 TESTS cases (`Date.now` spied to `10 * DAY_MS`). 4) Run DONE.
+- **MUTATES:** `convex/memory.ts` (edit: add `DAY_MS`, `SALIENCE_FLOOR`, `DECAY_SCAN`, `decayForUser`; add `internalMutation` to the `./_generated/server` import, `MutationCtx` to its type import and `Id` to the `./_generated/dataModel` type import, each only if not there yet) · `convex/memory.test.ts` (edit: append one `describe` block) · `memories.salience` (patch).
+- **STEPS:** 1) Code-map check: read `convex/memory.ts` imports and `remember` (lines 1–6, 87–112) and `decayMemories` in `convex/memories.ts` line 186 (do not edit or call it). Relies-on checks (each prints at least one line; else stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n "memories: defineTable" convex/schema.ts`; `grep -n 'describe("memory.remember"' convex/memory.test.ts` (TFV2-0171). 2) Add the constants and `decayForUser` as written in SPEC. 3) Append `describe("memory.decayForUser", …)` with the 5 TESTS cases (`Date.now` spied to `10 * DAY_MS`). 4) Run DONE.
 - **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** change `updatedAt`, `lastAccessed` or `accessCount`; raise any salience; edit `convex/memories.ts`; make it public; add the cron here (TFV2-0195b).
 - **REPORT:** `status / ticket: TFV2-0195a / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15605,17 +15684,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `now = Date.now()`; rows = `by_userId_deletedAt` (`eq userId`, `eq deletedAt undefined`) `.take(DECAY_SCAN)`, keep `deletedAt === undefined`; for each with `now - lastAccessed > DAY_MS`: `next = Math.max(SALIENCE_FLOOR, salience * (1 - decayRate))`; when `next < salience` → `ctx.db.patch(row._id, { salience: next })`, `updated += 1`. Internal only (no `requireUser`; TFV2-0195b schedules it). No errors.
-- **TESTS:** (`seedMemory` inserts `{ userId, content, sector: "general", salience, decayRate: 0.01, lastAccessed, accessCount: 0, createdAt: 1, updatedAt: 1 }`)
+  **Relies on** (not created here; checked in STEP 1):
+  - table `memories` (existing, `convex/schema.ts` line 228): `userId: v.id("users")`, `content: v.string()`, `sector` (union of `"semantic"`, `"episodic"`, `"procedural"`, `"emotional"`, `"general"`), `salience: v.number()`, `decayRate: v.number()`, `lastAccessed: v.number()`, `accessCount: v.number()`, `metadata: v.optional(v.any())`, `createdAt: v.number()`, `updatedAt: v.number()`, `deletedAt: v.optional(v.number())`; index `by_userId_deletedAt` `["userId", "deletedAt"]`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - `convex/memory.test.ts` with its imports `{ afterEach, describe, expect, spyOn, test }` from `"bun:test"`, `* as memory from "./memory"` and `{ makeFakeCtx, makeSignedOutCtx, run }` from `"./lib/testFakeCtx"` (created by TFV2-0171).
+- **TESTS:** (test helpers declared inside this ticket's own `describe` block (CONVENTIONS §16 (d); no ticket uses another ticket's helpers): `const seedMemory = (ctx: any, userId: string, content: string, salience: number, lastAccessed: number, extra: Record<string, unknown> = {}) => ctx.db.insert("memories", { userId, content, sector: "general", salience, decayRate: 0.01, lastAccessed, accessCount: 0, createdAt: 1, updatedAt: 1, ...extra });`; `now` = `10 * DAY_MS` = `864_000_000`)
   1. Given a memory with `salience: 0.5`, `lastAccessed: 0` / When `decayForUser({ userId: "users:1" })` runs / Then `{ updated: 1 }`, `salience` is `0.495` (`toBeCloseTo`, 10 digits), and `lastAccessed`, `accessCount`, `updatedAt` are unchanged.
-  2. Given `lastAccessed` = `now - DAY_MS` (exactly one day) / When it runs / Then `{ updated: 0 }` and `salience` is unchanged.
+  2. Given `lastAccessed` = `now - DAY_MS` (exactly one day) / When it runs / Then `{ updated: 0 }` and `salience` is unchanged; and given `lastAccessed` = `now - DAY_MS - 1` / Then `{ updated: 1 }`.
   3. Given `salience: 0.1` / When it runs / Then unchanged; and given `salience: 0.1005` / Then `salience` becomes `0.1`.
   4. Given a soft-deleted memory of `users:1` and a memory of `users:2`, both stale / When it runs for `users:1` / Then `{ updated: 0 }` and both keep their salience.
-  5. Given 501 stale memories of `users:1` / When it runs / Then `{ updated: 500 }`.
+  5. Given 501 stale memories of `users:1` / When it runs / Then `{ updated: 500 }`; and given exactly 500 / Then `{ updated: 500 }`.
 - **NUMBERS:** salience floor 0.1 (`SALIENCE_FLOOR`, test 3); one day's decay per run, idle threshold > 86,400,000 ms (test 2); ≤ 500 rows per person per run (`DECAY_SCAN`, test 5); 5 of 5 cases pass. p95 latency: UNKNOWN.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0195b — Memory: `memory.decayAll` (internal mutation) + the daily decay cron line
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0195a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0195a.
@@ -15623,9 +15707,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** Every day at 03:00 UTC, `memory.decayAll` (internalMutation) schedules `decayForUser` for up to 500 live, active people, and `convex/crons.ts` registers it.
 - **SCOPE:** `convex/memory.ts` · `convex/crons.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (edit: add `DECAY_USERS_MAX`, `decayAll`; import `internal` from `./_generated/api` and `isInactiveAccount` from `./lib/accountDeletion` if not present) · `convex/crons.ts` (edit: one line, §17) · `convex/memory.test.ts` (edit: append one `describe` block) · Convex cron schedule on next deploy; schedules internal mutations.
-- **STEPS:** 1) Code-map check: read `convex/crons.ts` (its existing `crons.…` lines; another ticket may have added one) and the fake `scheduler.runAfter` recorder (TFV2-0000a). 2) Add `DECAY_USERS_MAX` and `decayAll` to `convex/memory.ts` exactly as SPEC. 3) In `convex/crons.ts`, add exactly `crons.daily("daily salience decay", { hourUTC: 3, minuteUTC: 0 }, internal.memory.decayAll, {});` on its own line after the last existing `crons.…` line and before `export default crons;`; change nothing else. 4) Append `describe("memory.decayAll", …)` with the 3 TESTS cases. 5) Run DONE, then `bun run typecheck`.
+- **STEPS:** 1) Code-map check: read `convex/crons.ts` (its existing `crons.…` lines; another ticket may have added one) and the fake `scheduler.runAfter` recorder (TFV2-0000a). Relies-on checks (each prints at least one line; else stop with `blocked: PATH_DRIFT — <what differs>`): `grep -n '"by_deletedAt", \["deletedAt"\]' convex/schema.ts` (line 61); `grep -n "export function isInactiveAccount" convex/lib/accountDeletion.ts`; `grep -n "runAfter" convex/lib/testFakeCtx.ts`; `grep -n "export const decayForUser" convex/memory.ts` (TFV2-0195a). 2) Add `DECAY_USERS_MAX` and `decayAll` to `convex/memory.ts` as written in SPEC. 3) In `convex/crons.ts`, add exactly `crons.daily("daily salience decay", { hourUTC: 3, minuteUTC: 0 }, internal.memory.decayAll, {});` on its own line after the last existing `crons.…` line and before `export default crons;`; change nothing else. 4) Append `describe("memory.decayAll", …)` with the 3 TESTS cases. 5) Run DONE, then `bun run typecheck`.
 - **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 3 new cases passing; `bun run typecheck` → exit code 0.
-- **EVIDENCE:** both outputs pasted into the PR, plus `git diff convex/crons.ts` showing the one added line.
+- **EVIDENCE:** the summary of `bun test convex/memory.test.ts` and the `bun run typecheck` exit code pasted into the PR, plus `git diff convex/crons.ts` showing the one added line.
 - **DO NOT:** decay inside this mutation; edit existing cron lines or the file comment; schedule for deleted or inactive accounts; make it public.
 - **REPORT:** `status / ticket: TFV2-0195b / evidence: <DONE output> / changed: convex/memory.ts, convex/crons.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -15638,26 +15722,32 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `users = await ctx.db.query("users").withIndex("by_deletedAt", (q) => q.eq("deletedAt", undefined)).take(DECAY_USERS_MAX)`; for each with `!isInactiveAccount(u)`: `await ctx.scheduler.runAfter(0, internal.memory.decayForUser, { userId: u._id })`; return `{ scheduled }`. Internal only. No errors. Cron line (`convex/crons.ts`): `crons.daily("daily salience decay", { hourUTC: 3, minuteUTC: 0 }, internal.memory.decayAll, {});`.
+  **Relies on** (not created here; checked in STEP 1):
+  - index `users.by_deletedAt` `["deletedAt"]` (existing, `convex/schema.ts` line 61).
+  - `isInactiveAccount(user: { deletedAt?: number; isActive?: boolean }): boolean` (`convex/lib/accountDeletion.ts` line 58, existing): `deletedAt !== undefined || isActive === false`.
+  - `makeFakeCtx(userId: string, extraUsers?: string[])`, `makeSignedOutCtx()` and `run(fn, ctx, args)` from `convex/lib/testFakeCtx.ts` (`makeSignedOutCtx` and the recorder `ctx.scheduler.calls: { delayMs: number; fn: unknown; args: unknown }[]` come from TFV2-0000a): seeds each listed user as `{ _id, email }` (no `_creationTime`, `approvalStatus`, `isActive` or `deletedAt`); `insert` returns `"<table>:<n>"` from one counter shared by every table and sets `_creationTime: 0`; `withIndex` keeps rows whose fields equal every `eq` value (a missing field equals `undefined`); `.order("desc")` with no range condition keeps insertion order, so a capped read is asserted by its count.
+  - `decayForUser` (`export const decayForUser = internalMutation({ args: { userId: v.id("users") }, returns: v.object({ updated: v.number() }), handler })`, `convex/memory.ts`, created by TFV2-0195a).
 - **TESTS:**
   1. Given `makeFakeCtx("users:1", ["users:2"])` / When `decayAll({})` runs / Then `{ scheduled: 2 }` and `ctx.scheduler.calls` has `delayMs` `[0, 0]` and `args` `[{ userId: "users:1" }, { userId: "users:2" }]`.
-  2. Given `users:2` patched to `isActive: false` and a third user patched to `deletedAt: 5` / When it runs / Then `{ scheduled: 1 }` for `users:1` only.
-  3. Given 501 users / When it runs / Then `{ scheduled: 500 }`.
+  2. Given `makeFakeCtx("users:1", ["users:2", "users:3"])`, `users:2` patched to `isActive: false` and `users:3` patched to `deletedAt: 5` / When it runs / Then `{ scheduled: 1 }` for `users:1` only.
+  3. Given 501 users (`makeFakeCtx("users:0", <the 500 ids "users:1"…"users:500">)`) / When it runs / Then `{ scheduled: 500 }`; and given exactly 500 users / Then `{ scheduled: 500 }`.
 - **NUMBERS:** ≤ 500 people per day (`DECAY_USERS_MAX`, test 3; above Tempo's sign-up cap, Q-04); cron daily at 03:00 UTC; 3 of 3 cases pass. p95 latency: UNKNOWN.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0196 — Coach reply shame guard in `runCoachReply` (`convex/coach.ts`) — OPEN
+- **STATUS:** open — new: When `containsShame` flags a coach reply (it over-flags by design: EN "That must be hard", HE "מחייב" and "חייבים" are flagged), should `runCoachReply` replace the whole reply, card included, with the fixed line `SHAME_GUARD_REPLY` as worded in SPEC, ask the model once more with a "no shaming words" instruction, or save the reply unchanged and only log it?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0003, TFV2-0155b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0003, TFV2-0155b.
 - **WHY:** HARD_RULES §1 ("the coach must never imply failure or laziness"); PRD §13 copy rules; CONVENTIONS §12 shame words. Re-scoped: the word list and `containsShame` are already created by TFV2-0003 (`convex/lib/shameWords.ts`), so the old "create `SHAME_PHRASES` / `isShaming`" part is gone; what is left is the guard on the live reply path, `runCoachReply` in `convex/coach.ts` (the only place a model reply is saved, through `internal.coach.saveReply`). The old dependency TFV2-0153 (Agent, OPEN) is dropped: the live path does not use the Agent. TFV2-0155b is a sequencing dependency only (it edits `convex/coach.ts` and appends to `convex/coach_chat.test.ts` too).
 - **GOAL:** A coach reply in which `containsShame` finds a term is never saved as written: `runCoachReply` saves the fixed line `SHAME_GUARD_REPLY[locale]` instead, with no card and no sources, and logs only that it happened.
 - **SCOPE:** `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
-- **MUTATES:** `convex/coach.ts` (edit: one import, one exported constant `SHAME_GUARD_REPLY`, one guard block in `runCoachReply`) · `convex/coach_chat.test.ts` (edit: append one `describe` block). Writes `messages` rows exactly as today (content changes only when the guard fires).
+- **MUTATES:** `convex/coach.ts` (edit: one import, one exported constant `SHAME_GUARD_REPLY`, one guard block in `runCoachReply`) · `convex/coach_chat.test.ts` (edit: append one `describe` block). Writes `messages` rows unchanged from today (content changes only when the guard fires).
 - **STEPS:**
   1. Code-map: `grep -n "export function containsShame\|SHAME_TERMS" convex/lib/shameWords.ts` (TFV2-0003 landed); in `convex/coach.ts` read `WEB_SEARCH_NOTES` (line ~537) and `runCoachReply` (line ~574) from `if (!answer) {` to `if (answer.proposal) answer.proposal = alignDecisionSteps(…)`; `bun test convex/coach_chat.test.ts` and record the pass count.
   2. Add `import { containsShame } from "./lib/shameWords";` after the `./lib/coachProposalGuard` import block.
-  3. Add `SHAME_GUARD_REPLY` exactly as SPEC directly after `WEB_SEARCH_NOTES`.
+  3. Add `SHAME_GUARD_REPLY` as written in SPEC directly after `WEB_SEARCH_NOTES`.
   4. In `runCoachReply`, replace the two blocks `if (duplicate) { … }` and `if (note !== null) { … }` with the guard block in SPEC (the two blocks move inside `if (!shamed)` unchanged). Nothing else in the function changes.
   5. Append `describe("the shame guard (TFV2-0196)", …)` with exactly the 5 TESTS cases, using the file's `makeWorld`, `seedConversation`, `say`, `fakeModel`, `messages`, `turnOnSearch`, `errorLog`, `A`, and `import { containsShame } from "./lib/shameWords";`. Every `coach.runCoachReply` call passes `null` as the 4th argument (no search provider).
   6. Run DONE, then `bun test convex/lib/coachProposalGuard.test.ts` (it runs whole turns too) → `0 fail`.
@@ -15698,9 +15788,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `SHAME_GUARD_REPLY` / Then `containsShame(SHAME_GUARD_REPLY.en).found` and `containsShame(SHAME_GUARD_REPLY.he).found` are both `false`.
 - **NUMBERS:** shaming replies saved as written = 0 of the canonical terms (recall 100% through `containsShame`, TFV2-0003; PRD §13); extra model calls when the guard fires = 0 (TESTS 1); 5 of 5 new cases pass. Turn p95 latency: UNKNOWN (no baseline measured; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: `containsShame` over-flags by design (EN "That must be hard", HE "מחייב" and "חייבים" are flagged). When it flags a coach reply, should `runCoachReply` (a) replace the whole reply, card included, with the fixed line `SHAME_GUARD_REPLY` (this SPEC), (b) ask the model once more with a "no shaming words" instruction, or (c) save the reply unchanged and only log it? And is the fixed EN/HE line in SPEC approved? — Amit.
+- **OPEN:** new: When `containsShame` flags a coach reply (it over-flags by design: EN "That must be hard", HE "מחייב" and "חייבים" are flagged), should `runCoachReply` replace the whole reply, card included, with the fixed line `SHAME_GUARD_REPLY` as worded in SPEC, ask the model once more with a "no shaming words" instruction, or save the reply unchanged and only log it? — Amit.
 
 ### TFV2-0197 — Mock embedding seam `mockEmbed` (`convex/lib/mockModel.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0174a (Q-14: Embedding model and vector dimension.; Q-12: HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted?)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0002, TFV2-0174a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0002, TFV2-0174a.
@@ -15745,9 +15836,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given the module / Then `MOCK_EMBEDDING_DIMENSIONS === EMBEDDING_DIMENSIONS`; `mockEmbed(0)` throws `"dims must be a positive integer"`; `await mockEmbed(8)(["hi"])` equals `[[0, 0, 1, 0, 0, 0, 0, 0]]`; and the file contains `const asEmbedSeam: typeof embedTexts = mockEmbed();` (with `import type { embedTexts } from "./ai_router"`), which `bun run typecheck` compiles.
 - **NUMBERS:** vector length = 1,024 by default, equal to `EMBEDDING_DIMENSIONS` (TFV2-0174a; Q-14 proposes 1,024); ≤ 64 texts per call (`EMBED_BATCH_MAX`); 0 network calls (TESTS 6); 17 of 17 cases pass. Latency: n/a (in-memory).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0174a (Q-14: which embedding model, and therefore the vector dimension; proposed 1,024 — and Q-12: is vector (RAG) search permitted under HARD_RULES §2) — Amit.
+- **OPEN:** inherits TFV2-0174a (Q-14: Embedding model and vector dimension.; Q-12: HARD_RULES §2 (AI SDK forbidden) vs TRD §3 (AI SDK + Convex Agent permitted); RAG/vector search permitted?) — Amit.
 
 ### TFV2-0198 — AI gate: entitlement stage after approval (`convex/approval.ts`, `convex/lib/entitlements.ts`) — OPEN
+- **STATUS:** open — Q-02: Prices and billing tiers (values shown to users).; new: Should every `requireApprovedForAi` caller (coach, brain dump, memories, nags, connections, voice) refuse an approved account whose plan is `userType: "free"` or `entitlementTier: "none"` with `AI_NOT_ENTITLED_MESSAGE` (rows with neither field pass; admins are not exempt), and if so, does voice keep its own "today's voice time" refusal (voice exempt from this stage) or does `convex/voice.test.ts` change its expected message to `AI_NOT_ENTITLED_MESSAGE` in a split ticket?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0018 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0018.
@@ -15797,9 +15889,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `makeSignedOutCtx()` / Then `run(assertApprovedForAi, ctx, {})` rejects with `"Not authenticated"`.
 - **NUMBERS:** stage order auth → approval → entitlement in 100% of cases (TRD §7.3; TESTS 3, 4, 7); 13 of 13 cases pass. Latency: one extra in-memory check, p95 UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-02 (prices and billing tiers): should AI calls (coach, brain dump, memories, nags, connections, voice — every `requireApprovedForAi` caller) have an entitlement stage after approval, and is the rule "refuse `userType: "free"` or `entitlementTier: "none"`; rows with neither field pass; admins are not exempt" the right one? Today every approved account is granted `max` / `paid`, so the stage refuses nobody until a plan is downgraded. If yes: does voice keep its own "today's voice time" refusal for free accounts (voice exempt from this stage), or does `convex/voice.test.ts` change its expected message to `AI_NOT_ENTITLED_MESSAGE` (then this ticket's SCOPE gains that test file and is split)? — Amit.
+- **OPEN:** Q-02: Prices and billing tiers (values shown to users).; new: Should every `requireApprovedForAi` caller (coach, brain dump, memories, nags, connections, voice) refuse an approved account whose plan is `userType: "free"` or `entitlementTier: "none"` with `AI_NOT_ENTITLED_MESSAGE` (rows with neither field pass; admins are not exempt), and if so, does voice keep its own "today's voice time" refusal (voice exempt from this stage) or does `convex/voice.test.ts` change its expected message to `AI_NOT_ENTITLED_MESSAGE` in a split ticket? — Amit.
 
 ### TFV2-0199 — Daily coach-turn quota in `coach.claimTurn` (`convex/coach.ts`) — OPEN
+- **STATUS:** open — new: What is `COACH_TURN_DAILY_LIMIT`, the number of coach turns one person may start per UTC day (the docs give none; a value below 5 makes existing whole-turn tests fail), and are the UTC day and the fixed EN/HE limit line in SPEC right?
 - **Stage:** C · **Pass:** 1 · **Depends:** CFG-035, TFV2-0155b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-035, TFV2-0155b.
@@ -15809,7 +15902,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/coach.ts` (edit: two exported constants, one helper `turnsOn`, one block in `claimTurn`) · `convex/coach_chat.test.ts` (edit: append one `describe` block). Writes `coachTurns` rows (one per claimed turn) and, at the limit, one `messages` row with `modelUsed: "coach-turn-limit"`.
 - **STEPS:**
   1. Code-map: `grep -n "coachTurns" convex/schema.ts` (CFG-035 landed: index `by_userId_utcDateKey`); read `WEB_SEARCH_DAILY_LIMIT` and `searchesOn` (lines ~224–236) and `claimTurn` (line ~338) up to `const claim = crypto.randomUUID();`; `grep -n "function daysAgo\|async function turnOnSearch\|async function seedSearches" convex/coach_chat.test.ts`; `bun test convex/coach_chat.test.ts` and record the pass count.
-  2. Add `COACH_TURN_DAILY_LIMIT` (value from Amit's answer), `COACH_TURN_LIMIT_NOTE` and `turnsOn` exactly as SPEC, right after `searchesOn`.
+  2. Add `COACH_TURN_DAILY_LIMIT` (value from Amit's answer), `COACH_TURN_LIMIT_NOTE` and `turnsOn` as written in SPEC, right after `searchesOn`.
   3. In `claimTurn`, insert the SPEC block after the `if (held !== null && held.until > now) { return "busy" as const; }` block and before `const claim = crypto.randomUUID();`. Nothing else in `claimTurn` changes.
   4. Append `describe("daily coach turn limit (TFV2-0199)", …)` with exactly the 7 TESTS cases, using `makeWorld`, `seedConversation`, `say`, `fakeModel`, `messages`, `turnOnSearch`, `daysAgo`, `A`, `B`, `PENDING`, `PENDING_APPROVAL_MESSAGE` from the file; seed turns with `world.db.insert("coachTurns", { userId, utcDateKey, createdAt: 1, updatedAt: 1 })`. Every `runCoachReply` call passes `null` as the 4th argument.
   5. Run DONE, then `bun test convex/lib/coachProposalGuard.test.ts` → `0 fail`.
@@ -15863,9 +15956,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `PENDING` has `COACH_TURN_DAILY_LIMIT` turns dated `today` and a conversation of `PENDING` / When `runCoachReply(world.actionAs(PENDING), …)` runs / Then it rejects with `PENDING_APPROVAL_MESSAGE` and no `"coach-turn-limit"` message exists (approval before quota).
 - **NUMBERS:** daily coach-turn cap = `COACH_TURN_DAILY_LIMIT` — value UNKNOWN until Amit answers (not in PRD/TRD; web search uses 10 a UTC day, `WEB_SEARCH_DAILY_LIMIT`, for comparison only); model calls at the limit = 0 (TESTS 2); rows read per turn ≤ the cap (bounded, CONVENTIONS §20); 7 of 7 new cases pass. Turn p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: how many coach turns may one person start per UTC day (`COACH_TURN_DAILY_LIMIT`)? The docs give no number (TRD §7.3 names the quota stage only). Also: is the UTC day right (as for web search) rather than the person's local day, and is the fixed EN/HE limit line in SPEC approved? — Amit.
+- **OPEN:** new: What is `COACH_TURN_DAILY_LIMIT`, the number of coach turns one person may start per UTC day (the docs give none; a value below 5 makes existing whole-turn tests fail), and are the UTC day and the fixed EN/HE limit line in SPEC right? — Amit.
 
 ### TFV2-0200 — Component: CoachPanelShell (props-only frame extracted from `CoachPanel`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -15874,9 +15968,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/CoachPanelShell.tsx` · `apps/web/components/coach/CoachPanel.tsx` · `apps/web/app/e2e/components/coach-panel-shell/page.tsx` · test: `tests/e2e/screens/coach-panel-shell.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/CoachPanelShell.tsx` (new) · `apps/web/components/coach/CoachPanel.tsx` (edit: body replaced as in SPEC) · `apps/web/app/e2e/components/coach-panel-shell/page.tsx` (new) · `tests/e2e/screens/coach-panel-shell.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map: `cat apps/web/components/coach/CoachPanel.tsx` (the `FOCUSABLE` constant, the focus `useEffect`, `keepFocusInside`, the `<aside>` markup); `grep -n "CoachPanel" apps/web/components/tempo/TempoShell.tsx` (line 321: `<CoachPanel onClose={closeCoach} modal={coachSheet} />`, unchanged); `grep -n "coach-panel\|CoachPanel" tests/unit/kb-74.test.tsx` (the browser suite that opens the panel inside the shell); `sed -n 375,388p apps/web/app/tempo.css`.
+  1. Code-map: `cat apps/web/components/coach/CoachPanel.tsx` (the `FOCUSABLE` constant, the focus `useEffect`, `keepFocusInside`, the `<aside>` markup); `grep -n "CoachPanel" apps/web/components/tempo/TempoShell.tsx` (line 321: `<CoachPanel onClose={closeCoach} modal={coachSheet} />`, unchanged); `grep -n "coach-panel\|CoachPanel" tests/unit/kb-74.test.tsx` (the browser suite that opens the panel inside the shell); `sed -n 375,388p apps/web/app/tempo.css`. Class check: `for c in tp-coach-panel tp-glass tp-coach-panel__head tp-coach-panel__title tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-coach-thread; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in coach x; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (2 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `CoachPanelShell.tsx` exactly as SPEC: move `FOCUSABLE`, the `panel`/`opened` refs, the focus effect, `keepFocusInside` and the `<aside>` with its head verbatim from `CoachPanel.tsx`; replace `<CoachConversation …/>` with `{children}`; replace the literal ids `"coach-panel"` / `"coach-panel-title"` with `panelId` / `` `${panelId}-title` ``.
+  3. Create `CoachPanelShell.tsx` as written in SPEC: move `FOCUSABLE`, the `panel`/`opened` refs, the focus effect, `keepFocusInside` and the `<aside>` with its head unchanged from `CoachPanel.tsx`; replace `<CoachConversation …/>` with `{children}`; replace the literal ids `"coach-panel"` / `"coach-panel-title"` with `panelId` / `` `${panelId}-title` ``.
   4. Replace the body of `CoachPanel.tsx` with the SPEC version (imports `CoachPanelShell`, `CoachConversation`, `useCoachPageId`; nothing else).
   5. Create the harness page with the two SPEC states.
   6. Create the spec with the 5 TESTS bullets.
@@ -15890,6 +15984,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/components/coach/CoachPanelShell.tsx
   "use client";
   import Link from "next/link";
+  import type React from "react";
   import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
   import { useLocale } from "@/components/providers/LocaleProvider";
   import { TpIcon } from "@/components/tempo/TpIcon";
@@ -15905,6 +16000,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 
   // apps/web/components/coach/CoachPanel.tsx (whole body after the change)
   "use client";
+  import type React from "react";
   import { CoachConversation } from "./CoachChat";
   import { useCoachPageId } from "./CoachPage";
   import { CoachPanelShell } from "./CoachPanelShell";
@@ -15918,15 +16014,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     );
   }
   ```
-  Shell markup (moved verbatim): `<aside ref tabIndex={-1} className="tp-coach-panel tp-glass" id={panelId} data-component="CoachPanel" aria-labelledby={`${panelId}-title`} role={modal ? "dialog" : undefined} aria-modal={modal ? true : undefined} onKeyDown={keepFocusInside}>` → `<div className="tp-coach-panel__head"><TpIcon name="coach" /><div className="tp-coach-panel__title"><strong id={`${panelId}-title`}>{t("coach.name")}</strong><span>{t("coachPanel.sub")}</span></div><Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/coach" onClick={onClose}>{t("coachPanel.full")}</Link><button className="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label={t("coachPanel.close")} onClick={onClose}><TpIcon name="x" size="sm" /></button></div>` then `{children}`. The `biome-ignore` comment above `<aside>` moves with it. `data-component` stays `"CoachPanel"` (kb-74 and TempoShell's `classList.contains("tp-coach-panel")` rely on the same DOM).
+  **Relies on:** `CoachConversation({ variant: "panel", pageId }: { variant: "panel"; pageId: string | null })` (`export function CoachConversation`, `apps/web/components/coach/CoachChat.tsx` line 181; calls Convex, so only `CoachPanel` renders it, never the harness) · `useCoachPageId(): string | null` (`apps/web/components/coach/CoachPage.tsx` line 25) · `TpIcon` names `coach`, `x` (CONVENTIONS §22). STEP 1 greps: `grep -n "export function CoachConversation" apps/web/components/coach/CoachChat.tsx` (line 181) and `grep -n "export function useCoachPageId" apps/web/components/coach/CoachPage.tsx` (line 25).
+  Shell markup (moved unchanged): `<aside ref={panel} tabIndex={-1} className="tp-coach-panel tp-glass" id={panelId} data-component="CoachPanel" aria-labelledby={`${panelId}-title`} role={modal ? "dialog" : undefined} aria-modal={modal ? true : undefined} onKeyDown={keepFocusInside}>` → `<div className="tp-coach-panel__head"><TpIcon name="coach" /><div className="tp-coach-panel__title"><strong id={`${panelId}-title`}>{t("coach.name")}</strong><span>{t("coachPanel.sub")}</span></div><Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/coach" onClick={onClose}>{t("coachPanel.full")}</Link><button className="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label={t("coachPanel.close")} onClick={onClose}><TpIcon name="x" size="sm" /></button></div>` then `{children}`. The `biome-ignore` comment above `<aside>` moves with it. `data-component` stays `"CoachPanel"` (kb-74 and TempoShell's `classList.contains("tp-coach-panel")` rely on the same DOM).
   Copy — moved code keeps its existing `t()` keys (§11, change to an existing component; no new strings): `coach.name` EN "Coach" / HE "מאמן"; `coachPanel.sub` EN "Proposes. Nothing changes without your yes." / HE "מציע בלבד. שום דבר לא משתנה בלי ההסכמה שלך."; `coachPanel.full` EN "Open full" / HE "פתיחה מלאה"; `coachPanel.close` (aria-label) EN "Close coach" / HE "סגירת המאמן".
   Behaviour (unchanged): on mount and whenever `modal` becomes true the panel element takes focus; when `modal` is true, Tab from the last visible focusable wraps to the first and Shift+Tab from the first (or from the panel itself) wraps to the last, using `FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'`; when `modal` is false Tab leaves the panel normally. "Open full" and the close button both call `onClose`.
-  Harness (`coach-panel-shell`): each section holds `<CoachPanelShell panelId="coach-panel-<state>" …><div className="tp-coach-thread"><p>Fixture thread</p><button type="button">Last</button></div></CoachPanelShell>` with `onClose={() => log("onClose", null)}` (the fixture text is test data, not product copy). States in order: `docked` (`modal` false), `sheet` (`modal` true). Loading / empty / error / offline / success / disabled: n/a for the frame (the screen's thread content owns them).
+  Harness (`coach-panel-shell`): each section holds `<CoachPanelShell panelId="coach-panel-<state>" …><div className="tp-coach-thread"><p>Fixture thread</p><button type="button">Last</button></div></CoachPanelShell>` with `onClose={() => log("onClose")()}` (the wrapper drops the click event, so the log has no argument; the fixture text is test data, not product copy). States in order: `docked` (`modal` false), `sheet` (`modal` true). Loading / empty / error / offline / success / disabled: n/a for the frame (the screen's thread content owns them).
   Layout and tokens (tempo.css, Case A): head padding `--tp-space-3`/`--tp-space-5`, border `--tp-glass-line`; title `--tp-font-serif` `--tp-text-lg`; sub `--tp-text-xs` `--tp-ink-muted`; glass surface `.tp-glass`; width `--tp-coach-w` (400) when docked inside `.tp-app` (the shell grid places it; in the harness it fills its section). RTL: the head flows right-to-left; the open animation is `tp-slide-in-rtl` under `[dir="rtl"]` (line 477). Keyboard and screen reader: the `aside` is a complementary landmark named by the title when docked, a modal dialog named by the title as a sheet. Breakpoints: TempoShell decides `modal` (sheet below 1280 px); the shell itself has no breakpoint logic. Motion: `tp-slide-in` 240 ms (`--tp-dur-slow`), instant under reduced motion.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `docked` section / Then its `aside[data-component="CoachPanel"]` has classes `tp-coach-panel` and `tp-glass`, `id="coach-panel-docked"`, `aria-labelledby="coach-panel-docked-title"` and no `role` attribute; `#coach-panel-docked-title` reads "Coach" / "מאמן"; the sub line reads "Proposes. Nothing changes without your yes." / "מציע בלבד. שום דבר לא משתנה בלי ההסכמה שלך."; the link reads "Open full" / "פתיחה מלאה" with `href="/coach"`; the close button's `aria-label` is "Close coach" / "סגירת המאמן"; "Fixture thread" is visible; and `expectDir(page, lang)` passes.
   2. Given the `sheet` section / Then its `aside` has `role="dialog"` and `aria-modal="true"` and `aria-labelledby="coach-panel-sheet-title"`.
-  3. Given the `docked` section / When its close button is clicked / Then `coach-panel-shell-log` reads `onClose:null`.
+  3. Given the `docked` section / When its close button is clicked / Then `coach-panel-shell-log` reads `onClose:` (nothing after the colon).
   4. Given focus on the `sheet` section's "Last" button / When Tab is pressed / Then that section's "Open full" link is focused; When Shift+Tab is pressed / Then "Last" is focused again; and Given focus on the `docked` section's "Last" button / When Tab is pressed / Then the focused element is not inside `#coach-panel-docked`.
   5. Given any viewport and language / Then `expectTargetSize(page, '[data-testid^="coach-panel-shell-"]')` and `expectMotionBudget(page, '[data-testid^="coach-panel-shell-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; "Open full" 36 px, close 44 px) · bullet 5. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only (`--tp-ink`, `--tp-ink-muted` on `--tp-glass`), `bun run scan:design-tokens`. Motion ≤ 250 ms, ≤ 1 ms reduced (DESIGN.md; CONVENTIONS §5) · bullet 5. Focus stays inside a modal sheet (WCAG 2.2 SC 2.4.3 focus order) · bullet 4. 20 of 20 Playwright cases pass.
@@ -15934,6 +16031,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0202 — Component: UserMessage
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -15942,9 +16040,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/UserMessage.tsx` · `apps/web/app/e2e/components/user-message/page.tsx` · test: `tests/e2e/screens/user-message.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `sed -n 390,395p apps/web/app/tempo.css`; `test -e apps/web/components/coach/UserMessage.tsx` fails.
+  1. Code-map: `sed -n 390,395p apps/web/app/tempo.css`; `test -e apps/web/components/coach/UserMessage.tsx` fails. Class check: `for c in tp-msg tp-msg--user tp-msg__who tp-msg__text; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `UserMessage.tsx` exactly as SPEC.
+  3. Create `UserMessage.tsx` as written in SPEC.
   4. Create the harness page with the two SPEC states.
   5. Create the spec with the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
@@ -15954,6 +16052,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0202 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "you";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { you: "You" }, he: { you: "אני" } };
   export type UserMessageProps = { text: string };
@@ -15970,6 +16069,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0203 — Component: CoachButton — harness spec for the existing button (`apps/web/components/tempo/CoachButton.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -15978,8 +16078,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/tempo/CoachButton.tsx` (read only, unchanged) · `apps/web/app/e2e/components/coach-button/page.tsx` · test: `tests/e2e/screens/coach-button.spec.ts`.
 - **MUTATES:** `apps/web/app/e2e/components/coach-button/page.tsx` (new) · `tests/e2e/screens/coach-button.spec.ts` (new). No source or data change.
 - **STEPS:**
-  1. Code-map: `cat apps/web/components/tempo/CoachButton.tsx`; `sed -n 366,372p apps/web/app/tempo.css`; `sed -n 519,520p apps/web/app/tempo.css`; `grep -n '"coach.open"\|"coach.name"' apps/web/lib/i18n.ts`.
-  2. Create the harness page exactly as SPEC.
+  1. Code-map: `cat apps/web/components/tempo/CoachButton.tsx`; `sed -n 366,372p apps/web/app/tempo.css`; `sed -n 519,520p apps/web/app/tempo.css`; `grep -n '"coach.open"\|"coach.name"' apps/web/lib/i18n.ts`. Class check: `for c in tp-coach-fab tp-glass tp-coach-fab__label; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in coach; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (1 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Create the harness page as written in SPEC.
   3. Create the spec with the 6 TESTS bullets.
   4. Run DONE, then `bun test apps/web/components/tempo/CoachButton.test.tsx` (unchanged, still green).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-button.spec.ts --reporter=line` → `24 passed`, 0 failed; `bun test apps/web/components/tempo/CoachButton.test.tsx` → `0 fail`.
@@ -15989,13 +16089,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   - Component (existing, unchanged): `export const CoachButton = forwardRef<HTMLButtonElement, { expanded: boolean; onOpen: () => void }>(…)`. Markup: `<button type="button" className="tp-coach-fab tp-glass" data-component="CoachButton" aria-label={t("coach.open")} aria-expanded={expanded} aria-controls="coach-panel" onClick={onOpen}><TpIcon name="coach" /><span className="tp-coach-fab__label">{t("coach.name")}</span></button>`.
   - Existing copy: `coach.open` (aria-label) EN "Open coach (Ctrl J)" / HE "פתיחת המאמן (Ctrl J)"; `coach.name` (label) EN "Coach" / HE "מאמן".
-  - Harness: each section is `<section data-testid="coach-button-<state>" style={{ contain: "layout", minBlockSize: "calc(var(--tp-space-20) * 2)" }}>` (layout containment makes the fixed button sit inside its own 160 px section; on a phone the button sits `--tp-tabbar-h` + `--tp-space-5` = 84 px above the section bottom). States in order: `closed` (`expanded={false}`), `open` (`expanded={true}`). `onOpen={() => log("onOpen", null)}`.
+  - Harness: each section is `<section data-testid="coach-button-<state>" style={{ contain: "layout", minBlockSize: "calc(var(--tp-space-20) * 2)" }}>` (layout containment makes the fixed button sit inside its own 160 px section; on a phone the button sits `--tp-tabbar-h` + `--tp-space-5` = 84 px above the section bottom). States in order: `closed` (`expanded={false}`), `open` (`expanded={true}`). `onOpen={() => log("onOpen")()}` (no argument, so the log reads `onOpen:`).
   - Geometry from tempo.css: desktop (≥ 768 px) `inset-inline-end: var(--tp-space-6)` (24 px), `bottom: var(--tp-space-6)`, min-height 52 px, label visible; phone (< 768 px) `inset-inline-end: var(--tp-space-4)` (16 px), width 52 px, label clipped to 1 × 1 px (still read by screen readers). States: `closed`, `open`; loading / empty / error / offline / success / disabled: n/a (the shell hides the button while the panel is open, `.tp-app[data-coach="open"] .tp-coach-fab { display: none }`). RTL: the button sits at the inline end (left in Hebrew). Keyboard: native button (Enter, Space). Motion: none of its own.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `closed` section / Then its `button[data-component="CoachButton"]` has classes `tp-coach-fab` and `tp-glass`, `aria-label` "Open coach (Ctrl J)" / "פתיחת המאמן (Ctrl J)", `aria-expanded="false"`, `aria-controls="coach-panel"`, a `use[href="#i-coach"]`, and `.tp-coach-fab__label` text "Coach" / "מאמן"; and `expectDir(page, lang)` passes.
   2. Given the `open` section / Then its button has `aria-expanded="true"`.
-  3. Given the `closed` section / When its button is clicked / Then `coach-button-log` reads `onOpen:null`.
-  4. Given focus on the `closed` button (`.focus()`) / When Enter is pressed / Then the log reads `onOpen:null`.
+  3. Given the `closed` section / When its button is clicked / Then `coach-button-log` reads `onOpen:`.
+  4. Given focus on the `closed` button (`.focus()`) / When Enter is pressed / Then the log reads `onOpen:`.
   5. Given the `closed` section / Then on `desktop` the label's bounding box is wider than 1 px and the button's inline-end gap to the section edge is 24 px ±1 (in `en` `section.right − button.right`, in `he` `button.left − section.left`); on `mobile` the label's bounding box is ≤ 1 px wide, the button is 52 px wide ±1 and the gap is 16 px ±1.
   6. Given any viewport and language / Then `expectTargetSize(page, '[data-testid^="coach-button-"]')` and `expectMotionBudget(page, '[data-testid^="coach-button-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; the button is 52 px) · bullet 6. Text contrast ≥ 4.5:1 for `--tp-ink` on `--tp-glass` (WCAG 2.2 SC 1.4.3) · tokens only. Name on a label-hidden control (WCAG 2.2 SC 4.1.2) · bullet 1 (`aria-label`). Motion ≤ 250 ms · bullet 6. 24 of 24 Playwright cases pass.
@@ -16006,6 +16106,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0037; not a build ticket.
 
 ### TFV2-0205 — Component: TypingIndicator
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16014,9 +16115,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/TypingIndicator.tsx` · `apps/web/app/e2e/components/typing-indicator/page.tsx` · test: `tests/e2e/screens/typing-indicator.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component TypingIndicator " apps/web/app/tempo.css` prints line 1163; `sed -n 1163,1172p apps/web/app/tempo.css` (the `tp-typing` keyframes run 1.2 s, only under `prefers-reduced-motion: no-preference`); `test -e apps/web/components/coach/TypingIndicator.tsx` fails.
+  1. Code-map: `grep -n "@component TypingIndicator " apps/web/app/tempo.css` prints line 1163; `sed -n 1163,1172p apps/web/app/tempo.css` (the `tp-typing` keyframes run 1.2 s, only under `prefers-reduced-motion: no-preference`); `test -e apps/web/components/coach/TypingIndicator.tsx` fails. Class check: `for c in tp-typing tp-typing__dots; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `TypingIndicator.tsx` exactly as SPEC.
+  3. Create `TypingIndicator.tsx` as written in SPEC.
   4. Create the harness page with the two SPEC states.
   5. Create the spec with the 3 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
@@ -16026,6 +16127,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0205 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "writing" | "opening";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { writing: "Coach is writing", opening: "Opening your conversation" },
@@ -16045,6 +16147,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0206 — Component: ReadAloudButton
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16053,10 +16156,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/ReadAloudButton.tsx` · `apps/web/app/e2e/components/read-aloud-button/page.tsx` · test: `tests/e2e/screens/read-aloud-button.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component ReadAloudButton " apps/web/app/tempo.css` prints line 1174; `grep -n '"volume"\|"pause"' apps/web/components/tempo/TpIcon.tsx` (both icons exist); `test -e apps/web/components/coach/ReadAloudButton.tsx` fails.
+  1. Code-map: `grep -n "@component ReadAloudButton " apps/web/app/tempo.css` prints line 1174; `test -e apps/web/components/coach/ReadAloudButton.tsx` fails. Class check: `for c in tp-btn tp-btn--ghost tp-btn--sm tp-readaloud; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in volume pause; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (2 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `ReadAloudButton.tsx` exactly as SPEC.
-  4. Create the harness page: each section keeps `pressed` in its own `useState` (initial value per SPEC state), and `onToggle={(next) => { setPressed(next); log("onToggle", next); }}`.
+  3. Create `ReadAloudButton.tsx` as written in SPEC.
+  4. Create the harness page: each section keeps `pressed` in its own `useState` (initial value per SPEC state), and `onToggle={(next) => { setPressed(next); log("onToggle")(next); }}`.
   5. Create the spec with the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/read-aloud-button.spec.ts --reporter=line` → `20 passed`, 0 failed.
@@ -16065,6 +16168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0206 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "read" | "stop";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { read: "Read aloud", stop: "Stop reading" },
@@ -16085,6 +16189,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0201 — Component: CoachMessage
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0205, TFV2-0206 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0205, TFV2-0206.
@@ -16093,10 +16198,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/CoachMessage.tsx` · `apps/web/app/e2e/components/coach-message/page.tsx` · test: `tests/e2e/screens/coach-message.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `sed -n 390,395p apps/web/app/tempo.css`; `grep -n "export" apps/web/components/coach/TypingIndicator.tsx apps/web/components/coach/ReadAloudButton.tsx` (TFV2-0205, TFV2-0206); `test -e apps/web/components/coach/CoachMessage.tsx` fails.
+  1. Code-map: `sed -n 390,395p apps/web/app/tempo.css`; `grep -n "export" apps/web/components/coach/TypingIndicator.tsx apps/web/components/coach/ReadAloudButton.tsx` (TFV2-0205, TFV2-0206); `test -e apps/web/components/coach/CoachMessage.tsx` fails. Class check: `for c in tp-msg tp-msg__who tp-msg__text tp-msg__actions; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `CoachMessage.tsx` exactly as SPEC.
-  4. Create the harness page with the four SPEC states; the `default` and `hebrew` sections keep `pressed` in `useState(false)` and pass `readAloud={{ pressed, onToggle: (next) => { setPressed(next); log("onToggle", next); } }}`.
+  3. Create `CoachMessage.tsx` as written in SPEC.
+  4. Create the harness page with the four SPEC states; the `default` and `hebrew` sections keep `pressed` in `useState(false)` and pass `readAloud={{ pressed, onToggle: (next) => { setPressed(next); log("onToggle")(next); } }}`.
   5. Create the spec with the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-message.spec.ts --reporter=line` → `20 passed`, 0 failed.
@@ -16105,6 +16210,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0201 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   import { ReadAloudButton } from "./ReadAloudButton";
   import { TypingIndicator } from "./TypingIndicator";
   type CopyKey = "coach";
@@ -16118,6 +16224,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function CoachMessage({ text, streaming = false, readAloud }: CoachMessageProps): React.JSX.Element;
   ```
+  **Relies on:** `TypingIndicator({ variant }: TypingIndicatorProps)` with `TypingIndicatorProps = { variant: "writing" | "opening" }` (TFV2-0205, `apps/web/components/coach/TypingIndicator.tsx`): renders `<div className="tp-typing" role="status" data-component="TypingIndicator" data-variant={variant}>` whose words are "Coach is writing" / "המאמן כותב" for `writing` · `ReadAloudButton({ pressed, onToggle, disabled })` with `ReadAloudButtonProps = { pressed: boolean; onToggle: (next: boolean) => void; disabled?: boolean }` (TFV2-0206, `apps/web/components/coach/ReadAloudButton.tsx`): renders `<button data-component="ReadAloudButton" aria-pressed={pressed}>`, label "Read aloud" / "הקראה" when not pressed and "Stop reading" / "עצירת ההקראה" when pressed, and calls `onToggle(!pressed)` on click. STEP 1 greps: `grep -n "export function TypingIndicator\|export type TypingIndicatorProps" apps/web/components/coach/TypingIndicator.tsx` (2 lines) and `grep -n "export function ReadAloudButton\|export type ReadAloudButtonProps" apps/web/components/coach/ReadAloudButton.tsx` (2 lines).
   Markup: `<div className="tp-msg" data-component="CoachMessage" aria-busy={streaming ? true : undefined}><span className="tp-msg__who">{copy.coach}</span><p className="tp-msg__text" dir="auto">{text}</p>{streaming ? <TypingIndicator variant="writing" /> : readAloud ? <div className="tp-msg__actions"><ReadAloudButton pressed={readAloud.pressed} onToggle={readAloud.onToggle} /></div> : null}</div>`. Styling from tempo.css: who `--tp-text-xs` 600 `--tp-ink-muted`; text max 60ch on the page ground (no bubble); actions gap `--tp-space-1`. States (harness order): `default` (text "Of course. Here is exactly what I would add. Nothing changes until you say yes.", with `readAloud`), `streaming` (text "Start with the bank call. It's ten minutes, and once it's done", `streaming`), `plain` (text "Hi. Ask me to plan, shrink or sort anything.", no `readAloud`), `hebrew` (text "בטח. זה בדיוק מה שהמאמן היה מוסיף. שום דבר לא משתנה בלי אישור.", with `readAloud`). Loading / empty / error / offline / success / disabled: n/a (the thread and screen own them; `streaming` is the in-progress state). RTL: label at the inline start; each message's text direction follows its content (`dir="auto"`). Keyboard: only the Read aloud button is focusable. Screen reader: label then text; while streaming the message is `aria-busy` and the status "Coach is writing" is announced. Breakpoints: none. Motion: none of its own (the typing dots follow TFV2-0205).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `default` section / Then `[data-component="CoachMessage"]` has no `aria-busy`, `.tp-msg__who` reads "Coach" / "המאמן", `.tp-msg__text` has `dir="auto"` and the fixture text, `.tp-msg__actions` holds one `[data-component="ReadAloudButton"]`, and there is no `[data-component="TypingIndicator"]`.
@@ -16130,6 +16237,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0207 — Component: ChatHistoryList
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16138,9 +16246,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/ChatHistoryList.tsx` · `apps/web/app/e2e/components/chat-history-list/page.tsx` · test: `tests/e2e/screens/chat-history-list.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component ChatHistoryList " apps/web/app/tempo.css` prints line 1116; `sed -n 1116,1125p apps/web/app/tempo.css`; `grep -n "export function threadDateLabel\|export function dayKeyOf" apps/web/lib/coach-threads.ts` (reference only; not imported); `test -e apps/web/components/coach/ChatHistoryList.tsx` fails.
+  1. Code-map: `grep -n "@component ChatHistoryList " apps/web/app/tempo.css` prints line 1116; `sed -n 1116,1125p apps/web/app/tempo.css`; `grep -n "export function threadDateLabel\|export function dayKeyOf" apps/web/lib/coach-threads.ts` (reference only; not imported); `test -e apps/web/components/coach/ChatHistoryList.tsx` fails. Class check: `for c in tp-chat-list tp-chat-group tp-chat-row tp-chat-row__title tp-chat-row__time tp-chat-row__last tp-num; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `ChatHistoryList.tsx` exactly as SPEC (the helper is pure: `Intl.DateTimeFormat` only, no React).
+  3. Create `ChatHistoryList.tsx` as written in SPEC (the helper is pure: `Intl.DateTimeFormat` only, no React).
   4. Create the harness page with the four SPEC states and the hidden `<output data-testid="chat-history-list-keys">` described in SPEC.
   5. Create the spec with the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
@@ -16150,6 +16258,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0207 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "today" | "week" | "earlier" | "untitled";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { today: "Today", week: "Last week", earlier: "Earlier", untitled: "Untitled" },
@@ -16174,7 +16283,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function ChatHistoryList({ groups, currentId = null, onOpen }: ChatHistoryListProps): React.JSX.Element;
   ```
   Markup: `<div data-component="ChatHistoryList">`; for each group with at least one thread, in the order given: `<section aria-labelledby={`${uid}-${key}`}><h2 className="tp-chat-group" id={`${uid}-${key}`}>{copy[key]}</h2><ul className="tp-chat-list" role="list">` and per thread `<li><a className="tp-chat-row" href={href} aria-current={id === currentId ? "page" : undefined} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); onOpen(id); }}><span className="tp-chat-row__title" dir="auto">{title.trim() === "" ? copy.untitled : title}</span><span className="tp-chat-row__time tp-num">{time}</span>{lastLine ? <span className="tp-chat-row__last" dir="auto">{lastLine}</span> : null}</a></li>`, closing `</ul></section>`. `uid` from `useId()`. Styling from tempo.css: group label `--tp-text-xs` 600 `--tp-ink-muted`; row padding `--tp-space-3`, radius `--tp-radius-md`; title `--tp-text-sm` 600 one line with ellipsis; time `--tp-text-xs` LTR isolate tabular; last line `--tp-text-sm` `--tp-ink-muted`, `-webkit-line-clamp: 2`; current row `--tp-paper` + `--tp-shadow-card`; hover `--tp-hover`.
-  Harness fixtures (typed `ChatHistoryGroup[]`, test data): `T1 = { id: "t1", title: "A lighter Monday", lastLine: "Coach: Done. “Call the bank” is on Today.", time: "09:12", href: "/coach/t1" }`; `T2 = { id: "t2", title: "Thursday talk, three slides", lastLine: "word ".repeat(120).trim(), time: "08:05", href: "/coach/t2" }`; `T3 = { id: "t3", title: "Email Dana about the lease", lastLine: "You: I keep avoiding this email.", time: "Wed 7 Oct", href: "/coach/t3" }`; `T4 = { id: "t4", title: "Yoni's birthday", lastLine: "Coach: Added “Buy Yoni a gift” to Wednesday.", time: "Fri 18 Sep", href: "/coach/t4" }`; `T5 = { id: "t5", title: "", lastLine: null, time: "10:00", href: "/coach/t5" }`. States in order: `default` (groups today [T1, T2], week [T3], earlier [T4]; `currentId` "t1"), `single` (earlier [T4] only, today and week empty), `empty` (all three groups with `threads: []`), `untitled` (today [T5]). Every `onOpen` logs `onOpen:"<id>"`. Below the sections the harness renders `<output data-testid="chat-history-list-keys">{JSON.stringify({ utc: [NOW, Date.UTC(2026, 9, 12, 0, 30), Date.UTC(2026, 9, 11, 23, 30), Date.UTC(2026, 9, 5, 9, 0), Date.UTC(2026, 9, 4, 9, 0), Date.UTC(2026, 9, 13, 9, 0)].map((t) => chatHistoryGroupKey(t, NOW, "UTC")), jerusalem: chatHistoryGroupKey(Date.UTC(2026, 9, 11, 23, 30), NOW, "Asia/Jerusalem") })}</output>` with `const NOW = Date.UTC(2026, 9, 12, 9, 0);`.
+  Harness fixtures (typed `ChatHistoryGroup[]`, test data): `T1 = { id: "t1", title: "A lighter Monday", lastLine: "Coach: Done. “Call the bank” is on Today.", time: "09:12", href: "/coach/t1" }`; `T2 = { id: "t2", title: "Thursday talk, three slides", lastLine: "word ".repeat(120).trim(), time: "08:05", href: "/coach/t2" }`; `T3 = { id: "t3", title: "Email Dana about the lease", lastLine: "You: I keep avoiding this email.", time: "Wed 7 Oct", href: "/coach/t3" }`; `T4 = { id: "t4", title: "Yoni's birthday", lastLine: "Coach: Added “Buy Yoni a gift” to Wednesday.", time: "Fri 18 Sep", href: "/coach/t4" }`; `T5 = { id: "t5", title: "", lastLine: null, time: "10:00", href: "/coach/t5" }`. States in order: `default` (groups today [T1, T2], week [T3], earlier [T4]; `currentId` "t1"), `single` (earlier [T4] only, today and week empty), `empty` (all three groups with `threads: []`), `untitled` (today [T5]). Every section passes `onOpen={log("onOpen")}`, so a row logs `onOpen:"<id>"`. Below the sections the harness renders `<output data-testid="chat-history-list-keys">{JSON.stringify({ utc: [NOW, Date.UTC(2026, 9, 12, 0, 30), Date.UTC(2026, 9, 11, 23, 30), Date.UTC(2026, 9, 5, 9, 0), Date.UTC(2026, 9, 4, 9, 0), Date.UTC(2026, 9, 13, 9, 0)].map((t) => chatHistoryGroupKey(t, NOW, "UTC")), jerusalem: chatHistoryGroupKey(Date.UTC(2026, 9, 11, 23, 30), NOW, "Asia/Jerusalem") })}</output>` with `const NOW = Date.UTC(2026, 9, 12, 9, 0);`.
   States: `default`, `single`, `empty` (the root renders with no section; the screen shows StateEmpty and its copy), `untitled`. Loading / error / offline: n/a (the screen's). RTL: rows mirror; the time stays an LTR isolate. Keyboard: each row is a link (Tab, Enter opens via `onOpen`). Screen reader: each group is a region named by its heading; the current row is announced "current page". Breakpoints: rows fill the width at every size. Motion: hover background only.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `default` section / Then its `h2.tp-chat-group` texts in order are "Today", "Last week", "Earlier" / "היום", "בשבוע שעבר", "מוקדם יותר"; it has 4 `a.tp-chat-row`; only the "A lighter Monday" row has `aria-current="page"`; that row's time reads "09:12" and its title has `dir="auto"`.
@@ -16188,6 +16297,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0208 — Component: ChatSearch (SearchInput + mode Segmented, debounced)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0098, TFV2-0099 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0098, TFV2-0099.
@@ -16196,9 +16306,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/ChatSearch.tsx` · `apps/web/app/e2e/components/chat-search/page.tsx` · test: `tests/e2e/screens/chat-search.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "export" apps/web/components/lists/SearchInput.tsx apps/web/components/lists/Segmented.tsx` (TFV2-0099 `SearchInputProps = { id; label; value; onChange; placeholder?; labelHidden? }`, TFV2-0098 `SegmentedProps = { label; options; value; onChange; block? }`); `grep -n "SEARCH_DEBOUNCE_MS" apps/web/lib/coach-threads.ts`; `sed -n 625,629p apps/web/app/tempo.css`; `test -e apps/web/components/coach/ChatSearch.tsx` fails.
+  1. Code-map: `grep -n "export" apps/web/components/lists/SearchInput.tsx apps/web/components/lists/Segmented.tsx` (TFV2-0099 `SearchInputProps = { id; label; value; onChange; placeholder?; labelHidden? }`, TFV2-0098 `SegmentedProps = { label; options; value; onChange; block? }`); `grep -n "SEARCH_DEBOUNCE_MS" apps/web/lib/coach-threads.ts`; `sed -n 625,629p apps/web/app/tempo.css`; `test -e apps/web/components/coach/ChatSearch.tsx` fails. Class check: `for c in tp-toolbar tp-toolbar__grow; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `ChatSearch.tsx` exactly as SPEC.
+  3. Create `ChatSearch.tsx` as written in SPEC.
   4. Create the harness page: each section keeps `query` and `mode` in its own `useState` (initial values per SPEC state); `onQueryChange` sets state and logs, `onModeChange` sets state and logs, `onSearch` logs.
   5. Create the spec with the 6 TESTS bullets; bullets 3–5 install the clock before `openHarness`.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
@@ -16208,6 +16318,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0208 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   import { SearchInput } from "@/components/lists/SearchInput";
   import { Segmented } from "@/components/lists/Segmented";
   import { SEARCH_DEBOUNCE_MS } from "@/lib/coach-threads";
@@ -16230,6 +16341,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function ChatSearch(props: ChatSearchProps): React.JSX.Element;
   ```
+  **Relies on:** `SearchInput(props: SearchInputProps)` with `SearchInputProps = { id: string; label: string; value: string; onChange: (value: string) => void; placeholder?: string; labelHidden?: boolean }` (TFV2-0099, `apps/web/components/lists/SearchInput.tsx`): renders a `<label htmlFor={id}>` and `<input id={id} type="search">` (role `searchbox`, named by the label) whose `placeholder` is the prop, calls `onChange(e.target.value)` on input, and on Escape with a non-empty value calls `onChange("")` · `Segmented(props: SegmentedProps)` with `SegmentedProps = { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; block?: boolean }` (TFV2-0098, `apps/web/components/lists/Segmented.tsx`): renders `role="radiogroup"` with `aria-label={label}` and one `button[role="radio"]` per option with `aria-checked={o.value === value}`, calling `onChange(o.value)` on click · `SEARCH_DEBOUNCE_MS = 250` (`export const`, `apps/web/lib/coach-threads.ts` line 18). STEP 1 greps: `grep -n "export type SearchInputProps" apps/web/components/lists/SearchInput.tsx`, `grep -n "export type SegmentedProps" apps/web/components/lists/Segmented.tsx` and `grep -n "export const SEARCH_DEBOUNCE_MS = 250" apps/web/lib/coach-threads.ts` (one line each).
   Markup: `<div className="tp-toolbar" role="search" data-component="ChatSearch"><div className="tp-toolbar__grow"><SearchInput id={id} label={copy.label} placeholder={copy.placeholder} value={query} onChange={onQueryChange} /></div>{meaningAvailable ? <Segmented label={copy.modeLabel} options={[{ value: "meaning", label: copy.meaning }, { value: "words", label: copy.words }]} value={mode} onChange={(v) => onModeChange(v === "meaning" ? "meaning" : "words")} /> : null}</div>`.
   Debounce: `effectiveMode = meaningAvailable ? mode : "words"`; `request = { query: query.trim(), mode: effectiveMode }`; a `useRef` holds the key `` `${request.mode}|${request.query}` `` of the last request sent, initialised with the key of the first render (so mounting sends nothing); a `useEffect` on `[request.query, request.mode]` clears any pending timer and, when the key differs from the last one sent, sets `window.setTimeout(() => { last.current = key; onSearch(request); }, SEARCH_DEBOUNCE_MS)`; the effect's cleanup clears the timer. An empty query is a valid request (the screen shows the full list).
   States (harness order): `default` (id "chat-search-a", query "", mode "meaning", `meaningAvailable` true), `words-only` (id "chat-search-b", query "lease", mode "meaning", `meaningAvailable` false), `filled` (id "chat-search-c", query "tired", mode "words", `meaningAvailable` true). Loading / empty / error / offline / success / disabled: n/a here (results and the offline notice are the screen's; offline is expressed by `meaningAvailable: false`). RTL: the search icon at the inline start; the switch follows reading direction (TFV2-0098 arrow rule). Keyboard: native search field (Escape clears a non-empty value, TFV2-0099); the switch is a radiogroup with arrow keys. Screen reader: a search landmark holding a searchbox named "Search conversations" and a radiogroup named "Search by". Breakpoints: the toolbar wraps the switch under the field when narrow (`flex-wrap`). Motion: field border 120 ms.
@@ -16245,6 +16357,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0209 — Component: CrisisCard (fixed resources card, props-only)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16253,9 +16366,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/CrisisCard.tsx` · `apps/web/app/e2e/components/crisis-card/page.tsx` · test: `tests/e2e/screens/crisis-card.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component CrisisCard " apps/web/app/tempo.css` prints line 1144; `grep -n "export const CRISIS_CARD" -A20 convex/lib/crisisWords.ts` (the fixture text below copies it); `grep -n "COACH_NOT_THERAPIST" apps/web/components/coach-crisis/crisisCopy.ts` (the English line reused verbatim); `test -e apps/web/components/coach/CrisisCard.tsx` fails.
+  1. Code-map: `grep -n "@component CrisisCard " apps/web/app/tempo.css` prints line 1144; `grep -n "export const CRISIS_CARD" -A20 convex/lib/crisisWords.ts` (the fixture text below copies it); `grep -n "COACH_NOT_THERAPIST" apps/web/components/coach-crisis/crisisCopy.ts` (the English line reused word for word); `test -e apps/web/components/coach/CrisisCard.tsx` fails. Class check: `for c in tp-crisis tp-crisis__title tp-crisis__body tp-crisis__list tp-crisis__item tp-crisis__item-text tp-crisis__name tp-crisis__detail tp-crisis__note tp-num tp-mono tp-btn tp-btn--secondary; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in phone link; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (2 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `CrisisCard.tsx` exactly as SPEC.
+  3. Create `CrisisCard.tsx` as written in SPEC.
   4. Create the harness page with the three SPEC states (fixtures typed `CrisisCardProps["card"]`).
   5. Create the spec with the 4 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
@@ -16265,6 +16378,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0209 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence. Notes for ticket sync: the card text from `crisis.resourcesCard` is English only; its Hebrew and per-country resources are Q-15 (backend).
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "call" | "open" | "note" | "notTherapist";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { call: "Call", open: "Open", note: "This card was written by people, not by the coach. The coach has paused.", notTherapist: "Tempo is a coach, not a therapist or counselor." },
@@ -16279,7 +16393,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export const CRISIS_PHONE_PATTERN = /^\+?[0-9]{2,15}$/;
   export function CrisisCard({ card, autoFocus = false }: CrisisCardProps): React.JSX.Element;
   ```
-  Markup: `<section ref className="tp-crisis" data-component="CrisisCard" aria-labelledby={titleId} tabIndex={-1}><h2 className="tp-crisis__title" id={titleId}>{card.title}</h2><p className="tp-crisis__body">{card.body}</p>{card.resources.length > 0 ? <ul className="tp-crisis__list" role="list">{…}</ul> : null}<p className="tp-crisis__note">{copy.note}</p><p className="tp-crisis__note">{copy.notTherapist}</p></section>`; each resource `<li className="tp-crisis__item"><span className="tp-crisis__item-text"><span className="tp-crisis__name" dir="auto">{label}</span><span className="tp-crisis__detail"><span dir="auto">{detail}</span>{phoneOk ? <> <span className="tp-num tp-mono">{phone}</span></> : null}</span></span>{phoneOk ? <a className="tp-btn tp-btn--secondary" href={`tel:${phone}`}><TpIcon name="phone" size="sm" /><span>{copy.call}</span> <span className="tp-num">{phone}</span></a> : null}{urlOk ? <a className="tp-btn tp-btn--secondary" href={url} target="_blank" rel="noopener noreferrer"><TpIcon name="link" size="sm" /><span>{copy.open}</span></a> : null}</li>` where `phoneOk = phone !== undefined && CRISIS_PHONE_PATTERN.test(phone)` and `urlOk = url !== undefined && url.startsWith("https://")`. `titleId` from `useId()`. `useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus])`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong` with a 4 px `--tp-ink` inline-start rule, padding `--tp-space-5`; title `--tp-font-serif` `--tp-text-xl`; items on `--tp-ground`, radius `--tp-radius-md`; note `--tp-text-xs` `--tp-ink-muted`. No animation or transition on the card.
+  Markup: `<section ref={ref} className="tp-crisis" data-component="CrisisCard" aria-labelledby={titleId} tabIndex={-1}><h2 className="tp-crisis__title" id={titleId}>{card.title}</h2><p className="tp-crisis__body">{card.body}</p>{card.resources.length > 0 ? <ul className="tp-crisis__list" role="list">{card.resources.map(renderResource)}</ul> : null}<p className="tp-crisis__note">{copy.note}</p><p className="tp-crisis__note">{copy.notTherapist}</p></section>`; `const renderResource = ({ label, detail, phone, url }: CrisisCardResource): React.JSX.Element =>` returns `<li key={label} className="tp-crisis__item"><span className="tp-crisis__item-text"><span className="tp-crisis__name" dir="auto">{label}</span><span className="tp-crisis__detail"><span dir="auto">{detail}</span>{phoneOk ? <> <span className="tp-num tp-mono">{phone}</span></> : null}</span></span>{phoneOk ? <a className="tp-btn tp-btn--secondary" href={`tel:${phone}`}><TpIcon name="phone" size="sm" /><span>{copy.call}</span> <span className="tp-num">{phone}</span></a> : null}{urlOk ? <a className="tp-btn tp-btn--secondary" href={url} target="_blank" rel="noopener noreferrer"><TpIcon name="link" size="sm" /><span>{copy.open}</span></a> : null}</li>` where `phoneOk = phone !== undefined && CRISIS_PHONE_PATTERN.test(phone)` and `urlOk = url !== undefined && url.startsWith("https://")`. `titleId` from `useId()`; `ref = useRef<HTMLElement>(null)`. `useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus])`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong` with a 4 px `--tp-ink` inline-start rule, padding `--tp-space-5`; title `--tp-font-serif` `--tp-text-xl`; items on `--tp-ground`, radius `--tp-radius-md`; note `--tp-text-xs` `--tp-ink-muted`. No animation or transition on the card.
   Harness fixtures (test data): `GENERIC` = the committed `CRISIS_CARD` text: title "You are not alone, and help is available", body "What you wrote matters. If you might act on these thoughts or you are in danger, please contact your local emergency number now. Country-specific helpline numbers are not set up in Tempo yet, so this card cannot show one for your location.", resources `[{ label: "Emergency services", detail: "Call your local emergency number if you are in immediate danger." }, { label: "A crisis line near you", detail: "Search for a suicide or crisis helpline in your country and call or text them." }, { label: "Someone you trust", detail: "Tell a friend, family member or doctor how you feel. You do not have to wait for a good moment." }]`; `CONTACTS` = title "Fixture card with contacts", body "Fixture body.", resources `[{ label: "Line A", detail: "Any hour.", phone: "1201" }, { label: "Chat B", detail: "By chat.", url: "https://example.org/chat" }, { label: "Line C", detail: "Emergency.", phone: "101" }]`; `UNSAFE` = title "Fixture card with unsafe values", body "Fixture body.", resources `[{ label: "Bad link", detail: "Should show no link.", url: "javascript:alert(1)" }, { label: "Bad phone", detail: "Should show no call button.", phone: "12-ab" }]`. States in order: `default` (`GENERIC`, `autoFocus`), `with-contacts` (`CONTACTS`), `unsafe` (`UNSAFE`). Loading / empty / error / offline / success / disabled: n/a (the card is shown only once the screen has it; while `crisis.resourcesCard` loads the screen shows the existing `FALLBACK_CARD` text through this same component). RTL: the inline-start rule and items mirror; numbers are LTR isolates. Keyboard: the card is focusable programmatically (`tabIndex={-1}`); links are in tab order. Screen reader: a region named by the card title. Breakpoints: items wrap their action under the text when narrow (`flex-wrap`). Motion: none.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `default` section / Then `h2.tp-crisis__title` reads "You are not alone, and help is available", it has 3 `.tp-crisis__item` whose names read "Emergency services", "A crisis line near you", "Someone you trust", it has no `a`, its two `.tp-crisis__note` read "This card was written by people, not by the coach. The coach has paused." and "Tempo is a coach, not a therapist or counselor." / "את הכרטיס הזה כתבו אנשים, לא המאמן. המאמן עצר." and "Tempo הוא מאמן, לא מטפל ולא יועץ.", and `document.activeElement` is that section's `section.tp-crisis`.
@@ -16291,6 +16405,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0210 — Component: GroundingCard (breathing line + one 10-second action)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16299,10 +16414,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/GroundingCard.tsx` · `apps/web/app/e2e/components/grounding-card/page.tsx` · test: `tests/e2e/screens/grounding-card.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component GroundingCard " apps/web/app/tempo.css` prints line 1131; `sed -n 1131,1142p apps/web/app/tempo.css` (`.tp-breath__line` transition `--tp-dur-slow` 240 ms; `data-phase="in"|"hold"` scale 1, otherwise 0.2); `test -e apps/web/components/coach/GroundingCard.tsx` fails.
+  1. Code-map: `grep -n "@component GroundingCard " apps/web/app/tempo.css` prints line 1131; `sed -n 1131,1142p apps/web/app/tempo.css` (`.tp-breath__line` transition `--tp-dur-slow` 240 ms; `data-phase="in"|"hold"` scale 1, otherwise 0.2); `test -e apps/web/components/coach/GroundingCard.tsx` fails. Class check: `for c in tp-grounding tp-grounding__title tp-grounding__body tp-breath tp-breath__track tp-breath__line tp-breath__label tp-grounding__action tp-grounding__action-text tp-num tp-btn tp-btn--secondary tp-small tp-muted; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in check; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (1 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `GroundingCard.tsx` exactly as SPEC.
-  4. Create the harness page with the two SPEC states.
+  3. Create `GroundingCard.tsx` as written in SPEC.
+  4. Create the harness page with the two SPEC states; each passes `onDone={log("onDone")}` (no argument, so the log reads `onDone:`).
   5. Create the spec with the 5 TESTS bullets; every case installs the clock before `openHarness`.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/grounding-card.spec.ts --reporter=line` → `20 passed`, 0 failed.
@@ -16311,6 +16426,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0210 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "title" | "body" | "in" | "hold" | "out" | "lead" | "seconds" | "done" | "after";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
     en: { title: "Let's slow down for a moment.", body: "Nothing needs deciding right now. Your list will wait. Follow the line with your breath.", in: "Breathe in", hold: "Hold", out: "Breathe out", lead: "One thing,", seconds: "seconds:", done: "Done", after: "That counts. Stay here as long as you like, or carry on when you're ready." },
@@ -16329,19 +16445,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function GroundingCard({ id, actionText, onDone }: GroundingCardProps): React.JSX.Element;
   ```
-  Behaviour: `const [step, setStep] = useState(0)`; `useEffect` starts `window.setInterval(() => setStep((s) => (s + 1) % 3), BREATH_STEP_MS)` and clears it on unmount; `phase = BREATH_ORDER[step]`. `const [done, setDone] = useState(false)`; Done click → if not done: `setDone(true); onDone();`. Markup: `<section className="tp-grounding" id={id} aria-labelledby={`${id}-title`} data-component="GroundingCard"><h2 className="tp-grounding__title" id={`${id}-title`}>{copy.title}</h2><p className="tp-grounding__body">{copy.body}</p><div className="tp-breath" data-phase={phase}><div className="tp-breath__track" aria-hidden="true"><span className="tp-breath__line" /></div><p className="tp-breath__label" aria-live="polite">{copy[phase]}</p></div><div className="tp-grounding__action"><span className="tp-grounding__action-text"><span>{copy.lead}</span> <span className="tp-num">{GROUNDING_ACTION_SECONDS}</span> <span>{copy.seconds}</span> <span dir="auto">{actionText}</span></span><button className="tp-btn tp-btn--secondary" type="button" disabled={done} onClick={…}><TpIcon name="check" size="sm" /><span>{copy.done}</span></button></div>{done ? <p className="tp-small tp-muted" data-grounding-done="">{copy.after}</p> : null}</section>`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong`, padding `--tp-space-5`, gap `--tp-space-4`; title `--tp-font-serif` `--tp-text-xl`; track `--tp-space-1` tall on `--tp-sunken`, line `--tp-ink`, `transition: transform var(--tp-dur-slow) var(--tp-ease-out)`; label `--tp-font-serif` `--tp-text-lg`; action row on `--tp-ground`.
+  Behaviour: `const [step, setStep] = useState(0)`; `useEffect` starts `window.setInterval(() => setStep((s) => (s + 1) % 3), BREATH_STEP_MS)` and clears it on unmount; `phase = BREATH_ORDER[step]`. `const [done, setDone] = useState(false)`; `handleDone` (the Done click): if not done, `setDone(true); onDone();`. Markup: `<section className="tp-grounding" id={id} aria-labelledby={`${id}-title`} data-component="GroundingCard"><h2 className="tp-grounding__title" id={`${id}-title`}>{copy.title}</h2><p className="tp-grounding__body">{copy.body}</p><div className="tp-breath" data-phase={phase}><div className="tp-breath__track" aria-hidden="true"><span className="tp-breath__line" /></div><p className="tp-breath__label" aria-live="polite">{copy[phase]}</p></div><div className="tp-grounding__action"><span className="tp-grounding__action-text"><span>{copy.lead}</span> <span className="tp-num">{GROUNDING_ACTION_SECONDS}</span> <span>{copy.seconds}</span> <span dir="auto">{actionText}</span></span><button className="tp-btn tp-btn--secondary" type="button" disabled={done} onClick={handleDone}><TpIcon name="check" size="sm" /><span>{copy.done}</span></button></div>{done ? <p className="tp-small tp-muted" data-grounding-done="">{copy.after}</p> : null}</section>`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong`, padding `--tp-space-5`, gap `--tp-space-4`; title `--tp-font-serif` `--tp-text-xl`; track `--tp-space-1` tall on `--tp-sunken`, line `--tp-ink`, `transition: transform var(--tp-dur-slow) var(--tp-ease-out)`; label `--tp-font-serif` `--tp-text-lg`; action row on `--tp-ground`.
   States (harness order): `default` (id "grounding-a", actionText "Stand up and drink a sip of water."), `hebrew` (id "grounding-b", actionText "לקום ולשתות לגימה של מים."). `done` is reached by clicking Done (TESTS 4). Loading / empty / error / offline / disabled: n/a (fixed copy, no data load; the Done button is disabled only after it was pressed). RTL: the line grows from the inline start (`[dir="rtl"] .tp-breath__line { transform-origin: right center }`, tempo.css line 1138). Keyboard: Done is the only control. Screen reader: the region is named by the title; the phase word is a polite live region, so each new word is read. Breakpoints: the action row wraps when narrow. Motion: line transform 240 ms; instant under reduced motion; the word keeps stepping.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `default` section / Then its title reads "Let's slow down for a moment." / "מאטים לרגע.", the body reads the SPEC body for `lang`, `.tp-breath` has `data-phase="in"`, `.tp-breath__label` reads "Breathe in" / "שאיפה" with `aria-live="polite"`, the action text reads "One thing, 10 seconds: Stand up and drink a sip of water." / "דבר אחד, 10 שניות: Stand up and drink a sip of water.", and the Done button reads "Done" / "סיימתי".
   2. Given the clock installed / When `page.clock.fastForward(4000)` runs / Then the `default` section's phase is `hold` and the label reads "Hold" / "החזקה"; after another 4000 ms it is `out` / "Breathe out" / "נשיפה"; after another 4000 ms it is `in` again.
   3. Given the default media / Then `.tp-breath__line` has computed `transition-duration` `0.24s`; When `page.emulateMedia({ reducedMotion: "reduce" })` runs and `page.clock.fastForward(4000)` runs / Then the phase is `hold` (the word still steps).
-  4. Given the `default` section / When Done is clicked / Then `grounding-card-log` reads `onDone:null`, `[data-grounding-done]` reads "That counts. Stay here as long as you like, or carry on when you're ready." / "זה נחשב. אפשר להישאר כאן כמה שרוצים, או להמשיך כשמתאים.", and the Done button is disabled.
+  4. Given the `default` section / When Done is clicked / Then `grounding-card-log` reads `onDone:`, `[data-grounding-done]` reads "That counts. Stay here as long as you like, or carry on when you're ready." / "זה נחשב. אפשר להישאר כאן כמה שרוצים, או להמשיך כשמתאים.", and the Done button is disabled.
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="grounding-card-"]')` and `expectMotionBudget(page, '[data-testid^="grounding-card-"]')` pass.
 - **NUMBERS:** Breath step 4,000 ms (components.md §2.10; constant `BREATH_STEP_MS`) · bullet 2. Line transition 240 ms ≤ 250 ms, ≤ 1 ms reduced (DESIGN.md motion rule) · bullets 3, 5. Action length 10 s (PRD F-25; constant `GROUNDING_ACTION_SECONDS`) · bullet 1. Target size ≥ 24 × 24 CSS px (Done 44 px; WCAG 2.2 SC 2.5.8) · bullet 5. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 20 of 20 Playwright cases pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0211 — Component: CoachDial (Dial in a card, commits 400 ms after the last change)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0119 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0119.
@@ -16350,10 +16467,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/CoachDial.tsx` · `apps/web/app/e2e/components/coach-dial/page.tsx` · test: `tests/e2e/screens/coach-dial.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "export" apps/web/components/forms/Dial.tsx` (TFV2-0119: `DialProps = { id; label; value; onChange; disabled? }`, `dialWord`); `sed -n 1125p apps/web/app/tempo.css`; `grep -n "^\.tp-card\|^\.tp-help" apps/web/app/tempo.css`; `test -e apps/web/components/coach/CoachDial.tsx` fails.
+  1. Code-map: `grep -n "export" apps/web/components/forms/Dial.tsx` (TFV2-0119: `DialProps = { id; label; value; onChange; disabled? }`, `dialWord`); `sed -n 1125p apps/web/app/tempo.css`; `grep -n "^\.tp-card\|^\.tp-help" apps/web/app/tempo.css`; `test -e apps/web/components/coach/CoachDial.tsx` fails. Class check: `for c in tp-card tp-help; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `CoachDial.tsx` exactly as SPEC.
-  4. Create the harness page with the three SPEC states; `onCommit` logs.
+  3. Create `CoachDial.tsx` as written in SPEC.
+  4. Create the harness page with the three SPEC states; each passes `onCommit={log("onCommit")}`.
   5. Create the spec with the 5 TESTS bullets; bullets 2–3 install the clock before `openHarness`.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-dial.spec.ts --reporter=line` → `20 passed`, 0 failed.
@@ -16362,6 +16479,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0211 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   import { Dial } from "@/components/forms/Dial";
   type CopyKey = "title" | "label" | "help" | "error";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
@@ -16379,7 +16497,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function CoachDial({ value, onCommit, disabled = false, error = false }: CoachDialProps): React.JSX.Element;
   ```
-  Behaviour: `const [draft, setDraft] = useState(value)`; `useEffect(() => setDraft(value), [value])` (a new saved value replaces the draft); Dial `onChange(next)` → `setDraft(next)`, clear the pending timer, then `timer = window.setTimeout(() => { if (next !== value) onCommit(next); }, COACH_DIAL_COMMIT_MS)`; the timer is cleared on unmount. Markup: `<section className="tp-card" data-component="CoachDial" aria-label={copy.title} aria-describedby={helpId}><Dial id={dialId} label={copy.label} value={draft} onChange={…} disabled={disabled} /><p className="tp-help" id={helpId}>{copy.help}</p>{error ? <p className="tp-help" role="alert">{copy.error}</p> : null}</section>`; `dialId`, `helpId` from `useId()`. The Dial's own words are TFV2-0119's ("Quiet" / "שקט", "Steady" / "יציב", "Push" / "דחיפה"; "{n} of 10, {word}" / "{n} מתוך 10, {word}"); the help line uses the same Hebrew words. Styling from tempo.css: card `--tp-paper`, border `--tp-line`, radius `--tp-radius-lg`, padding `--tp-space-4`; help `--tp-text-sm` `--tp-ink-muted`.
+  **Relies on:** `Dial(props: DialProps)` with `DialProps = { id: string; label: string; value: number; onChange: (value: number) => void; disabled?: boolean }` (TFV2-0119, `apps/web/components/forms/Dial.tsx`): renders `<label htmlFor={id}>{label}</label>`, `[data-dial-num]` showing `v = Math.min(10, Math.max(0, Math.round(value)))`, `[data-dial-word]`, and `<input id={id} type="range" min={0} max={10} step={1} disabled={disabled}>` (role `slider`) whose `aria-valuetext` is "{n} of 10, {word}" / "{n} מתוך 10, {word}" with words Quiet 0–3 / Steady 4–7 / Push 8–10 ("שקט" / "יציב" / "דחיפה"), calling `onChange(Number(e.target.value))` on each change. STEP 1 grep: `grep -n "export type DialProps\|export function Dial" apps/web/components/forms/Dial.tsx` (2 lines).
+  Behaviour: `const [draft, setDraft] = useState(value)`; `useEffect(() => setDraft(value), [value])` (a new saved value replaces the draft); `handleChange(next: number)` (the Dial `onChange`) → `setDraft(next)`, clear the pending timer, then `timer = window.setTimeout(() => { if (next !== value) onCommit(next); }, COACH_DIAL_COMMIT_MS)`; the timer is cleared on unmount. Markup: `<section className="tp-card" data-component="CoachDial" aria-label={copy.title} aria-describedby={helpId}><Dial id={dialId} label={copy.label} value={draft} onChange={handleChange} disabled={disabled} /><p className="tp-help" id={helpId}>{copy.help}</p>{error ? <p className="tp-help" role="alert">{copy.error}</p> : null}</section>`; `dialId`, `helpId` from `useId()`. The Dial's own words are TFV2-0119's ("Quiet" / "שקט", "Steady" / "יציב", "Push" / "דחיפה"; "{n} of 10, {word}" / "{n} מתוך 10, {word}"); the help line uses the same Hebrew words. Styling from tempo.css: card `--tp-paper`, border `--tp-line`, radius `--tp-radius-lg`, padding `--tp-space-4`; help `--tp-text-sm` `--tp-ink-muted`.
   States (harness order): `default` (value 4), `disabled` (value 7, `disabled`), `error` (value 2, `error`). Loading / empty / offline / success: n/a (the screen shows the dial only after `coach.getSettings` answers; offline the screen passes `disabled`). RTL: the slider runs right-to-left (0 at the right, TFV2-0119). Keyboard: native range (Arrow keys ±1, Home 0, End 10). Screen reader: a region "Coach style" described by the help line, holding the slider "How much should the coach push?, 4 of 10, Steady". Breakpoints: full width at every size (inside a bottom sheet on phones, chosen by the screen). Motion: none beyond the native thumb.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `default` section / Then `getByRole("region", { name: "Coach style" / "סגנון המאמן" })` exists, `getByRole("slider", { name: "How much should the coach push?" / "כמה המאמן ידחוף?" })` has `aria-valuetext` "4 of 10, Steady" / "4 מתוך 10, יציב", `[data-dial-num]` reads "4", the help line reads the SPEC `help` for `lang`, and there is no `role="alert"`.
@@ -16392,6 +16511,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0212 — Component: PanicButton
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16400,10 +16520,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/coach/PanicButton.tsx` · `apps/web/app/e2e/components/panic-button/page.tsx` · test: `tests/e2e/screens/panic-button.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `grep -n "@component PanicButton " apps/web/app/tempo.css` prints line 1127; `grep -n '"lifebuoy"' apps/web/components/tempo/TpIcon.tsx`; `test -e apps/web/components/coach/PanicButton.tsx` fails.
+  1. Code-map: `grep -n "@component PanicButton " apps/web/app/tempo.css` prints line 1127; `test -e apps/web/components/coach/PanicButton.tsx` fails. Class check: `for c in tp-panic; do grep -qn "\.$c\b" apps/web/app/tempo.css apps/web/app/v3/*.css || echo "MISSING $c"; done` prints nothing. Icon check: `for i in lifebuoy; do grep -c "^  \"$i\":" apps/web/components/tempo/TpIcon.tsx; done` prints `1` once per icon (1 lines). If any check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `PanicButton.tsx` exactly as SPEC.
-  4. Create the harness page with the three SPEC states; `onPress` logs.
+  3. Create `PanicButton.tsx` as written in SPEC.
+  4. Create the harness page with the three SPEC states; each passes `onPress={() => log("onPress")()}` (the wrapper drops the click event, so the log reads `onPress:`).
   5. Create the spec with the 5 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/panic-button.spec.ts --reporter=line` → `20 passed`, 0 failed.
@@ -16412,6 +16532,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0212 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  import type React from "react";
   type CopyKey = "label";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { label: "I'm overwhelmed" }, he: { label: "יותר מדי לי עכשיו" } };
   export type PanicButtonProps = {
@@ -16428,7 +16549,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `closed` section / Then its `button[data-component="PanicButton"]` reads "I'm overwhelmed" / "יותר מדי לי עכשיו", has `aria-controls="grounding"`, `aria-expanded="false"` and a `use[href="#i-lifebuoy"]`.
   2. Given the `open` section / Then its button has `aria-expanded="true"`.
-  3. Given the `closed` section / When its button is clicked / Then `panic-button-log` reads `onPress:null`; Given a fresh load and focus on that button / When Space is pressed / Then the log reads `onPress:null`.
+  3. Given the `closed` section / When its button is clicked / Then `panic-button-log` reads `onPress:`; Given a fresh load and focus on that button / When Space is pressed / Then the log reads `onPress:`.
   4. Given the `disabled` section / Then its button is disabled; When clicked with `{ force: true }` / Then the log is still empty.
   5. Given focus moved to the `closed` button with Tab / Then its computed `outline-width` is ≥ 2px and its height is ≥ 44 px; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="panic-button-"]')` and `expectMotionBudget(page, '[data-testid^="panic-button-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px, button 44 px tall (WCAG 2.2 SC 2.5.8) · bullet 5. Focus visible ≥ 2 px (WCAG 2.2 SC 2.4.7) · bullet 5. Non-text contrast ≥ 3:1 for the `--tp-line-control` border (WCAG 2.2 SC 1.4.11) · token check. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. No model call (PRD F-25) · DO NOT + no import of Convex (scope guard). 20 of 20 Playwright cases pass.
@@ -16436,26 +16557,33 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0213a — Component: ProposalCard — shell + task variant
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
-- **WHY:** HARD_RULES §1 / `.cursorrules` "Accept-reject flow" (the coach never changes anything without Accept; 5-minute Undo); `docs/design/v3/components.md` §1 / §2.10 and `coach-thread.html` `@component ProposalCard` (head with kind label, exact preview, Accept / Edit / Reject, note, Undo); CONVENTIONS §10 Case A (tempo.css Stage 1 lines 398–418: `.tp-proposal`, `__head`, `__target`, `__changes`, `.tp-change[data-op]`, `__sign`, `__body`, `__title`, `__detail`, `__actions`, `__note`, `[data-status]`; Stage 2 block line 1155: `[data-kind]`, `.tp-proposal__kind`, `.tp-proposal__what`, `.tp-what-row`). Code truth: the proposal kinds are `CoachProposal` in `convex/lib/coachPrompt.ts` line 46 (`task { title, minutes, when: "today" | "later" }`, `note { title, body }`, `template { name, body, period }`, `decision { title?, steps }`), stored with `status: "pending" | "accepted" | "rejected" | "undone"` and `undoUntilMs` (`StoredProposal`, `convex/coach.ts` line 173); the screen calls `coach.acceptProposal({ messageId, edit? })` (edit fields `title`, `name`, …), `coach.rejectProposal`, `coach.undoProposal` (errors "This proposal was already decided.", "There is nothing to undo.", "The 5 minutes to undo this have passed."). `apps/web/components/coach/ChatProposal.tsx` already draws these cards with `useMutation` inside (and an OpenUI path), so it cannot be used in the harness; this ticket makes the props-only `ProposalCard` for the v3 thread. One file is shared by TFV2-0213a (shell + task), TFV2-0213b (note), TFV2-0214 (template), TFV2-0217 (decision) and the OPEN TFV2-0215 (module) and TFV2-0216 (job); each later ticket adds one member to `ProposalView`, its harness sections and its spec bullets. The design's "1 change to Today" head and "before 12:00" detail have no field in the real task proposal, so the head and detail below use what the data holds (title, minutes, today/later), as `ChatProposal` does.
+- **WHY:** HARD_RULES §1 / `.cursorrules` "Accept-reject flow" (the coach never changes anything without Accept; 5-minute Undo); `docs/design/v3/components.md` §1 / §2.10 and `coach-thread.html` `@component ProposalCard` (head with kind label, exact preview, Accept / Edit / Reject, note, Undo); CONVENTIONS §10 Case A (tempo.css Stage 1 lines 398–418: `.tp-proposal`, `__head`, `__target`, `__changes`, `.tp-change[data-op]`, `__sign`, `__body`, `__title`, `__detail`, `__actions`, `__note`, `[data-status]`; Stage 2 block line 1155: `[data-kind]`, `.tp-proposal__kind`, `.tp-proposal__what`, `.tp-what-row`). Code truth: the proposal kinds are `CoachProposal` in `convex/lib/coachPrompt.ts` line 46 (`task { title, minutes, when: "today" | "later" }`, `note { title, body }`, `template { name, body, period }`, `decision { title?, steps }`), stored with `status: "pending" | "accepted" | "rejected" | "undone"` and `undoUntilMs` (`StoredProposal`, `convex/coach.ts` line 173); the screen calls `coach.acceptProposal({ messageId, edit? })` (edit field `title` for a task or note, `name` for a template), `coach.rejectProposal`, `coach.undoProposal` (errors "This proposal was already decided.", "There is nothing to undo.", "The 5 minutes to undo this have passed."). `apps/web/components/coach/ChatProposal.tsx` already draws these cards with `useMutation` inside (and an OpenUI path), so it cannot be used in the harness; this ticket makes the props-only `ProposalCard` for the v3 thread. One file is shared by TFV2-0213a (shell + task), TFV2-0213b (note), TFV2-0214 (template), TFV2-0217 (decision) and the OPEN TFV2-0215 (module) and TFV2-0216 (job); each later ticket adds one member to `ProposalView`, its harness sections and its spec bullets. The design's "1 change to Today" head and "before 12:00" detail have no field in the real task proposal, so the head and detail below use what the data holds (title, minutes, today/later), as `ChatProposal` does.
 - **GOAL:** `apps/web/components/coach/ProposalCard.tsx` renders a task proposal with its exact preview, Accept / Edit (title in place) / Reject while pending, a busy and an error state, and after a decision the matching note with a live 5-minute Undo — all data and actions through props.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** the three files above (new). No data.
 - **STEPS:**
-  1. Code-map: `sed -n 398,418p apps/web/app/tempo.css`; `sed -n 1155,1161p apps/web/app/tempo.css`; `sed -n 46,50p convex/lib/coachPrompt.ts`; `sed -n 173,182p convex/coach.ts`; `cat apps/web/lib/useCountdown.ts` (`useCountdown(untilMs?: number): string | null`, "m:ss" ticking each second, null once passed); `test -e apps/web/components/coach/ProposalCard.tsx` fails.
+  1. Code-map: `sed -n 398,418p apps/web/app/tempo.css`; `sed -n 1155,1161p apps/web/app/tempo.css`; `sed -n 46,50p convex/lib/coachPrompt.ts`; `sed -n 173,182p convex/coach.ts`; `cat apps/web/lib/useCountdown.ts` (`useCountdown(untilMs?: number): string | null`, "m:ss" ticking each second, null once passed); `test -e apps/web/components/coach/ProposalCard.tsx` fails; icons — `grep -n '^  "task":' apps/web/components/tempo/TpIcon.tsx` (line 34), `grep -n '^  "check":' apps/web/components/tempo/TpIcon.tsx` (line 10), `grep -n '^  "edit":' apps/web/components/tempo/TpIcon.tsx` (line 41), `grep -n '^  "undo":' apps/web/components/tempo/TpIcon.tsx` (line 26), `grep -n '^  "plus":' apps/web/components/tempo/TpIcon.tsx` (line 11), one line each; classes — `grep -n "^\.tp-btn--primary\|^\.tp-btn--secondary\|^\.tp-btn--ghost\|^\.tp-btn--sm\|^\.tp-input, \.tp-textarea\|^\.tp-num\|^\.tp-mono" apps/web/app/tempo.css` prints lines 82, 83, 129, 130, 131, 134, 135, 1028. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A, no new file.
-  3. Create `ProposalCard.tsx` exactly as SPEC (task variant only; `ProposalView` is `TaskProposalView` in this ticket).
+  3. Create `ProposalCard.tsx` as written in SPEC (task variant only; `ProposalView` is `TaskProposalView` in this ticket).
   4. Create the harness page with the eight SPEC states.
   5. Create the spec with the 9 TESTS bullets; every case installs the clock before `openHarness`.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → `36 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** call Convex, `fetch` or a model; apply or remember anything on Accept (the screen calls `coach.acceptProposal`); show actions unless `status` is `pending`; show Undo after `undoUntilMs`; use `contentEditable` (the in-place edit is an `<input>`); edit `ChatProposal.tsx`, `CoachProposalCard.tsx`, `useCountdown.ts` or `apps/web/lib/i18n.ts`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0213a / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```tsx
+  "use client";
+  import type React from "react";
+  import { useState } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   import { useCountdown } from "@/lib/useCountdown";
   type CopyKey =
     | "kindTask" | "headTask" | "targetToday" | "targetLater" | "add" | "min" | "fieldTitle"
@@ -16503,10 +16631,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```
   Shell markup: `<section className="tp-proposal" data-component="ProposalCard" data-kind={proposal.kind} data-status={status} aria-labelledby={`${id}-title`} aria-busy={busy ? true : undefined}>` → head `<div className="tp-proposal__head"><span className="tp-proposal__kind"><TpIcon name={icon} size="sm" /><span>{kindLabel}</span></span><strong id={`${id}-title`} dir="auto">{head}</strong><span className="tp-proposal__target">{target}</span></div>` → the variant body → if `status === "pending"`: `<div className="tp-proposal__actions">` with Accept `<button type="button" className={primary ? "tp-btn tp-btn--primary" : "tp-btn tp-btn--secondary"} data-action="accept" disabled={busy || (editable && draft.trim() === "")} onClick={accept}><TpIcon name="check" size="sm" /><span>{copy.accept}</span></button>`, Edit (editable kinds only) `<button type="button" className="tp-btn tp-btn--secondary" data-action="edit" aria-pressed={editing} disabled={busy} onClick={() => setEditing(!editing)}><TpIcon name="edit" size="sm" /><span>{editing ? copy.doneEditing : copy.edit}</span></button>`, Reject `<button type="button" className="tp-btn tp-btn--ghost" data-action="reject" disabled={busy} onClick={onReject}><span>{copy.reject}</span></button>`; else the note `<p className="tp-proposal__note" role="status"><TpIcon name={status === "accepted" ? "check" : "undo"} size="sm" /><span>{noteText}</span>{left ? <button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" data-action="undo" disabled={busy} onClick={onUndo}><TpIcon name="undo" size="sm" /><span>{copy.undo}</span><span className="tp-num tp-mono" aria-hidden="true">{left}</span></button> : null}</p>` → if `error`: `<p className="tp-proposal__note" role="alert">{copy.error}</p>`.
   Note text: `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; accepted with `left` → `<>{copy.acceptedLead} <span className="tp-num">{PROPOSAL_UNDO_MINUTES}</span> {copy.acceptedTail}</>`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`.
-  Edit: `editable` = kind is `task` (later tickets add `note`, `template`); `const original = proposal.title` (template: `name`); `const [draft, setDraft] = useState(original)`; `const [editing, setEditing] = useState(false)`. While `editing`, the variant's title element is replaced by `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`; when not editing the title shows `draft`. `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)` (template: `{ name: … }`).
-  Task variant: icon `"task"`, kindLabel `copy.kindTask`, head `copy.headTask`, target `when === "today" ? copy.targetToday : copy.targetLater`; body `<ul className="tp-proposal__changes" role="list"><li className="tp-change" data-op="add" data-component="ChangePreview"><span className="tp-change__sign"><TpIcon name="plus" size="sm" /><span>{copy.add}</span></span><span className="tp-change__body">{editing ? <input …/> : <span className="tp-change__title" dir="auto">{draft}</span>}<span className="tp-change__detail">{copy.kindTask} · <span className="tp-num">{minutes}</span> {copy.min}</span></span></li></ul>`.
+  Edit: `editable` = kind is `task` (later tickets add `note`, `template`); `const original = proposal.title` (template: `name`); `const [draft, setDraft] = useState(original)`; `const [editing, setEditing] = useState(false)`. While `editing`, the variant's title element is replaced by `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`; when not editing the title shows `draft`. `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)` (template: `{ name: draft.trim() }`).
+  Task variant: icon `"task"`, kindLabel `copy.kindTask`, head `copy.headTask`, target `when === "today" ? copy.targetToday : copy.targetLater`; body `<ul className="tp-proposal__changes" role="list"><li className="tp-change" data-op="add" data-component="ChangePreview"><span className="tp-change__sign"><TpIcon name="plus" size="sm" /><span>{copy.add}</span></span><span className="tp-change__body">{editing ? editInput : <span className="tp-change__title" dir="auto">{draft}</span>}<span className="tp-change__detail">{copy.kindTask} · <span className="tp-num">{minutes}</span> {copy.min}</span></span></li></ul>`.
   Harness (`proposal-card`): `const TASK: TaskProposalView = { kind: "task", title: "Call the bank", minutes: 10, when: "today" }`; `const LATER: TaskProposalView = { kind: "task", title: "Book the dentist", minutes: 15, when: "later" }`; the `accepted` section holds `const [until] = useState(() => Date.now() + 300_000)`; callbacks log `onAccept:<JSON>`, `onReject:null`, `onUndo:null`. States in order (each `id` = the state name): `task-pending` (`TASK`, pending, `primary`), `task-later` (`LATER`, pending), `task-busy` (`TASK`, pending, `busy`), `task-error` (`TASK`, pending, `error`), `task-accepted` (`TASK`, accepted, `undoUntilMs={until}`), `task-expired` (`TASK`, accepted, `undoUntilMs={0}`), `task-rejected` (`TASK`, rejected), `task-undone` (`TASK`, undone).
-  States: pending (default), editing, busy (disabled), error, accepted with Undo (success), accepted after the window, rejected, undone. Loading / empty / offline: n/a (the screen does not render a card it has not loaded; offline it passes `busy`). Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong`, radius `--tp-radius-lg`; head and rows padding `--tp-space-3`/`--tp-space-4`; add sign `--tp-done` on `--tp-done-wash` with icon + word; actions on `--tp-ground`; note `--tp-text-sm` `--tp-ink-muted`; rejected cards hide `.tp-proposal__changes` (CSS). RTL: head, rows and actions mirror; minutes and countdown are LTR isolates. Keyboard: buttons in order Accept, Edit, Reject; Escape in the edit field cancels the edit. Screen reader: a region named by the head; Edit is a toggle button; the note is a status; the ticking countdown is `aria-hidden` (the note says "5 minutes"). Breakpoints: actions wrap (`flex-wrap`). Motion: button colour transitions 120 ms.
+  States: pending (default), editing, busy (disabled), error, accepted with Undo (success), accepted after the window, rejected, undone. Loading / empty / offline: n/a (the screen does not render a card it has not loaded; offline it passes `busy`). Styling (no new CSS; what tempo.css lines 398–418 already give): card `--tp-paper`, border `--tp-line-strong`, radius `--tp-radius-lg`; head and rows padding `--tp-space-3`/`--tp-space-4`; add sign `--tp-done` on `--tp-done-wash` with icon + word; actions on `--tp-ground`; note `--tp-text-sm` `--tp-ink-muted`; rejected cards hide `.tp-proposal__changes` (CSS). RTL: head, rows and actions mirror; minutes and countdown are LTR isolates. Keyboard: buttons in order Accept, Edit, Reject; Escape in the edit field cancels the edit. Screen reader: a region named by the head; Edit is a toggle button; the note is a status; the ticking countdown is `aria-hidden` (the note says "5 minutes"). Breakpoints: actions wrap (`flex-wrap`). Motion: button colour transitions 120 ms.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
   1. Given the `task-pending` section / Then its `section.tp-proposal` has `data-kind="task"`, `data-status="pending"`; `.tp-proposal__kind` reads "Task" / "משימה" with `use[href="#i-task"]`; the head reads "Add a task" / "הוספת משימה"; the target reads "Today" / "היום"; the sign reads "Add" / "הוספה"; `.tp-change__title` reads "Call the bank" with `dir="auto"`; the detail's `.tp-num` reads "10" and the detail ends with "min" / "דק׳"; the buttons read "Accept", "Edit", "Reject" / "אישור", "עריכה", "דחייה"; and Accept has class `tp-btn--primary`.
   2. Given the `task-later` section / Then the target reads "Tasks" / "משימות" and Accept has class `tp-btn--secondary`.
@@ -16522,21 +16650,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0213b — Component: ProposalCard — note (new page) variant
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213a.
-- **WHY:** `CoachProposal` kind `note { title, body }` (`convex/lib/coachPrompt.ts` line 48) is a real card the coach makes today (`coach.acceptProposal` inserts a `notes` row; edit field `title`), and `ChatProposal.tsx` draws it with a "Show all of it" body preview; no other ticket gives the props-only ProposalCard this variant, so TFV2-0213 is split and this ticket adds it. CONVENTIONS §10 Case A (same tempo.css classes as TFV2-0213a, plus `.tp-proposal__what` for the body preview and Stage 1 `.tp-textarea`, line 1034). Sequenced after TFV2-0213a (same three files).
+- **WHY:** `CoachProposal` kind `note { title, body }` (`convex/lib/coachPrompt.ts` line 48) is a real card the coach makes today (`coach.acceptProposal` inserts a `notes` row; edit field `title`), and `ChatProposal.tsx` draws it with a "Show all of it" body preview; no other ticket gives the props-only ProposalCard this variant, so TFV2-0213 is split and this ticket adds it. CONVENTIONS §10 Case A (the tempo.css Stage 1 classes `.tp-proposal`, `.tp-proposal__head`, `.tp-proposal__target`, `.tp-proposal__changes`, `.tp-change`, `.tp-change__sign`, `.tp-change__body`, `.tp-change__title`, `.tp-change__detail`, `.tp-proposal__actions`, `.tp-proposal__note` at lines 398–418 and `.tp-proposal__kind` at line 1156, plus `.tp-proposal__what` (line 1157) for the body preview and Stage 1 `.tp-textarea`, line 1034). Sequenced after TFV2-0213a (same three files).
 - **GOAL:** `ProposalCard` also renders a `note` proposal (kind "Page", title editable in place, the body's first line as the preview, the whole body behind "Show all of it"), and exports `firstBodyLine` for the template variant.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (edit: add `NoteProposalView`, `firstBodyLine`, the note branch and copy keys) · `apps/web/app/e2e/components/proposal-card/page.tsx` (edit: two sections + one output appended) · `tests/e2e/screens/proposal-card.spec.ts` (edit: 3 bullets appended). No data.
 - **STEPS:**
-  1. Code-map: read `ProposalCard.tsx` (TFV2-0213a: `ProposalView`, `editable`, the task branch); `sed -n 330,360p apps/web/components/coach/ChatProposal.tsx` (reference for the note rows; do not edit).
+  1. Code-map: read `ProposalCard.tsx` and confirm every TFV2-0213a name in **Relies on** below; `grep -n '^  "page":' apps/web/components/tempo/TpIcon.tsx` (line 14, one line); `grep -n "\.tp-proposal__what\b\|^\.tp-textarea {" apps/web/app/tempo.css` prints lines 1155, 1157, 1161 and 1034; `sed -n 330,360p apps/web/components/coach/ChatProposal.tsx` (reference for the note rows; do not edit). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. In `ProposalCard.tsx` add exactly the SPEC additions; extend `ProposalView` to `TaskProposalView | NoteProposalView`; `editable` becomes `kind === "task" || kind === "note"`.
   3. Append the two SPEC sections and the `proposal-card-firstline` output to the harness, after the existing sections.
   4. Append TESTS bullets 10–12 to the spec inside the same loops.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → `48 passed`, 0 failed (36 from TFV2-0213a + 12).
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** change the task branch, the shell, existing copy keys or existing harness sections and spec bullets; render the body as Markdown or HTML (plain text in a read-only textarea); call Convex; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0213b / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -16554,8 +16683,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //   showAll: EN "Show all of it" / HE "להצגת הכול"
   //   fieldBody: EN "What it says" / HE "מה כתוב בו"
   ```
-  Note branch: icon `"page"`, kindLabel `copy.kindNote`, head `copy.headNote`, target `copy.targetNotes`; body = the same `<ul className="tp-proposal__changes" role="list"><li className="tp-change" data-op="add" data-component="ChangePreview">` row as the task (sign "Add", title = `draft` or the edit input), with `<span className="tp-change__detail" dir="auto">{firstBodyLine(body)}</span>`; then `<details className="tp-proposal__what"><summary>{copy.showAll}</summary><textarea className="tp-textarea" readOnly rows={8} dir="auto" aria-label={copy.fieldBody} value={body} /></details>`. Edit sends `{ title }` exactly as the task. Rejected cards hide the preview row and the details (`.tp-proposal[data-status="rejected"] .tp-proposal__changes` and `.tp-proposal__what { display: none }`).
-  Harness additions (after the existing sections): `const NOTE: NoteProposalView = { kind: "note", title: "Sunday reset", body: "\n  Clear the desk.\nWater the plants." }`; sections `note-pending` (`NOTE`, pending) and `note-accepted` (`NOTE`, accepted, `undoUntilMs` = a `useState(() => Date.now() + 300_000)` value); then `<output data-testid="proposal-card-firstline">{JSON.stringify([firstBodyLine("\n  Clear the desk.\nWater."), firstBodyLine("   "), firstBodyLine("a".repeat(130)).length, firstBodyLine("a".repeat(130)).endsWith("…")])}</output>`. RTL, keyboard, screen reader, breakpoints and motion as TFV2-0213a; the `summary` is a native disclosure (Enter / Space).
+  Note branch: icon `"page"`, kindLabel `copy.kindNote`, head `copy.headNote`, target `copy.targetNotes`; body = `<ul className="tp-proposal__changes" role="list"><li className="tp-change" data-op="add" data-component="ChangePreview"><span className="tp-change__sign"><TpIcon name="plus" size="sm" /><span>{copy.add}</span></span><span className="tp-change__body">{editing ? editInput : <span className="tp-change__title" dir="auto">{draft}</span>}<span className="tp-change__detail" dir="auto">{firstBodyLine(body)}</span></span></li></ul>`; then `<details className="tp-proposal__what"><summary>{copy.showAll}</summary><textarea className="tp-textarea" readOnly rows={8} dir="auto" aria-label={copy.fieldBody} value={body} /></details>`. Edit uses `accept()` unchanged: `{ title: draft.trim() }` when the trimmed draft is non-empty and differs from `proposal.title`, else `null`. Rejected cards hide the preview row and the details (`.tp-proposal[data-status="rejected"] .tp-proposal__changes` and `.tp-proposal__what { display: none }`).
+  Harness additions (after the existing sections): `const NOTE: NoteProposalView = { kind: "note", title: "Sunday reset", body: "\n  Clear the desk.\nWater the plants." }`; sections `note-pending` (`NOTE`, pending) and `note-accepted` (`NOTE`, accepted, `undoUntilMs` = a `useState(() => Date.now() + 300_000)` value); then `<output data-testid="proposal-card-firstline">{JSON.stringify([firstBodyLine("\n  Clear the desk.\nWater."), firstBodyLine("   "), firstBodyLine("a".repeat(130)).length, firstBodyLine("a".repeat(130)).endsWith("…")])}</output>`. RTL: the head, rows and actions mirror (flex and grid follow `dir`); text values are `dir="auto"`; numbers are `.tp-num` LTR isolates. Keyboard: native buttons in DOM order Accept, Edit, Reject, then the `summary` (a native disclosure, Enter / Space); Escape in the edit field restores the original text and leaves edit mode. Screen reader: the card is a `section` named by its head (`aria-labelledby`); Edit is a toggle (`aria-pressed`); the decision note is `role="status"`. Breakpoints: one layout at 390 / 768 / 1024 / 1280 px; actions wrap (`.tp-proposal__actions` has `flex-wrap: wrap`, tempo.css line 414). Motion: only the `.tp-btn` colour transitions (`var(--tp-dur-fast)`, 120 ms; tempo.css `.tp-btn` rule from line 121); nothing is added.
+  **Relies on** (names created by TFV2-0213a in `apps/web/components/coach/ProposalCard.tsx`, checked by reading the file in STEP 1): `export type TaskProposalView = { kind: "task"; title: string; minutes: number; when: "today" | "later" }`; `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone"`; `export type ProposalEdit = { title: string } | { name: string }`; `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void }`; `export const PROPOSAL_UNDO_MINUTES = 5`; inside `ProposalCard`: `const { lang } = useLocale(); const copy = COPY[lang];`, `editable` (a boolean, `kind === "task"` in TFV2-0213a), `const original = proposal.title`, `const [draft, setDraft] = useState(original)`, `const [editing, setEditing] = useState(false)`, `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)`, `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; the shell renders the actions only while `status === "pending"`, else the note (accepted with `left` → `copy.acceptedLead` + `PROPOSAL_UNDO_MINUTES` + `copy.acceptedTail`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`); copy keys used here: `add` EN "Add" / HE "הוספה", `min` EN "min" / HE "דק׳", `targetToday` EN "Today" / HE "היום", `acceptedLead` EN "Done. You can undo this for" / HE "בוצע. אפשר לבטל במשך", `acceptedTail` EN "minutes." / HE "דקות.", `kept` EN "Done." / HE "בוצע.", `rejected` EN "Left as it was. Nothing changed." / HE "נשאר כמו שהיה. שום דבר לא השתנה.", `undone` EN "Undone. Nothing changed." / HE "בוטל. שום דבר לא השתנה.", `accept` EN "Accept" / HE "אישור", `reject` EN "Reject" / HE "דחייה", `undo` EN "Undo" / HE "ביטול". The spec file `tests/e2e/screens/proposal-card.spec.ts` (TFV2-0213a) has bullets 1–9 inside the §22 loops (36 cases) and installs the clock (`page.clock.install()`) before `openHarness`.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`) (bullets 10–12, appended to TFV2-0213a's 1–9, same loops and clock)
   10. Given the `note-pending` section / Then the card has `data-kind="note"`; the kind reads "Page" / "דף" with `use[href="#i-page"]`; the head reads "Make a new page" / "יצירת דף חדש"; the target reads "Notes" / "פתקים"; the title reads "Sunday reset"; the detail reads "Clear the desk."; the `summary` reads "Show all of it" / "להצגת הכול"; When the summary is clicked / Then a read-only `textarea` with `aria-label` "What it says" / "מה כתוב בו" holds the whole body; and `proposal-card-firstline` reads `["Clear the desk.","",120,true]`.
   11. Given the `note-pending` section / When Edit is clicked, the input is filled with "Sunday reset, short" and Accept is clicked / Then `proposal-card-log` reads `onAccept:{"title":"Sunday reset, short"}`.
@@ -16565,21 +16695,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0214 — Component: ProposalCard — template variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213b · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213b.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b.
 - **WHY:** `coach-thread.html` turn 2 (`ProposalCard` `data-kind="template"` with a `dl` of `.tp-what-row`); tempo.css `@component ProposalCard variants` (line 1155) → CONVENTIONS §10 Case A. Code truth: the template proposal is `{ kind: "template"; name; body; period: "daily" | "weekly" | "none" }` (`convex/lib/coachPrompt.ts` line 49; `coach.acceptProposal` inserts a `templates` row; edit field `name`). The design's "Adds" / "Changes" rows have no field in that data, so the rows are the ones the data holds — Name, Starts with (first body line), Used for (period) — as `ChatProposal.tsx` already shows them. The old ticket depended on TFV2-0158 (the Agent `fillTemplate` tool, OPEN); a props-only card needs no backend ticket. Sequenced after TFV2-0213b (same three files; uses `firstBodyLine`).
 - **GOAL:** `ProposalCard` also renders a `template` proposal with Name (editable in place), Starts with and Used for rows and the full body behind "Show all of it", and Accept sends `{ name }` when the name was edited.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (edit: add `TemplateProposalView`, the template branch and copy keys) · `apps/web/app/e2e/components/proposal-card/page.tsx` (edit: two sections appended) · `tests/e2e/screens/proposal-card.spec.ts` (edit: 3 bullets appended). No data.
 - **STEPS:**
-  1. Code-map: read `ProposalCard.tsx` (TFV2-0213a/b: `editable`, `original`, `accept()`, `firstBodyLine`); `sed -n 1155,1161p apps/web/app/tempo.css`.
+  1. Code-map: read `ProposalCard.tsx` and confirm every TFV2-0213a / TFV2-0213b name in **Relies on** below; `sed -n 1155,1161p apps/web/app/tempo.css`; `grep -n "^\.tp-what-row" apps/web/app/tempo.css` prints lines 1158, 1159, 1160; `grep -n '^  "template":' apps/web/components/tempo/TpIcon.tsx` (line 18, one line). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add exactly the SPEC additions; `ProposalView` becomes `TaskProposalView | NoteProposalView | TemplateProposalView`; `editable` also includes `template`; `original` is `proposal.name` for a template; `accept()` sends `{ name: draft.trim() }` for a template.
   3. Append the two SPEC sections to the harness after the existing sections (before the `proposal-card-firstline` output is fine).
   4. Append TESTS bullets 13–15 to the spec.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → `60 passed`, 0 failed (48 + 12).
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** invent "Adds" / "Changes" text; change the task or note branches, the shell, existing copy keys, sections or bullets; call Convex; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0214 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -16598,8 +16729,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //   periodWeekly: EN "Weekly pages" / HE "דפים שבועיים"
   //   periodNone: EN "Any page" / HE "כל דף"
   ```
-  Template branch: icon `"template"`, kindLabel `copy.kindTemplate`, head `copy.headTemplate`, target `copy.targetTemplates`; body `<dl className="tp-proposal__what"><div className="tp-what-row"><dt>{copy.fieldName}</dt><dd>{editing ? <input className="tp-input" … aria-label={copy.fieldName} /> : <span className="tp-change__title" dir="auto">{draft}</span>}</dd></div><div className="tp-what-row"><dt>{copy.startsWith}</dt><dd dir="auto">{firstBodyLine(body)}</dd></div><div className="tp-what-row"><dt>{copy.usedFor}</dt><dd>{period === "daily" ? copy.periodDaily : period === "weekly" ? copy.periodWeekly : copy.periodNone}</dd></div></dl>` then the same `<details className="tp-proposal__what">` "Show all of it" body preview as the note. The edit input props are those of TFV2-0213a except `aria-label={copy.fieldName}`. Rejected cards hide both `.tp-proposal__what` blocks (tempo.css line 1161). Styling: rows `--tp-text-sm`, label column ≥ `calc(var(--tp-space-20) + var(--tp-space-4))`, `dt` 600 `--tp-ink-muted`.
-  Harness additions: `const TEMPLATE: TemplateProposalView = { kind: "template", name: "Gentle Monday", body: "## Three things only\n- [ ] {{date}}", period: "weekly" }`; sections `template-pending` (`TEMPLATE`, pending) and `template-rejected` (`TEMPLATE`, rejected). RTL, keyboard, screen reader, breakpoints and motion as TFV2-0213a.
+  Template branch: icon `"template"`, kindLabel `copy.kindTemplate`, head `copy.headTemplate`, target `copy.targetTemplates`; body `<dl className="tp-proposal__what"><div className="tp-what-row"><dt>{copy.fieldName}</dt><dd>{editing ? <input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldName} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} /> : <span className="tp-change__title" dir="auto">{draft}</span>}</dd></div><div className="tp-what-row"><dt>{copy.startsWith}</dt><dd dir="auto">{firstBodyLine(body)}</dd></div><div className="tp-what-row"><dt>{copy.usedFor}</dt><dd>{period === "daily" ? copy.periodDaily : period === "weekly" ? copy.periodWeekly : copy.periodNone}</dd></div></dl>` then `<details className="tp-proposal__what"><summary>{copy.showAll}</summary><textarea className="tp-textarea" readOnly rows={8} dir="auto" aria-label={copy.fieldBody} value={body} /></details>`. `original` is `proposal.name` for a template and `accept()` sends `{ name: draft.trim() }` when the trimmed draft is non-empty and differs from it, else `null`. Rejected cards hide both `.tp-proposal__what` blocks (tempo.css line 1161). Styling: no new CSS; tempo.css lines 1158–1160 already give the rows `--tp-text-sm`, a label column of at least `calc(var(--tp-space-20) + var(--tp-space-4))` and `dt` weight 600 in `--tp-ink-muted` (checked in STEP 1).
+  Harness additions: `const TEMPLATE: TemplateProposalView = { kind: "template", name: "Gentle Monday", body: "## Three things only\n- [ ] {{date}}", period: "weekly" }`; sections `template-pending` (`TEMPLATE`, pending) and `template-rejected` (`TEMPLATE`, rejected). RTL: the head, rows and actions mirror (flex and grid follow `dir`); text values are `dir="auto"`; numbers are `.tp-num` LTR isolates. Keyboard: native buttons in DOM order Accept, Edit, Reject, then the `summary` (a native disclosure, Enter / Space); Escape in the edit field restores the original text and leaves edit mode. Screen reader: the card is a `section` named by its head (`aria-labelledby`); Edit is a toggle (`aria-pressed`); the decision note is `role="status"`. Breakpoints: one layout at 390 / 768 / 1024 / 1280 px; actions wrap (`.tp-proposal__actions` has `flex-wrap: wrap`, tempo.css line 414). Motion: only the `.tp-btn` colour transitions (`var(--tp-dur-fast)`, 120 ms; tempo.css `.tp-btn` rule from line 121); nothing is added.
+  **Relies on** (names created by TFV2-0213a in `apps/web/components/coach/ProposalCard.tsx`, checked by reading the file in STEP 1): `export type TaskProposalView = { kind: "task"; title: string; minutes: number; when: "today" | "later" }`; `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone"`; `export type ProposalEdit = { title: string } | { name: string }`; `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void }`; `export const PROPOSAL_UNDO_MINUTES = 5`; inside `ProposalCard`: `const { lang } = useLocale(); const copy = COPY[lang];`, `editable` (a boolean, `kind === "task"` in TFV2-0213a), `const original = proposal.title`, `const [draft, setDraft] = useState(original)`, `const [editing, setEditing] = useState(false)`, `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)`, `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; the shell renders the actions only while `status === "pending"`, else the note (accepted with `left` → `copy.acceptedLead` + `PROPOSAL_UNDO_MINUTES` + `copy.acceptedTail`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`); copy keys used here: `add` EN "Add" / HE "הוספה", `min` EN "min" / HE "דק׳", `targetToday` EN "Today" / HE "היום", `acceptedLead` EN "Done. You can undo this for" / HE "בוצע. אפשר לבטל במשך", `acceptedTail` EN "minutes." / HE "דקות.", `kept` EN "Done." / HE "בוצע.", `rejected` EN "Left as it was. Nothing changed." / HE "נשאר כמו שהיה. שום דבר לא השתנה.", `undone` EN "Undone. Nothing changed." / HE "בוטל. שום דבר לא השתנה.", `accept` EN "Accept" / HE "אישור", `reject` EN "Reject" / HE "דחייה", `undo` EN "Undo" / HE "ביטול". The spec file `tests/e2e/screens/proposal-card.spec.ts` (TFV2-0213a) has bullets 1–9 inside the §22 loops (36 cases) and installs the clock (`page.clock.install()`) before `openHarness`. From TFV2-0213b (same file): `export type NoteProposalView = { kind: "note"; title: string; body: string }`; `export const BODY_PREVIEW_CHARS = 120`; `export function firstBodyLine(body: string, max: number = BODY_PREVIEW_CHARS): string` (the first line of `body` with non-space text, trimmed; longer than `max` → its first `max − 1` characters + "…"; none → ""), so `firstBodyLine("## Three things only\n- [ ] {{date}}")` → `"## Three things only"`; `editable` is `kind === "task" || kind === "note"` after TFV2-0213b; copy keys `showAll` EN "Show all of it" / HE "להצגת הכול" and `fieldBody` EN "What it says" / HE "מה כתוב בו"; the spec has bullets 1–12 (48 cases).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`) (bullets 13–15, appended)
   13. Given the `template-pending` section / Then the card has `data-kind="template"`; the kind reads "Template" / "תבנית" with `use[href="#i-template"]`; the head reads "Make a new template" / "יצירת תבנית חדשה"; the target reads "Templates" / "תבניות"; the three `dt` read "Name", "Starts with", "Used for" / "שם", "מתחילה ב־", "משמשת ל־"; the `dd`s read "Gentle Monday", "## Three things only", "Weekly pages" / "דפים שבועיים".
   14. Given the `template-pending` section / When Edit is clicked / Then an input with `aria-label` "Name" / "שם" holds "Gentle Monday"; When it is filled with "Gentle Monday v2" and Accept is clicked / Then `proposal-card-log` reads `onAccept:{"name":"Gentle Monday v2"}`.
@@ -16609,21 +16741,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0217 — Component: ProposalCard — decision (order of steps) variant
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0214 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0214.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214.
 - **WHY:** PRD F-22 (decision help: "what order should I do these in?"); `CoachProposal` kind `decision { title?; steps: { title; minutes; reason? }[] }` (`convex/lib/coachPrompt.ts` lines 44 and 50; 2–7 steps, `COACH_LIMITS.minSteps` / `maxSteps`); Accept saves the steps to today's page (`coach.acceptProposal` with `todayDate`, no `edit` for steps) and Undo takes them off (`undoProposal`). Code truth: `ChatProposal.tsx` `DecisionProposal` draws the steps with the tested `DecisionSteps` component from `@tempo/ui/blocks/decision-steps` (labels `{ list, minutes }`; steps past `DECISION_LIMITS.maxSteps` = 7 are not drawn) and uses "Order" / "Save to today" wording, which this variant reuses. This old ticket was untitled in the old backlog (the decision variant right after TFV2-0216); it is placed before the OPEN TFV2-0215 / TFV2-0216 in build order so it stays buildable. CONVENTIONS §10 Case A (the ProposalCard classes plus Stage 1 `.tp-block-task` / `.tp-task-row`, line 283, which `DecisionSteps` renders).
 - **GOAL:** `ProposalCard` also renders a `decision` proposal as a numbered list of steps (title, minutes, reason) with "Save to today" and Reject (no Edit), and after Accept the "Saved to today" note with a live 5-minute Undo.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (edit: add `DecisionProposalView`, the decision branch and copy keys) · `apps/web/app/e2e/components/proposal-card/page.tsx` (edit: two sections appended) · `tests/e2e/screens/proposal-card.spec.ts` (edit: 3 bullets appended). No data.
 - **STEPS:**
-  1. Code-map: read `ProposalCard.tsx` (TFV2-0213a/b, TFV2-0214); `grep -n "export" packages/ui/src/blocks/decision-steps.tsx` (`DecisionStep = { title: string; minutes: number; reason?: string }`, `DECISION_LIMITS`, `DecisionSteps({ steps, labels })`); `grep -n "DecisionSteps" apps/web/components/coach/ChatProposal.tsx` (line 177 passes `proposal.steps` straight through); `grep -n '"sort"' apps/web/components/tempo/TpIcon.tsx`.
+  1. Code-map: read `ProposalCard.tsx` and confirm every TFV2-0213a / 0213b / 0214 name in **Relies on** below; `grep -n "export" packages/ui/src/blocks/decision-steps.tsx` (`DecisionStep = { title: string; minutes: number; reason?: string }`, `DECISION_LIMITS`, `DecisionSteps({ steps, labels })`); `grep -n "DecisionSteps" apps/web/components/coach/ChatProposal.tsx` (line 177 passes `proposal.steps` straight through); `grep -n '^  "sort":' apps/web/components/tempo/TpIcon.tsx` (line 73, one line); `grep -n 'className="tp-task-row__meta"\|className="tp-block-task"\|className="tp-task-row"\|className="tp-num tp-muted"' packages/ui/src/blocks/decision-steps.tsx` prints lines 84, 128, 132, 133; `grep -n "^\.tp-num\|^\.tp-muted\|^\.tp-block-task\|^\.tp-task-row {\|^\.tp-task-row__meta" apps/web/app/tempo.css` prints lines 82, 84, 282, 283, 291. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add exactly the SPEC additions; `ProposalView` gains `DecisionProposalView`; `editable` stays false for `decision`, so no Edit button renders.
   3. Append the two SPEC sections to the harness.
   4. Append TESTS bullets 16–18 to the spec.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` → `72 passed`, 0 failed (60 + 12).
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/proposal-card.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** offer Edit on a decision (the backend has no step edit); draw steps yourself instead of `DecisionSteps`; drop a step's reason; change other branches, the shell, existing copy keys, sections or bullets; edit `decision-steps.tsx` or `ChatProposal.tsx`; call Convex; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0217 / evidence: <DONE output> / changed: <3 files> / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:**
@@ -16640,8 +16773,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   //   savedLead: EN "Saved to today. You can undo this for" / HE "נשמר להיום. אפשר לבטל במשך"
   //   savedKept: EN "Saved to today." / HE "נשמר להיום."
   ```
-  Decision branch: icon `"sort"`, kindLabel `copy.kindDecision`, head `proposal.title ?? copy.headDecision` (in `<strong dir="auto">`), target `copy.targetToday`; body `<DecisionSteps steps={proposal.steps} labels={{ list: copy.stepsList, minutes: copy.min }} />`; Accept's label is `copy.saveToday` (icon `check`, class rules unchanged) and it calls `onAccept(null)`; no Edit; Reject as the shell. Note: accepted with `left` → `<>{copy.savedLead} <span className="tp-num">{PROPOSAL_UNDO_MINUTES}</span> {copy.acceptedTail}</>`; accepted without `left` → `copy.savedKept`; rejected / undone as the shell. Styling of steps: `.tp-task-row` rows with the step number in `.tp-num.tp-muted`, minutes in `.tp-num`, reason in `--tp-ink-muted`.
-  Harness additions: `const DECISION: DecisionProposalView = { kind: "decision", title: "An order for this afternoon", steps: [{ title: "Call the bank", minutes: 10, reason: "It's short and has a deadline." }, { title: "Draft 3 slides", minutes: 45 }, { title: "Walk", minutes: 10 }] }`; `const DECISION_UNTITLED: DecisionProposalView = { kind: "decision", steps: DECISION.steps }`; sections `decision-pending` (`DECISION`, pending, `primary`) and `decision-accepted` (`DECISION_UNTITLED`, accepted, `undoUntilMs` = a `useState(() => Date.now() + 300_000)` value). RTL: step numbers at the inline start; minutes LTR isolates. Keyboard: Save to today, Reject. Screen reader: an ordered list named "Suggested order". Breakpoints and motion as TFV2-0213a.
+  Decision branch: icon `"sort"`, kindLabel `copy.kindDecision`, head `proposal.title ?? copy.headDecision` (in `<strong dir="auto">`), target `copy.targetToday`; body `<DecisionSteps steps={proposal.steps} labels={{ list: copy.stepsList, minutes: copy.min }} />`; Accept is `<button type="button" className={primary ? "tp-btn tp-btn--primary" : "tp-btn tp-btn--secondary"} data-action="accept" disabled={busy} onClick={() => onAccept(null)}><TpIcon name="check" size="sm" /><span>{copy.saveToday}</span></button>`; no Edit; Reject is the shell's `<button type="button" className="tp-btn tp-btn--ghost" data-action="reject" disabled={busy} onClick={onReject}><span>{copy.reject}</span></button>`. Note: accepted with `left` → `<>{copy.savedLead} <span className="tp-num">{PROPOSAL_UNDO_MINUTES}</span> {copy.acceptedTail}</>`; accepted without `left` → `copy.savedKept`; rejected → `copy.rejected` ("Left as it was. Nothing changed." / "נשאר כמו שהיה. שום דבר לא השתנה."); undone → `copy.undone` ("Undone. Nothing changed." / "בוטל. שום דבר לא השתנה."). Styling: no new CSS. `DecisionSteps` (existing, `packages/ui/src/blocks/decision-steps.tsx`) renders `<ol className="tp-block-task" data-component="DecisionSteps" aria-label={labels.list}>`, one `<li className="tp-task-row" data-component="TaskRow">` per step with the number in `<span className="tp-num tp-muted" aria-hidden="true">`, the title in `.tp-task-row__title`, and minutes (`<span className="tp-num">`) plus the reason inside `.tp-task-row__meta`; tempo.css already styles those classes (lines 82, 84, 282, 283, 291), checked in STEP 1.
+  Harness additions: `const DECISION: DecisionProposalView = { kind: "decision", title: "An order for this afternoon", steps: [{ title: "Call the bank", minutes: 10, reason: "It's short and has a deadline." }, { title: "Draft 3 slides", minutes: 45 }, { title: "Walk", minutes: 10 }] }`; `const DECISION_UNTITLED: DecisionProposalView = { kind: "decision", steps: DECISION.steps }`; sections `decision-pending` (`DECISION`, pending, `primary`) and `decision-accepted` (`DECISION_UNTITLED`, accepted, `undoUntilMs` = a `useState(() => Date.now() + 300_000)` value). RTL: step numbers at the inline start; minutes LTR isolates. Keyboard: Save to today, Reject. Screen reader: an ordered list named "Suggested order"; the step number is `aria-hidden` (the list order carries it). Breakpoints: one layout at 390 / 768 / 1024 / 1280 px; actions wrap (`.tp-proposal__actions` has `flex-wrap: wrap`, tempo.css line 414). Motion: only the `.tp-btn` colour transitions (`var(--tp-dur-fast)`, 120 ms); nothing is added.
+  **Relies on** (names created by TFV2-0213a in `apps/web/components/coach/ProposalCard.tsx`, checked by reading the file in STEP 1): `export type TaskProposalView = { kind: "task"; title: string; minutes: number; when: "today" | "later" }`; `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone"`; `export type ProposalEdit = { title: string } | { name: string }`; `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void }`; `export const PROPOSAL_UNDO_MINUTES = 5`; inside `ProposalCard`: `const { lang } = useLocale(); const copy = COPY[lang];`, `editable` (a boolean, `kind === "task"` in TFV2-0213a), `const original = proposal.title`, `const [draft, setDraft] = useState(original)`, `const [editing, setEditing] = useState(false)`, `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)`, `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; the shell renders the actions only while `status === "pending"`, else the note (accepted with `left` → `copy.acceptedLead` + `PROPOSAL_UNDO_MINUTES` + `copy.acceptedTail`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`); copy keys used here: `add` EN "Add" / HE "הוספה", `min` EN "min" / HE "דק׳", `targetToday` EN "Today" / HE "היום", `acceptedLead` EN "Done. You can undo this for" / HE "בוצע. אפשר לבטל במשך", `acceptedTail` EN "minutes." / HE "דקות.", `kept` EN "Done." / HE "בוצע.", `rejected` EN "Left as it was. Nothing changed." / HE "נשאר כמו שהיה. שום דבר לא השתנה.", `undone` EN "Undone. Nothing changed." / HE "בוטל. שום דבר לא השתנה.", `accept` EN "Accept" / HE "אישור", `reject` EN "Reject" / HE "דחייה", `undo` EN "Undo" / HE "ביטול". The spec file `tests/e2e/screens/proposal-card.spec.ts` (TFV2-0213a) has bullets 1–9 inside the §22 loops (36 cases) and installs the clock (`page.clock.install()`) before `openHarness`. From TFV2-0213b (same file): `export type NoteProposalView = { kind: "note"; title: string; body: string }`; `export const BODY_PREVIEW_CHARS = 120`; `export function firstBodyLine(body: string, max: number = BODY_PREVIEW_CHARS): string` (the first line of `body` with non-space text, trimmed; longer than `max` → its first `max − 1` characters + "…"; none → ""), so `firstBodyLine("## Three things only\n- [ ] {{date}}")` → `"## Three things only"`; `editable` is `kind === "task" || kind === "note"` after TFV2-0213b; copy keys `showAll` EN "Show all of it" / HE "להצגת הכול" and `fieldBody` EN "What it says" / HE "מה כתוב בו"; the spec has bullets 1–12 (48 cases). From TFV2-0214 (same file): `export type TemplateProposalView = { kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" }`; `ProposalView` is `TaskProposalView | NoteProposalView | TemplateProposalView`; `editable` is true for `task`, `note` and `template`; the spec has bullets 1–15 (60 cases). Existing code: `DecisionStep = { title: string; minutes: number; reason?: string }` and `DecisionSteps({ steps, labels }: { steps: readonly DecisionStep[]; labels: { list: string; minutes: string } })` (`packages/ui/src/blocks/decision-steps.tsx` lines 21 and 117), `DECISION_LIMITS = { minSteps: 2, maxSteps: 7 }` (line 28).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`) (bullets 16–18, appended)
   16. Given the `decision-pending` section / Then the card has `data-kind="decision"`; the kind reads "Order" / "סדר" with `use[href="#i-sort"]`; the head reads "An order for this afternoon"; `ol[aria-label="Suggested order"]` / `ol[aria-label="הסדר המוצע"]` has 3 `li`; the first `li` shows "1", "Call the bank", "10" and "It's short and has a deadline."; the section has no `[data-action="edit"]`; and Accept reads "Save to today" / "שמירה להיום".
   17. Given the `decision-pending` section / When "Save to today" is clicked / Then `proposal-card-log` reads `onAccept:null`.
@@ -16651,15 +16785,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0215 — Component: ProposalCard — module variant — OPEN
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0217 · **Folds-in:** none
+- **STATUS:** open — new: What does the coach's module card show and which buttons does it have — the design's rows Name / Adds / Changes with Accept / Edit / Reject, or the planned module draft's fields `name` / `summary` / `body` (TFV2-0159) with Approve / Discard (TFV2-0162)?
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0217.
-- **WHY:** `coach-thread.html` turn 3 (`ProposalCard` `data-kind="module"`: rows Name / Adds / Changes; Accept / Edit / Reject; Undo uninstalls within 5 minutes); tempo.css `@component ProposalCard variants` (line 1155) → CONVENTIONS §10 Case A. Code truth: `module` is not a `CoachProposal` kind and `coach.acceptProposal` accepts only `task | note | template | decision` (`convex/coach.ts` line 1105). The planned module draft (TFV2-0159, OPEN) is `{ kind: "module"; status: "draft"; name; summary; body }` with an Approve / Discard decision (TFV2-0162, OPEN), which matches neither the design's rows (no "Adds" / "Changes" fields) nor its Accept / Edit / Reject buttons. The card's data contract and buttons are therefore undecided (OPEN below). Sequenced after TFV2-0217 (same three files); it adds one variant once answered.
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217.
+- **WHY:** `coach-thread.html` turn 3 (`ProposalCard` `data-kind="module"`: rows Name / Adds / Changes; Accept / Edit / Reject; Undo uninstalls within 5 minutes); tempo.css `@component ProposalCard variants` (line 1155) → CONVENTIONS §10 Case A. Code truth: `module` is not a `CoachProposal` kind and `coach.acceptProposal` accepts only `task | note | template | decision` (`convex/coach.ts` line 1105). The planned module draft (TFV2-0159, OPEN) is `{ kind: "module"; status: "draft"; name; summary; body }` with an Approve / Discard decision (TFV2-0162, OPEN), which matches neither the design's rows (no "Adds" / "Changes" fields) nor its Accept / Edit / Reject buttons. The card's data contract and buttons are therefore undecided (OPEN below). Sequenced after TFV2-0217 (same three files); it adds one variant once answered. Related: Q-12 (is the Agent component the coach foundation) and CFG-008 (module columns).
 - **GOAL:** `ProposalCard` also renders a `module` proposal with the rows and actions Amit picks, and reports the decision through the existing callbacks.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (edit: add `ModuleProposalView`, the module branch and copy keys) · `apps/web/app/e2e/components/proposal-card/page.tsx` (edit: two sections appended) · `tests/e2e/screens/proposal-card.spec.ts` (edit: 3 bullets appended). No data.
 - **STEPS:**
-  1. Code-map: read `ProposalCard.tsx` (all variants so far; TFV2-0216 may also be present if it was built first — keep it); `sed -n 1155,1161p apps/web/app/tempo.css`; `grep -n '"module"' apps/web/components/tempo/TpIcon.tsx`.
+  1. Code-map: read `ProposalCard.tsx` (all variants so far; TFV2-0216 may also be present if it was built first — keep it); `sed -n 1155,1161p apps/web/app/tempo.css`; `grep -n '^  "module":' apps/web/components/tempo/TpIcon.tsx` (line 54, one line). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add exactly the SPEC additions (draft below; the field list and buttons follow Amit's answer).
   3. Append the two SPEC sections to the harness.
   4. Append the 3 TESTS bullets to the spec.
@@ -16673,25 +16808,27 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type ModuleProposalView = { kind: "module"; title: string; target: string; name: string; adds: string; changes: string };
   // new copy keys: kindModule EN "Module" / HE "מודול"; fieldAdds EN "Adds" / HE "מוסיף"; fieldChanges EN "Changes" / HE "משנה"
   ```
-  Module branch: icon `"module"`, kindLabel `copy.kindModule`, head `title` (`dir="auto"`), target `target`; body `<dl className="tp-proposal__what">` with rows Name (`copy.fieldName`, editable as the template's), Adds (`copy.fieldAdds`), Changes (`copy.fieldChanges`). Harness: `const MODULE: ModuleProposalView = { kind: "module", title: "Turn on a water tracker", target: "Today page", name: "Water", adds: "A tracker on Today, goal 6 glasses", changes: "Nothing else. No reminders unless you ask." }`; sections `module-pending`, `module-accepted`. RTL, keyboard, screen reader, breakpoints and motion as TFV2-0213a.
-- **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
-  - Given the `module-pending` section / Then the card has `data-kind="module"`, the kind reads "Module" / "מודול" with `use[href="#i-module"]`, and the rows read Name "Water", Adds "A tracker on Today, goal 6 glasses", Changes "Nothing else. No reminders unless you ask.".
-  - Given the `module-pending` section / When Accept is clicked / Then `proposal-card-log` reads `onAccept:null`.
-  - Given the `module-accepted` section / When Undo is clicked / Then the log reads `onUndo:null`.
+  Module branch: icon `"module"`, kindLabel `copy.kindModule`, head `title` (`dir="auto"`), target `target`; body `<dl className="tp-proposal__what">` with rows Name (`copy.fieldName`; while `editing` the value is `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldName} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, else `<span className="tp-change__title" dir="auto">{draft}</span>`), Adds (`copy.fieldAdds`), Changes (`copy.fieldChanges`). Harness: `const MODULE: ModuleProposalView = { kind: "module", title: "Turn on a water tracker", target: "Today page", name: "Water", adds: "A tracker on Today, goal 6 glasses", changes: "Nothing else. No reminders unless you ask." }`; sections `module-pending`, `module-accepted`. RTL: the head, rows and actions mirror (flex and grid follow `dir`); text values are `dir="auto"`; numbers are `.tp-num` LTR isolates. Keyboard: native buttons in DOM order Accept, Edit, Reject; Escape in the edit field restores the original text and leaves edit mode. Screen reader: the card is a `section` named by its head (`aria-labelledby`); Edit is a toggle (`aria-pressed`); the decision note is `role="status"`. Breakpoints: one layout at 390 / 768 / 1024 / 1280 px; actions wrap (`.tp-proposal__actions` has `flex-wrap: wrap`, tempo.css line 414). Motion: only the `.tp-btn` colour transitions (`var(--tp-dur-fast)`, 120 ms; tempo.css `.tp-btn` rule from line 121); nothing is added.
+  **Relies on** (names created by TFV2-0213a in `apps/web/components/coach/ProposalCard.tsx`, checked by reading the file in STEP 1): `export type TaskProposalView = { kind: "task"; title: string; minutes: number; when: "today" | "later" }`; `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone"`; `export type ProposalEdit = { title: string } | { name: string }`; `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void }`; `export const PROPOSAL_UNDO_MINUTES = 5`; inside `ProposalCard`: `const { lang } = useLocale(); const copy = COPY[lang];`, `editable` (a boolean, `kind === "task"` in TFV2-0213a), `const original = proposal.title`, `const [draft, setDraft] = useState(original)`, `const [editing, setEditing] = useState(false)`, `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)`, `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; the shell renders the actions only while `status === "pending"`, else the note (accepted with `left` → `copy.acceptedLead` + `PROPOSAL_UNDO_MINUTES` + `copy.acceptedTail`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`); copy keys used here: `add` EN "Add" / HE "הוספה", `min` EN "min" / HE "דק׳", `targetToday` EN "Today" / HE "היום", `acceptedLead` EN "Done. You can undo this for" / HE "בוצע. אפשר לבטל במשך", `acceptedTail` EN "minutes." / HE "דקות.", `kept` EN "Done." / HE "בוצע.", `rejected` EN "Left as it was. Nothing changed." / HE "נשאר כמו שהיה. שום דבר לא השתנה.", `undone` EN "Undone. Nothing changed." / HE "בוטל. שום דבר לא השתנה.", `accept` EN "Accept" / HE "אישור", `reject` EN "Reject" / HE "דחייה", `undo` EN "Undo" / HE "ביטול". The spec file `tests/e2e/screens/proposal-card.spec.ts` (TFV2-0213a) has bullets 1–9 inside the §22 loops (36 cases) and installs the clock (`page.clock.install()`) before `openHarness`. From TFV2-0213b (same file): `export type NoteProposalView = { kind: "note"; title: string; body: string }`; `export const BODY_PREVIEW_CHARS = 120`; `export function firstBodyLine(body: string, max: number = BODY_PREVIEW_CHARS): string` (the first line of `body` with non-space text, trimmed; longer than `max` → its first `max − 1` characters + "…"; none → ""), so `firstBodyLine("## Three things only\n- [ ] {{date}}")` → `"## Three things only"`; `editable` is `kind === "task" || kind === "note"` after TFV2-0213b; copy keys `showAll` EN "Show all of it" / HE "להצגת הכול" and `fieldBody` EN "What it says" / HE "מה כתוב בו"; the spec has bullets 1–12 (48 cases). From TFV2-0214 (same file): `export type TemplateProposalView = { kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" }`; `ProposalView` is `TaskProposalView | NoteProposalView | TemplateProposalView`; `editable` is true for `task`, `note` and `template`; the spec has bullets 1–15 (60 cases). From TFV2-0214: copy key `fieldName` EN "Name" / HE "שם". From TFV2-0217: `DecisionProposalView` joins `ProposalView`; the spec has bullets 1–18 (72 cases).
+- **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`) (bullets 19–21 when TFV2-0216 is not yet built; 22–24 when it is)
+  19. Given the `module-pending` section / Then the card has `data-kind="module"`, the kind reads "Module" / "מודול" with `use[href="#i-module"]`, and the rows read Name "Water", Adds "A tracker on Today, goal 6 glasses", Changes "Nothing else. No reminders unless you ask.".
+  20. Given the `module-pending` section / When Accept is clicked / Then `proposal-card-log` reads `onAccept:null`.
+  21. Given the `module-accepted` section / When Undo is clicked / Then the log reads `onUndo:null`.
 - **NUMBERS:** Undo window 5 min (PRD F-131) · bullet 3. Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) and motion ≤ 250 ms · TFV2-0213a bullet 9. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: What does the coach's module card show and which buttons does it have — the design's rows Name / Adds / Changes with Accept / Edit / Reject, or the planned module draft's fields `name` / `summary` / `body` (TFV2-0159) with Approve / Discard (TFV2-0162)? (Related: Q-12, is the Agent component the coach foundation; CFG-008, module columns.) — Amit.
+- **OPEN:** new: What does the coach's module card show and which buttons does it have — the design's rows Name / Adds / Changes with Accept / Edit / Reject, or the planned module draft's fields `name` / `summary` / `body` (TFV2-0159) with Approve / Discard (TFV2-0162)? — Amit.
 
 ### TFV2-0216 — Component: ProposalCard — scheduled job variant — OPEN
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0217 · **Folds-in:** none
+- **STATUS:** open — new: Does the coach's scheduled-job card show the design's Name / When / Does / Stop it rows (and then who writes the job's name and "Does" sentence, and is "When" a cron-to-words text in the person's `userPreferences.timeZone` made by the screen), or only what the planned job proposal holds (TFV2-0161: a UTC `cron`, a `task` line and a `targetPageType`)?
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0217.
-- **WHY:** `coach-thread.html` turn 4 (`ProposalCard` `data-kind="job"`: rows Name / When / Does / Stop it, "When" as an LTR mono time; Undo removes within 5 minutes); tempo.css `@component ProposalCard variants` (line 1155) → CONVENTIONS §10 Case A. Code truth: `job` is not a `CoachProposal` kind and `coach.acceptProposal` accepts only `task | note | template | decision` (`convex/coach.ts` line 1105). The planned job proposal (TFV2-0161, OPEN) is `{ kind: "job"; cron; task; targetPageType }` — a 5-field UTC cron and a task line, with no "Name" or "Does" text — while the design shows a name, a human time in the person's zone ("Mon–Fri 08:00") and a "Does" sentence. Where those strings come from is undecided (OPEN below). Glossary: "Scheduled job" = "פעולה מתוזמנת" (CONVENTIONS §12; the design file's "משימה מתוזמנת" is not used). Sequenced after TFV2-0217 (same three files).
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217.
+- **WHY:** `coach-thread.html` turn 4 (`ProposalCard` `data-kind="job"`: rows Name / When / Does / Stop it, "When" as an LTR mono time; Undo removes within 5 minutes); tempo.css `@component ProposalCard variants` (line 1155) → CONVENTIONS §10 Case A. Code truth: `job` is not a `CoachProposal` kind and `coach.acceptProposal` accepts only `task | note | template | decision` (`convex/coach.ts` line 1105). The planned job proposal (TFV2-0161, OPEN) is `{ kind: "job"; cron; task; targetPageType }` — a 5-field UTC cron and a task line, with no "Name" or "Does" text — while the design shows a name, a human time in the person's zone ("Mon–Fri 08:00") and a "Does" sentence. Where those strings come from is undecided (OPEN below). Glossary: "Scheduled job" = "פעולה מתוזמנת" (CONVENTIONS §12; the design file's "משימה מתוזמנת" is not used). Sequenced after TFV2-0217 (same three files). Related: Q-12 (is the Agent component the coach foundation).
 - **GOAL:** `ProposalCard` also renders a `job` proposal with the rows Amit picks, "When" shown as an LTR isolate, and reports the decision through the existing callbacks.
 - **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · `apps/web/app/e2e/components/proposal-card/page.tsx` · test: `tests/e2e/screens/proposal-card.spec.ts`.
 - **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (edit: add `JobProposalView`, the job branch and copy keys) · `apps/web/app/e2e/components/proposal-card/page.tsx` (edit: two sections appended) · `tests/e2e/screens/proposal-card.spec.ts` (edit: 3 bullets appended). No data.
 - **STEPS:**
-  1. Code-map: read `ProposalCard.tsx` (all variants so far; TFV2-0215 may also be present — keep it); `sed -n 579p apps/web/app/tempo.css` (`.tp-ltr`); `grep -n '"clock"' apps/web/components/tempo/TpIcon.tsx`.
+  1. Code-map: read `ProposalCard.tsx` (all variants so far; TFV2-0215 may also be present — keep it); `sed -n 579p apps/web/app/tempo.css` (`.tp-ltr`); `grep -n '^  "clock":' apps/web/components/tempo/TpIcon.tsx` (line 27, one line); `grep -n "^\.tp-ltr" apps/web/app/tempo.css` (line 579). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add exactly the SPEC additions (draft below; the field list follows Amit's answer).
   3. Append the two SPEC sections to the harness.
   4. Append the 3 TESTS bullets to the spec.
@@ -16706,16 +16843,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // new copy keys: kindJob EN "Scheduled job" / HE "פעולה מתוזמנת"; fieldWhen EN "When" / HE "מתי"; fieldDoes EN "Does" / HE "מה עושה";
   //   fieldStop EN "Stop it" / HE "איך מפסיקים"; stopText EN "Switch it off in Modules, any time." / HE "אפשר לכבות במודולים, בכל רגע."
   ```
-  Job branch: icon `"clock"`, kindLabel `copy.kindJob`, head `title` (`dir="auto"`), target `target`; body `<dl className="tp-proposal__what">` rows Name (editable as the template's), When (`<span className="tp-ltr tp-mono tp-num">{when}</span>`), Does (`dir="auto"`), Stop it (`copy.stopText`). Harness: `const JOB: JobProposalView = { kind: "job", title: "Write my plan into Today", target: "Weekdays", name: "Morning plan", when: "Mon–Fri 08:00", does: "Reads your tasks and calendar, then writes a short plan at the top of Today." }`; sections `job-pending`, `job-accepted`. RTL, keyboard, screen reader, breakpoints and motion as TFV2-0213a.
-- **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
-  - Given the `job-pending` section / Then the card has `data-kind="job"`, the kind reads "Scheduled job" / "פעולה מתוזמנת" with `use[href="#i-clock"]`, the four `dt` read "Name", "When", "Does", "Stop it" / "שם", "מתי", "מה עושה", "איך מפסיקים", and the When value has class `tp-ltr` and computed `direction` `ltr`.
-  - Given the `job-pending` section / When Accept is clicked / Then `proposal-card-log` reads `onAccept:null`.
-  - Given the `job-accepted` section / When Undo is clicked / Then the log reads `onUndo:null`.
+  Job branch: icon `"clock"`, kindLabel `copy.kindJob`, head `title` (`dir="auto"`), target `target`; body `<dl className="tp-proposal__what">` rows Name (while `editing` the value is `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldName} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, else `<span className="tp-change__title" dir="auto">{draft}</span>`), When (`<span className="tp-ltr tp-mono tp-num">{when}</span>`), Does (`dir="auto"`), Stop it (`copy.stopText`). Harness: `const JOB: JobProposalView = { kind: "job", title: "Write my plan into Today", target: "Weekdays", name: "Morning plan", when: "Mon–Fri 08:00", does: "Reads your tasks and calendar, then writes a short plan at the top of Today." }`; sections `job-pending`, `job-accepted`. RTL: the head, rows and actions mirror (flex and grid follow `dir`); text values are `dir="auto"`; numbers are `.tp-num` LTR isolates. Keyboard: native buttons in DOM order Accept, Edit, Reject; Escape in the edit field restores the original text and leaves edit mode. Screen reader: the card is a `section` named by its head (`aria-labelledby`); Edit is a toggle (`aria-pressed`); the decision note is `role="status"`. Breakpoints: one layout at 390 / 768 / 1024 / 1280 px; actions wrap (`.tp-proposal__actions` has `flex-wrap: wrap`, tempo.css line 414). Motion: only the `.tp-btn` colour transitions (`var(--tp-dur-fast)`, 120 ms; tempo.css `.tp-btn` rule from line 121); nothing is added.
+  **Relies on** (names created by TFV2-0213a in `apps/web/components/coach/ProposalCard.tsx`, checked by reading the file in STEP 1): `export type TaskProposalView = { kind: "task"; title: string; minutes: number; when: "today" | "later" }`; `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone"`; `export type ProposalEdit = { title: string } | { name: string }`; `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void }`; `export const PROPOSAL_UNDO_MINUTES = 5`; inside `ProposalCard`: `const { lang } = useLocale(); const copy = COPY[lang];`, `editable` (a boolean, `kind === "task"` in TFV2-0213a), `const original = proposal.title`, `const [draft, setDraft] = useState(original)`, `const [editing, setEditing] = useState(false)`, `editInput` = `<input className="tp-input" id={`${id}-edit`} aria-label={copy.fieldTitle} dir="auto" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setDraft(original); setEditing(false); } }} />`, `accept()` = `onAccept(draft.trim() !== "" && draft.trim() !== original ? { title: draft.trim() } : null)`, `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; the shell renders the actions only while `status === "pending"`, else the note (accepted with `left` → `copy.acceptedLead` + `PROPOSAL_UNDO_MINUTES` + `copy.acceptedTail`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`); copy keys used here: `add` EN "Add" / HE "הוספה", `min` EN "min" / HE "דק׳", `targetToday` EN "Today" / HE "היום", `acceptedLead` EN "Done. You can undo this for" / HE "בוצע. אפשר לבטל במשך", `acceptedTail` EN "minutes." / HE "דקות.", `kept` EN "Done." / HE "בוצע.", `rejected` EN "Left as it was. Nothing changed." / HE "נשאר כמו שהיה. שום דבר לא השתנה.", `undone` EN "Undone. Nothing changed." / HE "בוטל. שום דבר לא השתנה.", `accept` EN "Accept" / HE "אישור", `reject` EN "Reject" / HE "דחייה", `undo` EN "Undo" / HE "ביטול". The spec file `tests/e2e/screens/proposal-card.spec.ts` (TFV2-0213a) has bullets 1–9 inside the §22 loops (36 cases) and installs the clock (`page.clock.install()`) before `openHarness`. From TFV2-0213b (same file): `export type NoteProposalView = { kind: "note"; title: string; body: string }`; `export const BODY_PREVIEW_CHARS = 120`; `export function firstBodyLine(body: string, max: number = BODY_PREVIEW_CHARS): string` (the first line of `body` with non-space text, trimmed; longer than `max` → its first `max − 1` characters + "…"; none → ""), so `firstBodyLine("## Three things only\n- [ ] {{date}}")` → `"## Three things only"`; `editable` is `kind === "task" || kind === "note"` after TFV2-0213b; copy keys `showAll` EN "Show all of it" / HE "להצגת הכול" and `fieldBody` EN "What it says" / HE "מה כתוב בו"; the spec has bullets 1–12 (48 cases). From TFV2-0214 (same file): `export type TemplateProposalView = { kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" }`; `ProposalView` is `TaskProposalView | NoteProposalView | TemplateProposalView`; `editable` is true for `task`, `note` and `template`; the spec has bullets 1–15 (60 cases). From TFV2-0214: copy key `fieldName` EN "Name" / HE "שם". From TFV2-0217: `DecisionProposalView` joins `ProposalView`; the spec has bullets 1–18 (72 cases).
+- **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`) (bullets 19–21 when TFV2-0215 is not yet built; 22–24 when it is)
+  19. Given the `job-pending` section / Then the card has `data-kind="job"`, the kind reads "Scheduled job" / "פעולה מתוזמנת" with `use[href="#i-clock"]`, the four `dt` read "Name", "When", "Does", "Stop it" / "שם", "מתי", "מה עושה", "איך מפסיקים", and the When value has class `tp-ltr` and computed `direction` `ltr`.
+  20. Given the `job-pending` section / When Accept is clicked / Then `proposal-card-log` reads `onAccept:null`.
+  21. Given the `job-accepted` section / When Undo is clicked / Then the log reads `onUndo:null`.
 - **NUMBERS:** Undo window 5 min (PRD F-131) · bullet 3. Times as LTR isolates in Hebrew (CONVENTIONS §12) · bullet 1. Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) and motion ≤ 250 ms · TFV2-0213a bullet 9. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: What does the coach's scheduled-job card show — the design's Name / When / Does / Stop it rows, or only what the planned job proposal holds (TFV2-0161: a UTC `cron`, a `task` line and a `targetPageType`)? If the design rows stay, who writes the job's name and "Does" sentence, and is "When" a cron-to-words text in the person's `userPreferences.timeZone` made by the screen? (Related: Q-12, is the Agent component the coach foundation.) — Amit.
+- **OPEN:** new: Does the coach's scheduled-job card show the design's Name / When / Does / Stop it rows (and then who writes the job's name and "Does" sentence, and is "When" a cron-to-words text in the person's `userPreferences.timeZone` made by the screen), or only what the planned job proposal holds (TFV2-0161: a UTC `cron`, a `task` line and a `targetPageType`)? — Amit.
 
 ### TFV2-0218 — Component: MemoryItem + MemoryList (`apps/web/components/memory/MemoryItem.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0093 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0093.
@@ -16724,19 +16863,25 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/memory/MemoryItem.tsx` · `apps/web/app/e2e/components/memory-item/page.tsx` · test: `tests/e2e/screens/memory-item.spec.ts`.
 - **MUTATES:** `apps/web/components/memory/MemoryItem.tsx` (new) · `apps/web/app/e2e/components/memory-item/page.tsx` (new) · `tests/e2e/screens/memory-item.spec.ts` (new). No data, route or schema change.
 - **STEPS:**
-  1. Code-map check: `grep -n "@component MemoryItem " apps/web/app/tempo.css` prints line 1241; `test -e apps/web/components/memory/MemoryItem.tsx` fails; `grep -n "export function Badge" apps/web/components/layout/Badge.tsx` (TFV2-0093; if absent report `blocked: missing TFV2-0093 Badge`); `grep -n "export function intlLocale" apps/web/lib/you/screenState.ts` (returns `"he-IL"` / `"en-GB"`); read `apps/web/components/memory/MemoryManager.tsx` lines 380–440 (reference only; do not edit).
+  1. Code-map check: `grep -n "@component MemoryItem " apps/web/app/tempo.css` prints line 1241; `test -e apps/web/components/memory/MemoryItem.tsx` fails; `grep -n "export function Badge" apps/web/components/layout/Badge.tsx` (TFV2-0093; if absent report `blocked: missing TFV2-0093 Badge`); `grep -n "export function intlLocale" apps/web/lib/you/screenState.ts` (returns `"he-IL"` / `"en-GB"`); read `apps/web/components/memory/MemoryManager.tsx` lines 380–440 (reference only; do not edit); icons, one line each: `grep -n '^  "memory":' apps/web/components/tempo/TpIcon.tsx` (line 53), `grep -n '^  "download":' apps/web/components/tempo/TpIcon.tsx` (line 75), `grep -n '^  "check":' apps/web/components/tempo/TpIcon.tsx` (line 10), `grep -n '^  "question":' apps/web/components/tempo/TpIcon.tsx` (line 79), `grep -n '^  "x":' apps/web/components/tempo/TpIcon.tsx` (line 25); classes: `grep -n "^\.tp-memory-list\|^\.tp-memory-row\|^\.tp-btn--ghost\|^\.tp-btn--danger-ghost\|^\.tp-btn--sm {\|^\.tp-error-text {\|^\.tp-num" apps/web/app/tempo.css` prints lines 82, 131, 132, 134, 1023, 1242, 1243, 1244, 1245, 1246; `grep -n "export type BadgeTone\|export type BadgeProps" apps/web/components/layout/Badge.tsx` prints two lines. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A — no `.css` file; use only the classes listed in SPEC.
-  3. Create `MemoryItem.tsx` (`"use client"`) exactly as SPEC.
+  3. Create `MemoryItem.tsx` (`"use client"`) as written in SPEC.
   4. Create the harness page with the five SPEC states, fixtures inline (CONVENTIONS §13), callbacks writing to `memory-item-log`.
   5. Create the spec with the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/memory-item.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/memory-item.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** call Convex, `fetch` or any hook other than `useLocale` / `useId`; add a stylesheet; show a source the data does not have ("You said it to the coach", "voice call"); show "Guess" on a confirmed row; edit `MemoryManager.tsx` or `apps/web/lib/i18n*`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0218 / evidence: <DONE output> / changed: apps/web/components/memory/MemoryItem.tsx, apps/web/app/e2e/components/memory-item/page.tsx, tests/e2e/screens/memory-item.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
-  import type { ReactNode } from "react";
+  "use client";
+  import type React from "react";
+  import { type ReactNode, useId } from "react";
+  import { Badge } from "@/components/layout/Badge";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   export type MemorySource = "saved" | "chatgpt" | "claude" | "grok" | "other";
   export type MemoryItemData = { id: string; fact: string; source: MemorySource; dayKey: string /* "YYYY-MM-DD" in the person's zone, computed by the route */ };
   export type MemoryGuess = { reason: string; confirmed: boolean };
@@ -16775,7 +16920,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     - after the row `div`, when `forgetError`: `<p className="tp-error-text" role="alert">{copy.forgetError}</p>`.
   - **Styling** (tempo.css, Case A): row grid `minmax(0, 1fr) auto`, padding `--tp-space-3` 0, border-bottom `1px solid var(--tp-line)`; source `--tp-text-sm` `--tp-ink-muted`; buttons are Stage 1 `.tp-btn--sm` (36 px tall).
   - **States (harness order):** `default` (saved, `dayKey` = `todayKey`), `imported` (chatgpt, an older day), `guess` (unconfirmed), `confirmed` (confirmed guess), `error` (`forgetError: true`). `loading` / `empty` / `offline` / `disabled` / `success` belong to the screen (TFV2-0224b), not to a row.
-  - **Harness fixtures** (`const TODAY = "2026-10-12";`): default `{ id: "m-1", fact: "Mondays are hard after the weekend. Start them small.", source: "saved", dayKey: "2026-10-12" }`; imported `{ id: "m-2", fact: "Works as a product designer, mostly from home.", source: "chatgpt", dayKey: "2026-10-09" }`; guess `{ id: "g-1", fact: "Gym slips after late nights.", source: "saved", dayKey: "2026-10-12" }` with `guess: { reason: "From 4 weeks of habit logs", confirmed: false }`; confirmed `{ id: "g-2", fact: "Dana is part of the “Thursday talk” project.", source: "saved", dayKey: "2026-10-12" }` with `guess: { reason: "Her name is on that page twice", confirmed: true }`; error = default with id `"m-3"` and `forgetError: true`. Every row gets `todayKey={TODAY}`. Each state is `<section data-testid="memory-item-<state>"><MemoryList label="Memories"><MemoryItem … /></MemoryList></section>`; `onForget` / `onConfirm` write `onForget:"<id>"` / `onConfirm:"<id>"` into `<output data-testid="memory-item-log">`.
+  - **Harness fixtures** (`const TODAY = "2026-10-12";`): default `{ id: "m-1", fact: "Mondays are hard after the weekend. Start them small.", source: "saved", dayKey: "2026-10-12" }`; imported `{ id: "m-2", fact: "Works as a product designer, mostly from home.", source: "chatgpt", dayKey: "2026-10-09" }`; guess `{ id: "g-1", fact: "Gym slips after late nights.", source: "saved", dayKey: "2026-10-12" }` with `guess: { reason: "From 4 weeks of habit logs", confirmed: false }`; confirmed `{ id: "g-2", fact: "Dana is part of the “Thursday talk” project.", source: "saved", dayKey: "2026-10-12" }` with `guess: { reason: "Her name is on that page twice", confirmed: true }`; error = default with id `"m-3"` and `forgetError: true`. Every row gets `todayKey={TODAY}`. Each state is `<section data-testid="memory-item-<state>"><MemoryList label="Memories"><MemoryItem memory={row} todayKey={TODAY} guess={guess} forgetError={forgetError} onForget={log("onForget")} onConfirm={log("onConfirm")} /></MemoryList></section>`; `row` is that state's fixture above, `guess` its guess (`undefined` for `default`, `imported`, `error`), `forgetError` is `true` only for `error`, and `log` is the CONVENTIONS §13 helper, so `onForget` / `onConfirm` write `onForget:"<id>"` / `onConfirm:"<id>"` into `<output data-testid="memory-item-log">`.
+  - **Relies on:** `Badge` (TFV2-0093, `apps/web/components/layout/Badge.tsx`): `export type BadgeTone = "neutral" | "done" | "info" | "caution";` `export type BadgeProps = { label: string; tone?: BadgeTone; icon?: ReactNode };` `export function Badge({ label, tone = "neutral", icon }: BadgeProps): React.JSX.Element;` rendering `<span className="tp-badge" data-tone={tone} data-component="Badge">{icon ?? null}<span dir="auto">{label}</span></span>` (bullets 4–5 select `[data-component="Badge"]` and `data-tone`). `TpIcon` (CONVENTIONS §22) with the five icons checked in STEP 1.
   - **RTL:** logical grid; the action column sits at inline-end; facts and reasons are `dir="auto"`; dates are `.tp-num` isolates. **Keyboard / screen reader:** native buttons; each button's accessible description is its fact (`aria-describedby`), so "Forget, Mondays are hard…" is announced; the Badge carries a word, never colour alone. **Breakpoints:** one row layout at 390 / 768 / 1024 / 1280. **Motion:** only Stage 1 button transitions (`--tp-dur-fast`, 120 ms).
 - **TESTS:** (CONVENTIONS §15: first statement `test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");`; every bullet is one `test()` inside `for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) for (const lang of ["en", "he"] as const)`, doing `page.setViewportSize(vp)`, `const errors = trackConsoleErrors(page)`, `openHarness(page, "memory-item", { lang })`, and ending `expect(errors).toEqual([])`; the spec keeps its own `EXPECT` copy table; 7 × 4 = 28)
   1. Given `memory-item-default` / Then its `li[data-component="MemoryItem"]` has `data-kind="you"`, the fact span has `dir="auto"` and the fixture text, the source line reads `saved` + " · " + `today` for `lang`, and the Forget button (name `forget`) has `aria-describedby` equal to the fact span's `id`.
@@ -16790,6 +16936,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0219 — Component: ImportReview (`apps/web/components/memory/ImportReview.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0098 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0098.
@@ -16798,18 +16945,25 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/memory/ImportReview.tsx` · `apps/web/app/e2e/components/import-review/page.tsx` · test: `tests/e2e/screens/import-review.spec.ts`.
 - **MUTATES:** `apps/web/components/memory/ImportReview.tsx` (new) · `apps/web/app/e2e/components/import-review/page.tsx` (new) · `tests/e2e/screens/import-review.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map check: `grep -n "@component ImportReview " apps/web/app/tempo.css` prints line 1248; `test -e apps/web/components/memory/ImportReview.tsx` fails; `grep -n "export type ImportItem\|export type ImportChoice" apps/web/lib/you/memory.ts`; `grep -n "export function Segmented" apps/web/components/lists/Segmented.tsx` (TFV2-0098; if absent report `blocked: missing TFV2-0098 Segmented`).
+  1. Code-map check: `grep -n "@component ImportReview " apps/web/app/tempo.css` prints line 1248; `test -e apps/web/components/memory/ImportReview.tsx` fails; `grep -n "export type ImportItem\|export type ImportChoice" apps/web/lib/you/memory.ts`; `grep -n "export function Segmented" apps/web/components/lists/Segmented.tsx` (TFV2-0098; if absent report `blocked: missing TFV2-0098 Segmented`); `grep -n '^  "info":' apps/web/components/tempo/TpIcon.tsx` (line 68, one line); `grep -n "^\.tp-import-list\|^\.tp-import-row\|^\.tp-textarea {" apps/web/app/tempo.css` prints lines 1034, 1249–1256. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A — no `.css` file.
-  3. Create `ImportReview.tsx` (`"use client"`) exactly as SPEC.
+  3. Create `ImportReview.tsx` (`"use client"`) as written in SPEC.
   4. Create the harness page: three sections; each keeps its items in `useState`, applies every change (`items.map((it) => it.id === change.id ? { ...it, ...change } : it)`) and writes `onChange:<JSON.stringify(change)>` into `<output data-testid="import-review-log">`.
   5. Create the spec with the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/import-review.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/import-review.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** add a Save button or call Convex (the screen saves); use `contenteditable` (edit uses a labelled textarea); send or store the raw import text; add a stylesheet; edit `apps/web/lib/you/memory.ts`, `MemoryImportScreen.tsx` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0219 / evidence: <DONE output> / changed: apps/web/components/memory/ImportReview.tsx, apps/web/app/e2e/components/import-review/page.tsx, tests/e2e/screens/import-review.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  "use client";
+  import type React from "react";
+  import { useEffect, useRef } from "react";
+  import { Segmented } from "@/components/lists/Segmented";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   import type { ImportChoice, ImportItem } from "@/lib/you/memory";
   export type ImportChange = { id: string; choice?: ImportChoice; text?: string };
   export type ImportReviewProps = { items: ImportItem[]; onChange: (change: ImportChange) => void };
@@ -16835,6 +16989,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     When a row switches to `edit`, focus moves into its new textarea (a `useEffect` keyed on the id that just switched).
   - **Styling** (tempo.css, Case A): row paper card, border `--tp-line`, radius `--tp-radius-md`, padding `--tp-space-3` `--tp-space-4`; a dropped row is `--tp-ground` with `line-through` text in `--tp-ink-muted`; the edit field has a `1px dashed var(--tp-line-strong)` outline.
   - **States (harness order):** `default` (items `i1` keep "Works as a product designer, mostly from home." · `i2` keep with `duplicate: true` "Prefers Hebrew for voice, English for writing." · `i3` drop "Has a dog named Pita."), `edit` (`i4` edit "Lives in Tel Aviv."), `hebrew` (`i5` keep "מעדיפים תוכניות קצרות."). Every item not named duplicate has `duplicate: false`. `empty` / `loading` / `error` / `offline` / `success` / `disabled` belong to the screen (TFV2-0225b).
+  - **Relies on:** `ImportItem = { id: string; text: string; choice: ImportChoice; duplicate: boolean }` and `ImportChoice = "keep" | "edit" | "drop"` (existing, `apps/web/lib/you/memory.ts` lines 46–54). `Segmented` (TFV2-0098, `apps/web/components/lists/Segmented.tsx`): `export type SegmentedOption = { value: string; label: string };` `export type SegmentedProps = { label: string; options: SegmentedOption[]; value: string; onChange: (value: string) => void; block?: boolean };` rendering `<div className="tp-segmented" role="radiogroup" aria-label={label} data-component="Segmented">` with one `<button type="button" role="radio" className="tp-seg__opt" aria-checked={o.value === value} data-value={o.value} onClick={() => onChange(o.value)}>{o.label}</button>` per option; arrow keys follow `useLocale().dir` (bullets 1, 4, 5 select `role="radiogroup"` / `role="radio"` by name).
   - **RTL:** the radiogroup's arrow keys follow reading direction (TFV2-0098); text `dir="auto"`. **Keyboard / screen reader:** each row's radiogroup is named "What to do with item n"; the note is `aria-live="polite"` so the new outcome is announced; the textarea is labelled "Change the words". **Breakpoints:** the bar wraps (`flex-wrap`) at 390 px. **Motion:** none added.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton with `openHarness(page, "import-review", { lang })`, locators scoped to each state section, callbacks read from `import-review-log`; 7 × 4 = 28)
   1. Given `import-review-default` / Then the `ol[data-component="ImportReview"]` has `aria-label` = `list` and 3 `li.tp-import-row`; row 1's radiogroup is named `choiceLabel` with `{n}` = 1 and has radios `keep`, `edit`, `drop` with only `keep` checked; row `i3` has `data-choice="drop"`.
@@ -16849,6 +17004,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0220 — Component: ExportArea (`apps/web/components/memory/ExportArea.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b.
@@ -16857,18 +17013,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/memory/ExportArea.tsx` · `apps/web/app/e2e/components/export-area/page.tsx` · test: `tests/e2e/screens/export-area.spec.ts`.
 - **MUTATES:** `apps/web/components/memory/ExportArea.tsx` (new) · `apps/web/app/e2e/components/export-area/page.tsx` (new) · `tests/e2e/screens/export-area.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map check: `grep -n "@component ExportArea " apps/web/app/tempo.css` prints line 1258; `test -e apps/web/components/memory/ExportArea.tsx` fails; read `MemoryManager.tsx` lines 470–495 (reference only).
+  1. Code-map check: `grep -n "@component ExportArea " apps/web/app/tempo.css` prints line 1258; `test -e apps/web/components/memory/ExportArea.tsx` fails; read `MemoryManager.tsx` lines 470–495 (reference only); `grep -n '^  "download":' apps/web/components/tempo/TpIcon.tsx` (line 75, one line); `grep -n "^\.tp-export\|^\.tp-btn--secondary\|^\.tp-mono" apps/web/app/tempo.css` prints lines 83, 130, 1259–1262. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: Case A — no `.css` file.
-  3. Create `ExportArea.tsx` (`"use client"`) exactly as SPEC.
+  3. Create `ExportArea.tsx` (`"use client"`) as written in SPEC.
   4. Create the harness page with the five states; `onExport` writes `onExport:null` into `<output data-testid="export-area-log">`.
   5. Create the spec with the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/export-area.spec.ts --reporter=line` → `24 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/export-area.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** run the query, create a Blob or download anything (the screen does); remove or change any memory; add a stylesheet; edit `MemoryManager.tsx`, `apps/web/components/memory-export/*` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0220 / evidence: <DONE output> / changed: apps/web/components/memory/ExportArea.tsx, apps/web/app/e2e/components/export-area/page.tsx, tests/e2e/screens/export-area.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  "use client";
+  import type React from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   export type ExportStatus = "idle" | "working" | "ready" | "error";
   export type ExportAreaProps = { status: ExportStatus; fileName?: string; disabled?: boolean; onExport: () => void };
   export function ExportArea({ status, fileName, disabled = false, onExport }: ExportAreaProps): React.JSX.Element;
@@ -16898,6 +17059,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0221 — Screen: coach panel over Today — verify the shell wiring and test it (`/today`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0021, TFV2-0200, TFV2-0203 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0021, TFV2-0200, TFV2-0203.
@@ -16906,11 +17068,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/tempo/TempoShell.tsx` (read only, unchanged) · test: `tests/e2e/screens/coach-panel-today.spec.ts`.
 - **MUTATES:** `tests/e2e/screens/coach-panel-today.spec.ts` (new). No source, data or route change.
 - **STEPS:**
-  1. Code-map check: in `TempoShell.tsx` read `useMaxWidth(1279)` (`coachSheet`), `openCoach`, `closeCoach`, the Ctrl/Cmd+J and Escape handler (lines ~265–286) and the render of `CoachButton` / `CoachPanel` (lines ~318–321); read `CoachPanelShell.tsx` (TFV2-0200: root `#coach-panel`, title id `coach-panel-title`, close button `aria-label={t("coachPanel.close")}`, "Open full" link `href="/coach"`); `grep -n '"coach.open"\|"coach.name"\|"coachPanel\.' apps/web/lib/i18n.ts` (EN and HE values in SPEC); `grep -n '"/today"' apps/web/proxy.ts`.
+  1. Code-map check: in `TempoShell.tsx` read `useMaxWidth(1279)` (`coachSheet`), `openCoach`, `closeCoach`, the Ctrl/Cmd+J and Escape handler (lines ~265–286) and the render of `CoachButton` / `CoachPanel` (lines ~318–321); read `CoachPanelShell.tsx` (TFV2-0200: root `#coach-panel`, title id `coach-panel-title`, close button `aria-label={t("coachPanel.close")}`, "Open full" link `href="/coach"`); `grep -n '"coach.open"\|"coach.name"\|"coachPanel\.' apps/web/lib/i18n.ts` (EN and HE values in SPEC); `grep -n '"/today"' apps/web/proxy.ts`; `grep -n "^\.tp-coach-panel__head\|^\.tp-app\[data-coach=\"open\"\]" apps/web/app/tempo.css` prints lines 179, 372, 382 and 444. If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Create the spec with the 5 TESTS bullets.
   3. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/today.spec.ts --reporter=line` (must stay green).
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-panel-today.spec.ts --reporter=line` → `20 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/today.spec.ts --reporter=line` → `1 passed`.
-- **EVIDENCE:** both Playwright summaries in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-panel-today.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/today.spec.ts --reporter=line`, pasted into the PR.
 - **DO NOT:** edit `TempoShell.tsx`, `CoachPanel.tsx`, `CoachPanelShell.tsx`, `CoachButton.tsx`, `TodayScreen` or `apps/web/lib/i18n.ts`; assert anything inside the conversation (it needs Convex); register a route (`/today` is a core route); touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0221 / evidence: <DONE output> / changed: tests/e2e/screens/coach-panel-today.spec.ts / unknowns / notes for ticket sync: i18n coach.name HE is "מאמן" where the glossary says "המאמן" (CONVENTIONS §12) — an i18n ticket (TFV2-0020 area) owns the fix`; list STEPS 1–3 each with its evidence.
 - **SPEC:** No new UI. Behaviour and copy as they are today (existing `apps/web/lib/i18n.ts` keys):
@@ -16921,6 +17083,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   | `coachPanel.sub` | Proposes. Nothing changes without your yes. | מציע בלבד. שום דבר לא משתנה בלי ההסכמה שלך. |
   | `coachPanel.full` (link to `/coach`) | Open full | פתיחה מלאה |
   | `coachPanel.close` (close button `aria-label`) | Close coach | סגירת המאמן |
+  - **Relies on:** `CoachPanelShell` (TFV2-0200, `apps/web/components/coach/CoachPanelShell.tsx`): `export type CoachPanelShellProps = { onClose: () => void; modal?: boolean; panelId?: string; children: ReactNode };` `export function CoachPanelShell({ onClose, modal = false, panelId = "coach-panel", children }: CoachPanelShellProps): React.JSX.Element;` — root `id={panelId}` (`#coach-panel`), title `id="coach-panel-title"` reading `t("coach.name")`, the close button with `aria-label={t("coachPanel.close")}` calling `onClose`, the "Open full" link `href="/coach"`, and `role="dialog"` + `aria-modal="true"` only when `modal`; `CoachPanel({ onClose, modal })` renders it. `CoachButton` (existing, harness-tested by TFV2-0203, `apps/web/components/tempo/CoachButton.tsx`): `forwardRef<HTMLButtonElement, { expanded: boolean; onOpen: () => void }>` with `data-component="CoachButton"`, `aria-label={t("coach.open")}`, `aria-expanded={expanded}`, `aria-controls="coach-panel"`. Helpers `openScreen`, `expectDir`, `expectTargetSize`, `expectMotionBudget`, `trackConsoleErrors` (TFV2-0000b, CONVENTIONS §15).
   - **States covered:** closed (button `aria-expanded="false"`, no `#coach-panel`), docked open at 1280 × 800 (`.tp-app[data-coach="open"]`, `#coach-panel` without `role`), sheet open at 390 × 844 (`#coach-panel[role="dialog"][aria-modal="true"]`), closed again with focus on the button. Loading / empty / error / offline of the conversation are the coach screen's (TFV2-0222a). **RTL:** under `?lang=he` `<html dir="rtl">` and the panel docks at inline-end (tempo.css). **Keyboard:** Ctrl+J (Meta+J on macOS) toggles; Escape closes; focus moves into the panel on open and back to the button on close. **Motion:** the panel's slide-in uses tempo.css `tp-slide-in` / `tp-rise` (≤ 240 ms).
 - **TESTS:** the §22 spec skeleton: `openScreen(page, "/today", { state: "default", lang })` (the page ignores `?state=`), console errors filtered with `/example\.convex\.cloud|WebSocket/i` then `[]`; 5 bullets × 2 viewports × 2 languages = 20:
   1. Given `/today` / Then the button `[data-component="CoachButton"]` has `aria-label` = `coach.open` for `lang`, `aria-expanded="false"`, `aria-controls="coach-panel"`, and no `#coach-panel` exists; `expectDir(page, lang)` passes.
@@ -16933,6 +17096,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0222a — Screen: coach thread (`/coach/[threadId]`) — messages, send, states
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0015, TFV2-0021, TFV2-0037, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0201, TFV2-0202, TFV2-0205 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0015, TFV2-0021, TFV2-0037, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0201, TFV2-0202, TFV2-0205.
@@ -16942,13 +17106,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (new) · `apps/web/lib/e2e/fixtures/coach-thread.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/coach-thread.spec.ts` (new) · route `/coach/<id>` released for the dev-only E2E bypass · `messages` rows written through `coach.sendMessage` / `coach.reply`.
 - **STEPS:**
   1. Code-map check: `ls "apps/web/app/(tempo)/coach"` (only `page.tsx`); `grep -n "export const get\b\|export const get =" convex/conversations.ts`; `grep -n "export const list" convex/messages.ts`; `grep -n "export const sendMessage\|export const reply" convex/coach.ts`; `grep -n "export function useLocalDayBounds" apps/web/lib/useLocalDayBounds.ts`; `grep -n "export function localIsoDate" apps/web/lib/period-pages.ts`; confirm `Composer.tsx` (TFV2-0037), `UserMessage.tsx` (TFV2-0202), `CoachMessage.tsx` (TFV2-0201), `TypingIndicator.tsx` (TFV2-0205), `states/State*.tsx`, `useE2EState.ts`, `tests/e2e/helpers/harness.ts` exist, else `blocked: missing <id>`; `cat apps/web/lib/e2eWiringRoutes.ts`.
-  2. Create `apps/web/lib/e2e/fixtures/coach-thread.ts` exactly as SPEC.
-  3. Create `page.tsx` exactly as SPEC.
+  2. Create `apps/web/lib/e2e/fixtures/coach-thread.ts` as written in SPEC.
+  3. Create `page.tsx` as written in SPEC.
   4. Register the route (named step, CONVENTIONS §17): insert exactly `  "/coach/(.*)",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else in that file.
   5. Create the spec with the 8 TESTS bullets.
   6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/coach.spec.ts --reporter=line`, `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` → `32 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/coach.spec.ts --reporter=line` → `1 passed`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both Playwright summaries, the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts` in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` and of `CI=1 bunx playwright test tests/e2e/wiring/coach.spec.ts --reporter=line` pasted into the PR, the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts` in the PR.
 - **DO NOT:** edit `/coach/page.tsx`, `CoachChat.tsx` or any component; render JSON or a raw `toolCalls`; send while offline or while a send is in flight; call a model from the client; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0222a / evidence: <DONE output> / changed: page.tsx, fixtures/coach-thread.ts, e2eWiringRoutes.ts, coach-thread.spec.ts / unknowns / notes for ticket sync: messages.list reads the whole thread with .collect() (no bound) — a backend ticket should bound it` (list STEPS 1–6 with evidence).
 - **SPEC:**
@@ -16962,14 +17126,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
       | { status: "ready"; title: string; messages: ThreadMessageView[]; waiting: boolean };
     ```
     Live: `const conversationId = useParams<{ threadId: string }>().threadId as Id<"conversations">`; `signed-out` from `useConvexAuth`; `api.users.getProfile` gate; `api.conversations.get({ conversationId })` and `api.messages.list({ conversationId })` (skip until the profile exists); a thrown `"Conversation not found or access denied"` (caught by `ScreenBoundary` and matched on that message) → `not-found`, any other throw → `error`; `undefined` → `loading`; else `ready` with `messages = rows.map((m) => ({ id: m._id, role: m.role, text: m.content, modelUsed: m.modelUsed, toolCalls: m.toolCalls }))`, `waiting = sending || rows.at(-1)?.role === "user"`.
-  - **Fixtures:** `apps/web/lib/e2e/fixtures/coach-thread.ts` holds only `import type { CoachThreadState, CoachThreadView } from "@/app/(tempo)/coach/[threadId]/page";` and `export const FIXTURES: Record<CoachThreadState, CoachThreadView>`: `default` and `offline` = `{ status: "ready", title: "A lighter Monday", waiting: false, messages: [ { id: "u1", role: "user", text: "Monday feels like a lot. Can we make it lighter?" }, { id: "a1", role: "assistant", text: "Yes. Three things today, and the rest can wait until Wednesday." } ] }`; `writing` = the same plus `{ id: "u2", role: "user", text: "Which three?" }` and `waiting: true`; `empty` = `{ status: "ready", title: "New Conversation", waiting: false, messages: [] }`; `loading`, `error`, `signed-out`, `not-found` = `{ status: … }`.
-  - **Page structure:** `Page` → `<Suspense fallback={null}><CoachThreadScreen /></Suspense>`. Forced (`useE2EState()` non-null): `FIXTURES[key]`, every query `"skip"`; sending appends `{ role: "user" }` locally and leaves `waiting` true (no reply comes). Live: `ScreenBoundary` whose fallback reads the error message to choose `not-found` or `error`.
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/coach-thread.ts` holds only `import type { CoachThreadState, CoachThreadView } from "@/app/(tempo)/coach/[threadId]/page";` and `export const FIXTURES: Record<CoachThreadState, CoachThreadView>`: `default` and `offline` = `{ status: "ready", title: "A lighter Monday", waiting: false, messages: [ { id: "u1", role: "user", text: "Monday feels like a lot. Can we make it lighter?" }, { id: "a1", role: "assistant", text: "Yes. Three things today, and the rest can wait until Wednesday." } ] }`; `writing` = the same plus `{ id: "u2", role: "user", text: "Which three?" }` and `waiting: true`; `empty` = `{ status: "ready", title: "New Conversation", waiting: false, messages: [] }`; `loading` = `{ status: "loading" }`; `error` = `{ status: "error" }`; `signed-out` = `{ status: "signed-out" }`; `not-found` = `{ status: "not-found" }`. The fixtures hold no dates: forced mode never asks for a reply, so it never computes a day.
+  - **Page structure:** `Page` → `<Suspense fallback={null}><CoachThreadScreen /></Suspense>`. Forced (CONVENTIONS §23.5): `const forced = useE2EState();` is read first; when `forced !== null` (and is a key of `FIXTURES`) the screen renders the body from `FIXTURES[forced]` directly — no profile gate, no `ProfileReady`, no `users.getProfile` — and every `useQuery` (`users.getProfile`, `conversations.get`, `messages.list`) is passed `"skip"`, so no Convex call is made; forced `offline` also makes the page act as if `useOnline()` returned `false` (CONVENTIONS §14); sending appends `{ role: "user" }` locally and leaves `waiting` true (no reply comes). Live: `ScreenBoundary` whose fallback reads the error message to choose `not-found` or `error`.
   - **Body:** root `<div className="tp-page" data-component="PageLayout" data-testid="coach-thread">` →
     1. header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><Link className="tp-btn tp-btn--link" href="/history"><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{copy.back}</span></Link><h1 className="tp-pagehead__title" dir="auto">{title === "New Conversation" ? copy.untitled : title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>` (only for `ready`; other states show `<h1>{copy.coach}</h1>`);
     2. `!online` → `<div data-testid="coach-thread-offline"><StateOffline text={copy.offline} /></div>`;
     3. `loading` → `coach-thread-loading` `<TypingIndicator variant="opening" />`; `error` → `coach-thread-error` `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `coach-thread-signed-out` `<StateEmpty title={copy.signedOut} action={<Link className="tp-btn tp-btn--secondary" href="/sign-in">{copy.signIn}</Link>} />`; `not-found` → `coach-thread-not-found` `<StateEmpty title={copy.notFound} action={<Link className="tp-btn tp-btn--secondary" href="/history">{copy.allChats}</Link>} />`;
     4. `ready` → `<section className="tp-coach-thread" aria-label={copy.thread} aria-live="polite" data-testid={messages.length ? "coach-thread-default" : "coach-thread-empty"}>`: empty → `<CoachMessage text={copy.opener} />`; else each message in order: `user` → `<UserMessage text={m.text} />`, `assistant` → `<CoachMessage text={m.text} />`; when `waiting` → `<CoachMessage text="" streaming />` (shows "Coach is writing") with `data-testid="coach-thread-writing"` on its wrapper; when the last reply status was `"unavailable"` → `<p className="tp-error-text" role="alert">{copy.unavailable}</p>`; then `<Composer onSend={onSend} disabled={!online || sending} />`, and `sendError` → `<p className="tp-error-text" role="alert">{sendError}</p>`.
-  - **onSend(text):** `setSending(true)`; `await send(text)` where live `send = async (content) => { await sendMessage({ conversationId, content }); const bounds = …useLocalDayBounds(); const r = await requestReply({ conversationId, dayStartMs: bounds.startMs, dayEndMs: bounds.endMs, todayDate: localIsoDate(new Date(bounds.startMs)) }); setLastStatus(r.status); }` (crisis handling is TFV2-0222d: until then a `crisis: true` result still calls nothing more — `reply` returns `"idle"` for a crisis turn); errors: `"That message is too long. Try a shorter one."` → `sendError = copy.tooLong`, anything else → `copy.sendFailed`; `finally setSending(false)`.
+  - **onSend(text):** `setSending(true)`; `await send(text)` where `const bounds = useLocalDayBounds();` (`{ startMs: number; endMs: number }`) is read once at the top of the screen and live `send = async (content) => { await sendMessage({ conversationId, content }); const r = await requestReply({ conversationId, dayStartMs: bounds.startMs, dayEndMs: bounds.endMs, todayDate: localIsoDate(new Date(bounds.startMs)) }); setLastStatus(r.status); }` (crisis handling is TFV2-0222d: until then a `crisis: true` result still calls nothing more — `reply` returns `"idle"` for a crisis turn); errors: `"That message is too long. Try a shorter one."` → `sendError = copy.tooLong`, anything else → `copy.sendFailed`; `finally setSending(false)`.
   - **Copy:**
     | key | EN | HE |
     |---|---|---|
@@ -16988,13 +17152,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | unavailable | The coach couldn't answer just now. Your message is saved, so try again in a moment. | המאמן לא הצליח לענות כרגע. ההודעה שלך שמורה, אפשר לנסות שוב בעוד רגע. |
     | tooLong | That message is too long. Try a shorter one. | ההודעה ארוכה מדי. אפשר לנסות הודעה קצרה יותר. |
     | sendFailed | That didn't send. Try again. | ההודעה לא נשלחה. אפשר לנסות שוב. |
+  - **Relies on:** `Composer` (TFV2-0037): `export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean };` — sends trimmed text on Enter or its send button, Shift+Enter is a newline, the send button is disabled while empty or `disabled`. `UserMessage` (TFV2-0202): `export type UserMessageProps = { text: string };`. `CoachMessage` (TFV2-0201): `export type CoachMessageProps = { text: string; streaming?: boolean; readAloud?: { pressed: boolean; onToggle: (next: boolean) => void } };` — `streaming` renders the variant with `aria-busy="true"` and "Coach is writing" / "המאמן כותב" and no actions. `TypingIndicator` (TFV2-0205): `export type TypingIndicatorVariant = "writing" | "opening";` `export type TypingIndicatorProps = { variant: TypingIndicatorVariant };` — `role="status"` with text `writing` EN "Coach is writing" / HE "המאמן כותב" or `opening` EN "Opening your conversation" / HE "פותחים את השיחה שלך". `StateEmpty` (TFV2-0120): `{ title: string; body?: string; icon?: ReactNode; action?: ReactNode }`; `StateLoading` (TFV2-0121): `{ label: string; rows?: number }`; `StateError` (TFV2-0122): `{ what: string; onRetry: () => void; retrying?: boolean }` (its retry button reads "Try again" / "לנסות שוב"); `StateOffline` (TFV2-0123): `{ text?: string }`. `useE2EState(): string | null` (TFV2-0000c); `openScreen`, `expectTargetSize`, `measureVitals`, `trackConsoleErrors` (TFV2-0000b, CONVENTIONS §15).
   - **States:** `default`, `empty`, `writing`, `loading`, `error`, `offline`, `signed-out`, `not-found` (test ids `coach-thread-<state>`). **RTL / keyboard / breakpoints / motion:** `<html dir>` from `LocaleProvider`; message text `dir="auto"` (components); Composer Enter sends, Shift+Enter newline (TFV2-0037); the thread is `aria-live="polite"`; 390 px base, `.tp-page` handles wider; TypingIndicator dots stop under reduced motion (TFV2-0205).
 - **TESTS:** the §22 spec skeleton with `openScreen(page, "/coach/t1", { state, lang })` (console errors filtered with `/example\.convex\.cloud|WebSocket/i`); 8 × 4 = 32:
   1. Given state `default` / Then `coach-thread` has the `h1` "A lighter Monday", the back link to `/history`, the sub; `coach-thread-default` holds one `UserMessage` and one `CoachMessage` in order; `expectTargetSize(page, '[data-testid="coach-thread"]')` passes; `measureVitals(page, "/coach/t1?state=default&lang=" + lang)` → LCP ≤ 2500, CLS ≤ 0.1.
-  2. Given state `default` / When "Plan my evening" is typed in the composer and Enter pressed / Then a third message (a `UserMessage` with that text) appears and `coach-thread-writing` shows the TFV2-0205 "Coach is writing" text for `lang`.
+  2. Given state `default` / When "Plan my evening" is typed in the composer and Enter pressed / Then a third message (a `UserMessage` with that text) appears and `coach-thread-writing` shows "Coach is writing" / "המאמן כותב".
   3. Given state `writing` / Then `coach-thread-writing` is visible and `[aria-busy="true"]` exists inside it.
   4. Given state `empty` / Then `coach-thread-empty` shows the `opener` and the `h1` reads `untitled`.
-  5. Given state `loading` / Then `coach-thread-loading` contains `role="status"` with the TFV2-0205 "opening" text for `lang`.
+  5. Given state `loading` / Then `coach-thread-loading` contains `role="status"` with "Opening your conversation" / "פותחים את השיחה שלך".
   6. Given state `error` / Then `coach-thread-error` shows `error` and "Try again" / "לנסות שוב".
   7. Given state `offline` / Then `coach-thread-offline` shows `offline` and the composer's send button is disabled.
   8. Given states `signed-out` and `not-found` in turn / Then `coach-thread-signed-out` links to `/sign-in`, and `coach-thread-not-found` shows `notFound` with a link to `/history`.
@@ -17003,6 +17168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0222b — Screen: coach thread (`/coach/[threadId]`) — proposal cards (accept, edit, reject, undo)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217, TFV2-0222a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0213a, TFV2-0213b, TFV2-0214, TFV2-0217, TFV2-0222a.
@@ -17012,12 +17178,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (edit) · `apps/web/lib/e2e/fixtures/coach-thread.ts` (edit: one new `cards` state) · `tests/e2e/screens/coach-thread.spec.ts` (edit: one `describe("cards", …)` block appended) · tasks / notes / templates / today's page written by `acceptProposal`, reverted by `undoProposal`.
 - **STEPS:**
   1. Code-map check: read the TFV2-0222a page; `grep -n "export function proposalOf" apps/web/components/coach/ChatProposal.tsx`; `grep -n "export const acceptProposal\|export const rejectProposal\|export const undoProposal" convex/coach.ts`; read `ProposalCardProps`, `ProposalView`, `ProposalEdit` in `apps/web/components/coach/ProposalCard.tsx`.
-  2. Add the `cards` state to `CoachThreadState` and its fixture exactly as SPEC.
-  3. Render cards and wire the three decisions exactly as SPEC.
+  2. Add the `cards` state to `CoachThreadState` and its fixture as written in SPEC.
+  3. Render cards and wire the three decisions as written in SPEC.
   4. Append the 5 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` → `52 passed` (32 + 20 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** apply anything before Accept; offer Undo after `undoUntilMs`; render a `module` or `job` card; edit `ChatProposal.tsx` or `ProposalCard.tsx`; change the TFV2-0222a cases; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0222b / evidence: <DONE output> / changed: page.tsx, fixtures/coach-thread.ts, coach-thread.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–5 with evidence).
 - **SPEC:**
@@ -17025,18 +17191,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - **State and fixture:** `CoachThreadState` gains `"cards"`; fixture `cards` = `{ status: "ready", title: "A lighter Monday", waiting: false, messages: [ { id: "u1", role: "user", text: "Can you add calling the bank?" }, { id: "a1", role: "assistant", text: "Here is the change.", toolCalls: { coachProposal: { kind: "task", title: "Call the bank", minutes: 10, when: "today", status: "pending" } } }, { id: "a2", role: "assistant", text: "And an order for the afternoon.", toolCalls: { coachProposal: { kind: "decision", title: "This afternoon", steps: [ { title: "Reply to Dana", minutes: 10 }, { title: "Draft 3 slides", minutes: 25, reason: "Thursday talk" } ], status: "accepted", undoUntilMs: 4102444800000 } } } ] }` (the `undoUntilMs` is 2100-01-01, so Undo stays open in the test).
   - **Render:** for an `assistant` message with `card = proposalOf(m.toolCalls)` non-null, render `<CoachMessage text={m.text} />` and directly under it `<ProposalCard id={m.id} proposal={toView(card)} status={card.status} undoUntilMs={card.undoUntilMs} busy={busyId === m.id} error={errorId === m.id} primary={m.id === newestPendingId} onAccept={(edit) => decide(m.id, "accept", edit)} onReject={() => decide(m.id, "reject")} onUndo={() => decide(m.id, "undo")} />`, where `toView` keeps only the variant fields (`task`: `title, minutes, when`; `note`: `title, body`; `template`: `name, body, period`; `decision`: `title, steps`) and `newestPendingId` is the last message whose card is `pending`.
   - **decide(messageId, action, edit?):** `setBusyId(messageId)`; live: `accept` → `acceptProposal({ messageId, todayDate: localIsoDate(new Date(bounds.startMs)), dueTodayAt: bounds.endMs - 1, ...(edit ? { edit } : {}) })`, `reject` → `rejectProposal({ messageId })`, `undo` → `undoProposal({ messageId })`; the stored status comes back through `messages.list`. Forced: the page keeps a local status per message (`accept` → `accepted` with `undoUntilMs = Date.now() + 300_000`, `reject` → `rejected`, `undo` → `undone`). Any throw → `setErrorId(messageId)`; `finally setBusyId(null)`.
-  - No new copy (the card owns its copy, TFV2-0213a…0217).
+  - No new copy (the card owns its copy).
+  - **Relies on:** `ProposalCard` (TFV2-0213a, `apps/web/components/coach/ProposalCard.tsx`): `export type ProposalCardProps = { id: string; proposal: ProposalView; status: ProposalStatus; undoUntilMs?: number; busy?: boolean; error?: boolean; primary?: boolean; onAccept: (edit: ProposalEdit | null) => void; onReject: () => void; onUndo: () => void };` `export type ProposalStatus = "pending" | "accepted" | "rejected" | "undone";` `export type ProposalEdit = { title: string } | { name: string };` root `section[data-component="ProposalCard"][data-kind][data-status]`; buttons `[data-action="accept"|"edit"|"reject"|"undo"]`; copy Accept "Accept" / "אישור", Edit "Edit" / "עריכה", Reject "Reject" / "דחייה", Undo "Undo" / "ביטול"; accepted note "Done. You can undo this for 5 minutes." / "בוצע. אפשר לבטל במשך 5 דקות."; rejected note "Left as it was. Nothing changed." / "נשאר כמו שהיה. שום דבר לא השתנה."; undone note "Undone. Nothing changed." / "בוטל. שום דבר לא השתנה."; the edit input is labelled "Title" / "כותרת". `ProposalView` = `TaskProposalView | NoteProposalView | TemplateProposalView | DecisionProposalView` after TFV2-0217: `{ kind: "task"; title: string; minutes: number; when: "today" | "later" }` (TFV2-0213a), `{ kind: "note"; title: string; body: string }` (TFV2-0213b), `{ kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" }` (TFV2-0214), `{ kind: "decision"; title?: string; steps: DecisionStep[] }` (TFV2-0217; the decision's Accept reads "Save to today" / "שמירה להיום", its accepted note "Saved to today. You can undo this for 5 minutes." / "נשמר להיום. אפשר לבטל במשך 5 דקות."); `PROPOSAL_UNDO_MINUTES = 5` (TFV2-0213a). `proposalOf(toolCalls: unknown): ChatProposalState | null` (existing, `apps/web/components/coach/ChatProposal.tsx` line 47; `ChatProposalState` = the proposal fields plus `{ status: "pending" | "accepted" | "rejected" | "undone"; createdId?: string; undoUntilMs?: number }`).
 - **TESTS:** appended `describe("cards", …)`, §22 skeleton, `openScreen(page, "/coach/t1", { state: "cards", lang })` (5 × 4 = 20):
-  1. Given state `cards` / Then two `[data-component="ProposalCard"]` render, the first with `data-kind="task"` and its Accept / Edit / Reject buttons (TFV2-0213a copy for `lang`), the second `data-kind="decision"` showing 2 steps and an Undo button.
-  2. Given the task card / When Accept is clicked / Then the card shows the TFV2-0213a accepted note and an Undo button.
-  3. Given the task card / When Reject is clicked / Then it shows the `rejected` note and no action buttons.
+  1. Given state `cards` / Then two `[data-component="ProposalCard"]` render, the first with `data-kind="task"` and its buttons "Accept", "Edit", "Reject" / "אישור", "עריכה", "דחייה", the second `data-kind="decision"` showing 2 steps and an Undo button.
+  2. Given the task card / When Accept is clicked / Then the card shows "Done. You can undo this for 5 minutes." / "בוצע. אפשר לבטל במשך 5 דקות." and an Undo button.
+  3. Given the task card / When Reject is clicked / Then it shows "Left as it was. Nothing changed." / "נשאר כמו שהיה. שום דבר לא השתנה." and no action buttons.
   4. Given the task card / When Edit is clicked, the title changed to "Call the bank before noon" and Accept clicked / Then the card shows the accepted note (the edit reached `onAccept`; in forced mode the local status is `accepted`).
-  5. Given the decision card / When Undo is clicked / Then it shows the `undone` note.
+  5. Given the decision card / When Undo is clicked / Then it shows "Undone. Nothing changed." / "בוטל. שום דבר לא השתנה.".
 - **NUMBERS:** Undo window 300,000 ms (`PROPOSAL_UNDO_MINUTES` = 5, PRD F-131) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · 52 of 52 pass · decision p95: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222c — Screen: coach thread (`/coach/[threadId]`) — coach style sheet and "I'm overwhelmed"
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166a, TFV2-0166b, TFV2-0167a, TFV2-0167b, TFV2-0167c, TFV2-0210, TFV2-0211, TFV2-0212, TFV2-0222b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0166a, TFV2-0166b, TFV2-0167a, TFV2-0167b, TFV2-0167c, TFV2-0210, TFV2-0211, TFV2-0212, TFV2-0222b.
@@ -17045,18 +17213,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` · test: `tests/e2e/screens/coach-thread.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (edit) · `tests/e2e/screens/coach-thread.spec.ts` (edit: one `describe("style and panic", …)` block appended) · `coachSettings` row written by `setDial` / `pressPanic` / `clearPanic`.
 - **STEPS:**
-  1. Code-map check: read the TFV2-0222b page; `grep -n "export const getSettings\|export const setDial\|export const pressPanic\|export const clearPanic" convex/coach.ts`; `grep -n "export function tenSecondActionCopy" convex/lib/coachLoad.ts` (TFV2-0167c; else `blocked: missing TFV2-0167c`); read the props of `PanicButton`, `GroundingCard`, `CoachDial`.
-  2. Add the header controls, the grounding card and the dial section exactly as SPEC.
+  1. Code-map check: read the TFV2-0222b page; `grep -n "export const getSettings\|export const setDial\|export const pressPanic\|export const clearPanic" convex/coach.ts`; `grep -n "export function tenSecondActionCopy" convex/lib/coachLoad.ts` (TFV2-0167c; else `blocked: missing TFV2-0167c`); read the props of `PanicButton`, `GroundingCard`, `CoachDial` against **Relies on**; `grep -n '^  "settings":' apps/web/components/tempo/TpIcon.tsx` (line 44, one line); `grep -n '"Stand up and drink a sip of water."' convex/lib/coachLoad.ts` (line 58). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Add the header controls, the grounding card and the dial section as written in SPEC.
   3. Append the 4 TESTS bullets.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` → `68 passed` (52 + 16 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** call a model or `coach.reply` on panic; save the dial on every movement (CoachDial commits once, 400 ms after the last change); edit any component or `coachLoad.ts`; change earlier cases; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0222c / evidence: <DONE output> / changed: page.tsx, coach-thread.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–4 with evidence).
 - **SPEC:**
   - **New imports:** `PanicButton` from `@/components/coach/PanicButton`; `GroundingCard` from `@/components/coach/GroundingCard`; `CoachDial` from `@/components/coach/CoachDial`; `tenSecondActionCopy` from `@/convex/lib/coachLoad`.
   - **Header** (`ready` only, in `.tp-pagehead__actions`): `<PanicButton expanded={grounding !== null} controls="coach-grounding" onPress={onPanic} disabled={!online} />` and `<button type="button" className="tp-btn tp-btn--ghost" aria-expanded={styleOpen} aria-controls="coach-style" onClick={() => setStyleOpen((o) => !o)}><TpIcon name="settings" size="sm" /><span>{copy.style}</span></button>`.
-  - **Grounding** (above the thread when `grounding !== null`): `<GroundingCard id="coach-grounding" actionText={grounding} onDone={onDone} />`. `onPanic`: live `const r = await pressPanic({})`, forced `r = { panicUntil: 0, action: { text: "Drink a glass of water." } }`; `grounding = tenSecondActionCopy(r.action.text)?.[lang] ?? r.action.text`; a throw → `panicError = true` → `<p className="tp-error-text" role="alert">{copy.panicFailed}</p>`. `onDone`: live `await clearPanic({})` (forced no-op), then `grounding = null`, focus back on the PanicButton.
+  - **Grounding** (above the thread when `grounding !== null`): `<GroundingCard id="coach-grounding" actionText={grounding} onDone={onDone} />`. `onPanic`: live `const r = await pressPanic({})`, forced `r = { panicUntil: 0, action: { text: "Stand up and drink a sip of water." } }` (an entry of `TEN_SECOND_ACTIONS`, `convex/lib/coachLoad.ts` line 58); `grounding = tenSecondActionCopy(r.action.text)?.[lang] ?? r.action.text`; a throw → `panicError = true` → `<p className="tp-error-text" role="alert">{copy.panicFailed}</p>`. `onDone`: live `await clearPanic({})` (forced no-op), then `grounding = null`, focus back on the PanicButton.
   - **Style section** (`styleOpen`): `<section id="coach-style" className="tp-section" data-testid="coach-thread-style"><CoachDial value={dial} onCommit={onCommitDial} disabled={!online} error={dialError} /></section>`. `dial` = live `getSettings({}).dial` (skip until the profile exists; `undefined` → the section shows `<StateLoading label={copy.styleLoading} rows={1} />`), forced `4`. `onCommitDial(v)`: live `await setDial({ dial: v })` → `dialError = false`, throw → `dialError = true`; forced: sets the local dial to `v` and writes it to a hidden `<output data-testid="coach-thread-dial">`.
   - **Copy added:**
     | key | EN | HE |
@@ -17065,8 +17233,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | styleLoading | Loading coach style | טוענים את סגנון המאמן |
     | panicFailed | That didn't open. Try again. | זה לא נפתח. אפשר לנסות שוב. |
   - Fixture: no change (`default` serves these cases).
+  - **Relies on:** `PanicButton` (TFV2-0212): `export type PanicButtonProps = { expanded: boolean; controls: string; onPress: () => void; disabled?: boolean };` — `<button className="tp-panic" data-component="PanicButton" aria-controls aria-expanded>` reading "I'm overwhelmed" / "יותר מדי לי עכשיו". `GroundingCard` (TFV2-0210): `export type GroundingCardProps = { id: string; actionText: string; onDone: () => void };` — root `id={id}`, shows `actionText`, a Done button "Done" / "סיימתי" calling `onDone`; `BREATH_STEP_MS = 4000`. `CoachDial` (TFV2-0211): `export type CoachDialProps = { value: number; onCommit: (value: number) => void; disabled?: boolean; error?: boolean };` — commits once `COACH_DIAL_COMMIT_MS = 400` ms after the last change; ArrowUp raises the value by 1. `tenSecondActionCopy(text: string): { en: string; he: string } | null` (TFV2-0167c, `convex/lib/coachLoad.ts`): `tenSecondActionCopy("Stand up and drink a sip of water.")` → `{ en: "Stand up and drink a sip of water.", he: "לקום ולשתות לגימה של מים." }`. `coach.getSettings` / `setDial` / `pressPanic` / `clearPanic` as quoted in WHY (TFV2-0166a, 0166b, 0167a, 0167b). In forced mode `getSettings` is passed `"skip"` and the dial is `4`.
 - **TESTS:** appended `describe("style and panic", …)`, §22 skeleton, `openScreen(page, "/coach/t1", { state: "default", lang })` (4 × 4 = 16):
-  1. Given state `default` / When the PanicButton (TFV2-0212 label for `lang`) is clicked / Then `#coach-grounding` is visible, the button has `aria-expanded="true"`, and the action text is "Drink a glass of water." in `en` or its `TEN_SECOND_ACTIONS_HE` text (from `tenSecondActionCopy`) in `he`.
+  1. Given state `default` / When the PanicButton ("I'm overwhelmed" / "יותר מדי לי עכשיו") is clicked / Then `#coach-grounding` is visible, the button has `aria-expanded="true"`, and the action text is "Stand up and drink a sip of water." in `en` and "לקום ולשתות לגימה של מים." in `he`.
   2. Given the grounding card open / When its Done button is clicked / Then `#coach-grounding` is gone and the PanicButton is focused.
   3. Given state `default` / When the `style` toggle is clicked / Then `coach-thread-style` shows the CoachDial at 4 and the toggle has `aria-expanded="true"`.
   4. Given the dial focused / When ArrowUp is pressed twice quickly and 600 ms pass (`page.waitForTimeout(600)`) / Then `coach-thread-dial` reads `6` (one commit after the last change).
@@ -17075,26 +17244,28 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0222d — Screen: coach thread (`/coach/[threadId]`) — crisis view — OPEN
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0017b, TFV2-0209, TFV2-0222c · **Folds-in:** none
+- **STATUS:** open — Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: The crisis card is English only (`CRISIS_CARD` in `convex/lib/crisisWords.ts`): which Hebrew card text and which per-country resources does the thread show a Hebrew-speaking person, and until then is the English card acceptable in the Hebrew interface?
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0017b, TFV2-0092, TFV2-0209, TFV2-0222c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0017b, TFV2-0209, TFV2-0222c.
+- **WHEN:** after TFV2-0017b, TFV2-0092, TFV2-0209, TFV2-0222c.
 - **WHY:** PRD F-24 (crisis text stops coaching and shows a fixed card written by people, never by the model); design `coach-thread.html` crisis view (composer hidden, "Coaching is paused" notice). Code truth: `coach.sendMessage` returns `crisis: true` and stores an assistant message with `modelUsed: "crisis-card"` whose `content` is `crisisCardText(CRISIS_CARD)`; `crisis.resourcesCard({})` returns the fixed `{ title, body, resources: { label, detail }[] }` (TFV2-0017b) — English only today. Showing a Hebrew person an English crisis card, or which Hebrew text to show, is Amit's decision (Q-15), so this ticket is OPEN.
 - **GOAL:** When the thread holds a crisis card message, the thread shows the CrisisCard (from `crisis.resourcesCard`) in place of that message, hides the composer and the panic and style controls, and shows the "Coaching is paused" notice.
 - **SCOPE:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` · `apps/web/lib/e2e/fixtures/coach-thread.ts` · test: `tests/e2e/screens/coach-thread.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (edit) · `apps/web/lib/e2e/fixtures/coach-thread.ts` (edit: one `crisis` state) · `tests/e2e/screens/coach-thread.spec.ts` (edit: one `describe("crisis", …)` block appended).
 - **STEPS:**
   1. Code-map check: read the TFV2-0222c page; `grep -n "crisis-card" convex/coach.ts`; `grep -n "export const resourcesCard" convex/crisis.ts`; read `CrisisCardProps` in `apps/web/components/coach/CrisisCard.tsx`.
-  2. Add the `crisis` state, its fixture and the crisis rendering exactly as SPEC.
+  2. Add the `crisis` state, its fixture and the crisis rendering as written in SPEC.
   3. Append the 3 TESTS bullets.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` → `80 passed` (68 + 12 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/coach-thread.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** write or change any card text; animate the card; ask the coach for a reply after a crisis turn; change earlier cases; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0222d / evidence: <DONE output> / changed: page.tsx, fixtures/coach-thread.ts, coach-thread.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–4 with evidence).
 - **SPEC:**
   - **New imports:** `CrisisCard` from `@/components/coach/CrisisCard`; `Notice` from `@/components/layout/Notice`.
   - **State and fixture:** `CoachThreadState` gains `"crisis"`; fixture `crisis` = `{ status: "ready", title: "A lighter Monday", waiting: false, messages: [ { id: "u1", role: "user", text: "I can't do this anymore" }, { id: "a1", role: "assistant", text: "(fixed card)", modelUsed: "crisis-card" } ], card: { title: "You are not alone, and help is available", body: "If you might act on thoughts of harming yourself, contact emergency services now.", resources: [ { label: "Emergency services", detail: "Call your local emergency number." }, { label: "A crisis line near you", detail: "Search for a crisis line in your country." }, { label: "Someone you trust", detail: "Tell a friend or family member how you feel." } ] } }` — the `ready` variant gains `card?: { title: string; body: string; resources: { label: string; detail: string }[] }`; live it comes from `api.crisis.resourcesCard({})` (skip until the thread holds a `crisis-card` message).
   - **Render:** a message with `modelUsed === "crisis-card"` renders `<div data-testid="coach-thread-crisis"><CrisisCard card={view.card} autoFocus /></div>` instead of its text (while `card` is `undefined` live, `<StateLoading label={copy.crisisLoading} rows={2} />`). When any such message exists: the Composer, PanicButton and style toggle are not rendered, and under the thread `<Notice tone="neutral" live="status" title={copy.pausedTitle} body={copy.pausedBody} />` shows. `onSend` stops after `sendMessage` when it returns `crisis: true` (no `coach.reply`).
+  - **Relies on:** `CrisisCard` (TFV2-0209): `export type CrisisCardResource = { label: string; detail: string; phone?: string; url?: string };` `export type CrisisCardProps = { card: { title: string; body: string; resources: CrisisCardResource[] }; autoFocus?: boolean };` root `[data-component="CrisisCard"]`, no animation. `Notice` (TFV2-0092): `export type NoticeTone = "neutral" | "info" | "caution" | "done" | "danger";` `export type NoticeProps = { tone: NoticeTone; title: string; body?: string; action?: ReactNode; live?: "status" | "alert" | "off" };` root `[data-component="Notice"]`. `StateLoading` (TFV2-0121): `{ label: string; rows?: number }`.
   - **Copy added:**
     | key | EN | HE |
     |---|---|---|
@@ -17107,9 +17278,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given state `crisis` / Then `expectMotionBudget(page, '[data-testid="coach-thread-crisis"]')` passes with every duration 0 (the card has no animation) and `expectTargetSize` on it passes.
 - **NUMBERS:** card text 100% fixed, written by people (PRD F-24) · no animation on the card (components.md §2.10) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · 80 of 80 pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-15: the crisis card is English only (`CRISIS_CARD` in `convex/lib/crisisWords.ts`); which Hebrew card text and which per-country resources does the thread show a Hebrew-speaking person (and until then, is the English card acceptable in the Hebrew interface)? — Amit.
+- **OPEN:** Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: The crisis card is English only (`CRISIS_CARD` in `convex/lib/crisisWords.ts`): which Hebrew card text and which per-country resources does the thread show a Hebrew-speaking person, and until then is the English card acceptable in the Hebrew interface? — Amit.
 
 ### TFV2-0223 — Screen: coach history (`/history`) — grouped list, search, new conversation
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0163, TFV2-0164a, TFV2-0165b, TFV2-0207, TFV2-0208, TFV2-0222a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0163, TFV2-0164a, TFV2-0165b, TFV2-0207, TFV2-0208, TFV2-0222a.
@@ -17118,14 +17290,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/app/(tempo)/history/page.tsx` · `apps/web/lib/e2e/fixtures/history.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/history.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/history/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/history.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/history.spec.ts` (new) · route `/history` released for the dev-only E2E bypass · a `conversations` row created by "New conversation".
 - **STEPS:**
-  1. Code-map check: read the current `page.tsx` (renders `HistoryScreen`); `grep -n "export const listThreads\|export const searchThreads\|export const create" convex/conversations.ts` (TFV2-0163, 0164a; else `blocked: missing <id>`); `grep -n "export function threadDateLabel" apps/web/lib/coach-threads.ts`; read `ChatHistoryListProps`, `chatHistoryGroupKey` (TFV2-0207) and `ChatSearchProps` (TFV2-0208); confirm `states/State*.tsx`, `useE2EState.ts`, `tests/e2e/helpers/harness.ts`; `cat apps/web/lib/e2eWiringRoutes.ts`.
-  2. Create `apps/web/lib/e2e/fixtures/history.ts` exactly as SPEC.
-  3. Replace `page.tsx` exactly as SPEC.
+  1. Code-map check: read the current `page.tsx` (renders `HistoryScreen`); `grep -n "export const listThreads\|export const searchThreads\|export const create" convex/conversations.ts` (TFV2-0163, 0164a; else `blocked: missing <id>`); `grep -n "export function threadDateLabel" apps/web/lib/coach-threads.ts`; read `ChatHistoryListProps`, `chatHistoryGroupKey` (TFV2-0207) and `ChatSearchProps` (TFV2-0208); confirm `states/State*.tsx`, `useE2EState.ts`, `tests/e2e/helpers/harness.ts`; `cat apps/web/lib/e2eWiringRoutes.ts`; `grep -n '^  "plus":' apps/web/components/tempo/TpIcon.tsx` (line 11, one line). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Create `apps/web/lib/e2e/fixtures/history.ts` as written in SPEC.
+  3. Replace `page.tsx` as written in SPEC.
   4. Register the route (named step, CONVENTIONS §17): insert exactly `  "/history",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else.
   5. Create the spec with the 8 TESTS bullets.
   6. Run DONE, then `bun test apps/web/components/history/HistoryScreen.test.tsx` (unchanged, still green), `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/history.spec.ts --reporter=line` → `32 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts` in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/history.spec.ts --reporter=line` pasted into the PR, the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts` in the PR.
 - **DO NOT:** delete or edit `HistoryScreen.tsx` or its test; run a vector or meaning search from the client; search on every keystroke (ChatSearch debounces); show JSON; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0223 / evidence: <DONE output> / changed: page.tsx, fixtures/history.ts, e2eWiringRoutes.ts, history.spec.ts / unknowns / notes for ticket sync: HistoryScreen.tsx is unused after this ticket` (list STEPS 1–6 with evidence).
 - **SPEC:**
@@ -17137,8 +17309,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
       | { status: "loading" } | { status: "error" } | { status: "signed-out" }
       | { status: "ready"; groups: ChatHistoryGroup[]; count: number; query: string; searching: boolean };
     ```
-    Live: `!isLoading && !isAuthenticated` (`useConvexAuth`) → `signed-out`; `api.users.getProfile` gates every other query; `api.preferences.get({})` for `timeZone`; with an empty trimmed `query` → `api.conversations.listThreads({})`; else `api.conversations.searchThreads({ query })` (the request from ChatSearch's `onSearch`); `undefined` → `loading` (first load) or `searching: true` (a search in flight keeps the last list); each thread → `{ id: t._id, title: t.title, lastLine: t.lastLine (search: t.matchedLine), time: threadDateLabel(t.updatedAt, …), href: "/coach/" + t._id }`, grouped by `chatHistoryGroupKey(t.updatedAt, Date.now(), timeZone)` in the order today, week, earlier (empty groups omitted).
-  - **Fixtures:** `apps/web/lib/e2e/fixtures/history.ts` holds only the type import from `@/app/(tempo)/history/page` and `export const FIXTURES: Record<HistoryState, HistoryView>`: `default` and `offline` = `{ status: "ready", count: 3, query: "", searching: false, groups: [ { key: "today", threads: [ { id: "t1", title: "A lighter Monday", lastLine: "Three things today, and the rest can wait.", time: "09:12", href: "/coach/t1" } ] }, { key: "week", threads: [ { id: "t2", title: "Thursday talk", lastLine: "Draft 3 slides first, then reply to Dana.", time: "Thu 8 Oct", href: "/coach/t2" } ] }, { key: "earlier", threads: [ { id: "t3", title: "The lease", lastLine: null, time: "28 Sept", href: "/coach/t3" } ] } ] }`; `empty` = `{ status: "ready", count: 0, query: "", searching: false, groups: [] }`; `no-results` = `{ status: "ready", count: 0, query: "zebra", searching: false, groups: [] }`; `loading`, `error`, `signed-out` = `{ status: … }`. In forced mode a typed search does not query; the view stays the fixture.
+    Live: `!isLoading && !isAuthenticated` (`useConvexAuth`) → `signed-out`; `api.users.getProfile` gates every other query; `api.preferences.get({})` for `timeZone`; with an empty trimmed `query` → `api.conversations.listThreads({})`; else `api.conversations.searchThreads({ query })` (the request from ChatSearch's `onSearch`); `undefined` → `loading` (first load) or `searching: true` (a search in flight keeps the last list); each thread → `{ id: t._id, title: t.title, lastLine: t.lastLine (search: t.matchedLine), time: threadDateLabel(t.updatedAt, Date.now(), lang === "he" ? "he-IL" : "en-GB", { yesterday: copy.yesterday }, timeZone), href: "/coach/" + t._id }`, grouped by `chatHistoryGroupKey(t.updatedAt, Date.now(), timeZone)` in the order today, week, earlier (empty groups omitted).
+  - **Fixtures:** `apps/web/lib/e2e/fixtures/history.ts` holds only the type import from `@/app/(tempo)/history/page` and `export const FIXTURES: Record<HistoryState, HistoryView>`: `default` and `offline` = `{ status: "ready", count: 3, query: "", searching: false, groups: [ { key: "today", threads: [ { id: "t1", title: "A lighter Monday", lastLine: "Three things today, and the rest can wait.", time: "09:12", href: "/coach/t1" } ] }, { key: "week", threads: [ { id: "t2", title: "Thursday talk", lastLine: "Draft 3 slides first, then reply to Dana.", time: "Thu 8 Oct", href: "/coach/t2" } ] }, { key: "earlier", threads: [ { id: "t3", title: "The lease", lastLine: null, time: "28 Sept", href: "/coach/t3" } ] } ] }`; `empty` = `{ status: "ready", count: 0, query: "", searching: false, groups: [] }`; `no-results` = `{ status: "ready", count: 0, query: "zebra", searching: false, groups: [] }`; `loading` = `{ status: "loading" }`; `error` = `{ status: "error" }`; `signed-out` = `{ status: "signed-out" }`. The fixture holds every date label as text (`time`), so forced mode never reads the clock or a time zone. In forced mode a typed search does not query; the view stays the fixture.
+  - **Forced mode (CONVENTIONS §23.5):** `const forced = useE2EState();` is read first; when `forced !== null` (and is a key of `FIXTURES`) the screen renders the body from `FIXTURES[forced]` directly — no profile gate, no `ProfileReady`, no `users.getProfile` — and every `useQuery` (`users.getProfile`, `preferences.get`, `conversations.listThreads`, `conversations.searchThreads`) is passed `"skip"`, so no Convex call is made; forced `offline` also makes the page act as if `useOnline()` returned `false` (CONVENTIONS §14).
   - **Body:** root `<div className="tp-page" data-component="PageLayout" data-testid="history">` → header `.tp-pagehead` with `<h1>{copy.title}</h1>`, sub, and in actions `<button type="button" className="tp-btn tp-btn--primary" onClick={onNew} disabled={!online || creating}><TpIcon name="plus" size="sm" /><span>{copy.newChat}</span></button>`; `!online` → `history-offline` `<StateOffline text={copy.offline} />`; then by status: `loading` → `history-loading` `<StateLoading label={copy.loading} rows={4} />`; `error` → `history-error` `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `history-signed-out` `<StateEmpty title={copy.signedOut} action={<Link className="tp-btn tp-btn--secondary" href="/sign-in">{copy.signIn}</Link>} />`; `ready`: `<ChatSearch id="history-search" query={query} mode="words" meaningAvailable={false} onQueryChange={setQuery} onModeChange={() => {}} onSearch={(r: ChatSearchRequest) => setSearch(r.query)} />` above, then: no threads and empty query → `history-empty` `<StateEmpty title={copy.emptyTitle} action={<button type="button" className="tp-btn tp-btn--secondary" onClick={onNew}>{copy.talk}</button>} />`; no threads and a query → `history-no-results` `<StateEmpty title={copy.noneTitle} action={<button type="button" className="tp-btn tp-btn--secondary" onClick={() => { setQuery(""); setSearch(""); }}>{copy.clear}</button>} />`; else `<section data-testid="history-default"><p className="tp-section__count" role="status">{count === 1 ? copy.countOne : copy.countMany.replace("{n}", String(count))}</p><ChatHistoryList groups={groups} onOpen={(id) => router.push("/coach/" + id)} /></section>`.
   - **onNew:** live `const id = await create({}); router.push("/coach/" + id)`; forced: `router.push("/coach/new")`; a throw → `<p className="tp-error-text" role="alert">{copy.newFailed}</p>`.
   - **Copy:**
@@ -17159,10 +17332,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | offline | You're offline. Your conversations are still here. | אין חיבור כרגע. השיחות שלך עדיין כאן. |
     | signedOut | Sign in to see your conversations. | צריך להתחבר כדי לראות את השיחות. |
     | signIn | Sign in | התחברות |
+    | yesterday | Yesterday | אתמול |
+  - **Relies on:** `ChatHistoryList` (TFV2-0207, `apps/web/components/coach/ChatHistoryList.tsx`): `export type ChatHistoryGroupKey = "today" | "week" | "earlier";` `export type ChatHistoryThread = { id: string; title: string; lastLine: string | null; time: string; href: string };` `export type ChatHistoryGroup = { key: ChatHistoryGroupKey; threads: ChatHistoryThread[] };` `export type ChatHistoryListProps = { groups: ChatHistoryGroup[]; currentId?: string | null; onOpen: (id: string) => void };` `export function chatHistoryGroupKey(updatedAt: number, nowMs: number, timeZone: string): ChatHistoryGroupKey;` — group headings EN "Today" / "Last week" / "Earlier", HE "היום" / "בשבוע שעבר" / "מוקדם יותר"; each row is a link to `href`. `ChatSearch` (TFV2-0208, `apps/web/components/coach/ChatSearch.tsx`): `export type ChatSearchMode = "meaning" | "words";` `export type ChatSearchRequest = { query: string; mode: ChatSearchMode };` `export type ChatSearchProps = { id: string; query: string; mode: ChatSearchMode; meaningAvailable: boolean; onQueryChange: (query: string) => void; onModeChange: (mode: ChatSearchMode) => void; onSearch: (request: ChatSearchRequest) => void };` — a searchbox labelled "Search conversations" / "חיפוש בשיחות"; the "By meaning" / "לפי משמעות" option renders only when `meaningAvailable`; `onSearch` fires `SEARCH_DEBOUNCE_MS` = 250 ms after the last change. `StateEmpty` (TFV2-0120): `{ title: string; body?: string; icon?: ReactNode; action?: ReactNode }`; `StateLoading` (TFV2-0121): `{ label: string; rows?: number }`; `StateError` (TFV2-0122): `{ what: string; onRetry: () => void; retrying?: boolean }` (retry button "Try again" / "לנסות שוב"); `StateOffline` (TFV2-0123): `{ text?: string }`. `threadDateLabel(ms: number, now: number, locale: string, labels: { yesterday: string }, timeZone?: string): string` (existing, `apps/web/lib/coach-threads.ts` line 245). `useE2EState(): string | null` (TFV2-0000c); `openScreen`, `expectTargetSize`, `expectMotionBudget`, `measureVitals`, `trackConsoleErrors` (TFV2-0000b).
   - **States:** `default`, `empty`, `no-results`, `loading`, `error`, `offline`, `signed-out` (test ids `history-<state>`). **RTL / keyboard / breakpoints / motion:** `<html dir>` from `LocaleProvider`; rows are links (Enter opens; ChatHistoryList); the count is a `role="status"` line; 390 px base, `.tp-page` handles wider; no motion added.
 - **TESTS:** the §22 spec skeleton with `openScreen(page, "/history", { state, lang })` (console errors filtered with `/example\.convex\.cloud|WebSocket/i`); 8 × 4 = 32:
-  1. Given state `default` / Then `history` has the `h1` `title` and the `newChat` button; `history-default` shows `countMany` with 3, three group headings (TFV2-0207 copy "Today" / "Last week" / "Earlier" for `lang`) and the first row link `href="/coach/t1"`; `expectTargetSize` and `expectMotionBudget` on `[data-testid="history"]` pass; `measureVitals(page, "/history?state=default&lang=" + lang)` → LCP ≤ 2500, CLS ≤ 0.1.
-  2. Given state `default` / Then a searchbox named by the TFV2-0208 label is visible and no "By meaning" / "לפי משמעות" option exists (meaning search off).
+  1. Given state `default` / Then `history` has the `h1` `title` and the `newChat` button; `history-default` shows `countMany` with 3, three group headings ("Today", "Last week", "Earlier" / "היום", "בשבוע שעבר", "מוקדם יותר") and the first row link `href="/coach/t1"`; `expectTargetSize` and `expectMotionBudget` on `[data-testid="history"]` pass; `measureVitals(page, "/history?state=default&lang=" + lang)` → LCP ≤ 2500, CLS ≤ 0.1.
+  2. Given state `default` / Then a searchbox named "Search conversations" / "חיפוש בשיחות" is visible and no "By meaning" / "לפי משמעות" option exists (meaning search off).
   3. Given state `default` / When the first row is clicked / Then the URL path becomes `/coach/t1`.
   4. Given state `empty` / Then `history-empty` shows `emptyTitle` and a `talk` button.
   5. Given state `no-results` / Then `history-no-results` shows `noneTitle`; When `clear` is clicked / Then the searchbox value is "".
@@ -17174,6 +17349,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0224a — Component: MemoryAddForm (`apps/web/components/memory/MemoryAddForm.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0113 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0113.
@@ -17182,22 +17358,30 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/memory/MemoryAddForm.tsx` · `apps/web/app/e2e/components/memory-add-form/page.tsx` · test: `tests/e2e/screens/memory-add-form.spec.ts`.
 - **MUTATES:** `apps/web/components/memory/MemoryAddForm.tsx` (new) · `apps/web/app/e2e/components/memory-add-form/page.tsx` (new) · `tests/e2e/screens/memory-add-form.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map check: `test -e apps/web/components/memory/MemoryAddForm.tsx` fails; `grep -n "export function TextInput" apps/web/components/forms/TextInput.tsx` (TFV2-0113; if absent report `blocked: missing TFV2-0113 TextInput`); `grep -n "MEMORY_TEXT_MAX\|export function checkMemory" apps/web/lib/you/memory.ts`; `grep -n "memory-new\|Remember this" tests/e2e/feature-sweep.spec.ts` (the contract to keep).
+  1. Code-map check: `test -e apps/web/components/memory/MemoryAddForm.tsx` fails; `grep -n "export function TextInput" apps/web/components/forms/TextInput.tsx` (TFV2-0113; if absent report `blocked: missing TFV2-0113 TextInput`); `grep -n "MEMORY_TEXT_MAX\|export function checkMemory" apps/web/lib/you/memory.ts`; `grep -n "memory-new\|Remember this" tests/e2e/feature-sweep.spec.ts` (the contract to keep); `grep -n "export type TextInputProps" apps/web/components/forms/TextInput.tsx` (one line, the SPEC **Relies on** shape); classes: `grep -n "\.tp-surface\b\|\.tp-section__title\b\|\.tp-form\b\|\.tp-form__actions\b\|\.tp-btn--secondary\b\|\.tp-num\b" apps/web/app/tempo.css` (at least one line each); icon: `grep -n '^  "plus":' apps/web/components/tempo/TpIcon.tsx` (one line). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: none — the card uses Stage 1 / shell classes `.tp-surface`, `.tp-section__title`, `.tp-form`, `.tp-form__actions`, `.tp-btn` (tempo.css) plus TextInput's own markup.
-  3. Create `MemoryAddForm.tsx` (`"use client"`) exactly as SPEC.
-  4. Create the harness page with the five states; each keeps `value` in `useState`; `onChange` writes `onChange:<JSON value>` and `onSubmit` writes `onSubmit:null` into `<output data-testid="memory-add-form-log">`.
+  3. Create `MemoryAddForm.tsx` (`"use client"`) as written in SPEC.
+  4. Create the harness page with the five states; each keeps `value` in `useState`; callbacks write through the CONVENTIONS §13 `log` helper into `<output data-testid="memory-add-form-log">`: `onChange` → `onChange:<JSON value>`, `onSubmit` (no argument) → `onSubmit:`.
   5. Create the spec with the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/memory-add-form.spec.ts --reporter=line` → `24 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/memory-add-form.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** call `memory.remember` or any Convex hook; validate inside the component (the screen passes `error`); change the id `memory-new` or the button word "Remember this"; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0224a / evidence: <DONE output> / changed: apps/web/components/memory/MemoryAddForm.tsx, apps/web/app/e2e/components/memory-add-form/page.tsx, tests/e2e/screens/memory-add-form.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  "use client";
+  import type React from "react";
+  import { useId } from "react";
+  import { TextInput } from "@/components/forms/TextInput";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   export type MemoryAddError = "empty" | "long" | "failed";
   export type MemoryAddFormProps = { value: string; onChange: (value: string) => void; onSubmit: () => void; error?: MemoryAddError; saving?: boolean };
   export function MemoryAddForm({ value, onChange, onSubmit, error, saving = false }: MemoryAddFormProps): React.JSX.Element;
   ```
+  - **Relies on:** `TextInput` (TFV2-0113, `apps/web/components/forms/TextInput.tsx`): `TextInputProps = { id: string; label: string; value: string; onChange: (value: string) => void; type?: TextInputType; help?: string; error?: string; optional?: boolean; disabled?: boolean; placeholder?: string; autoComplete?: string; required?: boolean; maxLength?: number }`; renders `<label for={id}>`, `<input id={id} aria-invalid={error ? "true" : undefined} aria-describedby="<id>-help <id>-error">`, help `<p className="tp-help" id="<id>-help">` and error `<p className="tp-error-text" id="<id>-error">`. `TpIcon` (CONVENTIONS §22) icon `plus`. Classes `.tp-surface`, `.tp-section__title`, `.tp-form`, `.tp-form__actions`, `.tp-btn`, `.tp-btn--secondary`, `.tp-num` (tempo.css). All checked in STEP 1.
   - **Copy:**
     | key | EN | HE |
     |---|---|---|
@@ -17214,7 +17398,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - **RTL:** TextInput is `dir="auto"`; the button sits at inline-end of `.tp-form__actions`. **Keyboard / screen reader:** Enter in the field submits; the error is tied to the input through TextInput's `aria-describedby` and `aria-invalid`; `aria-busy` while saving. **Breakpoints:** full width inside `.tp-page--narrow` at every width. **Motion:** none added.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton with `openHarness(page, "memory-add-form", { lang })`, locators scoped to each state section, callbacks read from `memory-add-form-log`; 6 × 4 = 24)
   1. Given `memory-add-form-default` / Then an `h2` reads `title`, `#memory-new` is a textbox labelled `label` with help `help` (digits inside `.tp-num`), and the button reads `button`.
-  2. Given `memory-add-form-default` / When "Likes tea" is typed / Then the log ends with `onChange:"Likes tea"`; When Enter is pressed / Then the log reads `onSubmit:null`.
+  2. Given `memory-add-form-default` / When "Likes tea" is typed / Then the log ends with `onChange:"Likes tea"`; When Enter is pressed / Then the log reads `onSubmit:`.
   3. Given `memory-add-form-error-empty` / Then `#memory-new` has `aria-invalid="true"` and the error text `empty` for `lang` is visible.
   4. Given `memory-add-form-error-long` / Then the error text `long` is visible.
   5. Given `memory-add-form-saving` / Then the button reads `saving`, is disabled and has `aria-busy="true"`; clicking it leaves the log empty.
@@ -17224,6 +17408,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0224b — Screen: memory (`/settings/memory`) — list, filter, forget one + Undo, states — OPEN
+- **STATUS:** open — inherits TFV2-0179 (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0180 (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0038, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0172, TFV2-0179, TFV2-0180, TFV2-0218 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0038, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0172, TFV2-0179, TFV2-0180, TFV2-0218.
@@ -17233,13 +17418,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/settings-memory.ts` (new) · `tests/e2e/screens/settings-memory.spec.ts` (new) · `memories` rows soft-deleted / restored through the existing mutations.
 - **STEPS:**
   1. Code-map check: read the current `page.tsx` (renders `MemoryManager`); `grep -n '"/settings/memory"' apps/web/lib/e2eWiringRoutes.ts` (present); `grep -n "export const list\|export const forget\|export const restore" convex/memory.ts`; `grep -n "export function shownMemories\|MEMORY_FILTERS" apps/web/lib/you/memory.ts`; `grep -n "UNDO_WINDOW_MS" apps/web/lib/you/screenState.ts` (300 000); confirm `MemoryItem.tsx` (TFV2-0218), `Segmented.tsx` (TFV2-0098), `states/State*.tsx` (TFV2-0120…0123), `useE2EState.ts` (TFV2-0000c) and `tests/e2e/helpers/harness.ts` (TFV2-0000b) exist, else report `blocked: missing <id>`; `grep -n "settings-memory" tests/e2e/wiring/settings-nags-memory.spec.ts` (root test id contract).
-  2. Create `apps/web/lib/e2e/fixtures/settings-memory.ts` exactly as SPEC.
-  3. Replace `page.tsx` exactly as SPEC.
+  2. Create `apps/web/lib/e2e/fixtures/settings-memory.ts` as written in SPEC.
+  3. Replace `page.tsx` as written in SPEC.
   4. No route step: `"/settings/memory"` is already in `E2E_WIRING_ROUTES` (say so in the PR).
   5. Create the spec with the 9 TESTS bullets.
   6. Run DONE, then `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line`, `bun run typecheck`, `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line` → `2 passed`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both Playwright summaries and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` pasted into the PR, plus the `settings-nags-memory.spec.ts` summary and the typecheck exit code.
 - **DO NOT:** delete or edit `MemoryManager.tsx`, `MemoryItem.tsx`, `lib/you/*` or i18n files; call `memory.forgetAll` (TFV2-0224d) or `memory.remember` / `memory.exportAll` (TFV2-0224c); hard-delete; show JSON; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0224b / evidence: <DONE output> / changed: page.tsx, fixtures/settings-memory.ts, settings-memory.spec.ts / unknowns / notes for ticket sync` (AGENTS.md format; list STEPS 1–6 with evidence).
 - **SPEC:**
@@ -17257,13 +17442,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     ```
     Live mapping: `!isLoading && !isAuthenticated` → `signed-out`; `api.users.getProfile` (skip until authenticated), `api.memory.list({ limit: MEMORY_LIST_LIMIT })` and `api.preferences.get({})` (both skip until the profile is non-null); any `undefined` → `loading`; else `ready` with `const zoneDay = new Intl.DateTimeFormat("en-CA", { timeZone: prefs.timeZone, year: "numeric", month: "2-digit", day: "2-digit" })`, `memories = rows.map((m) => ({ id: m._id, fact: m.content, source: m.importedFrom ?? "saved", createdAt: m.createdAt, dayKey: zoneDay.format(m.createdAt) }))`, `capped = rows.length >= MEMORY_LIST_LIMIT`, `todayKey = zoneDay.format(Date.now())` (the route computes "today", CONVENTIONS §22).
   - **Fixtures:** `apps/web/lib/e2e/fixtures/settings-memory.ts` holds only `import type { SettingsMemoryState, SettingsMemoryView } from "@/app/(tempo)/settings/memory/page";` and `export const FIXTURES: Record<SettingsMemoryState, SettingsMemoryView>`. With `const ROWS = [ { id: "m1", fact: "Mondays are hard after the weekend. Start them small.", source: "saved", createdAt: Date.UTC(2026, 9, 12, 8, 0), dayKey: "2026-10-12" }, { id: "m2", fact: "Phone calls feel easier before noon.", source: "saved", createdAt: Date.UTC(2026, 9, 9, 8, 0), dayKey: "2026-10-09" }, { id: "m3", fact: "Works as a product designer, mostly from home.", source: "chatgpt", createdAt: Date.UTC(2026, 9, 3, 10, 0), dayKey: "2026-10-03" }, { id: "m4", fact: "Prefers Hebrew for voice, English for writing.", source: "claude", createdAt: Date.UTC(2026, 9, 3, 9, 0), dayKey: "2026-10-03" } ]`: `default` and `offline` = `{ status: "ready", memories: ROWS, capped: false, todayKey: "2026-10-12" }`; `empty` = same with `memories: []`; `loading` = `{ status: "loading" }`; `error` = `{ status: "error" }`; `signed-out` = `{ status: "signed-out" }`.
-  - **Page structure:** `export default function Page()` → `<Suspense fallback={null}><SettingsMemoryScreen /></Suspense>`. `SettingsMemoryScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`. Forced: `key = forced in FIXTURES ? forced : "loading"`, every query gets `"skip"`, render `<MemoryBody view={FIXTURES[key]} online={key !== "offline"} forgetMemory={async () => {}} restoreMemory={async () => {}} onRetry={() => {}} />` (Forget / Undo work on local state only, no Convex). Live: `<ScreenBoundary fallback={(retry) => <MemoryBody view={{ status: "error" }} online={liveOnline} … onRetry={retry} />}><MemoryLive online={liveOnline} /></ScreenBoundary>`; `MemoryLive` passes `forgetMemory = (id) => forget({ memoryId: id as Id<"memories"> })` and `restoreMemory = (id) => restore({ memoryId: id as Id<"memories"> })`.
+  - **Page structure:** `export default function Page()` → `<Suspense fallback={null}><SettingsMemoryScreen /></Suspense>`. `SettingsMemoryScreen`: `const forced = useE2EState(); const liveOnline = useOnline();`. Forced: `key = forced in FIXTURES ? forced : "loading"`, every query gets `"skip"`, render `<MemoryBody view={FIXTURES[key]} online={key !== "offline"} forgetMemory={async () => {}} restoreMemory={async () => {}} onRetry={() => {}} />` (Forget / Undo work on local state only, no Convex). Live: `<ScreenBoundary fallback={(retry) => <MemoryBody view={{ status: "error" }} online={liveOnline} forgetMemory={async () => {}} restoreMemory={async () => {}} onRetry={retry} />}><MemoryLive online={liveOnline} /></ScreenBoundary>`; `MemoryLive` passes `forgetMemory = (id) => forget({ memoryId: id as Id<"memories"> })` and `restoreMemory = (id) => restore({ memoryId: id as Id<"memories"> })`.
   - **Body:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-testid="settings-memory">` →
     1. header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div><div className="tp-pagehead__actions"><Link className="tp-btn tp-btn--secondary" href="/settings/memory/import"><TpIcon name="upload" size="sm" /><span>{copy.import}</span></Link></div></header>`;
     2. `!online` → `<div data-testid="settings-memory-offline"><StateOffline /></div>`;
-    3. by status: `loading` → `<div data-testid="settings-memory-loading"><StateLoading label={copy.loading} rows={5} /></div>`; `error` → `<div data-testid="settings-memory-error"><StateError what={copy.error} onRetry={onRetry} /></div>`; `signed-out` → `<div data-testid="settings-memory-signed-out"><StateEmpty title={copy.signedOut} action={<Link className="tp-btn tp-btn--secondary" href="/sign-in">{copy.signIn}</Link>} /></div>`; `ready` with no memories → `<div data-testid="settings-memory-empty"><StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link className="tp-btn tp-btn--secondary" href="/settings/memory/import">{copy.import}</Link>} /></div>`; `ready` with memories → `<section className="tp-section" aria-labelledby="mm-list-title" data-testid="settings-memory-default">` with `<div className="tp-section__head"><h2 className="tp-section__title" id="mm-list-title" tabIndex={-1} ref={listHeading}>{copy.listTitle}</h2><span className="tp-section__count">{(capped ? copy.countCapped : copy.count).replace("{n}", …)}</span></div>` (the number in `<span className="tp-num">`), `<Segmented label={copy.filter} value={filter} options={MEMORY_FILTERS.map((v) => ({ value: v, label: copy[v] }))} onChange={(v) => setFilter(v as MemoryFilter)} />`, then the shown rows `shownMemories(visible.map((r) => ({ ...r, importedFrom: r.source === "saved" ? undefined : r.source })), filter)` (newest first) in `<MemoryList label={copy.listTitle}>` as `<MemoryItem key={id} memory={row} todayKey={view.todayKey} forgetError={rowError === id} onForget={onForget} forgetButtonRef={(el) => …map…} />`, or `<p className="tp-help">{copy.noneFilter}</p>` when the filter shows none.
+    3. by status: `loading` → `<div data-testid="settings-memory-loading"><StateLoading label={copy.loading} rows={5} /></div>`; `error` → `<div data-testid="settings-memory-error"><StateError what={copy.error} onRetry={onRetry} /></div>`; `signed-out` → `<div data-testid="settings-memory-signed-out"><StateEmpty title={copy.signedOut} action={<Link className="tp-btn tp-btn--secondary" href="/sign-in">{copy.signIn}</Link>} /></div>`; `ready` with no memories → `<div data-testid="settings-memory-empty"><StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<Link className="tp-btn tp-btn--secondary" href="/settings/memory/import">{copy.import}</Link>} /></div>`; `ready` with memories → `<section className="tp-section" aria-labelledby="mm-list-title" data-testid="settings-memory-default">` with `<div className="tp-section__head"><h2 className="tp-section__title" id="mm-list-title" tabIndex={-1} ref={listHeading}>{copy.listTitle}</h2><span className="tp-section__count">{before}<span className="tp-num">{visible.length}</span>{after}</span></div>` with `const [before, after] = (capped ? copy.countCapped : copy.count).split("{n}")` and `visible` = `view.memories` without the ids in `hidden`, `<Segmented label={copy.filter} value={filter} options={MEMORY_FILTERS.map((v) => ({ value: v, label: copy[v] }))} onChange={(v) => setFilter(v as MemoryFilter)} />`, then the shown rows `shownMemories(visible.map((r) => ({ ...r, importedFrom: r.source === "saved" ? undefined : r.source })), filter)` (newest first) in `<MemoryList label={copy.listTitle}>` as `<MemoryItem key={id} memory={row} todayKey={view.todayKey} forgetError={rowError === id} onForget={onForget} forgetButtonRef={(el) => { if (el) forgetButtons.current.set(row.id, el); else forgetButtons.current.delete(row.id); }} />` (`const forgetButtons = useRef(new Map<string, HTMLButtonElement>())`; focus moves use this map), or `<p className="tp-help">{copy.noneFilter}</p>` when the filter shows none.
     4. a visually hidden live line `<p className="tp-sr-only" role="status">{live}</p>`.
-  - **Forget and Undo:** `hidden: Set<string>` and `forgotten: { id: string; untilMs: number }[]` in state. `onForget(id)`: clear `rowError`; add `id` to `hidden`; focus the Forget button of the next shown row (else the previous, else `listHeading`); `await forgetMemory(id)`; on success set `live = copy.forgot + ": " + fact`, drop expired entries and append `{ id, untilMs: Date.now() + UNDO_WINDOW_MS }`; on failure remove `id` from `hidden` and set `rowError = id`. While `forgotten` is non-empty render one `<UndoToast key={"forgot-" + forgotten.length} title={forgotten.length === 1 ? copy.forgot : copy.forgotN.replace("{n}", String(forgotten.length))} untilMs={Math.max(...untilMs)} onUndo={undo} onClose={() => setForgotten([])} />`; a timer drops each entry at its own `untilMs`. `undo`: `await Promise.all(open.map((f) => restoreMemory(f.id)))`, remove them from `hidden`, focus the last restored row's Forget button, clear `forgotten`.
+  - **Forget and Undo:** `hidden: Set<string>` and `forgotten: { id: string; untilMs: number }[]` in state. `onForget(id)`: clear `rowError`; add `id` to `hidden`; focus the Forget button of the next shown row (else the previous, else `listHeading`); `await forgetMemory(id)`; on success set `live = copy.forgot + ": " + fact`, drop expired entries and append `{ id, untilMs: Date.now() + UNDO_WINDOW_MS }`; on failure remove `id` from `hidden` and set `rowError = id`. While `forgotten` is non-empty render one `<UndoToast key={"forgot-" + forgotten.length} title={forgotten.length === 1 ? copy.forgot : copy.forgotN.replace("{n}", String(forgotten.length))} untilMs={Math.max(...forgotten.map((f) => f.untilMs))} onUndo={undo} onClose={() => setForgotten([])} />`; a timer drops each entry at its own `untilMs`. `undo`: `await Promise.all(forgotten.map((f) => restoreMemory(f.id)))`, remove them from `hidden`, focus the last restored row's Forget button, clear `forgotten`.
   - **Copy:**
     | key | EN | HE |
     |---|---|---|
@@ -17300,23 +17485,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given state `signed-out` / Then `settings-memory-signed-out` has a link to `/sign-in` named `signIn`.
 - **NUMBERS:** Undo window 300 000 ms (`UNDO_WINDOW_MS`, PRD F-131) · list cap 200 rows (`MEMORY_LIST_LIMIT` = server `MAX_LIMIT` in `convex/memory.ts`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · motion ≤ 250 ms (DESIGN.md) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · INP ≤ 200 ms: UNKNOWN locally (measured on preview, not a gate) · backend p95: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0179 (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
+- **OPEN:** inherits TFV2-0179 (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0180 (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.) — Amit.
 
 ### TFV2-0224c — Screen: memory (`/settings/memory`) — add a memory + export — OPEN
+- **STATUS:** open — inherits TFV2-0224b (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, TFV2-0182, TFV2-0220, TFV2-0224a, TFV2-0224b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171, TFV2-0182, TFV2-0220, TFV2-0224a, TFV2-0224b.
-- **WHY:** design `memory.html` flow step 5 (export as one Markdown file) and the existing "Add a memory" form the preview sweep relies on (`tests/e2e/feature-sweep.spec.ts`: `#memory-new` + "Remember this"). Backend (existing): `memory.remember` `{ content: string; sector?: … }` → `Id<"memories">`, errors `"Write something to remember first."` / `"Keep a memory to 2000 characters or fewer."` (TFV2-0171); `memory.exportAll` `{}` → `{ filename, exportedAt, count, markdown }` (TFV2-0182). Download helpers exist: `toBlobParts(markdown)` and `safeFilename(name)` in `apps/web/components/memory-export/download.ts`.
+- **WHY:** design `memory.html` flow step 5 (export as one Markdown file) and the existing "Add a memory" form the preview sweep relies on (`tests/e2e/feature-sweep.spec.ts`: `#memory-new` + "Remember this"). Backend (existing): `memory.remember` `{ content: string; sector?: "semantic" | "episodic" | "procedural" | "emotional" | "general" }` → `Id<"memories">`, errors `"Write something to remember first."` / `"Keep a memory to 2000 characters or fewer."` (TFV2-0171); `memory.exportAll` `{}` → `{ filename, exportedAt, count, markdown }` (TFV2-0182). Download helpers exist: `toBlobParts(markdown)` and `safeFilename(name)` in `apps/web/components/memory-export/download.ts`.
 - **GOAL:** The memory screen gains the "Add a memory" card (validated with `checkMemory`, saved with `memory.remember`) and a "Take it with you, or start fresh" section with the ExportArea that downloads the Markdown file, in forced and live modes.
 - **SCOPE:** `apps/web/app/(tempo)/settings/memory/page.tsx` · test: `tests/e2e/screens/settings-memory.spec.ts`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (edit: add the two sections and their handlers; the forced-mode export text lives here, the fixtures file is unchanged) · `tests/e2e/screens/settings-memory.spec.ts` (edit: one `describe("add and export", …)` block appended) · `memories` rows inserted through `memory.remember`.
 - **STEPS:**
   1. Code-map check: read the TFV2-0224b `page.tsx`; `grep -n "export function checkMemory\|MEMORY_TEXT_MAX" apps/web/lib/you/memory.ts`; `grep -n "export function toBlobParts\|export function safeFilename" apps/web/components/memory-export/download.ts`; confirm `MemoryAddForm.tsx` (TFV2-0224a) and `ExportArea.tsx` (TFV2-0220) exist.
-  2. Add the add-memory card and the export section to `page.tsx` exactly as SPEC (no change to the fixtures file).
+  2. Add the add-memory card and the export section to `page.tsx` as written in SPEC (no change to the fixtures file).
   3. Append the 5 TESTS bullets to the spec.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` → `56 passed` (36 from TFV2-0224b + 20 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** change the TFV2-0224b behaviour or its 9 cases; edit `apps/web/lib/e2e/fixtures/settings-memory.ts`, `MemoryAddForm.tsx`, `ExportArea.tsx` or `download.ts`; add forget-everything (TFV2-0224d); send more than the trimmed text to `memory.remember`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0224c / evidence: <DONE output> / changed: page.tsx, settings-memory.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–4 with evidence).
 - **SPEC:**
@@ -17335,9 +17521,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given state `offline` / Then the Export button in `settings-memory-keep` is disabled; given state `empty` / Then `#memory-new` is visible and `settings-memory-keep` is absent.
 - **NUMBERS:** memory length ≤ 500 characters on this screen (`MEMORY_TEXT_MAX`; server cap 2,000) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · 56 of 56 pass · backend p95: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0224b (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
+- **OPEN:** inherits TFV2-0224b (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.) — Amit.
 
 ### TFV2-0224d — Screen: memory (`/settings/memory`) — forget everything — OPEN
+- **STATUS:** open — inherits TFV2-0181a (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0181b (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0224c (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0181a, TFV2-0181b, TFV2-0224c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0181a, TFV2-0181b, TFV2-0224c.
@@ -17347,18 +17534,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (edit) · `tests/e2e/screens/settings-memory.spec.ts` (edit: one `describe("forget everything", …)` block appended) · `memories` rows soft-deleted / restored as one batch.
 - **STEPS:**
   1. Code-map check: read the TFV2-0224c `page.tsx`; `grep -n "export function ConfirmSheet" -A16 apps/web/components/you/Controls.tsx`; `grep -n "export const forgetAll\|export const restoreAll" convex/memory.ts`.
-  2. Add the row, the sheet and the handlers exactly as SPEC.
+  2. Add the row, the sheet and the handlers as written in SPEC.
   3. Append the 4 TESTS bullets.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` → `72 passed` (56 + 16 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** forget without the sheet's confirm; pass `memoryIds` (this is the whole set); change earlier cases; edit `Controls.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0224d / evidence: <DONE output> / changed: page.tsx, settings-memory.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–4 with evidence).
 - **SPEC:**
   - **New imports:** `ConfirmSheet` from `@/components/you/Controls`.
   - **Row** (inside `settings-memory-keep`, after the ExportArea): `<div className="tp-surface" data-testid="settings-memory-forget-all"><p className="tp-section__title">{copy.faLabel}</p><p className="tp-help">{copy.faHelp}</p><button type="button" className="tp-btn tp-btn--danger-ghost" aria-haspopup="dialog" aria-expanded={sheetOpen} onClick={() => setSheetOpen(true)}><TpIcon name="x" size="sm" /><span>{copy.faButton}</span></button></div>`.
   - **Sheet** (`sheetOpen`): `<ConfirmSheet title={copy.fsTitle} body={<>{(capped ? copy.fsBodyMany : copy.fsBody).replace("{n}", String(count))}{forgetAllFailed ? <span className="tp-error-text" role="alert"> {copy.failed}</span> : null}</>} confirmLabel={copy.fsConfirm} cancelLabel={copy.fsKeep} busy={forgettingAll} onConfirm={onForgetAll} onClose={() => { setSheetOpen(false); setForgetAllFailed(false); }} />` where `count` is the number of rows currently shown before the filter.
-  - **onForgetAll:** `setForgettingAll(true)`; `const r = await forgetAllMemories()` (live `forgetAll({})`; forced: hides every row locally and returns `{ count, forgottenAt: Date.now() }`); success → close the sheet, clear the one-by-one `forgotten` list, hide all rows, show `<UndoToast title={copy.forgotAll} untilMs={Date.now() + UNDO_WINDOW_MS} onUndo={async () => { await restoreAllMemories(r.forgottenAt); unhideAll(); setLive(copy.restoredAll); }} onClose={…} />` (live `restoreAll({ forgottenAt })`); failure → `setForgetAllFailed(true)`; finally `setForgettingAll(false)`. After success the body shows the `empty` state (`settings-memory-empty`).
+  - **onForgetAll:** `setForgettingAll(true)`; `const r = await forgetAllMemories()` (live `forgetAll({})`; forced: hides every row locally and returns `{ count, forgottenAt: Date.now() }`); success → close the sheet, clear the one-by-one `forgotten` list, hide all rows, keep `r` in state as `forgotAll` and, while `forgotAll !== null`, show `<UndoToast title={copy.forgotAll} untilMs={forgotAllUntil} onUndo={async () => { await restoreAllMemories(forgotAll.forgottenAt); unhideAll(); setLive(copy.restoredAll); }} onClose={() => setForgotAll(null)} />` (`forgotAllUntil` = `Date.now() + UNDO_WINDOW_MS` taken once when `r` arrives) (live `restoreAll({ forgottenAt })`); failure → `setForgetAllFailed(true)`; finally `setForgettingAll(false)`. After success the body shows the `empty` state (`settings-memory-empty`).
   - **Copy added:**
     | key | EN | HE |
     |---|---|---|
@@ -17377,12 +17564,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given state `default` / When `faButton` is clicked / Then a sheet titled `fsTitle` opens with `fsBody` for `{n}` = 4, focus is on `fsKeep`; When Escape is pressed / Then the sheet closes and 4 rows remain.
   2. Given the open sheet / When `fsConfirm` is clicked / Then `settings-memory-empty` shows and a toast reads `forgotAll`.
   3. Given that toast / When Undo is clicked / Then 4 rows are back and the status line reads `restoredAll`.
-  4. Given the open sheet / Then `expectTargetSize(page, ".tp-sheet")` passes and Tab from `fsConfirm` wraps to the sheet's first button.
+  4. Given the open sheet / Then `expectTargetSize(page, ".tp-sheet")` passes and Tab from `fsConfirm` wraps to the sheet's first button (its close button, named "Close" / "סגירה").
 - **NUMBERS:** Undo 300 000 ms (PRD F-131) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · focus kept inside the sheet (WCAG 2.2 SC 2.4.3 Focus Order) · 72 of 72 pass · backend p95: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0181a (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
+- **OPEN:** inherits TFV2-0181a (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0181b (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0224c (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.) — Amit.
 
 ### TFV2-0224e — Life graph: `lifeGraph.listGuesses` (the caller's open guessed links, for the memory screen)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003, CFG-034 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003, CFG-034.
@@ -17392,11 +17580,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `GUESS_SCAN`, `GUESS_MAX`, `guessValidator`, `listGuesses`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block). Reads `edges`, `entities`, `notes`; writes nothing.
 - **STEPS:**
   1. Code-map check: `grep -n "confirmedAt\|sourceNoteId" convex/schema.ts` (CFG-034; else `blocked: missing CFG-034`); read `convex/lifeGraph.ts` (`entityKindValidator`, `listEdges` for the read pattern); `bun test convex/lifeGraph.test.ts` and record the pass count.
-  2. Add the constants, `guessValidator` and `listGuesses` exactly as SPEC.
-  3. Append `describe("lifeGraph.listGuesses", …)` with the 6 TESTS cases.
+  2. Add the constants, `guessValidator` and `listGuesses` as written in SPEC.
+  3. Append `describe("lifeGraph.listGuesses", …)` with the 9 TESTS cases and the SPEC test helpers.
   4. Run DONE.
-- **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail`, and the pass count is exactly the STEP 1 count + 6.
-- **EVIDENCE:** the `bun test` summary before and after, pasted into the PR.
+- **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail`, and the pass count is exactly the STEP 1 count + 9.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR, before and after.
 - **DO NOT:** return extracted or confirmed edges; return another user's rows or anything whose entity is deleted; write anything; read without a bound; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0224e / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -17419,18 +17607,30 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Handler: `const user = await requireUser(ctx)`; `rows = ctx.db.query("edges").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).take(GUESS_SCAN)`; keep `origin === "inferred" && confirmedAt === undefined && deletedAt === undefined`; for each, load both entities with `ctx.db.get` and skip the edge when either is missing, has `deletedAt`, or has `userId !== user._id`; `sourceNoteTitle` = the title of `ctx.db.get(sourceNoteId)` when that note exists, is the caller's and has no `deletedAt` (otherwise the key is absent); sort `createdAt` descending; return the first `GUESS_MAX`. Errors (exact · trigger · test): `"Not authenticated"` · no identity · 1. `Infer` is imported from `convex/values`.
-- **TESTS:** (`ctx = makeFakeCtx("users:1")`; entities Dana (person), Talk (project), Gym (habit) of `users:1`; note P `{ userId: "users:1", title: "Thursday talk", … }`; helper `seedEdge(from, to, extra)` inserts `{ userId: "users:1", fromEntityId: from, toEntityId: to, relation: "part of", origin: "inferred", confidence: 0.6, createdAt: 10, updatedAt: 10, ...extra }`)
-  1. Given `makeSignedOutCtx()` / When `run(listGuesses, ctx, {})` runs / Then it rejects with `"Not authenticated"`.
+  **Relies on:** `entityKindValidator` (`export const`, `convex/lifeGraph.ts`, created by TFV2-0186a) = `v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit"))` — STEP 1 `grep -n "export const entityKindValidator" convex/lifeGraph.ts` (one line); `entities` (CFG-002) fields `userId`, `kind`, `name`, `aliases: string[]`, `createdAt`, `updatedAt`, `deletedAt?`; `edges` (CFG-003) fields `userId`, `fromEntityId`, `toEntityId`, `relation`, `origin: "extracted" | "inferred"`, `confidence`, `sourceMemoryId?`, `createdAt`, `updatedAt`, `deletedAt?`, index `by_userId_deletedAt` on `["userId", "deletedAt"]`; CFG-034 adds `confirmedAt?: number` and `sourceNoteId?: Id<"notes">`; `notes` (existing schema) required fields `userId`, `title`, `body`, `pinned`, `periodType`, `createdAt`, `updatedAt`.
+  **Test helpers** (declared at the top of the new `describe`; `import { makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` and the CONVENTIONS §16 `rejection` helper, reused if the file already has it):
+  ```ts
+  const seedEntity = (ctx: any, userId: string, name: string, kind: string, extra: Record<string, unknown> = {}) =>
+    ctx.db.insert("entities", { userId, kind, name, aliases: [], createdAt: 1, updatedAt: 1, ...extra });
+  const seedEdge = (ctx: any, from: string, to: string, extra: Record<string, unknown> = {}) =>
+    ctx.db.insert("edges", { userId: "users:1", fromEntityId: from, toEntityId: to, relation: "part of", origin: "inferred", confidence: 0.6, createdAt: 10, updatedAt: 10, ...extra });
+  ```
+- **TESTS:** (each case: `const ctx = makeFakeCtx("users:1", ["users:2"])`; `Dana = await seedEntity(ctx, "users:1", "Dana", "person")`, `Talk = await seedEntity(ctx, "users:1", "Talk", "project")`, `Gym = await seedEntity(ctx, "users:1", "Gym", "habit")`; note `P = await ctx.db.insert("notes", { userId: "users:1", title: "Thursday talk", body: "Dana presents.", pinned: false, periodType: "none", createdAt: 1, updatedAt: 1 })`)
+  1. Given `makeSignedOutCtx()` / When `rejection(run(listGuesses, makeSignedOutCtx(), {}))` runs / Then it returns `"Not authenticated"`.
   2. Given an inferred edge Dana → Talk with `sourceNoteId: P`, `createdAt: 10` / When it runs / Then it returns `[{ _id, from: { _id: Dana, name: "Dana", kind: "person" }, to: { _id: Talk, name: "Talk", kind: "project" }, relation: "part of", confidence: 0.6, sourceNoteTitle: "Thursday talk", createdAt: 10 }]`.
   3. Given an extracted edge Dana → Gym, an inferred edge Gym → Talk with `confirmedAt: 5`, and an inferred edge Talk → Dana with `deletedAt: 5` / When it runs / Then it returns `[]`.
   4. Given inferred edges Dana → Talk (`createdAt: 10`) and Gym → Dana (`createdAt: 20`), the second without `sourceNoteId` / When it runs / Then the first item is Gym → Dana with no `sourceNoteTitle` key, the second Dana → Talk.
-  5. Given an inferred edge Dana → Gym where Gym has `deletedAt: 5`, and an inferred edge of `users:2` between `users:2` entities / When `users:1` runs it / Then it returns `[]`.
-  6. Given 51 inferred edges Dana → Talk with `createdAt` 1…51 / When it runs / Then it returns 50 items and the first has `createdAt: 51` (cap `GUESS_MAX`).
-- **NUMBERS:** ≤ 500 edges read (`GUESS_SCAN`), ≤ 50 returned (`GUESS_MAX`) — bounded reads per CONVENTIONS §16/§20, test 6; 6 of 6 new cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+  5. Given an inferred edge Dana → Gym after `ctx.db.patch(Gym, { deletedAt: 5 })`, and an edge `seedEdge(ctx, X, Y, { userId: "users:2" })` where `X = await seedEntity(ctx, "users:2", "Noa", "person")` and `Y = await seedEntity(ctx, "users:2", "Run", "habit")` / When `users:1` runs it / Then it returns `[]`.
+  6. Given 50 inferred edges Dana → Talk with `createdAt` 1 to 50 / When it runs / Then it returns 50 items and the first has `createdAt: 50` (at the cap `GUESS_MAX`).
+  7. Given 51 inferred edges Dana → Talk with `createdAt` 1 to 51 / When it runs / Then it returns 50 items and the first has `createdAt: 51` (over the cap `GUESS_MAX`).
+  8. Given 499 edges Dana → Gym with `origin: "extracted"` inserted first, then 1 inferred edge Dana → Talk / When it runs / Then it returns 1 item (500 rows read = `GUESS_SCAN`).
+  9. Given 500 edges Dana → Gym with `origin: "extracted"` inserted first, then 1 inferred edge Dana → Talk / When it runs / Then it returns `[]` (the 501st row is past `GUESS_SCAN`).
+- **NUMBERS:** ≤ 500 edges read (`GUESS_SCAN`), ≤ 50 returned (`GUESS_MAX`) — bounded reads per CONVENTIONS §16/§20, tests 6–9; 9 of 9 new cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0224f — Life graph: `lifeGraph.forgetEdge` (forget one guessed or written link) — OPEN
+- **STATUS:** open — Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the Q-08 answer for memories also apply to life-graph links (`edges` rows)?
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186a, CFG-003 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0186a, CFG-003.
@@ -17440,11 +17640,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lifeGraph.ts` (edit: add `forgetEdge`) · `convex/lifeGraph.test.ts` (edit: append one `describe` block) · `edges` rows (patch `deletedAt`, `updatedAt`).
 - **STEPS:**
   1. Code-map check: read `convex/lifeGraph.ts` and `forget` in `convex/memory.ts` lines 158–172 (the pattern copied); `bun test convex/lifeGraph.test.ts` and record the pass count.
-  2. Add `forgetEdge` exactly as SPEC.
+  2. Add `forgetEdge` as written in SPEC.
   3. Append `describe("lifeGraph.forgetEdge", …)` with the 4 TESTS cases (`Date.now` spied to `9000`).
   4. Run DONE.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `0 fail`, and the pass count is exactly the STEP 1 count + 4.
-- **EVIDENCE:** the `bun test` summary before and after, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR, before and after.
 - **DO NOT:** hard-delete; touch entities or memories; touch another user's edge; change other functions; touch `convex/schema.ts`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0224f / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -17463,9 +17663,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given an edge of `users:1` with `deletedAt: 5` / When it runs / Then it rejects with `"Edge not found"` and `deletedAt` stays `5`.
 - **NUMBERS:** 4 of 4 new cases pass (exact). Restorable window: follows Q-08. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-08: `forget` — soft delete with 30-day grace or complete hard delete; does the answer for memories also apply to life-graph links? — Amit.
+- **OPEN:** Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the Q-08 answer for memories also apply to life-graph links (`edges` rows)? — Amit.
 
 ### TFV2-0224g — Screen: memory (`/settings/memory`) — links Tempo guessed — OPEN
+- **STATUS:** open — inherits TFV2-0224d (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0224f (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the Q-08 answer for memories also apply to life-graph links (`edges` rows)?)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0188a, TFV2-0224d, TFV2-0224e, TFV2-0224f · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0188a, TFV2-0224d, TFV2-0224e, TFV2-0224f.
@@ -17475,12 +17676,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (edit) · `apps/web/lib/e2e/fixtures/settings-memory.ts` (edit: `guesses` added to every `ready` fixture) · `tests/e2e/screens/settings-memory.spec.ts` (edit: one `describe("guesses", …)` block appended) · `edges` rows patched through `confirmEdge` / `forgetEdge`.
 - **STEPS:**
   1. Code-map check: read the TFV2-0224d `page.tsx` and fixtures; `grep -n "export const listGuesses\|export const confirmEdge\|export const forgetEdge" convex/lifeGraph.ts`.
-  2. Extend the `ready` view type and the fixtures exactly as SPEC.
-  3. Add the query, the section and the two handlers exactly as SPEC.
+  2. Extend the `ready` view type and the fixtures as written in SPEC.
+  3. Add the query, the section and the two handlers as written in SPEC.
   4. Append the 4 TESTS bullets.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` → `88 passed` (72 + 16 new), 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-memory.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code.
 - **DO NOT:** show confirmed or written links in this section; mix guesses into the memories list or its count; change earlier cases; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0224g / evidence: <DONE output> / changed: page.tsx, fixtures/settings-memory.ts, settings-memory.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–5 with evidence).
 - **SPEC:**
@@ -17504,9 +17705,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given state `empty` / Then `settings-memory-guesses` is absent.
 - **NUMBERS:** ≤ 50 guesses shown (`GUESS_MAX`, TFV2-0224e) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · Guess / confirmed as words (WCAG 2.2 SC 1.4.1) · 88 of 88 pass · backend p95: UNKNOWN.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0224f (Q-08: `forget` — soft delete with 30-day grace or complete hard delete; does it also apply to life-graph links?) — Amit.
+- **OPEN:** inherits TFV2-0224d (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.); inherits TFV2-0224f (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Does the Q-08 answer for memories also apply to life-graph links (`edges` rows)?) — Amit.
 
 ### TFV2-0225a — Component: ImportTextStep (`apps/web/components/memory/ImportTextStep.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0098, TFV2-0114 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web component lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0098, TFV2-0114.
@@ -17515,18 +17717,26 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/memory/ImportTextStep.tsx` · `apps/web/app/e2e/components/import-text-step/page.tsx` · test: `tests/e2e/screens/import-text-step.spec.ts`.
 - **MUTATES:** `apps/web/components/memory/ImportTextStep.tsx` (new) · `apps/web/app/e2e/components/import-text-step/page.tsx` (new) · `tests/e2e/screens/import-text-step.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map check: `test -e apps/web/components/memory/ImportTextStep.tsx` fails; `grep -n "export function Segmented" apps/web/components/lists/Segmented.tsx` (TFV2-0098) and `grep -n "export function Textarea" apps/web/components/forms/Textarea.tsx` (TFV2-0114) — if either is absent report `blocked: missing <id>`; read `MemoryImportScreen.tsx` lines 296–400 (reference only).
+  1. Code-map check: `test -e apps/web/components/memory/ImportTextStep.tsx` fails; `grep -n "export function Segmented" apps/web/components/lists/Segmented.tsx` (TFV2-0098) and `grep -n "export function Textarea" apps/web/components/forms/Textarea.tsx` (TFV2-0114) — if either is absent report `blocked: missing <id>`; read `MemoryImportScreen.tsx` lines 296–400 (reference only); `grep -n "export type SegmentedProps" apps/web/components/lists/Segmented.tsx` and `grep -n "export type TextareaProps" apps/web/components/forms/Textarea.tsx` (one line each, the SPEC **Relies on** shapes); classes: `grep -n "\.tp-surface\b\|\.tp-section__title\b\|\.tp-form\b\|\.tp-field\b\|\.tp-label\b\|\.tp-input\b\|\.tp-help\b\|\.tp-error-text\b\|\.tp-form__actions\b\|\.tp-btn--secondary\b\|\.tp-num\b" apps/web/app/tempo.css` (at least one line each); icon: `grep -n '^  "search":' apps/web/components/tempo/TpIcon.tsx` (one line). If a check fails, stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Stylesheet: none — Stage 1 / shell classes `.tp-surface`, `.tp-section__title`, `.tp-form`, `.tp-field`, `.tp-label`, `.tp-input`, `.tp-help`, `.tp-error-text`, `.tp-form__actions`, `.tp-btn` plus the composed components.
-  3. Create `ImportTextStep.tsx` (`"use client"`) exactly as SPEC.
-  4. Create the harness page with the six states; each keeps `source`, `how` and `text` in `useState`; callbacks write `onSourceChange:"<v>"`, `onHowChange:"<v>"`, `onTextChange:<JSON text>`, `onFileChange:<JSON file?.name ?? null>`, `onFind:null` into `<output data-testid="import-text-step-log">`.
+  3. Create `ImportTextStep.tsx` (`"use client"`) as written in SPEC.
+  4. Create the harness page with the six states; each keeps `source`, `how` and `text` in `useState`; callbacks write through the CONVENTIONS §13 `log` helper into `<output data-testid="import-text-step-log">`: `onSourceChange:"<v>"`, `onHowChange:"<v>"`, `onTextChange:<JSON text>`, `onFind:` (no argument); `onFileChange` is wrapped so it logs the file name: `(f) => setLog(`onFileChange:${JSON.stringify(f?.name ?? null)}`)`.
   5. Create the spec with the 7 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/import-text-step.spec.ts --reporter=line` → `28 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus typecheck/lint exit codes in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/import-text-step.spec.ts --reporter=line` pasted into the PR, plus the typecheck/lint exit codes.
 - **DO NOT:** read the file's contents, call `readImport`, Convex or `fetch` (the screen does); keep the text anywhere but props; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0225a / evidence: <DONE output> / changed: apps/web/components/memory/ImportTextStep.tsx, apps/web/app/e2e/components/import-text-step/page.tsx, tests/e2e/screens/import-text-step.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  "use client";
+  import type React from "react";
+  import { useEffect, useId } from "react";
+  import { Textarea } from "@/components/forms/Textarea";
+  import { Segmented } from "@/components/lists/Segmented";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
   export type ImportSourceChoice = "chatgpt" | "claude";
   export type ImportHow = "paste" | "upload";
   export type ImportTextError = "empty" | "file-missing" | "too-large";
@@ -17541,6 +17751,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function ImportTextStep(props: ImportTextStepProps): React.JSX.Element;
   ```
+  - **Relies on:** `Segmented` (TFV2-0098, `apps/web/components/lists/Segmented.tsx`): `SegmentedProps = { label: string; options: SegmentedOption[]; value: string; onChange: (value: string) => void; block?: boolean }` with `SegmentedOption = { value: string; label: string }`; renders a `role="radiogroup"` named `label` whose options are `role="radio"` with `aria-checked`. `Textarea` (TFV2-0114, `apps/web/components/forms/Textarea.tsx`): `TextareaProps = { id: string; label: string; value: string; onChange: (value: string) => void; rows?: number; help?: string; error?: string; optional?: boolean; disabled?: boolean; placeholder?: string; maxLength?: number }`; renders `<textarea id={id} aria-invalid={error ? "true" : undefined}>` with help `<id>-help` and error `<id>-error`. `TpIcon` (CONVENTIONS §22) icon `search`. All checked in STEP 1.
   - **Copy:**
     | key | EN | HE |
     |---|---|---|
@@ -17569,7 +17780,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - **RTL:** Segmented arrows follow reading direction; the textarea is `dir="auto"`. **Keyboard / screen reader:** both choices are radiogroups named by their questions; the paste field's tip and error are tied to it (Textarea `aria-describedby`); the file error is `role="alert"`. **Breakpoints:** full width at every size. **Motion:** none added.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton with `openHarness(page, "import-text-step", { lang })`, locators scoped to each state section, callbacks read from `import-text-step-log`; 7 × 4 = 28)
   1. Given `import-text-step-default` / Then the `h2` reads "1." + `title`, a radiogroup named `from` has ChatGPT checked, a radiogroup named `how` has `paste` checked, a textarea `#mi-paste` labelled `pasteLabel` shows the tip `tip` for `lang`, and the button reads `find`.
-  2. Given `import-text-step-default` / When "Claude" is clicked / Then the log reads `onSourceChange:"claude"`; When "- Likes tea" is typed into `#mi-paste` / Then the log ends with `onTextChange:"- Likes tea"`; When the button is clicked / Then the log reads `onFind:null`.
+  2. Given `import-text-step-default` / When "Claude" is clicked / Then the log reads `onSourceChange:"claude"`; When "- Likes tea" is typed into `#mi-paste` / Then the log ends with `onTextChange:"- Likes tea"`; When the button is clicked / Then the log reads `onFind:`.
   3. Given `import-text-step-error-empty` / Then `#mi-paste` has `aria-invalid="true"` and the `empty` error for `lang` is visible.
   4. Given `import-text-step-default` / When `upload` is clicked / Then the log reads `onHowChange:"upload"` and `#mi-file` is visible with help `fileHelp`.
   5. Given `import-text-step-upload` / When `setInputFiles("#mi-file", { name: "memory.txt", mimeType: "text/plain", buffer: Buffer.from("- A") })` runs / Then the log reads `onFileChange:"memory.txt"`.
@@ -17580,6 +17791,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0225b — Screen: memory import (`/settings/memory/import`) — text → review → save → Undo — OPEN
+- **STATUS:** open — inherits TFV2-0181a (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.)
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0038, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0172, TFV2-0181a, TFV2-0193, TFV2-0219, TFV2-0225a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0021, TFV2-0038, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0172, TFV2-0181a, TFV2-0193, TFV2-0219, TFV2-0225a.
@@ -17589,17 +17801,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` (edit: whole file replaced) · `apps/web/lib/e2e/fixtures/settings-memory-import.ts` (new) · `apps/web/lib/e2eWiringRoutes.ts` (edit: one line) · `tests/e2e/screens/settings-memory-import.spec.ts` (new) · route `/settings/memory/import` released for the dev-only E2E bypass · `memories` rows inserted by `saveReviewed` and soft-deleted by the Undo.
 - **STEPS:**
   1. Code-map check: read the current `page.tsx` (renders `MemoryImportScreen`); `grep -n "export function readImport\|export function itemsToSave\|MAX_IMPORT_BYTES" apps/web/lib/you/memory.ts`; `grep -n "export const saveReviewed" convex/memoryImport.ts`; `grep -n "export const forgetAll" convex/memory.ts`; confirm `ImportReview.tsx` (TFV2-0219), `ImportTextStep.tsx` (TFV2-0225a), `layout/Notice.tsx` (TFV2-0092), `states/State*.tsx`, `useE2EState.ts`, `tests/e2e/helpers/harness.ts` exist, else `blocked: missing <id>`; `cat apps/web/lib/e2eWiringRoutes.ts` (no `"/settings/memory/import"`).
-  2. Create `apps/web/lib/e2e/fixtures/settings-memory-import.ts` exactly as SPEC.
-  3. Replace `page.tsx` exactly as SPEC.
+  2. Create `apps/web/lib/e2e/fixtures/settings-memory-import.ts` as written in SPEC.
+  3. Replace `page.tsx` as written in SPEC.
   4. Register the route (named step, CONVENTIONS §17): insert exactly `  "/settings/memory/import",` as the last entry before `] as const;` in `apps/web/lib/e2eWiringRoutes.ts`; nothing else in that file.
   5. Create the spec with the 9 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-memory-import.spec.ts --reporter=line` → `36 passed`, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary, the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts` in the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-memory-import.spec.ts --reporter=line` pasted into the PR, plus the typecheck exit code and the one-line diff of `e2eWiringRoutes.ts`.
 - **DO NOT:** send the raw text or file to Convex or `fetch` (only `itemsToSave` output reaches `saveReviewed`); keep the text after a save; call `memoryImport.importMemories` (server-side parse of the raw text); delete or edit `MemoryImportScreen.tsx`, `lib/you/*` or i18n files; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0225b / evidence: <DONE output> / changed: page.tsx, fixtures/settings-memory-import.ts, e2eWiringRoutes.ts, settings-memory-import.spec.ts / unknowns / notes for ticket sync` (list STEPS 1–6 with evidence; notes: `MemoryManager.tsx` and `MemoryImportScreen.tsx` are unused after TFV2-0224b and this ticket — a cleanup ticket can delete them).
 - **SPEC:**
-  - **Imports:** `useConvexAuth`, `useMutation`, `useQuery` from `convex/react`; `api`; `type Id`; `Link`; `Suspense`, `useEffect`, `useRef`, `useState` from `react`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `TpIcon`; `Notice` from `@/components/layout/Notice`; `ImportReview`, `type ImportChange` from `@/components/memory/ImportReview`; `ImportTextStep`, `type ImportHow`, `type ImportSourceChoice`, `type ImportTextError` from `@/components/memory/ImportTextStep`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `UndoToast` from `@/components/you/UndoToast`; `readImport`, `itemsToSave`, `MAX_IMPORT_BYTES`, `type ImportItem` from `@/lib/you/memory`; `UNDO_WINDOW_MS` from `@/lib/you/screenState`; `FIXTURES` from `@/lib/e2e/fixtures/settings-memory-import`.
+  - **Imports:** `useConvexAuth`, `useMutation`, `useQuery` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `Suspense`, `useEffect`, `useRef`, `useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `TpIcon` from `@/components/tempo/TpIcon`; `Notice` from `@/components/layout/Notice`; `ImportReview`, `type ImportChange` from `@/components/memory/ImportReview`; `ImportTextStep`, `type ImportHow`, `type ImportSourceChoice`, `type ImportTextError` from `@/components/memory/ImportTextStep`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `UndoToast` from `@/components/you/UndoToast`; `readImport`, `itemsToSave`, `MAX_IMPORT_BYTES`, `type ImportItem` from `@/lib/you/memory`; `UNDO_WINDOW_MS` from `@/lib/you/screenState`; `FIXTURES` from `@/lib/e2e/fixtures/settings-memory-import`.
   - **View type (exported from `page.tsx`):**
     ```ts
     export type MemoryImportState = "default" | "review" | "saved" | "empty" | "loading" | "error" | "offline" | "signed-out";
@@ -17617,11 +17829,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     1. header: back link `<Link className="tp-btn tp-btn--link" href="/settings/memory"><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{copy.back}</span></Link>`, `<h1 className="tp-pagehead__title">{copy.title}</h1>`, sub;
     2. `!online` → `<div data-testid="settings-memory-import-offline"><StateOffline text={copy.offline} /></div>`;
     3. `loading` → `settings-memory-import-loading` `<StateLoading label={copy.loading} rows={4} />`; `error` → `settings-memory-import-error` `<StateError what={copy.error} onRetry={backToText} />`; `signed-out` → `settings-memory-import-signed-out` `<StateEmpty title={copy.signedOut} action={<Link className="tp-btn tp-btn--secondary" href="/sign-in">{copy.signIn}</Link>} />`; `nothing-found` → `settings-memory-import-empty` `<StateEmpty title={copy.emptyTitle} body={copy.emptyBody} action={<button type="button" className="tp-btn tp-btn--secondary" onClick={backToText}>{copy.tryOther}</button>} />`;
-    4. `text` → `<div data-testid="settings-memory-import-default"><ImportTextStep … error={fieldError} busy={reading} onFind={onFind} /></div>`;
+    4. `text` → `<div data-testid="settings-memory-import-default"><ImportTextStep source={source} onSourceChange={setSource} how={how} onHowChange={(h) => { setHow(h); setFieldError(undefined); }} text={text} onTextChange={(t) => { setText(t); setFieldError(undefined); }} onFileChange={(f) => { setFile(f); setFieldError(undefined); }} error={fieldError} busy={reading} onFind={onFind} /></div>`;
     5. `review` → `<section className="tp-section" aria-labelledby="mi-s2-title" data-testid="settings-memory-import-review">` with `<h2 className="tp-section__title" id="mi-s2-title" tabIndex={-1}><span className="tp-num">2.</span> <span>{copy.reviewTitle}</span></h2>`, count `<span className="tp-section__count"><span className="tp-num">{items.length}</span> {copy.found.replace("{source}", sourceName)}</span>`, `<p className="tp-help">{copy.reviewHelp}</p>`, `<ImportReview items={items} onChange={onChangeItem} />`, `saveError` → `<p className="tp-error-text" role="alert">{copy[saveError]}</p>`, then `<button type="button" className="tp-btn tp-btn--primary" disabled={saving || !online} onClick={onSave}><TpIcon name="check" size="sm" />{saving ? copy.saving : <>{copy.saveLead} <span className="tp-num">{kept}</span> {copy.saveTail}</>}</button>` and `<button type="button" className="tp-btn tp-btn--ghost" onClick={backToText}>{copy.backToText}</button>` (`kept` = items not dropped);
     6. `saved` → `<div data-testid="settings-memory-import-saved"><Notice tone="done" live="status" title={copy.savedTitle.replace("{n}", String(added))} body={skipped > 0 ? copy.savedBody + " " + copy.skipped.replace("{n}", String(skipped)) : copy.savedBody} action={<Link className="tp-btn tp-btn--secondary" href="/settings/memory">{copy.toMemory}</Link>} /></div>`.
     7. a visually hidden live line `<p className="tp-sr-only" role="status">{live}</p>` (the "status line" the TESTS read).
-  - **Handlers:** `onFind`: upload with no file → `fieldError = "file-missing"`; file larger than `MAX_IMPORT_BYTES` → `"too-large"`; read the file with `await file.text()` (`reading` true meanwhile); `readImport(raw, source, existing)`: `!ok` → `fieldError = reason === "too-large" ? "too-large" : how === "paste" ? "empty" : "file-missing"`; `items.length === 0` → step `nothing-found`; else `items`, step `review`, focus the review heading. `onChangeItem(change)` merges the change into the item and clears `saveError`. `onSave`: `toSave = itemsToSave(items)`; empty → `saveError = "nothingKept"`; else `saving`, `const r = await saveItems(source, toSave)` (live `saveReviewed({ source, items: toSave })`); success → clear `text` and `file` (RAM-only), step `saved`, and when `r.added > 0` show `<UndoToast title={copy.toast} untilMs={Date.now() + UNDO_WINDOW_MS} onUndo={async () => { await forgetBatch(r.memoryIds); setStep("review"); setLive(copy.undone); }} onClose={…} />` (live `forgetAll({ memoryIds: r.memoryIds })`); failure → `saveError = "saveError"`. `backToText` → step `text`, focus `#mi-paste`.
+  - **Handlers:** `onFind`: upload with no file → `fieldError = "file-missing"`; file larger than `MAX_IMPORT_BYTES` → `"too-large"`; read the file with `await file.text()` (`reading` true meanwhile); `readImport(raw, source, existing)`: `!ok` → `fieldError = reason === "too-large" ? "too-large" : how === "paste" ? "empty" : "file-missing"`; `items.length === 0` → step `nothing-found`; else `items`, step `review`, focus the review heading. `onChangeItem(change)` merges the change into the item and clears `saveError`. `onSave`: `toSave = itemsToSave(items)`; empty → `saveError = "nothingKept"`; else `saving`, `const r = await saveItems(source, toSave)` (live `saveReviewed({ source, items: toSave })`); success → clear `text` and `file` (RAM-only), step `saved`, and when `r.added > 0` show `<UndoToast title={copy.toast} untilMs={Date.now() + UNDO_WINDOW_MS} onUndo={async () => { await forgetBatch(r.memoryIds); setStep("review"); setLive(copy.undone); }} onClose={() => setSavedBatch(null)} />` (live `forgetAll({ memoryIds: r.memoryIds })`); `onClose={() => setSavedBatch(null)}`, where `savedBatch` holds `r` and the toast shows while it is non-null; failure → `saveError = "saveError"`. `backToText` → step `text`, focus `#mi-paste`.
   - **Copy:**
     | key | EN | HE |
     |---|---|---|
@@ -17665,9 +17877,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given states `offline` and `signed-out` / Then `settings-memory-import-offline` shows `offline` while the text step stays visible; `settings-memory-import-signed-out` has a link to `/sign-in`.
 - **NUMBERS:** Undo 300 000 ms (PRD F-131) · import ≤ 1 MiB (`MAX_IMPORT_BYTES`) · ≤ 300 items saved per call (`MAX_REVIEWED_ITEMS`, `convex/memoryImport.ts`) · LCP ≤ 2,500 ms, CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · INP ≤ 200 ms: UNKNOWN locally · backend p95: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0181a (Q-08: `forget` — soft delete with 30-day grace or complete hard delete?) — Amit.
+- **OPEN:** inherits TFV2-0181a (Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.) — Amit.
 
 ### TFV2-0226 — Coach prompt: the missing tests for `buildCoachMessages`, `parseCoachReply`, `truncate` (`convex/lib/coachPrompt.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0155a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0155a.
@@ -17680,7 +17893,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("coach prompt rules without a test until TFV2-0226", …)` with exactly the 6 TESTS cases, reusing the file's existing import line (`buildCoachMessages`, `parseCoachReply`, `truncate` are already imported).
   3. Run DONE. If a case fails, the code differs from this SPEC: stop and report `blocked: code differs from SPEC` with the case (do not change the source).
 - **DONE:** `bun test convex/lib/coachPrompt.test.ts` → `51 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (45) and after (51), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/coachPrompt.test.ts` pasted into the PR (before: 45 pass; after: 51 pass).
 - **DO NOT:** edit `convex/lib/coachPrompt.ts`, `coachHistory.test.ts` or any existing case; change the proposal JSON shape or remove the never-shame line; call a model; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0226 / evidence: <DONE output> / changed: convex/lib/coachPrompt.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged pure functions under test:
@@ -17702,9 +17915,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0227 — Coach load rules: the missing tests (`convex/lib/coachLoad.ts`)
-- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0169 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167c, TFV2-0169 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0169.
+- **WHEN:** after TFV2-0167c, TFV2-0169.
 - **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract, 10-second action, realism checker). `convex/lib/coachLoad.ts` (67 lines) has 9 cases; TFV2-0167c adds 4 (Hebrew 10-second actions) and TFV2-0169 adds 5 (`checkRealism` fit/over/boundary and `REALISM_NOTES`). Still untested: the exact constants, `afterAccept` from a streak of 0 or past 3, `effectiveLoad` clamping on a normal day, `taskMinutes` rounding and bad estimates, the exact `pickTenSecondAction` index for negative and fractional seeds, and `checkRealism` with no tasks. The old dependency TFV2-0170 (now TFV2-0170a/b/c, tests in `convex/coach.test.ts`) is dropped: this ticket tests the pure module and needs only TFV2-0169 (same test file, and its `REALISM_NOTES`).
 - **GOAL:** `convex/lib/coachLoad.test.ts` gains 6 cases so every exported rule of `coachLoad.ts` is pinned, with `convex/lib/coachLoad.ts` unchanged.
 - **SCOPE:** `convex/lib/coachLoad.ts` (read only, unchanged) · test: `convex/lib/coachLoad.test.ts`.
@@ -17714,7 +17928,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `MIN_LOAD`, `MAX_LOAD`, `STREAK_FOR_RAISE`, `DEFAULT_TASK_MINUTES`, `MS_PER_MINUTE` and `REALISM_NOTES` to the existing import line where missing; append `describe("load rules without a test until TFV2-0227", …)` with exactly the 6 TESTS cases (tab indentation, as the file uses).
   3. Run DONE. A failing case means the code differs from SPEC: stop and report `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/lib/coachLoad.test.ts` → `24 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (18) and after (24), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/coachLoad.test.ts` pasted into the PR (before: 18 pass; after: 24 pass).
 - **DO NOT:** edit `convex/lib/coachLoad.ts`; change or lower any constant or threshold; edit existing cases; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0227 / evidence: <DONE output> / changed: convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -17739,6 +17953,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0228 — Coach proposal guard: the missing tests (`convex/lib/coachProposalGuard.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** #1031
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -17748,10 +17963,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/coachProposalGuard.test.ts` (edit: `cardTitle` added to the existing `./coachProposalGuard` import; one `describe` block appended). No source or data change.
 - **STEPS:**
   1. Code-map: `grep -n "^export" convex/lib/coachProposalGuard.ts` (`MAX_OPEN_TASKS_CHECKED`, `ALREADY_ON_TODAY_NOTE`, `normalizeTitle`, `cardTitle`, `duplicateOfOpenTask`); `bun test convex/lib/coachProposalGuard.test.ts` → `17 pass`.
-  2. Add `cardTitle` to the import block `import { ALREADY_ON_TODAY_NOTE, duplicateOfOpenTask, MAX_OPEN_TASKS_CHECKED, normalizeTitle } from "./coachProposalGuard";` and append `describe("guard details without a test until TFV2-0228", …)` with exactly the 4 TESTS cases, using the file's `task(title)` helper.
+  2. Add `cardTitle` to the import block `import { ALREADY_ON_TODAY_NOTE, duplicateOfOpenTask, MAX_OPEN_TASKS_CHECKED, normalizeTitle } from "./coachProposalGuard";` and append `describe("guard details without a test until TFV2-0228", …)` with exactly the 4 TESTS cases, using the file's existing helper `const task = (title: string): CoachProposal => ({ … })` (line 23 of `convex/lib/coachProposalGuard.test.ts`, a task card with that title; check with `grep -n "const task = (title: string): CoachProposal" convex/lib/coachProposalGuard.test.ts`, one line).
   3. Run DONE. A failing case means the code differs from SPEC: stop and report `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/lib/coachProposalGuard.test.ts` → `21 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (17) and after (21), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/coachProposalGuard.test.ts` pasted into the PR (before: 17 pass; after: 21 pass).
 - **DO NOT:** edit `convex/lib/coachProposalGuard.ts` or `convex/coach.ts`; change the note copy or the cap; edit existing cases; call a model; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0228 / evidence: <DONE output> / changed: convex/lib/coachProposalGuard.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -17773,6 +17988,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0229 — Memory: `memory.touch` (a recalled memory gets stronger)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171, TFV2-0173 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0171, TFV2-0173.
@@ -17780,9 +17996,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GOAL:** `memory.touch` (mutation) sets `lastAccessed` to now, adds 1 to `accessCount` and raises `salience` by 0.02 (capped at 1.0) for each distinct live memory of the caller among up to 200 given ids, and returns how many it touched.
 - **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
 - **MUTATES:** `convex/memory.ts` (edit: add `TOUCH_BUMP`, `touch`) · `convex/memory.test.ts` (edit: append one `describe` block) · `memories` rows (patch `lastAccessed`, `accessCount`, `salience`).
-- **STEPS:** 1) Code-map check: read `MAX_LIMIT` (line 42), `remember` and `recall` (lines 87–130) in `convex/memory.ts`. 2) Add `TOUCH_BUMP` and `touch` exactly as SPEC. 3) Append `describe("memory.touch", …)` with the 6 TESTS cases (`Date.now` spied to `5000`). 4) Run DONE.
-- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **STEPS:** 1) Code-map check: read `MAX_LIMIT` (line 42), `remember` and `recall` (lines 87–130) in `convex/memory.ts`. 2) Add `TOUCH_BUMP` and `touch` as written in SPEC. 3) Append `describe("memory.touch", …)` with the SPEC helper and the 7 TESTS cases (`Date.now` spied to `5000`). 4) Run DONE.
+- **DONE:** `bun test convex/memory.test.ts` → `0 fail` with the 7 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** change `updatedAt` or `content`; exceed salience 1.0; touch another user's or a deleted row; change `recall` or any other function; edit `convex/memories.ts`.
 - **REPORT:** `status / ticket: TFV2-0229 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
@@ -17795,18 +18011,25 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `requireUser`; `memoryIds.length > MAX_LIMIT` (200) → `new Error("Touch up to 200 memories at a time.")`; for each distinct id: row missing, foreign or deleted → skip; else `patch(id, { lastAccessed: now, accessCount: row.accessCount + 1, salience: Math.min(1, row.salience + TOUCH_BUMP) })`, `touched += 1`. Errors: `"Not authenticated"`, `"Touch up to 200 memories at a time."`. Add `MutationCtx` and `Id` type imports if not present.
-- **TESTS:** (`seedMemory` as in TFV2-0195a with `accessCount: 0`, `updatedAt: 1`)
-  1. Given `makeSignedOutCtx()` / When `touch({ memoryIds: [] })` runs / Then it rejects with `"Not authenticated"`.
-  2. Given 201 ids / When it runs / Then it rejects with `"Touch up to 200 memories at a time."`.
+  Test helper (declared in the new `describe`; `import { makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` and the CONVENTIONS §16 `rejection` helper, reused if the file already has it):
+  ```ts
+  const seedTouchMemory = (ctx: any, userId: string, content: string, extra: Record<string, unknown> = {}) =>
+    ctx.db.insert("memories", { userId, content, sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 1, accessCount: 0, createdAt: 1, updatedAt: 1, ...extra });
+  ```
+- **TESTS:** (`ctx = makeFakeCtx("users:1", ["users:2"])`; rows seeded with `seedTouchMemory`)
+  1. Given `makeSignedOutCtx()` / When `rejection(run(touch, makeSignedOutCtx(), { memoryIds: [] }))` runs / Then it returns `"Not authenticated"`.
+  2. Given 201 ids `"memories:9001"` … `"memories:9201"` (none exist) / When `rejection(run(touch, ctx, { memoryIds }))` runs / Then it returns `"Touch up to 200 memories at a time."`.
   3. Given a memory with `salience: 0.5`, `lastAccessed: 1` / When `touch({ memoryIds: [id] })` runs / Then `{ touched: 1 }`, the row has `lastAccessed: 5000`, `accessCount: 1`, `salience` `0.52` (`toBeCloseTo`, 10 digits) and `updatedAt: 1`.
   4. Given memories with `salience: 0.99` and `salience: 1` / When both are touched / Then both have `salience: 1`.
   5. Given ids `[A, A, F, D]` where A is `users:1`'s, F is `users:2`'s and D is `users:1`'s with `deletedAt: 5` / When it runs / Then `{ touched: 1 }`, A has `accessCount: 1`, and F and D are unchanged.
   6. Given memories `"Phone calls before noon"` and `"Gym on Sundays"` / When `recall({ query: "phone" })` runs and its ids are passed to `touch` / Then only the phone memory has `accessCount: 1`.
-- **NUMBERS:** salience cap 1.0 and bump +0.02 (`TOUCH_BUMP`; tests 3–4); ≤ 200 ids per call (`MAX_LIMIT`, test 2); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
+  7. Given 200 ids `"memories:9001"` … `"memories:9200"` (none exist) / When it runs / Then it returns `{ touched: 0 }` (200 is accepted).
+- **NUMBERS:** salience cap 1.0 and bump +0.02 (`TOUCH_BUMP`; tests 3–4); ≤ 200 ids per call (`MAX_LIMIT`, tests 2 and 7); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0230a — Crisis words: the missing tests for the English list and the card text (`convex/lib/crisisWords.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0003 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0003.
@@ -17819,7 +18042,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `import { containsShame } from "./shameWords";` and append `describe("crisis words without a test until TFV2-0230a", …)` with exactly the 7 TESTS cases (tab indentation, as the file uses).
   3. Run DONE. A failing case means the code differs from SPEC: stop and report `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/lib/crisisWords.test.ts` → `13 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary before (6) and after (13), pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/crisisWords.test.ts` pasted into the PR (before: 6 pass; after: 13 pass).
 - **DO NOT:** edit `convex/lib/crisisWords.ts` or `convex/crisis.ts`; add, remove or reword a phrase or any card text; add Hebrew phrases (TFV2-0230b); call a model; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0230a / evidence: <DONE output> / changed: convex/lib/crisisWords.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 each with its evidence.
 - **SPEC:** Existing, unchanged:
@@ -17830,7 +18053,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export const CRISIS_CARD: CrisisCard;
   export function crisisCardText(card?: CrisisCard): string; // `${title}\n\n${body}\n\n${resources.map((r) => `- ${r.label}: ${r.detail}`).join("\n")}`
   ```
-  The exact list (TESTS 1): `["kill myself", "killing myself", "end my life", "ending my life", "take my own life", "want to die", "wanna die", "better off dead", "suicide", "suicidal", "self harm", "self-harm", "hurt myself", "hurting myself", "cut myself", "no reason to live", "don't want to be alive", "dont want to be alive", "don't want to live", "dont want to live"]`. The card text is English only today (fixed, written by people); no copy is added. No errors thrown.
+  **Relies on:** `containsShame(text: string): ShameCheck` with `ShameCheck = { found: boolean; matches: string[] }` (`convex/lib/shameWords.ts`, created by TFV2-0003; STEP 1 grep). The exact list (TESTS 1): `["kill myself", "killing myself", "end my life", "ending my life", "take my own life", "want to die", "wanna die", "better off dead", "suicide", "suicidal", "self harm", "self-harm", "hurt myself", "hurting myself", "cut myself", "no reason to live", "don't want to be alive", "dont want to be alive", "don't want to live", "dont want to live"]`. The card text is English only today (fixed, written by people); no copy is added. No errors thrown.
 - **TESTS:**
   1. Given `CRISIS_PHRASES` / Then it `toEqual`s the exact 20-phrase list in SPEC.
   2. Given each phrase `p` of `CRISIS_PHRASES` in a loop / When `isCrisisText(\`Lately I think about ${p.toUpperCase()} a lot\`)` runs / Then it is `true` (recall 100%).
@@ -17844,6 +18067,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0230b — Crisis words: Hebrew crisis phrases (`convex/lib/crisisWords.ts`) — OPEN
+- **STATUS:** open — Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0230a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0230a.
@@ -17858,7 +18082,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Append `describe("Hebrew crisis phrases (TFV2-0230b)", …)` with exactly the 4 TESTS cases.
   5. Run DONE, then `bun test convex/coach_chat.test.ts` → `0 fail`.
 - **DONE:** `bun test convex/lib/crisisWords.test.ts` → `17 pass`, `0 fail`; `bun test convex/coach_chat.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/crisisWords.test.ts` pasted into the PR, plus the `bun test convex/coach_chat.test.ts` summary.
 - **DO NOT:** remove or reword an English phrase; change `CRISIS_CARD` or `crisisCardText`; write card text from a model; add phrases Amit did not approve; edit `convex/coach.ts` or `convex/crisis.ts`; edit existing cases; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0230b / evidence: <DONE output> / changed: convex/lib/crisisWords.ts, convex/lib/crisisWords.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 each with its evidence.
 - **SPEC:** Pure helper.
@@ -17875,9 +18099,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given every English phrase in a loop / Then `isCrisisText(p)` is still `true`, and every `CRISIS_PHRASES_HE` item contains no niqqud (`/[\u0591-\u05C7]/` does not match).
 - **NUMBERS:** recall on the approved Hebrew list = 100% and on the English list = 100% (PRD F-24; TESTS 1, 4); 17 of 17 cases pass. Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-15: which Hebrew crisis phrases does Amit approve for `CRISIS_PHRASES_HE` (proposal in SPEC)? Also part of Q-15 and outside this ticket: the Hebrew text of the fixed crisis card and per-country resources beyond Israel — Amit.
+- **OPEN:** Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval. — Amit.
 
 ### TFV2-0231 — Memory import: `cleanImportItem` and `utf8ByteLength` (verify + tests, `convex/lib/memoryImport.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -17887,7 +18112,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/memoryImport.test.ts` (new). `convex/lib/memoryImport.ts` unchanged.
 - **STEPS:** 1) Code-map check: `ls convex/lib/memoryImport.test.ts` (absent); read `utf8ByteLength`, `cleanItem`, `cleanImportItem`, `BULLET_PREFIX`, `MAX_ITEM_LENGTH` (`convex/lib/memoryImport.ts` lines 1–25). 2) Create `convex/lib/memoryImport.test.ts` (`import { describe, expect, test } from "bun:test"; import { cleanImportItem, utf8ByteLength } from "./memoryImport";`) with the 6 TESTS cases. 3) Run DONE; a mismatch with SPEC is reported as `blocked: code differs from SPEC`.
 - **DONE:** `bun test convex/lib/memoryImport.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/memoryImport.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/lib/memoryImport.ts`, `convex/memory.ts` or `convex/memoryImport.test.ts`; change any source label.
 - **REPORT:** `status / ticket: TFV2-0231 / evidence: <DONE output> / changed: convex/lib/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
 - **SPEC:**
