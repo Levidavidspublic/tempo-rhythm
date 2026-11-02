@@ -2450,7 +2450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### CFG-054 — Schema: `nags.pushAtMinute` + `nags.nextPushAt` + index `by_nextPushAt` — config lane: Amit — OPEN
-- **STATUS:** open — Q-11: Nag delivery channel beyond in-app; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?
+- **STATUS:** open — Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?
 - **Stage:** config · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); config lane: Amit (or a `convex-arch`-labelled run). Factory lanes never build this.
 - **WHEN:** first.
@@ -2480,7 +2480,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.nags[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_nextPushAt", fields: ["nextPushAt"] }` and still `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact). Query latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-11: Nag delivery channel beyond in-app; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day? — Amit.
+- **OPEN:** Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day? — Amit.
 
 ### CFG-055 — Config: app links in `apps/mobile/app.json` (iOS associated domains, Android intent filters) — config lane: Amit — OPEN
 - **STATUS:** open — new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`; `preview.tempoflow.dev` stays web-only), and which paths (proposed `/today`, `/coach`, `/notes/*`)?
@@ -10068,7 +10068,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0051, TFV2-0094, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #537
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0051, TFV2-0094, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0051, TFV2-0094, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** PRD F-05 ("Today is the daily page"); APP-FLOW §5 item 1; `docs/design/v3/screens/web/today.html` (paper page: title + meta, Next up, Intention, Energy, Tasks, Time blocks; states default/empty/loading/error/offline); CONVENTIONS §9 (web component kind), §10 Case A (compose tempo.css classes, no stylesheet), §11–§13. Today's route renders `components/today/TodayScreen.tsx`, which calls Convex inside its children (DailyPage, TodayQuickAdd, TodayEnergyRecommendations…); this ticket makes a props-only View the route can feed (TFV2-0124b). CONVENTIONS §22 (spec skeleton; date formatting).
 - **GOAL:** `apps/web/components/today/TodayView.tsx` renders the v3 Today page from props alone in every state (default, empty, loading, error, offline overlay, undo toast) in EN and HE.
 - **SCOPE:** `apps/web/components/today/TodayView.tsx` · `apps/web/app/e2e/components/today-view/page.tsx` · test: `tests/e2e/screens/today-view.spec.ts`.
@@ -10201,7 +10201,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — new: The CI specs tests/e2e/task-views-core.spec.ts, tests/e2e/calendar-views.spec.ts and tests/e2e/fix/calendar-add.spec.ts run signed out under the dev bypass and assert the current local-store screens on /today, /tasks and /calendar (inline add forms, the Inbox heading, the inline row editor, Day/Week/Month buttons, test ids day-events/week-events/month-events), which the v3 designs drop: should each v3 route keep the current screen for the signed-out dev bypass so those specs pass unchanged, or should a separate test ticket retire or rewrite those specs first?; new: tests/e2e/acceptance/alpha.spec.ts:70 (storage-state, skipped in CI) waits for a signed-in Today main heading /^Hi,/, but the only h1 of the v3 Today design is the date: should a separate test ticket change that spec to the date heading, or should TFV2-0124b also add a "Hi, <name>" h1 to TodayView?
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0124a, TFV2-0000b, TFV2-0000c, TFV2-0070a, TFV2-0070b, TFV2-0071a · **Folds-in:** #537
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0124a, TFV2-0000b, TFV2-0000c, TFV2-0070a, TFV2-0070b, TFV2-0071a
+- **WHEN:** after TFV2-0124a, TFV2-0000b, TFV2-0000c, TFV2-0070a, TFV2-0070b, TFV2-0071a.
 - **WHY:** PRD F-05; APP-FLOW §5 item 1; `docs/design/v3/screens/web/today.html`; CONVENTIONS §9 (web screen kind), §14 (only `page.tsx` calls Convex; `?state=` renders fixtures; offline via `useOnline`; the day key and day bounds come from `userPreferences.timeZone` through `api.preferences.get`). The old ticket's OPEN reason (no `tasks.nextUp` / `tasks.skipNextUp` / `energy.log`) is resolved by code that exists: Next up is picked client-side by `pickNextUp` inside `NextUpCard` (TFV2-0051), "Not now" is local state there, and energy is stored on `dayPlans.energy` through `dayPlans.upsert`. CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `/today` renders `TodayView` with live data (tasks due today, today's day plan, today's time blocks) and real tick / undo / add / energy writes, every state is forceable with `?state=`, and the signed-out dev-bypass render that existing CI specs assert stays unchanged.
 - **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/lib/e2e/fixtures/today.ts` · test: `tests/e2e/screens/today.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `/today` is already released by `isCoreTaskViewRoute` in `apps/web/proxy.ts` line 13.)
@@ -10275,7 +10275,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0000b · **Folds-in:** #450, #446
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b
+- **WHEN:** after TFV2-0000b.
 - **WHY:** PRD F-05 ("Today is the daily page"); `docs/design/v3/README.md` line 128 maps F-05 to both `web/today.html` and `web/daily-note.html`; CONVENTIONS §9 ("a ticket that only verifies existing code and adds missing tests lists the existing file plus its one test file"), §17. Decision from the code: `apps/web/app/(bare)/daily-note/page.tsx` (B07, commit 45754e8b) deliberately redirects to `/today`, keeping the query string, because Today is the daily page (code comment and `apps/web/lib/ask-founder.test.ts` "goes to /today, where today's daily page is drawn"). `web/daily-note.html` repeats Today's sections (Intention, Energy, Top three, Time blocks) and adds Notes, End of day and backlinks; the v3 Today (TFV2-0124a/b) carries the shared sections, the day's note pages are read and written on Journal (TFV2-0130, wiring TFV2-0075a/b/c, which range 2 settled as `notes` daily pages and not OPEN), and backlinks wait on TFV2-0009 (OPEN). A second daily screen would duplicate TFV2-0124 and TFV2-0130, so this ticket is **not** a build of `web/daily-note.html`: it keeps the redirect (already unit-tested by `apps/web/lib/ask-founder.test.ts` `describe("/daily-note")`) and adds the missing e2e proof that it works through `proxy.ts` for a signed-out visitor. A focus-mode daily page is not built; the REPORT "notes for ticket sync" line raises it for Amit. CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `/daily-note` is proven by a spec to send the visitor to `/today` with every query parameter kept, signed out under the dev bypass, at both viewports in EN and HE.
 - **SCOPE:** `apps/web/app/(bare)/daily-note/page.tsx` (unchanged) · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/daily-note.spec.ts`.
@@ -10305,7 +10305,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b
+- **WHEN:** after TFV2-0023b, TFV2-0000b.
 - **WHY:** PRD F-09 (brain dump → ordered plan → accept line by line); APP-FLOW §5 item 6; `docs/design/v3/screens/web/brain-dump.html` (`?view=review` proposal); CONVENTIONS §9, §10 Case A, §11–§13. Split out of the Brain dump View because the review list (groups, per-line Accept/Reject, Add accepted, Save as a page) is a second major sub-surface; together with the compose form it would pass the ≈ 350-line unit size. Markup and copy come from today's `apps/web/components/brain-dump/BrainDumpScreen.tsx` lines 362–461, made props-only. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `apps/web/components/brain-dump/BrainDumpReview.tsx` renders a sorted brain-dump plan grouped Now / Soon / Later with per-line Accept / Reject and the Add accepted / Save as a page actions, from props alone.
 - **SCOPE:** `apps/web/components/brain-dump/BrainDumpReview.tsx` · `apps/web/app/e2e/components/brain-dump-review/page.tsx` · test: `tests/e2e/screens/brain-dump-review.spec.ts`.
@@ -10385,7 +10385,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0126c, TFV2-0114, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0126c, TFV2-0114, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0126c, TFV2-0114, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** PRD F-09; APP-FLOW §5 item 6 and §3 ("brain dump → proposal → Add N to Today"); `docs/design/v3/screens/web/brain-dump.html` (states default/empty/loading/error/offline + review); CONVENTIONS §9, §10 Case A, §11–§13; HARD_RULES accept-reject flow (nothing is written before the person accepts). Today's `BrainDumpScreen.tsx` mixes Convex calls (`useAction`, `useMutation`, `useConvex`) with markup; this View is the props-only half the route (TFV2-0126b) feeds. Copy reuses the existing `bd.*` strings so storage-state specs keep their selectors. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `apps/web/components/brain-dump/BrainDumpView.tsx` renders the Brain dump page (compose box, notices, sorting, review via BrainDumpReview, error, crisis card, offline) from props alone in EN and HE.
 - **SCOPE:** `apps/web/components/brain-dump/BrainDumpView.tsx` · `apps/web/app/e2e/components/brain-dump-view/page.tsx` · test: `tests/e2e/screens/brain-dump-view.spec.ts`.
@@ -10488,7 +10488,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0126a, TFV2-0000b, TFV2-0000c, TFV2-0017a, TFV2-0017b, TFV2-0074a, TFV2-0074b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0126a, TFV2-0000b, TFV2-0000c, TFV2-0017a, TFV2-0017b, TFV2-0074a, TFV2-0074b
+- **WHEN:** after TFV2-0126a, TFV2-0000b, TFV2-0000c, TFV2-0017a, TFV2-0017b, TFV2-0074a, TFV2-0074b.
 - **WHY:** PRD F-09; APP-FLOW §3 ("brain dump → proposal → Add N to Today") and §5 item 6; `docs/design/v3/screens/web/brain-dump.html`; CONVENTIONS §9 (web screen kind), §14; HARD_RULES accept-reject flow and RAM-only rule (the dump is never stored server-side; only accepted lines become tasks). Today's `BrainDumpScreen.tsx` holds the logic this route moves into `page.tsx` around `BrainDumpView`, reusing the existing pure helpers in `apps/web/lib/brain-dump-today.ts`, `brain-dump-session.ts`, `brain-dump-page.ts` and `components/brain-dump/brainDumpState.ts`. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`). TFV2-0074a/b are not OPEN: the plan is a preview and nothing is written before Add accepted (APP-FLOW §5 item 6), so Q-06 does not reach this screen.
 - **GOAL:** `/brain-dump` renders `BrainDumpView` with the real crisis check, sort, accept/reject, Add accepted (Now lines onto Today), Save as a page with 5-minute Undo and the per-tab kept session, and every state is forceable with `?state=`.
 - **SCOPE:** `apps/web/app/(tempo)/brain-dump/page.tsx` · `apps/web/lib/e2e/fixtures/brain-dump.ts` · test: `tests/e2e/screens/brain-dump.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/brain-dump"` is already in `E2E_WIRING_ROUTES`, line 12.)
@@ -10561,7 +10561,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0102, TFV2-0104, TFV2-0105, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0102, TFV2-0104, TFV2-0105, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0102, TFV2-0104, TFV2-0105, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** PRD F-07; APP-FLOW §5 item 2; `docs/design/v3/screens/web/plan.html` (page header with Previous / Today / Next, Day / Week / Month segmented control, legend, day timeline, week columns, month grid; states default/empty/loading/error/offline); CONVENTIONS §9, §10 Case A, §11–§14 (week start is a prop, never hard-coded). Today's `/plan` (`PlanScreen.tsx`) shows only the wired day timeline; this View is the props-only three-view page the route (TFV2-0127b) feeds. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`; date formatting). CONVENTIONS §13 (harness: `"use client"`; imports only the component under test, its types and React; every state in `<section data-testid="plan-view-<state>">` in SPEC order; callbacks write into the one `<output data-testid="plan-view-log">` in the format the TESTS assert).
 - **GOAL:** `apps/web/components/plan/PlanView.tsx` renders Plan in day, week and month modes with every state, from props alone, in EN and HE.
 - **SCOPE:** `apps/web/components/plan/PlanView.tsx` · `apps/web/app/e2e/components/plan-view/page.tsx` · test: `tests/e2e/screens/plan-view.spec.ts`.
@@ -10661,7 +10661,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0127a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066c, TFV2-0071a, TFV2-0071b, TFV2-0071c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0127a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066c, TFV2-0071a, TFV2-0071b, TFV2-0071c
+- **WHEN:** after TFV2-0127a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066c, TFV2-0071a, TFV2-0071b, TFV2-0071c.
 - **WHY:** PRD F-07; APP-FLOW §5 item 2; `docs/design/v3/screens/web/plan.html` (`?view=day|week|month`, same data in all three); CONVENTIONS §9 (web screen kind), §14 (week start and time zone from `api.preferences.get`, `?state=` fixtures, `useOnline`). The design's `plan.getDay/getWeek/getMonth` do not exist; the same data comes from existing functions: `timeBlocks.listForDate`, `calendar_events.listInRange`, `tasks.listDueInRange`. The old OPEN (week start, conflict #10) is answered by code: `userPreferences.weekStartsOn` (0 | 1 | 6, default 1) through `preferences.get`. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`).
 - **GOAL:** `/plan` renders `PlanView` with live day / week / month data, the view kept in `?view=`, time blocks editable through the existing `TimeBlockDialog`, every state forceable with `?state=`, and the signed-out dev-bypass render that CI specs assert unchanged.
 - **SCOPE:** `apps/web/app/(tempo)/plan/page.tsx` · `apps/web/lib/e2e/fixtures/plan.ts` · test: `tests/e2e/screens/plan.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/plan"` is already in `E2E_WIRING_ROUTES`, line 8.)
@@ -10741,7 +10741,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0101 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0101
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0101.
 - **WHY:** PRD F-05 (task blocks); `docs/design/v3/screens/web/tasks.html` @flow 1, 5, 6, 7 (groups Today / This week / Checklists / Later, "2 of 5 done", edit opens the task sheet, Later loads 20 at a time); CONVENTIONS §10 (compose existing tempo.css classes, no stylesheet), §11, §12, §13. Split out of TFV2-0128 because the Tasks View with its four groups, rows, checklists and load-more is more than one major sub-surface (> 350 lines). CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `TaskGroups` renders the Tasks list's sections (Today, This week, Checklists, Later) with task rows, checklist steps and the Later "Show more" control, all from props, proven in every state by its own harness spec.
 - **SCOPE:** `apps/web/components/tasks/TaskGroups.tsx` · `apps/web/app/e2e/components/task-groups/page.tsx` · test: `tests/e2e/screens/task-groups.spec.ts`.
@@ -10830,7 +10830,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0099, TFV2-0100, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0128c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0099, TFV2-0100, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0128c
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0099, TFV2-0100, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0128c.
 - **WHY:** PRD F-05; `docs/design/v3/screens/web/tasks.html` (@flow 1–7, @states default | empty | loading | error | offline + filtered-to-nothing); CONVENTIONS §9 "Web component", §10 Case A (compose tempo.css classes and the components in Depends, no stylesheet), §11, §12, §13, §14 (props only; the route wires data). CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `TasksView` renders the whole Tasks list screen (page head, offline notice, Quick add, toolbar with search / energy / priority / sort, the "Showing N tasks" line, the grouped list, the filtered-to-nothing note, the empty / loading / error states and the undo toast) purely from props, proven in every state by its own harness spec.
 - **SCOPE:** `apps/web/components/tasks/TasksView.tsx` · `apps/web/app/e2e/components/tasks-view/page.tsx` · test: `tests/e2e/screens/tasks-view.spec.ts`.
@@ -10948,7 +10948,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — new: The CI specs tests/e2e/task-views-core.spec.ts, tests/e2e/calendar-views.spec.ts and tests/e2e/fix/calendar-add.spec.ts run signed out under the dev bypass and assert the current local-store screens on /today, /tasks and /calendar (inline add forms, the Inbox heading, the inline row editor, Day/Week/Month buttons, test ids day-events/week-events/month-events), which the v3 designs drop: should each v3 route keep the current screen for the signed-out dev bypass so those specs pass unchanged, or should a separate test ticket retire or rewrite those specs first?; new: The storage-state specs tests/e2e/screens/tasks-edit.spec.ts, tests/e2e/acceptance/alpha.spec.ts:119-142 and the signed-in case of tests/e2e/fix/calendar-add.spec.ts (skipped in CI) assert signed-in controls that the v3 Tasks and Calendar designs drop (the Inbox heading, the Task title field, the inline row editor, two-step row delete, the always-visible Event title form): should a separate test ticket rewrite those specs to the v3 designs before these routes land, or should a new ticket add those controls to the v3 Views first?
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0128a, TFV2-0000b, TFV2-0000c, TFV2-0065a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0128a, TFV2-0000b, TFV2-0000c, TFV2-0065a
+- **WHEN:** after TFV2-0128a, TFV2-0000b, TFV2-0000c, TFV2-0065a.
 - **WHY:** PRD F-05; `docs/design/v3/screens/web/tasks.html` (@data, @actions, @flow); CONVENTIONS §9 "Web screen", §14 (the page is the only Convex caller; forced `?state=` renders fixtures; week start and time zone from `api.preferences.get`), §15, §17. CONVENTIONS §22 pattern: the unforced data component sits inside `ProfileReady` (`apps/web/components/today/ProfileReady.tsx`). CONVENTIONS §22 (`useOnline` from `apps/web/lib/useOnline.ts`).
 - **GOAL:** `/tasks` renders `TasksView` from live Convex data (tasks grouped by the person's own time zone and week start, Quick add, tick, step tick, filters, sort, load-more, undo), renders `FIXTURES[state]` for a forced `?state=`, and keeps today's signed-out E2E branch so existing CI specs stay green.
 - **SCOPE:** `apps/web/app/(tempo)/tasks/page.tsx` · `apps/web/lib/e2e/fixtures/tasks.ts` · test: `tests/e2e/screens/tasks.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `/tasks` is already released by `isCoreTaskViewRoute` in `apps/web/proxy.ts` lines 12–20.)
@@ -11008,7 +11008,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116, TFV2-0118, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116, TFV2-0118, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0098, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116, TFV2-0118, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** `docs/design/v3/screens/web/task-sheet.html` (@flow 1–6: edit title, day, time, length, Fixed/Flexible, energy, nag phrase, notes; Save / Cancel / Delete; focus stays inside and returns to the opener); PRD F-05, F-60 (nag in the person's own words); CONVENTIONS §10 (compose the existing `@component MobileSheet` classes and the components in Depends, no stylesheet), §11–§13. The task sheet is a component, not a route: no `TaskSheet*` file exists in `apps/web/components/tasks/` today (checked: `TaskKanbanBoard.tsx`, `TaskRowEditor.tsx`, `TaskViewsScreen.tsx` only). It is opened by TFV2-0129b on `/tasks?task=<id>`. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `TaskSheetView` renders the edit-task sheet (bottom sheet under 768 px, centred panel from 768 px per tempo.css) with every field, the optional nag section, Save / Cancel / Delete, focus trap and Esc-to-close, and the loading / error / offline / new-task states, purely from props, proven by its own harness spec.
 - **SCOPE:** `apps/web/components/tasks/TaskSheetView.tsx` · `apps/web/app/e2e/components/task-sheet-view/page.tsx` · test: `tests/e2e/screens/task-sheet-view.spec.ts`.
@@ -11118,7 +11118,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — inherits TFV2-0128b (new: The CI specs tests/e2e/task-views-core.spec.ts, tests/e2e/calendar-views.spec.ts and tests/e2e/fix/calendar-add.spec.ts run signed out under the dev bypass and assert the current local-store screens on /today, /tasks and /calendar (inline add forms, the Inbox heading, the inline row editor, Day/Week/Month buttons, test ids day-events/week-events/month-events), which the v3 designs drop: should each v3 route keep the current screen for the signed-out dev bypass so those specs pass unchanged, or should a separate test ticket retire or rewrite those specs first?; new: The storage-state specs tests/e2e/screens/tasks-edit.spec.ts, tests/e2e/acceptance/alpha.spec.ts:119-142 and the signed-in case of tests/e2e/fix/calendar-add.spec.ts (skipped in CI) assert signed-in controls that the v3 Tasks and Calendar designs drop (the Inbox heading, the Task title field, the inline row editor, two-step row delete, the always-visible Event title form): should a separate test ticket rewrite those specs to the v3 designs before these routes land, or should a new ticket add those controls to the v3 Views first?)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0129a, TFV2-0128b, TFV2-0000b, TFV2-0000c, TFV2-0065a, TFV2-0065b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0129a, TFV2-0128b, TFV2-0000b, TFV2-0000c, TFV2-0065a, TFV2-0065b
+- **WHEN:** after TFV2-0129a, TFV2-0128b, TFV2-0000b, TFV2-0000c, TFV2-0065a, TFV2-0065b.
 - **WHY:** `task-sheet.html` @route ("opened from Today, Tasks, Plan; `?task=<id>`"), @actions (save → `tasks.update`, delete → `tasks.remove` with Undo 5 min → `tasks.restore`); CONVENTIONS §9 "Web screen" (the sheet has no route of its own, so its wiring lives in the route that opens it), §14. This ticket wires the sheet into `/tasks` only; Today and Plan wiring belong to their own screen tickets. CONVENTIONS §22 (spec skeleton).
 - **GOAL:** On `/tasks`, `?task=<id>` opens `TaskSheetView` for that task (and `?task=new` for a new one) with live data, Save / Delete / Undo / Close wired to existing `tasks` mutations, and forced `?state=` renders the sheet fixtures.
 - **SCOPE:** `apps/web/app/(tempo)/tasks/page.tsx` · `apps/web/lib/e2e/fixtures/task-sheet.ts` · test: `tests/e2e/screens/task-sheet.spec.ts`. (`e2eWiringRoutes.ts` not needed: `/tasks` is in `isCoreTaskViewRoute`.)
@@ -11169,7 +11169,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #446
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** v3 OVERNIGHT-RUN.md decision 6 as implemented on `integration` ("the Journal is the run of daily pages": `apps/web/app/(tempo)/journal/page.tsx` comment, `apps/web/components/journal/JournalScreen.tsx`, `apps/web/lib/journal.ts`, `convex/notes.ts` `listPeriodPages`); `docs/design/v3/screens/web/journal.html` (prompt surface, "Another prompt", newest-first list, empty / loading / error / offline states and their copy); CONVENTIONS §10 Case A, §11–§13. The design's separate entry form, search, month filter and read-aloud need a `journal.*` backend that does not exist (`convex/journal.ts` is absent and TFV2-0075's storage question is open), so this View keeps today's decision-6 behaviour: writing happens in today's daily page. CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `JournalView` renders the Journal screen (page head, offline notice, today's optional prompt with "Write in today's page" and "Another prompt", the list of past daily pages newest first with "Show more", and the empty / loading / error states) purely from props, proven by its own harness spec.
 - **SCOPE:** `apps/web/components/journal/JournalView.tsx` · `apps/web/app/e2e/components/journal-view/page.tsx` · test: `tests/e2e/screens/journal-view.spec.ts`.
@@ -11252,7 +11252,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0130a, TFV2-0000b, TFV2-0000c · **Folds-in:** #446
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0130a, TFV2-0000b, TFV2-0000c
+- **WHEN:** after TFV2-0130a, TFV2-0000b, TFV2-0000c.
 - **WHY:** decision 6 (Journal = run of daily pages) on `integration`; `journal.html` states; CONVENTIONS §9 "Web screen", §14 (time zone from `api.preferences.get`), §15, §17. All data comes from functions that already exist (`notes.listPeriodPages`, `preferences.get`, `users.getProfile` inside `ProfileReady`), so no backend ticket is needed. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`).
 - **GOAL:** `/journal` renders `JournalView` from live data (today in the person's time zone, a rotating prompt, past daily pages 10 at a time), renders `FIXTURES[state]` for a forced `?state=`, and is registered for the signed-out E2E bypass.
 - **SCOPE:** `apps/web/app/(tempo)/journal/page.tsx` · `apps/web/lib/e2e/fixtures/journal.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/journal.spec.ts`.
@@ -11298,7 +11298,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — new: calendarEvents (convex/schema.ts, plus endsAtMs from CFG-005) has no field for "Fixed / Flexible" or "Where" and no CFG ticket adds one: should the Add event sheet drop those two fields (every event then shows as Fixed and has no place), or should a config-lane ticket add calendarEvents.kind and calendarEvents.place first?
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0113, TFV2-0118, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0113, TFV2-0118, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0113, TFV2-0118, TFV2-0123.
 - **WHY:** `docs/design/v3/screens/web/calendar.html` (@flow 6: "Add event opens a sheet: title, day, start, end, Fixed or Flexible, optional place. End must be after start, said plainly next to the field"; the `#add-event` MobileSheet); PRD F-07; CONVENTIONS §10 (existing `@component MobileSheet` classes), §11–§13. Split out of TFV2-0131 because the calendar View plus its add form is more than one major sub-surface. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `AddEventSheet` renders the Add event sheet (name, day, start, end, how firm, where) with its two field errors, Save / Cancel / Close, focus trap and Esc, purely from props, proven by its own harness spec.
 - **SCOPE:** `apps/web/components/calendar/AddEventSheet.tsx` · `apps/web/app/e2e/components/add-event-sheet/page.tsx` · test: `tests/e2e/screens/add-event-sheet.spec.ts`.
@@ -11374,7 +11374,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — inherits TFV2-0131c (new: calendarEvents (convex/schema.ts, plus endsAtMs from CFG-005) has no field for "Fixed / Flexible" or "Where" and no CFG ticket adds one: should the Add event sheet drop those two fields (every event then shows as Fixed and has no place), or should a config-lane ticket add calendarEvents.kind and calendarEvents.place first?)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0048, TFV2-0102, TFV2-0103, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0131c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0048, TFV2-0102, TFV2-0103, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0131c
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0048, TFV2-0102, TFV2-0103, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0131c.
 - **WHY:** PRD F-07; APP-FLOW §5 item 7; `docs/design/v3/screens/web/calendar.html` (@flow 1–7: month grid with dots, counts and a legend; the chosen day's agenda with start AND end times and Fixed / Flexible; kind empty-day copy; Add event sheet; Undo toast; @states default | empty | loading | error | offline + empty day + form error); CONVENTIONS §10, §11–§14 (week start comes in as a prop). CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`; date formatting). CONVENTIONS §13 (harness: `"use client"`; imports only the component under test, its types and React; every state in `<section data-testid="calendar-view-<state>">` in SPEC order; callbacks write into the one `<output data-testid="calendar-view-log">` in the format the TESTS assert).
 - **GOAL:** `CalendarView` renders the Calendar screen (head with Add event, offline notice, month grid with legend, the selected day's agenda or its empty-day note, the whole-month empty state, loading / error states, the Add event sheet when open, and the undo toast) purely from props, proven by its own harness spec.
 - **SCOPE:** `apps/web/components/calendar/CalendarView.tsx` · `apps/web/app/e2e/components/calendar-view/page.tsx` · test: `tests/e2e/screens/calendar-view.spec.ts`.
@@ -11474,7 +11474,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** open — inherits TFV2-0131a (new: calendarEvents (convex/schema.ts, plus endsAtMs from CFG-005) has no field for "Fixed / Flexible" or "Where" and no CFG ticket adds one: should the Add event sheet drop those two fields (every event then shows as Fixed and has no place), or should a config-lane ticket add calendarEvents.kind and calendarEvents.place first?); new: The CI specs tests/e2e/task-views-core.spec.ts, tests/e2e/calendar-views.spec.ts and tests/e2e/fix/calendar-add.spec.ts run signed out under the dev bypass and assert the current local-store screens on /today, /tasks and /calendar (inline add forms, the Inbox heading, the inline row editor, Day/Week/Month buttons, test ids day-events/week-events/month-events), which the v3 designs drop: should each v3 route keep the current screen for the signed-out dev bypass so those specs pass unchanged, or should a separate test ticket retire or rewrite those specs first?; new: The storage-state specs tests/e2e/screens/tasks-edit.spec.ts, tests/e2e/acceptance/alpha.spec.ts:119-142 and the signed-in case of tests/e2e/fix/calendar-add.spec.ts (skipped in CI) assert signed-in controls that the v3 Tasks and Calendar designs drop (the Inbox heading, the Task title field, the inline row editor, two-step row delete, the always-visible Event title form): should a separate test ticket rewrite those specs to the v3 designs before these routes land, or should a new ticket add those controls to the v3 Views first?
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0131a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066b, TFV2-0066c, TFV2-0066d · **Folds-in:** #1341
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0131a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066b, TFV2-0066c, TFV2-0066d
+- **WHEN:** after TFV2-0131a, TFV2-0000b, TFV2-0000c, CFG-005, TFV2-0066b, TFV2-0066c, TFV2-0066d.
 - **WHY:** PRD F-07; `calendar.html` (@data, @actions, @flow); CFG-005 (`calendarEvents.endsAtMs`) + TFV2-0066b/c/d (create with end time, bounded month list, soft delete for Undo); CONVENTIONS §9 "Web screen", §14 (week start and time zone from `api.preferences.get`, never hard-coded), §15, §17. Today's `page.tsx` picks a browser-storage event source when `TEMPO_E2E_PUBLIC_CALENDAR === "1"` (a server-only variable); a client page cannot read it, so the signed-out E2E branch below uses the client-visible bypass flag instead (same effect under the Playwright webServer, which sets both). CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`).
 - **GOAL:** `/calendar` renders `CalendarView` from live data (the person's month in their own time zone and week start, the chosen day's events with end times, Add event with Undo), renders `FIXTURES[state]` for a forced `?state=`, keeps today's signed-out local-store screen for the E2E bypass, and is registered in `E2E_WIRING_ROUTES`.
 - **SCOPE:** `apps/web/app/(tempo)/calendar/page.tsx` · `apps/web/lib/e2e/fixtures/calendar.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/calendar.spec.ts`.
@@ -11526,7 +11526,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** PRD F-10 (habits without streaks); design `docs/design/v3/screens/web/habits.html` (@flow 1–4, 6); CONVENTIONS §9 (Web component), §10 Case A, §11, §12, §13; the route (TFV2-0132b) needs a props-only view so it is the only Convex caller (§14). CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`; date formatting).
 - **GOAL:** `HabitsView` renders the Habits screen (header, today's habit cards with their last 7 local days and Log today, quick add, New habit sheet, Undo toasts, and the loading/empty/error/offline/save-error states) from props alone.
 - **SCOPE:** `apps/web/components/habits/HabitsView.tsx` · `apps/web/app/e2e/components/habits-view/page.tsx` · test: `tests/e2e/screens/habits-view.spec.ts`.
@@ -11624,7 +11624,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0132a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0132a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b
+- **WHEN:** after TFV2-0132a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b.
 - **WHY:** PRD F-10; design `docs/design/v3/screens/web/habits.html`; CONVENTIONS §9 (Web screen), §14 (page is the only Convex caller, `?state=` fixtures, `useOnline`, time zone from `api.preferences.get`). CONVENTIONS §22 (spec skeleton).
 - **GOAL:** `/habits` reads habits, the last 7 local days of check-ins and preferences in `page.tsx`, renders `HabitsView`, and renders a typed fixture for every forced `?state=`.
 - **SCOPE:** `apps/web/app/(tempo)/habits/page.tsx` · `apps/web/lib/e2e/fixtures/habits.ts` · test: `tests/e2e/screens/habits.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/habits"` is already at line 9.)
@@ -11718,7 +11718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** PRD F-10; APP-FLOW §5 item 4 (6-week grid); design `docs/design/v3/screens/web/habit-detail.html` (@flow 1–4); CONVENTIONS §9, §10 Case A, §11–§14 (week start is a prop, never hard-coded). CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`). CONVENTIONS §13 (harness: `"use client"`; imports only the component under test, its types and React; every state in `<section data-testid="habit-detail-view-<state>">` in SPEC order; callbacks write into the one `<output data-testid="habit-detail-view-log">` in the format the TESTS assert).
 - **GOAL:** `HabitDetailView` renders one habit (name, rhythm, Log today, a 6-week grid whose weeks start on `weekStartsOn`, one plain summary sentence, Edit) and its loading/empty/error/not-found/offline/save-error states from props alone.
 - **SCOPE:** `apps/web/components/habit-detail/HabitDetailView.tsx` · `apps/web/app/e2e/components/habit-detail-view/page.tsx` · test: `tests/e2e/screens/habit-detail-view.spec.ts`.
@@ -11808,7 +11808,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0133a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0133a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b
+- **WHEN:** after TFV2-0133a, TFV2-0000b, TFV2-0000c, TFV2-0067a, TFV2-0067b.
 - **WHY:** APP-FLOW §5 item 4; design `docs/design/v3/screens/web/habit-detail.html`; CONVENTIONS §14 (page is the only Convex caller; `weekStartsOn` and `timeZone` from `api.preferences.get`, Q-10 blocks only tickets that change the default). CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`).
 - **GOAL:** `/habits/[id]` reads the habit, its check-ins for the 6 visible weeks and the person's preferences in `page.tsx`, builds the grid with the person's week start, renders `HabitDetailView`, and renders a typed fixture for every forced `?state=`.
 - **SCOPE:** `apps/web/app/(tempo)/habits/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/habit-detail.ts` · test: `tests/e2e/screens/habit-detail.spec.ts`. (`apps/web/lib/e2eWiringRoutes.ts` is not in SCOPE: `"/habits/(.*)"` is already at line 10.)
@@ -11867,7 +11867,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** #447 (routines); design `docs/design/v3/screens/web/routines.html` (@flow 1–3, 6); CONVENTIONS §9, §10 Case A, §11–§13. Today a routine is a page tagged `#routine` whose list items are its steps (`apps/web/lib/routines.ts`); the View shows what the route derives from those pages. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `RoutinesView` renders routine cards (name, step count, about-minutes, usual time, first three steps, "Fits right now" with the one primary Start, "Add steps" for a routine with no steps), the New routine action, the how-it-works line and the loading/empty/error/offline/save-error/creating states from props alone.
 - **SCOPE:** `apps/web/components/routines/RoutinesView.tsx` · `apps/web/app/e2e/components/routines-view/page.tsx` · test: `tests/e2e/screens/routines-view.spec.ts`.
@@ -11947,7 +11947,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0134a, TFV2-0000b, TFV2-0000c · **Folds-in:** #447
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0134a, TFV2-0000b, TFV2-0000c
+- **WHEN:** after TFV2-0134a, TFV2-0000b, TFV2-0000c.
 - **WHY:** design `docs/design/v3/screens/web/routines.html`; CONVENTIONS §14 and §17 (route registered in `E2E_WIRING_ROUTES` as its own step). Routines stay `#routine` pages (`notes.listRoutines`) until Amit answers Q-07 for CFG-029/TFV2-0076; this ticket wires the functions that exist. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`).
 - **GOAL:** `/routines` reads the person's `#routine` pages and preferences in `page.tsx`, parses them into cards, marks the one that fits the person's local time, creates a new routine page on request, renders `RoutinesView`, renders a typed fixture for every forced `?state=`, and opens signed out under the E2E bypass.
 - **SCOPE:** `apps/web/app/(tempo)/routines/page.tsx` · `apps/web/lib/e2e/fixtures/routines.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/routines.spec.ts`.
@@ -11993,7 +11993,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0097, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** design `docs/design/v3/screens/web/routine-detail.html` (@flow 1–7); CONVENTIONS §9, §10 Case A, §11–§13. The guided run (one step at a time, Skip without guilt, Pause keeps the place, Back a step, calm finish) must render from props so the route alone owns the routine page and the run's place. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `RoutineDetailView` renders a routine's guided run (current step, progress, dots, Done/Skip/Pause/Back, the all-steps list, edit link) and its paused, finished, empty, loading, error, not-found and offline states from props alone.
 - **SCOPE:** `apps/web/components/routines/RoutineDetailView.tsx` · `apps/web/app/e2e/components/routine-detail-view/page.tsx` · test: `tests/e2e/screens/routine-detail-view.spec.ts`.
@@ -12091,7 +12091,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0135a, TFV2-0000b, TFV2-0000c, TFV2-0134b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0135a, TFV2-0000b, TFV2-0000c, TFV2-0134b
+- **WHEN:** after TFV2-0135a, TFV2-0000b, TFV2-0000c, TFV2-0134b.
 - **WHY:** design `docs/design/v3/screens/web/routine-detail.html`; CONVENTIONS §14, §17. The run's place is kept in this tab's `sessionStorage` by the existing helpers in `RoutineGuide.tsx` (no runs table until Q-07 / CFG-030); this ticket keeps that behaviour while moving the data call into `page.tsx`. Depends on TFV2-0134b so the two wiring lines land in order (`"/routines"` before `"/routines/(.*)"`). CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`).
 - **GOAL:** `/routines/[id]` reads the routine page in `page.tsx`, keeps the guided run in page state (resuming a saved place for this tab), renders `RoutineDetailView`, renders a typed fixture for every forced `?state=`, and opens signed out under the E2E bypass.
 - **SCOPE:** `apps/web/app/(tempo)/routines/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/routine-detail.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/routine-detail.spec.ts`.
@@ -12137,7 +12137,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first
+- **WHEN:** first.
 - **WHY:** CONVENTIONS §3 and §14 (a screen spec registers its route in `E2E_WIRING_ROUTES`); `tests/e2e/wiring/harness.spec.ts` lines 14–17 use `/goals` as the example of a route outside the wiring list, so TFV2-0136b (which registers `/goals`) would turn it red. Moving the example to a route no ticket registers keeps the check just as strong (lead decision, range 3).
 - **GOAL:** The wiring harness spec proves "a route outside the wiring list still redirects" with `/admin` instead of `/goals`, with the unchanged assertion.
 - **SCOPE:** test: `tests/e2e/wiring/harness.spec.ts` (only file).
@@ -12166,7 +12166,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #457
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0091, TFV2-0092, TFV2-0093, TFV2-0098, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** #457 (goals); design `docs/design/v3/screens/web/goals.html` (@flow 1, 4–6); CONVENTIONS §9, §10 Case A, §11–§13. Goals are not linked to projects in the schema (CFG-006/CFG-007 are OPEN), so the cards show title, status and "why" only — no linked projects or task counts. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `GoalsView` renders goal cards with a status word, the All/Active/Resting/Done filter with a live count, a New goal name form with Undo toast, the See progress link, and the loading/empty/filtered-empty/error/offline/save-error/creating states from props alone.
 - **SCOPE:** `apps/web/components/goals/GoalsView.tsx` · `apps/web/app/e2e/components/goals-view/page.tsx` · test: `tests/e2e/screens/goals-view.spec.ts`.
@@ -12263,7 +12263,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0136a, TFV2-0000b, TFV2-0000c, TFV2-0136c, TFV2-0069a, TFV2-0069e, TFV2-0069g · **Folds-in:** #457
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0136a, TFV2-0000b, TFV2-0000c, TFV2-0136c, TFV2-0069a, TFV2-0069e, TFV2-0069g
+- **WHEN:** after TFV2-0136a, TFV2-0000b, TFV2-0000c, TFV2-0136c, TFV2-0069a, TFV2-0069e, TFV2-0069g.
 - **WHY:** #457; design `docs/design/v3/screens/web/goals.html`; CONVENTIONS §14, §17. `projects.listByGoals` exists nowhere and CFG-007 is OPEN, so this route wires only the goal functions (range 2: `goals.list` TFV2-0069a, `goals.create` TFV2-0069e, `goals.remove` TFV2-0069g). TFV2-0136c first moves the wiring harness spec's unregistered example off `/goals`. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`).
 - **GOAL:** `/goals` reads the person's goals in `page.tsx`, filters them by `?status=`, creates a goal with a 5-minute Undo, renders `GoalsView`, renders a typed fixture for every forced `?state=`, and opens signed out under the E2E bypass.
 - **SCOPE:** `apps/web/app/(tempo)/goals/page.tsx` · `apps/web/lib/e2e/fixtures/goals.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/goals.spec.ts`.
@@ -12311,7 +12311,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0093, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0093, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123
+- **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0092, TFV2-0093, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123.
 - **WHY:** design `docs/design/v3/screens/web/goal-detail.html` (@flow 1, 6); CONVENTIONS §9, §10 Case A, §11–§13. "Next small step", "Linked projects" and linked tasks need a task→goal link (CFG-006, OPEN) and a projects table (CFG-007, OPEN); this View covers what the data supports today: the goal in the person's words, its status and why it matters (all editable), and the honest "no steps yet" note. CONVENTIONS §22 (spec skeleton; `TpIcon` from `@/components/tempo/TpIcon`).
 - **GOAL:** `GoalDetailView` renders one goal (editable title, status word + status select, autosaving "Why this matters", the no-steps note) and its loading/error/not-found/offline/save-error states from props alone.
 - **SCOPE:** `apps/web/components/goals/GoalDetailView.tsx` · `apps/web/app/e2e/components/goal-detail-view/page.tsx` · test: `tests/e2e/screens/goal-detail-view.spec.ts`.
@@ -12386,7 +12386,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STATUS:** approved-unsent
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0137a, TFV2-0000b, TFV2-0000c, TFV2-0136b, TFV2-0069a, TFV2-0069f · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0137a, TFV2-0000b, TFV2-0000c, TFV2-0136b, TFV2-0069a, TFV2-0069f
+- **WHEN:** after TFV2-0137a, TFV2-0000b, TFV2-0000c, TFV2-0136b, TFV2-0069a, TFV2-0069f.
 - **WHY:** design `docs/design/v3/screens/web/goal-detail.html`; CONVENTIONS §14, §17. The goal is found in `goals.list` (TFV2-0069a), not read with `goals.get` (TFV2-0069d), because a URL id that is not a goals id would fail `v.id("goals")` and throw instead of reading as not found; edits go through `goals.update` (TFV2-0069f). Depends on TFV2-0136b so `"/goals"` is registered before `"/goals/(.*)"`. CONVENTIONS §22 (spec skeleton; `useOnline` from `apps/web/lib/useOnline.ts`; `ProfileReady` from `apps/web/components/today/ProfileReady.tsx`).
 - **GOAL:** `/goals/[id]` finds the goal in `page.tsx`, saves title / why / status edits, renders `GoalDetailView`, renders a typed fixture for every forced `?state=`, and opens signed out under the E2E bypass (the added `"/goals/(.*)"` line also covers `/goals/progress`).
 - **SCOPE:** `apps/web/app/(tempo)/goals/[id]/page.tsx` · `apps/web/lib/e2e/fixtures/goal-detail.ts` · `apps/web/lib/e2eWiringRoutes.ts` · test: `tests/e2e/screens/goal-detail.spec.ts`.
@@ -29355,6 +29355,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0361a — BYOK: key encryption helper `convex/lib/byokCrypto.ts`
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-019 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-019.
@@ -29413,6 +29414,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0361b — BYOK: input validation `convex/lib/byokInput.ts`
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -29488,6 +29490,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362c — BYOK: `byok.checkKeySlot` (internal query: who is adding, and is there room)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-019, CFG-044, TFV2-0000a, TFV2-0361b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-019, CFG-044, TFV2-0000a, TFV2-0361b.
@@ -29548,6 +29551,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362d — BYOK: `byok.insertKey` (internal mutation: store one encrypted key)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362c.
@@ -29591,6 +29595,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362a — BYOK: `byok.setKey` (action: validate, encrypt, store)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0361b, TFV2-0362c, TFV2-0362d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0361a, TFV2-0361b, TFV2-0362c, TFV2-0362d.
@@ -29667,6 +29672,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362b — BYOK: `byok.listKeys` (query: the vault list, never the key)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362c.
@@ -29728,6 +29734,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362e — BYOK: `byok.deleteKey` (mutation: soft delete)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362c.
@@ -29776,6 +29783,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362f — BYOK: `byok.keyForUse` (internal query: ciphertext for a server-side call)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362e · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362e.
@@ -29820,6 +29828,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362g — BYOK: `byok.recordCheck` (internal mutation: store a health check)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362e · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362e.
@@ -29860,6 +29869,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0362h — BYOK: `byok.checkKey` (action: one health probe to the endpoint)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0362a, TFV2-0362f, TFV2-0362g · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0361a, TFV2-0362a, TFV2-0362f, TFV2-0362g.
@@ -29930,6 +29940,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0363a — BYOK: `callLLM` accepts a per-call route (`convex/lib/ai_router.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -29979,6 +29990,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0363b — BYOK: `byok.activeKeyForUse` (internal query: the key a person's model calls use) — OPEN
+- **STATUS:** open — new: Which model calls use a person's BYOK key (the coach only, or every text call: brain dump, nag phrases, memory extraction), which key is used when they keep several, and when the key fails does Tempo fall back to its own model (Tempo pays) or show an error? PRD F-102 also promises "local endpoints", which Convex's servers cannot reach: drop them, or route them from the person's device?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362f, TFV2-0362g · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0362f, TFV2-0362g.
@@ -30023,6 +30035,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Which model calls use a person's BYOK key (the coach only, or every text call: brain dump, nag phrases, memory extraction), which key is used when they keep several, and when the key fails does Tempo fall back to its own model (Tempo pays) or show an error? PRD F-102 also promises "local endpoints", which Convex's servers cannot reach: drop them, or route them from the person's device? — Amit.
 
 ### TFV2-0363c — BYOK: `resolveByokRoute` (`convex/lib/byokRoute.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0363b (new: Which model calls use a person's BYOK key (the coach only, or every text call: brain dump, nag phrases, memory extraction), which key is used when they keep several, and when the key fails does Tempo fall back to its own model (Tempo pays) or show an error? PRD F-102 also promises "local endpoints", which Convex's servers cannot reach: drop them, or route them from the person's device?)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361a, TFV2-0363a, TFV2-0363b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0361a, TFV2-0363a, TFV2-0363b.
@@ -30072,9 +30085,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given material whose ciphertext was made for `"users:2"` but `userId: "users:1"` / When resolved / Then `{ kind: "default" }`.
 - **NUMBERS:** 4 of 4 cases pass · the decrypted key leaves the function only inside the returned route (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0363b (new: which model calls use a BYOK key, which key, fallback to Tempo's model or an error, and local endpoints) — Amit.
+- **OPEN:** inherits TFV2-0363b (new: Which model calls use a person's BYOK key (the coach only, or every text call: brain dump, nag phrases, memory extraction), which key is used when they keep several, and when the key fails does Tempo fall back to its own model (Tempo pays) or show an error? PRD F-102 also promises "local endpoints", which Convex's servers cannot reach: drop them, or route them from the person's device?) — Amit.
 
 ### TFV2-0364a — Component: `ByokKeyVault` (key list + add form, props only)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023a, TFV2-0023b, TFV2-0361b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023a, TFV2-0023b, TFV2-0361b.
@@ -30189,6 +30203,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0364b — Screen: AI keys (`/settings/byok`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000c, TFV2-0361b, TFV2-0362a, TFV2-0362b, TFV2-0362e, TFV2-0362h, TFV2-0364a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000c, TFV2-0361b, TFV2-0362a, TFV2-0362b, TFV2-0362e, TFV2-0362h, TFV2-0364a.
@@ -30236,6 +30251,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0365 — Voice: `dailyMinutesFor` / `leaseMs` / `leaseExpired` and the limit values — verify + tests (`convex/lib/voicePolicy.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -30271,6 +30287,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0370 — Voice: `speechSentences` / `ttsLanguage` — verify + tests (`convex/lib/voicePolicy.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0365.
@@ -30287,6 +30304,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DO NOT:** edit `convex/lib/voicePolicy.ts` (the sentence grammar is A-10's); change or delete an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0370 / evidence: <DONE output> / changed: convex/lib/voicePolicy.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Unchanged functions: `speechSentences(reply: string): string[]` (drops fenced code, keeps inline-code and link words, drops images, strips heading/list/quote marks and `*_~` emphasis, splits after `. ! ? … 。 ！ ？` and at line breaks, skips pieces with no letter or digit, cuts a piece over `VOICE_LIMITS.maxSentenceChars` (300) at the last space in the window when that space is past a third of the window, else hard at 300); `ttsLanguage(lane: "en" | "he"): string` (returns the lane). No errors; no copy.
+  Contract of `speechSentences` for whitespace and list marks (code: the regex `/^\s{0,3}(#{1,6}\s+|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?)/gm` strips one mark at a line start; each line is split on `/\n+/`; each piece is `raw.replace(/\s+/g, " ").trim()`). Whitespace: every run of spaces or tabs inside a piece becomes one space, and leading/trailing whitespace is trimmed; one or more line breaks end a piece and blank lines add nothing. List marks: at a line start after at most 3 spaces, `- `, `* `, `+ ` (with an optional `[ ]`/`[x]`/`[X]` box and its space), `<digits>. `, `<digits>) `, `# `–`###### ` and `>` (optional space) are removed; a mark with no following whitespace, or indented 4 or more spaces, is kept as text. Expected outputs (checked against `origin/integration`): `speechSentences("A.  B")` → `["A.", "B"]`; `speechSentences("  Hello   there\tfriend.  ")` → `["Hello there friend."]`; `speechSentences("Line one\n\n\nLine two")` → `["Line one", "Line two"]`; `speechSentences("- Milk\n* Eggs\n+ Bread\n- [x] Done\n  - Nested")` → `["Milk", "Eggs", "Bread", "Done", "Nested"]`; `speechSentences("# Title\n## Sub")` → `["Title", "Sub"]`; `speechSentences("-Milk")` → `["-Milk"]`; `speechSentences("    - Deep")` → `["- Deep"]`; `speechSentences("1.Water")` → `["1.", "Water"]`. These outputs are the contract; TESTS 2–3 assert the cases below, and a builder who finds any line above differs stops with `blocked: PATH_DRIFT — speechSentences <input>`.
 - **TESTS:** (`describe("speechSentences and ttsLanguage, more cases")`)
   1. Given `ttsLanguage("en")` and `ttsLanguage("he")` / Then `"en"` and `"he"`.
   2. Given `"See ![chart](x.png) and run \`npm test\` now."` / When split / Then `["See and run npm test now."]`.
@@ -30298,6 +30316,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0391 — Voice: `localDateKey` / `utcDateKey` at midnight — verify + tests (`convex/lib/voicePolicy.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0370 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0370.
@@ -30323,6 +30342,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0366 — Voice: `voice.availability` — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -30373,6 +30393,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0367a — Voice: `voice.start` — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0366 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0366.
@@ -30410,6 +30431,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0367b — Voice: `voice.renew` (heartbeat) — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0367a.
@@ -30445,6 +30467,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0367c — Voice: `voice.stop` — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0367b.
@@ -30461,6 +30484,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DO NOT:** edit `convex/voice.ts`; change an existing test; touch `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0367c / evidence: <DONE output> / changed: convex/voice.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Function under test, unchanged: `export const stop = mutation({ args: { sessionId: v.id("voiceSessions") }, returns: v.null(), handler: async (ctx: MutationCtx, args: { sessionId: Id<"voiceSessions"> }): Promise<null> => { … } });` Errors (exact): `"Not authenticated"`; `ConvexError` `voice_session_ended` (missing, foreign or tombstoned lease). A live lease gets `status: "ended"`, `endReason: "stopped"`, `endedAt`, `durationMs`, `updatedAt`.
+  Test helpers and their origin (CONVENTIONS §16, §23): every case starts `const world = makeWorld();` — `makeWorld()` (existing, line 21 of `convex/voice.test.ts`, returns `{ db, as, actionAs, rows, row }`; `type World = ReturnType<typeof makeWorld>`, line 94); `run(fn, ctx, args)` (existing, line 93); `conversation(world: World, userId = A)` (existing, line 96); `startSession(world: World, conversationId, clientKey = "client_key_1", userId = A)` (existing, line 122; returns `{ sessionId, language, renewEveryMs, minutesLeft }`); `A = "users:a"` (existing, line 18); `signedOutCtx(world: World): MutationCtx` and `rejection(promise: Promise<unknown>): Promise<string>` (created by TFV2-0366 right after `type World`; `rejection` returns a `ConvexError`'s `data.code` or an `Error`'s `message`). "A lease of `A`" is `const { sessionId } = await startSession(world, await conversation(world));`; "`A` stops it" is `run(voice.stop, world.as(A), { sessionId })`; the row is read with `world.row(sessionId)`; the patch is `world.db.patch(sessionId, { deletedAt: Date.now() })`. STEP 1 greps `convex/voice.test.ts` for `function makeWorld`, `function signedOutCtx`, `async function rejection`, `async function startSession` (one line each).
 - **TESTS:** (`describe("stop: every branch")`)
   1. Given a lease of `A` / When `rejection(run(voice.stop, signedOutCtx(world), { sessionId }))` / Then `"Not authenticated"` and the lease stays `"active"`.
   2. Given a fresh lease of `A` / When `A` stops it / Then the result is `null` and the row has `status: "ended"`, `endReason: "stopped"`, a numeric `endedAt`, and `durationMs` ≥ 0 and < 60,000.
@@ -30470,6 +30494,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0368 — Voice: `voice.grant` (30-second Deepgram token) — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0367c.
@@ -30517,6 +30542,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0369 — Voice: `voice.speak` (one sentence read aloud) — verify + tests (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0368.
@@ -30556,6 +30582,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0392 — Voice: a spoken crisis turn gets the fixed card and is never read aloud — tests (`convex/voice.ts`, `convex/coach.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0015, TFV2-0369 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0015, TFV2-0369.
@@ -30580,6 +30607,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0390a — Voice prefs: `preferences.getVoicePrefs` (`convex/preferences.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-020, TFV2-0000a, TFV2-0265a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-020, TFV2-0000a, TFV2-0265a.
@@ -30629,6 +30657,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0390b — Voice prefs: `preferences.setVoicePrefs` (`convex/preferences.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0390a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0390a.
@@ -30684,6 +30713,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0390c — Voice: the call language follows `voiceLanguage` (`convex/voice.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-020, TFV2-0367a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-020, TFV2-0367a.
@@ -30717,6 +30747,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0395 — Voice: turn on the Hebrew lane (Nova-3) in `laneFor` — OPEN
+- **STATUS:** open — inherits TFV2-0230b (Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.)
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0230b, TFV2-0365, TFV2-0390c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0230b, TFV2-0365, TFV2-0390c.
@@ -30749,12 +30780,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `{ locale: "en", voiceLanguage: "he" }` / When `A` starts / Then `language` is `"he"`.
 - **NUMBERS:** Hebrew STT model Nova-3 (PRD F-33; Deepgram's Hebrew support is Nova-3, Flux is English-only, comment P-2 in `voicePolicy.ts`) · pass counts unchanged in both files (exact).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0230b (Q-15: which Hebrew crisis phrases Amit approves for `CRISIS_PHRASES_HE`) — Amit.
+- **OPEN:** inherits TFV2-0230b (Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.) — Amit.
 
 ### TFV2-0371 — Voice: speech socket client `apps/web/lib/voice-stt.ts` (extracted from `useVoiceCall`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0368
+- **WHEN:** after TFV2-0368.
 - **WHY:** TRD §5a step 2 (the browser streams the microphone straight to Deepgram with a 30-second token); PRD F-32/F-33; `convex/voice.ts` `grant` (returns `{ token, url }`; the socket opens with the token as its `bearer` subprotocol; TFV2-0368 verifies it). Code truth: the socket already exists inline in `apps/web/components/coach/voice/useVoiceCall.ts` (`start`: `new WebSocket(url, ["bearer", token])`, `onopen` starts a `MediaRecorder`, `onmessage` parses JSON through `speechEvent` from `apps/web/lib/voice-runtime.ts`, `onerror`/`onclose` call `fail()`), and none of that wiring has a test (`speechEvent` itself is tested in `apps/web/lib/voice-runtime.test.ts`). This ticket moves the socket wiring into a small module that takes a socket factory, so it is unit-tested with a fake socket, and makes the hook call it; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-stt.ts` exports `openSpeechSocket`, which opens the speech socket with the token subprotocol, reports open, parsed speech events and failure, sends audio only while open, and closes once; `useVoiceCall` uses it, proven by `apps/web/lib/voice-stt.test.ts`.
 - **SCOPE:** `apps/web/lib/voice-stt.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-stt.test.ts`.
@@ -30882,9 +30914,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0372 — Voice: mobile speech socket client `apps/mobile/lib/v3/voice-stt.ts` — OPEN
+- **STATUS:** open — inherits CFG-045 (new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?)
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-045, TFV2-0368, TFV2-0371 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
-- **WHEN:** after CFG-045, TFV2-0368, TFV2-0371
+- **WHEN:** after CFG-045, TFV2-0368, TFV2-0371.
 - **WHY:** TRD §5a step 2; PRD F-121/F-32/F-33; `convex/voice.ts` `grant` (`{ token, url }`, TFV2-0368). Code truth: `apps/mobile` has no microphone capture and no voice client at all (`apps/mobile/package.json` has no audio package; `apps/mobile/app/(tempo)/voice-call.tsx` is a layout with every control disabled). Expo's own audio modules record to a file, so streaming live audio to Deepgram needs a microphone-streaming package; adding one is a dependency change (config lane, CONVENTIONS §7 B), requested as CFG-045, whose package choice is Amit's. The socket half mirrors the web contract of TFV2-0371 (`openSpeechSocket`), so both clients behave the same. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/mobile/lib/v3/voice-stt.ts` exports `openSpeechSocket` (same signature and behaviour as the web module of TFV2-0371, on React Native's global `WebSocket`) and `startMicStream`, which streams microphone chunks from the CFG-045 package into the socket, proven by `tests/unit/mobile_voice_stt.test.ts`.
 - **SCOPE:** `apps/mobile/lib/v3/voice-stt.ts` · test: `tests/unit/mobile_voice_stt.test.ts`.
@@ -30908,9 +30941,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** inherits CFG-045 (new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?) — Amit.
 
 ### TFV2-0373 — Voice: read-aloud sentence queue `apps/web/lib/voice-tts.ts` (extracted from `useVoiceCall`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369, TFV2-0371 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0369, TFV2-0371
+- **WHEN:** after TFV2-0369, TFV2-0371.
 - **WHY:** TRD §5a step 4 (speech starts before the whole reply is read); `convex/voice.ts` `speak({ sessionId, messageId, index })` → `{ status: "audio", audio, mime, count } | { status: "done" } | { status: "exhausted" }` (TFV2-0369 verifies it); `VOICE_CLIENT_LIMITS.sentencesAhead` = 2 in `apps/web/lib/voice-runtime.ts` (A-10). Code truth: the queue already exists inline as `readAloud` in `apps/web/components/coach/voice/useVoiceCall.ts` (a `Map` of `speak` promises, fetches `sentencesAhead` ahead, plays each clip with `new Audio(url)`, stops when the `live()` fence fails) and has no test; it also prefetches indexes past the last sentence (each one an extra `speak` call that returns `done`). This ticket moves the loop into a tested function, stops prefetching once the sentence count is known, and keeps the hook's audio element handling. Depends on TFV2-0371 only because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-tts.ts` exports `playReply`, which fetches sentence clips up to `ahead` in front of playback (never past the reply's `count`), plays them in index order exactly once, and reports `finished`, `stopped` or `failed`; `useVoiceCall`'s `readAloud` uses it, proven by `apps/web/lib/voice-tts.test.ts`.
 - **SCOPE:** `apps/web/lib/voice-tts.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-tts.test.ts`.
@@ -31020,9 +31054,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0374 — Voice: barge-in rule `interruptsPlayback` (`apps/web/lib/voice-runtime.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0373 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0373
+- **WHEN:** after TFV2-0373.
 - **WHY:** TRD §5a step 5 (barge-in); PRD F-30; docs/contracts/VOICE.md L-6 as cited in `useVoiceCall.ts`. Code truth: barge-in already works inline in the `onSpeech` handler of `useVoiceCall.ts` (after TFV2-0371): a `speechStarted` or `interim` event while `phaseRef.current === "speaking"` calls `stopPlayback()` and `setPhaseBoth("listening")`; a `final` event never stops playback; the Interrupt button calls `interrupt()`, which does the same only while speaking. The rule has no test. This ticket names it as a pure function next to `speechEvent`, tests it, and makes the hook use it; behaviour does not change. Depends on TFV2-0373 only because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-runtime.ts` exports `interruptsPlayback(phase, event)` (true only for `speechStarted` or `interim` while the coach speaks) and `useVoiceCall` decides barge-in with it, proven by four new cases in `apps/web/lib/voice-runtime.test.ts`.
 - **SCOPE:** `apps/web/lib/voice-runtime.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-runtime.test.ts`.
@@ -31068,9 +31103,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0375a — Voice: lease heartbeat and client bounds `apps/web/lib/voice-lease.ts` (extracted from `useVoiceCall`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367a, TFV2-0367b, TFV2-0367c, TFV2-0374 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0367a, TFV2-0367b, TFV2-0367c, TFV2-0374
+- **WHEN:** after TFV2-0367a, TFV2-0367b, TFV2-0367c, TFV2-0374.
 - **WHY:** TRD §5a; `convex/voice.ts` `start` (returns `renewEveryMs` = `VOICE_LIMITS.renewEveryMs` 15 000), `renew` (returns `{ status: "ok" | "revoked" | "exhausted" | "expired"; minutesLeft: number }`), `stop` (TFV2-0367a/b/c verify them); docs/contracts/VOICE.md A-3 (heartbeat) and L-15 (idle and hidden-page bounds) as cited in the hook. Code truth: the client call state machine already lives in `apps/web/components/coach/voice/useVoiceCall.ts` (`start` → `listening`, `fail` → `error`, `end` → `idle` with `ended`), and inside `start` two `window.setInterval` timers run the heartbeat (anything but `"ok"`, or a failed `renew`, calls `end()`) and the idle/hidden check (`VOICE_CLIENT_LIMITS.idleMs` 90 000 with no speech and no playback; `hiddenMs` 30 000 with the page hidden). Neither timer has a test. This ticket moves both rules into a tested module with injectable timers and makes the hook use it; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-lease.ts` exports `startHeartbeat` (renews every `everyMs`, reports minutes, ends the call on any non-`ok` status or failed call, returns its stop function) and `pastClientBounds` (the L-15 idle and hidden rules); `useVoiceCall` uses both, proven by `apps/web/lib/voice-lease.test.ts`.
 - **SCOPE:** `apps/web/lib/voice-lease.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-lease.test.ts`.
@@ -31182,9 +31218,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0375b — Voice: `useVoiceCall` takes its backend as a parameter (`useConvexVoiceBackend`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0375a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0375a
+- **WHEN:** after TFV2-0375a.
 - **WHY:** CONVENTIONS §13 (a harness page never imports `convex/react`) and the end-to-end smoke of TFV2-0394, which drives the real hook against fake voice functions. Code truth: `useVoiceCall.ts` calls `useMutation(api.voice.start)`, `useMutation(api.voice.renew)`, `useMutation(api.voice.stop)`, `useAction(api.voice.grant)` and `useAction(api.voice.speak)` itself, so nothing can run it without a live Convex deployment; its only caller is `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` (`const voice = useVoiceCall({ conversationId, send: sendSpoken, latestReply: …, replyInFlight: … })`). This ticket moves those five calls into one small hook and passes the result in; behaviour does not change. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `useVoiceCall` takes `backend: VoiceBackend` and imports nothing from `convex/react` or `@/convex/_generated/api`; `apps/web/components/coach/voice/useConvexVoiceBackend.ts` builds the backend from the five Convex functions and `CoachChat` passes it, proven by `apps/web/components/coach/voice/useConvexVoiceBackend.test.ts`.
 - **SCOPE:** `apps/web/components/coach/voice/useConvexVoiceBackend.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · `apps/web/components/coach/CoachChat.tsx` · test: `apps/web/components/coach/voice/useConvexVoiceBackend.test.ts`.
@@ -31247,9 +31284,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0376a — Voice: `VoiceCallView` — the call layout without the dialog (extracted from `VoiceCall`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
 - **WHY:** `docs/design/v3/components.md` §2.11 (VoiceCall `.tp-call[data-state][data-ended]`, `__top`, `__title`, `__stage`, `__state` `aria-live`, `__hint`, `__dock`); `docs/design/v3/screens/web/voice-call.html` (`@states default | empty | loading | error | offline` + ended; loading = connecting); PRD F-30; CONVENTIONS §10 Case A (tempo.css `@component VoiceCall` block, line 1182, and the blocks that follow it) and §13. Code truth: `apps/web/components/coach/voice/VoiceCall.tsx` is already props-only (no Convex) and is mounted by `CoachChat.tsx`, but it draws everything inside a Radix `Dialog.Portal`, so a harness cannot render its states side by side (each portal goes to `document.body`, and several open modal dialogs trap focus against each other). This ticket moves the `<section className="tp-call tp-glass">…</section>` unchanged into a new `VoiceCallView` and leaves `VoiceCall` as the dialog around it; its own strings keep their `t("vc.*")` keys (CONVENTIONS §11, existing component). Later tickets (TFV2-0377…TFV2-0384) replace the inline controls with their own components one by one. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/VoiceCallView.tsx` renders the call layout for every call state from props (no dialog, no portal), `VoiceCall` wraps it in the existing dialog, and a harness spec proves each state.
 - **SCOPE:** `apps/web/components/coach/voice/VoiceCallView.tsx` · `apps/web/components/coach/voice/VoiceCall.tsx` · `apps/web/app/e2e/components/voice-call-view/page.tsx` · test: `tests/e2e/screens/voice-call-view.spec.ts`.
@@ -31266,9 +31304,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DO NOT:** change any class, `data-*` attribute, `t()` key, string or markup order while moving the section; add a stylesheet; call Convex, `fetch`, audio or a socket in the view or the harness; edit `apps/web/lib/i18n*`, `apps/web/lib/voice-call.ts` or `CoachChat.tsx`; touch `convex/**`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0376a / evidence: <DONE output> / changed: VoiceCallView.tsx, VoiceCall.tsx, voice-call-view/page.tsx, voice-call-view.spec.ts / unknowns / notes for ticket sync: vc.empty Hebrew ("…מה עובר עלייך") and vc.you ("את") are gendered (CONVENTIONS §12); fixing them is an i18n ticket`; list STEPS 1–6 with evidence.
 - **SPEC:**
-  VoiceCallView (`"use client"`):
+  VoiceCallView (`"use client"`). The file's first lines, exactly (the body uses `useState`, `KeyboardEvent`, `TpIcon`, `callView`, `minutesLow`, `useLocale` as `VoiceCall.tsx` does today):
   ```tsx
-  import type { ElementType } from "react";
+  "use client";
+
+  import type React from "react";
+  import { type ElementType, type KeyboardEvent, useState } from "react";
+  import { useLocale } from "@/components/providers/LocaleProvider";
+  import { TpIcon } from "@/components/tempo/TpIcon";
+  import type { Lang } from "@/lib/i18n";
+  import { callView, minutesLow } from "@/lib/voice-call";
+  import type { VoiceSessionState } from "./voiceSession";
+  ```
+  Then the exports:
+  ```tsx
   export type CallLine = { id: string; who: "you" | "coach"; text: string; live?: boolean; notSent?: boolean };
   export type VoiceCallViewProps = {
     session: VoiceSessionState; connecting: boolean; ended: boolean; online: boolean; micOn: boolean;
@@ -31282,7 +31331,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function VoiceCallView(props: VoiceCallViewProps): React.JSX.Element;
   ```
   Body: the current `VoiceCall` body from `const { t } = useLocale();` through the closing `</section>`, unchanged, except (a) `props.open` is not read, (b) `<Dialog.Title className="tp-call__title">{t("vc.title")}</Dialog.Title>` becomes `<TitleAs className="tp-call__title">{t("vc.title")}</TitleAs>` with `const TitleAs = props.titleAs ?? "h2";`, (c) no `Dialog` import.
-  VoiceCall (`"use client"`):
+  VoiceCall (`"use client"`; the file is exactly the block below after its `"use client";` line and a blank line, plus the doc comment):
   ```tsx
   import * as Dialog from "@radix-ui/react-dialog";
   import { callView } from "@/lib/voice-call";
@@ -31316,7 +31365,16 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Copy (existing keys, values from `apps/web/lib/i18n-groups/extras.ts`, EN / HE): `vc.title` "Call with your coach" / "שיחה עם המאמן"; `vc.connecting` "Connecting…" / "מתחבר…"; `vc.listening` "Listening" / "מקשיב"; `vc.speaking` "Speaking" / "מדבר"; `vc.paused` "Paused" / "מושהה"; `vc.notConnected` "Not connected" / "לא מחובר"; `vc.ended` "Call ended" / "השיחה הסתיימה"; `vc.hint` "Talk any time. You can cut in while the coach speaks. Esc pauses the mic." / "אפשר לדבר בכל רגע. אפשר לקטוע את המאמן כשהוא מדבר. Esc משהה את המיקרופון."; `vc.err.title` "Couldn't connect." / "לא הצלחנו להתחבר."; `vc.err.body` "Nothing was lost. You can try the call again." / "שום דבר לא אבד. אפשר לנסות את השיחה שוב."; `vc.retry` "Try again" / "לנסות שוב"; `vc.off.title` "You're offline." / "אין חיבור לרשת."; `vc.off.body` "The call will reconnect when you're back. What was said stays here." / "השיחה תתחבר מחדש כשהחיבור יחזור. מה שנאמר נשאר כאן."; `vc.empty` "Say hello, or tell the coach what's on your mind." / "אפשר להגיד שלום, או לספר למאמן מה עובר עלייך." (existing value, kept as is: it is gendered, so the REPORT records it under "notes for ticket sync" for an i18n ticket); `vc.back` "Back to Today" / "חזרה להיום"; `vc.end` "End call" / "סיום שיחה". The child controls' strings are asserted by their own tickets.
   States (harness order; `session` is `{ phase, generation: -1, identity: null, interimText: "", acceptedText: null, replyAttempt: 0, retryable: false, error: null, lastRequest: null }` with the phase shown; other props `connecting: false, ended: false, online: true, micOn: true, callLang: "en"` unless stated): `default` (phase `listening`, lines `[{ id: "l1", who: "you", text: "What should I do first?" }, { id: "l2", who: "coach", text: "Start with the email to Dana. It takes ten minutes." }]`, `minutesLeft: 12`); `connecting` (phase `listening`, `connecting: true`, lines `[]`); `empty` (phase `listening`, lines `[]`); `speaking` (phase `speaking`, the default lines); `paused` (phase `listening`, `micOn: false`, the default lines); `error` (phase `error`, lines `[]`); `offline` (phase `listening`, `online: false`, the default lines); `ended` (phase `idle`, `ended: true`, the default lines). Loading = `connecting`; success n/a; disabled = the Interrupt button outside `speaking`.
   Layout and tokens (from tempo.css, unchanged): full-screen grid (`position: fixed; inset: 0`), top bar `--tp-space-3`/`--tp-space-4` padding, stage gap `--tp-space-5`, state word `--tp-font-serif` `--tp-text-3xl`, hint `--tp-text-sm` `--tp-ink-muted`, dock gap `--tp-space-4`/`--tp-space-6`; entry animation `tp-rise` `--tp-dur-slow` (240 ms). Breakpoints: one layout; the dock wraps at 390 px. RTL: the top bar and dock are flex rows, so they mirror under `dir="rtl"`; line text `dir="auto"`. Keyboard: native buttons in DOM order (top bar, notice action, transcript, dock). Screen reader: `.tp-call__state` and the transcript are polite live regions; the error notice is `role="alert"`; the offline notice is an `<output>`.
-  Harness (`apps/web/app/e2e/components/voice-call-view/page.tsx`, `"use client"`, imports only React, `VoiceCallView` and the `VoiceSessionState` / `CallLine` types): the 8 states in order, each `<section data-testid="voice-call-view-<state>" style={{ position: "relative", contain: "layout", blockSize: "100dvh" }}>` (`contain: layout` makes the section the containing block of `.tp-call`'s `position: fixed`, so the stacked calls do not overlap), plus `<output data-testid="voice-call-view-log">`; every callback writes `<propName>:undefined` (they take no argument).
+  Harness (`apps/web/app/e2e/components/voice-call-view/page.tsx`, `"use client"`, imports only React, `VoiceCallView` and the `VoiceSessionState` / `CallLine` types): the 8 states in order, each `<section data-testid="voice-call-view-<state>" style={{ position: "relative", contain: "layout", blockSize: "100dvh" }}>` (`contain: layout` makes the section the containing block of `.tp-call`'s `position: fixed`, so the stacked calls do not overlap), plus `<output data-testid="voice-call-view-log">{log}</output>` after the last section. Its imports, exactly:
+  ```tsx
+  "use client";
+
+  import type React from "react";
+  import { useState } from "react";
+  import { type CallLine, VoiceCallView } from "@/components/coach/voice/VoiceCallView";
+  import type { VoiceSessionState } from "@/components/coach/voice/voiceSession";
+  ```
+  Logging: the page holds `const [log, setLog] = useState("");` and `const record = (name: string) => (arg?: unknown): void => setLog(`${name}:${JSON.stringify(arg)}`);`. Every section passes `onMicToggle={record("onMicToggle")}`, `onInterrupt={record("onInterrupt")}`, `onEnd={record("onEnd")}`, `onClose={record("onClose")}`, `onRetry={record("onRetry")}`, `onCallLang={record("onCallLang")}`, `onReadAloud={record("onReadAloud")}`, `onPushStart={record("onPushStart")}`, `onPushEnd={record("onPushEnd")}`; the `action` prop is not passed. The log's text is the last call only, `<propName>:<JSON of its first argument>`: a no-argument callback gives `JSON.stringify(undefined)` = `undefined`, so `onRetry:undefined`; `onCallLang("he")` gives `onCallLang:"he"`. The component is `export default function VoiceCallViewHarness(): React.JSX.Element`.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton; locators scoped to each section)
   1. Given `default` / Then `.tp-call` has `data-component="VoiceCall"`, `data-state="listening"` and no `data-ended`; `.tp-call__state` has `aria-live="polite"` and text "Listening" / "מקשיב"; `.tp-call__hint` is visible; `ol.tp-call__transcript` has two `li.tp-call-line` with `data-who` `you` then `coach`; the title is an `h2` with "Call with your coach" / "שיחה עם המאמן".
   2. Given `connecting` / Then `data-state="connecting"` and the state word "Connecting…" / "מתחבר…".
@@ -31333,9 +31391,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0376b — Voice: `VoiceCall` dialog — harness spec (role, modality, Esc pauses)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0376a
+- **WHEN:** after TFV2-0376a.
 - **WHY:** `docs/design/v3/components.md` §2.11 (VoiceCall: `role="dialog" aria-modal="true"`; "Esc pauses"); `voice-call.html` `@actions` ("mic on / off …; Esc also pauses"). Code truth (after TFV2-0376a): `VoiceCall` is a Radix `Dialog.Root open` → `Dialog.Portal` → `Dialog.Content` (`onEscapeKeyDown` prevents closing and calls `onMicToggle` while the mic is on and controls show; `onPointerDownOutside` prevents closing) around `VoiceCallView` with `titleAs={Dialog.Title}`. This ticket verifies that wrapper with a harness spec; no component code changes. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** A harness spec proves `VoiceCall` is a modal dialog named by its title, takes focus, and pauses the mic on Esc without closing.
 - **SCOPE:** `apps/web/components/coach/voice/VoiceCall.tsx` (unchanged) · `apps/web/app/e2e/components/voice-call/page.tsx` · test: `tests/e2e/screens/voice-call.spec.ts`.
@@ -31359,9 +31418,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0377 — Voice: `AudioLevel` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0376a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0376a
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0376a.
 - **WHY:** `docs/design/v3/components.md` §2.11 (AudioLevel `.tp-level` > `.tp-level__bar` with `--level`, `aria-hidden`, static under reduced motion); CONVENTIONS §10 Case A (tempo.css `@component AudioLevel` block, line 1196: `.tp-level`, `.tp-level__bar { transform: scaleY(var(--level, 0.15)); transition: transform var(--tp-dur-fast) … }`, state rules under `.tp-call[data-state]`). Code truth: `VoiceCallView.tsx` (TFV2-0376a) draws nine `.tp-level__bar` spans inline without `--level`; the app measures no microphone level today, so the call keeps passing the quiet level (0.15, the stylesheet default) and the state word carries the meaning. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/AudioLevel.tsx` renders one bar per level with `--level` clamped to 0…1, hidden from assistive tech, and `VoiceCallView` uses it with `QUIET_LEVELS`.
 - **SCOPE:** `apps/web/components/coach/voice/AudioLevel.tsx` · `apps/web/app/e2e/components/audio-level/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/audio-level.spec.ts`.
@@ -31408,9 +31468,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0378 — Voice: `LiveTranscript` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0206, TFV2-0377 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0206, TFV2-0377
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0206, TFV2-0377.
 - **WHY:** `docs/design/v3/components.md` §2.11 (LiveTranscript `ol.tp-call__transcript[aria-live=polite]`, `.tp-call-line[data-who][data-live]`, `__who`, `__text`; ReadAloud per line); PRD F-30 (read-back); CONVENTIONS §10 Case A (tempo.css `@component LiveTranscript` block, line 1202). Code truth: `VoiceCallView.tsx` draws the transcript inline with `t("vc.you")` (HE "את", gendered), `t("vc.coach")`, `t("vc.notSent")`, `t("vc.transcript")` and an icon-only read-aloud button with local `reading` state. This new component owns its copy in a `COPY` constant (CONVENTIONS §11/§12: the person's label is "אני", as in TFV2-0202 UserMessage) and composes the merged `ReadAloudButton` (TFV2-0206, `apps/web/components/coach/ReadAloudButton.tsx`, props `{ pressed: boolean; onToggle: (next: boolean) => void; disabled?: boolean }`). Depends on TFV2-0377 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/LiveTranscript.tsx` renders the call's lines (who, text, not-sent note, a Read aloud toggle on coach lines when `onReadAloud` is given) as a polite live list, renders nothing for no lines, and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/LiveTranscript.tsx` · `apps/web/app/e2e/components/live-transcript/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/live-transcript.spec.ts`.
@@ -31457,9 +31518,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0379 — Voice: `MicToggle` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0378 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0378
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0378.
 - **WHY:** `docs/design/v3/components.md` §2.11 (MicToggle `.tp-call__micwrap`, `button.tp-call__mic[aria-pressed]`, `.tp-call__mic-label`; "the one accent on the call screen"); `voice-call.html` (`mic on / off -> track.enabled`); CONVENTIONS §10 Case A (tempo.css `@component MicToggle` block, line 1210: accent ground when pressed, `--tp-paper` with a `--tp-line-control` border when `aria-pressed="false"`). Code truth: `VoiceCallView.tsx` draws the mic inline with `t("vc.mute")`, `t("vc.unmute")`, `t("vc.micOn")` (HE "המיקרופון פתוח"), `t("vc.micOff")`; `useVoiceCall.toggleMic` flips the track. This component owns its copy (glossary On/Off = פועל/כבוי). Depends on TFV2-0378 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/MicToggle.tsx` renders the round mic toggle with `aria-pressed`, an action label and a visible on/off word, reports presses through `onToggle`, and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/MicToggle.tsx` · `apps/web/app/e2e/components/mic-toggle/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/mic-toggle.spec.ts`.
@@ -31497,9 +31559,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0380 — Voice: `Interrupt` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0379 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0379
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0379.
 - **WHY:** `docs/design/v3/components.md` §2.11 (Interrupt `.tp-btn--secondary[data-action=call-interrupt]`, hand icon, enabled only while the coach speaks); TRD §5a step 5 (barge-in); CONVENTIONS §10 Case A (Stage 1 `.tp-btn`, `.tp-btn--secondary` in tempo.css; the call rules at line 1194 hide it when `data-ended="true"`). Code truth: `VoiceCallView.tsx` draws the button inline with `t("vc.interrupt")` and `disabled={!view.canInterrupt}` (`callView` sets `canInterrupt` only while speaking); `useVoiceCall.interrupt` stops playback. Depends on TFV2-0379 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/Interrupt.tsx` renders the secondary Interrupt button, disabled unless `enabled`, reporting presses through `onInterrupt`, and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/Interrupt.tsx` · `apps/web/app/e2e/components/interrupt/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/interrupt.spec.ts`.
@@ -31534,9 +31597,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0381 — Voice: `EndCall` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0380 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0380
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0380.
 - **WHY:** `docs/design/v3/components.md` §2.11 (EndCall `.tp-btn--danger[data-action=call-end]`, phone-off icon, the word "End call"; then `call-close`); CONVENTIONS §10 Case A (Stage 1 `.tp-btn--danger`). Code truth: `VoiceCallView.tsx` draws End call inline (`t("vc.end")`) and, once the call has ended, a Back button (`data-action="call-close"`, `t("vc.back")`) in its place; `useVoiceCall.end` is safe to call twice, but a double press still runs the teardown twice. This component fires `onEnd` once per mount. The Back button stays in `VoiceCallView`. Depends on TFV2-0380 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/EndCall.tsx` renders the danger End call button that calls `onEnd` at most once, and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/EndCall.tsx` · `apps/web/app/e2e/components/end-call/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/end-call.spec.ts`.
@@ -31570,9 +31634,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0382 — Voice: `PushToTalk` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0381 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0381
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0381.
 - **WHY:** PRD F-35 (walkie-talkie on every tier); `docs/design/v3/components.md` §2.11 (PushToTalk `button.tp-ptt[data-pressed]` + `[data-label]`; pointer hold, or Space / Enter hold); CONVENTIONS §10 Case A (tempo.css `@component PushToTalk` block, line 1218). Code truth: `VoiceCallView.tsx` holds the push-to-talk state inline (`holding` state, `startPush`, `endPush`, `pushKey`, the `.tp-ptt` button shown only when `props.onPushStart` is set, and a `tp-sr-only` help span with the fixed id `vc-ptt-help`), using `t("vc.ptt")` (HE "החזיקי כדי לדבר", gendered), `t("vc.pttRelease")` and `t("vc.pttHelp")`. This component owns the hold state and gender-neutral copy (CONVENTIONS §12) and uses `useId` for the help id. Wiring it to a live call is TFV2-0388b. Depends on TFV2-0381 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/PushToTalk.tsx` renders the hold-to-talk button that reports `onPressStart` on pointer down or Space/Enter down and `onPressEnd` on release or pointer leave, with `data-pressed`/`aria-pressed` following the hold, and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/PushToTalk.tsx` · `apps/web/app/e2e/components/push-to-talk/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/push-to-talk.spec.ts`.
@@ -31612,9 +31677,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0383 — Voice: `CallMinutes` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0365, TFV2-0382 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0365, TFV2-0382
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0365, TFV2-0382.
 - **WHY:** `docs/design/v3/components.md` §2.11 (CallMinutes `.tp-call__minutes[data-low]`, clock icon + "12 minutes left today"); PRD F-35; CONVENTIONS §10 Case A (tempo.css `@component CallMinutes` block, line 1222: `--tp-sunken` badge, low = `--tp-caution-wash` / `--tp-caution`). Code truth: minutes come from the server (`voice.start` / `voice.renew` `minutesLeft`, floored; caps from `dailyMinutesFor`, verified by TFV2-0365); `minutesLow(n)` in `apps/web/lib/voice-call.ts` is `n <= 5`; `VoiceCallView.tsx` draws the badge inline with `t("vc.minutes")` / `t("vc.minutesLow")`, which reads "1 minutes" for one minute and puts the number first in Hebrew. This component owns its copy with singular forms and Hebrew word order. Depends on TFV2-0382 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/CallMinutes.tsx` shows the minutes left today (number in `.tp-num`, singular for 1, the low note at 5 or fewer with `data-low`), and `VoiceCallView` uses it.
 - **SCOPE:** `apps/web/components/coach/voice/CallMinutes.tsx` · `apps/web/app/e2e/components/call-minutes/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/call-minutes.spec.ts`.
@@ -31653,9 +31719,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0384 — Voice: `CallActionConfirm` component (extracted from `VoiceCallView`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0383 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0383
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0383.
 - **WHY:** `docs/design/v3/components.md` §2.11 (CallActionConfirm `.tp-call-action[data-undone]`, `__icon`, `__text`; "Added 'call the bank' to Today · Undo"); PRD F-22/F-131 (5-minute Undo); CONVENTIONS §10 Case A (tempo.css `@component CallActionConfirm` block, line 1226). Code truth: `VoiceCallView.tsx` draws an inline `<output className="tp-call-action">` when its `action?: { text; onUndo }` prop is set, with `t("tx.undo")`, and has no undone state; nothing passes `action` yet (whether spoken actions apply with Undo is TFV2-0393, OPEN on Q-06). This component is display-only: the caller supplies the sentence, the Undo handler and whether it was undone, and removes it when the 5-minute window ends. Depends on TFV2-0383 only because both edit `VoiceCallView.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/CallActionConfirm.tsx` shows a confirmed in-call action with an Undo button, and after Undo shows "Undone. Nothing was added." with `data-undone`; `VoiceCallView` uses it and its `action` prop gains `undone?: boolean`.
 - **SCOPE:** `apps/web/components/coach/voice/CallActionConfirm.tsx` · `apps/web/app/e2e/components/call-action-confirm/page.tsx` · `apps/web/components/coach/voice/VoiceCallView.tsx` · test: `tests/e2e/screens/call-action-confirm.spec.ts`.
@@ -31693,9 +31760,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0385 — Voice: `LanguageChip` component (call language) — OPEN
+- **STATUS:** open — Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b
+- **WHEN:** after TFV2-0000b, TFV2-0023b.
 - **WHY:** `docs/design/v3/components.md` §2.11 (LanguageChip `button.tp-lang-chip[data-lang]`, `[data-lang-current]`, `__other`; each name in its own `lang`); PRD F-73; CONVENTIONS §10 Case A (tempo.css `@component LanguageChip` block, line 1233). Code truth: the call language is decided by the server from `userPreferences.locale` through `laneFor` in `convex/lib/voicePolicy.ts`, which returns a lane only for English (`laneFor("he")` is `null` until Amit approves a Hebrew crisis phrase list); there is no `voice.setLanguage`. A chip that offers Hebrew would offer a call that cannot start, so the component waits for Q-15 (and TFV2-0395, the Hebrew lane). `VoiceCallView.tsx` keeps its inline chip (shown only when `onCallLang` is passed; nobody passes it today). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/LanguageChip.tsx` renders the call-language chip (globe, current language name in its own `lang`, the other name quieter) and reports the other language through `onChange`, proven by a harness spec.
 - **SCOPE:** `apps/web/components/coach/voice/LanguageChip.tsx` · `apps/web/app/e2e/components/language-chip/page.tsx` · test: `tests/e2e/screens/language-chip.spec.ts`.
@@ -31727,12 +31795,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="language-chip-"]')` and `expectMotionBudget(page, '[data-testid^="language-chip-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` of 16. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 44 px) · bullet 4. Language of parts (WCAG 2.2 SC 3.1.2) · bullets 1–2.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-15: Is the Hebrew crisis phrase list approved, so that a Hebrew voice lane (and a call-language choice between English and Hebrew) can be offered? — Amit.
+- **OPEN:** Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval. — Amit.
 
 ### TFV2-0386 — Voice: calm EN/HE copy for every voice refusal `apps/web/lib/voice-errors.ts`
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0366, TFV2-0367a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0366, TFV2-0367a
+- **WHEN:** after TFV2-0366, TFV2-0367a.
 - **WHY:** PRD F-70/F-71 (calm refusals); `convex/voice.ts` `VOICE_ERRORS` (not exported; six codes thrown as `new ConvexError({ code, message })` so the copy survives production) and `availability` (`reason: null | "off" | "language" | "budget" | "resting" | "pending"`, TFV2-0366); `start` throws `voice_off`, `voice_language`, `voice_daily_limit`, `voice_resting`, `voice_session_ended` (TFV2-0367a). Code truth: the server messages are English only (CONVENTIONS §11: the UI maps them); the web client has no mapping today (`useVoiceCall` swallows the error and shows the generic "Couldn't connect."). This ticket adds the one mapping module the voice UI reads (TFV2-0388a uses it for the Talk button). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-errors.ts` maps every `voice_*` code and every unavailable reason to calm EN/HE copy and reads the code out of a thrown `ConvexError`, proven by `apps/web/lib/voice-errors.test.ts`, whose English matches `convex/voice.ts` word for word.
 - **SCOPE:** `apps/web/lib/voice-errors.ts` · test: `apps/web/lib/voice-errors.test.ts`.
@@ -31801,9 +31870,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0206; not a build ticket.
 
 ### TFV2-0388a — Voice: `VoiceStartButton` — the coach's Talk button with the unavailable reason
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0366, TFV2-0386, TFV2-0375b · **Folds-in:** #746
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0366, TFV2-0386, TFV2-0375b
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0366, TFV2-0386, TFV2-0375b.
 - **WHY:** PRD F-30/F-31; issue #746 (`/coach` voice in/out); `docs/design/v3/screens/web/voice-call.html` (the call opens from the coach composer). Code truth: voice in/out on `/coach` is already wired — `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` reads `api.voice.availability` (`{ available, reason, minutesLeft }`, TFV2-0366), shows an inline "Talk" button (`data-component="VoiceStart"`, `t("coachChat.talk")`) only when `available`, starts `useVoiceCall`, and mounts `VoiceCall`. When voice is unavailable the button disappears with no reason. This ticket moves the button into a props-only component that also shows a disabled button with the calm reason (TFV2-0386 `unavailableText`) for `language`, `budget` and `resting`; for `off` (voice not set up on the deployment) and `pending` (account not approved) it stays hidden, as today, because neither is something the person can act on in the composer. Depends on TFV2-0375b only because both edit `CoachChat.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/components/coach/voice/VoiceStartButton.tsx` renders nothing, an enabled Talk button, or a disabled Talk button described by the unavailable reason, from props; `CoachChat` uses it, proven by a harness spec.
 - **SCOPE:** `apps/web/components/coach/voice/VoiceStartButton.tsx` · `apps/web/app/e2e/components/voice-start-button/page.tsx` · `apps/web/components/coach/CoachChat.tsx` · test: `tests/e2e/screens/voice-start-button.spec.ts`.
@@ -31855,9 +31925,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0394 — Voice: end-to-end smoke of the web call with fake providers (harness + Playwright)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023b, TFV2-0375b, TFV2-0384 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; web component lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0375b, TFV2-0384
+- **WHEN:** after TFV2-0000b, TFV2-0023b, TFV2-0375b, TFV2-0384.
 - **WHY:** PRD F-30; AGENTS.md (UI changes need an e2e check; no real keys or providers); TRD §5a (socket → transcript → spoken reply → barge-in → end). Code truth: `/coach` signed out under the E2E bypass skips every Convex query, so the Talk button never shows there and the real call cannot be driven on that route. After TFV2-0375b the call runtime `useVoiceCall` takes a `VoiceBackend` and imports nothing from Convex, and after TFV2-0371 the socket goes through `browserSocket` (the global `WebSocket`). So this smoke renders the real `useVoiceCall` + `VoiceCall` on a harness page with a fake backend, and the spec replaces the browser's microphone, recorder, speech socket and audio element with fakes before the page loads. The harness imports the hook as well as the component (the unit under test is the pair); it still imports no Convex client (CONVENTIONS §13's purpose), which TFV2-0375b's test guarantees. The unavailable path (Talk disabled with a reason) is proven by TFV2-0388a; Esc by TFV2-0376b. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** A Playwright smoke starts a call, sees it connect, sends a final transcript, sees the reply in the transcript and read aloud, interrupts it by speaking and by the Interrupt button, mutes the mic, ends the call (lease stopped, socket closed) and fails cleanly on a socket error — all with fake providers.
 - **SCOPE:** `apps/web/app/e2e/components/voice-smoke/page.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts`.
@@ -31958,9 +32029,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0388b — Voice: push-to-talk mode in the call runtime (`useVoiceCall` `pushToTalk`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0382, TFV2-0394 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0382, TFV2-0394
+- **WHEN:** after TFV2-0382, TFV2-0394.
 - **WHY:** PRD F-35 (walkie-talkie on every tier); `docs/design/v3/components.md` §2.11 (PushToTalk). Code truth: `PushToTalk` (TFV2-0382) shows in `VoiceCallView` only when `onPushStart` and `onPushEnd` are passed, and `useVoiceCall` has no push-to-talk mode (the mic starts on; `toggleMic` flips every audio track's `enabled`). There is no clip-upload backend (`voice.sendClip` in the design does not exist), so push-to-talk uses the same live socket: in this mode the tracks start disabled (silence keeps the socket open, as the existing mute does), holding enables them, and letting go disables them again, so the speech provider ends the turn on the silence. The person's saved default comes from `preferences.getVoicePrefs` in TFV2-0388c. Depends on TFV2-0394 because this ticket extends its harness and spec. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `useVoiceCall({ pushToTalk: true, … })` starts the call with the mic off and exposes `pushStart` / `pushEnd`, which turn the mic on only while held; the voice smoke proves it.
 - **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` · `apps/web/app/e2e/components/voice-smoke/page.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts`.
@@ -31999,9 +32071,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0388c — Voice: the coach starts calls in the person's saved push-to-talk mode (`CoachChat`)
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0390a, TFV2-0388a, TFV2-0388b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0390a, TFV2-0388a, TFV2-0388b
+- **WHEN:** after TFV2-0390a, TFV2-0388a, TFV2-0388b.
 - **WHY:** PRD F-35; `convex/preferences.ts` `getVoicePrefs` (TFV2-0390a: a `query` with `args: {}` returning `{ voicePushToTalk: boolean; voiceLanguage: "en" | "he" }`, `voicePushToTalk` `false` when unset; field from CFG-020). Code truth: `CoachConversation` in `apps/web/components/coach/CoachChat.tsx` calls `useVoiceCall` and mounts `VoiceCall` without push-to-talk; `useVoiceCall` takes `pushToTalk` and returns `pushStart`/`pushEnd` after TFV2-0388b. `CoachChat.test.tsx` mocks `@/convex/_generated/api` without `preferences`, so the new query needs one mock entry. Depends on TFV2-0388a because both edit `CoachChat.tsx`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `CoachChat` reads `preferences.getVoicePrefs` (only once the profile exists), starts calls with `pushToTalk` from it, and passes the push handlers to `VoiceCall` in that mode; its unit test proves the query is asked for (skipped while signed out).
 - **SCOPE:** `apps/web/components/coach/CoachChat.tsx` · test: `apps/web/components/coach/CoachChat.test.tsx`.
@@ -32026,9 +32099,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0393 — Voice: spoken coach actions inside a call (confirm with 5-minute Undo) — OPEN
+- **STATUS:** open — Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: For a live voice call, should a proposed change be applied with the in-call "Added … · Undo" line, or wait for an in-call Accept?
 - **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0384, TFV2-0394, TFV2-0388c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0384, TFV2-0394, TFV2-0388c
+- **WHEN:** after TFV2-0384, TFV2-0394, TFV2-0388c.
 - **WHY:** PRD F-31/F-22/F-131; HARD_RULES §6.2 (the coach never silently changes data); `docs/design/v3/screens/web/voice-call.html` (`CallActionConfirm` "Added 'call the bank' to Today · Undo", `undo an in-call action -> tasks.remove`). Code truth: voice has no action path of its own (`convex/voice.ts` header, L-16): a spoken turn goes through `coach.sendMessage` + `coach.reply` like typed text, so any change the coach suggests arrives as a pending proposal (`ChatProposal` in `CoachChat.tsx`, Accept / Edit / Not now) in the thread behind the full-screen call, where the person cannot see or accept it while talking. The design's in-call line instead shows the change as already done with an Undo, which is the auto-apply-with-Undo model. Which model voice uses is Q-06; the build differs completely (auto-apply: on a proposal for the current call, accept it and pass `action={{ text, undone, onUndo }}` to `VoiceCall`, `onUndo` calling `coach.undoProposal`; always-propose: an in-call Accept / Not now control that does not exist in the design yet). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** A change the coach proposes during a voice call is surfaced inside the call according to Amit's Q-06 answer, never applied without a visible confirm and a 5-minute Undo.
 - **SCOPE:** `apps/web/components/coach/CoachChat.tsx` · test: `tests/e2e/screens/voice-smoke.spec.ts` (TFV2-0394's spec, one added case).
@@ -32046,35 +32120,44 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** Given a spoken turn whose reply carries a task proposal / When the call is open / Then the behaviour Amit chose for Q-06 shows inside the call (auto-apply: the confirm line with Undo, and Undo restores; always-propose: an Accept control, and nothing changes until it is pressed).
 - **NUMBERS:** Undo window 5 minutes (PRD F-131; `UNDO_WINDOW_MS`). Latency: UNKNOWN (CONVENTIONS §20).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo — and, for a live voice call, should a proposed change be applied with the in-call "Added … · Undo" line, or wait for an in-call Accept? — Amit.
+- **OPEN:** Q-06: AI changes: always propose (confirm/edit/reject) vs auto-apply with 5-min undo.; new: For a live voice call, should a proposed change be applied with the in-call "Added … · Undo" line, or wait for an in-call Accept? — Amit.
 
 ### TFV2-0389 — Voice: mobile voice-call screen goes live — OPEN
+- **STATUS:** open — inherits TFV2-0372 (new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?)
 - **Stage:** E · **Pass:** 1 · **Depends:** CFG-031, CFG-032, TFV2-0000d, TFV2-0325, TFV2-0367c, TFV2-0369, TFV2-0372 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
-- **WHEN:** after CFG-031, CFG-032, TFV2-0000d, TFV2-0325, TFV2-0367c, TFV2-0369, TFV2-0372
+- **WHEN:** after CFG-031, CFG-032, TFV2-0000d, TFV2-0325, TFV2-0367c, TFV2-0369, TFV2-0372.
 - **WHY:** PRD F-30/F-121; `docs/design/v3/screens/mobile/voice-call.html`; CONVENTIONS §9 (mobile screen set), §13–§15. Code truth: `apps/mobile/app/(tempo)/voice-call.tsx` shows the call layout honestly disconnected (state "Not connected", notice `voiceCall.unavailable.*` "Live calls aren't ready on the phone yet.", every control disabled; TFV2-0325 owns that layout). Going live needs the mobile speech socket and microphone stream of TFV2-0372 (OPEN on CFG-045), the same `voice.availability` / `start` / `renew` / `stop` / `grant` / `speak` functions as web (TFV2-0366…TFV2-0369), and the mobile strings in `apps/mobile/lib/v3/strings.ts` group `voiceCall` (several Hebrew entries there are gendered — "החזיקי", "את", "עלייך" — and are replaced with neutral copy in this ticket's `COPY`). Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** The mobile voice-call screen starts a real call when `voice.availability` says it can (connecting → listening → speaking, transcript, minutes, interrupt, mute, end), keeps today's disconnected layout when it cannot, and forces every state from fixtures.
-- **SCOPE:** `apps/mobile/app/(tempo)/voice-call.tsx` · `apps/mobile/lib/v3/useVoiceCall.ts` · `apps/mobile/lib/e2e/fixtures/voice-call.ts` · test: `tests/e2e/mobile/voice-call.spec.ts`.
-- **MUTATES:** `voice-call.tsx` (edit) · `apps/mobile/lib/v3/useVoiceCall.ts` (new: the mobile call runtime, mirroring the web hook's lease, socket, read-aloud and barge-in rules on TFV2-0372's `openSpeechSocket` / `startMicStream`) · `apps/mobile/lib/e2e/fixtures/voice-call.ts` (new) · `tests/e2e/mobile/voice-call.spec.ts` (new). Runtime writes: `voiceSessions` rows through `voice.start` / `renew` / `stop` only.
+- **SCOPE:** the CONVENTIONS §9 mobile screen set only: `apps/mobile/app/(tempo)/voice-call.tsx` · `apps/mobile/lib/e2e/fixtures/voice-call.ts` · test: `tests/e2e/mobile/voice-call.spec.ts`. The call runtime (lease, socket, read-aloud, barge-in) is a function `useVoiceCall()` declared inside `voice-call.tsx`, not a separate file.
+- **MUTATES:** `voice-call.tsx` (edit: adds the in-file `useVoiceCall()` runtime on TFV2-0372's `openSpeechSocket` / `startMicStream`, and forced states) · `apps/mobile/lib/e2e/fixtures/voice-call.ts` (new) · `tests/e2e/mobile/voice-call.spec.ts` (new). Runtime writes: `voiceSessions` rows through `voice.start` / `renew` / `stop` only.
 - **STEPS:**
   1. Code-map check: `grep -n "export function openSpeechSocket\|export async function startMicStream" apps/mobile/lib/v3/voice-stt.ts` (TFV2-0372); `grep -n "voiceCall:" apps/mobile/lib/v3/strings.ts`; read `voice-call.tsx`.
-  2. Create the hook, the fixtures and the screen changes as written into this ticket once CFG-045 is answered (the package decides how audio is captured and which socket parameters are added).
+  2. Not buildable yet: the body of `useVoiceCall()` (how microphone audio is captured and streamed, and which socket parameters `openSpeechSocket` takes) depends on the package CFG-045 picks, so this ticket stays OPEN and its runtime code is written into SPEC when Amit answers. Nothing in this STEP may be guessed.
   3. Create the spec (states `unavailable`, `connecting`, `listening`, `speaking`, `ended`, `error`, `offline` through `?state=` and `useE2EMobile()`).
   4. Run DONE.
-- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line` → all cases pass, 0 failed; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the Playwright summary and the typecheck exit code, pasted into the PR.
+- **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line` → `28 passed` (7 bullets × 2 viewports × 2 languages), 0 failed; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/voice-call.spec.ts --reporter=line` and the `bun run typecheck` exit code, pasted into the PR.
 - **DO NOT:** add a provider key or a dependency; record audio to a file; enable the mic when availability is not `available`; import from `apps/web`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0389 / evidence: <DONE output> / changed: voice-call.tsx, useVoiceCall.ts, fixtures/voice-call.ts, voice-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
+- **REPORT:** `status / ticket: TFV2-0389 / evidence: <DONE output> / changed: voice-call.tsx, fixtures/voice-call.ts, voice-call.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:** States: `unavailable` (today's layout: "Not connected" / "לא מחובר", the unavailable notice, controls disabled), `connecting` ("Connecting…" / "מתחבר…"), `listening` ("Listening" / "מקשיב"), `speaking` ("Speaking" / "מדבר", Interrupt enabled), `ended` ("Call ended" / "השיחה הסתיימה", Back to chat), `error` ("Couldn't connect." / "לא הצלחנו להתחבר."), `offline` (existing `voiceCall.off.*`). Neutral Hebrew for the gendered entries: hold "להחזיק כדי לדבר"; release "מקשיבים… אפשר לשחרר כדי לשלוח"; help "מחזיקים עם האצבע, או מחזיקים רווח או Enter. משחררים כדי לשלוח."; who-you "אני"; empty hint "אפשר להגיד שלום, או לספר למאמן מה עובר עליך היום."; skip "דילוג למיקרופון"; error body "אפשר להחזיק את הכפתור למטה כדי לדבר. נמשיך לנסות את השיחה החיה.". Mic accent `c.accent`; End call danger; RTL via `p.row`; numbers LTR.
-- **TESTS:** Given `?state=unavailable` / Then "Not connected" and every control disabled. Given `?state=listening` / Then the word "Listening" / "מקשיב" and the mic enabled. Given `?state=speaking` / Then Interrupt is enabled. Given `?state=ended` / Then Back to chat shows. Given `?state=error` and `?state=offline` / Then their notices show. Each at 390 and 1280, EN and HE.
+- **TESTS:** (the CONVENTIONS §15 mobile spec skeleton: `trackConsoleErrors` first, the `VIEWPORTS` × `["en", "he"]` loop, `page.goto("/voice-call?state=<state>")` after the `tempo.v3.lang` init script, NOISE filtered and `[]` asserted last; 7 bullets, `28 passed`)
+  1. Given `?state=unavailable` / Then the state word is "Not connected" / "לא מחובר", the unavailable notice is visible, and the mic, hold-to-talk and Interrupt buttons have `aria-disabled="true"`.
+  2. Given `?state=connecting` / Then the state word is "Connecting…" / "מתחבר…".
+  3. Given `?state=listening` / Then the state word is "Listening" / "מקשיב" and the mic button is not disabled.
+  4. Given `?state=speaking` / Then the state word is "Speaking" / "מדבר" and Interrupt is not disabled.
+  5. Given `?state=ended` / Then the state word is "Call ended" / "השיחה הסתיימה" and Back to chat is visible.
+  6. Given `?state=error` / Then "Couldn't connect." / "לא הצלחנו להתחבר." is visible.
+  7. Given `?state=offline` / Then the `voiceCall.off.*` title is visible (matched with `k("off.title")`), and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8); text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms. Latency UNKNOWN (CONVENTIONS §20).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0372 (CFG-045 new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?) — Amit.
+- **OPEN:** inherits TFV2-0372 (new: Which React Native microphone-streaming package, with an exact pinned version, should `apps/mobile` add so a call can stream live microphone audio to Deepgram, or should mobile live calls wait for a later stage?) — Amit.
 
 ### TFV2-0396 — Voice: latency record for the web call `apps/web/lib/voice-perf.ts`
+- **STATUS:** approved-unsent
 - **Stage:** E · **Pass:** 2 · **Depends:** TFV2-0388b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0388b
+- **WHEN:** after TFV2-0388b.
 - **WHY:** TRD §5a step 6 (acknowledgement < 0.2 s; response ≈ 1 s; first-audio latency is UNKNOWN until measured); TICKET-STANDARD NUMBERS rule (measured or UNKNOWN, never invented). Code truth: `useVoiceCall.ts` measures nothing. This ticket adds a small in-memory latency record and three marks in the hook — `ack` (Start pressed → speech socket open), `first_text` (socket open → first speech event), `first_audio` (a turn's final words sent → its first reply clip starts) — and returns the record's summary from the hook, so a preview measurement can read real values. Nothing is stored or sent. Depends on TFV2-0388b because both edit `useVoiceCall.ts`. Stage E (Gen 1) per REWRITE-PLAN-v2 §4 item 1; Q-01 decides only when this stage runs, not what this ticket builds.
 - **GOAL:** `apps/web/lib/voice-perf.ts` exports `createLatencyLog` and `LATENCY_TARGET_MS`; `useVoiceCall` marks `ack`, `first_text` and `first_audio` and returns `latency()`; proven by `apps/web/lib/voice-perf.test.ts`.
 - **SCOPE:** `apps/web/lib/voice-perf.ts` · `apps/web/components/coach/voice/useVoiceCall.ts` · test: `apps/web/lib/voice-perf.test.ts`.
@@ -32124,6 +32207,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 ## Chunk 6 — Gen 2 (later)
 
 ### TFV2-0397 — Plugin manifest schema (Zod) `packages/utils/src/plugin-manifest.ts` — OPEN
+- **STATUS:** open — new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -32234,6 +32318,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component? — Amit.
 
 ### TFV2-0398 — Plugin manifest validator `validatePluginManifest` (`packages/utils/src/plugin-validate.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0397 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0397.
@@ -32304,9 +32389,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given the string `"not an object"` / Then the result equals `{ ok: false, issues: [{ path: "", message: "This field is missing or has the wrong type." }] }`.
 - **NUMBERS:** 9 of 9 cases pass (exact). Manifest cap 8,192 UTF-8 bytes (`PLUGIN_LIMITS.manifestMaxBytes`, source TFV2-0397; case 5 checks bytes with Hebrew text per CONVENTIONS §7 H). Issue list ≤ 50 (`PLUGIN_ISSUES_MAX`, code constant; case 7). Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend) — Amit.
+- **OPEN:** inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0399 — Plugin file pack/parse `packPlugin` / `parsePlugin` (`packages/utils/src/plugin-pack.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); pure-helper lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -32373,6 +32459,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by CFG-022; not a build ticket.
 
 ### TFV2-0401a — `plugins.install`: install or update a plugin from its file text (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0398 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0397, TFV2-0398, TFV2-0399 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (this ticket creates `convex/plugins.ts`).
 - **WHEN:** after TFV2-0000a, CFG-022, TFV2-0397, TFV2-0398, TFV2-0399.
@@ -32385,8 +32472,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/plugins.ts` with exactly the SPEC imports, constant, private helper `pluginRow` and the `install` mutation.
   3. Create `convex/plugins.test.ts` with the shared fixtures in TESTS (they are reused by TFV2-0401b, 0401c, 0402a, 0402b, 0405a) and `describe("TFV2-0401a plugins.install", …)` holding exactly the 9 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401a"` → `9 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 9 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 9 `(pass)` lines whose names start with `TFV2-0401a`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 9 `TFV2-0401a` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 9 test names.
 - **DO NOT:** store or run the plugin body (only the validated manifest is stored; CFG-022 has no body field); install from a marketplace listing or set `source: "marketplace"` / `listingId` (a separate range-10 ticket); grant any permission; create a second row for the same `userId` + `pluginId`; hard-delete; use `ConvexError`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or any other test file; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0401a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:** new file `convex/plugins.ts`:
@@ -32437,9 +32524,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given 50 rows from `addPlugin(ctx, { pluginId: "p" + i })` for `i` 0–49 / When A installs `file()` / Then it rejects with `"Plugin limit reached"` and `rows(ctx)` still has length 50.
 - **NUMBERS:** 9 of 9 cases pass (exact). `PLUGINS_PER_USER_MAX` = 50 live plugins per person (code constant; no external source; case 9 seeds the cap). File cap 1,048,576 UTF-8 bytes and manifest cap 8,192 UTF-8 bytes come from TFV2-0399 / TFV2-0397 (cases 2, 4). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-022 (new: a dedicated `plugins` table vs `notes` rows with a plugin page type; CFG-022 also inherits CFG-021: the listing category list and moderation workflow) and TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0398 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0401b — `plugins.list`: the caller's installed plugins (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0397, TFV2-0401a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-022, TFV2-0397, TFV2-0401a.
@@ -32452,8 +32540,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC code to `convex/plugins.ts` after `install`; add `query` to the existing `./_generated/server` import and, when not already there (TFV2-0405a may have added it), `type PluginManifest` to the existing `@tempo/utils` import.
   3. Append `describe("TFV2-0401b plugins.list", …)` with exactly the 5 TESTS cases, reusing the TFV2-0401a fixtures.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401b"` → `5 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0401b`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 5 `TFV2-0401b` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
 - **DO NOT:** return `manifest`, `userId`, `_id` or another person's rows; use `.collect()`; sort with `localeCompare` (the order must not depend on the server's locale); change `install` or `pluginRow`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or the TFV2-0401a test block; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0401b / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32498,9 +32586,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given 51 live A rows (`pluginId` `p0`…`p50`) / When A lists / Then it returns exactly 50 items.
 - **NUMBERS:** 5 of 5 cases pass (exact). Bounded read ≤ `PLUGINS_PER_USER_MAX` = 50 (code constant from TFV2-0401a; case 5 seeds 51). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0401c — `plugins.get`: one of the caller's plugins by id (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b.
@@ -32513,8 +32602,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC `get` after `list`.
   3. Append `describe("TFV2-0401c plugins.get", …)` with exactly the 5 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0401c"` → `5 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0401c`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 5 `TFV2-0401c` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
 - **DO NOT:** throw for a missing, uninstalled or foreign row (they return `null`); return `manifest`; change `install`, `list`, `pluginRow` or `toPluginView`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0401c / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32536,9 +32625,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `addPlugin(ctx, { userId: B })` only / When A gets `"focus-timer"` / Then it returns `null`.
 - **NUMBERS:** 5 of 5 cases pass (exact). One indexed read (no list read). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0402a — `plugins.setEnabled`: turn one installed plugin on or off (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a.
@@ -32551,8 +32641,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC `setEnabled` after the last exported function in `convex/plugins.ts`.
   3. Append `describe("TFV2-0402a plugins.setEnabled", …)` with exactly the 6 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0402a"` → `6 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 6 `(pass)` lines whose names start with `TFV2-0402a`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 6 `TFV2-0402a` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
 - **DO NOT:** change any other field (`manifest`, `version`, grants, `deletedAt`); revive an uninstalled row; hard-delete; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0402a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32575,9 +32665,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `addPlugin(ctx, { enabled: false })` / When A calls `setEnabled(true)` / Then it returns `null` and the row has `enabled: true`.
 - **NUMBERS:** 6 of 6 cases pass (exact). One indexed read and one write (no list read). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0402b — `plugins.uninstall`: soft-delete one installed plugin (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-022, TFV2-0401a, TFV2-0401b.
@@ -32590,8 +32681,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC `uninstall` after the last exported function in `convex/plugins.ts`.
   3. Append `describe("TFV2-0402b plugins.uninstall", …)` with exactly the 6 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0402b"` → `6 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 6 `(pass)` lines whose names start with `TFV2-0402b`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 6 `TFV2-0402b` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
 - **DO NOT:** hard-delete (`ctx.db.delete`); change `enabled`, `manifest` or grants; treat a second uninstall as success; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0402b / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32614,9 +32705,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given A's rows `focus-timer` and `other` (`pluginId: "other"`, `manifest: { ...VALID, id: "other", name: "Other" }`) and `uninstall("focus-timer")` / When `run(plugins.list, ctx, {})` / Then it returns exactly one item with `pluginId: "other"`.
 - **NUMBERS:** 6 of 6 cases pass (exact). One indexed read and one write. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0401a (CFG-022, new: a dedicated `plugins` table vs `notes` rows; TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0403 — Plugin overlay over the block catalog `buildPluginOverlay` (`apps/web/lib/pluginOverlay.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0397 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); web lib lane per `factory/SLOTS.md` (pure helper, no UI).
 - **WHEN:** after TFV2-0397.
@@ -32674,12 +32766,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `const input = [P("a")]` and a `JSON.stringify(input)` snapshot / When `buildPluginOverlay(input, { plainMode: false })` runs / Then `JSON.stringify(input)` is unchanged; and `buildPluginOverlay([], { plainMode: false })` is `EMPTY_PLUGIN_OVERLAY`.
 - **NUMBERS:** 8 of 8 cases pass (exact). Allowlist ⊆ catalog (exact invariant, case 6). Lookup is O(1) per name; build is O(plugins × names) over at most `PLUGINS_PER_USER_MAX` (50, TFV2-0401a) inputs. Latency: n/a (pure, in memory).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0397 (new: the plugin permission set and the catalog component/action names a plugin may extend, and whether a plugin may add a new block component) — Amit.
+- **OPEN:** inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0404 — Plugin sandbox enforcement (code modules run only in an isolated frame) — superseded by TFV2-0244
 - **Status:** superseded by TFV2-0244; not a build ticket.
 
 ### TFV2-0405a — `plugins.grantPermissions`: store the permissions the person granted (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits CFG-046 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, CFG-046, TFV2-0397, TFV2-0401a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-022, CFG-046, TFV2-0397, TFV2-0401a.
@@ -32692,8 +32785,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC `grantPermissions` after the last exported function in `convex/plugins.ts`; add `PLUGIN_PERMISSIONS` (and `type PluginManifest` if TFV2-0401b has not added it) to the existing `@tempo/utils` import.
   3. Append `describe("TFV2-0405a plugins.grantPermissions", …)` with exactly the 8 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0405a"` → `8 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 8 test names.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 8 `(pass)` lines whose names start with `TFV2-0405a`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 8 `TFV2-0405a` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 8 test names.
 - **DO NOT:** grant a permission the manifest does not declare; write anything into `manifest`; merge with the old set (the call replaces it); write partially when one entry is refused; change `enabled`; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0405a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32718,9 +32811,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `addPlugin(ctx, { grantedPermissions: ["read_pages"] })` / When A grants `[]` / Then it returns `{ granted: [] }` and the row's `grantedPermissions` equals `[]`.
 - **NUMBERS:** 8 of 8 cases pass (exact). Granted set ⊆ declared set (exact invariant, case 5). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-046 and CFG-022 (new: a dedicated `plugins` table vs `notes` rows; also CFG-021: listing categories and moderation) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits CFG-046 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0405b — Plugin permission check `assertPluginPermission` (`convex/lib/pluginPermissions.ts`) — OPEN
+- **STATUS:** open — inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits CFG-046 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-022, CFG-046, TFV2-0397 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (internal helper, not a public function).
 - **WHEN:** after TFV2-0000a, CFG-022, CFG-046, TFV2-0397.
@@ -32766,12 +32860,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `addPlugin(ctx, { userId: B })` only / When `check("read_pages")` for A / Then it rejects with `"Plugin not found"`.
 - **NUMBERS:** 8 of 8 cases pass (exact). Effective permission = declared ∩ granted (exact invariant, cases 4–5). Every `PLUGIN_CONFIRM_EACH_USE` permission returns `needsConfirmation: true` (case 7). Latency: one indexed read; p95 UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-046 and CFG-022 (new: a dedicated `plugins` table vs `notes` rows; also CFG-021: listing categories and moderation) and TFV2-0397 (new: the plugin permission set, which permissions need confirmation on every use, and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-022 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits CFG-046 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0406 — `marketplaceListings` table in `convex/schema.ts` — superseded by CFG-021
 - **Status:** superseded by CFG-021; not a build ticket.
 
 ### TFV2-0407a — `marketplace.publish`: submit a plugin listing for review (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0398 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0398, TFV2-0399 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md` (this ticket creates `convex/marketplace.ts`).
 - **WHEN:** after TFV2-0000a, CFG-021, TFV2-0398, TFV2-0399.
@@ -32784,8 +32879,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/marketplace.ts` with exactly the SPEC imports, constants, validator, private helper `listingBySlug` and `publish`.
   3. Create `convex/marketplace.test.ts` with the shared fixtures in TESTS (reused by TFV2-0407b, 0407c, 0408) and `describe("TFV2-0407a marketplace.publish", …)` holding exactly the 10 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407a"` → `10 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 10 test names.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 10 `(pass)` lines whose names start with `TFV2-0407a`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 10 `TFV2-0407a` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 10 test names.
 - **DO NOT:** set `status: "published"` or `"rejected"` (moderation is not decided, CFG-021); let a non-author change a listing; reset `installCount`, `ratingAverage`, `ratingCount` or `createdAt` on an update; store the plugin body; read `users` (the public author name is `manifest.author.name`); use `ConvexError`; hard-delete; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or any other test file; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0407a / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:** new file `convex/marketplace.ts`:
@@ -32844,9 +32939,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given 100 A listings from `addListing(ctx, { slug: "p" + i, manifest: { ...VALID, id: "p" + i } })` for `i` 0–99 / When A publishes `file()` / Then it rejects with `"Listing limit reached"` and `rows(ctx)` still has length 100.
 - **NUMBERS:** 10 of 10 cases pass (exact). `MARKETPLACE_LIMITS.listingsPerAuthorMax` = 100 listings per author (source: old TFV2-0407 "listing count per author cap 100"; case 10 seeds the cap). Slug ≤ 64 characters, grammar `PLUGIN_ID_PATTERN` (case 5). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-021 (new: the listing category list `planning`, `coach`, `learning`, `habits`, `wellbeing`, `other`, and the moderation workflow behind `status`) and TFV2-0398 (inherits TFV2-0397, new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0398 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0407b — `marketplace.unpublish`: take down the author's listing (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0407a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-021, TFV2-0407a.
@@ -32859,8 +32955,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC `unpublish` after `publish`.
   3. Append `describe("TFV2-0407b marketplace.unpublish", …)` with exactly the 5 TESTS cases, reusing the TFV2-0407a fixtures.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407b"` → `5 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0407b`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 5 `TFV2-0407b` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 5 test names.
 - **DO NOT:** hard-delete; change `status`, `installCount` or the manifest; touch any `plugins` row; change `publish` or `listingBySlug`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0407b / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32882,9 +32978,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `addListing(ctx)` / When A unpublishes / Then it returns `{ slug: "focus-timer" }`, the row still exists, its `deletedAt` is a number equal to its `updatedAt`, and `status` is still `"published"`.
 - **NUMBERS:** 5 of 5 cases pass (exact). One indexed read and one write. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-021 (new: the listing category list and the moderation workflow behind `status`) and TFV2-0407a — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0407c — `marketplace.getBySlug`: one listing's detail (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a.
@@ -32897,8 +32994,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC code after the last exported function; make sure `query` is in the existing `./_generated/server` import (TFV2-0408 may have added it).
   3. Append `describe("TFV2-0407c marketplace.getBySlug", …)` with exactly the 6 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0407c"` → `6 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 6 `(pass)` lines whose names start with `TFV2-0407c`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 6 `TFV2-0407c` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 6 test names.
 - **DO NOT:** return `manifest`, `authorId`, `_id` or any `users` field; show a non-published listing to anyone but its author; show an unpublished listing at all; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0407c / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -32944,9 +33041,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given no rows / When A gets `"focus-timer"` / Then it returns `null`.
 - **NUMBERS:** 6 of 6 cases pass (exact). One indexed read. Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-021 (new: the listing category list and the moderation workflow behind `status`) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0408 — `marketplace.list`: search, filter, sort and page published listings (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); backend lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, CFG-021, TFV2-0397, TFV2-0407a.
@@ -32959,8 +33057,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the SPEC code after the last exported function; make sure `query` is in the `./_generated/server` import.
   3. Append `describe("TFV2-0408 marketplace.list", …)` with exactly the 11 TESTS cases.
   4. Run DONE, then `bun run lint` and `bun run typecheck`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0408"` → `11 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries plus the lint and typecheck exit codes, pasted into the PR, with the 11 test names.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 11 `(pass)` lines whose names start with `TFV2-0408`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 11 `TFV2-0408` `(pass)` lines) plus the lint and typecheck exit codes, pasted into the PR, with the 11 test names.
 - **DO NOT:** return `draft`, `under_review`, `rejected` or unpublished listings; return `manifest`, `authorId` or any `users` field; call a model or a search index for matching; use `.collect()` or `.paginate()`; sort with `localeCompare`; change earlier functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, `packages/**` or earlier test blocks; run any `convex:*` script; touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0408 / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 each with its evidence.
 - **SPEC:**
@@ -33021,9 +33119,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given 501 published listings `L("p" + i)` for `i` 0–500 / When A lists `{ limit: 100, cursor: "400" }` / Then it returns 100 items, `hasMore` is `false` and `nextCursor` is `null` (only 500 rows were read).
 - **NUMBERS:** 11 of 11 cases pass (exact). Page size 24 by default, 1–100 allowed (source: old TFV2-0408 "page size 24 default / 100 max"; case 8). Scan cap `MARKETPLACE_LIST.scanMax` = 500 rows (code constant; case 11 seeds 501; a marketplace with more than 500 published listings needs a paginated design — not a gate now). Query ≤ 100 characters (case 10). Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-021 (new: the listing category list `planning`, `coach`, `learning`, `habits`, `wellbeing`, `other`, and the moderation workflow behind `status`) and TFV2-0397 (new: the plugin permission set and the catalog names a plugin may extend) — Amit.
+- **OPEN:** inherits CFG-021 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0407a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0409a — View: MarketplaceView (browse published plugins) (`apps/web/components/marketplace/MarketplaceView.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0408 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0088, TFV2-0089, TFV2-0093, TFV2-0097, TFV2-0099, TFV2-0100, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0408 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0088, TFV2-0089, TFV2-0093, TFV2-0097, TFV2-0099, TFV2-0100, TFV2-0115, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0408.
@@ -33115,9 +33214,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the page / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="marketplace-view-default"]')` and `expectMotionBudget(page, '[data-testid="marketplace-view-default"]')` run, and Tab reaches the first row link / Then all pass, its computed `outline-width` is ≥ `2px`, and at 390 px `document.documentElement.scrollWidth <= 390`.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7. Motion ≤ 250 ms, ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. No sideways scroll at 390 px (DESIGN.md §8; last bullet). 36 of 36 cases pass (9 bullets × 2 viewports × 2 languages).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0408 (CFG-021: the category list — these six labels — and the moderation workflow) — Amit.
+- **OPEN:** inherits TFV2-0408 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0409b — Route: `/marketplace` (`apps/web/app/(tempo)/marketplace/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0409a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0409a, TFV2-0000b, TFV2-0000c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0409a, TFV2-0000b, TFV2-0000c.
@@ -33152,9 +33252,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (once, EN, 1280) Given no `?state` (signed out under the bypass) / When `page.goto("/marketplace")` / Then the URL does not match `/sign-in/` and `marketplace-route` is attached.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 · web.dev Core Web Vitals · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8. Page grows by 24 up to 100 (`marketplace.list` `defaultLimit` / `maxLimit`, TFV2-0408). INP: UNKNOWN locally (preview only). 25 of 25 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0409a (TFV2-0408 → CFG-021: category list and moderation) — Amit.
+- **OPEN:** inherits TFV2-0409a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0411a — Marketplace: `marketplace.installListing` installs a published listing for the caller (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0407c (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0407c, TFV2-0401a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0407c, TFV2-0401a.
@@ -33167,8 +33268,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `installListing` to `convex/marketplace.ts` exactly as SPEC (a private copy of the `plugins` row lookup is written in this file; `pluginRow` in `convex/plugins.ts` is not exported and is not edited).
   3. Add `describe("TFV2-0411a marketplace.installListing", …)` with the 8 TESTS cases, using the TFV2-0407a fixtures (`A`, `B`, `VALID`, `addListing`) plus a local `pluginRows = (ctx) => ctx.db.query("plugins").collect()`.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0411a"` → `8 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 8 `(pass)` lines whose names start with `TFV2-0411a`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 8 `TFV2-0411a` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** install a listing that is not `published`; grant any permission (grants are `plugins.grantPermissions`, TFV2-0405a); count the same person twice; decrease `installCount`; edit `convex/plugins.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0411a / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33199,9 +33300,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given B has 50 live plugins with other ids / Then B's install rejects with `"Plugin limit reached"` and `installCount` stays 0.
 - **NUMBERS:** Live plugins per person ≤ 50 (`PLUGINS_PER_USER_MAX`, TFV2-0401a; case 8). One counted install per person per listing (exact; cases 5–6). p95 latency: UNKNOWN (no baseline; not a gate). 8 of 8 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0407c (CFG-021: the category list and the moderation workflow that makes a listing `published`) and TFV2-0401a (CFG-022 and TFV2-0397: dedicated `plugins` table; the permission set and the catalog parts a plugin may extend) — Amit.
+- **OPEN:** inherits TFV2-0407c (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0401a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0411c — Marketplace: `marketplace.myInstall` (is this listing installed for me) (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0411a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0411a.
@@ -33214,8 +33316,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `myInstall` exactly as SPEC.
   3. Add `describe("TFV2-0411c marketplace.myInstall", …)` with the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0411c"` → `5 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0411c`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 5 `TFV2-0411c` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** return another person's install; return the manifest; write anything; edit `convex/plugins.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0411c / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33227,19 +33329,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: QueryCtx, args: { slug: string }): Promise<{ pluginId: string; version: string; enabled: boolean; granted: string[] } | null> => { … },
   });
   ```
-  Behaviour: `user = await requireUser(ctx)`; `listing = await listingBySlug(ctx, args.slug)`; `null` or `deletedAt` set → return `null`; `id = (listing.manifest as PluginManifest).id`; `row` = the caller's `plugins` row by `by_userId_pluginId` (`.unique()`); return `null` unless `row` is live and `row.listingId === listing._id`; else `{ pluginId: row.pluginId, version: row.version, enabled: row.enabled, granted: row.grantedPermissions ?? [] }` (`grantedPermissions` is the optional field that TFV2-0405a writes).
+  Behaviour: `user = await requireUser(ctx)`; `listing = await listingBySlug(ctx, args.slug)`; `listing === null` or `listing.deletedAt !== undefined` (the `marketplaceListings` row is tombstoned) → return `null`; `id = (listing.manifest as PluginManifest).id`; `row` = the caller's `plugins` row by `by_userId_pluginId` (`.unique()`); return `null` unless `row` exists, `row.deletedAt === undefined` (the caller's `plugins` row is live) and `row.listingId === listing._id`; else `{ pluginId: row.pluginId, version: row.version, enabled: row.enabled, granted: row.grantedPermissions ?? [] }` (`grantedPermissions` is the optional field that TFV2-0405a writes).
   Errors (exact → trigger): `"Not authenticated"`. Limits: two `.unique()` reads.
 - **TESTS:** (TFV2-0407a fixtures)
   1. Given `makeSignedOutCtx()` / Then `run(marketplace.myInstall, ctx, { slug: "focus-timer" })` rejects with `"Not authenticated"`.
   2. Given `addListing(ctx)` and no install / When B asks / Then `null`.
   3. Given B installed it through `installListing` / Then it returns `{ pluginId: "focus-timer", version: "1.0.0", enabled: true, granted: [] }`.
   4. Given B's install / When A asks for the same slug / Then `null` (A has no install).
-  5. Given B has a live `source: "file"` row for `focus-timer` with no `listingId` / Then `null`; and given B's marketplace row with `deletedAt: 5` / Then `null`.
+  5. Given B has a live `source: "file"` row for `focus-timer` with no `listingId` / Then `null`; and given B installed it through `installListing` and then its `plugins` row (not the listing) is patched to `deletedAt: 5` / Then `null`; and given B's live install and the `marketplaceListings` row patched to `deletedAt: 5` / Then `null`.
 - **NUMBERS:** Two indexed reads per call (exact). p95 latency: UNKNOWN (not a gate). 5 of 5 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0411a (CFG-021 categories and moderation; CFG-022 and TFV2-0397 plugin table, permission set and catalog parts) — Amit.
+- **OPEN:** inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?) — Amit.
 
 ### TFV2-0411b — Component: InstallConfirm (install sheet: what the plugin may do, Approve or Cancel) (`apps/web/components/marketplace/InstallConfirm.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0117, TFV2-0123, TFV2-0397 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0117, TFV2-0123, TFV2-0397.
@@ -33311,9 +33414,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the page / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="install-confirm-default"]')` and `expectMotionBudget(page, '[data-testid="install-confirm-default"]')` run, and Tab moves from Cancel / Then all pass and focus wraps to Close with `outline-width` ≥ `2px`.
 - **NUMBERS:** Permissions pre-ticked = 0 (exact; PRD §5 accept/reject; bullet 1). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8. Focus visible ≥ 2 px · SC 2.4.7. Text contrast ≥ 4.5:1 · SC 1.4.3 (tokens only). Motion ≤ 250 ms, ≤ 1 ms reduced · `expectMotionBudget`. 32 of 32 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0397 (the permission set and which catalog components and actions a plugin may extend) — Amit. Also new: Should every permission start unticked (proposed), and is the plain-words list above the right wording? — Amit.
+- **OPEN:** inherits TFV2-0397 (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); new: Should every permission start unticked (proposed), and is the plain-words list above the right wording? — Amit.
 
 ### TFV2-0410a — View: PluginDetailView (one plugin, Install, what it changes and may do) (`apps/web/components/marketplace/PluginDetailView.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0411b (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0411b, TFV2-0088, TFV2-0090, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0411b, TFV2-0088, TFV2-0090, TFV2-0092, TFV2-0093, TFV2-0120, TFV2-0121, TFV2-0122.
@@ -33408,9 +33512,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the page / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="plugin-detail-view-default"]')` and `expectMotionBudget(page, '[data-testid="plugin-detail-view-default"]')` run / Then all pass, and in `he` the back link's chevron has class `tp-icon--back`.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Target size ≥ 24 × 24 CSS px · SC 2.5.8. Focus visible ≥ 2 px · SC 2.4.7 (global ring). Motion ≤ 250 ms, ≤ 1 ms reduced · `expectMotionBudget`. Revenue share 100% (PRD F-45). 40 of 40 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0411b (TFV2-0397: permission set and catalog parts; unticked-by-default and the wording) — Amit.
+- **OPEN:** inherits TFV2-0411b (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?) — Amit.
 
 ### TFV2-0410b — Route: `/marketplace/[slug]` (detail, install, Undo) (`apps/web/app/(tempo)/marketplace/[slug]/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0410a (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?); inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0411c (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0405a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0402b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0409b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0410a, TFV2-0411a, TFV2-0411c, TFV2-0405a, TFV2-0402b, TFV2-0409b, TFV2-0000b, TFV2-0000c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0410a, TFV2-0411a, TFV2-0411c, TFV2-0405a, TFV2-0402b, TFV2-0409b, TFV2-0000b, TFV2-0000c.
@@ -33446,9 +33551,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (once, EN, 1280) Given no `?state` (signed out under the bypass) / When `page.goto("/marketplace/focus-timer")` / Then the URL does not match `/sign-in/` and `marketplace-detail-route` is attached.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 · web.dev Core Web Vitals · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8. Undo window 5 minutes (PRD F-131; `UNDO_MS`). INP: UNKNOWN locally. 29 of 29 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0410a and TFV2-0411a (TFV2-0397 permission set and catalog parts; CFG-021 categories and moderation; CFG-022 plugin table) — Amit.
+- **OPEN:** inherits TFV2-0410a (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?); inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0411c (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0405a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0402b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0409b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0412a — Marketplace reviews: `marketplace.rate` (one star rating and short review per person per listing) (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits CFG-023 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); new: Must a reviewer have installed the plugin (proposed: yes), and who moderates review text?
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-023, TFV2-0411a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-023, TFV2-0411a.
@@ -33461,8 +33567,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the constants and `rate` exactly as SPEC.
   3. Add `describe("TFV2-0412a marketplace.rate", …)` with the 8 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0412a"` → `8 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 8 `(pass)` lines whose names start with `TFV2-0412a`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 8 `TFV2-0412a` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** append a second review for the same person and listing; accept stars outside 1–5 or a non-integer; let an author rate their own listing; store HTML or trim inner whitespace beyond the SPEC; edit `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0412a / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33488,9 +33594,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given B rated 4 / When B rates 2 / Then there is still one review row for B (stars 2) and it returns `{ ratingAverage: 2, ratingCount: 1 }`; and given a third person's live review of 5 seeded directly / When B rates 2 again / Then `{ ratingAverage: 3.5, ratingCount: 2 }`.
 - **NUMBERS:** Stars integer 1–5 · review ≤ 1,000 characters (old TFV2-0412; CFG-023 note) · ≤ 5,000 reviews read per recompute (`REVIEWS_AGGREGATE_MAX`, product bound; CONVENTIONS §16). Review spam limits: UNKNOWN (Amit). p95 latency: UNKNOWN (not a gate). 8 of 8 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-023 (which inherits CFG-021: category list and moderation) and TFV2-0411a — Amit. Also new: Must a reviewer have installed the plugin (proposed: yes), and who moderates review text? — Amit.
+- **OPEN:** inherits CFG-023 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?); inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); new: Must a reviewer have installed the plugin (proposed: yes), and who moderates review text? — Amit.
 
 ### TFV2-0412b — Marketplace reviews: `marketplace.listReviews` (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0412a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: Must a reviewer have installed the plugin (proposed: yes), and who moderates review text?); new: Is a reviewer's first name the right public label for a review (proposed), or no name at all?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0412a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0412a.
@@ -33503,8 +33610,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `REVIEWS_PAGE_MAX` and `listReviews` exactly as SPEC.
   3. Add `describe("TFV2-0412b marketplace.listReviews", …)` with the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0412b"` → `5 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0412b`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 5 `TFV2-0412b` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** return an email, a user id or a full name; return soft-deleted reviews; read without the page bound; edit `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0412b / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33529,9 +33636,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given any page / Then `JSON.stringify(result)` contains no `"@example.com"` and no `"users:"`.
 - **NUMBERS:** Page ≤ 50 reviews (`REVIEWS_PAGE_MAX`, old TFV2-0412 "limit 50 max"; case 4). p95 latency: UNKNOWN (not a gate). 5 of 5 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0412a (CFG-023/CFG-021; whether reviewers must have installed the plugin and who moderates review text) — Amit. Also new: Is a reviewer's first name the right public label for a review (proposed), or no name at all? — Amit.
+- **OPEN:** inherits TFV2-0412a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: Must a reviewer have installed the plugin (proposed: yes), and who moderates review text?); new: Is a reviewer's first name the right public label for a review (proposed), or no name at all? — Amit.
 
 ### TFV2-0413 — Marketplace: `marketplace.listByAuthor` (more from this author) + `AUTHOR_REVENUE_SHARE_PERCENT` (`convex/marketplace.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0408 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0408 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0408.
@@ -33544,8 +33652,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add the constants and `listByAuthor` exactly as SPEC.
   3. Add `describe("TFV2-0413 marketplace.listByAuthor", …)` with the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/marketplace.test.ts -t "TFV2-0413"` → `5 pass`, `0 fail`; then `bun test convex/marketplace.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/marketplace.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `TFV2-0413`.
+- **EVIDENCE:** the summary of `bun test convex/marketplace.test.ts` (with its 5 `TFV2-0413` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** return `authorId` or any user field; read `users`; add a payment rail, payout account or schedule; return unpublished listings; edit `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0413 / evidence: <DONE output> / changed: convex/marketplace.ts, convex/marketplace.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33569,9 +33677,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `AUTHOR_REVENUE_SHARE_PERCENT` / Then it equals 100, and `JSON.stringify` of case 3's result contains no `"users:"`.
 - **NUMBERS:** Revenue share 100% (PRD F-45; exact; case 5). ≤ 24 listings returned (`AUTHOR_LISTINGS_MAX`, product bound matching TFV2-0408's default page size; case 4) from ≤ 100 read (`listingsPerAuthorMax`). Payout rail: UNKNOWN (Amit). p95 latency: UNKNOWN (not a gate). 5 of 5 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0408 (CFG-021: category list and moderation) — Amit.
+- **OPEN:** inherits TFV2-0408 (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0414a — Plugins: `plugins.checkUpdates` (installed marketplace plugins with a newer listing version) (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0405a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0411a, TFV2-0405a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0411a, TFV2-0405a.
@@ -33584,8 +33693,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `checkUpdates` exactly as SPEC.
   3. Add `describe("TFV2-0414a plugins.checkUpdates", …)` with the 6 TESTS cases, using the TFV2-0401a fixtures (`A`, `B`, `VALID`, `addPlugin`) and inserting listings with `ctx.db.insert("marketplaceListings", …)`.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0414a"` → `6 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 6 `(pass)` lines whose names start with `TFV2-0414a`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 6 `TFV2-0414a` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** apply an update; offer a downgrade; read listings that are not linked by `listingId`; edit `convex/marketplace.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0414a / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33608,9 +33717,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given B's marketplace plugin with an update / When A calls / Then `[]`.
 - **NUMBERS:** Versions compared as MAJOR.MINOR.PATCH integers (`compareVersions`, TFV2-0397; exact). ≤ 50 plugins read (`PLUGINS_PER_USER_MAX`). p95 latency: UNKNOWN (not a gate). 6 of 6 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0411a and TFV2-0405a (CFG-021, CFG-022, TFV2-0397: categories, moderation, plugin table, permission set and catalog parts) — Amit.
+- **OPEN:** inherits TFV2-0411a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0405a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?) — Amit.
 
 ### TFV2-0414b — Plugins: `plugins.update` applies a newer listing version (`convex/plugins.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0414a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); new: Are plugin updates always manual (proposed), and is "ask once, then the new permissions start off" the right re-grant flow?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0414a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0414a.
@@ -33623,8 +33733,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `update` exactly as SPEC.
   3. Add `describe("TFV2-0414b plugins.update", …)` with the 7 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/plugins.test.ts -t "TFV2-0414b"` → `7 pass`, `0 fail`; then `bun test convex/plugins.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/plugins.test.ts` → `0 fail`, and its output lists 7 `(pass)` lines whose names start with `TFV2-0414b`.
+- **EVIDENCE:** the summary of `bun test convex/plugins.test.ts` (with its 7 `TFV2-0414b` `(pass)` lines) and the typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** grant a new permission; apply a downgrade or the same version; update a `source: "file"` plugin; change `enabled`; edit `convex/marketplace.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0414b / evidence: <DONE output> / changed: convex/plugins.ts, convex/plugins.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -33647,12 +33757,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given the listing at `1.1.0` whose manifest drops `"read_pages"` / Then it returns `granted: []` and the row's `grantedPermissions` is `[]`.
 - **NUMBERS:** No new permission is granted by an update (exact; case 6). Only newer versions apply (exact; case 3). p95 latency: UNKNOWN (not a gate). 7 of 7 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0414a (CFG-021, CFG-022, TFV2-0397) — Amit. Also new: Are plugin updates always manual (proposed), and is "ask once, then the new permissions start off" the right re-grant flow? — Amit.
+- **OPEN:** inherits TFV2-0414a (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); new: Are plugin updates always manual (proposed), and is "ask once, then the new permissions start off" the right re-grant flow? — Amit.
 
 ### TFV2-0415 — Tauri 2 desktop shell scaffold `apps/desktop` — superseded by CFG-048
 - **Status:** superseded by CFG-048; not a build ticket.
 
 ### TFV2-0418a — Desktop main window + navigation allow-list (`apps/desktop/src-tauri/src/nav.rs`, `window.rs`) — OPEN
+- **STATUS:** open — inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits CFG-049 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-048, CFG-049 · **Folds-in:** TFV2-0418 (old: webview + CSP)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust, `apps/desktop/src-tauri`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-048, CFG-049.
@@ -33742,9 +33853,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given the window constants / Then `MAIN_LABEL == "main"`, `MAIN_TITLE == "Tempo Flow"`, `MAIN_SIZE == (1200.0, 800.0)`, `MAIN_MIN_SIZE == (800.0, 600.0)`.
 - **NUMBERS:** window 1200 × 800, minimum 800 × 600 logical px (product values carried from the old TFV2-0415 ticket; pass = the exact constants, test 9). Allowed in-window origins = 1 web origin + the bundled pages (pass = tests 1–6). 9 of 9 tests pass. Latency: n/a (no network call). Desktop performance budgets (startup time, memory): UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits CFG-049 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0418b — Web ↔ desktop bridge `apps/web/lib/desktop/bridge.ts` — OPEN
+- **STATUS:** open — inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-048 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (pure helper used by the desktop routes); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-048.
@@ -33803,9 +33915,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `handoffDeepLink("A1".repeat(16))` / Then `"tempo-flow://auth?code=A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1"`; and `handoffDeepLink("abc")`, `handoffDeepLink("a".repeat(31) + "!")`, `handoffDeepLink(null)` are each `null`.
 - **NUMBERS:** 10 of 10 tests pass (exact). Auth code length = 32 (source: `@convex-dev/auth` 0.0.91, the version in `bun.lock`). Latency: n/a (no network).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0423a — Desktop settings store + commands (`apps/desktop/src-tauri/src/settings.rs`) — OPEN
+- **STATUS:** open — inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418a.
@@ -33878,9 +33991,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given the constants / Then `STORE_FILE == "settings.json"`, `STORE_KEY == "desktop"`, `SETTINGS_CHANGED_EVENT == "desktop-settings-changed"`.
 - **NUMBERS:** 10 of 10 tests pass (exact). Stored fields = 5 (exact, test 1). Latency: n/a (local file). Store file size: UNKNOWN in bytes (a few hundred; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0422 — Desktop auto-update: check, download, install on quit or restart (`apps/desktop/src-tauri/src/updater.rs`) — OPEN
+- **STATUS:** open — inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0423a.
@@ -33941,9 +34055,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `map_install_error::<&str>(Err("disk"))` / Then `Err("The update could not be installed")`; and `map_install_error::<&str>(Ok(()))` / Then `Ok(())`.
 - **NUMBERS:** downloads only over HTTPS and only with a valid signature (exact; enforced by `tauri-plugin-updater` and the CFG-048 `https://` endpoint). 0 installs without a Quit or Restart (exact; tests 4–5 and DO NOT). 6 of 6 tests pass. Update check latency and package size: UNKNOWN (no feed yet).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0423a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0416 — Desktop native menu + tray + keep-in-tray close (`apps/desktop/src-tauri/src/menu.rs`, `tray.rs`) — OPEN
+- **STATUS:** open — inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0422 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423a, TFV2-0422 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0423a, TFV2-0422.
@@ -34016,9 +34131,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given settings with `close_to_tray: true` / Then `on_close_action == CloseAction::Hide`; with `false` / Then `CloseAction::Quit`.
 - **NUMBERS:** accelerators follow platform conventions — `CmdOrCtrl+Q` quit, `CmdOrCtrl+,` settings, `CmdOrCtrl+R` reload (Apple Human Interface Guidelines, Menus, https://developer.apple.com/design/human-interface-guidelines/the-menu-bar ; pass = tests 3 and 5). 9 of 9 tests pass. Menu rebuild time after a language change: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0423a, TFV2-0422, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0422 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0417a — Desktop deep link `tempo-flow://auth` → sign in inside the window (`apps/desktop/src-tauri/src/deeplink.rs`) — OPEN
+- **STATUS:** open — inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418a.
@@ -34066,9 +34182,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `"not a url"` / Then `None`.
 - **NUMBERS:** code length = 32 (source: `@convex-dev/auth` 0.0.91 `generateRandomString(32, alphabet)`); magic link valid 30 min (`convex/auth.ts` `maxAge: 60 * 30`); session 30 days (`convex/auth.ts` `session.totalDurationMs`). 9 of 9 tests pass. Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0417b — Web: `/desktop/handoff` is public and its magic-link code is not exchanged in the browser (`apps/web/lib/rootEntry.ts`, `apps/web/proxy.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (auth routing); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418b.
@@ -34105,9 +34222,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (new) Given `decideEntryRedirect({ pathname: "/desktop/handoff", search: "?code=abc", isAuthenticated: false, isPublicRoute: true, isCalendarE2EBypass: false })` / Then `null` (no redirect to `/sign-in`).
 - **NUMBERS:** routes that skip the code exchange = exactly 1 (test 2). 10 of 10 unit cases pass; wiring specs 0 failed. Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0417c — Web route `/desktop/handoff`: open the desktop app with the sign-in code — OPEN
+- **STATUS:** open — inherits TFV2-0417b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0417b, TFV2-0418b, TFV2-0000b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0417b, TFV2-0418b, TFV2-0000b.
@@ -34159,9 +34277,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the opening URL / Then `expectDir(page, lang)` and `expectTargetSize(page, "main")` pass, and Tab focus on the button gives a computed `outline-width` ≥ `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. 20 of 20 tests pass. LCP/CLS: not measured (a one-time hand-off page; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0417b, TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0417b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0417d — Web sign-in inside the desktop app asks for a hand-off link (`apps/web/app/sign-in/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0417c (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b, TFV2-0417c, TFV2-0000b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418b, TFV2-0417c, TFV2-0000b.
@@ -34196,9 +34315,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Browser with next: Given no init script and `/sign-in?next=%2Fnotes` / When submitted / Then `captured.args.params.redirectTo === "/notes"`.
 - **NUMBERS:** 12 of 12 tests pass (3 bullets × 2 viewports × 2 languages). Requests that leave the desktop with a non-hand-off `redirectTo` = 0 (Desktop bullet). Latency: n/a.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418b, TFV2-0417c, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0417c (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0421a — Desktop offline page cache: LRU store + commands (`apps/desktop/src-tauri/src/page_cache.rs`) — OPEN
+- **STATUS:** open — inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (Rust); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418a.
@@ -34270,9 +34390,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given a store with `[n1, n2]` / When `get("n2")` and `get("zz")` / Then `Some(n2)` and `None`; When `clear` / Then the store holds `[]`.
 - **NUMBERS:** cap 200 pages (product value carried from the old TFV2-0421; test 4) · body ≤ 262,144 UTF-8 bytes (= 256 KiB; product bound; test 5; "bytes" per CONVENTIONS §7 H) · worst-case cache size ≈ 200 × 256 KiB = 50 MiB (derived). 10 of 10 tests pass. Latency: n/a (local file).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418a, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)? — Amit.
+- **OPEN:** inherits TFV2-0418a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)? — Amit.
 
 ### TFV2-0421b — Desktop offline reader view (`apps/desktop/src/offline.ts` + `offline.css`) — OPEN
+- **STATUS:** open — inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-048, TFV2-0000b, TFV2-0421a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (bundled boot page, TypeScript); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-048, TFV2-0000b, TFV2-0421a.
@@ -34329,10 +34450,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   | missing | This page isn't saved for offline reading. | הדף הזה לא נשמר לקריאה בלי חיבור. |
   | error | Couldn't open the offline pages. | לא הצלחנו לפתוח את הדפים השמורים. |
   | safe | Your data is safe. | המידע שלך שמור. |
-  **Stylesheet `offline.css` (every rule):**
+  **Stylesheet `offline.css` (every rule; CONVENTIONS §10 Case B: every selector starts with `.tp-offline-reader`, no `html`/`body` or other element selector at top level — the page background, ink and font sit on the `.tp-offline-reader` root, and the bundled page's `body` margin belongs to CFG-048's `index.html`, not this file):**
   ```css
-  body { margin: 0; background: var(--tp-ground); color: var(--tp-ink); font-family: var(--tp-font-sans); font-size: var(--tp-text-md); line-height: var(--tp-leading-body); }
-  .tp-offline-reader { display: grid; gap: var(--tp-space-4); max-inline-size: var(--tp-paper-max); margin-inline: auto; padding: var(--tp-space-6) var(--tp-space-4); }
+  .tp-offline-reader { display: grid; gap: var(--tp-space-4); max-inline-size: var(--tp-paper-max); margin-inline: auto; padding: var(--tp-space-6) var(--tp-space-4); background: var(--tp-ground); color: var(--tp-ink); font-family: var(--tp-font-sans); font-size: var(--tp-text-md); line-height: var(--tp-leading-body); }
   .tp-offline-reader__banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); padding: var(--tp-space-3) var(--tp-space-4); border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); background: var(--tp-caution-wash); }
   .tp-offline-reader__banner-text { flex: 1 1 auto; margin: 0; font-size: var(--tp-text-sm); }
   .tp-offline-reader__btn { min-block-size: var(--tp-touch); padding-inline: var(--tp-space-4); border: 1px solid var(--tp-line-control); border-radius: var(--tp-radius-md); background: var(--tp-paper); color: var(--tp-ink); font: inherit; font-weight: 600; cursor: pointer; transition: background-color var(--tp-dur-fast) var(--tp-ease-out); }
@@ -34363,9 +34483,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given `list` / Then `expectDir(page, lang)`, `expectTargetSize(page, "main")` and `expectMotionBudget(page, "main")` pass, and Tab focus on the retry button gives a computed `outline-width` ≥ `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (controls are `--tp-touch` 44 px). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Motion ≤ 250 ms / ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); inherits TFV2-0421a (new: keep up to 200 opened pages as plain text on disk for offline reading, and clear them on sign-out?) — Amit.
+- **OPEN:** inherits CFG-048 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?) — Amit.
 
 ### TFV2-0421c — Desktop boot page: connection check, first run, offline reader wiring (`apps/desktop/src/boot.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0421b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0421b, TFV2-0421a, TFV2-0423a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `desktop` (bundled boot page); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0421b, TFV2-0421a, TFV2-0423a.
@@ -34423,9 +34544,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given a fake fetch resolving `{ ok: true, json: async () => ({ ok: true }) }` / Then `checkHealth(fake, 50)` is `true` and the fake was called with `"https://www.tempoflow.dev/api/health"` and `{ cache: "no-store", credentials: "omit", signal }`; a fake resolving `{ ok: false }` gives `false`; a fake that never resolves gives `false` after 50 ms.
 - **NUMBERS:** health check timeout 4,000 ms (product value; pass = `HEALTH_TIMEOUT_MS === 4000`, abort proven by test 9 with 50 ms). Time to first paint of the boot page: UNKNOWN (no baseline; not a gate). 9 of 9 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); inherits TFV2-0421a (new: keep up to 200 opened pages as plain text on disk for offline reading, and clear them on sign-out?) — Amit.
+- **OPEN:** inherits TFV2-0421b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0421d — Web: push each opened page into the desktop cache (`apps/web/lib/desktop/DesktopPageCacheSync.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b, TFV2-0421a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (route-level data helper); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418b, TFV2-0421a.
@@ -34438,7 +34560,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `DesktopPageCacheSync.tsx` exactly as SPEC.
   3. Edit `page.tsx`: add `import { DesktopPageCacheSync } from "@/lib/desktop/DesktopPageCacheSync";` and change the return to `return (<><NotesScreen noteId={id} /><DesktopPageCacheSync noteId={id} /></>);`.
   4. Create the test with the 5 TESTS cases (pure functions only).
-  5. Run DONE, then `bun run typecheck`, `bun run lint`, and `CI=1 bunx playwright test tests/e2e --grep "notes" --reporter=line` (no notes spec regresses).
+  5. Run DONE, then `bun run typecheck`, `bun run lint`, and `bunx playwright test` (the full e2e run, CONVENTIONS §1; no notes spec regresses).
 - **DONE:** `bun test apps/web/lib/desktop/DesktopPageCacheSync.test.ts` → `5 pass`, `0 fail`; the notes Playwright run → `0 failed`.
 - **EVIDENCE:** both summaries plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** query Convex outside the desktop shell (`"skip"`); send another person's note (only what `getSafe` returns for the signed-in person); send a body over 262,144 UTF-8 bytes; show any UI or toast; edit `NotesScreen.tsx` or `convex/notes.ts`; touch `apps/desktop/**`, `.github/**`, `.env*`.
@@ -34472,9 +34594,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `cacheKey({ id: "n1", title: "", body: "", updatedAt: 9 })` / Then `"n1:9"`.
 - **NUMBERS:** body cap 262,144 UTF-8 bytes (CONVENTIONS §7 H; matches TFV2-0421a). Extra Convex queries outside the desktop = 0 (`"skip"`). 5 of 5 tests pass. Latency: the extra `getSafe` subscription is the same query `NotesScreen` may already hold; p95 UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); inherits TFV2-0421a (new: keep up to 200 opened pages as plain text on disk for offline reading, and clear them on sign-out?) — Amit.
+- **OPEN:** inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?) — Amit.
 
 ### TFV2-0423b — View: DesktopSettingsView (`apps/web/components/desktop/DesktopSettingsView.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b, TFV2-0000b, TFV2-0023a, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (shown inside the desktop window); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418b, TFV2-0000b, TFV2-0023a, TFV2-0023b.
@@ -34564,9 +34687,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="desktop-settings-view-default"]')` and `expectMotionBudget(page, '[data-testid="desktop-settings-view-default"]')` pass, and Tab focus on `#ds-launch-switch` gives a computed `outline-width` ≥ `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (switch and buttons ≥ `--tp-touch` 44 px). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 / non-text ≥ 3:1 · WCAG 2.2 SC 1.4.3 / 1.4.11 · tokens only. Motion ≤ 250 ms / ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key) — Amit.
+- **OPEN:** inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0423c — Route: `/desktop/settings` — OPEN
+- **STATUS:** open — inherits TFV2-0423b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0422 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0423b, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a, TFV2-0422, TFV2-0421a · **Folds-in:** TFV2-0423 (old: desktop settings screen)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (route shown in the desktop window; opened by the menu item "Desktop settings…", TFV2-0416); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0423b, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a, TFV2-0422, TFV2-0421a.
@@ -34592,6 +34716,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - **Live** (effect on `[forced, attempt]` when `forced === null`): `!isDesktopShell()` → `FIXTURES["not-desktop"]`; else `Promise.all([getDesktopSettings(), getUpdateStatus()])` → `{ state: "default", settings, update, pending: null, notice: null }`, rejection → `{ state: "error", settings: null, update: { state: "idle" }, pending: null, notice: null }`. After a successful load, if `!langSynced.current && settings.lang !== lang` → `langSynced.current = true; setDesktopSettings({ lang })` → on success replace `settings` (errors ignored).
   - **Live handlers:** `onToggle({ key, next })` → `pending: key`, `setDesktopSettings({ [key]: next })` → `settings` = reply, `notice: null`; rejection → `notice: "saveError"`; finally `pending: null`. `onRestart` → `pending: "restart"`, `restartToUpdate()` (the app restarts); rejection → `notice: "restartError"`, `pending: null`. `onClearPages` → `pending: "clear"`, `clearPageCache()` → `notice: "cleared"`; rejection → `notice: "clearError"`; finally `pending: null`. `onRetry` → `attempt + 1` with `FIXTURES.loading`.
   Renders `<DesktopSettingsView {...view} onToggle={…} onRestart={…} onClearPages={…} onRetry={…} />`. States, copy, RTL, keyboard, breakpoints and motion are TFV2-0423b's; no new string.
+  **Relies on — `#ds-launch-switch`:** created by TFV2-0423b (in `Depends`), whose SPEC renders, quoted: "section `ds-app` {appSection}: row `launchAtLogin` (rowId `ds-launch`, control `<SettingsSwitch id="ds-launch-switch" checked={settings.launchAtLogin} labelledBy="ds-launch" describedBy="ds-launch-help" locked={pending !== null} onChange={(next) => onToggle({ key: "launchAtLogin", next })} />`)". So the selector `#ds-launch-switch` is the `launchAtLogin` switch: its `aria-checked` follows `settings.launchAtLogin`, and a click calls `onToggle({ key: "launchAtLogin", next: !settings.launchAtLogin })`. STEP 1 also runs `grep -n 'id="ds-launch-switch"' apps/web/components/desktop/DesktopSettingsView.tsx` (one line expected; else `blocked: PATH_DRIFT — ds-launch-switch`).
 - **TESTS:** (route spec; forced cases `openScreen(page, "/desktop/settings", { state, lang })`; each asserts `desktop-settings-route` is attached and ends with the §22 route console-error check)
   - Given `?state=default` / Then the `h1` reads `Desktop settings` / `הגדרות המחשב` and there are 3 `[role="switch"]`.
   - Given `?state=loading` / Then `Loading desktop settings…` / `הגדרות המחשב בטעינה…` shows.
@@ -34605,9 +34730,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="desktop-settings-route"] [data-view="DesktopSettingsView"]')` pass, and `measureVitals(page, \`/desktop/settings?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally (preview only). Language saves per load ≤ 1 (bullet 9). 40 of 40 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); inherits TFV2-0421a (new: keep up to 200 opened pages as plain text on disk for offline reading, and clear them on sign-out?) — Amit.
+- **OPEN:** inherits TFV2-0423b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0422 (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0421a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: May the desktop keep up to 200 recently opened pages as plain text in its app-data folder for offline reading (proposed: yes, cleared from Desktop settings; no encryption at rest), and must it also clear them on sign-out (proposed: a later ticket hooks sign-out)?) — Amit.
 
 ### TFV2-0424a — View: DesktopWelcomeView (first run in the desktop app) (`apps/web/components/desktop/DesktopWelcomeView.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0418b, TFV2-0000b, TFV2-0023a, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (shown inside the desktop window on first run); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0418b, TFV2-0000b, TFV2-0023a, TFV2-0023b.
@@ -34679,9 +34805,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Layout: Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="desktop-welcome-view-choices"]')` and `expectMotionBudget(page, '[data-testid="desktop-welcome-view-choices"]')` pass; in `welcome`, Tab focus on the checked radio then `ArrowRight` (en) / `ArrowLeft` (he) logs `onLang:"he"`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible` (tempo.css line 91). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Motion ≤ 250 ms / ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. Steps = 2 (product proposal replacing the old 3-step Welcome/Language/Theme; theme stays a web preference). 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0418b, which inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow? — Amit.
+- **OPEN:** inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow? — Amit.
 
 ### TFV2-0424b — Route: `/desktop/welcome` (desktop first run) — OPEN
+- **STATUS:** open — inherits TFV2-0424a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0424a, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a · **Folds-in:** TFV2-0424 (old: desktop first-run onboarding)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (route the desktop boot page opens on first run, TFV2-0421c); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0424a, TFV2-0418b, TFV2-0000b, TFV2-0000c, TFV2-0423a.
@@ -34717,9 +34844,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `?state=welcome` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="desktop-welcome-route"]')` pass, and `measureVitals(page, \`/desktop/welcome?state=welcome&lang=${lang}\`)` gives `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally (preview only). 28 of 28 tests pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-048 (new: adopt the Tauri 2 desktop shell with its pins, bundle targets, signing identities, bundle id, the web origin it loads, the deep-link scheme and the updater feed/key); inherits TFV2-0424a (new: is the desktop first run these two steps, with theme and account onboarding left to the web?) — Amit.
+- **OPEN:** inherits TFV2-0424a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?; new: Is the desktop first run these two steps (language; start at login + keep running in the tray), with theme left to the web Preferences screen and the account onboarding left to the web `/onboarding` flow?); inherits TFV2-0418b (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?); inherits TFV2-0423a (new: Adopt the Tauri 2 desktop shell `apps/desktop` with these pins, and decide: bundle targets (proposed macOS `.dmg`, Windows `.msi`, Linux `.AppImage`), code-signing identities (Apple Developer ID, Windows certificate), bundle identifier (proposed `dev.tempoflow.desktop`), the one web origin the desktop loads (proposed `https://www.tempoflow.dev`, not preview), the deep-link scheme (proposed `tempo-flow`), and the updater feed host (proposed `https://www.tempoflow.dev/desktop/updates/latest.json`) and who holds the update-signing key?) — Amit.
 
 ### TFV2-0419 — VPS runner: bounded `claude` spawn (`apps/claude-runner/src/spawn.ts`) — OPEN
+- **STATUS:** open — inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-050 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `claude-runner` (Bun service for the VPS, new workspace from CFG-050); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-050.
@@ -34779,9 +34907,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `truncateUtf8("abc", 2)` / Then `{ text: "ab", truncated: true }`; `truncateUtf8("אב", 3)` / Then `{ text: "א", truncated: true }`; `truncateUtf8("ab", 2)` / Then `{ text: "ab", truncated: false }`.
 - **NUMBERS:** output ≤ 32,768 UTF-8 bytes; run ≤ 60,000 ms; prompt ≤ 16,384 bytes; ≤ 8 agent turns (product bounds carried from the old TFV2-0419; pass = tests 3, 7, 8 and test 1's `--max-turns`). 11 of 11 tests pass. Spawn latency and cost per run: UNKNOWN (no VPS yet).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-050 (new: may Tempo run the person's own Claude subscription token on a Tempo-operated VPS — Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's approval — and if so: which VPS host, which pinned `claude` version, and where the runner code lives?) — Amit.
+- **OPEN:** inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?) — Amit.
 
 ### TFV2-0420a — VPS runner: authenticated `POST /run` handler (`apps/claude-runner/src/server.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0419 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?); inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0419, CFG-050 · **Folds-in:** TFV2-0420 (old: bridge, part 1)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `claude-runner`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0419, CFG-050.
@@ -34831,9 +34960,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `mcpConfigJson("https://a/mcp", "t")` / Then it equals `{"mcpServers":{"tempo":{"type":"http","url":"https://a/mcp","headers":{"Authorization":"Bearer t"}}}}`.
 - **NUMBERS:** body ≤ 32,768 bytes; run ≤ 60,000 ms; ≤ 2 concurrent runs per runner (product bounds; tests 3, 9). Allowed tools = 11 (test 5). 10 of 10 tests pass. Runner p95 latency: UNKNOWN (no VPS; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-050 (new: may Tempo run the person's own Claude subscription token on a Tempo-operated VPS, given Anthropic's third-party login restriction, and if so which VPS host, `claude` version and runner location?) — Amit.
+- **OPEN:** inherits TFV2-0419 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?); inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?) — Amit.
 
 ### TFV2-0420b — `claudeRunner.reserveRun`: tier + connection + daily run cap (`convex/claudeRunner.ts`) — OPEN
+- **STATUS:** open — inherits CFG-051 (new: Store each person's Claude token and a Tempo MCP token encrypted in `claudeLinks` (this shape), allow Claude runs only on the `max`/`god` tiers, and cap them at 20 runs per person per UTC day (a failed run still counts)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-051, TFV2-0000a · **Folds-in:** TFV2-0420 (old: bridge, part 2)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (`convex/`); lane per `factory/SLOTS.md` (one exported function, CONVENTIONS §16).
 - **WHEN:** after CFG-051, TFV2-0000a.
@@ -34864,7 +34994,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: MutationCtx, _args: Record<string, never>): Promise<{ userId: Id<"users">; oauthTokenCipher: string; mcpTokenCipher: string }> => { … },
   });
   ```
-  Handler: `user = await requireUser(ctx)`; `user.entitlementTier` not in `CLAUDE_TIERS` (incl. undefined) → `throw new Error("Claude runs need the Max plan")`; `link = await ctx.db.query("claudeLinks").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).first()`; none → `throw new Error("Claude is not connected")`; `now = Date.now()`, `day = new Date(now).toISOString().slice(0, 10)`; `used = link.runDay === day ? (link.runCount ?? 0) : 0`; `used >= CLAUDE_DAILY_RUN_LIMIT` → `throw new Error("Daily Claude run limit reached")`; `ctx.db.patch(link._id, { runDay: day, runCount: used + 1, updatedAt: now })`; return `{ userId: user._id, oauthTokenCipher: link.oauthTokenCipher, mcpTokenCipher: link.mcpTokenCipher }`. Errors (exact → trigger): `"Not authenticated"` (signed out), `"User not found"`, `"This account is not active"` (requireUser); `"Claude runs need the Max plan"` (tier not max/god); `"Claude is not connected"` (no live row of the caller — another person's row or a soft-deleted row counts as none); `"Daily Claude run limit reached"` (20 runs already today, UTC). English only (CONVENTIONS §11).
+  Handler: `user = await requireUser(ctx)`; `user.entitlementTier` not in `CLAUDE_TIERS` (incl. undefined) → `throw new Error("Claude runs need the Max plan")`; `link = await ctx.db.query("claudeLinks").withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined)).first()`; none → `throw new Error("Claude is not connected")`; `now = Date.now()`, `day = new Date(now).toISOString().slice(0, 10)`; `used = link.runDay === day ? (link.runCount ?? 0) : 0`; `used >= CLAUDE_DAILY_RUN_LIMIT` → `throw new Error("Daily Claude run limit reached")`; `ctx.db.patch(link._id, { runDay: day, runCount: used + 1, updatedAt: now })`; return `{ userId: user._id, oauthTokenCipher: link.oauthTokenCipher, mcpTokenCipher: link.mcpTokenCipher }`. Errors (exact → trigger): `"Not authenticated"` (signed out; `requireUser` can also throw `"User not found"` and `"This account is not active"`, which are `requireUser`'s own errors, covered by its tests and not asserted here); `"Claude runs need the Max plan"` (tier not max/god); `"Claude is not connected"` (no live row of the caller — another person's row or a soft-deleted row counts as none); `"Daily Claude run limit reached"` (20 runs already today, UTC). English only (CONVENTIONS §11).
 - **TESTS:** (`bun:test`; the caller `users:1` seeded with `entitlementTier: "max"` unless stated; link rows `{ userId, oauthTokenCipher: "c1", mcpTokenCipher: "m1", createdAt: 1, updatedAt: 1 }`)
   1. Given `makeSignedOutCtx()` / Then it rejects `"Not authenticated"`.
   2. Given the caller with `entitlementTier: "basic"` and a link / Then it rejects `"Claude runs need the Max plan"` and the link is unchanged.
@@ -34872,14 +35002,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given only a link of `users:2` / Then the caller gets `"Claude is not connected"` and that row is unchanged.
   5. Given the caller's link with `deletedAt: 5` / Then `"Claude is not connected"`.
   6. Given the caller's link with no `runDay` / Then it returns `{ userId: "users:1", oauthTokenCipher: "c1", mcpTokenCipher: "m1" }` and the row now has `runDay: "2026-11-02"`, `runCount: 1`.
-  7. Given `runDay: "2026-11-02"`, `runCount: 19` / Then it succeeds with `runCount: 20`; given `runCount: 20` / Then it rejects `"Daily Claude run limit reached"` and the row keeps `runCount: 20`.
+  7. Limit at n and n + 1 (`CLAUDE_DAILY_RUN_LIMIT` = 20): given `runDay: "2026-11-02"`, `runCount: 19` / When the caller reserves run n = 20 / Then it succeeds and the row has `runCount: 20`; given `runDay: "2026-11-02"`, `runCount: 20` / When the caller reserves run n + 1 = 21 / Then it rejects `"Daily Claude run limit reached"` and the row keeps `runCount: 20`.
   8. Given `runDay: "2026-11-01"`, `runCount: 20` / Then it succeeds with `runDay: "2026-11-02"`, `runCount: 1`.
   9. Given the caller with `entitlementTier: "god"` and a link / Then it succeeds.
 - **NUMBERS:** daily cap 20 runs per person per UTC day (proposed; UNKNOWN until Amit answers; pass = tests 7–8). Bounded read: `.first()` on one index (1 row). 9 of 9 tests pass. p95 latency: UNKNOWN (no baseline; CONVENTIONS §20).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-051 (new: store each person's Claude token and a Tempo MCP token encrypted in `claudeLinks`, limit Claude runs to the max/god tiers, and cap them at 20 per UTC day?) — Amit.
+- **OPEN:** inherits CFG-051 (new: Store each person's Claude token and a Tempo MCP token encrypted in `claudeLinks` (this shape), allow Claude runs only on the `max`/`god` tiers, and cap them at 20 runs per person per UTC day (a failed run still counts)?) — Amit.
 
 ### TFV2-0420c — `claudeRunner.run` action + runner call (`convex/lib/claudeRunnerCall.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0420b (new: Store each person's Claude token and a Tempo MCP token encrypted in `claudeLinks` (this shape), allow Claude runs only on the `max`/`god` tiers, and cap them at 20 runs per person per UTC day (a failed run still counts)?); inherits TFV2-0420a (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?); inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0420b, TFV2-0420a, CFG-050 · **Folds-in:** TFV2-0420 (old: bridge, part 3)
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (`convex/`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0420b, TFV2-0420a, CFG-050.
@@ -34944,9 +35075,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   12. Given fetch → 200 `{ output: "x", truncated: true, extra: "y" }` / Then the result is exactly `{ output: "x", truncated: true }`; and no rejection message in tests 1–11 contains `runner-token`, `plain-c1` or `https://runner.test`.
 - **NUMBERS:** call timeout 75,000 ms (runner 60,000 ms + 15,000 ms margin; product value; test 9 uses the name check). Prompt ≤ 16,384 bytes (matches TFV2-0419). 12 of 12 tests pass. Action p95 latency: UNKNOWN (bounded by the run; no baseline; CONVENTIONS §20).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-050 (new: may Tempo run the person's own Claude subscription token on a Tempo-operated VPS, given Anthropic's third-party login restriction, and if so which VPS host, `claude` version and runner location?); inherits CFG-051 (new: store each person's Claude and MCP tokens encrypted in `claudeLinks`, max/god tiers only, 20 runs per UTC day?) — Amit.
+- **OPEN:** inherits TFV2-0420b (new: Store each person's Claude token and a Tempo MCP token encrypted in `claudeLinks` (this shape), allow Claude runs only on the `max`/`god` tiers, and cap them at 20 runs per person per UTC day (a failed run still counts)?); inherits TFV2-0420a (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?); inherits CFG-050 (new: May Tempo run the person's own Claude subscription token on a Tempo-operated VPS (Anthropic's Agent SDK docs say third-party products may not offer claude.ai login or its rate limits without Anthropic's prior approval; PRD §6 also forbids Anthropic keys in third-party code)? If yes: which VPS host and region, which pinned `claude` CLI version (npm `@anthropic-ai/claude-code` latest was 2.1.316 on 2 Nov 2026, installed on the image, not in the repo), and is `apps/claude-runner` in this repo the right place for the runner code?) — Amit.
 
 ### TFV2-0425 — Push registration logic `registerForPush` (`apps/mobile/lib/push.ts` + `push-native.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-052 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-052.
@@ -35012,6 +35144,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0426a — `push.register` (mutation, `convex/push.ts`) — OPEN
+- **STATUS:** open — inherits CFG-024 (new: Is the push token stored as plain text (this shape) or encrypted at rest?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-024, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-024, TFV2-0000a.
@@ -35024,8 +35157,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/push.ts` with the imports `import { v } from "convex/values"; import type { Id } from "./_generated/dataModel"; import { mutation, type MutationCtx } from "./_generated/server"; import { requireUser } from "./lib/requireUser";`, the two constants and `register` exactly as SPEC.
   3. Create `convex/push.test.ts` (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run` from `./lib/testFakeCtx`) with `describe("push.register", …)` holding the 6 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/push.test.ts -t "push.register"` → `6 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/push.test.ts` → `0 fail`, and its output lists 6 `(pass)` lines whose names start with `push.register`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/push.test.ts` (with its 6 `push.register` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** log or return the token in an error message; return any row of another user; send a push; edit `convex/schema.ts` or `convex/lib/accountDeletion.ts` (TFV2-0426e); touch `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0426a / evidence: <DONE output> / changed: convex/push.ts, convex/push.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35051,9 +35184,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given 10 live `users:1` rows with distinct tokens / When `users:1` registers an 11th new token / Then it rejects with `"Too many devices for push"` and there are still 10 rows.
 - **NUMBERS:** 6 of 6 cases pass (exact). Token ≤ 512 characters (`DEVICE_TOKEN_MAX`); ≤ 10 live devices per person (`DEVICE_TOKENS_PER_USER_MAX`, product bound, case 6 seeds cap and asserts the rejection). Reads ≤ 11 documents. Backend p95 latency: UNKNOWN (no baseline; not a gate — CONVENTIONS §20).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-024 (Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
+- **OPEN:** inherits CFG-024 (new: Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
 
 ### TFV2-0426b — `push.unregister` (mutation, `convex/push.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0426a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0426a.
@@ -35066,8 +35200,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `unregister` to `convex/push.ts` exactly as SPEC (reuse the existing imports).
   3. Append `describe("push.unregister", …)` with the 4 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/push.test.ts -t "push.unregister"` → `4 pass`, `0 fail`; `bun test convex/push.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/push.test.ts` → `0 fail`, and its output lists 4 `(pass)` lines whose names start with `push.unregister`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/push.test.ts` (with its 4 `push.unregister` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** hard-delete the row; touch another user's row; change `register`; edit `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0426b / evidence: <DONE output> / changed: convex/push.ts, convex/push.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35087,9 +35221,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given no row, and separately a `users:1` row with `deletedAt: 5` / When `users:1` unregisters each token / Then both reject with `"Push token not found"` and the deleted row keeps `deletedAt: 5`.
 - **NUMBERS:** 4 of 4 cases pass (exact); reads 1 document. Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0426a (CFG-024: Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
+- **OPEN:** inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
 
 ### TFV2-0426c — `push.targetsFor` (internalQuery, `convex/push.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0426a, CFG-025 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0426a, CFG-025.
@@ -35102,8 +35237,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `internalQuery` and `type QueryCtx` to the `./_generated/server` import; append `targetsFor` exactly as SPEC.
   3. Append `describe("push.targetsFor", …)` with the 4 TESTS cases (`run` calls `_handler`, so an internal query is tested like a public one).
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/push.test.ts -t "push.targetsFor"` → `4 pass`, `0 fail`; `bun test convex/push.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/push.test.ts` → `0 fail`, and its output lists 4 `(pass)` lines whose names start with `push.targetsFor`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/push.test.ts` (with its 4 `push.targetsFor` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** make it public (`query`); return `userId`, `_id` or timestamps; read more than `DEVICE_TOKENS_PER_USER_MAX` token rows; edit `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0426c / evidence: <DONE output> / changed: convex/push.ts, convex/push.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35125,9 +35260,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `pushEnabled: true` and 11 live `users:1` tokens / Then `tokens.length` is `10` (`DEVICE_TOKENS_PER_USER_MAX`).
 - **NUMBERS:** 4 of 4 cases pass (exact). Bounded read ≤ 10 token rows + 1 preferences row (CONVENTIONS §20 bounded reads; case 4 seeds cap + 1). Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0426a (CFG-024: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits CFG-025 (Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
+- **OPEN:** inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
 
 ### TFV2-0426d — `push.retireToken` (internalMutation, `convex/push.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0426a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0426a.
@@ -35140,8 +35276,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `internalMutation` to the `./_generated/server` import; append `retireToken` exactly as SPEC.
   3. Append `describe("push.retireToken", …)` with the 3 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/push.test.ts -t "push.retireToken"` → `3 pass`, `0 fail`; `bun test convex/push.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/push.test.ts` → `0 fail`, and its output lists 3 `(pass)` lines whose names start with `push.retireToken`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/push.test.ts` (with its 3 `push.retireToken` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** make it public; hard-delete; touch rows other than the one matching the token; edit `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0426d / evidence: <DONE output> / changed: convex/push.ts, convex/push.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35159,9 +35295,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given no row for `"ExponentPushToken[zz]"` and a live row for `"ExponentPushToken[d1]"` / When it retires `"ExponentPushToken[zz]"` / Then it returns `false` and the `d1` row is unchanged.
 - **NUMBERS:** 3 of 3 cases pass (exact); reads 1 document. Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0426a (CFG-024: Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
+- **OPEN:** inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?) — Amit.
 
 ### TFV2-0426e — Account deletion covers `deviceTokens` (`convex/lib/accountDeletion.ts`) — OPEN
+- **STATUS:** open — inherits CFG-024 (new: Is the push token stored as plain text (this shape) or encrypted at rest?); new: CFG-024 must also add `.index("by_userId", ["userId"])` (required of every owned table by `convex/lib/accountDeletion.test.ts`) and should land in the same PR as this fixture, because the uncovered-table test fails as soon as the table exists without one — approve that change to CFG-024?
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-024 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-024.
@@ -35185,9 +35322,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `USER_OWNED_TABLES` / Then it contains `"deviceTokens"` and equals the sorted generic soft-delete fixture names (STEP 4 assertion).
 - **NUMBERS:** whole file `0 fail` (66 of 66 today; exact). No latency number applies.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-024 (Is the push token stored as plain text (this shape) or encrypted at rest?); new: CFG-024 must also add `.index("by_userId", ["userId"])` (required of every owned table by `convex/lib/accountDeletion.test.ts`) and should land in the same PR as this fixture, because the uncovered-table test fails as soon as the table exists without one — approve that change to CFG-024? — Amit.
+- **OPEN:** inherits CFG-024 (new: Is the push token stored as plain text (this shape) or encrypted at rest?); new: CFG-024 must also add `.index("by_userId", ["userId"])` (required of every owned table by `convex/lib/accountDeletion.test.ts`) and should land in the same PR as this fixture, because the uncovered-table test fails as soon as the table exists without one — approve that change to CFG-024? — Amit.
 
 ### TFV2-0427a — `buildExpoPushBatches` (pure helper `convex/lib/expoPush.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -35236,6 +35374,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0427b — `readExpoPushTickets` (pure helper `convex/lib/expoPush.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0427a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0427a.
@@ -35248,8 +35387,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `ExpoTicketSummary` and `readExpoPushTickets` exactly as SPEC.
   3. Append `describe("readExpoPushTickets", …)` with the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/lib/expoPush.test.ts -t "readExpoPushTickets"` → `5 pass`, `0 fail`; `bun test convex/lib/expoPush.test.ts` → `11 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/lib/expoPush.test.ts` → `0 fail`, and its output lists 5 `(pass)` lines whose names start with `readExpoPushTickets`; `bun test convex/lib/expoPush.test.ts` → `11 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/lib/expoPush.test.ts` (with its 5 `readExpoPushTickets` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** throw on a malformed response; treat any error other than `DeviceNotRegistered` as a dead token; change `buildExpoPushBatches`.
 - **REPORT:** `status / ticket: TFV2-0427b / evidence: <DONE output> / changed: convex/lib/expoPush.ts, convex/lib/expoPush.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35269,6 +35408,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0427c — `push.sendToUser` (internalAction, `convex/push.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0426c (new: Is the push token stored as plain text (this shape) or encrypted at rest?; new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0426d (new: Is the push token stored as plain text (this shape) or encrypted at rest?); Q-11: Nag delivery channel beyond in-app.; new: Android push through Expo needs Firebase Cloud Messaging credentials (an FCM v1 service-account key uploaded to EAS, no Firebase SDK in the repo), while HARD_RULES forbids Firebase — allow FCM credentials for Android push only, or ship push on iOS only?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0426c, TFV2-0426d, TFV2-0427a, TFV2-0427b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0426c, TFV2-0426d, TFV2-0427a, TFV2-0427b.
@@ -35281,8 +35421,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `internalAction`, `type ActionCtx` to the `./_generated/server` import, `import { internal } from "./_generated/api";` and `import { buildExpoPushBatches, EXPO_PUSH_SEND_URL, readExpoPushTickets } from "./lib/expoPush";`; append `sendToUser` exactly as SPEC.
   3. Append `describe("push.sendToUser", …)` with the 7 TESTS cases. Build the action ctx as `{ runQuery: dispatch, runMutation: dispatch }` where `dispatch(ref, args)` looks up `getFunctionName(ref)` (`"push:targetsFor"`, `"push:retireToken"`) in a handler map and records each call; stub `fetch` with `spyOn(globalThis, "fetch")` and restore it in `afterEach`; set and delete `process.env.EXPO_ACCESS_TOKEN` inside the cases that need it (fake value `"test-expo-token"`).
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/push.test.ts -t "push.sendToUser"` → `7 pass`, `0 fail`; `bun test convex/push.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/push.test.ts` → `0 fail`, and its output lists 7 `(pass)` lines whose names start with `push.sendToUser`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/push.test.ts` (with its 7 `push.sendToUser` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** call the real Expo endpoint in tests; log a token or the access token; make it public; write message text (title and body come from the caller); add a Firebase SDK; edit `convex/schema.ts` or env files.
 - **REPORT:** `status / ticket: TFV2-0427c / evidence: <DONE output> / changed: convex/push.ts, convex/push.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35313,9 +35453,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `process.env.EXPO_ACCESS_TOKEN = "test-expo-token"` / Then the request headers include `Authorization: "Bearer test-expo-token"`; and with the variable deleted / Then no `Authorization` header is sent.
 - **NUMBERS:** 7 of 7 cases pass (exact). ≤ 100 messages per request (TFV2-0427a); ≤ 10 devices per person (TFV2-0426a), so one request per send today. Delivery latency end to end: UNKNOWN (Expo and APNs/FCM are asynchronous; no baseline — CONVENTIONS §20). Daily push cap per person: UNKNOWN (Amit; the nag sweep TFV2-0427f sends at most one push per nag per day).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0426c (CFG-024: Is the push token stored as plain text (this shape) or encrypted at rest?; CFG-025: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); Q-11: Nag delivery channel beyond in-app — is push the channel? new: Android push through Expo needs Firebase Cloud Messaging credentials (an FCM v1 service-account key uploaded to EAS, no Firebase SDK in the repo), while HARD_RULES forbids Firebase — allow FCM credentials for Android push only, or ship push on iOS only? — Amit.
+- **OPEN:** inherits TFV2-0426c (new: Is the push token stored as plain text (this shape) or encrypted at rest?; new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0426d (new: Is the push token stored as plain text (this shape) or encrypted at rest?); Q-11: Nag delivery channel beyond in-app.; new: Android push through Expo needs Firebase Cloud Messaging credentials (an FCM v1 service-account key uploaded to EAS, no Firebase SDK in the repo), while HARD_RULES forbids Firebase — allow FCM credentials for Android push only, or ship push on iOS only? — Amit.
 
 ### TFV2-0427d — `nextLocalMinuteAt` (pure helper `convex/lib/localTime.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -35352,6 +35493,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0427e — `nags.setPushTime` (mutation, `convex/nags.ts`) — OPEN
+- **STATUS:** open — inherits CFG-054 (Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-054, TFV2-0000a, TFV2-0077j, TFV2-0427d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-054, TFV2-0000a, TFV2-0077j, TFV2-0427d.
@@ -35364,8 +35506,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `import { preferencesFor } from "./preferences";` and `import { nextLocalMinuteAt } from "./lib/localTime";` to `convex/nags.ts`; append `setPushTime` exactly as SPEC after `setEnabled`.
   3. Append `describe("nags.setPushTime", …)` to `convex/nags.test.ts` with the 7 TESTS cases; freeze time with `spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 2, 6, 0))` and restore it in `afterEach`.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/nags.test.ts -t "nags.setPushTime"` → `7 pass`, `0 fail`; `bun test convex/nags.test.ts` → `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/nags.test.ts` → `0 fail`, and its output lists 7 `(pass)` lines whose names start with `nags.setPushTime`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (with its 7 `nags.setPushTime` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** send a push here; change `list`, `setEnabled` or the phrase rules; write message text; edit `convex/schema.ts` or `convex/preferences.ts`.
 - **REPORT:** `status / ticket: TFV2-0427e / evidence: <DONE output> / changed: convex/nags.ts, convex/nags.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35388,9 +35530,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a nag whose only phrase has `status: "proposed"` / When `minuteOfDay: 540` / Then it rejects with `"Add a phrase you accept first."`.
 - **NUMBERS:** 7 of 7 cases pass (exact). Minute 0–1439 (one day of minutes). Reads 2 documents. Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-054 (Q-11: Nag delivery channel beyond in-app — is it push?; new: store a nag's daily push time as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt`, one push per nag per day?) — Amit.
+- **OPEN:** inherits CFG-054 (Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?) — Amit.
 
 ### TFV2-0427f — `nagPush.sweep` (internalMutation + cron line, `convex/nagPush.ts`) — OPEN
+- **STATUS:** open — inherits CFG-054 (Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?); inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0427c (new: Is the push token stored as plain text (this shape) or encrypted at rest?; new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?; Q-11: Nag delivery channel beyond in-app.; new: Android push through Expo needs Firebase Cloud Messaging credentials (an FCM v1 service-account key uploaded to EAS, no Firebase SDK in the repo), while HARD_RULES forbids Firebase — allow FCM credentials for Android push only, or ship push on iOS only?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-054, CFG-025, TFV2-0000a, TFV2-0427c, TFV2-0427d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-054, CFG-025, TFV2-0000a, TFV2-0427c, TFV2-0427d.
@@ -35432,9 +35575,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `convex/crons.ts` read as text / Then it contains `crons.interval("send due nag pushes", { minutes: 5 }, internal.nagPush.sweep, {});` and still contains `crons.interval("expire transient page payloads", { minutes: 5 }, internal.pageCleanup.runBatch, {});`.
 - **NUMBERS:** 7 of 7 cases pass (exact). ≤ 200 nags per sweep (`NAG_PUSH_SWEEP_MAX`; case 6 seeds cap + 1). A push leaves at most 5 minutes after its time (cron interval, deterministic) plus Expo delivery time (UNKNOWN, asynchronous). One push per nag per day (deterministic: `nextPushAt` moves to tomorrow). Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-054 (Q-11: Nag delivery channel beyond in-app — is it push?; new: store a nag's daily push time as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt`?); inherits CFG-025 (Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0427c (Android FCM credentials vs the Firebase ban) — Amit.
+- **OPEN:** inherits CFG-054 (Q-11: Nag delivery channel beyond in-app.; new: Is that channel push, and is a nag's daily push time stored as `nags.pushAtMinute` + `nags.nextPushAt` with index `by_nextPushAt` (this shape), one push per nag per day?); inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0427c (new: Is the push token stored as plain text (this shape) or encrypted at rest?; new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?; Q-11: Nag delivery channel beyond in-app.; new: Android push through Expo needs Firebase Cloud Messaging credentials (an FCM v1 service-account key uploaded to EAS, no Firebase SDK in the repo), while HARD_RULES forbids Firebase — allow FCM credentials for Android push only, or ship push on iOS only?) — Amit.
 
 ### TFV2-0429a — `notificationPrefs.get` (query, `convex/notificationPrefs.ts`) — OPEN
+- **STATUS:** open — inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-025, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-025, TFV2-0000a.
@@ -35447,8 +35591,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/notificationPrefs.ts` with `NOTIFICATION_DEFAULTS`, `notificationPrefsValidator`, the `NotificationPrefs` type and `get` exactly as SPEC.
   3. Create `convex/notificationPrefs.test.ts` with `describe("notificationPrefs.get", …)` and the 4 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/notificationPrefs.test.ts -t "notificationPrefs.get"` → `4 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/notificationPrefs.test.ts` → `0 fail`, and its output lists 4 `(pass)` lines whose names start with `notificationPrefs.get`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/notificationPrefs.test.ts` (with its 4 `notificationPrefs.get` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** edit `convex/preferences.ts` or `convex/schema.ts`; return other preference fields; read another user's row.
 - **REPORT:** `status / ticket: TFV2-0429a / evidence: <DONE output> / changed: convex/notificationPrefs.ts, convex/notificationPrefs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35473,9 +35617,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a `users:1` row with `pushEnabled: true` and `deletedAt: 5` / Then it returns the defaults.
 - **NUMBERS:** 4 of 4 cases pass (exact); reads 1 document. Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-025 (Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
+- **OPEN:** inherits CFG-025 (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
 
 ### TFV2-0429b — `notificationPrefs.set` (mutation, `convex/notificationPrefs.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0429a (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0429a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0429a.
@@ -35488,8 +35633,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `mutation`, `type MutationCtx` to the server import and `import { PREFERENCE_DEFAULTS } from "./preferences";`; append `set` exactly as SPEC.
   3. Append `describe("notificationPrefs.set", …)` with the 4 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/notificationPrefs.test.ts -t "notificationPrefs.set"` → `4 pass`, `0 fail`; `bun test convex/notificationPrefs.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/notificationPrefs.test.ts` → `0 fail`, and its output lists 4 `(pass)` lines whose names start with `notificationPrefs.set`; `bun test convex/notificationPrefs.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/notificationPrefs.test.ts` (with its 4 `notificationPrefs.set` `(pass)` lines) and the typecheck exit code, pasted into the PR.
 - **DO NOT:** create a second `userPreferences` row for a person; change theme, locale, week start, time zone or any non-notification field of an existing live row; edit `convex/preferences.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0429b / evidence: <DONE output> / changed: convex/notificationPrefs.ts, convex/notificationPrefs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35509,9 +35654,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a `users:1` row with `locale: "he"` and `deletedAt: 5` / When it sets `notifyReminders` to `false` / Then that row has `deletedAt: undefined`, `notifyReminders: false`, `locale: "en"` (reset to defaults) and no second row exists.
 - **NUMBERS:** 4 of 4 cases pass; whole file 8 of 8 (exact). Writes 1 document. Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0429a (CFG-025: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
+- **OPEN:** inherits TFV2-0429a (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
 
 ### TFV2-0428a — Mobile component: EnablePushCard (`apps/mobile/components/v3/EnablePushCard.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -35587,6 +35733,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0428b — Mobile screen: Enable reminders (`apps/mobile/app/(tempo)/enable-push.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits TFV2-0429b (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); new: Where does the push prompt appear (proposed: only from the Notifications screen, TFV2-0429d, and after a person sets a nag's first push time), never on first sign-in?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000d, CFG-031, CFG-032, TFV2-0425, TFV2-0426a, TFV2-0429b, TFV2-0428a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000d, CFG-031, CFG-032, TFV2-0425, TFV2-0426a, TFV2-0429b, TFV2-0428a.
@@ -35627,9 +35774,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Forced offline: Given `?state=offline` / Then the text `You're offline. Changes save when you're back.` / `אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.` is visible and the allow button has `aria-disabled="true"`; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** 16 of 16 tests pass (4 bullets × 4). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. One OS prompt per install (deterministic, TFV2-0425 rule 4). Registration round trip p95: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0426a (CFG-024: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits TFV2-0429b (CFG-025: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); new: Where does the push prompt appear (proposed: only from the Notifications screen, TFV2-0429d, and after a person sets a nag's first push time), never on first sign-in? — Amit.
+- **OPEN:** inherits TFV2-0426a (new: Is the push token stored as plain text (this shape) or encrypted at rest?); inherits TFV2-0429b (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); new: Where does the push prompt appear (proposed: only from the Notifications screen, TFV2-0429d, and after a person sets a nag's first push time), never on first sign-in? — Amit.
 
 ### TFV2-0429c — Mobile component: NotificationPrefsList (`apps/mobile/components/v3/NotificationPrefsList.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -35700,6 +35848,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0429d — Mobile screen: Notifications (`apps/mobile/app/(tempo)/notifications.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0429a (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0429b (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000d, CFG-031, CFG-032, TFV2-0425, TFV2-0429a, TFV2-0429b, TFV2-0429c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000d, CFG-031, CFG-032, TFV2-0425, TFV2-0429a, TFV2-0429b, TFV2-0429c.
@@ -35744,9 +35893,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Offline and denied: Given `?state=offline` / Then `You're offline.` / `אין חיבור כרגע.` is visible and every switch has `aria-disabled="true"`; Given `?state=denied` / Then `Open phone settings` / `לפתוח את הגדרות הטלפון` is visible; and `expectTargetSize(page, "body")` passes on both.
 - **NUMBERS:** 16 of 16 tests pass (4 bullets × 4). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Save round trip p95: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0429a (CFG-025: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
+- **OPEN:** inherits TFV2-0429a (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?); inherits TFV2-0429b (new: Are notification preferences typed columns on `userPreferences` (this shape) or one loose object?) — Amit.
 
 ### TFV2-0430a — Mobile component: CameraCapture (`apps/mobile/components/v3/CameraCapture.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0000d, CFG-031, CFG-032 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0000d, CFG-031, CFG-032.
@@ -35814,6 +35964,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0430b — Camera capture state + hook (`apps/mobile/lib/camera-state.ts`, `useCameraCapture.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-053, TFV2-0430a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-053, TFV2-0430a.
@@ -35880,11 +36031,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0431a — `noteImages.generateUploadUrl` (mutation, `convex/noteImages.ts`) — OPEN
+### TFV2-0431a — `noteImages.generateUploadUrl` (mutation, `convex/noteImages.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
-- **WHY:** PRD §4.11 F-122 (a camera photo must land in a page); TRD §4 (pages are markdown in `notes.body`). Convex file storage upload is two steps: a mutation returns a short-lived upload URL (`ctx.storage.generateUploadUrl()`), the client POSTs the file and gets a `storageId` (Convex docs, File Storage → Upload files). The old TFV2-0431 bundled mobile and backend; this ticket is the first backend function (CONVENTIONS §16). No table is needed: Convex keeps file metadata in the `_storage` system table.
+- **WHY:** PRD §4.11 F-122 (a camera photo must land in a page); TRD §4 (pages are markdown in `notes.body`). Convex file storage upload is two steps: a mutation returns a short-lived upload URL (`ctx.storage.generateUploadUrl()`), the client POSTs the file and gets a `storageId` (Convex docs, File Storage → Upload files). The old TFV2-0431 bundled mobile and backend; this ticket is the first backend function (CONVENTIONS §16). No table is needed: Convex keeps file metadata in the `_storage` system table. Split per CONVENTIONS §19: the photo question (8 MiB cap, per-plan quota, automatic deletion) changes only what `attach` accepts and keeps, so it lives on TFV2-0431b; minting an upload URL is the same under every answer, so this ticket is not OPEN.
 - **GOAL:** `noteImages.generateUploadUrl()` gives a signed-in person a one-time URL to upload one photo.
 - **SCOPE:** `convex/noteImages.ts` · test: `convex/noteImages.test.ts`.
 - **MUTATES:** `convex/noteImages.ts` (new) · `convex/noteImages.test.ts` (new). No rows written (the URL is minted by Convex storage).
@@ -35893,8 +36045,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Create `convex/noteImages.ts` with `import { v } from "convex/values"; import { mutation, type MutationCtx } from "./_generated/server"; import { requireUser } from "./lib/requireUser";` and `generateUploadUrl` exactly as SPEC.
   3. Create `convex/noteImages.test.ts` with `describe("noteImages.generateUploadUrl", …)` and the 2 TESTS cases; the ctx is `{ ...makeFakeCtx("users:1"), storage: { generateUploadUrl: async () => "https://upload.test/u1" } }` (a test stand-in; no network).
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/noteImages.test.ts -t "noteImages.generateUploadUrl"` → `2 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/noteImages.test.ts` → `2 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/noteImages.test.ts` and the `bun run typecheck` exit code, pasted into the PR.
 - **DO NOT:** return a URL to a signed-out caller; store anything; add a table or edit `convex/schema.ts`; edit `convex/notes.ts`.
 - **REPORT:** `status / ticket: TFV2-0431a / evidence: <DONE output> / changed: convex/noteImages.ts, convex/noteImages.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35913,10 +36065,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `{ ...makeSignedOutCtx(), storage: { generateUploadUrl: async () => "https://upload.test/u1" } }` / When `run(generateUploadUrl, ctx, {})` / Then it rejects with `"Not authenticated"` and the stub was not called (a call counter stays `0`).
   2. Given the signed-in ctx in STEP 3 / Then it resolves `"https://upload.test/u1"` and the stub was called once.
 - **NUMBERS:** 2 of 2 cases pass (exact). Upload URL lifetime: 1 hour (Convex docs, File Storage) — not asserted (platform value). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note (proposed)? — Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
 
 ### TFV2-0431b — `noteImages.attach` (mutation, `convex/noteImages.ts`) — OPEN
+- **STATUS:** open — new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note (proposed)?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0431a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0431a.
@@ -35929,8 +36082,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Add `import type { Id } from "./_generated/dataModel";` and append the constants and `attach` exactly as SPEC.
   3. Append `describe("noteImages.attach", …)` with the 7 TESTS cases. The ctx is `makeFakeCtx("users:1")` (or `makeSignedOutCtx()`) plus `storage: { getUrl: async (id) => URLS[id] ?? null, delete: async (id) => { deleted.push(id); } }`, and `ctx.db.system = { get: async (id) => META[id] ?? null }`, where `META` and `URLS` are per-test maps keyed by fake ids like `"_storage:1"`.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/noteImages.test.ts -t "noteImages.attach"` → `7 pass`, `0 fail`; `bun test convex/noteImages.test.ts` → `9 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
+- **DONE:** `bun test convex/noteImages.test.ts` → `9 pass` (2 from TFV2-0431a + 7 here), `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/noteImages.test.ts` and the `bun run typecheck` exit code, pasted into the PR.
 - **DO NOT:** store image bytes in a table; insert into another person's note; throw after `ctx.storage.delete` (a thrown mutation rolls back, so refusals return a result instead); edit `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0431b / evidence: <DONE output> / changed: convex/noteImages.ts, convex/noteImages.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -35957,14 +36110,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the seeded note / When `alt: "  Tent  by the  lake "` / Then it returns `{ ok: true, url: "https://files.test/s1" }` and the body is exactly `"Packing list\n\n![Tent by the lake](https://files.test/s1)\n"`.
   3. Given an empty-body note and `alt: "a [b] c"` / Then the body is exactly `"![a \\[b\\] c](https://files.test/s1)\n"` (brackets escaped).
   4. Given a `users:2` note, and separately a `users:1` note with `deletedAt: 5` / Then both reject with `"Note not found"` and no file was deleted.
-  5. Given `META["_storage:1"].size = 8 * 1024 * 1024 + 1` / Then it returns `{ ok: false, reason: "too_large" }`, `deleted` equals `["_storage:1"]` and the body is unchanged; and `contentType: "application/pdf"` / Then `{ ok: false, reason: "unsupported_type" }` and the file was deleted.
-  6. Given `alt: "   "`, and separately `"x".repeat(201)` / Then each rejects with `"Describe the photo in 1 to 200 characters."`.
+  5. Limit at n and n + 1 (`NOTE_IMAGE_MAX_BYTES`): given `META["_storage:1"].size = 8 * 1024 * 1024` (n) / Then it returns `{ ok: true, url: "https://files.test/s1" }` and `deleted` is `[]`; given `META["_storage:1"].size = 8 * 1024 * 1024 + 1` (n + 1) / Then it returns `{ ok: false, reason: "too_large" }`, `deleted` equals `["_storage:1"]` and the body is unchanged; and `contentType: "application/pdf"` / Then `{ ok: false, reason: "unsupported_type" }` and the file was deleted.
+  6. Given `alt: "x".repeat(200)` (n = `NOTE_IMAGE_ALT_MAX`) / Then it returns `{ ok: true, url: "https://files.test/s1" }`; given `alt: "   "`, and separately `"x".repeat(201)` (n + 1) / Then each rejects with `"Describe the photo in 1 to 200 characters."`.
   7. Given no `META` entry for `"_storage:9"`, and separately a `META` entry with `URLS` missing / Then each rejects with `"Image not found"`.
-- **NUMBERS:** 7 of 7 cases pass; whole file 9 of 9 (exact). Photo ≤ 8 MiB = 8,388,608 bytes (`NOTE_IMAGE_MAX_BYTES`, proposed; OPEN) — case 5 uses cap + 1. Alt text 1–200 characters (WCAG 2.2 SC 1.1.1 requires a text alternative; 200 is a product bound). Backend p95 latency: UNKNOWN (no baseline; not a gate).
+- **NUMBERS:** 7 of 7 cases pass; whole file 9 of 9 (exact). Photo ≤ 8 MiB = 8,388,608 bytes (`NOTE_IMAGE_MAX_BYTES`, proposed; OPEN) — case 5 uses the cap (accepted) and cap + 1 (refused); case 6 uses 200 (accepted) and 201 (rejected). Alt text 1–200 characters (WCAG 2.2 SC 1.1.1 requires a text alternative; 200 is a product bound). Backend p95 latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0431a (new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note?) — Amit.
+- **OPEN:** new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note (proposed)? — Amit.
 
 ### TFV2-0431c — `uploadPhoto` (mobile helper `apps/mobile/lib/photo-upload.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -35999,6 +36153,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0431d — Mobile screen: Add a photo to a note (`apps/mobile/app/(tempo)/attach-photo.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0431b (new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note (proposed)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000d, CFG-031, CFG-032, TFV2-0430a, TFV2-0430b, TFV2-0431a, TFV2-0431b, TFV2-0431c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000d, CFG-031, CFG-032, TFV2-0430a, TFV2-0430b, TFV2-0431a, TFV2-0431b, TFV2-0431c.
@@ -36045,9 +36200,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Offline: Given `?state=offline` / Then `You're offline.` / `אין חיבור כרגע.` and `The photo can be added when you're back.` / `אפשר יהיה להוסיף את התמונה כשהחיבור יחזור.` are visible; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** 20 of 20 tests pass (5 bullets × 4). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Alt text required before upload · WCAG 2.2 SC 1.1.1. Photo ≤ 8 MiB (server cap, TFV2-0431b). Upload + attach p95: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0431b (new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note?) — Amit.
+- **OPEN:** inherits TFV2-0431b (new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan storage quota and no automatic deletion of photos whose markdown is later removed from the note (proposed)?) — Amit.
 
 ### TFV2-0432a — `readOcrPages` (pure helper `convex/lib/ocr.ts`) — OPEN
+- **STATUS:** open — new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36084,6 +36240,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)? — Amit.
 
 ### TFV2-0432b — `scan.ocrImage` (action, `convex/scan.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0432a (new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0432a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0432a.
@@ -36125,6 +36282,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** inherits TFV2-0432a (new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)?) — Amit.
 
 ### TFV2-0432c — Mobile screen: Scan a page (`apps/mobile/app/(tempo)/scan.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0432b (new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000d, CFG-031, CFG-032, TFV2-0430a, TFV2-0430b, TFV2-0431a, TFV2-0431c, TFV2-0432b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000d, CFG-031, CFG-032, TFV2-0430a, TFV2-0430b, TFV2-0431a, TFV2-0431c, TFV2-0432b.
@@ -36174,9 +36332,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Offline: Given `?state=offline` / Then `You're offline.` / `אין חיבור כרגע.` and `Scanning works when you're back online.` / `הסריקה תעבוד כשהחיבור יחזור.` are visible; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** 20 of 20 tests pass (5 bullets × 4). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Text ≤ 8,000 characters (server cap). Scan round trip p95: UNKNOWN (provider not approved; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0432b (new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit?); inherits TFV2-0431a (new: Keep note photos in Convex file storage with an 8 MiB cap per photo, no per-plan quota?) — Amit.
+- **OPEN:** inherits TFV2-0432b (new: Approve Mistral OCR (`mistral-ocr-latest`, billed per page, key `MISTRAL_API_KEY`) for camera scans, and set a per-person daily scan limit (proposed 20 scans a day)?) — Amit.
 
 ### TFV2-0433a — `resolveDeepLink` + `routeForPushData` (mobile helper `apps/mobile/lib/deep-link.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36217,6 +36376,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0433b — Expo Router native intent (`apps/mobile/app/+native-intent.tsx`) — OPEN
+- **STATUS:** open — inherits CFG-055 (new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`; `preview.tempoflow.dev` stays web-only), and which paths (proposed `/today`, `/coach`, `/notes/*`)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-055, TFV2-0433a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-055, TFV2-0433a.
@@ -36256,6 +36416,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** inherits CFG-055 (new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`; `preview.tempoflow.dev` stays web-only), and which paths (proposed `/today`, `/coach`, `/notes/*`)?) — Amit.
 
 ### TFV2-0433c — Push tap opens its screen (`apps/mobile/lib/push-tap.ts` + root layout)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-052, TFV2-0425, TFV2-0433a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-052, TFV2-0425, TFV2-0433a.
@@ -36304,6 +36465,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0433d — Web: `/.well-known/*` is public (`apps/web/lib/rootEntry.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36329,6 +36491,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0433e — Web: app-link verification files (`apps/web/app/.well-known/…/route.ts`) — OPEN
+- **STATUS:** open — inherits CFG-055 (new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`; `preview.tempoflow.dev` stays web-only), and which paths (proposed `/today`, `/coach`, `/notes/*`)?); new: set `APPLE_TEAM_ID` and `ANDROID_CERT_SHA256` (proposed env names) on the web deployments with your Apple Team ID and the app's signing-key SHA-256 fingerprints?
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-055, TFV2-0433d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-055, TFV2-0433d.
@@ -36372,9 +36535,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `ANDROID_CERT_SHA256` deleted / Then the assetlinks `GET()` answers status `404`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Cache 3,600 s (product choice; Apple's CDN caches AASA on its own schedule — UNKNOWN). Response is JSON with no redirect (Apple and Android requirement).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-055 (new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`), and which paths (proposed `/today`, `/coach`, `/notes/*`)?); new: set `APPLE_TEAM_ID` and `ANDROID_CERT_SHA256` (proposed env names) on the web deployments with your Apple Team ID and the app's signing-key SHA-256 fingerprints? — Amit.
+- **OPEN:** inherits CFG-055 (new: Which https hosts open the app (proposed `www.tempoflow.dev` and `tempoflow.dev`; `preview.tempoflow.dev` stays web-only), and which paths (proposed `/today`, `/coach`, `/notes/*`)?); new: set `APPLE_TEAM_ID` and `ANDROID_CERT_SHA256` (proposed env names) on the web deployments with your Apple Team ID and the app's signing-key SHA-256 fingerprints? — Amit.
 
 ### TFV2-0434a — App Store listing + age rating (`apps/mobile/store.config.json`) — OPEN
+- **STATUS:** open — new: Approve the App Store name ("Tempo Flow: Daily Planner"; `app.json` says "Tempo Rhythm"), subtitle, descriptions and keywords in SPEC (including the word "ADHD"), the categories (Productivity, then Health & Fitness), and the age-rating answers (all "None"; is crisis-resource content "Medical/Treatment Information: Infrequent/Mild")?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (store metadata); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36446,9 +36610,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given every title, subtitle, description and keyword (lower-cased) / Then none contains any of `"failed"`, `"overdue"`, `"lazy"`, `"must"`, `"should have"`, `"streak lost"`, `"you never"`, `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"` (the shaming list in CONVENTIONS §12).
 - **NUMBERS:** 5 of 5 cases pass (exact). Name ≤ 30, subtitle ≤ 30, keywords ≤ 100, description ≤ 4,000 characters (App Store Connect limits, https://developer.apple.com/help/app-store-connect/reference/platform-version-information). Age rating result: UNKNOWN until Amit confirms the answers.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Approve the App Store name ("Tempo Flow: Daily Planner"; `app.json` says "Tempo Rhythm"), subtitle, descriptions and keywords in SPEC (including the word "ADHD"), the categories (Productivity, then Health & Fitness), and the age-rating answers (all "None"; is crisis-resource content "Medical/Treatment Information: Infrequent/Mild"?) — Amit.
+- **OPEN:** new: Approve the App Store name ("Tempo Flow: Daily Planner"; `app.json` says "Tempo Rhythm"), subtitle, descriptions and keywords in SPEC (including the word "ADHD"), the categories (Productivity, then Health & Fitness), and the age-rating answers (all "None"; is crisis-resource content "Medical/Treatment Information: Infrequent/Mild")? — Amit.
 
 ### TFV2-0434b — App Store privacy answers (`apps/mobile/store/app-privacy.json`) — OPEN
+- **STATUS:** open — new: Confirm the App Store privacy answers in SPEC — are photos listed now or only once TFV2-0431 ships; will the phone app collect analytics (PostHog) or crash data; is voice audio (Q-01) collected; is anything linked to the person beyond the account?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (store metadata); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36489,6 +36654,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Confirm the App Store privacy answers in SPEC — are photos listed now or only once TFV2-0431 ships; will the phone app collect analytics (PostHog) or crash data; is voice audio (Q-01) collected; is anything linked to the person beyond the account? — Amit.
 
 ### TFV2-0434c — Store icons meet Apple and Google sizes (verify `apps/mobile/assets/images`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36515,6 +36681,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0435a — Google Play data safety answers (`apps/mobile/store/play-data-safety.json`) — OPEN
+- **STATUS:** open — new: Confirm the Play data-safety answers in SPEC — photos now or later, analytics or crash data on the phone, whether RevenueCat counts as "shared" (Google treats service providers as not shared), and a web link for account deletion requests (Play requires one; proposed https://www.tempoflow.dev/settings/privacy)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (store metadata); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36556,6 +36723,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Confirm the Play data-safety answers in SPEC — photos now or later, analytics or crash data on the phone, whether RevenueCat counts as "shared" (Google treats service providers as not shared), and a web link for account deletion requests (Play requires one; proposed https://www.tempoflow.dev/settings/privacy)? — Amit.
 
 ### TFV2-0435b — Google Play listing + content rating answers (`apps/mobile/store/play-listing.json`) — OPEN
+- **STATUS:** open — new: Approve the Play title, short and full descriptions in SPEC (English and Hebrew), the category (Productivity), and the IARC answers (no user interaction, no shared location, digital purchases yes; target audience 18+ or 13+)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (store metadata); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36609,9 +36777,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given every listing string (lower-cased) / Then none contains any of `"failed"`, `"overdue"`, `"lazy"`, `"must"`, `"should have"`, `"streak lost"`, `"you never"`, `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"` (CONVENTIONS §12).
 - **NUMBERS:** 4 of 4 cases pass (exact). Title ≤ 30, short ≤ 80, full ≤ 4,000 characters (Play Console limits, https://support.google.com/googleplay/android-developer/answer/9859152). Resulting rating: UNKNOWN until the IARC form is submitted.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Approve the Play title, short and full descriptions in SPEC (English and Hebrew), the category (Productivity), and the IARC answers (no user interaction, no shared location, digital purchases yes; target audience 18+ or 13+?) — Amit.
+- **OPEN:** new: Approve the Play title, short and full descriptions in SPEC (English and Hebrew), the category (Productivity), and the IARC answers (no user interaction, no shared location, digital purchases yes; target audience 18+ or 13+)? — Amit.
 
 ### TFV2-0436 — Store tier mapping `tierFromRevenueCatEntitlements` (`convex/lib/revenuecat_events.ts`) — OPEN
+- **STATUS:** open — Q-02: Prices and billing tiers (values shown to users).
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36624,7 +36793,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `StoreTier`, `REVENUECAT_ENTITLEMENT_TIERS` and `tierFromRevenueCatEntitlements` exactly as SPEC (no imports).
   3. Append `describe("tierFromRevenueCatEntitlements", …)` with the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test convex/lib/revenuecat_events.test.ts` → `0 fail` with the 5 new cases passing (`-t "tierFromRevenueCatEntitlements"` → `5 pass`); `bun run typecheck` → exit 0.
+- **DONE:** `bun test convex/lib/revenuecat_events.test.ts` → `0 fail` and its output lists 5 `(pass)` lines whose names start with `tierFromRevenueCatEntitlements`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** both `bun test` summaries and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change `mapRevenueCatEventToUserType`, `convex/revenuecat.ts`, `convex/users.ts` or `convex/lib/entitlements.ts` (`GRANTED_*` stays); invent a price; map anything to `"god"`.
 - **REPORT:** `status / ticket: TFV2-0436 / evidence: <DONE output> / changed: convex/lib/revenuecat_events.ts, convex/lib/revenuecat_events.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
@@ -36651,9 +36820,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `["tempo_pro_monthly"]` and the table `{ tempo_pro_monthly: "pro" }` / Then `"pro"` (the table is data; ids can change without changing the rule).
 - **NUMBERS:** 5 of 5 new cases pass; the existing cases in the file stay green (exact). Unknown ids → `"none"` (fail closed, deterministic). Product ids and prices: UNKNOWN (Q-02).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-02: Prices and billing tiers — which RevenueCat entitlement identifiers map to Basic, Pro and Max (proposed `basic`, `pro`, `max`), and should a store purchase ever change `users.entitlementTier` while every account is granted Max? — Amit.
+- **OPEN:** Q-02: Prices and billing tiers (values shown to users). — Amit.
 
 ### TFV2-0438a — Calendar file import: `parseIcs` (`convex/lib/ics.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36722,6 +36892,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0438b — Calendar file export: `serializeIcs` (`convex/lib/ics.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0438a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0438a.
@@ -36762,6 +36933,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0439 — Calendar sync: pure merge `mergeEvents` (`convex/lib/calendarMerge.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -36814,6 +36986,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0440 — Component: ExternalWriteConfirm (confirm one write to an outside calendar) (`apps/web/components/calendar/ExternalWriteConfirm.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0123 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0123.
@@ -36885,6 +37058,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0437a — Calendar sync: `calendarSync.applyImport` writes merged outside events (internal mutation) (`convex/calendarSync.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-005, CFG-047, TFV2-0439, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-005, CFG-047, TFV2-0439, TFV2-0000a.
@@ -36895,10 +37069,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map check: `test -e convex/calendarSync.ts` fails; `grep -n "externalId\|by_userId_externalId\|endsAtMs" convex/schema.ts` shows the CFG-047 and CFG-005 lines inside `calendarEvents` (else report `blocked: missing CFG-047` / `blocked: missing CFG-005`); `grep -n "export function mergeEvents" convex/lib/calendarMerge.ts` prints one line; `grep -n "makeSignedOutCtx\|unique" convex/lib/testFakeCtx.ts` shows TFV2-0000a.
   2. Create `convex/calendarSync.ts` with the SPEC constants, validator and `applyImport` exactly as SPEC.
-  3. Create `convex/calendarSync.test.ts` (`bun:test`, `makeFakeCtx`, `run`) with the 8 TESTS cases; seed rows with `ctx.db.insert("calendarEvents", …)`.
+  3. Create `convex/calendarSync.test.ts` (`bun:test`, `makeFakeCtx`, `run`) with the 9 TESTS cases; seed rows with `ctx.db.insert("calendarEvents", …)`.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/calendarSync.test.ts` → `8 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck and lint exit codes, pasted into the PR.
+- **DONE:** `bun test convex/calendarSync.test.ts` → `9 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/calendarSync.test.ts` and the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** export a public function from this ticket (internal only); call any outside service or `fetch`; hard-delete a row; overwrite or delete a row reported as a conflict; touch rows of another user; read more than the named bounds; edit `convex/schema.ts`, `convex/calendar_events.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0437a / evidence: <DONE output> / changed: convex/calendarSync.ts, convex/calendarSync.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -36931,6 +37105,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. `user = await ctx.db.get(args.userId)`; missing, or `user.deletedAt !== undefined` → `throw new Error("User not found")`.
   3. Existing rows with an outside id: for each distinct `externalId` in `args.events`, `await ctx.db.query("calendarEvents").withIndex("by_userId_externalId", (q) => q.eq("userId", args.userId).eq("externalId", externalId)).first()`; keep it when `deletedAt === undefined`.
   4. Tempo-made rows for conflict matching: when `args.events` is not empty, `minStart` / `maxStart` = min / max `startsAtMs` of the not-deleted incoming events; read `ctx.db.query("calendarEvents").withIndex("by_userId_deletedAt_startsAtMs", (q) => q.eq("userId", args.userId).eq("deletedAt", undefined).gte("startsAtMs", minStart).lt("startsAtMs", maxStart + 1)).take(CALENDAR_IMPORT_SCAN_MAX)` (`lt(max + 1)`, not `lte`, so the test fake from `convex/lib/testFakeCtx.ts`, which supports `eq` / `gte` / `lt`, runs it) and keep rows whose `externalId === undefined`.
+  `mergeEvents` (created by TFV2-0439, in `Depends`; `convex/lib/calendarMerge.ts`) has the signature `export function mergeEvents(existing: readonly MergeExisting[], incoming: readonly MergeIncoming[]): MergeResult;` and its full return type, quoted from TFV2-0439:
+  ```ts
+  export type MergeExisting = { id: string; externalId: string | null; title: string; startsAtMs: number; endsAtMs: number | null };
+  export type MergeIncoming = { externalId: string; title: string; startsAtMs: number; endsAtMs: number | null; deleted: boolean };
+  export type MergeConflict = { existingId: string; incoming: MergeIncoming; reason: "same-start-and-title" };
+  export type MergeResult = {
+    toInsert: MergeIncoming[];
+    toUpdate: { id: string; incoming: MergeIncoming }[];
+    toDelete: string[];          // existing ids
+    conflicts: MergeConflict[];
+    duplicates: number;          // incoming items skipped because an earlier item had the same externalId
+  };
+  ```
+  The handler destructures `const { toInsert, toUpdate, toDelete, conflicts, duplicates } = mergeEvents(existing, args.events);` and casts each `id` / `existingId` to `Id<"calendarEvents">` before `ctx.db.patch`.
   5. Map rows to `MergeExisting` (`{ id: row._id, externalId: row.externalId ?? null, title: row.title, startsAtMs: row.startsAtMs, endsAtMs: row.endsAtMs ?? null }`) and call `mergeEvents(existing, args.events)`.
   6. `now = Date.now()`. Each `toInsert` item → `ctx.db.insert("calendarEvents", { userId: args.userId, title: item.title.trim(), startsAtMs: item.startsAtMs, ...(item.endsAtMs !== null && item.endsAtMs > item.startsAtMs ? { endsAtMs: item.endsAtMs } : {}), externalId: item.externalId, externalSource: args.source, createdAt: now, updatedAt: now })`. Each `toUpdate` → `ctx.db.patch(id, { title: incoming.title.trim(), startsAtMs: incoming.startsAtMs, endsAtMs: incoming.endsAtMs !== null && incoming.endsAtMs > incoming.startsAtMs ? incoming.endsAtMs : undefined, updatedAt: now })`. Each `toDelete` id → `ctx.db.patch(id, { deletedAt: now, updatedAt: now })`. Conflicts are not written.
   7. Return `{ inserted: toInsert.length, updated: toUpdate.length, deleted: toDelete.length, conflicts: conflicts.length, duplicates }`.
@@ -36942,13 +37130,15 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a stored Tempo row `{ userId: "users:1", title: "Coffee with Dana", startsAtMs: 5000 }` (no `externalId`) / When the import sends `{ externalId: "g4", title: "coffee with dana", startsAtMs: 5000, endsAtMs: null, deleted: false }` / Then `conflicts` is 1, `inserted` is 0, and the Tempo row is unchanged.
   5. Given a stored row for `users:2` with `externalId: "g1"` / When `users:1` imports `g1` / Then `inserted` is 1 and the `users:2` row is unchanged.
   6. Given an incoming event with `endsAtMs` equal to its `startsAtMs` / Then the inserted row has no `endsAtMs` field.
-  7. Given 101 incoming events / Then it rejects with `"Too many events in one import"` and no row was written.
+  7. Limit at n and n + 1 (`CALENDAR_IMPORT_MAX` = 100): given 100 incoming events `g0`…`g99` (`{ externalId: "g<i>", title: "E<i>", startsAtMs: 10_000 + i, endsAtMs: null, deleted: false }` for i = 0…99) / Then it returns `inserted: 100`; given the same shape with 101 events (i = 0…100) / Then it rejects with `"Too many events in one import"` and no row was written.
   8. Given `userId` `"users:999"` (no row) / Then it rejects with `"User not found"`.
-- **NUMBERS:** Incoming events per call ≤ 100 (`CALENDAR_IMPORT_MAX`, product bound; case 7). Tempo rows scanned ≤ 500 (`CALENDAR_IMPORT_SCAN_MAX`, product bound; CONVENTIONS §16 bounded reads). p95 latency: UNKNOWN (no measured baseline; CONVENTIONS §20, not a gate). 8 of 8 cases pass.
+  9. Scan limit at n and n + 1 (`CALENDAR_IMPORT_SCAN_MAX` = 500; the fake returns index rows in ascending `startsAtMs`): given 500 Tempo rows `{ userId: "users:1", title: "T<i>", startsAtMs: i, createdAt: 1, updatedAt: 1 }` for i = 1…500 (no `externalId`) / When the import sends `{ externalId: "ga", title: "T1", startsAtMs: 1, endsAtMs: null, deleted: false }` and `{ externalId: "gb", title: "T500", startsAtMs: 500, endsAtMs: null, deleted: false }` / Then it returns `conflicts: 2, inserted: 0`; given 501 such rows (i = 1…501) and the import sends `ga` (`T1` at 1) and `{ externalId: "gb", title: "T501", startsAtMs: 501, endsAtMs: null, deleted: false }` / Then it returns `conflicts: 1, inserted: 1` (row 501 is beyond the 500 read, so it is not matched).
+- **NUMBERS:** Incoming events per call ≤ 100 (`CALENDAR_IMPORT_MAX`, product bound; case 7 at 100 and 101). Tempo rows scanned ≤ 500 (`CALENDAR_IMPORT_SCAN_MAX`, product bound; CONVENTIONS §16 bounded reads; case 9 at 500 and 501). p95 latency: UNKNOWN (no measured baseline; CONVENTIONS §20, not a gate). 9 of 9 cases pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0437b — Calendar sync: `calendarSync.importGoogle` reads Google Calendar through Executor (action) (`convex/calendarSync.ts`) — OPEN
+- **STATUS:** open — new: Which Executor tool lists Google Calendar events (its name, input arguments and result fields), may that read-only listing run without a per-call approval card even though `convex/lib/connections/policy.ts` today allows only `search` and `describe`, and is a 30-day, manual "Import now" window right (or a scheduled sync, at what interval)?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0437a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0437a.
@@ -36998,6 +37188,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Which Executor tool lists Google Calendar events (its name, input arguments and result fields), may that read-only listing run without a per-call approval card even though `convex/lib/connections/policy.ts` today allows only `search` and `describe`, and is a 30-day, manual "Import now" window right (or a scheduled sync, at what interval)? — Amit.
 
 ### TFV2-0437c — Calendar sync: `calendarSync.exportEvent` writes one confirmed event to Google Calendar (action) (`convex/calendarSync.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0437b (new: Which Executor tool lists Google Calendar events (its name, input arguments and result fields), may that read-only listing run without a per-call approval card even though `convex/lib/connections/policy.ts` today allows only `search` and `describe`, and is a 30-day, manual "Import now" window right (or a scheduled sync, at what interval)?); new: Which Executor tool writes one Google Calendar event (name, arguments, result), and is "add, change, remove one event after Approve" the full write scope for Gen 2?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0437b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0437b.
@@ -37043,9 +37234,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   19. Given stubs returning `{ status: "unavailable" }` and `{ status: "error" }` / Then the calls reject with `"Calendar sync is unavailable"` and `"Calendar sync failed"` respectively, and the row is unchanged.
 - **NUMBERS:** Outside writes per call = 1 (exact; PRD F-100 "heavy writes hard-refused") · confirmation required on every write (exact; PRD F-131). p95 latency: UNKNOWN (outside service). 19 of 19 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0437b (which Executor tools read and write Google Calendar, and whether they may run outside the `search`/`describe` allow list) — Amit. Also new: Which Executor tool writes one Google Calendar event (name, arguments, result), and is "add, change, remove one event after Approve" the full write scope for Gen 2? — Amit.
+- **OPEN:** inherits TFV2-0437b (new: Which Executor tool lists Google Calendar events (its name, input arguments and result fields), may that read-only listing run without a per-call approval card even though `convex/lib/connections/policy.ts` today allows only `search` and `describe`, and is a 30-day, manual "Import now" window right (or a scheduled sync, at what interval)?); new: Which Executor tool writes one Google Calendar event (name, arguments, result), and is "add, change, remove one event after Approve" the full write scope for Gen 2? — Amit.
 
 ### TFV2-0441a — WhatsApp bridge: export parser `parseWhatsAppExport` (`convex/lib/whatsappExport.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper, also imported by the web import screen); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37108,6 +37300,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0441b — Message bridges: commitment rule `candidateFromText` (`convex/lib/messageCandidates.ts`) — OPEN
+- **STATUS:** open — Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper shared by the WhatsApp and Telegram bridges); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37160,9 +37353,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `"I need to " + "a".repeat(400)` / Then the result has length 280, starts with `"Aaa"` and ends with `"…"`.
 - **NUMBERS:** candidate ≤ 280 characters (`MESSAGE_CANDIDATE_MAX_CHARS`; source: `QUICK_TITLE_MAX` in `convex/tasks.ts`; tested with 400); crisis text → 0 candidates (PRD §6, fixed list); 10 of 10 cases pass. Latency: n/a (pure). Precision/recall of the cue list: UNKNOWN (no labelled set; Amit).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages), or with a runtime model (which one — Q-03 — and may it read third-party chat text)? Approve the Hebrew cue list. — Amit.
+- **OPEN:** Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved? — Amit.
 
 ### TFV2-0441c — WhatsApp bridge: pick candidates `whatsappCandidates` (`convex/lib/whatsappCandidates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0441b (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?); new: Take candidates only from the person's own messages (this proposal), or also from what others asked of them?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0441a, TFV2-0441b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper used by the import screen); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0441a, TFV2-0441b.
@@ -37201,9 +37395,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given 201 messages from `"Me"` with `` `I need to task ${i}` `` / Then 200 candidates, the last `"Task 199"`, and `truncated: true`; given exactly 200 / Then `truncated: false`.
 - **NUMBERS:** ≤ 200 candidates (`WHATSAPP_CANDIDATES_MAX`; source: TFV2-0443 save cap; tested at 201); 6 of 6 cases pass. Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0441b (new: fixed cue list vs a runtime model for picking candidates; approve the Hebrew cues) — Amit. new: Take candidates only from the person's own messages (this proposal), or also from what others asked of them? — Amit.
+- **OPEN:** inherits TFV2-0441b (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?); new: Take candidates only from the person's own messages (this proposal), or also from what others asked of them? — Amit.
 
 ### TFV2-0442a — Telegram bridge: message intent `telegramIntent` (`convex/lib/telegramBridge.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0441b (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?); new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0441b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0441b.
@@ -37245,9 +37440,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `"a".repeat(4096) + " I'll call mom"` / Then `{ kind: "help" }` (text past 4,096 characters is not read).
 - **NUMBERS:** text read ≤ 4,096 characters (Telegram Bot API message limit, https://core.telegram.org/bots/api#sendmessage; tested at 4,096 + suffix); link code 22 characters (16 random bytes, base64url); 7 of 7 cases pass. Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0441b (new: fixed cue list vs a runtime model for picking candidates; approve the Hebrew cues) — Amit. new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)? — Amit.
+- **OPEN:** inherits TFV2-0441b (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?); new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)? — Amit.
 
 ### TFV2-0442b — Telegram bridge: reply copy `telegramReplyText` (`convex/lib/telegramCopy.ts`) — OPEN
+- **STATUS:** open — Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37292,9 +37488,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `{ kind: "crisis" }` with `"en"` and with `"he"` / Then both equal `crisisCardText()`.
 - **NUMBERS:** 8 outcomes × 2 languages = 16 exact strings checked; 4 of 4 cases pass. Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)? Q-15: the crisis reply is the English-only card until the Hebrew crisis text and per-country resources are approved — Amit.
+- **OPEN:** Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)? — Amit.
 
 ### TFV2-0442c — Telegram bridge: `telegram.createLinkCode` (`convex/telegram.ts`) — OPEN
+- **STATUS:** open — inherits CFG-057 (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-057, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-057, TFV2-0000a.
@@ -37332,9 +37529,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeFakeCtx("users:a", ["users:b"])` and a pending row of `"users:b"` / When A calls `createLinkCode({})` / Then B's row is unchanged (other-user case).
 - **NUMBERS:** code lifetime 600,000 ms (`TELEGRAM_LINK_CODE_TTL_MS`; same as `CONFIRM_TTL_MS` in `convex/connections.ts`); 16 random bytes = 128 bits per code; ≤ 10 rows read (`TELEGRAM_LINK_ROWS_MAX`); 5 of 5 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-057 (new: build the Telegram bridge as one first-party Tempo bot with chats linked by a one-time `/start <code>` and tasks added only by `/add`, stored in a `telegramLinks` table of this shape; name the bot username and webhook secret) — Amit.
+- **OPEN:** inherits CFG-057 (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?) — Amit.
 
 ### TFV2-0442d — Telegram bridge: `telegram.applyUpdate` (`convex/telegram.ts`) — OPEN
+- **STATUS:** open — inherits CFG-057 (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442a (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442b (Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442c (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-057, TFV2-0442a, TFV2-0442b, TFV2-0442c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-057, TFV2-0442a, TFV2-0442b, TFV2-0442c.
@@ -37382,9 +37580,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `"users:a"` already linked to chat `"41"` and a valid pending code of `"users:a"` / When the code is sent from chat `"42"` / Then the `"41"` row has a numeric `deletedAt` and the code's row has `chatId: "42"`.
 - **NUMBERS:** title ≤ 280 characters (`TELEGRAM_TITLE_MAX`; tested at 281); ≤ 10 rows read per index (`TELEGRAM_LINK_ROWS_MAX`); free-text messages persisted = 0 (HARD_RULES §6.4); 11 of 11 new cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-057 (new: one first-party Tempo bot, chats linked by `/start <code>`, `telegramLinks` of this shape, bot username and webhook secret), TFV2-0442a (new: fixed cue list vs a runtime model), TFV2-0442b (Q-15: English-only crisis card) — Amit.
+- **OPEN:** inherits CFG-057 (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442a (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442b (Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442c (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?) — Amit.
 
 ### TFV2-0442e — Telegram bridge: webhook `telegramWebhook` + route `/telegram/webhook` (`convex/telegramHttp.ts`, `convex/http.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0442a (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442d (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?; Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?; Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.); new: Is the webhook secret name `TELEGRAM_WEBHOOK_SECRET` right, and does Amit run `setWebhook` to `https://<deployment>.convex.site/telegram/webhook`?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0442a, TFV2-0442d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0442a, TFV2-0442d.
@@ -37434,9 +37633,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a private message whose text is `"a".repeat(5000)` / Then `calls[0].text` has length `4096` and `calls[0]` has no `languageCode`.
 - **NUMBERS:** text passed ≤ 4,096 characters (Telegram Bot API limit; tested with 5,000); unauthorised requests reaching the mutation = 0 (tested); 6 of 6 cases pass. Latency: UNKNOWN (no baseline); Telegram's webhook timeout is not documented as a number (UNKNOWN).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0442d (one first-party Tempo bot, chats linked by `/start <code>`, `telegramLinks` shape, fixed cues vs a model, Q-15 crisis card); new: confirm the webhook secret name `TELEGRAM_WEBHOOK_SECRET` and that Amit runs `setWebhook` to `https://<deployment>.convex.site/telegram/webhook` — Amit.
+- **OPEN:** inherits TFV2-0442a (Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?); inherits TFV2-0442d (new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`), stored in a `telegramLinks` table of this shape, rather than a bot each person supplies; and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?; Q-03: Interim text model id (runtime model).; new: Do the message bridges pick task candidates with this fixed cue list (the EN and HE lists in SPEC, no model reads the messages) or with a runtime model that may read third-party chat text, and is the Hebrew cue list approved?; new: Build the Telegram bridge as one first-party Tempo bot (Telegram webhook into Convex; a chat linked to one Tempo account by a one-time code sent as `/start <code>`; a task added only when the person sends `/add <task>`) rather than a bot each person supplies, and name the bot username and the webhook secret (proposed `TELEGRAM_WEBHOOK_SECRET`)?; Q-15: Per-country crisis resources beyond Israel; Hebrew crisis phrase list approval.); new: Is the webhook secret name `TELEGRAM_WEBHOOK_SECRET` right, and does Amit run `setWebhook` to `https://<deployment>.convex.site/telegram/webhook`? — Amit.
 
 ### TFV2-0443 — Message import: `messageImport.commitImport` (save reviewed candidates as tasks) (`convex/messageImport.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -37482,6 +37682,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0444a — Course platforms: deadline normalizer `courseDeadlineItems` (`convex/lib/courseDeadlines.ts`) — OPEN
+- **STATUS:** open — new: Which course platforms (LMS list) does Tempo read, and which Executor tool returns their deadlines (tool name, input, output shape)? Executor today allows only read-only `search`/`describe` and Tempo has no approval card, so a deadline read needs a new allow-listed read-only tool or the approval card. Is this normalized shape (`externalId`, `courseName`, `title`, ISO `dueAt`) right?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37519,6 +37720,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Which course platforms (LMS list) does Tempo read, and which Executor tool returns their deadlines (tool name, input, output shape)? Executor today allows only read-only `search`/`describe` and Tempo has no approval card, so a deadline read needs a new allow-listed read-only tool or the approval card. Is this normalized shape (`externalId`, `courseName`, `title`, ISO `dueAt`) right? — Amit.
 
 ### TFV2-0444b — Course platforms: `courses.fetchDeadlines` (read-only action) (`convex/courses.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0444a (new: Which course platforms (LMS list) does Tempo read, and which Executor tool returns their deadlines (tool name, input, output shape)? Executor today allows only read-only `search`/`describe` and Tempo has no approval card, so a deadline read needs a new allow-listed read-only tool or the approval card. Is this normalized shape (`externalId`, `courseName`, `title`, ISO `dueAt`) right?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0444a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0444a.
@@ -37564,9 +37766,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given any successful call / Then `ctx.runMutation` and `ctx.runQuery` spies were called 0 times (read-only; nothing written).
 - **NUMBERS:** writes per call = 0 (tested); ≤ 500 deadlines (`COURSE_DEADLINES_MAX`); 5 of 5 cases pass. p95 latency: UNKNOWN (depends on the LMS and Executor; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0444a (new: which LMS platforms, which Executor tool returns deadlines and its shape, given Executor allows only read-only `search`/`describe` and there is no approval card) — Amit.
+- **OPEN:** inherits TFV2-0444a (new: Which course platforms (LMS list) does Tempo read, and which Executor tool returns their deadlines (tool name, input, output shape)? Executor today allows only read-only `search`/`describe` and Tempo has no approval card, so a deadline read needs a new allow-listed read-only tool or the approval card. Is this normalized shape (`externalId`, `courseName`, `title`, ISO `dueAt`) right?) — Amit.
 
 ### TFV2-0445 — Dispatch B (Agentwright): adapter seam `dispatchB` (`convex/lib/dispatchB.ts`) — OPEN
+- **STATUS:** open — new: What is Dispatch B in Tempo (which feature sends work to it, what the payload and result are, who sees the result), and what is Agentwright's API (endpoint, request and response shape, auth method and secret name, timeout, price)? Are the proposed bounds (64 KiB payload, 60 s) right?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37605,6 +37808,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: What is Dispatch B in Tempo (which feature sends work to it, what the payload and result are, who sees the result), and what is Agentwright's API (endpoint, request and response shape, auth method and secret name, timeout, price)? Are the proposed bounds (64 KiB payload, 60 s) right? — Amit.
 
 ### TFV2-0446a — Offline inference: `LocalModelRunner` contract + `inferWithBudget` (`packages/utils/src/local-model.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils` (shared, client-side); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37654,6 +37858,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0446b — Offline inference: deterministic `createStubRunner` (`packages/utils/src/local-model-stub.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0446a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0446a.
@@ -37690,6 +37895,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0447a — Offline inference: approved model list `findApprovedLocalModel` (`convex/lib/localModelRegistry.ts`) — OPEN
+- **STATUS:** open — new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper, also imported by clients); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37729,6 +37935,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)? — Amit.
 
 ### TFV2-0447b — Offline inference: `localModel.setOfflineModel` (`convex/localModel.ts`) — OPEN
+- **STATUS:** open — inherits CFG-058 (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?); inherits TFV2-0447a (new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-058, TFV2-0447a, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-058, TFV2-0447a, TFV2-0000a.
@@ -37764,9 +37971,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `makeFakeCtx("users:a", ["users:b"])` and a seeded row for `"users:b"` / When A sets a model / Then B's row is unchanged and A gets a new row (other-user case).
 - **NUMBERS:** 1 preferences row per person (by_userId `.unique()`); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-058 (new: store the chosen offline model as `userPreferences.offlineModelId`, download state kept per device) and TFV2-0447a (new: which on-device models are approved, with id, version, size, SHA-256, URL, host, license) — Amit.
+- **OPEN:** inherits CFG-058 (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?); inherits TFV2-0447a (new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?) — Amit.
 
 ### TFV2-0447c — Offline inference: `localModel.getOfflineModel` (`convex/localModel.ts`) — OPEN
+- **STATUS:** open — inherits CFG-058 (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?); inherits TFV2-0447a (new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?); inherits TFV2-0447b (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?; new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-058, TFV2-0447a, TFV2-0447b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-058, TFV2-0447a, TFV2-0447b.
@@ -37804,9 +38012,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`; and given `makeFakeCtx("users:a", ["users:b"])` with only B's row set / Then A gets `null` (other-user case).
 - **NUMBERS:** rows read = 1 (by_userId `.unique()`); 5 of 5 new cases pass. p95 latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-058 (new: `userPreferences.offlineModelId`, download state per device) and TFV2-0447a (new: which on-device models are approved, with their details) — Amit.
+- **OPEN:** inherits CFG-058 (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?); inherits TFV2-0447a (new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?); inherits TFV2-0447b (new: Store the person's chosen offline model as `userPreferences.offlineModelId` (this shape; absent = offline coach off), with download status kept on each device and never in Convex?; new: Which on-device models are approved for offline coaching (for each: id, version, size in bytes, SHA-256, HTTPS download URL and where it is hosted, license)?) — Amit.
 
 ### TFV2-0447d — Offline inference: device download state `nextLocalModelState` (`packages/utils/src/local-model-state.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils` (client-side); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37861,6 +38070,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0448 — Offline inference: offline coach fallback `offlineCoachReply` (`packages/utils/src/offline-coach.ts`) — OPEN
+- **STATUS:** open — new: Is offline coaching allowed at all — text answers only from an approved on-device model, never proposing or applying changes, labelled "Offline answer (on your device)." — with this offline prompt, and what quality bar must an offline answer meet before it ships?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0446a, TFV2-0446b, TFV2-0447d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils` (client-side); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0446a, TFV2-0446b, TFV2-0447d.
@@ -37913,6 +38123,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Is offline coaching allowed at all — text answers only from an approved on-device model, never proposing or applying changes, labelled "Offline answer (on your device)." — with this offline prompt, and what quality bar must an offline answer meet before it ships? — Amit.
 
 ### TFV2-0449 — Local-first sync: ordered offline queue `SyncQueue` (`packages/utils/src/sync-queue.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `utils` (client-side); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -37965,6 +38176,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0450 — Inkling distillation: dataset check + job seam `submitDistillJob` (`convex/lib/distill.ts`) — OPEN
+- **STATUS:** open — new: Approve Inkling distillation — the spend cap, the training engine or service and its auth secret name, the base (student) model, where checkpoints are stored, and the data source for prompt/completion pairs (proposed: teacher outputs on synthetic prompts only, never people's conversations without consent)?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -38007,6 +38219,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Approve Inkling distillation — the spend cap, the training engine or service and its auth secret name, the base (student) model, where checkpoints are stored, and the data source for prompt/completion pairs (proposed: teacher outputs on synthetic prompts only, never people's conversations without consent)? — Amit.
 
 ### TFV2-0451a — Regional inference: region from time zone `inferenceRegionFor` (`convex/lib/aiRegion.ts`) — OPEN
+- **STATUS:** open — new: Regional inference — which regional endpoints exist and are approved (provider and one HTTPS chat-completions URL per region), is the region derived from `userPreferences.timeZone` (this proposal, no new field) or stored as its own preference (a config-lane field), and are `il`/`eu`/`us` the regions?
 - **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (pure helper); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -38040,6 +38253,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Regional inference — which regional endpoints exist and are approved (provider and one HTTPS chat-completions URL per region), is the region derived from `userPreferences.timeZone` (this proposal, no new field) or stored as its own preference (a config-lane field), and are `il`/`eu`/`us` the regions? — Amit.
 
 ### TFV2-0451b — Regional inference: `callLLM` region option (`convex/lib/ai_router.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0451a (new: Regional inference — which regional endpoints exist and are approved (provider and one HTTPS chat-completions URL per region), is the region derived from `userPreferences.timeZone` (this proposal, no new field) or stored as its own preference (a config-lane field), and are `il`/`eu`/`us` the regions?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0451a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0451a.
@@ -38077,9 +38291,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a region with no entry in `REGION_CHAT_COMPLETIONS_URLS` (cast, so the test holds for any approved list) / Then `fetch` was called with `DEEPINFRA_CHAT_COMPLETIONS_URL`.
 - **NUMBERS:** model changes caused by a region = 0 (tested); existing `callLLM` cases keep passing; 3 of 3 new cases pass. Regional latency gain: UNKNOWN (no measured baseline; Amit).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0451a (new: which regional endpoints are approved, region from `userPreferences.timeZone` or its own preference, and which regions) — Amit.
+- **OPEN:** inherits TFV2-0451a (new: Regional inference — which regional endpoints exist and are approved (provider and one HTTPS chat-completions URL per region), is the region derived from `userPreferences.timeZone` (this proposal, no new field) or stored as its own preference (a config-lane field), and are `il`/`eu`/`us` the regions?) — Amit.
 
 ### TFV2-0452a — Family plans: `familyPlans.getMine` (my family, or my pending invite) (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits CFG-026 (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?); inherits CFG-027 (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?); new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-026, CFG-027, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-026, CFG-027, TFV2-0000a.
@@ -38122,7 +38337,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: QueryCtx): Promise<FamilyView | null> => { … },
   });
   ```
-  Private helpers: `activeMembership(ctx, userId)` → the first `familyMembers` row from `withIndex("by_userId", (q) => q.eq("userId", userId))` with `status === "active"` and `deletedAt === undefined`, else `null`; `displayNameOf(user)` → `user.fullName?.trim()` when non-empty and not `"User"` and the user has no `deletedAt`, else `null`.
+  Private helpers: `async function activeMembership(ctx: QueryCtx | MutationCtx, userId: Id<"users">): Promise<Doc<"familyMembers"> | null>` (types: `import type { Doc, Id } from "./_generated/dataModel";` and `type MutationCtx, type QueryCtx` from `./_generated/server`) → the first `familyMembers` row from `withIndex("by_userId", (q) => q.eq("userId", userId))` with `status === "active"` and `deletedAt === undefined`, else `null`; `displayNameOf(user)` → `user.fullName?.trim()` when non-empty and not `"User"` and the user has no `deletedAt`, else `null`.
   Handler: 1) `user = await requireUser(ctx)`. 2) `m = activeMembership(ctx, user._id)`. 3) When `m`: `group = await ctx.db.get(m.groupId)`; group missing or `deletedAt` set → return `null`; rows = `withIndex("by_groupId", (q) => q.eq("groupId", group._id)).take(FAMILY_MEMBERS_READ_MAX)` without `deletedAt`, owner first then by `createdAt`; each → `{ memberId, displayName: row.userId ? displayNameOf(await ctx.db.get(row.userId)) : null, inviteEmail: row.status === "invited" && m.role === "owner" ? row.inviteEmail : null, role, status, isMe: row.userId === user._id }`; return `{ kind: "family", groupId, name: group.name, memberLimit: group.memberLimit, myRole: m.role, members }`. 4) Else: `email = user.email.trim().toLowerCase()`; `invite` = first `familyMembers` row from `withIndex("by_inviteEmail", (q) => q.eq("inviteEmail", email))` with `status === "invited"`, no `deletedAt`, whose group exists without `deletedAt`; when found return `{ kind: "invite", memberId: invite._id, groupName: group.name, ownerName: displayNameOf(owner) }`; else `null`.
   Errors (exact → trigger): `"Not authenticated"` → no identity (from `requireUser`). No other error: a missing family is `null`.
 - **TESTS:** (`convex/familyPlans.test.ts`; `makeFakeCtx("users:1", ["users:2", "users:3"])`; seed `familyGroups` / `familyMembers` / user `fullName` with `ctx.db.insert` / `ctx.db.patch`)
@@ -38134,9 +38349,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a group with 25 member rows / Then `members.length` is 20 (`FAMILY_MEMBERS_READ_MAX`).
 - **NUMBERS:** Members read per family ≤ 20 (`FAMILY_MEMBERS_READ_MAX`, product bound; case 6). Member limit 5 (`FAMILY_MEMBER_LIMIT`, proposed; UNKNOWN until Amit answers CFG-026). p95 latency: UNKNOWN (no baseline; not a gate). 6 of 6 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-027 (which inherits CFG-026: member limit, proposed 5; family price; whether children get full or limited features) — Amit. Also new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)? — Amit.
+- **OPEN:** inherits CFG-026 (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?); inherits CFG-027 (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?); new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)? — Amit.
 
 ### TFV2-0452b — Family plans: `familyPlans.create` (start a family) (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0452a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0452a.
@@ -38172,9 +38388,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `users:1` already an active member of another family / Then it rejects with `"Already in a family"`.
 - **NUMBERS:** Family name 1–60 characters (`FAMILY_NAME_MAX`, product bound; cases 9–10). Member limit stored = `FAMILY_MEMBER_LIMIT` (5, proposed; UNKNOWN until Amit answers). p95 latency: UNKNOWN (not a gate). 11 of 11 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?) — Amit.
 
 ### TFV2-0452c — Family plans: `familyPlans.invite` (owner invites by email) (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0452b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0452b.
@@ -38211,9 +38428,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   17. Given the group already has 5 live rows / Then inviting a sixth address rejects with `"Member limit reached"` and no row is added.
 - **NUMBERS:** Live rows per family ≤ `memberLimit` (5 proposed; UNKNOWN until Amit answers) · email ≤ 254 characters (RFC 5321 §4.5.3.1.3). p95 latency: UNKNOWN (not a gate). 17 of 17 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452b, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?) — Amit.
 
 ### TFV2-0452d — Family plans: `familyPlans.acceptInvite` (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0452c (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0452c.
@@ -38227,7 +38445,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Add the 5 TESTS cases.
   4. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `bun test convex/familyPlans.test.ts` → `22 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/familyPlans.test.ts` and the `bun run typecheck` and `bun run lint` exit codes, pasted into the PR.
 - **DO NOT:** accept by any key other than the caller's own email; join a second family; change any entitlement; edit `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0452d / evidence: <DONE output> / changed: convex/familyPlans.ts, convex/familyPlans.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -38238,19 +38456,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: MutationCtx, args: { memberId: Id<"familyMembers"> }): Promise<Id<"familyGroups">> => { … },
   });
   ```
-  Handler: 1) `user = await requireUser(ctx)`. 2) `row = await ctx.db.get(args.memberId)`; missing, `deletedAt` set, `status !== "invited"`, or `row.inviteEmail !== user.email.trim().toLowerCase()`, or its group missing / soft-deleted → `throw new Error("Invite not found")`. 3) `activeMembership(ctx, user._id)` not `null` → `throw new Error("Already in a family")`. 4) `patch(row._id, { userId: user._id, status: "active", joinedAt: now, updatedAt: now })`; return `row.groupId`.
+  Relies on (created by TFV2-0452a, in `Depends` through TFV2-0452c; private, in `convex/familyPlans.ts`), quoted: "`async function activeMembership(ctx: QueryCtx | MutationCtx, userId: Id<"users">): Promise<Doc<"familyMembers"> | null>` → the first `familyMembers` row from `withIndex("by_userId", (q) => q.eq("userId", userId))` with `status === "active"` and `deletedAt === undefined`, else `null`".
+  Email typing: `users.email` is `email: v.string()` in `convex/schema.ts` (line 20 on `integration`), so `user.email` is typed `string` (not optional) and the handler writes `const email = user.email.trim().toLowerCase();` right after step 1, with no `??` fallback. An empty `email` (`""`) never matches, because `invite` (TFV2-0452c) stores only addresses matching `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`.
+  Handler: 1) `user = await requireUser(ctx)`. 2) `row = await ctx.db.get(args.memberId)`; missing, `deletedAt` set, `status !== "invited"`, or `row.inviteEmail !== email`, or `group = await ctx.db.get(row.groupId)` is `null` or has `deletedAt !== undefined` (the family was removed) → `throw new Error("Invite not found")`. 3) `activeMembership(ctx, user._id)` not `null` → `throw new Error("Already in a family")`. 4) `patch(row._id, { userId: user._id, status: "active", joinedAt: now, updatedAt: now })`; return `row.groupId`.
   Errors (exact → trigger): `"Not authenticated"`; `"Invite not found"` (missing, removed, already active, addressed to another email, or its family removed); `"Already in a family"`.
 - **TESTS:** (added)
   18. Given `makeSignedOutCtx()` / Then `acceptInvite` rejects with `"Not authenticated"`.
   19. Given an invited row for `users:3@example.com` / When `users:3` accepts / Then it returns the group id and the row has `userId: "users:3"`, `status: "active"` and a numeric `joinedAt`.
   20. Given that invited row / When `users:2` (another email) accepts it / Then it rejects with `"Invite not found"` and the row is unchanged.
-  21. Given a row whose `status` is already `"active"` / Then accepting rejects with `"Invite not found"`.
+  21. Given a row whose `status` is already `"active"` / Then accepting rejects with `"Invite not found"`; and given the invited row for `users:3@example.com` whose `familyGroups` row is patched to `deletedAt: 5` (the family was removed) / When `users:3` accepts / Then it rejects with `"Invite not found"` and the member row still has `status: "invited"` and no `userId`.
   22. Given `users:3` already active in another family / Then accepting rejects with `"Already in a family"`.
 - **NUMBERS:** One active family per person (exact invariant; cases 22 and 11). p95 latency: UNKNOWN (not a gate). 22 of 22 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452c, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452c (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?) — Amit.
 
 ### TFV2-0452e — Family plans: `familyPlans.removeMember` (owner removes a member or cancels an invite) (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0452d (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452d · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0452d.
@@ -38285,9 +38506,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   27. Given the owner's own row / Then it rejects with `"The owner cannot be removed"`.
 - **NUMBERS:** Soft delete only (exact; PRD F-131; case 24). p95 latency: UNKNOWN (not a gate). 27 of 27 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452d, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit.
+- **OPEN:** inherits TFV2-0452d (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?) — Amit.
 
 ### TFV2-0452f — Family plans: `familyPlans.leave` (a member leaves) (`convex/familyPlans.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0452e (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0452e · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0452e.
@@ -38321,9 +38543,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   31. Given owner `users:1` / Then it rejects with `"The owner cannot leave the family"`.
 - **NUMBERS:** Soft delete only (exact; PRD F-131). p95 latency: UNKNOWN (not a gate). 31 of 31 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452e, which inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; members seeing names) — Amit. Also new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first? — Amit.
+- **OPEN:** inherits TFV2-0452e (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first? — Amit.
 
 ### TFV2-0453a — View: FamilyView (family members, invite, leave) (`apps/web/components/family/FamilyView.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0452a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0088, TFV2-0090, TFV2-0092, TFV2-0093, TFV2-0097, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0452a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0023b, TFV2-0000b, TFV2-0032, TFV2-0088, TFV2-0090, TFV2-0092, TFV2-0093, TFV2-0097, TFV2-0113, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123, TFV2-0452a.
@@ -38433,9 +38656,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the page / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="family-view-default"]')` and `expectMotionBudget(page, '[data-testid="family-view-default"]')` run, and Tab reaches `Send invite` / Then all pass and its computed `outline-width` is ≥ `2px`.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only (`bun run scan:design-tokens`). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · last bullet. Motion ≤ 250 ms, ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. Family name ≤ 60 characters (`maxLength`, matches `FAMILY_NAME_MAX` of TFV2-0452b). 44 of 44 cases pass (11 bullets × 2 viewports × 2 languages).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0452a (CFG-026/CFG-027: member limit, family price, children's features; whether members see each other's names) — Amit.
+- **OPEN:** inherits TFV2-0452a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?) — Amit.
 
 ### TFV2-0453b — Route: `/settings/family` (`apps/web/app/(tempo)/settings/family/page.tsx`) — OPEN
+- **STATUS:** open — inherits TFV2-0453a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452c (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452d (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452e (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452f (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?; new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first?); new: Does the family page live under Settings (`/settings/family`, proposed) or under Billing?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0453a, TFV2-0000b, TFV2-0000c, TFV2-0452b, TFV2-0452c, TFV2-0452d, TFV2-0452e, TFV2-0452f · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0453a, TFV2-0000b, TFV2-0000c, TFV2-0452b, TFV2-0452c, TFV2-0452d, TFV2-0452e, TFV2-0452f.
@@ -38472,9 +38696,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (once, EN, 1280) Given no `?state` (signed out under the bypass) / When `page.goto("/settings/family")` / Then the URL does not match `/sign-in/` and `settings-family-route` is attached (the wiring line works).
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally (preview only, not a gate). 29 of 29 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0453a (TFV2-0452a: member limit, family price, children's features; members seeing names) — Amit. Also new: Does the family page live under Settings (`/settings/family`, proposed) or under Billing? — Amit.
+- **OPEN:** inherits TFV2-0453a (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452c (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452d (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452e (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?); inherits TFV2-0452f (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?; new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first?); new: Does the family page live under Settings (`/settings/family`, proposed) or under Billing? — Amit.
 
 ### TFV2-0454a — SOC 2 audit log: `audit.record` (internal, append-only) (`convex/audit.ts`) — OPEN
+- **STATUS:** open — inherits CFG-028 (new: Which exact events are audited, what is the retention window, and do audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** CFG-028 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-028.
@@ -38516,9 +38741,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given the module's exports (`import * as audit from "./audit"`) / Then the exported function names are exactly `["record"]` plus the constants and validator (no export whose name contains `update`, `patch`, `delete` or `remove`).
 - **NUMBERS:** Metadata ≤ 10 entries, each key / value / target ≤ 200 characters (product bounds; cases 3–4). Append-only (exact; case 6). Retention window: UNKNOWN (Amit; CFG-028 OPEN). p95 latency: UNKNOWN (not a gate). 6 of 6 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-028 (the exact list of audited events and the retention window) — Amit.
+- **OPEN:** inherits CFG-028 (new: Which exact events are audited, what is the retention window, and do audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`)?) — Amit.
 
 ### TFV2-0454b — SOC 2 audit log: `audit.listMine` (a person reads their own events) (`convex/audit.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0454a (new: Which exact events are audited, what is the retention window, and do audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`)?)
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0454a, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0454a, TFV2-0000a.
@@ -38559,9 +38785,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `limit: 0`, `limit: 101` and `limit: 2.5` / Then each rejects with `"Invalid page size"`.
 - **NUMBERS:** Page ≤ 100 events, default 50 (`AUDIT_PAGE_MAX` / `AUDIT_PAGE_DEFAULT`, product bounds; CONVENTIONS §16 bounded reads; cases 10–11). p95 latency: UNKNOWN (not a gate). 11 of 11 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0454a (CFG-028: the exact list of audited events and the retention window) — Amit.
+- **OPEN:** inherits TFV2-0454a (new: Which exact events are audited, what is the retention window, and do audit rows survive account deletion (they have no `deletedAt`, so they cannot use the `owned-table-soft-delete` lifecycle in `convex/lib/accountDeletion.ts`)?) — Amit.
 
 ### TFV2-0455a — Compliance: `compliance.exportMine` (all my pages, tasks, events and habits as markdown) (`convex/compliance.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -38617,22 +38844,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0455b — Compliance: `compliance.purgeExpiredAccounts` hard-deletes accounts past the 30-day grace (internal mutation + cron line) (`convex/compliance.ts`, `convex/crons.ts`) — OPEN
+- **STATUS:** open — Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Is a daily purge of every row of an account deleted more than 30 days ago the SOC 2 retention rule, and how long are `auditEvents` kept after the account is gone?
 - **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0455a, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`; lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0455a, TFV2-0000a.
 - **WHY:** PRD F-131 ("soft delete with 30-day grace"); PRD §4.12 (SOC 2 retention); register Q-08 (`forget`: soft delete with 30-day grace vs complete hard delete). Code truth: `users.deleteMyAccount` (`convex/users.ts` line 241) soft-deletes through `softDeleteUserAccount` (`convex/lib/accountDeletion.ts`), whose `USER_OWNED_TABLES` lists 24 tables that carry `by_userId`, and `ACCOUNT_RESTORE_GRACE_MS = 30 days`; nothing ever removes the rows after the grace. CONVENTIONS §17 (one `crons.ts` line). Split from old TFV2-0455.
 - **GOAL:** A cron runs `compliance.purgeExpiredAccounts`, which hard-deletes, in bounded batches, the rows of accounts soft-deleted more than 30 days ago, so a deleted account is really gone after its grace window.
 - **SCOPE:** `convex/compliance.ts` · `convex/crons.ts` · test: `convex/compliance.test.ts`.
-- **MUTATES:** `convex/compliance.ts` (edit: add `PURGE_USERS_PER_RUN`, `PURGE_ROWS_PER_RUN`, `purgeExpiredAccounts`) · `convex/crons.ts` (edit: one line) · `convex/compliance.test.ts` (edit: add 5 cases) · runtime: hard deletes of rows in `USER_OWNED_TABLES` for expired accounts, then of the `users` row.
+- **MUTATES:** `convex/compliance.ts` (edit: add `PURGE_USERS_PER_RUN`, `PURGE_ROWS_PER_RUN`, `purgeExpiredAccounts`) · `convex/crons.ts` (edit: one line) · `convex/compliance.test.ts` (edit: add 7 cases) · runtime: hard deletes of rows in `USER_OWNED_TABLES` for expired accounts, then of their Convex Auth rows (`authRefreshTokens`, `authSessions`, `authVerificationCodes`, `authAccounts`), then of the `users` row. `auditEvents` rows are never deleted.
 - **STEPS:**
-  1. Code-map check: `grep -n "export const USER_OWNED_TABLES\|export const ACCOUNT_RESTORE_GRACE_MS" convex/lib/accountDeletion.ts` prints both; `grep -n "by_deletedAt" convex/schema.ts` shows the `users` index; `grep -n "export const exportMine" convex/compliance.ts` prints one line (TFV2-0455a); `grep -n "delete:" convex/lib/testFakeCtx.ts` shows TFV2-0000a's `db.delete`.
+  1. Code-map check: `grep -n "export const USER_OWNED_TABLES\|export const ACCOUNT_RESTORE_GRACE_MS" convex/lib/accountDeletion.ts` prints both; `grep -n "by_deletedAt" convex/schema.ts` shows the `users` index; `grep -n "export const exportMine" convex/compliance.ts` prints one line (TFV2-0455a); `grep -n "delete:" convex/lib/testFakeCtx.ts` shows TFV2-0000a's `db.delete`; `grep -n "auditEvents" convex/lib/accountDeletion.ts` prints nothing (it is not in `USER_OWNED_TABLES`); `grep -n "authTables" convex/schema.ts` prints `import { authTables } from "@convex-dev/auth/server";` and `...authTables,`; `grep -n 'index("userId"\|index("userIdAndProvider"\|index("sessionId"\|index("accountId"' node_modules/@convex-dev/auth/dist/server/implementation/types.js` shows the four indexes used below (`@convex-dev/auth` `^0.0.91`). Any miss → `blocked: PATH_DRIFT — <what differs>`.
   2. Add the constants and `purgeExpiredAccounts` to `convex/compliance.ts` exactly as SPEC.
   3. Add the cron line (its own step) to `convex/crons.ts` before `export default crons;`: `crons.daily("purge expired accounts", { hourUTC: 3, minuteUTC: 15 }, internal.compliance.purgeExpiredAccounts, {});` (CONVENTIONS §17). Nothing else in that file changes.
-  4. Add the 5 TESTS cases.
+  4. Add the 7 TESTS cases.
   5. Run DONE, then `bun run typecheck` and `bun run lint`.
-- **DONE:** `bun test convex/compliance.test.ts` → `13 pass`, `0 fail`; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary, the `crons.ts` diff line and the typecheck and lint exit codes, pasted into the PR.
-- **DO NOT:** delete any row of an account inside its grace window or of an active account; delete `auditEvents` rows (retention is OPEN); touch Convex Auth tables (`authAccounts`, `authSessions`, …) or Agent component tables; delete more than the bounds per run; edit `convex/lib/accountDeletion.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
+- **DONE:** `bun test convex/compliance.test.ts` → `15 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **EVIDENCE:** the summary of `bun test convex/compliance.test.ts`, the `crons.ts` diff line and the typecheck and lint exit codes, pasted into the PR.
+- **DO NOT:** delete any row of an account inside its grace window or of an active account; delete `auditEvents` rows (retention is OPEN; `auditEvents` is not in `USER_OWNED_TABLES` and is never added to any delete list here); touch `authVerifiers` or `authRateLimits` (not keyed by user; short-lived) or Agent component tables; delete more than the bounds per run; edit `convex/lib/accountDeletion.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
 - **REPORT:** `status / ticket: TFV2-0455b / evidence: <DONE output> / changed: convex/compliance.ts, convex/crons.ts, convex/compliance.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
   ```ts
@@ -38644,19 +38872,22 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: MutationCtx): Promise<{ usersPurged: number; rowsDeleted: number }> => { … },
   });
   ```
-  Handler: 1) `cutoff = Date.now() - ACCOUNT_RESTORE_GRACE_MS`. 2) `users = await ctx.db.query("users").withIndex("by_deletedAt", (q) => q.gte("deletedAt", 0).lt("deletedAt", cutoff)).take(PURGE_USERS_PER_RUN)`. 3) `budget = PURGE_ROWS_PER_RUN`; for each user, for each `table` of `USER_OWNED_TABLES` in order: `rows = await ctx.db.query(table).withIndex("by_userId", (q) => q.eq("userId", user._id)).take(budget)`; `ctx.db.delete` each; `budget -= rows.length`; stop all work when `budget === 0`. 4) A user whose 24 tables all returned fewer rows than asked (nothing left) is deleted with `ctx.db.delete(user._id)` and counted in `usersPurged`; a user cut off by the budget keeps its `users` row and is finished on a later run. 5) Return `{ usersPurged, rowsDeleted }`.
+  Handler: 1) `cutoff = Date.now() - ACCOUNT_RESTORE_GRACE_MS`. 2) `users = await ctx.db.query("users").withIndex("by_deletedAt", (q) => q.gte("deletedAt", 0).lt("deletedAt", cutoff)).take(PURGE_USERS_PER_RUN)`. 3) `budget = PURGE_ROWS_PER_RUN`; for each user, for each `table` of `USER_OWNED_TABLES` in order: `rows = await ctx.db.query(table).withIndex("by_userId", (q) => q.eq("userId", user._id)).take(budget)`; `ctx.db.delete` each; `budget -= rows.length`; stop all work when `budget === 0`. 3b) Convex Auth rows (the tables `...authTables` adds to `convex/schema.ts` from `@convex-dev/auth/server`), after the 24 tables and inside the same budget: `sessions = ctx.db.query("authSessions").withIndex("userId", (q) => q.eq("userId", user._id)).take(budget)`; for each session, delete its `authRefreshTokens` rows (`withIndex("sessionId", (q) => q.eq("sessionId", session._id)).take(budget)`), then the session; then `accounts = ctx.db.query("authAccounts").withIndex("userIdAndProvider", (q) => q.eq("userId", user._id)).take(budget)`; for each account, delete its `authVerificationCodes` rows (`withIndex("accountId", (q) => q.eq("accountId", account._id)).take(budget)`), then the account. Every deleted row counts against `budget` and in `rowsDeleted`. So after the purge no Convex Auth row points at the deleted `users` row, and the person's sign-in identifier (`authAccounts.providerAccountId`) is gone; `authVerifiers` and `authRateLimits` are untouched. 4) A user whose 24 tables and four auth queries all returned fewer rows than asked (nothing left) is deleted with `ctx.db.delete(user._id)` and counted in `usersPurged`; a user cut off by the budget keeps its `users` row and is finished on a later run. 5) Return `{ usersPurged, rowsDeleted }`.
   No errors are thrown (an empty run returns zeros). Auth: internal only (cron).
 - **TESTS:** (added; seed `users` rows by `ctx.db.patch(id, { deletedAt })`)
   9. Given `users:2` with `deletedAt = now - 31 days` and two `tasks` and one `notes` row / When `run(purgeExpiredAccounts, ctx, {})` / Then it returns `{ usersPurged: 1, rowsDeleted: 3 }`, those rows and the `users:2` row are gone.
-  10. Given `users:2` with `deletedAt = now - 29 days` / Then it returns `{ usersPurged: 0, rowsDeleted: 0 }` and every row remains.
+  10. Given `users:2` with `deletedAt = now - 30 days` exactly (`now - ACCOUNT_RESTORE_GRACE_MS`, equal to `cutoff`; the index range is `.lt("deletedAt", cutoff)`, so the boundary day is still inside the grace window) / Then it returns `{ usersPurged: 0, rowsDeleted: 0 }` and every row remains.
   11. Given an active `users:1` (no `deletedAt`) with rows / Then none of them is deleted.
-  12. Given an expired user with `PURGE_ROWS_PER_RUN + 10` task rows / Then the first run deletes exactly 1,000 rows and keeps the `users` row; the second run deletes the last 10 and the `users` row.
+  12. Row limit at n and n + 1 (`PURGE_ROWS_PER_RUN` = 1,000): given an expired user with exactly 1,000 `tasks` rows / Then the first run returns `{ usersPurged: 0, rowsDeleted: 1000 }` and keeps the `users` row (the take returned as many as asked), and the second run returns `{ usersPurged: 1, rowsDeleted: 0 }`; given an expired user with 1,001 `tasks` rows / Then the first run returns `{ usersPurged: 0, rowsDeleted: 1000 }` and the second `{ usersPurged: 1, rowsDeleted: 1 }`.
   13. Given an expired user with an `auditEvents` row (seeded directly) / Then that row still exists after the run.
-- **NUMBERS:** Grace window 30 days (`ACCOUNT_RESTORE_GRACE_MS`, code; PRD F-131; cases 9–10). ≤ 5 accounts and ≤ 1,000 rows per run (product bounds under Convex mutation write limits, https://docs.convex.dev/production/state/limits; case 12). Daily at 03:15 UTC (proposed). p95 latency: UNKNOWN (not a gate). 13 of 13 cases pass.
+  14. Given an expired `users:2` with `authSessions` `{ userId: "users:2", expirationTime: 1 }`, `authRefreshTokens` `{ sessionId: <that session id>, expirationTime: 1 }`, `authAccounts` `{ userId: "users:2", provider: "password", providerAccountId: "two@example.com" }` and `authVerificationCodes` `{ accountId: <that account id>, provider: "password", code: "c", expirationTime: 1 }` / When the purge runs / Then it returns `{ usersPurged: 1, rowsDeleted: 4 }` and none of the four rows nor `users:2` exists.
+  15. User limit at n and n + 1 (`PURGE_USERS_PER_RUN` = 5): given 5 expired users with no rows / Then one run returns `{ usersPurged: 5, rowsDeleted: 0 }`; given 6 expired users with no rows / Then the first run returns `{ usersPurged: 5, rowsDeleted: 0 }` with one expired `users` row left, and the second run returns `{ usersPurged: 1, rowsDeleted: 0 }`.
+- **NUMBERS:** Grace window 30 days (`ACCOUNT_RESTORE_GRACE_MS`, code; PRD F-131; cases 9–10 at 31 days and exactly 30 days). ≤ 5 accounts and ≤ 1,000 rows per run (product bounds under Convex mutation write limits, https://docs.convex.dev/production/state/limits; case 12 at 1,000 and 1,001 rows, case 15 at 5 and 6 accounts). Daily at 03:15 UTC (proposed). p95 latency: UNKNOWN (not a gate). 15 of 15 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-08: `forget` — soft delete with 30-day grace then a complete hard delete (this ticket), or something else? — Amit. Also new: Is a daily purge of every row of an account deleted more than 30 days ago the SOC 2 retention rule, and how long are `auditEvents` kept after the account is gone? — Amit.
+- **OPEN:** Q-08: `forget`: soft delete with 30-day grace vs complete hard delete.; new: Is a daily purge of every row of an account deleted more than 30 days ago the SOC 2 retention rule, and how long are `auditEvents` kept after the account is gone? — Amit.
 
 ### TFV2-0456 — Gen 2 web sweep: one RTL, keyboard, target-size, motion and layout spec over the new screens (`tests/e2e/screens/gen2-sweep.spec.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0409b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0410b (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?; new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0453b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?; new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first?; new: Does the family page live under Settings (`/settings/family`, proposed) or under Billing?)
 - **Stage:** F · **Pass:** 2 · **Depends:** TFV2-0409b, TFV2-0410b, TFV2-0453b, TFV2-0440 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web` (test only); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0409b, TFV2-0410b, TFV2-0453b, TFV2-0440.
@@ -38694,5 +38925,5 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Motion: Given the target / Then `expectMotionBudget(page, t.root)` passes.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7. Motion ≤ 250 ms, ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. No sideways scroll at 390 px · DESIGN.md §8. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · enforced by tokens-only (`bun run scan:design-tokens`) in each owning ticket, not re-measured here. Scrolling 60 fps: UNKNOWN (not measurable in the local dev server; preview only). 80 of 80 cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0409b, TFV2-0410b (CFG-021, CFG-022, TFV2-0397: categories, moderation, plugin table, permission set) and TFV2-0453b (CFG-026/CFG-027: member limit, family price, children's features; where the family page lives) — Amit.
+- **OPEN:** inherits TFV2-0409b (new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?); inherits TFV2-0410b (new: (1) Is the plugin permission set exactly `read_pages`, `write_today`, `schedule_job`, `web_request`, with `web_request` the only permission confirmed on every use (`PLUGIN_CONFIRM_EACH_USE`)? (2) Which catalog names may a plugin extend — this ticket proposes the components `TaskBlock` and `TemplateBlock` and the action `setTaskDone` from `packages/ui/src/blocks/catalog.ts` — and may a plugin ever add a new block component?; new: Should every permission start unticked (proposed), and is the plain-words list above the right wording?; new: Is the listing category list exactly planning, coach, learning, habits, wellbeing, other, and which moderation workflow moves a listing's `status` to `published`?; new: Are installed plugins a dedicated `plugins` table (this shape) or `notes` rows with a plugin page type?); inherits TFV2-0453b (new: What is the family member limit (proposed default 5), what is the family price, and do children get full or limited features?; new: May family members see each other's display names in the family list (proposed: yes, names only; an invited address is shown only to the owner)?; new: When the owner wants to leave, does the family close for everyone, or is ownership handed to another member first?; new: Does the family page live under Settings (`/settings/family`, proposed) or under Billing?) — Amit.
 
