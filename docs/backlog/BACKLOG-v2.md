@@ -42,12 +42,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A reusable query-wrapper that reads every list the way a coach tool would — with a hard row and byte budget and an explicit `truncated` flag, so no query can ever run unbounded.
 - **SCOPE:** `convex/lib/bounded.ts` (+ `convex/lib/bounded.test.ts`).
 - **MUTATES:** none (adds a pure helper module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (the unit is MISSING today — confirmed no `bounded*` file); 2) write `convex/lib/bounded.ts` exporting `boundedQuery<T>(rows: readonly T[], opts: { maxRows: number; maxBytes: number }): { rows: T[]; truncated: boolean }`; 3) count rows first, then bytes by `JSON.stringify` length, stopping at the first budget exceeded and setting `truncated: true`; 4) handle `maxRows=0` (empty result; `truncated: true` only if the input had rows) and `maxBytes=0` (keeps only zero-byte rows; `truncated: true` if any row was dropped); 5) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (the unit is MISSING today — confirmed no `bounded*` file); 2) write `convex/lib/bounded.ts` exporting `boundedQuery<T>(rows: readonly T[], opts: { maxRows: number; maxBytes: number }): { rows: T[]; truncated: boolean }`; 3) count rows first, then bytes by UTF-8 byte length (`new TextEncoder().encode(JSON.stringify(row)).length`), stopping at the first budget exceeded and setting `truncated: true`; 4) handle `maxRows=0` (empty result; `truncated: true` only if the input had rows) and `maxBytes=0` (keeps only zero-byte rows; `truncated: true` if any row was dropped); 5) add the unit test file.
 - **DONE:** `bun test convex/lib/bounded.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count) into the PR.
 - **DO NOT:** do not change any existing query's call site; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, any `.env` or workflow.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Pure function, no Convex context. `maxRows` and `maxBytes` are positive integers; a non-finite or negative option throws a `ConvexError`. Return type is always `{ rows, truncated }`; `truncated` is `true` only when at least one row was dropped for budget. Budget check order: row count first, then cumulative byte size. Rows are kept in input order (no sort). Error messages (surfaced by callers, EN/HE): `EN: "Showing the first {n} results." / HE: "מוצגות התוצאות הראשונות: {n}."`. There is no other user-facing copy in this module.
+- **SPEC:** Pure function, no Convex context. `maxRows` and `maxBytes` are non-negative integers (`maxRows=0` keeps no rows; `maxBytes=0` keeps only zero-byte rows); a non-integer, non-finite or negative option throws a `ConvexError`. Return type is always `{ rows, truncated }`; `truncated` is `true` only when at least one row was dropped for budget. Budget check order: row count first, then cumulative byte size. Rows are kept in input order (no sort). Error messages (surfaced by callers, EN/HE): `EN: "Showing the first {n} results." / HE: "מוצגות התוצאות הראשונות: {n}."`. There is no other user-facing copy in this module.
 - **TESTS:**
   - Given `rows=[]`, `maxRows=10`, `maxBytes=1_000_000` / When `boundedQuery` runs / Then returns `{rows:[], truncated:false}`.
   - Given 10 rows of 100 bytes and `maxRows=5` / Then `rows.length===5` and `truncated===true`.
@@ -55,6 +55,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `maxRows=0` with non-empty rows / Then `rows.length===0` and `truncated===true`.
   - Given `maxRows=0` with empty rows / Then `truncated===false`.
   - Given a negative `maxBytes` / Then a `ConvexError` is thrown.
+  - Given a non-integer `maxRows` (e.g. `1.5`) / Then a `ConvexError` is thrown.
   - Given 5 rows all under budget / Then `rows.length===5` and `truncated===false`.
 - **NUMBERS:** No industry number applies; correctness is byte-count exactness (deterministic, no range). `maxRows` and `maxBytes` are caller-set (this module holds no defaults).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -68,17 +69,17 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A deterministic in-process stand-in for the runtime model that returns scripted replies and lets coach/chat tests assert exact behaviour without network, keys or spend.
 - **SCOPE:** `convex/lib/mockModel.ts` (+ `convex/lib/mockModel.test.ts`).
 - **MUTATES:** none (pure module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING — confirmed no `mockModel*` file); 2) write `mockModel.ts` exporting `mockModel({ queue }: { queue: readonly string[] }): (input: { messages: readonly { role: "system"|"user"|"assistant"; content: string }[] }) => Promise<{ content: string }>`; 3) replies consume `queue` in order; on empty queue return a fixed final reply `"Done."`; 4) record every received `messages` array on the returned callable (expose a `.calls` property) so tests assert the prompt; 5) no network, no `process.env`, no key reads; 6) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING — confirmed no `mockModel*` file); 2) write `mockModel.ts` exporting `mockModel({ queue }: { queue: readonly string[] }): MockModelFn`, where `type MockModelFn = ((input: { messages: readonly { role: "system"|"user"|"assistant"; content: string }[] }) => Promise<{ content: string }>) & { calls: readonly { messages: readonly { role: string; content: string }[] }[] }` (the `.calls` property is part of the returned type, not an afterthought); 3) replies consume `queue` in order; on empty queue return a fixed final reply `"Done."`; 4) record every received `messages` array on the returned callable (expose a `.calls` property) so tests assert the prompt; 5) no network, no `process.env`, no key reads; 6) add the unit test file.
 - **DONE:** `bun test convex/lib/mockModel.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not call any real model, `fetch`, or `ai_router`; do not read or log secrets; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The returned callable is the only API; it is async and always resolves (never rejects). `messages` is validated to be an array of objects with `role` in the allowed set and `content: string`; an invalid `messages` argument throws a `ConvexError` with `EN: "Bad messages for the mock model." / HE: "הודעות לא תקינות למודל המדומה."`. Reply shape mirrors `ai_router.AiResult`'s `content` field (the field the coach reads via `parseCoachReply(result.content)`): the callable returns `{ content: string }` so callers substitute it without changes.
+- **SPEC:** The returned callable is the only API; it is async and resolves for valid input. `messages` is validated to be an array of objects with `role` in the allowed set and `content: string`; an invalid `messages` argument rejects with a `ConvexError` with `EN: "Bad messages for the mock model." / HE: "הודעות לא תקינות למודל המדומה."`. Reply shape mirrors `ai_router.AiResult`'s `content` field (the field the coach reads via `parseCoachReply(result.content)`): the callable returns `{ content: string }` so callers substitute it without changes.
 - **TESTS:**
   - Given `queue=["First","Second"]` / When called twice / Then `reply.content` is `"First"` then `"Second"`.
   - Given empty `queue` / When called / Then returns `{ content: "Done." }` and records the call.
   - Given a call / Then `.calls[0]` equals the exact `messages` array passed (deep equal).
-  - Given `messages` missing `content` / Then a `ConvexError` is thrown.
+  - Given `messages` missing `content` / Then the returned promise rejects with a `ConvexError`.
   - Given 3 queued replies and 4 calls / Then the 4th returns `{ content: "Done." }`.
 - **NUMBERS:** reply determinism is exact (no range); no latency or score target applies (UNKNOWN — none needed; Amit).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -92,12 +93,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** A word/pattern list plus a pure checker that flags shaming language in any coach or app copy before it reaches the user, so generated text can be rejected or rewritten.
 - **SCOPE:** `convex/lib/shameWords.ts` (+ `convex/lib/shameWords.test.ts`).
 - **MUTATES:** none (pure module; no table, route or env).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING today — `crisisWords.ts` exists but `shameWords.ts` does not); 2) write `shameWords.ts` exporting `SHAME_PATTERNS: readonly RegExp[]` (compiled patterns only, no secrets) and `containsShame(text: string): { found: boolean; matches: string[] }`; 3) cover EN and HE shaming terms (e.g. EN "failed", "overdue", "lazy", "must", "should have", "streak lost", "you never"; HE "נכשל", "איחרת", "עצלן", "חייב", "היית צריך"); 4) match whole words case-insensitively (EN) and plain substrings (HE, no case); 5) return the list of matched raw terms, not the text; 6) add the unit test file.
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING today — `crisisWords.ts` exists but `shameWords.ts` does not); 2) write `shameWords.ts` exporting `SHAME_PATTERNS: readonly RegExp[]` (compiled patterns only, no secrets) and `containsShame(text: string): { found: boolean; matches: string[] }`; 3) cover the canonical EN and HE shaming terms — EN `"failed"`, `"overdue"`, `"lazy"`, `"must"`, `"should have"`, `"streak lost"`, `"you never"`; HE `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"` (this is the complete canonical list, not an example); 4) match whole words case-insensitively (EN) and plain substrings (HE, no case); 5) return the list of matched raw terms, not the text; 6) add the unit test file.
 - **DONE:** `bun test convex/lib/shameWords.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not invent or hard-code user data; do not read/write any table; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not log secrets.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `SHAME_PATTERNS` is a frozen array of compiled RegExps. `containsShame` accepts a string, never mutates it, and returns `{found, matches}` where `matches` is the array of matched source terms (deduplicated). Matching is conservative (no shaming word may slip through): the checker is allowed to over-flag borderline terms for a human/reviewer pass, but never to under-flag the canonical list.
+- **SPEC:** `SHAME_PATTERNS` is a frozen array of compiled RegExps (the canonical terms above only). `containsShame` accepts a string, never mutates it, and returns `{found, matches}` where `matches` is the array of canonical source terms that matched — the terms themselves (EN lowercased; the raw Hebrew term for HE), deduplicated and in canonical-list order, never the input text. Matching is conservative (no shaming word may slip through): the checker is allowed to over-flag borderline terms for a human/reviewer pass, but never to under-flag the canonical list.
 - **TESTS:**
   - Given `"You failed to finish it."` / Then `found===true` and `matches` contains `"failed"`.
   - Given `"The task is overdue by a day."` / Then `found===true` and `matches` contains `"overdue"`.
@@ -180,46 +181,67 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0007 — `notes.save` / `notes.patchBlock` (notes.body authority)
+### TFV2-0007a — `notes.save` (notes.body authority, revision-advancing)
 - **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0006.
-- **WHY:** PRD §4.1 F-02/F-03 (every page one markdown document; blocks drawn as elements); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (notes.body authority, save/patchBlock)"; REWRITE-PLAN-v2 §4 conflict 7.
-- **GOAL:** `convex/notes.ts` gains a block-aware `save` (whole-body, revision-advancing) and `patchBlock` (one block by id), both writing `notes.body`, advancing `revision`, and leaving an operation receipt for Undo.
+- **WHY:** PRD §4.1 F-02/F-03 (every page one markdown document; blocks drawn as elements); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (notes.body authority, save)"; REWRITE-PLAN-v2 §4 conflict 7.
+- **GOAL:** `convex/notes.ts` gains a block-aware `save` (whole-body, revision-advancing) that writes `notes.body`, advances `revision` by exactly one, and leaves a page-operation receipt for Undo.
 - **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
-- **MUTATES:** `notes` table writes (body, revision, updatedAt) and `pageOperations`/`pageOperationPayloads` receipt writes via `convex/lib/pageLedger.ts`; adds mutations `save`, `patchBlock`.
-- **STEPS:** 1) Graphify code-map check of `convex/notes.ts` (EXISTS `get`, `getSafe`, `create`, `update`, `remove`, `restore`, `togglePin`, `backlinks`; `save`/`patchBlock` are MISSING); 2) add `save({ id, body, expectedRevision? })` that validates `body` via `parseTempoBlocks`, rejects over-budget bodies, writes `body`, advances `revision` by exactly one, sets `updatedAt`, and writes the operation receipt through `convex/lib/pageLedger.ts`; 3) add `patchBlock({ id, blockId, patch })` that reads `notes.body`, re-serializes only the addressed block (byte-exact elsewhere), and routes through the same save path; 4) keep `update` working for legacy callers or mark it internal; 5) every body-changing write is owner-scoped (`userId` must equal the caller); 6) add the unit test file covering every error case below.
+- **MUTATES:** `notes` rows (`body`, `revision`, `updatedAt`) and `pageOperations`/`pageOperationPayloads` receipt writes via `convex/lib/pageLedger.ts`; adds the mutation `save`.
+- **STEPS:** 1) Graphify code-map check of `convex/notes.ts` (EXISTS `get`, `getSafe`, `create`, `update`, `remove`, `restore`, `togglePin`, `backlinks`; `save` is MISSING); 2) add `save({ id, body, expectedRevision? })` that parses `body` with `parseTempoBlocks` to enforce the body byte budget, rejects an over-budget body, writes `body`, advances `revision` by exactly one, sets `updatedAt`, and writes the page-operation receipt through `convex/lib/pageLedger.ts`; 3) every body-changing write is owner-scoped (`userId` must equal the caller, via `lib/requireUser.ts`); 4) keep the existing `update` mutation exported and working for legacy callers — do NOT rename or remove it; 5) add the unit test file covering every error case below.
 - **DONE:** `bun test convex/notes.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not write `noteBlocks` directly here (that is TFV2-0008); do not bypass `parseTempoBlocks`; do not change `notes.body` schema; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not surface JSON.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Mutations run in `convex/notes.ts` under the user's own `userId` (auth via `lib/requireUser.ts`). `save` args: `{ id: Id<"notes">, body: string, expectedRevision?: number }`; returns `{ ok: true, revision: number }`. `patchBlock` args: `{ id: Id<"notes">, blockId: string, patch: TempoBlock }`; returns `{ ok: true, revision: number }`. On `expectedRevision` mismatch throw a `ConvexError` with code `REVISION_CONFLICT`. Over-budget body throws code `BODY_TOO_LARGE`. A missing page or non-owner throws code `NOT_FOUND`. Error copy (EN/HE): `EN: "Someone else changed this page. Reload and try again." / HE: "מישהו אחר שינה את הדף. טענו מחדש ונסו שוב."` (conflict); `EN: "This page is too large to save." / HE: "הדף הזה גדול מדי לשמירה."` (too large).
+- **SPEC:** `save` runs in `convex/notes.ts` under the user's own `userId`. Args `{ id: Id<"notes">, body: string, expectedRevision?: number }`; returns `{ ok: true, revision: number }`. `save` runs `parseTempoBlocks(body)` first: a whole body over `BLOCK_CODEC_LIMITS.maxBodyChars` throws `new Error("Page body is too long")` (the file's existing plain-`Error` convention — `convex/notes.ts` throws plain `Error`, never `ConvexError`). A *broken block* is allowed through as the parser's `broken` segment and still saves (the index writer in TFV2-0008 records the `broken` row); only the whole-body byte budget rejects. On `expectedRevision` mismatch it throws `new Error("Revision conflict")`. A missing page or non-owner throws `new Error("Note not found")` (the file's existing message). The receipt writes `pageOperations` with `kind: "save"`, `source: "ui"`, `result: "applied"`, and `pageOperationPayloads` with the before/after digests via `digestBody` (TFV2-0010). User-facing copy (rendered by the screen, not this module): `EN: "Someone else changed this page. Reload and try again." / HE: "מישהו אחר שינה את הדף. טענו מחדש ונסו שוב."` (conflict); `EN: "This page is too large to save." / HE: "הדף הזה גדול מדי לשמירה."` (too large).
 - **TESTS:**
-  - Given an owner calls `save` with a valid body / Then `body` updates, `revision` advances by 1, `updatedAt` increases, a page operation receipt exists.
-  - Given `expectedRevision` stale / Then `REVISION_CONFLICT` and `body` unchanged.
-  - Given a body over `BLOCK_CODEC_LIMITS.maxBodyChars` / Then `BODY_TOO_LARGE` and no write.
-  - Given a non-owner calls `save` / Then `NOT_FOUND` (or auth reject) and no write.
-  - Given `patchBlock` on an existing `blockId` / Then only that block's source changes; other segments byte-identical.
-  - Given `patchBlock` on a missing `blockId` / Then `NOT_FOUND` and no write.
+  - Given an owner calls `save` with a valid body / Then `body` updates, `revision` advances by 1, `updatedAt` increases, and a `pageOperations` receipt with `kind:"save"` and `source:"ui"` exists.
+  - Given `expectedRevision` stale / Then `new Error("Revision conflict")` and `body` unchanged.
+  - Given a body over `BLOCK_CODEC_LIMITS.maxBodyChars` / Then `new Error("Page body is too long")` and no write.
+  - Given a non-owner calls `save` / Then `new Error("Note not found")` and no write.
   - Given two sequential `save` calls / Then `revision` is 1 then 2.
-- **NUMBERS:** `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars` = 1,048,576 chars (repo code). Save round-trip of untouched blocks = byte-exact (no range).
+- **NUMBERS:** `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars` = 1,048,576 chars (repo code). Save of an untouched body = byte-exact (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** none.
+
+### TFV2-0007b — `notes.patchBlock` (one block by id, byte-exact elsewhere)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007a · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0007a.
+- **WHY:** PRD §4.1 F-02/F-03 (blocks drawn as elements; editing one block must not touch the others); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (patchBlock)".
+- **GOAL:** `convex/notes.ts` gains `patchBlock` — replace exactly one block by `blockId` and re-serialize, leaving every other segment byte-identical.
+- **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
+- **MUTATES:** `notes` rows (`body`, `revision`, `updatedAt`) through the TFV2-0007a save path; adds the mutation `patchBlock`.
+- **STEPS:** 1) Graphify code-map check (`patchBlock` is MISSING); 2) add `patchBlock({ id, blockId, patch })` that reads `notes.body`, finds the addressed `blockId`, replaces only that block's source span with the re-serialized `patch`, and routes the result through the TFV2-0007a save path (so `revision`, `updatedAt` and the receipt all behave identically); 3) owner-scope via the same `lib/requireUser.ts`; 4) keep the existing `update` mutation untouched; 5) add the unit test file covering every error case below.
+- **DONE:** `bun test convex/notes.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not write `noteBlocks` directly (TFV2-0008); do not re-parse or rewrite segments other than the addressed block; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `patchBlock` args `{ id: Id<"notes">, blockId: string, patch: TempoBlock }`; returns `{ ok: true, revision: number }`. It re-serializes only the addressed block; every other segment (markdown and other blocks) stays byte-identical. A missing page or non-owner throws `new Error("Note not found")`; a missing `blockId` throws `new Error("Block not found")`; an over-budget result body throws `new Error("Page body is too long")` (plain `Error`, matching the file). The receipt writes `pageOperations` with `kind: "patch_block"`, `source: "ui"`.
+- **TESTS:**
+  - Given `patchBlock` on an existing `blockId` / Then only that block's source changes; every other segment byte-identical.
+  - Given `patchBlock` on a missing `blockId` / Then `new Error("Block not found")` and no write.
+  - Given a non-owner calls `patchBlock` / Then `new Error("Note not found")` and no write.
+  - Given a patch that pushes the body over `maxBodyChars` / Then `new Error("Page body is too long")` and no write.
+- **NUMBERS:** untouched segments byte-exact (no range); `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars`.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0008 — `noteBlocks` derived index
-- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0007.
+- **WHEN:** after TFV2-0007b.
 - **WHY:** PRD §4.1 F-02 (blocks drawn as their own elements); REWRITE-PLAN-v2 §6 chunk 1 "derived indexes".
 - **GOAL:** Every write through `notes.save`/`patchBlock` keeps the disposable `noteBlocks` derived index in sync with `notes.body`, so block reads never re-parse the whole body.
 - **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
 - **MUTATES:** `noteBlocks` table writes (derived index rows for page-meta/task/template/broken blocks).
-- **STEPS:** 1) Graphify code-map check of `convex/schema.ts` `noteBlocks` (EXISTS: union of page-meta/task/template/broken, `v:1`, positional `position`); 2) in the TFV2-0007 save path, after writing `notes.body`, delete-and-reinsert the page's `noteBlocks` rows derived from `parseTempoBlocks(body)` in the same transaction; 3) keep `position` in block order and `blockId` stable; 4) mark `deletedAt` on removed blocks (soft) or hard-delete — assert the existing convention and follow it; 5) add tests proving index/body consistency.
+- **STEPS:** 1) Graphify code-map check of `convex/schema.ts` `noteBlocks` (EXISTS: union of page-meta/task/template/broken, `v:1`, positional `position`); 2) in the TFV2-0007a/TFV2-0007b save paths, after writing `notes.body`, rebuild the page's `noteBlocks` rows from `parseTempoBlocks(body)` in the same transaction (delete stale rows and insert fresh ones — the index is disposable and derived); 3) keep `position` in block order and `blockId` stable; 4) hard-delete stale rows (no soft delete on `noteBlocks` — the index is rebuildable from `notes.body`); 5) add tests proving index/body consistency.
 - **DONE:** `bun test convex/notes.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change the `noteBlocks` schema shape; do not write `noteBlocks` from any other module; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The derived index is disposable (rebuildable from `notes.body` at any time). For each valid block, one `noteBlocks` row is written with `userId`, `noteId`, `type`, `blockId`, `v:1`, `data`, `position`, `createdAt`, `updatedAt`. Broken blocks write a `broken` row with `errorCode`. A save that changes no blocks writes no rows. Consistency invariant: `parseTempoBlocks(body)` block list and `noteBlocks` rows for that page are equal in count, type and `blockId`.
+- **SPEC:** The derived index is disposable (rebuildable from `notes.body` at any time). For each valid block, one `noteBlocks` row is written with `userId`, `noteId`, `type`, `blockId`, `v:1`, `data`, `position`, `createdAt`, `updatedAt`. Broken blocks write a `broken` row with `errorCode`. The rebuild is idempotent: rebuilding from the same `notes.body` yields identical rows; stale rows are hard-deleted and fresh rows inserted. Consistency invariant: `parseTempoBlocks(body)` block list and `noteBlocks` rows for that page are equal in count, type and `blockId`.
 - **TESTS:**
   - Given a save with 3 task blocks + 1 page-meta block / Then 4 `noteBlocks` rows exist in block order.
   - Given a save that removes a block / Then the removed block's row is gone and remaining `position` values are contiguous.
@@ -256,26 +278,27 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** whether to add a derived `noteLinks` table (schema change) instead of the current live `notes.body` scan — REWRITE-PLAN-v2 §4 conflict 7 (block model authority). UNKNOWN — Amit. Code truth today: live bounded scan, no link table.
 
 ### TFV2-0010 — Operation ledger + 5-min Undo `convex/lib/pageLedger.ts`
-- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0006.
 - **WHY:** PRD §4.11 F-131 (Undo 5 minutes on internal changes); §6 rules (accept/reject, undo); REWRITE-PLAN-v2 §6 chunk 1 "operation ledger + 5-min Undo"; REWRITE-PLAN-v2 §4 conflict 6.
 - **GOAL:** The existing page-operation ledger and its 5-minute Undo path are verified end-to-end, with every error and conflict case under test.
 - **SCOPE:** `convex/lib/pageLedger.ts` (+ `convex/lib/pageLedger.test.ts`).
-- **MUTATES:** none (pure ledger helpers; the write path lives in `notes.save`, TFV2-0007).
-- **STEPS:** 1) Graphify code-map check of `convex/lib/pageLedger.ts` (EXISTS: `PAGE_LEDGER_LIMITS`, `PAGE_LEDGER_TIMING`, `validatePageOperationFacts`, `applyPageSplices`, `invertPageSplices`, `diffToSingleSplice`, `checkExpectedRevision`, `digestBody`, `sha256Hex`, `isValidSha256Hex`, and a test file); 2) verify `PAGE_LEDGER_TIMING` encodes the 5-minute Undo window (`undoWindowMs: 300_000`); 3) confirm `notes.save` (TFV2-0007) writes a receipt with the body digest and previous revision; 4) read the existing test file and add the missing error/boundary cases below; 5) do not rename exported symbols.
+- **MUTATES:** none (pure ledger helpers; the write path lives in `notes.save`, TFV2-0007a).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pageLedger.ts` (EXISTS: `PAGE_LEDGER_LIMITS`, `PAGE_LEDGER_TIMING`, `validatePageOperationFacts`, `applyPageSplices`, `invertPageSplices`, `diffToSingleSplice`, `checkExpectedRevision`, `digestBody`, `sha256Hex`, `isValidSha256Hex`, and a test file); 2) verify `PAGE_LEDGER_TIMING.undoWindowMs === 300_000`, and that the exported `operationDeadlines(appliedAtMs)` returns `undoUntilMs` and `isUndoEligible(appliedAtMs, undoUntilMs, nowMs)` enforces the half-open window; 3) do NOT modify `convex/notes.ts` (outside SCOPE) — assert the ledger's own `digestBody`/`checkExpectedRevision` produce the digest and revision comparison the write path (TFV2-0007a) consumes; 4) read the existing test file and add the missing error/boundary cases below; 5) do not rename exported symbols.
 - **DONE:** `bun test convex/lib/pageLedger.test.ts` → all tests pass.
 - **EVIDENCE:** paste the `bun test` output (pass count).
 - **DO NOT:** do not change the Undo window duration (5 minutes is a product rule); do not weaken `checkExpectedRevision`; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** A page operation receipt stores `userId`, `pageId`, `kind`, `source`, the `before`/`after` body digests, the previous `revision`, and a `createdAt` timestamp. `checkExpectedRevision` compares the stored revision to the caller's and returns a `PageLedgerResult`. Undo eligibility: an operation is undoable only while `now - createdAt ≤ PAGE_LEDGER_TIMING.undoWindowMs` (5 minutes) and the current revision still equals the receipt's post-revision. `applyPageSplices(base, splices)` and `invertPageSplices(splices)` are exact inverses. User-facing Undo copy (EN/HE): `EN: "Done. You can undo for 5 minutes." / HE: "בוצע. אפשר לבטל למשך 5 דקות."` and `EN: "Undo" / HE: "ביטול"`.
+- **SPEC:** A page operation receipt stores `userId`, `pageId`, `kind`, `source`, the `before`/`after` body digests, the previous `revision`, and a `createdAt` timestamp. `checkExpectedRevision` compares the stored revision to the caller's and returns a `PageLedgerResult`. Undo eligibility is computed by `operationDeadlines(appliedAtMs)` (returns `undoUntilMs`) and `isUndoEligible(appliedAtMs, undoUntilMs, nowMs)` (returns `boolean`): an operation is undoable only while `appliedAtMs ≤ now < undoUntilMs` (5 minutes) and the current revision still equals the receipt's post-revision. `applyPageSplices(base, splices)` and `invertPageSplices(splices)` are exact inverses. User-facing Undo copy (EN/HE): `EN: "Done. You can undo for 5 minutes." / HE: "בוצע. אפשר לבטל למשך 5 דקות."` and `EN: "Undo" / HE: "ביטול"`.
 - **TESTS:**
   - Given a valid operation receipt / When `validatePageOperationFacts` runs / Then `ok:true`.
-  - Given a missing required field / Then `ok:false` with the right `errorCode`.
+  - Given a missing required field / Then `ok:false` with `errorCode === "missing_field"`.
   - Given `checkExpectedRevision` with equal revisions / Then success.
   - Given a stale revision / Then a conflict result and no mutation.
   - Given `applyPageSplices` then `invertPageSplices` / Then the body round-trips byte-exact.
   - Given a receipt older than 5 minutes / Then it is not undoable (window enforced).
+  - Given `isUndoEligible` at exactly `undoUntilMs` / Then `false` (the window is half-open, `now < undoUntilMs`).
   - Given an invalid sha256 hex / Then `isValidSha256Hex` rejects it.
   - Given `digestBody` on the same body twice / Then equal digests (determinism).
 - **NUMBERS:** Undo window = 5 minutes (`PAGE_LEDGER_TIMING.undoWindowMs = 300_000`, repo code + PRD F-131). Digest determinism = exact (no range).
@@ -545,9 +568,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `resolveLang("he", null)` / Then `"he"`.
   - Given `resolveLang(null, "he")` / Then `"he"`.
   - Given `resolveLang(null, null)` / Then `"en"`.
+  - Given `resolveLang("fr", null)` (invalid) / Then `"en"` and `isLang("fr") === false`.
   - Given `dirFor("he")` / Then `"rtl"`; `dirFor("en")` → `"ltr"`.
-  - Given the EN and HE dictionaries / Then every EN key exists in HE (no missing key).
-  - Given a mixed-direction paragraph / Then `dir="auto"` is applied (component-level assert).
+  - Given the EN and HE dictionaries / Then the key set of `MESSAGES.en` equals the key set of `MESSAGES.he` (no missing HE key and no orphan EN key).
 - **NUMBERS:** no industry number; completeness = every EN key has a HE value (100%).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -584,7 +607,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not add new i18n files (reuse existing keys); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** `.tp-rail` width 264px (`--tp-rail-w`); groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE) via existing keys: `rail.pages` `EN: "Pages" / HE: "דפים"`; `rail.library` `EN: "Library" / HE: "ספרייה"`; `rail.search` `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `nav.dyslexia` `EN: "Reading font" / HE: "גופן קריאה"`; `nav.settings` `EN: "Settings" / HE: "הגדרות"`. RTL: rail on the right; chevrons flip (`tp-icon--flip`). States: loading/error/offline/empty are n/a for the rail chrome itself; an empty page list shows the `rail.noPages` kind copy. Keyboard: rows are links/buttons, focusable, Enter activates; the collapsed-folder toggle is a button with `aria-expanded`.
+- **SPEC:** `.tp-rail` width 264px (`--tp-rail-w`); groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE) via existing keys: `rail.pages` `EN: "Pages" / HE: "דפים"`; `rail.library` `EN: "Library" / HE: "ספרייה"`; `rail.search` `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `nav.dyslexia` `EN: "Reading font" / HE: "גופן קריאה"`; `nav.settings` `EN: "Settings" / HE: "הגדרות"`; `rail.noPages` `EN: "No pages yet" / HE: "עוד אין דפים"`. RTL: rail on the right; chevrons flip (`tp-icon--flip`). States: loading/error/offline/empty are n/a for the rail chrome itself; an empty page list shows the `rail.noPages` kind copy. Keyboard: rows are links/buttons, focusable, Enter activates; the collapsed-folder toggle is a button with `aria-expanded`.
 - **TESTS:** Given 1280×800 / Then the rail shows all groups and the current page has `aria-current="page"`. Given a folder with children / Then tapping toggles collapse and `aria-expanded` flips. Given 390×844 / Then the rail is a drawer opened from the topbar, and Esc closes it. Given `lang=he` / Then labels are Hebrew and the rail is on the right. Given the current row / Then it uses `--tp-ink` (not muted) and a screen reader announces it as the current page.
 - **NUMBERS:** rail 264px (`--tp-rail-w`). WCAG 2.2 AA text contrast 4.5:1; target ≥24×24 CSS px (WCAG 2.5.8); motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -609,22 +632,22 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0023a — Component render harness (isolated Playwright route + catalog)
+### TFV2-0023a — Component render harness (per-component route + Suspense/LocaleProvider frame)
 - **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** first (prerequisite for every design-system component ticket in chunk 1).
-- **WHY:** Defect-fix: every UI ticket must run its own Playwright spec, but the design-system primitives in `packages/ui` and the editor/coach components have no screen to mount in. This ticket builds the one isolated render route the component specs navigate to, using the repo's existing Playwright setup and e2e auth bypass, so no component ticket has to decide how to mount itself.
-- **GOAL:** A dev-only route renders any registered design-system component in isolation (no app chrome, no auth, no data fetch) so each component's Playwright spec can assert its states and RTL at both widths.
-- **SCOPE:** `apps/web/app/e2e/components/page.tsx` (new) + `apps/web/lib/e2e/component-catalog.tsx` (new) (+ `tests/e2e/screens/components-harness.spec.ts`).
-- **MUTATES:** none (adds two dev/e2e files behind the auth-bypass gate; no table, route group, schema, env or workflow).
-- **STEPS:** 1) Graphify code-map check (neither file exists today — confirmed); 2) create `apps/web/lib/e2e/component-catalog.tsx` exporting `export type CatalogEntry = { id: string; title: string; render: () => React.ReactNode }` and `export const componentCatalog: CatalogEntry[] = []` (empty to start; each component ticket appends its entry); 3) create `apps/web/app/e2e/components/page.tsx` as a `"use client"` component that reads `?lang=` and `?theme=` via `useSearchParams()`, sets `dir`/`lang` and `data-theme` on the wrapper, and renders each `componentCatalog` entry as `<section data-testid={entry.id}>{entry.render()}</section>` inside `<div data-testid="component-harness">`; 4) gate the route: `if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS !== "1") notFound()` (the same gate the repo's other e2e-only routes use, e.g. `apps/web/components/approval/ApprovalGate.tsx`); 5) no app shell, no `requireUser`, no Convex data, no i18n dictionary changes; 6) add the smoke spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **WHEN:** first (prerequisite for every design-system component ticket in chunks 1 and 2).
+- **WHY:** Defect-fix: every UI ticket must run its own Playwright spec, but the design-system primitives in `packages/ui` and the editor/coach components have no screen to mount in. This ticket builds the one shared render frame the component routes use, on the repo's existing Playwright `webServer` (`bun run --cwd apps/web dev`) and e2e auth bypass, so no component ticket decides how to mount itself.
+- **GOAL:** A dev-only, per-component route (`/e2e/components/<id>`) renders one component in isolation (no app chrome, no auth, no data fetch, real `LocaleProvider`) so each component's Playwright spec asserts its states and RTL at both widths.
+- **SCOPE:** `apps/web/app/e2e/components/layout.tsx` (new) + `apps/web/app/e2e/components/page.tsx` (new, empty index) + `apps/web/lib/e2eWiringRoutes.ts` (register the route) (+ `tests/e2e/screens/components-harness.spec.ts`).
+- **MUTATES:** none (adds two dev/e2e files and one bypass-route entry; no table, schema, env or workflow).
+- **STEPS:** 1) Graphify code-map check (neither `e2e/components` file exists today — confirmed); 2) create `apps/web/app/e2e/components/layout.tsx`, a `"use client"` component that gates the route — `if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS !== "1") notFound()` — then wraps `{children}` in `LocaleProvider` (from `apps/web/components/providers/LocaleProvider.tsx`, the real i18n context) and `<Suspense fallback={null}>` around an inner component that reads `?lang=` and `?theme=` with `useSearchParams()` (inside Suspense, as Next.js 16 requires) and sets `dir`/`lang`/`data-theme` on `<div data-testid="component-harness">`; 3) create `apps/web/app/e2e/components/page.tsx`, an empty `"use client"` page so `/e2e/components` itself answers 200 for the smoke spec; 4) add `/e2e/components` and `/e2e/components/(.*)` to `E2E_WIRING_ROUTES` in `apps/web/lib/e2eWiringRoutes.ts` (in SCOPE) so the bypass releases the route; 5) there is NO shared catalog and NO shared page — each component ticket creates its own `apps/web/app/e2e/components/<id>/page.tsx`; this ticket ships only the frame plus the empty index; 6) add the smoke spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/components-harness.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not render the harness in production (the bypass gate must 404); do not touch `convex/**`, `.github/**`, `.env` or workflows; do not add any component itself here (each component ticket builds and registers its own).
+- **DO NOT:** do not render the harness in production (the bypass gate must 404); do not create a shared component catalog or a single `page.tsx` every component appends to; do not touch `convex/**`, `.github/**`, `.env` or workflows; do not add any component itself here (each component ticket builds its own route and spec).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** The route answers at `/e2e/components` with no layout chrome. `componentCatalog` entries are `{ id, title, render }`; `render` returns JSX for the component's documented states, each state under its own `data-testid="<id>-<state>"` anchor. `?lang=he` sets `dir="rtl"` + `lang="he"`; `?theme=dark` sets `data-theme="dark"` (DESIGN.md §14). Loading/empty/error/offline/success/disabled states are n/a for the harness route itself (it is a synchronous render surface; a component's own states live in that component's ticket). The harness has no user-facing copy. Keyboard/screen-reader/motion behaviour is the component's, not the harness's; reduced-motion is inherited from the component. Numbers: none for the harness (it renders whatever is registered).
-- **TESTS:** Given the route with an empty catalog / When loaded at 390×844 and 1280×800 / Then the `component-harness` container renders (possibly empty) and the route returns 200. Given `?lang=he` / Then the wrapper is `dir="rtl"` and `lang="he"`. Given `NODE_ENV=production` (or no bypass flag) / Then the route 404s (`notFound()`), never rendering components.
-- **NUMBERS:** no industry number; correctness = the route 404s without the bypass flag and renders `componentCatalog` entries otherwise.
+- **SPEC:** The frame renders at `/e2e/components/<id>` with no layout chrome, inside `<div data-testid="component-harness">`. It wraps in `<Suspense>` + the bypass gate + `LocaleProvider`, so `useLocale()` works and components render with the real i18n context. `?lang=he` sets `dir="rtl"` + `lang="he"`; `?theme=dark` sets `data-theme="dark"`. Loading/empty/error/offline/success/disabled states are n/a for the frame itself (a synchronous render surface); a component's own states live in that component's route. The frame has no user-facing copy. Keyboard/screen-reader/motion behaviour is the component's, not the frame's.
+- **TESTS:** Given the empty index route `/e2e/components` / When loaded at 390×844 and 1280×800 / Then the `component-harness` container renders and the route returns 200. Given `?lang=he` / Then the wrapper is `dir="rtl"` and `lang="he"`. Given `NODE_ENV=production` (or no bypass flag) / Then the route 404s (`notFound()`), never rendering components.
+- **NUMBERS:** no industry number; correctness = the route 404s without the bypass flag and renders the frame otherwise.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
@@ -635,9 +658,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Avatar (person's initials, never "User"); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** An accessible initials avatar (`name` → initials, `role="img"` + `aria-label`, never the word "User") exists in the design-system package.
-- **SCOPE:** `packages/ui/src/primitives/Avatar.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/avatar.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Avatar.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/avatar/page.tsx` (+ `tests/e2e/screens/avatar.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING — no `Avatar` primitive; the editor HTML uses `tp-avatar` but no React component exists); 2) implement `Avatar({ name, initials? }: AvatarProps)` deriving initials from `name` (first letter of first + last word, uppercased); 3) render `role="img"` with `aria-label={name}`; 4) export `Avatar` and `AvatarProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="avatar-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/avatar.spec.ts` that navigates to `/e2e/components#avatar` and `/e2e/components?lang=he#avatar`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING — no `Avatar` primitive; the editor HTML uses `tp-avatar` but no React component exists); 2) implement `Avatar({ name, initials? }: AvatarProps)` deriving initials from `name` (first letter of first + last word, uppercased); 3) render `role="img"` with `aria-label={name}`; 4) export `Avatar` and `AvatarProps` from `index.ts`; 5) create `apps/web/app/e2e/components/avatar/page.tsx` (client) that renders each documented state under a `data-testid="avatar-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/avatar.spec.ts` that navigates to `/e2e/components/avatar` and `/e2e/components/avatar?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/avatar.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not fall back to the text "User"; do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -668,14 +691,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0026 — CommandTrigger
-- **Stage:** A · **Pass:** 1 · **Depends:** 0022 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0022, 0033 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0022.
 - **WHY:** DESIGN.md §9 CommandTrigger (Ctrl K in dialog); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The "Search or jump to" rail trigger opens the command palette on click and on Ctrl/Cmd+K, with focus moved into the dialog.
 - **SCOPE:** `apps/web/components/tempo/CommandTrigger.tsx` + `apps/web/components/tempo/Sidebar.tsx` (+ `tests/e2e/screens/command-trigger.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (`CommandTrigger.tsx` is MISSING; the button is currently inline in `Sidebar.tsx` with `data-component="CommandTrigger"` and `onClick={onOpenPalette}`; `CommandPalette.tsx`/`CommandList.tsx` exist and are the dialog it opens); 2) extract the inline button into `CommandTrigger({ onOpen, label, kbd }: CommandTriggerProps)` — a `--tp-btn--secondary` button labelled `rail.search` with a `Kbd` hint `Ctrl K`; 3) replace the inline button in `Sidebar.tsx` with `<CommandTrigger>` (that file is in SCOPE so the mount is legal); 4) wire click and Ctrl/Cmd+K to open `CommandPalette`, move focus into the dialog, and Esc returns focus to the trigger; 5) add the Playwright spec below; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (`CommandTrigger.tsx` is MISSING; the button is currently inline in `Sidebar.tsx` with `data-component="CommandTrigger"` and `onClick={onOpenPalette}`; `CommandPalette.tsx`/`CommandList.tsx` exist and are the dialog it opens); 2) extract the inline button into `CommandTrigger({ onOpen, label, kbd }: CommandTriggerProps)` — a `--tp-btn--secondary` button labelled `rail.search` with a `Kbd` hint `Ctrl K`; 3) replace the inline button in `Sidebar.tsx` with `<CommandTrigger>` (that file is in SCOPE so the mount is legal); 4) wire the button's click and Enter/Space to `onOpen`; the global Ctrl/Cmd+K listener lives in `TempoShell` (the shell), which calls the same `onOpen` — `CommandTrigger` itself renders only the button and does not own a global key listener; 5) add the Playwright spec below (it navigates to `/plan`, a wiring route in `E2E_WIRING_ROUTES`, where `TempoShell` renders the Sidebar containing `CommandTrigger`); set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command-trigger.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not rebuild the palette itself; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -687,14 +710,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0027 — Page / PageEditor (CodeMirror live preview + remark-gfm)
-- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0007.
+- **WHEN:** after TFV2-0007b.
 - **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks as elements, no JSON); DESIGN.md §9 Page/PageEditor; REWRITE-PLAN-v2 §6 chunk 1 "markdown editor (CodeMirror live preview + GFM)"; REWRITE-PLAN-v2 §8 (settled: `notes.body` is the only source of truth, `- [ ]` stays plain markdown).
 - **GOAL:** The page editor renders `notes.body` as CodeMirror with a live `remark-gfm` preview and never shows raw JSON.
 - **SCOPE:** `apps/web/components/notes/PageEditorView.tsx` + `apps/web/components/editor/LivePreviewEditor.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `PageEditorView.tsx`, `LivePreviewEditor.tsx`, `editor/live-preview.ts`, `editor/ReadView.tsx`); 2) verify CodeMirror 6 editing + `remark-gfm` preview; 3) verify `- [ ]` stays plain markdown (rendered as a GFM checkbox by `remark-gfm`; NOT converted to a block and NOT a task mutation); 4) verify autosave calls `notes.save` (TFV2-0007) and no JSON appears anywhere; 5) extend the spec below with these assertions; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `PageEditorView.tsx`, `LivePreviewEditor.tsx`, `editor/live-preview.ts`, `editor/ReadView.tsx`); 2) assert CodeMirror 6 editing + `remark-gfm` preview in the spec (the components exist; edits stay inside SCOPE); 3) assert `- [ ]` stays plain markdown (rendered as a GFM checkbox by `remark-gfm`; NOT converted to a block and NOT a task mutation); 4) assert autosave calls `notes.save` (TFV2-0007a) and no JSON appears anywhere; 5) the spec seeds a page via the existing `notes.create({ title, body })` and navigates to `/notes/<id>` (the existing `apps/web/app/(tempo)/notes/[id]` route, rendered by `NotesScreen`/`PageEditorView`); 6) extend the spec below with these assertions; set BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-save.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not surface JSON; do not bypass `notes.save`; do not render `- [ ]` as a task mutation (it stays markdown); do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
@@ -711,14 +734,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §3 (serif 42px page title, headings weight 560); components.md §1 PageTitle/Headings; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** Serif page-title and heading primitives (h1 `.tp-page-title`, h2 `.tp-h2`, h3 `.tp-h3`) exist in the design-system package with correct type tokens.
-- **SCOPE:** `packages/ui/src/primitives/PageTitle.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/page-title.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/PageTitle.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/page-title/page.tsx` (+ `tests/e2e/screens/page-title.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageTitle({ children, as }: PageTitleProps)` and `Heading({ level, children }: HeadingProps)` using `--tp-font-serif` / `--tp-text-3xl` (title 42px) and `--tp-text-xl` (h2 26px) / `--tp-text-lg` (h3 20px); 3) editable title uses `contenteditable` + `dir="auto"`; 4) export `PageTitle`, `PageTitleProps`, `Heading`, `HeadingProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="page-title-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/page-title.spec.ts` that navigates to `/e2e/components#page-title` and `/e2e/components?lang=he#page-title`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageTitle({ children, as }: PageTitleProps)` and `Heading({ level, children }: HeadingProps)` using `--tp-font-serif` / `--tp-text-3xl` (title 42px) and `--tp-text-xl` (h2 26px) / `--tp-text-lg` (h3 20px); 3) editable title uses `contenteditable` + `dir="auto"`; 4) export `PageTitle`, `PageTitleProps`, `Heading`, `HeadingProps` from `index.ts`; 5) create `apps/web/app/e2e/components/page-title/page.tsx` (client) that renders each documented state under a `data-testid="page-title-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/page-title.spec.ts` that navigates to `/e2e/components/page-title` and `/e2e/components/page-title?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-title.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not set colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Types: `export type PageTitleProps = { children: ReactNode; as?: "h1" }; export type HeadingProps = { level: 2 | 3; children: ReactNode }`. Title: `--tp-font-serif` (Newsreader / Frank Ruhl Libre), `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew), `--tp-leading-heading` 1.18. h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px. Editable title focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`). No visible copy beyond the title text itself. States: loading/error/offline/disabled n/a (static typography); the only interactive state is the editable title's focus ring. Keyboard: editable title is focusable and announces as editable text; motion n/a.
+- **SPEC:** Types: `export type PageTitleProps = { children: ReactNode; as?: "h1"; editable?: boolean; onChange?: (value: string) => void }; export type HeadingProps = { level: 2 | 3; children: ReactNode }`. Title: `--tp-font-serif` — Newsreader in English, Frank Ruhl Libre in Hebrew (the HE font switch is `html[lang="he"] { --tp-font-serif: "Frank Ruhl Libre" }`, driven by the `lang` attribute, not per-component), `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew), `--tp-leading-heading` 1.18. h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px. Editable title focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`). No visible copy beyond the title text itself. States: loading/error/offline/disabled n/a (static typography); the only interactive state is the editable title's focus ring. Keyboard: editable title is focusable and announces as editable text; motion n/a.
 - **TESTS:** Given a title / Then it renders in the serif face at 42px (assert class/token `--tp-text-3xl`). Given an editable title / Then typing updates it and `dir="auto"` is set. Given `lang=he` / Then the serif face is Frank Ruhl Libre and tracking is 0. Given a heading level 2 / Then it renders at 26px (`--tp-text-xl`) and level 3 at 20px (`--tp-text-lg`). Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
 - **NUMBERS:** title 42px (`--tp-text-3xl`), h2 26px (`--tp-text-xl`), h3 20px (`--tp-text-lg`) (DESIGN.md §3). Contrast ≥4.5:1.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -730,9 +753,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Tag (inline `#tag`, badge); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** An inline `#tag` badge primitive (pill, `--tp-accent-wash` on selected, linkable) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Tag.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/tag.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Tag.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/tag/page.tsx` (+ `tests/e2e/screens/tag.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Tag({ name, href, selected }: TagProps)` rendering `tp-tag`; 3) selected state uses `--tp-accent-wash` with `--tp-accent` text (word + no colour-only signal); 4) export `Tag` and `TagProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="tag-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/tag.spec.ts` that navigates to `/e2e/components#tag` and `/e2e/components?lang=he#tag`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Tag({ name, href, selected }: TagProps)` rendering `tp-tag`; 3) selected state uses `--tp-accent-wash` with `--tp-accent` text (word + no colour-only signal); 4) export `Tag` and `TagProps` from `index.ts`; 5) create `apps/web/app/e2e/components/tag/page.tsx` (client) that renders each documented state under a `data-testid="tag-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/tag.spec.ts` that navigates to `/e2e/components/tag` and `/e2e/components/tag?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tag.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -749,9 +772,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0009.
 - **WHY:** DESIGN.md §9 Wikilink (`[[page]]`, popover picker); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A `[[page]]` link primitive renders inline, links to the page, and offers a popover picker; it feeds the backlinks index.
-- **SCOPE:** `packages/ui/src/primitives/Wikilink.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/wikilink.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Wikilink.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/wikilink/page.tsx` (+ `tests/e2e/screens/wikilink.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Wikilink({ page, href, resolved }: WikilinkProps)` rendering `tp-wikilink`; 3) unresolved links (no page yet) render as plain text with a create affordance; 4) resolved links navigate and register in the link index via `notes_links` (TFV2-0009 — a backend read, no direct write from this UI component); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="wikilink-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/wikilink.spec.ts` that navigates to `/e2e/components#wikilink` and `/e2e/components?lang=he#wikilink`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Wikilink({ page, href, resolved }: WikilinkProps)` rendering `tp-wikilink`; 3) unresolved links (no page yet) render as plain text with a create affordance; 4) resolved links navigate and register in the link index via `notes_links` (TFV2-0009 — a backend read, no direct write from this UI component); 5) create `apps/web/app/e2e/components/wikilink/page.tsx` (client) that renders each documented state under a `data-testid="wikilink-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/wikilink.spec.ts` that navigates to `/e2e/components/wikilink` and `/e2e/components/wikilink?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/wikilink.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -768,9 +791,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Chip (`--fixed`/`--flex`/`--done`, word always present); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A status chip primitive (done/fixed/flexible tones, icon + word, never colour-only) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Chip.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/chip.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Chip.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/chip/page.tsx` (+ `tests/e2e/screens/chip.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (`Chip.tsx` is MISSING; `Pill.tsx` exists but uses the old design system and is not the v3 Chip); 2) implement `Chip({ tone, label, icon }: ChipProps)` rendering `tp-chip`; 3) map tones `"done"|"info"|"caution"|"danger"` to `--tp-done`/`--tp-info`/`--tp-caution`/`--tp-danger` + their `-wash`; 4) always render icon + word; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="chip-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/chip.spec.ts` that navigates to `/e2e/components#chip` and `/e2e/components?lang=he#chip`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (`Chip.tsx` is MISSING; `Pill.tsx` exists but uses the old design system and is not the v3 Chip); 2) implement `Chip({ tone, label, icon }: ChipProps)` rendering `tp-chip`; 3) map tones `"done"|"info"|"caution"|"danger"` to `--tp-done`/`--tp-info`/`--tp-caution`/`--tp-danger` + their `-wash`; 4) always render icon + word; 5) create `apps/web/app/e2e/components/chip/page.tsx` (client) that renders each documented state under a `data-testid="chip-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/chip.spec.ts` that navigates to `/e2e/components/chip` and `/e2e/components/chip?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chip.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not signal by colour alone; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -787,9 +810,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Button (primary/secondary/ghost/icon, primary once per screen); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The button primitive is migrated to v3 tokens and variants, with the accent reserved for one primary per screen.
-- **SCOPE:** `packages/ui/src/primitives/Button.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/button.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Button.tsx` + `apps/web/app/e2e/components/button/page.tsx` (+ `tests/e2e/screens/button.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `packages/ui/src/primitives/Button.tsx` — currently on the old design system with variants `primary|soft|ghost|subtle|inverse|destructive` and sizes `sm|md|lg`; also `apps/web/components/ui/button.tsx` shadcn wrapper — this ticket migrates the design-system primitive); 2) migrate `variant` to `primary|secondary|ghost|icon` and `size` to `sm|md` per DESIGN.md §9; 3) map primary → `--tp-accent`/`--tp-on-accent`, secondary → `--tp-line-control` outline on `--tp-paper`, ghost → transparent with `--tp-ink`, icon → square ghost; 4) verify focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`) and press/hover motion ≤250ms; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="button-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/button.spec.ts` that navigates to `/e2e/components#button` and `/e2e/components?lang=he#button`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `packages/ui/src/primitives/Button.tsx` — currently on the old design system with variants `primary|soft|ghost|subtle|inverse|destructive` and sizes `sm|md|lg`; also `apps/web/components/ui/button.tsx` shadcn wrapper — this ticket migrates the design-system primitive); 2) migrate `variant` to `primary|secondary|ghost|icon` and `size` to `sm|md` per DESIGN.md §9; 3) map primary → `--tp-accent`/`--tp-on-accent`, secondary → `--tp-line-control` outline on `--tp-paper`, ghost → transparent with `--tp-ink`, icon → square ghost; 4) verify focus ring `--tp-accent` 2px (`--tp-focus-w`) with 2px gap (`--tp-focus-gap`) and press/hover motion ≤250ms; 5) create `apps/web/app/e2e/components/button/page.tsx` (client) that renders each documented state under a `data-testid="button-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/button.spec.ts` that navigates to `/e2e/components/button` and `/e2e/components/button?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/button.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not use accent on more than one primary per screen (a usage note for consumers); do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -806,9 +829,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Kbd; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A keyboard-key hint primitive (`Ctrl K`, `⌘ K`, `[]`, `#`, `-`) exists in the design system, mono and LTR-isolated.
-- **SCOPE:** `packages/ui/src/primitives/Kbd.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/kbd.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Kbd.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/kbd/page.tsx` (+ `tests/e2e/screens/kbd.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Kbd({ keys }: KbdProps)` rendering `tp-kbd` + `tp-num` (mono, LTR isolate); 3) map platform (Ctrl vs ⌘); 4) export `Kbd` and `KbdProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="kbd-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/kbd.spec.ts` that navigates to `/e2e/components#kbd` and `/e2e/components?lang=he#kbd`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Kbd({ keys }: KbdProps)` rendering `tp-kbd` + `tp-num` (mono, LTR isolate); 3) map platform (Ctrl vs ⌘); 4) export `Kbd` and `KbdProps` from `index.ts`; 5) create `apps/web/app/e2e/components/kbd/page.tsx` (client) that renders each documented state under a `data-testid="kbd-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/kbd.spec.ts` that navigates to `/e2e/components/kbd` and `/e2e/components/kbd?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/kbd.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -825,14 +848,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Card (quiet inline block card); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The card primitive (`__head`/`__title`, paper surface, `--tp-shadow-card`) is migrated to v3 tokens.
-- **SCOPE:** `packages/ui/src/primitives/SoftCard.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/card.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/SoftCard.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/card/page.tsx` (+ `tests/e2e/screens/card.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `SoftCard.tsx` on the old design system — `rounded-xl border shadow-whisper`; also `apps/web/components/ui/card.tsx`); 2) migrate to `--tp-paper` surface, `--tp-radius-lg` (14px), `--tp-shadow-card`; 3) verify hover lift (180ms `--tp-dur-base`) only when it is a link/button; 4) export `SoftCard`/`SoftCardProps` from `index.ts` (already exported); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="card-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/card.spec.ts` that navigates to `/e2e/components#card` and `/e2e/components?lang=he#card`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `SoftCard.tsx` on the old design system — `rounded-xl border shadow-whisper`; also `apps/web/components/ui/card.tsx`); 2) migrate to `--tp-paper` surface, `--tp-radius-lg` (14px), `--tp-shadow-card`; 3) verify hover lift (180ms `--tp-dur-base`) only when it is a link/button; 4) export `SoftCard`/`SoftCardProps` from `index.ts` (already exported); 5) create `apps/web/app/e2e/components/card/page.tsx` (client) that renders each documented state under a `data-testid="card-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/card.spec.ts` that navigates to `/e2e/components/card` and `/e2e/components/card?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/card.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not put glass on a card; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not put glass on a card; do not add colours; do not touch `apps/web/components/ui/card.tsx` (the shadcn wrapper — this ticket migrates `SoftCard.tsx` in `packages/ui` only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Type `export type SoftCardProps = HTMLAttributes<HTMLDivElement> & { as?: "div" | "article" | "section"; padding?: "none" | "sm" | "md" | "lg"; interactive?: boolean }`. Solid `--tp-paper` #FBF9F4, `--tp-radius-lg` (14px), `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. Cards on paper use the `raise` shadow (`--tp-shadow-card`); interactive cards lift 1px at 180ms and show a focus ring. States: loading/error/offline/disabled/empty n/a (static surface); interactive vs non-interactive is the only distinction. Motion: hover lift 180ms, reduced-motion → instant.
+- **SPEC:** Type `export type SoftCardProps = HTMLAttributes<HTMLDivElement> & { as?: "div" | "article" | "section"; padding?: "none" | "sm" | "md" | "lg"; interactive?: boolean }`. Solid `--tp-paper` #FBF9F4, `--tp-radius-lg` (14px), `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. `padding` maps to spacing tokens: `none` 0 · `sm` `--tp-space-3` (12px) · `md` `--tp-space-4` (16px) · `lg` `--tp-space-6` (24px). Focus ring (interactive only): `--tp-focus-w` (2px) `--tp-accent` with `--tp-focus-gap` (2px). Cards on paper use the `raise` shadow (`--tp-shadow-card`); interactive cards lift 1px at 180ms and show a focus ring. States: loading/error/offline/disabled/empty n/a (static surface); interactive vs non-interactive is the only distinction. Motion: hover lift 180ms, reduced-motion → instant.
 - **TESTS:** Given a Card / Then paper surface + card shadow + 14px radius. Given interactive / Then hover lifts and it is keyboard-focusable. Given a block card / Then it is solid, never glass. Given `as="section"` / Then it renders a `<section>`. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
 - **NUMBERS:** radius 14px (`--tp-radius-lg`); contrast ≥4.5:1; motion ≤250ms (180ms lift).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -844,15 +867,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 BlockHandle (add below + options; buttons, never drag-only); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** Each block exposes a keyboard-reachable handle with "Add a block below" and "Block options" (move/copy/delete), never drag-only.
-- **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/block-handle.spec.ts`).
+- **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` + `apps/web/app/e2e/components/block-handle/page.tsx` (+ `tests/e2e/screens/block-handle.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BlockHandle({ onAdd, onMove, onCopy, onDelete }: BlockHandleProps)` rendering two ghost icon buttons; 3) wire each action to the editor's body edit path — insert/move/duplicate/delete re-serialize `notes.body` and call `notes.save` (TFV2-0007); single-block edit uses `notes.patchBlock`; 4) each action offers 5-min Undo through `convex/lib/pageLedger.ts` (TFV2-0010); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="block-handle-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/block-handle.spec.ts` that navigates to `/e2e/components#block-handle` and `/e2e/components?lang=he#block-handle`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BlockHandle({ onAdd, onMove, onCopy, onDelete }: BlockHandleProps)` rendering two ghost icon buttons; 3) render two ghost icon buttons bound to the callback props `onAdd`/`onMove`/`onCopy`/`onDelete` — this ticket has NO backend or editor wiring; the mounting screen wires those callbacks to `notes.save`/`notes.patchBlock` (TFV2-0007a/TFV2-0007b) and the 5-min Undo (TFV2-0010), all outside SCOPE; 4) the harness page passes spies for the callbacks so the spec asserts them without touching Convex; 5) create `apps/web/app/e2e/components/block-handle/page.tsx` (client) that renders each documented state under a `data-testid="block-handle-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/block-handle.spec.ts` that navigates to `/e2e/components/block-handle` and `/e2e/components/block-handle?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/block-handle.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not make actions drag-only; do not add colours; do not call a `pages.*` mutation (the write path is `notes.save`/`notes.patchBlock`, TFV2-0007); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not make actions drag-only; do not add colours; do not call any backend mutation here (the write path — `notes.save`/`notes.patchBlock`, TFV2-0007a/TFV2-0007b — is the mounting screen's job); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Type `export type BlockHandleProps = { onAdd: () => void; onMove: (dir: -1 | 1) => void; onCopy: () => void; onDelete: () => void }`. Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). Hidden under 768 (long-press later). Options open a dropdown-menu with Move up / Move down / Duplicate / Delete (Delete uses `--tp-danger` + confirmation + Undo). States: loading/error/offline/empty n/a (button group); the open/closed menu is the only state. Keyboard: both buttons focusable, menu items arrow-navigable. Motion ≤250ms (dropdown 180ms); reduced-motion → instant.
-- **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 / Then the handle is hidden (menu via long-press later). Given "Move up" / Then `onMove(-1)` fires. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
+- **SPEC:** Type `export type BlockHandleProps = { onAdd: () => void; onMove: (dir: -1 | 1) => void; onCopy: () => void; onDelete: () => void }`. Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). The "hidden under 768" rule belongs to the mounting screen, not this component — the harness renders the handle visible at both widths so its states are assertable. Options open a dropdown-menu with `EN: "Move up" / HE: "הזז למעלה"`, `EN: "Move down" / HE: "הזז למטה"`, `EN: "Duplicate" / HE: "שכפל"`, `EN: "Delete" / HE: "מחק"` (Delete uses `--tp-danger` + confirmation). States: loading/error/offline/empty n/a (button group); the open/closed menu is the only state. Keyboard: both buttons focusable, menu items arrow-navigable. Motion ≤250ms (dropdown 180ms); reduced-motion → instant.
+- **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 and 1280 / Then both buttons render and are keyboard-focusable (the harness renders the component visible at both widths). Given "Move up" / Then `onMove(-1)` fires. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -863,12 +886,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0027.
 - **WHY:** DESIGN.md §9 SlashMenu (listbox, arrows/Enter/Esc); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The slash menu (`/` on an empty line) is verified: filter, arrow/Enter/Esc, RTL arrow swap, and insert re-serializes the body through `notes.save`.
-- **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/slash-menu.spec.ts`).
+- **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` + `apps/web/app/e2e/components/slash-menu/page.tsx` (+ `tests/e2e/screens/slash-menu.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `editor/SlashMenu.tsx`); 2) verify listbox semantics (`role=listbox`, `aria-activedescendant`), item set (Task, Time block, Habit, Energy, Nag, Heading, Bullet, Link); 3) verify arrows move, Enter inserts, Esc closes; 4) verify RTL arrow swap; 5) verify insert appends the chosen block's markdown source to `notes.body` and calls `notes.save` (TFV2-0007); 6) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="slash-menu-<state>"` anchor, per components.md §2.2); 7) add the Playwright spec `tests/e2e/screens/slash-menu.spec.ts` that navigates to `/e2e/components#slash-menu` and `/e2e/components?lang=he#slash-menu`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `editor/SlashMenu.tsx`); 2) verify listbox semantics (`role=listbox`, `aria-activedescendant`), item set (Task, Time block, Habit, Energy, Nag, Heading, Bullet, Link); 3) verify arrows move, Enter inserts, Esc closes; 4) verify RTL arrow swap; 5) verify insert appends the chosen block's markdown source to `notes.body` and calls `notes.save` (TFV2-0007a); 6) create `apps/web/app/e2e/components/slash-menu/page.tsx` (client) that renders each documented state under a `data-testid="slash-menu-<state>"` anchor inside the TFV2-0023a frame; 7) add the Playwright spec `tests/e2e/screens/slash-menu.spec.ts` that navigates to `/e2e/components/slash-menu` and `/e2e/components/slash-menu?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/slash-menu.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
-- **DO NOT:** do not add colours; do not call a `pages.insertBlock` mutation (the write path is `notes.save`, TFV2-0007); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **DO NOT:** do not add colours; do not call a `pages.insertBlock` mutation (the write path is `notes.save`, TFV2-0007a); do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
 - **SPEC:** Glass popover (`.tp-slash-menu.tp-glass`, `--tp-glass` with `--tp-glass-solid` fallback). Copy (EN/HE): group `EN: "Tempo blocks" / HE: "בלוקים של Tempo"`, `EN: "Text" / HE: "טקסט"`; items `Task/משימה`, `Time block/בלוק זמן`, `Habit/הרגל`, `Energy check-in/בדיקת אנרגיה`, `Nag/תזכורת`, `Heading/כותרת`, `Bullet list/רשימת נקודות`, `Link to a page/קישור לדף`; hint `EN: "Type to filter · ↑ ↓ to move · Enter to add" / HE: "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה"`. Arrow direction flips in RTL. States: loading/error/offline/disabled n/a (synchronous listbox); empty filter result is the "no matches" state; success = block inserted + menu closed. Motion ≤250ms (popover 180ms `--tp-dur-base`); reduced-motion → instant.
 - **TESTS:** Given `/` / Then the menu opens focused. Given typing "ta" / Then only matching items remain. Given ↓ then Enter / Then the highlighted block inserts (via `notes.save`) and the menu closes. Given Esc / Then it closes with focus returned. Given `lang=he` / Then arrows are mirrored. Given no match / Then a "no matches" row shows. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
@@ -882,14 +905,14 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0015.
 - **WHY:** DESIGN.md §9 Composer (textarea + send, send is ink not accent); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The coach message composer (textarea, Enter to send, Shift+Enter newline, ink send button) is verified.
-- **SCOPE:** `apps/web/components/coach/Composer.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/composer.spec.ts`).
+- **SCOPE:** `apps/web/components/coach/Composer.tsx` + `apps/web/lib/i18n.ts` + `apps/web/app/e2e/components/composer/page.tsx` (+ `tests/e2e/screens/composer.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING as a component; the panel renders it inline in the coach HTML); 2) implement `Composer({ onSend, disabled }: ComposerProps)`; 3) wire send to the coach send path (TFV2-0015); 4) voice button placeholder (`.tp-btn--ghost` mic, disabled until chunk E); 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="composer-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/composer.spec.ts` that navigates to `/e2e/components#composer` and `/e2e/components?lang=he#composer`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING as a component; the panel renders it inline in the coach HTML); 2) implement `Composer({ onSend, disabled }: ComposerProps)`; 3) `onSend` is a callback prop — this ticket does NOT wire the coach send path (TFV2-0015, outside SCOPE); the mounting screen passes `onSend`; 4) render a disabled voice button placeholder (`.tp-btn--ghost` mic with `aria-label` `composer.mic`, disabled until chunk E); 5) create `apps/web/app/e2e/components/composer/page.tsx` (client) that renders each documented state under a `data-testid="composer-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/composer.spec.ts` that navigates to `/e2e/components/composer` and `/e2e/components/composer?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/composer.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not colour the send button accent (it is ink); do not enable voice yet; do not touch `convex/**`, `.github/**`, `.env` or workflows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Type `export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean }`. Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour `--tp-ink` (not accent). Placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; send `aria-label` `EN: "Send" / HE: "שליחה"`. Hint `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`. Disabled while Thinking. States: loading = disabled (Thinking), empty = send does nothing, error/offline n/a (the composer itself never fails); success = send clears the textarea. Keyboard: Enter sends, Shift+Enter newline; reduced-motion → instant.
+- **SPEC:** Type `export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean }`. Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour `--tp-ink` (not accent). Copy is read via `useLocale().t()` from the existing i18n dict — keys `composer.placeholder` `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; `composer.send` `EN: "Send" / HE: "שליחה"` (send `aria-label`); `composer.hint` `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`; `composer.mic` `EN: "Voice message (coming soon)" / HE: "הודעה קולית (בקרוב)"` (mic `aria-label`). Disabled while Thinking. States: loading = disabled (Thinking), empty = send does nothing, error/offline n/a (the composer itself never fails); success = send clears the textarea. Keyboard: Enter sends, Shift+Enter newline; reduced-motion → instant.
 - **TESTS:** Given Enter / Then it sends and clears. Given Shift+Enter / Then a newline, no send. Given disabled (Thinking) / Then send is blocked. Given empty / Then send does nothing. Given `lang=he` / Then placeholder is Hebrew and `dir="auto"`. Given viewport 390×844 and 1280×800 / When the harness renders it / Then every state above holds at both widths, and `?lang=he` renders RTL where the component has text.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8); contrast ≥4.5:1; motion ≤250ms.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -901,9 +924,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** after TFV2-0010.
 - **WHY:** DESIGN.md §9 UndoToast (sonner, 5:00 countdown, Undo); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The Undo toast (title + countdown + Undo, 5-minute window) is verified with keyboard and screen-reader behaviour.
-- **SCOPE:** `apps/web/components/you/UndoToast.tsx` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/undo-toast.spec.ts`).
+- **SCOPE:** `apps/web/components/you/UndoToast.tsx` + `apps/web/app/e2e/components/undo-toast/page.tsx` (+ `tests/e2e/screens/undo-toast.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (EXISTS: `you/UndoToast.tsx` and `habits/UndoToast.tsx` — verify the canonical `you/` one); 2) verify it accepts `{ title, sub?, undoMs, onUndo }`; 3) verify 5:00 countdown and `aria-live=polite` region; 4) verify `prefers-reduced-motion` stops the countdown animation; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="undo-toast-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/undo-toast.spec.ts` that navigates to `/e2e/components#undo-toast` and `/e2e/components?lang=he#undo-toast`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `you/UndoToast.tsx` and `habits/UndoToast.tsx` — verify the canonical `you/` one); 2) verify it accepts `{ title, sub?, undoMs, onUndo }`; 3) verify 5:00 countdown and `aria-live=polite` region; 4) verify `prefers-reduced-motion` stops the countdown animation; 5) create `apps/web/app/e2e/components/undo-toast/page.tsx` (client) that renders each documented state under a `data-testid="undo-toast-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/undo-toast.spec.ts` that navigates to `/e2e/components/undo-toast` and `/e2e/components/undo-toast?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/undo-toast.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not shorten the 5-minute window; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -920,9 +943,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Skeleton (content >100ms; shimmer stops with reduced motion); components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** A skeleton primitive (`--w40/w60/w80/w100/sm/block` widths, shimmer gated on reduced motion) exists in the design system.
-- **SCOPE:** `packages/ui/src/primitives/Skeleton.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/skeleton.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Skeleton.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/skeleton/page.tsx` (+ `tests/e2e/screens/skeleton.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Skeleton({ width }: SkeletonProps)`; 3) shimmer uses opacity only and stops under `prefers-reduced-motion`; 4) export `Skeleton` and `SkeletonProps` from `index.ts`; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="skeleton-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/skeleton.spec.ts` that navigates to `/e2e/components#skeleton` and `/e2e/components?lang=he#skeleton`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Skeleton({ width }: SkeletonProps)`; 3) shimmer uses opacity only and stops under `prefers-reduced-motion`; 4) export `Skeleton` and `SkeletonProps` from `index.ts`; 5) create `apps/web/app/e2e/components/skeleton/page.tsx` (client) that renders each documented state under a `data-testid="skeleton-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/skeleton.spec.ts` that navigates to `/e2e/components/skeleton` and `/e2e/components/skeleton?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/skeleton.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not animate transform; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -939,9 +962,9 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHEN:** first.
 - **WHY:** DESIGN.md §9 Empty (kind copy + next step); PRD §13 copy rules; components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
 - **GOAL:** The web Empty-state primitive (icon + kind title + body + next-step action) is verified.
-- **SCOPE:** `packages/ui/src/primitives/Empty.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/lib/e2e/component-catalog.tsx` (+ `tests/e2e/screens/empty.spec.ts`).
+- **SCOPE:** `packages/ui/src/primitives/Empty.tsx` + `packages/ui/src/primitives/index.ts` + `apps/web/app/e2e/components/empty/page.tsx` (+ `tests/e2e/screens/empty.spec.ts`).
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map check (mobile `TempoEmptyState.tsx` EXISTS; the web design-system `Empty` is MISSING); 2) implement `Empty({ icon, title, body, action }: EmptyProps)`; 3) no illustration — a line icon on a parchment disc (`--tp-sunken` + hairline + halo) or the shared page drawing (`--tp-empty-art`); 4) copy is kind and offers a next step; 5) register it in `apps/web/lib/e2e/component-catalog.tsx` (append a `CatalogEntry` whose `render` returns each documented state under a `data-testid="empty-<state>"` anchor, per components.md §2.2); 6) add the Playwright spec `tests/e2e/screens/empty.spec.ts` that navigates to `/e2e/components#empty` and `/e2e/components?lang=he#empty`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
+- **STEPS:** 1) Graphify code-map check (mobile `TempoEmptyState.tsx` EXISTS; the web design-system `Empty` is MISSING); 2) implement `Empty({ icon, title, body, action }: EmptyProps)`; 3) no illustration — a line icon on a parchment disc (`--tp-sunken` + hairline + halo) or the shared page drawing (`--tp-empty-art`); 4) copy is kind and offers a next step; 5) create `apps/web/app/e2e/components/empty/page.tsx` (client) that renders each documented state under a `data-testid="empty-<state>"` anchor inside the TFV2-0023a frame; 6) add the Playwright spec `tests/e2e/screens/empty.spec.ts` that navigates to `/e2e/components/empty` and `/e2e/components/empty?lang=he`, asserts every state and RTL, and sets BOTH viewports with `test.use({ viewport })` — `{ width: 390, height: 844 }` and `{ width: 1280, height: 800 }`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/empty.spec.ts --reporter=line` → all pass.
 - **EVIDENCE:** paste the Playwright pass count.
 - **DO NOT:** do not shame the user (no "failed"/"overdue"/"must"); do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
@@ -1419,7 +1442,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/tasks.ts` · `convex/tasks.test.ts` (test; create if absent).
 - **MUTATES:** `tasks` rows (`deletedAt`, `dueAt`, `status`) only; the 5-min Undo is timestamp-based (no `activity` row is written today).
 - **STEPS:** 1) Graphify code-map check (EXISTS: `tasks.remove` soft-deletes and `tasks.restore` restores within `UNDO_WINDOW_MS` from `convex/lib/softDelete.ts`; `tasks.update` sets `dueAt`/`status`; `dayPlans.moveTaskToDay({ taskId, dueAt })` moves a task to a day); 2) verify `tasks.remove` sets `deletedAt` and `tasks.restore` restores only within the 5-minute window; 3) ensure moving a task onto Today reuses `tasks.update({ taskId, dueAt })` (set to the caller's Today local-day `dueAt` ms); 4) both paths rely on the timestamp `undoUntil(now)` / `isRestorable` from `convex/lib/softDelete.ts` (no `activity` row is written today); 5) write the tests; 6) run DONE.
-- **DONE:** `bun run test convex/tasks.test.ts` → all cases pass, including every error case below.
+- **DONE:** `bun test convex/tasks.test.ts` → all cases pass, including every error case below.
 - **EVIDENCE:** terminal output of DONE (pass count) + the `tasks.test.ts` file listing every Given/When/Then.
 - **DO NOT:** change `convex/schema.ts`; touch any other module; delete a task hard (must be soft); invent a new table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1438,7 +1461,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/calendar_events.ts` · `convex/calendar_events.test.ts` (test; create if absent).
 - **MUTATES:** `calendarEvents.endsAtMs` (additive read/write); event `title`/`startAtMs`/`endsAtMs` on edit; `deletedAt` on delete.
 - **STEPS:** 1) Graphify code-map of `convex/calendar_events.ts` (EXISTS: `create`, `update`, `remove` (soft), `restore`, `listInRange`; `endsAtMs` may already be on the row — verify against `convex/schema.ts`, which you may NOT edit); 2) verify `update({ eventId, title?, startsAtMs? })` edits in place (the code has no `endsAtMs` on this mutation today); 3) verify `remove({ eventId })` soft-deletes and `restore` restores; 4) extend the return validator for the optional `endsAtMs`; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/calendar_events.test.ts` → all pass, incl. the end-before-start rejection.
+- **DONE:** `bun test convex/calendar_events.test.ts` → all pass, incl. the end-before-start rejection.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** edit `convex/schema.ts`; hard-delete; allow `endsAtMs <= startAtMs`; touch any other module.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1457,7 +1480,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/habitCheckIns.ts` · `convex/habitCheckIns.test.ts` (extend if present).
 - **MUTATES:** `habitCheckIns` rows (check-in / soft-delete undo); `habits` cache fields recomputed.
 - **STEPS:** 1) Graphify code-map of `convex/habitCheckIns.ts` (EXISTS: `check({ habitId, localDate, source, note?, asOfLocalDate? })` upserts exactly one row per habit per `localDate`, and `undo({ habitId, localDate })` soft-deletes and recomputes the habit cache — verify); 2) ensure `check` is idempotent (one row per `localDate`, Convex mutation is transactional); 3) ensure `undo` soft-deletes (`deletedAt`) and recomputes the habit cache; 4) keep the file's existing validation only (`localDate` must be `YYYY-MM-DD`, `asOfLocalDate` within one day of UTC today); do not add future/past-range rejection unless the code already has it — see OPEN; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/habitCheckIns.test.ts` → all pass.
+- **DONE:** `bun test convex/habitCheckIns.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a streak counter to any query result; touch `convex/schema.ts`; log in UTC instead of the passed `localDate`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1474,13 +1497,13 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **WHY:** APP-FLOW §5 item 4 (`/habits/[id]` 6-week grid); PRD F-10; screen `web/habit-detail.html`.
 - **GOAL:** The habit detail screen can read a 6-week day grid and a summary, with the habit cache recomputed on every check-in.
 - **SCOPE:** `convex/habits.ts` · `convex/habits.test.ts` (create if absent).
-- **MUTATES:** `habits` cache fields (recomputed read); no new tables.
-- **STEPS:** 1) Graphify code-map of `convex/habits.ts` and `convex/lib/habitStreak.ts` / `habitCheckInStreak.ts`; 2) add `habits.listDays({ habitId, localDate })` returning 42 days (6 weeks ending today, Monday-first per code; see OPEN #10); 3) add `habits.summary({ habitId })` returning `{ totalLogged, daysThisWeek, lastLoggedAt }` with **no streak counter**; 4) ensure the cache is recomputed by `habitCheckIns.check`/`undo` (defined in TFV2-0067); 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/habits.test.ts` → all pass.
+- **MUTATES:** none (read-only queries over `habits` and `habitCheckIns`; no writes).
+- **STEPS:** 1) Graphify code-map of `convex/habits.ts` and `convex/lib/habitStreak.ts` / `habitCheckInStreak.ts`; 2) add `habits.listDays({ habitId, localDate })` returning 42 days (6 weeks ending today, Monday-first per code; see OPEN #10); 3) add `habits.summary({ habitId })` returning `{ totalLogged, daysThisWeek, lastLoggedAt }` with **no streak counter**; 4) do NOT edit `convex/habitCheckIns.ts` (outside SCOPE) — the cache recompute is TFV2-0067's job; this ticket only reads the cache fields those mutations already maintain; 5) write tests; 6) run DONE.
+- **DONE:** `bun test convex/habits.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** return a streak number anywhere; touch `convex/schema.ts`; add a new table.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Queries (read-only): `habits.listDays({ habitId, localDate }) -> { days: { localDate, checked }[] }`, `habits.summary({ habitId }) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` defaults to today in the caller's zone. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
+- **SPEC:** Queries (read-only): `habits.listDays({ habitId, localDate }) -> { days: { localDate, checked }[] }`, `habits.summary({ habitId }) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` is a required `YYYY-MM-DD` arg (the caller's local day); it is never defaulted. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
 - **TESTS:** Given 3 check-ins in the last 6 weeks / When `listDays` / Then 42 days, 3 `checked`. Given none / When `summary` / Then `{ totalLogged: 0, daysThisWeek: 0, lastLoggedAt: null }` and no streak field. Given a check-in today / When `summary` / Then `daysThisWeek` increments and `lastLoggedAt` = today. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** query has no N+1 and returns ≤42 rows (code review) · p95 latency — UNKNOWN (Amit answers).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
@@ -1494,35 +1517,54 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GOAL:** Goals can be created, listed, opened, and updated; the existing CRUD matches the data contract and is unit-tested.
 - **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (create if absent).
 - **MUTATES:** `goals` rows.
-- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (EXISTS: `list({ status? })`, `create({ title, description?, targetDate? })`, `update({ goalId, title?, description?, targetDate?, progressPercent?, status? })`, `remove({ goalId })`); 2) verify `create` trims title and initializes `progressPercent: 0`, `status: "active"`; 3) verify `update` clamps `progressPercent` to 0–100; 4) verify `list` sorts newest-first and filters by `status`; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/goals.test.ts` → all pass.
+- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (EXISTS: `list({ status? })`, `create({ title, description?, targetDate? })`, `update({ goalId, title?, description?, targetDate?, progressPercent?, status? })`, `remove({ goalId })`); 2) verify `create` trims title and initializes `progressPercent: 0`, `status: "active"`; 3) verify `update` clamps `progressPercent` to 0–100; 4) verify `list` sorts newest-first and filters by `status`; 5) add `goals.get({ goalId })` returning the row or `null` (a getter never throws for a missing/foreign id); 6) write tests; 7) run DONE.
+- **DONE:** `bun test convex/goals.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped (`requireUser`). `list({ status? }) -> Doc<"goals">[]`; `create({ title, description?, targetDate? }) -> Id<"goals">`; `update({ goalId, title?, description?, targetDate?, progressPercent?, status? }) -> Id<"goals">`; `remove({ goalId }) -> { success }`. Titles are user text (`dir="auto"` at render). Errors (typed `ConvexError` codes): `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars (trimmed); `progressPercent` clamped 0–100; `status` ∈ `"active"|"completed"|"archived"`.
-- **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal / When `update({ progressPercent: 140 })` / Then stored as 100. Given `list({ status: "active" })` / Then only active goals. Given other user / When `update` / Then `forbidden`.
+- **SPEC:** Owner-scoped (`requireUser`). `list({ status? }) -> Doc<"goals">[]`; `create({ title, description?, targetDate? }) -> Id<"goals">`; `update({ goalId, title?, description?, targetDate?, progressPercent?, status? }) -> Id<"goals">`; `remove({ goalId }) -> { success }`; `get({ goalId }) -> Doc<"goals"> | null` (a missing or foreign id returns `null`, never throws). Titles are user text (`dir="auto"` at render). Errors (typed `ConvexError` codes): `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars (trimmed); `progressPercent` clamped 0–100; `status` ∈ `"active"|"completed"|"archived"`.
+- **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal / When `update({ progressPercent: 140 })` / Then stored as 100. Given `list({ status: "active" })` / Then only active goals. Given other user / When `update` / Then `forbidden`. Given a missing `goalId` / When `get` / Then `null`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `list` (code review) · title 1–200 chars (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0069b — Goals progress + next step (`convex/goals.ts`)
+### TFV2-0069b — Goals progress + next step (`convex/goals.ts`) — OPEN
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069a · **Folds-in:** #457
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0069a.
 - **WHY:** PRD F-08 (progress); screen `web/goals-progress.html`.
-- **GOAL:** Goals can be read back as progress (per-goal counts and weekly steps) and a single suggested next action.
+- **GOAL:** Each goal can be read back as progress (open/done task counts and a percent) plus a single suggested next action.
 - **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (extend).
 - **MUTATES:** none (read-only aggregates over `goals` and linked `tasks`).
-- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (no `get`/`progressByGoal`/`stepsByWeek`/`nextStep` yet); 2) add `goals.get({ goalId })` returning the row or `null`; 3) add `goals.progressByGoal()` and `goals.stepsByWeek({ goalId })`; 4) add `goals.nextStep({ goalId })` returning one suggested next action or `null`; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/goals.test.ts` → all pass.
+- **STEPS:** 1) Graphify code-map of `convex/goals.ts` (`get` now lives in TFV2-0069a; `progressByGoal`/`nextStep` are MISSING); 2) add `goals.progressByGoal()` returning per-goal counts + percent; 3) add `goals.nextStep({ goalId })` returning one suggested next action or `null`; 4) write tests; 5) run DONE.
+- **DONE:** `bun test convex/goals.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
-- **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call.
+- **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call; invent a task→goal link (see OPEN).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped queries. `get({ goalId }) -> Doc<"goals"> | null`; `progressByGoal() -> { goalId, openTasks, doneTasks, progressPercent }[]`; `stepsByWeek({ goalId }) -> { weekStart, doneCount }[]`; `nextStep({ goalId }) -> Id<"tasks"> | null` (the earliest open task linked to the goal, else `null`). Errors (typed `ConvexError` codes): `goal_not_found`, `forbidden`. Limits: no model call; `nextStep` returns the earliest open linked task or `null`.
-- **TESTS:** Given a goal with 2 linked tasks / When `progressByGoal` / Then counts reflect open vs done. Given no open tasks / When `nextStep` / Then `null`. Given `stepsByWeek` with one done task this week / Then that week's `doneCount` is 1. Given other user / When `get` / Then `forbidden`.
+- **SPEC:** Owner-scoped queries. `progressByGoal() -> { goalId, openTasks, doneTasks, progressPercent }[]`; `nextStep({ goalId }) -> Id<"tasks"> | null`. `progressPercent = doneTasks / (openTasks + doneTasks) * 100`; when `openTasks + doneTasks === 0` it is `0` (no divide-by-zero). `nextStep` on a missing or foreign goal returns `null` (consistent with `get` in TFV2-0069a, which never throws `goal_not_found`). These read queries never throw `forbidden`/`goal_not_found`. Limits: no model call; `nextStep` returns the earliest open linked task or `null`.
+- **TESTS:** Given a goal with 2 open + 1 done linked tasks / When `progressByGoal` / Then `{ openTasks: 2, doneTasks: 1, progressPercent: 33 }`. Given a goal with no linked tasks / When `progressByGoal` / Then `progressPercent: 0` (no divide-by-zero). Given no open tasks / When `nextStep` / Then `null`. Given a missing `goalId` / When `nextStep` / Then `null` (never `goal_not_found`).
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `progressByGoal` (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
-- **OPEN:** none.
+- **OPEN:** the task→goal link. `convex/schema.ts` `tasks` has NO `goalId` field and no goal join table, so "linked tasks" has no data source. Before this is buildable, Amit must say how a task links to a goal (add `goalId: v.optional(v.id("goals"))` to `tasks`, or a join table). Weekly grouping is out of scope here (see TFV2-0069c).
+
+### TFV2-0069c — Goals steps by week (`convex/goals.ts`) — OPEN
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069b · **Folds-in:** #457
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0069b.
+- **WHY:** PRD F-08 (progress over time); screen `web/goals-progress.html`.
+- **GOAL:** A goal's completed tasks are grouped by week, returning one `{ weekStart, doneCount }` per week.
+- **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (extend).
+- **MUTATES:** none (read-only aggregate over linked `tasks`).
+- **STEPS:** 1) Graphify code-map (`stepsByWeek` is MISSING); 2) add `goals.stepsByWeek({ goalId })` returning `{ weekStart, doneCount }[]`; 3) write tests; 4) run DONE. Blocked on the OPEN items until answered.
+- **DONE:** `bun test convex/goals.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; hardcode Sunday-first or Monday-first; add a model call.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped query. `stepsByWeek({ goalId }) -> { weekStart, doneCount }[]` (completed tasks grouped by the week containing their `completedAt`). A missing or foreign goal returns `[]` (never throws). Limits: no model call.
+- **TESTS:** Given one done task this week / When `stepsByWeek` / Then that week's `doneCount` is 1. Given no tasks / Then `[]`. (Week-boundary cases depend on the OPEN week-start ruling.)
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **OPEN:** week start (Sunday vs Monday) — UNKNOWN, Amit answers (conflict #10) — decides the week boundary in `stepsByWeek`; plus the task→goal link (same as TFV2-0069b).
 
 ### TFV2-0070 — Day plans (`convex/dayPlans.ts`)
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
@@ -1533,12 +1575,12 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/dayPlans.ts` · `convex/dayPlans.test.ts` (extend if present).
 - **MUTATES:** `dayPlans` rows (upsert); no new tables.
 - **STEPS:** 1) Graphify code-map of `convex/dayPlans.ts` (EXISTS: `getForDate({ localDate })`, `upsert({ localDate, timezone?, intention?, topTaskIds?, energy? })`, `commit({ localDate })`, `listCarryOver({ beforeMs })`, `moveTaskToDay({ taskId, dueAt })`); 2) verify `getForDate` returns the row or `null`; 3) verify `upsert` enforces one row per `localDate` and `topTaskIds` length ≤ 3; 4) verify `commit` sets `status: "committed"` + `committedAt`; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/dayPlans.test.ts` → all pass.
+- **DONE:** `bun test convex/dayPlans.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; allow two rows per `localDate`; use energy words other than `low|medium|high`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Owner-scoped. `getForDate({ localDate }) -> Doc<"dayPlans"> | null`; `upsert({ localDate, timezone?, intention?, topTaskIds?, energy? }) -> Id<"dayPlans">`; `commit({ localDate }) -> { dayPlanId, committedAt }`. `energy` ∈ `"low"|"medium"|"high"`; `status` ∈ `"draft"|"committed"`; `topTaskIds` length ≤ 3 (all must be owned by the caller). Errors (typed `ConvexError` codes): `invalid_energy`, `too_many_top_tasks`, `invalid_date`. Uniqueness (one row per `localDate`) enforced inside `upsert`; `upsert` patches but never changes `status`.
-- **TESTS:** Given none / When `getForDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy: "turbo"` / When `upsert` / Then `invalid_energy`. Given 4 top tasks / When `upsert` / Then `too_many_top_tasks`. Given `commit` / When `getForDate` / Then `status="committed"` and `committedAt` set.
+- **SPEC:** Owner-scoped. `getForDate({ localDate }) -> Doc<"dayPlans"> | null`; `upsert({ localDate, timezone?, intention?, topTaskIds?, energy? }) -> Id<"dayPlans">`; `commit({ localDate }) -> { dayPlanId, committedAt }`; `commit` with no existing row creates and commits a new `dayPlans` row. `energy` ∈ `"low"|"medium"|"high"` (rejected by the `v.union` arg validator); `status` ∈ `"draft"|"committed"`; `localDate` is `YYYY-MM-DD` (validated by `assertLocalDate`); `topTaskIds` length ≤ 3 and every id must be a live task owned by the caller (enforced by `assertOwnedTasks`). Errors follow the code's plain-`Error` convention: malformed `localDate` → `Error("localDate must be YYYY-MM-DD")`; more than 3 top tasks → `Error("A day plan can have at most 3 top tasks")`; a non-owned/missing/deleted top task → `Error("Task not found")`. Uniqueness (one row per `localDate`) enforced inside `upsert`; `upsert` patches but never changes `status`.
+- **TESTS:** Given none / When `getForDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy: "turbo"` / When `upsert` / Then the `v.union` arg validator rejects it. Given a malformed `localDate` (e.g. `"10-16-2026"`) / When `upsert` / Then `Error("localDate must be YYYY-MM-DD")`. Given 4 top tasks / When `upsert` / Then `Error("A day plan can have at most 3 top tasks")`. Given a top task owned by another user / When `upsert` / Then `Error("Task not found")`. Given `commit` with no existing row / When `commit` / Then a new committed row is created. Given `commit` / When `getForDate` / Then `status="committed"` and `committedAt` set.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `topTaskIds` ≤ 3 enforced (code review).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -1552,7 +1594,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/timeBlocks.ts` · `convex/timeBlocks.test.ts` (create if absent).
 - **MUTATES:** `timeBlocks` rows; `taskId`/`habitId` links (read).
 - **STEPS:** 1) Graphify code-map of `convex/timeBlocks.ts` (EXISTS: `listForDate({ localDate })`, `create({ localDate, title, startMinute, durationMinutes, startsAtMs, endsAtMs, kind, taskId?, habitId? })`, `update({ timeBlockId, ... })`, `setStatus({ timeBlockId, status })`, `remove({ timeBlockId })`); 2) verify `listForDate` is ordered by `startMinute`; 3) verify `create` validates `startMinute` 0–1439, `durationMinutes` 5–720, and `endsAtMs > startsAtMs`; 4) verify `remove` is a soft delete; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/timeBlocks.test.ts` → all pass.
+- **DONE:** `bun test convex/timeBlocks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; allow overlap checking that isn't required; hard-delete.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1571,7 +1613,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/focusBlocks.ts` · `convex/focusBlocks.test.ts` (extend if present).
 - **MUTATES:** `focusBlocks` rows; optional `taskId` link.
 - **STEPS:** 1) Graphify code-map of `convex/focusBlocks.ts` (EXISTS: `create({ startedAtMs, durationMs, label?, taskId? })`, `listInRange({ startMs, endMs })`, `remove({ focusBlockId })`, `restore({ focusBlockId })`); 2) verify `create` logs a completed block with `startedAtMs` + `durationMs` (1 ms–8 h); 3) keep pause/resume as local timer state (no server row); 4) verify `listInRange` lists the completed session (persisted across reload); 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/focusBlocks.test.ts` → all pass.
+- **DONE:** `bun test convex/focusBlocks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** persist pause/resume as rows; touch `convex/schema.ts`; round minutes dishonestly.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1590,7 +1632,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/lib/brainDumpInput.ts` · `convex/lib/brainDumpParse.ts` · `convex/brain_dump.test.ts` (extend if present).
 - **MUTATES:** none (pure input validation and model-output parsing; no rows until `acceptPlan` in TFV2-0074).
 - **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts`, `convex/lib/brainDumpInput.ts`, `convex/lib/brainDumpParse.ts` (EXISTS: `validateBrainDumpInput`, `parsePlanFromModelContent`, `BrainDumpPlan`, `BrainDumpPriority`); 2) verify `validateBrainDumpInput` trims, rejects empty, and caps at `BRAIN_DUMP_MAX_RAW_CHARS` (12,000); 3) verify `parsePlanFromModelContent` strips C0/C1 control chars, requires a `summary`, and caps at 6 priorities; 4) write tests for every error case; 5) run DONE.
-- **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
+- **DONE:** `bun test convex/brain_dump.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** persist raw text anywhere (RAM-only rule); touch `convex/schema.ts`; call a model in this ticket.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1609,7 +1651,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/brain_dump.ts` · `convex/brain_dump.test.ts` (extend if present).
 - **MUTATES:** `tasks` rows only on `acceptPlan`; the dump itself is never stored.
 - **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts` (EXISTS: `prioritize` action `{ rawText } -> BrainDumpPlan` via `planBrainDump`, `acceptPlan` mutation `{ items: [{ title, urgency }] } -> { created, taskIds }`); 2) verify `prioritize` validates input, passes the approval AI gate, and returns a plan (≤ 6 priorities); 3) verify `acceptPlan` writes only accepted items as tasks (1–6 items) and nothing else; 4) verify parse failure returns a typed error (no model call required on failure — conflict #6: model-written vs rule-based is UNKNOWN); 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
+- **DONE:** `bun test convex/brain_dump.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** write to Today before `acceptPlan`; call a paid model directly; invent a proposal shape not in `BrainDumpPlan`; persist the dump.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1628,7 +1670,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/journal.ts` · `convex/journal.test.ts` (both new).
 - **MUTATES:** journal/daily entries (backed by `notes` rows of `periodType:"daily"`/other page types); `deletedAt` for soft delete.
 - **STEPS:** 1) Graphify code-map of `convex/notes.ts` and `notes_period.ts` (EXISTS: `notes.create`, `notes.update`, `notes.remove` (soft), `notes.restore`, `notes.listPeriodPages`, `notes.getPeriodPage`, `notes.ensurePeriodPage` — verify whether journal already reuses these); 2) add `journal.list()`, `journal.get({ date })`, `journal.saveEntry({ date, body })`, `journal.promptForToday({ date })`; 3) daily note reuses `notes` with a page type + `date`, soft-delete via `notes.remove`; 4) write tests; 5) run DONE.
-- **DONE:** `bun run test convex/journal.test.ts` → all pass.
+- **DONE:** `bun test convex/journal.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a new table if `notes` with a page type already serves journal; touch `convex/schema.ts`; invent prompts (return the fixed prompt text defined in the screen copy).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1647,7 +1689,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/routines.ts` · `convex/routines.test.ts` (both new).
 - **MUTATES:** routine definitions and a run cursor (or a note page of a routine page type); `deletedAt` on delete.
 - **STEPS:** 1) Graphify code-map of `convex/notes.ts` (EXISTS: `notes.listRoutines` — verify whether routines already reuse notes as step lists); 2) add `routines.list()`, `routines.get({ routineId })`, `routines.create({ title, steps })`, `routines.startRun({ routineId })`, `routines.completeStep({ runId, stepIndex })`, `routines.suggestNow({ localDate })`; 3) write tests; 4) run DONE.
-- **DONE:** `bun run test convex/routines.test.ts` → all pass.
+- **DONE:** `bun test convex/routines.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a model call to `suggestNow` (return the time-based suggestion); touch `convex/schema.ts`; invent a steps schema different from a string array.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1666,7 +1708,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/nags.ts` · `convex/lib/nagPhrase.ts` · `convex/nags.test.ts` (create if absent).
 - **MUTATES:** `nags` rows (enabled, phrases); dosing-data answer log (never a streak).
 - **STEPS:** 1) Graphify code-map of `convex/nags.ts` and `convex/lib/nagPhrase.ts` (EXISTS: `create({ label })`, `addPhrase({ nagId, text, source })`, `decidePhrase({ nagId, phraseId, decision })`, `setEnabled({ nagId, enabled })`, `remove({ nagId })`; `validatePhrase`, `parseProposals`); 2) verify `setEnabled(true)` is rejected with zero accepted phrases; 3) verify emoji are rejected by `validatePhrase` and phrase length ≤ `NAG_PHRASE_MAX` (140); 4) verify a `derived` phrase starts `proposed` and becomes `accepted` only via `decidePhrase`; 5) write tests; 6) run DONE.
-- **DONE:** `bun run test convex/nags.test.ts` → all pass.
+- **DONE:** `bun test convex/nags.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add stock copy or emoji; surface a streak; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1685,7 +1727,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/notifications.ts` · `convex/notifications.test.ts` (create if absent).
 - **MUTATES:** `notifications` rows (readAt).
 - **STEPS:** 1) Graphify code-map of `convex/notifications.ts` (EXISTS: `list({ unreadOnly? })`, `markRead({ notificationId })`, `markAllRead({})`); 2) verify `list` is newest-first; 3) verify `markRead` and `markAllRead` set `readAt`; 4) write tests; 5) run DONE.
-- **DONE:** `bun run test convex/notifications.test.ts` → all pass.
+- **DONE:** `bun test convex/notifications.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add push/email delivery (conflict #11); touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1704,7 +1746,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/analytics.ts` · `convex/analytics.test.ts` (extend if present).
 - **MUTATES:** none (read-only aggregates).
 - **STEPS:** 1) Graphify code-map of `convex/analytics.ts` (EXISTS: `overview({ todayStartMs?, todayEndMs? })`, `insightsSummary({ todayStartMs, todayEndMs, weekStartMs })`, `computeOverview`, `computeInsightsSummary`); 2) add `tasksByWeekday({ localDate })` and `focusMinutesByWeek({ localDate })`; 3) ensure aggregates are computed over soft-delete-aware rows; 4) write tests; 5) run DONE.
-- **DONE:** `bun run test convex/analytics.test.ts` → all pass.
+- **DONE:** `bun test convex/analytics.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** invent a metric the data does not support; expose raw rows; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1723,7 +1765,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/analytics.ts` · `convex/lib/insights_summary.ts` · `convex/insights.test.ts` (extend if present).
 - **MUTATES:** none (read-only aggregates).
 - **STEPS:** 1) Graphify code-map (EXISTS: `analytics.insightsSummary` query, `lib/insights_summary.computeInsightsSummary` pure function, `convex/insights.test.ts` — note `convex/insights.ts` does NOT exist; the query lives on `analytics`); 2) verify `computeInsightsSummary` produces the summary shape (`tasksOpen`, `tasksDueToday`, `tasksOverdue`, `tasksCompletedThisWeek`, `openByEnergy`, `openByPriority`, `habitsTotal`, `habitsWithActiveStreak`, `bestStreak`, `goalsActive`, `goalsAverageProgressPercent`); 3) verify soft-deleted rows are excluded; 4) write tests for every field; 5) run DONE.
-- **DONE:** `bun run test convex/insights.test.ts` → all pass.
+- **DONE:** `bun test convex/insights.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** write shaming copy; auto-generate patterns from a model here; touch `convex/schema.ts`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1742,7 +1784,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (create if absent).
 - **MUTATES:** activity feed (read).
 - **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) keep `list` owner-scoped and newest-first; 3) write tests; 4) run DONE.
-- **DONE:** `bun run test convex/activity.test.ts` → all pass.
+- **DONE:** `bun test convex/activity.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add an `undo` mutation here (that is TFV2-0081b); touch `convex/schema.ts`; invent a coach actor.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1761,7 +1803,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (create if absent).
 - **MUTATES:** activity rows (read) + undo of coach changes.
 - **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) add coach-origin tracking + `undo`; 3) write tests; 4) run DONE.
-- **DONE:** `bun run test convex/activity.test.ts` → all pass.
+- **DONE:** `bun test convex/activity.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** touch `convex/schema.ts`; invent an actor model; shorten the 5-minute window.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1780,7 +1822,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `convex/streaks.ts` · `convex/streaks.test.ts` (create if absent).
 - **MUTATES:** none (derived read).
 - **STEPS:** 1) Graphify code-map of `convex/streaks.ts`, `convex/lib/habitStreak.ts` and `convex/lib/habitCheckInStreak.ts`; 2) ensure `streaks.getCurrent` is the only aggregate read and is consumed by insights/tracking only; 3) ensure no chunk-B component or screen renders `currentStreak`/`longestStreak` as a visible counter; 4) write tests; 5) run DONE.
-- **DONE:** `bun run test convex/streaks.test.ts` → all pass.
+- **DONE:** `bun test convex/streaks.test.ts` → all pass.
 - **EVIDENCE:** DONE output + test file listing.
 - **DO NOT:** add a `streaks.getForHabit` query; render a streak counter in any block (EventBlock, HabitBlock, habit detail); remove `currentStreak`/`longestStreak` from the habit doc (insights use them).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1790,7 +1832,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0083 — Component: EventBlock
+### TFV2-0083 — Component: EventBlock — superseded by TFV2-0048
+- **Superseded by:** TFV2-0048 (`apps/web/components/blocks/EventBlock.tsx`). Do not build. TFV2-0048 is the canonical EventBlock; this duplicate used a different API (`kind: "fixed"|"flex"`) in a different package. Keep one EventBlock.
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0066 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0066.
@@ -1799,7 +1842,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/blocks/EventBlock.tsx` · `packages/ui/src/blocks/EventBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/event-block.spec.ts`.
 - **MUTATES:** none (read-only render).
 - **STEPS:** 1) Graphify code-map of `packages/ui/src/blocks`; 2) implement per SPEC; 3) add the export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → EventBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` → all pass (states, EN/HE, 390 px and 1280 px).
+- **DONE:** `bun test packages/ui` → EventBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` → all pass (states, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + the two Playwright screenshots (390/1280, EN/HE).
 - **DO NOT:** edit `convex/`; set colours inline; render JSON; exceed 250 ms motion.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1809,7 +1852,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0084 — Component: HabitBlock
+### TFV2-0084 — Component: HabitBlock — superseded by TFV2-0049
+- **Superseded by:** TFV2-0049 (`apps/web/components/blocks/HabitBlock.tsx`). Do not build. TFV2-0049 is the canonical HabitBlock; this duplicate lived in a different package. Keep one HabitBlock.
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0067.
@@ -1818,7 +1862,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/blocks/HabitBlock.tsx` · `packages/ui/src/blocks/HabitBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/habit-block.spec.ts`.
 - **MUTATES:** none (render + `habitCheckIns.check`/`undo` call).
 - **STEPS:** 1) Graphify code-map; 2) implement per SPEC; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → HabitBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` → all pass (log/undo and dot states, EN/HE, 390 px and 1280 px).
+- **DONE:** `bun test packages/ui` → HabitBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` → all pass (log/undo and dot states, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** draw a streak counter; touch `convex/`; label a missed day as failure.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1828,7 +1872,8 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
-### TFV2-0085 — Component: NagBlock — OPEN
+### TFV2-0085 — Component: NagBlock — superseded by TFV2-0050 (and OPEN)
+- **Superseded by:** TFV2-0050 (`apps/web/components/blocks/NagBlock.tsx`). Do not build. TFV2-0050 is the canonical NagBlock (its Now/Snooze/Not-today response mutation remains OPEN — see TFV2-0050). Keep one NagBlock.
 - **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0077 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0077.
@@ -1837,7 +1882,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/blocks/NagBlock.tsx` · `packages/ui/src/blocks/NagBlock.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/nag-block.spec.ts`.
 - **MUTATES:** none (render + `nags` response call).
 - **STEPS:** 1) Graphify code-map; 2) implement the phrase card per SPEC; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → NagBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` → all pass (the three answers, EN/HE, 390 px and 1280 px).
+- **DONE:** `bun test packages/ui` → NagBlock cases pass; and `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` → all pass (the three answers, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** add an icon or emoji; use stock copy; touch `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1848,15 +1893,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** the delivered-nag response mutation does not exist (`nags.respond` is absent; code only has `nags.decidePhrase` for phrase acceptance) and its now/snooze/nottoday semantics depend on REWRITE-PLAN-v2 §4 conflict #11 (nag delivery channel) — UNKNOWN, Amit answers.
 
 ### TFV2-0086 — Component: PageLayout
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; used by every non-document screen in chunk B.
 - **GOAL:** A page container with narrow/wide widths inside the app main area.
-- **SCOPE:** `packages/ui/src/layout/PageLayout.tsx` · `packages/ui/src/layout/PageLayout.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-layout.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageLayout.tsx` · `packages/ui/src/layout/PageLayout.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/page-layout/page.tsx` · `tests/e2e/screens/page-layout.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageLayout cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-layout.spec.ts --reporter=line` → all pass (narrow/wide, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/page-layout/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → PageLayout cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-layout.spec.ts --reporter=line` → all pass (narrow/wide, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** set colours/type here (screens add layout only); touch `convex/`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1867,15 +1912,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0087 — Component: Surface
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; solid paper panel for chunk B screens.
 - **GOAL:** A solid paper panel used as the background for cards and lists.
-- **SCOPE:** `packages/ui/src/layout/Surface.tsx` · `packages/ui/src/layout/Surface.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/surface.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/Surface.tsx` · `packages/ui/src/layout/Surface.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/surface/page.tsx` · `tests/e2e/screens/surface.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Surface cases pass; and `CI=1 bunx playwright test tests/e2e/screens/surface.spec.ts --reporter=line` → all pass (390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/surface/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Surface cases pass; and `CI=1 bunx playwright test tests/e2e/screens/surface.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** make it glass (glass is floating chrome only); set type sizes.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1886,15 +1931,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0088 — Component: PageHeader
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; one H1 per screen.
 - **GOAL:** A screen header with one H1 title, subtitle and action slot.
-- **SCOPE:** `packages/ui/src/layout/PageHeader.tsx` · `packages/ui/src/layout/PageHeader.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-header.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageHeader.tsx` · `packages/ui/src/layout/PageHeader.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/page-header/page.tsx` · `tests/e2e/screens/page-header.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageHeader cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-header.spec.ts --reporter=line` → all pass (390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/page-header/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → PageHeader cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-header.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** render more than one H1; hide the subtitle on mobile.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1905,15 +1950,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0089 — Component: Toolbar
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; search + filter + sort on list screens.
 - **GOAL:** A toolbar row hosting search, filter and sort controls.
-- **SCOPE:** `packages/ui/src/layout/Toolbar.tsx` · `packages/ui/src/layout/Toolbar.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/toolbar.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/Toolbar.tsx` · `packages/ui/src/layout/Toolbar.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/toolbar/page.tsx` · `tests/e2e/screens/toolbar.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Toolbar cases pass; and `CI=1 bunx playwright test tests/e2e/screens/toolbar.spec.ts --reporter=line` → all pass (390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/toolbar/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Toolbar cases pass; and `CI=1 bunx playwright test tests/e2e/screens/toolbar.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** hardcode a control type (accept children).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1924,15 +1969,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0090 — Component: Section
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; grouped sections with a count.
 - **GOAL:** A titled section with an optional item count.
-- **SCOPE:** `packages/ui/src/layout/Section.tsx` · `packages/ui/src/layout/Section.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/section.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/Section.tsx` · `packages/ui/src/layout/Section.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/section/page.tsx` · `tests/e2e/screens/section.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Section cases pass; and `CI=1 bunx playwright test tests/e2e/screens/section.spec.ts --reporter=line` → all pass (390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/section/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Section cases pass; and `CI=1 bunx playwright test tests/e2e/screens/section.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** invent a heading level (accept `as`).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1943,34 +1988,34 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0091 — Component: CardGrid
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; auto-fill card layout.
 - **GOAL:** An auto-filling grid of cards, small or default.
-- **SCOPE:** `packages/ui/src/layout/CardGrid.tsx` · `packages/ui/src/layout/CardGrid.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/card-grid.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/CardGrid.tsx` · `packages/ui/src/layout/CardGrid.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/card-grid/page.tsx` · `tests/e2e/screens/card-grid.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → CardGrid cases pass; and `CI=1 bunx playwright test tests/e2e/screens/card-grid.spec.ts --reporter=line` → all pass (390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/card-grid/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → CardGrid cases pass; and `CI=1 bunx playwright test tests/e2e/screens/card-grid.spec.ts --reporter=line` → all pass (390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** fix a column count (auto-fill).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?: "sm"|"default"; children: ReactNode }`. CSS `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`. Each card is a `.tp-surface`-like card at radius `--tp-radius-lg` (14 px). States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
+- **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?: "sm"|"default"; children: ReactNode }`. CSS `grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))` (default) and `repeat(auto-fill, minmax(200px, 1fr))` with `--sm`; gap `--tp-space-4` (16px), `--tp-space-3` (12px) with `--sm`. Each card is a `.tp-surface`-like card at radius `--tp-radius-lg` (14 px). States: none; loading/empty/error/offline/success/disabled: n/a — presentational. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7).
 - **TESTS:** Given 4 cards / When render at 390 vs 1280 / Then 1 column vs multiple. Playwright: the spec sets viewport 390 and 1280, asserts column count.
 - **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0092 — Component: Notice
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; icon + words, never colour alone.
 - **GOAL:** An alert with tone, icon, title, body and optional action; never colour-only.
-- **SCOPE:** `packages/ui/src/layout/Notice.tsx` · `packages/ui/src/layout/Notice.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/notice.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/Notice.tsx` · `packages/ui/src/layout/Notice.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/notice/page.tsx` · `tests/e2e/screens/notice.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Notice cases pass; and `CI=1 bunx playwright test tests/e2e/screens/notice.spec.ts --reporter=line` → all pass (tones, EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/notice/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Notice cases pass; and `CI=1 bunx playwright test tests/e2e/screens/notice.spec.ts --reporter=line` → all pass (tones, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** rely on colour alone (always icon + word).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -1981,15 +2026,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0093 — Component: Badge
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.1; labels like "Built-in" / "Your plan".
 - **GOAL:** A small tone badge with label and optional icon.
-- **SCOPE:** `packages/ui/src/layout/Badge.tsx` · `packages/ui/src/layout/Badge.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/badge.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/Badge.tsx` · `packages/ui/src/layout/Badge.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/badge/page.tsx` · `tests/e2e/screens/badge.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Badge cases pass; and `CI=1 bunx playwright test tests/e2e/screens/badge.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/badge/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Badge cases pass; and `CI=1 bunx playwright test tests/e2e/screens/badge.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** use colour alone (label always present).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2000,15 +2045,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0094 — Component: PageHead
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0088 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0088 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0088.
 - **WHY:** components.md §2.3; wraps page title + meta for daily/weekly/project/note.
 - **GOAL:** A variant head wrapping the page title and meta for four page kinds.
-- **SCOPE:** `packages/ui/src/layout/PageHead.tsx` · `packages/ui/src/layout/PageHead.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/page-head.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/PageHead.tsx` · `packages/ui/src/layout/PageHead.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/page-head/page.tsx` · `tests/e2e/screens/page-head.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → PageHead cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-head.spec.ts --reporter=line` → all pass (variants, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/page-head/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → PageHead cases pass; and `CI=1 bunx playwright test tests/e2e/screens/page-head.spec.ts --reporter=line` → all pass (variants, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** set the title font size (PageTitle owns it); add a second H1.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2019,15 +2064,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0095 — Component: WeekStrip — OPEN
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.3; weekly page head; used in `web/weekly-page.html`.
 - **GOAL:** A 7-day toggle strip selects one day and shows its open count.
-- **SCOPE:** `packages/ui/src/layout/WeekStrip.tsx` · `packages/ui/src/layout/WeekStrip.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/week-strip.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/WeekStrip.tsx` · `packages/ui/src/layout/WeekStrip.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/week-strip/page.tsx` · `tests/e2e/screens/week-strip.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → WeekStrip cases pass; and `CI=1 bunx playwright test tests/e2e/screens/week-strip.spec.ts --reporter=line` → all pass (selection, EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/week-strip/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → WeekStrip cases pass; and `CI=1 bunx playwright test tests/e2e/screens/week-strip.spec.ts --reporter=line` → all pass (selection, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** hardcode Sunday-first (see OPEN); navigate away (emit `onSelectDay`).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2038,15 +2083,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** week start (Sunday vs Monday — code uses Monday; #546 question 3 open) — UNKNOWN, Amit answers (conflict #10); this decides the `days` array order.
 
 ### TFV2-0096 — Component: ProjectStatus
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0093 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0093 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0093.
 - **WHY:** components.md §2.3; used in `web/projects.html`, `web/project-detail.html`.
 - **GOAL:** A badge showing a project's idea/active/paused/done status with icon and word.
-- **SCOPE:** `packages/ui/src/layout/ProjectStatus.tsx` · `packages/ui/src/layout/ProjectStatus.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/project-status.spec.ts`.
+- **SCOPE:** `packages/ui/src/layout/ProjectStatus.tsx` · `packages/ui/src/layout/ProjectStatus.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/project-status/page.tsx` · `tests/e2e/screens/project-status.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → ProjectStatus cases pass; and `CI=1 bunx playwright test tests/e2e/screens/project-status.spec.ts --reporter=line` → all pass (four statuses, EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/project-status/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → ProjectStatus cases pass; and `CI=1 bunx playwright test tests/e2e/screens/project-status.spec.ts --reporter=line` → all pass (four statuses, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** use colour alone; invent statuses beyond the four.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2057,34 +2102,34 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0097 — Component: ListRow
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; used by tasks, habits, routines, goals, projects, activity, notifications lists.
 - **GOAL:** A 56px-min list row with icon, title, meta and end slot, link or button.
-- **SCOPE:** `packages/ui/src/lists/ListRow.tsx` · `packages/ui/src/lists/ListRow.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/list-row.spec.ts`.
+- **SCOPE:** `packages/ui/src/lists/ListRow.tsx` · `packages/ui/src/lists/ListRow.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/list-row/page.tsx` · `tests/e2e/screens/list-row.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → ListRow cases pass; and `CI=1 bunx playwright test tests/e2e/screens/list-row.spec.ts --reporter=line` → all pass (focus + 56 px, EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/list-row/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → ListRow cases pass; and `CI=1 bunx playwright test tests/e2e/screens/list-row.spec.ts --reporter=line` → all pass (focus + 56 px, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** go below 56px tall; omit an accessible name for icon-only rows.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
-- **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon: ReactNode; title: string; meta?: string; href?: string; onClick?: () => void; ariaLabel?: string }`. Height ≥56 px; radius `--tp-radius-sm` (6 px, rows). RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring `--tp-accent` (#A3461F light / #EE9468 dark). Breakpoints: same at 390/1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
+- **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon: ReactNode; title: string; meta?: string; end?: ReactNode; href?: string; onClick?: () => void; ariaLabel?: string }`. Height ≥56 px; radius `--tp-radius-sm` (6 px, rows). `title` is required — a row always shows a title; `end` is the trailing slot rendered in `__end`; `ariaLabel` is an optional override of the accessible name (default is `title`). RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring `--tp-accent` (#A3461F light / #EE9468 dark). Breakpoints: same at 390/1280. Motion: none; `prefers-reduced-motion: reduce` → instant (DESIGN.md §7). Loading/empty/error/offline/success/disabled: n/a — the mounting screen owns data states.
 - **TESTS:** Given a row / When render / Then height ≥56 px and title present. Given href / When render / Then `<a>` with `aria-label` if icon-only. Playwright: the spec sets viewport 390 and 1280, asserts focus ring + height, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (WCAG 2.2, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (WCAG 2.5.8) · row ≥56 px (components.md) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0098 — Component: Segmented / Filter
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; used by plan, tasks, goals, projects, insights, activity.
 - **GOAL:** A single-choice segmented control (radiogroup) with dot + word marks.
-- **SCOPE:** `packages/ui/src/lists/Segmented.tsx` · `packages/ui/src/lists/Segmented.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/segmented.spec.ts`.
+- **SCOPE:** `packages/ui/src/lists/Segmented.tsx` · `packages/ui/src/lists/Segmented.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/segmented/page.tsx` · `tests/e2e/screens/segmented.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Segmented cases pass; and `CI=1 bunx playwright test tests/e2e/screens/segmented.spec.ts --reporter=line` → all pass (arrow-key selection in RTL and LTR, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/segmented/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → Segmented cases pass; and `CI=1 bunx playwright test tests/e2e/screens/segmented.spec.ts --reporter=line` → all pass (arrow-key selection in RTL and LTR, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** allow multiple selection; omit `role=radio`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2095,15 +2140,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0099 — Component: SearchInput
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0098 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0098 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0098.
 - **WHY:** components.md §2.4; used by tasks, search, command, notes, templates.
 - **GOAL:** A labelled search input (label always present, visible or sr-only).
-- **SCOPE:** `packages/ui/src/forms/SearchInput.tsx` · `packages/ui/src/forms/SearchInput.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/search-input.spec.ts`.
+- **SCOPE:** `packages/ui/src/forms/SearchInput.tsx` · `packages/ui/src/forms/SearchInput.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/search-input/page.tsx` · `tests/e2e/screens/search-input.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → SearchInput cases pass; and `CI=1 bunx playwright test tests/e2e/screens/search-input.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/search-input/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → SearchInput cases pass; and `CI=1 bunx playwright test tests/e2e/screens/search-input.spec.ts --reporter=line` → all pass (EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output.
 - **DO NOT:** omit the label; break the clear affordance.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2114,15 +2159,15 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **OPEN:** none.
 
 ### TFV2-0100 — Component: SortMenu
-- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0023a, TFV2-0001 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0001.
 - **WHY:** components.md §2.4; sort control on list screens.
 - **GOAL:** A radio dropdown menu for sort options with arrows, Esc and focus return.
-- **SCOPE:** `packages/ui/src/lists/SortMenu.tsx` · `packages/ui/src/lists/SortMenu.test.tsx` · `packages/ui/src/index.ts` · `tests/e2e/screens/sort-menu.spec.ts`.
+- **SCOPE:** `packages/ui/src/lists/SortMenu.tsx` · `packages/ui/src/lists/SortMenu.test.tsx` · `packages/ui/src/index.ts` · `apps/web/app/e2e/components/sort-menu/page.tsx` · `tests/e2e/screens/sort-menu.spec.ts`.
 - **MUTATES:** none.
-- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + the Playwright spec (renders the component in isolation); 5) run DONE.
-- **DONE:** `bun run test packages/ui` → SortMenu cases pass; and `CI=1 bunx playwright test tests/e2e/screens/sort-menu.spec.ts --reporter=line` → all pass (open/choose/close, EN/HE, 390 px and 1280 px).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export in `packages/ui/src/index.ts`; 4) write unit tests + create `apps/web/app/e2e/components/sort-menu/page.tsx` (client) rendering the component in isolation inside the TFV2-0023a frame + the Playwright spec; 5) run DONE.
+- **DONE:** `bun test packages/ui` → SortMenu cases pass; and `CI=1 bunx playwright test tests/e2e/screens/sort-menu.spec.ts --reporter=line` → all pass (open/choose/close, EN/HE, 390 px and 1280 px).
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** trap focus incorrectly; omit `role=menu`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2141,7 +2186,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/lists/LoadMore.tsx` · `packages/ui/src/lists/LoadMore.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → LoadMore cases pass.
+- **DONE:** `bun test packages/ui` → LoadMore cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** auto-load on scroll (explicit button).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2160,7 +2205,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/calendar/MonthGrid.tsx` · `packages/ui/src/calendar/MonthGrid.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → MonthGrid cases pass; Playwright asserts selection + count at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → MonthGrid cases pass; Playwright asserts selection + count at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** render the count text visually under 768 (sr-only); hardcode Sunday-first.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2179,7 +2224,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/calendar/Dot.tsx` · `packages/ui/src/calendar/Dot.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Dot cases pass.
+- **DONE:** `bun test packages/ui` → Dot cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** use colour alone as the only signal (always paired with a word elsewhere).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2198,7 +2243,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/calendar/WeekColumns.tsx` · `packages/ui/src/calendar/WeekColumns.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → WeekColumns cases pass; Playwright asserts internal scroll at 390 and static at 1280.
+- **DONE:** `bun test packages/ui` → WeekColumns cases pass; Playwright asserts internal scroll at 390 and static at 1280.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** scroll the whole page; fix columns wider than the container.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2217,7 +2262,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/calendar/DayTimeline.tsx` · `packages/ui/src/calendar/DayTimeline.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → DayTimeline cases pass; Playwright asserts now line + slot heights at 390/1280.
+- **DONE:** `bun test packages/ui` → DayTimeline cases pass; Playwright asserts now line + slot heights at 390/1280.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** use whole-hour-only slots (half-hour); animate the now line.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2236,7 +2281,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/kanban/Kanban.tsx` · `packages/ui/src/kanban/Kanban.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Kanban cases pass; Playwright asserts snap-scroll at 390 and columns at 1280.
+- **DONE:** `bun test packages/ui` → Kanban cases pass; Playwright asserts snap-scroll at 390 and columns at 1280.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** require drag (cards have move buttons); exceed the page with columns.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2255,7 +2300,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/kanban/KanbanCard.tsx` · `packages/ui/src/kanban/KanbanCard.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → KanbanCard cases pass; Playwright asserts move buttons + disabled edges at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → KanbanCard cases pass; Playwright asserts move buttons + disabled edges at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** rely on drag; miss `aria-label` on move buttons.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2274,7 +2319,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/charts/BarChart.tsx` · `packages/ui/src/charts/BarChart.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → BarChart cases pass; Playwright asserts bars + labels at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → BarChart cases pass; Playwright asserts bars + labels at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** omit a label or number per bar; colour-only bars.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2293,7 +2338,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/charts/LineChart.tsx` · `packages/ui/src/charts/LineChart.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → LineChart cases pass; Playwright asserts points at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → LineChart cases pass; Playwright asserts points at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** skip `role="img"` + `aria-labelledby`; use an external chart lib.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2312,7 +2357,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/charts/ChartSummary.tsx` · `packages/ui/src/charts/ChartSummary.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → ChartSummary cases pass.
+- **DONE:** `bun test packages/ui` → ChartSummary cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** render a chart without a summary; write shaming copy.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2331,7 +2376,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Form.tsx` · `packages/ui/src/forms/Form.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Form cases pass.
+- **DONE:** `bun test packages/ui` → Form cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** exceed 68ch width; suppress native validation.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2350,7 +2395,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Field.tsx` · `packages/ui/src/forms/Field.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Field cases pass.
+- **DONE:** `bun test packages/ui` → Field cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** omit `aria-describedby`; use colour alone for error.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2369,7 +2414,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/TextInput.tsx` · `packages/ui/src/forms/TextInput.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → TextInput cases pass.
+- **DONE:** `bun test packages/ui` → TextInput cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** omit `dir="ltr"` for email; break the label link.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2388,7 +2433,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Textarea.tsx` · `packages/ui/src/forms/Textarea.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Textarea cases pass.
+- **DONE:** `bun test packages/ui` → Textarea cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** fix a hard direction (must be auto).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2407,7 +2452,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Select.tsx` · `packages/ui/src/forms/Select.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Select cases pass.
+- **DONE:** `bun test packages/ui` → Select cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** build a custom dropdown (native select); omit the label.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2426,7 +2471,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Switch.tsx` · `packages/ui/src/forms/Switch.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Switch cases pass; Playwright asserts toggle + word at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → Switch cases pass; Playwright asserts toggle + word at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** omit the word; use `aria-checked` incorrectly.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2445,7 +2490,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Checkbox.tsx` · `packages/ui/src/forms/Checkbox.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Checkbox cases pass.
+- **DONE:** `bun test packages/ui` → Checkbox cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** render a bare checkbox without a label.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2464,7 +2509,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Radio.tsx` · `packages/ui/src/forms/Radio.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Radio cases pass.
+- **DONE:** `bun test packages/ui` → Radio cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** omit `name` (grouping).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2483,7 +2528,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/forms/Dial.tsx` · `packages/ui/src/forms/Dial.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → Dial cases pass; Playwright asserts number + word at 390/1280, EN/HE.
+- **DONE:** `bun test packages/ui` → Dial cases pass; Playwright asserts number + word at 390/1280, EN/HE.
 - **EVIDENCE:** test output + Playwright screenshots.
 - **DO NOT:** show only a number (word required); miss `aria-valuetext`.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2502,7 +2547,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/states/StateEmpty.tsx` · `packages/ui/src/states/StateEmpty.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → StateEmpty cases pass.
+- **DONE:** `bun test packages/ui` → StateEmpty cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** write shaming empty copy (kind copy only).
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2521,7 +2566,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/states/StateLoading.tsx` · `packages/ui/src/states/StateLoading.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → StateLoading cases pass.
+- **DONE:** `bun test packages/ui` → StateLoading cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** animate shimmer under reduced motion.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2540,7 +2585,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/states/StateError.tsx` · `packages/ui/src/states/StateError.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → StateError cases pass.
+- **DONE:** `bun test packages/ui` → StateError cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** show JSON or a raw error; omit Retry.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
@@ -2559,7 +2604,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SCOPE:** `packages/ui/src/states/StateOffline.tsx` · `packages/ui/src/states/StateOffline.test.tsx` · `packages/ui/src/index.ts`.
 - **MUTATES:** none.
 - **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
-- **DONE:** `bun run test packages/ui` → StateOffline cases pass.
+- **DONE:** `bun test packages/ui` → StateOffline cases pass.
 - **EVIDENCE:** test output.
 - **DO NOT:** hide content when offline.
 - **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
