@@ -17908,6 +17908,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0232 — Chunk 3 contract test: coach card Accept → task on Today → memory recall → coach context (`convex/coach_memory_smoke.test.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0015, TFV2-0171, TFV2-0173, TFV2-0178 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a, TFV2-0015, TFV2-0171, TFV2-0173, TFV2-0178.
@@ -17917,23 +17918,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/coach_memory_smoke.test.ts` (new). No source, table, route, env or schema change.
 - **STEPS:**
   1. Code-map check: read `coach.sendMessage`, `coach.acceptProposal`, `ownedProposal` and `storedProposal` in `convex/coach.ts`; `remember`, `recall`, `context` and `liveMemories` in `convex/memory.ts`; `makeFakeCtx`, `run` in `convex/lib/testFakeCtx.ts`. Confirm none of these signatures differ from SPEC; if one does, stop and report `blocked: question — <which signature>`.
-  2. Create `convex/coach_memory_smoke.test.ts` with the `seed` helper exactly as SPEC.
+  2. Create `convex/coach_memory_smoke.test.ts` with the `seed` helper as the SPEC states.
   3. Add the 3 TESTS cases inside `describe("chunk 3 contract: card → Today → memory → context", …)`.
   4. Run DONE.
 - **DONE:** `bun test convex/coach_memory_smoke.test.ts` → `3 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/coach_memory_smoke.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`, `convex/memory.ts`, `convex/tasks.ts` or any other source file; call `coach.reply`, `callLLM` or any network; use `convex-test`; assert UI (screens are TFV2-0222 / TFV2-0224); touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0232 / evidence: <DONE output> / changed: convex/coach_memory_smoke.test.ts / unknowns / notes for ticket sync` (AGENTS.md format); list STEPS 1–4 each with its evidence.
 - **SPEC:** Test-only. Functions under test (existing, unchanged):
   ```ts
   // convex/coach.ts
   export const sendMessage: mutation({ conversationId: Id<"conversations">; content: string }) => { success: true; crisis?: boolean };
-  export const acceptProposal: mutation({ messageId: Id<"messages">; dueTodayAt?: number; todayDate?: string; edit?: {...} }) => { kind: "task" | "note" | "template" | "decision"; createdId: string; undoUntilMs: number };
+  export const acceptProposal: mutation({ messageId: Id<"messages">; dueTodayAt?: number; todayDate?: string; edit?: { title?: string; minutes?: number; when?: "today" | "later"; name?: string; body?: string; period?: "daily" | "weekly" | "none" } }) => { kind: "task" | "note" | "template" | "decision"; createdId: string; undoUntilMs: number };
   // convex/memory.ts
   export const remember: mutation({ content: string; sector?: Sector }) => Id<"memories">;
   export const recall: query({ query: string; limit?: number }) => Memory[];
   export const context: query({ limit?: number }) => { text: string; count: number };
   ```
+  **Relies on** (existing, unchanged): the five functions above; `sendMessage` and `acceptProposal` start with `requireApprovedUser` (`convex/lib/approval.ts`), `sendMessage` inserts `{ conversationId, role: "user", content: <trimmed>, createdAt }` and returns `{ success: true }` for non-crisis text; `acceptProposal` on a pending `task` card with `when: "today"` calls `createTaskForUser` (`convex/tasks.ts`) with `{ title, timeEstimate: minutes * 60_000, dueAt }` when `dueTodayAt` is within 36 h of now, which stores `status: "todo"`; `memory.recall` lower-cases the query and returns live memories whose `content` contains it; `memory.context` returns `{ text: rows.map((m) => `- ${m.content}`).join("\n"), count }`. STEP 1 checks them with `grep -n "^export const sendMessage\|^export const acceptProposal" convex/coach.ts` (2 lines), `grep -n "^export const remember\|^export const recall\|^export const context" convex/memory.ts` (3 lines) and `grep -n "export async function createTaskForUser" convex/tasks.ts` (1 line); a missing line → `blocked: PATH_DRIFT — <which>`.
   Seed helper (in the test file):
   ```ts
   import { describe, expect, test } from "bun:test";
@@ -17946,7 +17948,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   /** One ctx, one in-memory db; `as(B)` reads the same rows as user B. */
   async function seed() {
     const ctx = makeFakeCtx(A, [B]);
-    const now = Date.now();
+    const now = 1_793_577_600_000;
     const conversationId = await ctx.db.insert("conversations", { userId: A, title: "Morning", createdAt: now, updatedAt: now });
     const messageId = await ctx.db.insert("messages", {
       conversationId,
@@ -17963,7 +17965,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `seed()` / When `run(coach.sendMessage, ctx, { conversationId, content: "Help me remember the bank call" })` runs / Then it returns `{ success: true }` and the `messages` rows of `conversationId` include one with `role: "user"` and `content: "Help me remember the bank call"`; and `ctx.db.query("tasks").collect()` has length 0 (nothing created before Accept). When `run(coach.acceptProposal, ctx, { messageId, dueTodayAt })` runs with `dueTodayAt = Date.now() + 60_000` / Then it returns `kind: "task"`, and the row `createdId` matches `{ userId: A, title: "Call the bank", timeEstimate: 600_000, dueAt: dueTodayAt, status: "todo" }`.
   2. Given `seed()` and `run(memory.remember, ctx, { content: "Call the bank before noon" })` / When `run(memory.recall, ctx, { query: "BANK" })` and `run(memory.context, ctx, {})` run / Then recall returns exactly 1 memory with `content: "Call the bank before noon"`, and context returns `count: 1` and `text: "- Call the bank before noon"`. When the same two run as `as(B)` / Then recall returns `[]` and context returns `{ text: "", count: 0 }`.
-  3. Given `makeSignedOutCtx()` / When `run(memory.recall, signedOut, { query: "bank" })` runs / Then it rejects with `"Not authenticated"`.
+  3. Given `makeSignedOutCtx()` / When `run(memory.recall, signedOut, { query: "bank" })` runs / Then `await rejection(run(memory.recall, signedOut, { query: "bank" }))` equals `"Not authenticated"` (the standard `rejection` helper of CONVENTIONS §16, declared once at the top of the test file: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`).
 - **NUMBERS:** 3 of 3 cases pass (exact); 0 tasks before Accept and exactly 1 after (exact); 0 memories visible to the other user (exact). Latency: n/a (in-memory test).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -17971,6 +17973,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 ## Chunk 4 — MVP · Modules, jobs, billing, language, polish
 
 ### TFV2-0233 — Templates: module fields on the template view (`status`, `enabled`, `summary`) proven through `templates.get` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-008, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-008, TFV2-0000a.
@@ -17980,13 +17983,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: `templateValidator`, `TemplateView`, `viewFromStarter`, `viewFromUser` only) · `convex/templates.test.ts` (edit: one new `describe` block appended). No table written.
 - **STEPS:**
   1. Code-map check: `grep -n "status\|enabled\|summary" convex/schema.ts` inside `templates` shows the three CFG-008 fields; `grep -n "templateValidator\|type TemplateView\|function viewFrom" convex/templates.ts` finds the four edit points (lines 23, 40, 51, 66 today).
-  2. Add the three fields to `templateValidator` and `TemplateView` exactly as SPEC.
+  2. Add the three fields to `templateValidator` and `TemplateView` as the SPEC states.
   3. In `viewFromStarter` set `status: "live"`, `enabled: true`, `summary: template.description`.
   4. In `viewFromUser` set `status: doc.status ?? "live"`, `enabled: doc.enabled ?? true`, `summary: doc.summary ?? doc.description ?? ""`.
   5. Append `describe("module fields on the view (TFV2-0233)", …)` with the 4 TESTS cases. New tests import `{ makeFakeCtx as makeSharedCtx, run } from "./lib/testFakeCtx"` (the file's own local `makeFakeCtx` stays as it is for the old tests).
   6. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, and the 4 new cases are listed as passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** rename or remove `source`; change starter bodies in `convex/lib/templateCatalog.ts`; write any row; edit `convex/schema.ts`; change the 7 existing tests.
 - **REPORT:** `status / ticket: TFV2-0233 / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync` (AGENTS.md format); list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -18014,9 +18017,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given an owned row with `status: "draft"`, `enabled: false`, `summary: "Asks three questions"` / When `get` runs / Then the view has exactly those three values.
 - **NUMBERS:** 4 of 4 new cases pass and the 7 existing cases still pass (exact). Latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0234 — Templates: `templates.list` hides drafts (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0233 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0233.
@@ -18027,11 +18031,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map check: read `listMine` and `list` in `convex/templates.ts`; confirm `list` is the only caller of `listMine` (`grep -n "listMine" convex/templates.ts`).
   2. Add `export const TEMPLATE_LIST_MAX = 200;` above `listMine`.
-  3. Change `listMine` exactly as SPEC: read the index `by_userId_deletedAt` with `.take(TEMPLATE_LIST_MAX)`, then drop drafts, then sort newest `updatedAt` first.
-  4. Append `describe("list hides drafts (TFV2-0234)", …)` with the 4 TESTS cases (shared fake, as TFV2-0233).
+  3. Change `listMine` as the SPEC states: read the index `by_userId_deletedAt` with `.take(TEMPLATE_LIST_MAX)`, then drop drafts, then sort newest `updatedAt` first.
+  4. Append `describe("list hides drafts (TFV2-0234)", …)` with the 4 TESTS cases (shared fake: `makeSharedCtx("users:a", ["users:b"])`).
   5. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** change `get` (an owner may still open their own draft by id); return another user's rows; add a `builtIn` field (`source === "starter"` already says it); edit `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0234 / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -18054,9 +18058,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / When `list({})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 200 user rows per call (`TEMPLATE_LIST_MAX`, tested with 201); 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0233 → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0233 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0235a — Templates: `templates.create` writes the module fields and can make a draft (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0234 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0234.
@@ -18066,11 +18071,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: `create` only) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates` rows (insert gains `status`, `enabled`).
 - **STEPS:**
   1. Code-map check: read `create` in `convex/templates.ts`; confirm CFG-008 fields exist on `templates` in `convex/schema.ts`.
-  2. Add `draft: v.optional(v.boolean())` to `create.args` and write `status` and `enabled` in the insert exactly as SPEC. Keep the existing trim and `"Name is required"` rule.
+  2. Add `draft: v.optional(v.boolean())` to `create.args` and write `status` and `enabled` in the insert as the SPEC states. Keep the existing trim and `"Name is required"` rule.
   3. Append `describe("create writes module fields (TFV2-0235a)", …)` with the 4 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** accept `source`, `status`, `enabled` or `summary` as arguments; let `update` change `status`; edit `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0235a / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18090,9 +18095,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / When `create` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0234 → TFV2-0233 → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0234 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0235b — Templates: `templates.update` (verify + tests) (`convex/templates.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -18101,11 +18107,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/templates.ts` (read only, unchanged) · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.test.ts` (edit: one new `describe` block appended). No source change.
 - **STEPS:**
-  1. Code-map check: read `update` and `ownedTemplate` in `convex/templates.ts`; confirm the 5 error strings in SPEC appear verbatim (`grep -n "Name is required\|Starter templates cannot be changed\|Template not found\|Access denied" convex/templates.ts`).
+  1. Code-map check: read `update` and `ownedTemplate` in `convex/templates.ts`; confirm the 5 error strings in SPEC appear word for word (`grep -n "Name is required\|Starter templates cannot be changed\|Template not found\|Access denied" convex/templates.ts`).
   2. Append `describe("update (TFV2-0235b)", …)` with the 6 TESTS cases. Import `{ makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx"` once at the top of the file (alongside the existing imports).
   3. Run DONE. If a case fails, stop and report `blocked: question — <case>`; do not change `convex/templates.ts`.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/templates.ts`; edit or reorder the existing tests; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0235b / evidence: <DONE output> / changed: convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing, unchanged:
@@ -18117,10 +18123,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Auth: `requireUser`, then owner check `ownedTemplate`. Errors (exact message → trigger): `"Not authenticated"` → signed out; `"Starter templates cannot be changed"` → `templateId` starts with `starter:`; `"Template not found"` → row missing or `deletedAt` set; `"Access denied"` → row of another user (this module's existing foreign-row message, CONVENTIONS §16); `"Name is required"` → `name` given and blank after trim. Every call sets `updatedAt` to now. No user-facing copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
-  1. Given an owned row / When `update({ templateId, periodType: "weekly", body: "## New" })` runs / Then the row has `periodType: "weekly"`, `body: "## New"`, its `name` unchanged, and `updatedAt` greater than before; the call returns `templateId`.
+  1. Given an owned row / When `update({ templateId, periodType: "weekly", body: "## New" })` runs / Then the row has `periodType: "weekly"`, `body: "## New"`, its `name` unchanged, and `updatedAt` greater than the seeded `1_700_000_000_000`; the call returns `templateId`.
   2. Given an owned row / When `update({ templateId, name: "  " })` runs / Then it rejects with `"Name is required"` and the name is unchanged.
-  3. Given an owned row with `deletedAt: 5` / When `update({ templateId, name: "X" })` runs / Then it rejects with `"Template not found"`.
+  3. Given an owned row with `deletedAt: 1_700_000_000_500` / When `update({ templateId, name: "X" })` runs / Then it rejects with `"Template not found"`.
   4. Given a row of user B / When user A runs `update` on it / Then it rejects with `"Access denied"`.
   5. Given `templateId: "starter:daily-page"` / When `update` runs / Then it rejects with `"Starter templates cannot be changed"`.
   6. Given `makeSignedOutCtx()` / When `update` runs / Then it rejects with `"Not authenticated"`.
@@ -18129,20 +18136,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0236 — Templates: `templates.restore` (undo a soft delete) (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235b · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0235b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0235b.
+- **WHEN:** after TFV2-0000a, TFV2-0235b.
 - **WHY:** PRD F-131 (soft delete with a grace period); TRD §7.5. `remove` (line 254) sets `deletedAt`; nothing clears it. TFV2-0235b owns the shared test file before this ticket.
 - **GOAL:** A new mutation `templates.restore` clears `deletedAt` on the caller's own soft-deleted template so it shows in `list` again.
 - **SCOPE:** `convex/templates.ts` · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `restore` after `remove`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.deletedAt`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: `grep -n "export const restore" convex/templates.ts` → none; read `remove` and `ownedTemplate` (it rejects deleted rows, so `restore` reads the row itself).
-  2. Add `restore` after `remove` exactly as SPEC.
-  3. Append `describe("restore (TFV2-0236)", …)` with the 5 TESTS cases (shared fake).
+  2. Add `restore` after `remove` as the SPEC states.
+  3. Append `describe("restore (TFV2-0236)", …)` with the 6 TESTS cases (shared fake).
   4. Run DONE.
-- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 6 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** hard-delete or purge rows; add an age limit to restore (no purge job exists); change `remove` or `ownedTemplate`; touch `convex/pageCleanup.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0236 / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18163,20 +18171,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Errors (exact → trigger): `"Not authenticated"` → signed out; `"Starter templates cannot be changed"` → a `starter:` id; `"Template not found"` → no row; `"Access denied"` → another user's row. Restoring a row that is not deleted is a no-op returning `null`. No user-facing copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
-  1. Given an owned row soft-deleted by `remove` / When `restore` runs / Then `deletedAt` is `undefined`, `updatedAt` is newer, and `list({ scope: "mine" })` includes it.
-  2. Given an owned row that is not deleted / When `restore` runs / Then it returns `null` and `updatedAt` is unchanged.
+  1. Given an owned row soft-deleted by `remove` / When `restore` runs / Then `deletedAt` is `undefined`, `updatedAt` is greater than `1_700_000_000_000`, and `list({ scope: "mine" })` includes it.
+  2. Given an owned row that is not deleted / When `restore` runs / Then it returns `null` and `updatedAt` is still `1_700_000_000_000`.
   3. Given a row of user B / When user A runs `restore` / Then it rejects with `"Access denied"`.
-  4. Given `templateId: "starter:journal"` / When `restore` runs / Then it rejects with `"Starter templates cannot be changed"`; given an id with no row (`"templates:999"`) / Then it rejects with `"Template not found"`.
-  5. Given `makeSignedOutCtx()` / When `restore` runs / Then it rejects with `"Not authenticated"`.
-- **NUMBERS:** 5 of 5 cases pass (exact). Latency: UNKNOWN (no baseline).
+  4. Given `templateId: "starter:journal"` / When `restore` runs / Then it rejects with `"Starter templates cannot be changed"`.
+  5. Given an id with no row (`"templates:999"`) / When `restore` runs / Then it rejects with `"Template not found"`.
+  6. Given `makeSignedOutCtx()` / When `restore` runs / Then it rejects with `"Not authenticated"`.
+- **NUMBERS:** 6 of 6 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0237 — Templates: `templates.duplicate` (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0236 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0236 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0236.
+- **WHEN:** after TFV2-0000a, TFV2-0236.
 - **WHY:** components.md §2.3 (`SortMenu` → Duplicate); templates screen action `templates.duplicate`. No duplicate function exists today.
 - **GOAL:** A new mutation `templates.duplicate` copies a starter or the caller's own template into a new user template named `<name> (copy)` and returns its id.
 - **SCOPE:** `convex/templates.ts` · test: `convex/templates.test.ts`.
@@ -18184,11 +18195,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map check: `grep -n "export const duplicate" convex/templates.ts` → none; read `resolveTemplate` (it returns a starter or an owned live row and throws `"Template not found"` / `"Access denied"`).
   2. Widen `resolveTemplate`'s return type to `Promise<{ name: string; description?: string; body: string; periodType: PeriodType }>` (both sources already carry `description`).
-  3. Add `export const COPY_SUFFIX = " (copy)";` and `duplicate` exactly as SPEC, after `remove`'s neighbour `restore`.
+  3. Add `export const COPY_SUFFIX = " (copy)";` and `duplicate` as the SPEC states, after `remove`'s neighbour `restore`.
   4. Append `describe("duplicate (TFV2-0237)", …)` with the 5 TESTS cases (shared fake).
   5. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** change the source row; copy `deletedAt`, `createdAt` or module fields; change `applyToNote`'s behaviour; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0237 / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -18214,10 +18225,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Errors (from `resolveTemplate`, exact → trigger): `"Not authenticated"` → signed out; `"Template not found"` → unknown `starter:` id, an id that is not a `templates` id, or a soft-deleted row; `"Access denied"` → another user's row. The copy's view reads `source: "user"` (derived in `viewFromUser`). The name copy is stored data, not UI copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
-  1. Given `templateId: "starter:meeting-notes"` / When `duplicate` runs / Then the new row has `name: "Meeting notes (copy)"`, `description: "<the starter's description>"`, the starter's `body` and `periodType`, and `userId` of the caller.
+  1. Given `templateId: "starter:meeting-notes"` / When `duplicate` runs / Then the new row has `name: "Meeting notes (copy)"`, `description: "People, purpose, notes, and next steps."`, `periodType: "none"`, the starter's `body` (equal to `starterById("starter:meeting-notes")!.body` from `convex/lib/templateCatalog.ts`), and `userId` of the caller.
   2. Given an owned row "Brief" / When `duplicate` runs / Then a second row "Brief (copy)" with the same `body` exists and the original row is unchanged.
-  3. Given an owned row with `deletedAt: 5` / When `duplicate` runs / Then it rejects with `"Template not found"`; given `"starter:nope"` / Then it rejects with `"Template not found"`.
+  3. Given an owned row with `deletedAt: 1_700_000_000_500` / When `duplicate` runs / Then it rejects with `"Template not found"`; given `"starter:nope"` / Then it rejects with `"Template not found"`.
   4. Given a row of user B / When user A runs `duplicate` / Then it rejects with `"Access denied"`.
   5. Given `makeSignedOutCtx()` / When `duplicate` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact); exactly 1 row inserted per call. Latency: UNKNOWN (no baseline).
@@ -18225,19 +18237,20 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0238a — Templates: `templates.proposeForPage` (verify + tests) (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0237 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0237 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0237.
+- **WHEN:** after TFV2-0000a, TFV2-0237.
 - **WHY:** PRD F-04/F-05 (a new daily, weekly or monthly page is offered its starter template; no model call). `proposeForPage` exists (line 134); the existing test checks only `daily` and `none`, not the exact reason text, the title suffix or the signed-out case.
 - **GOAL:** `templates.proposeForPage` is proven, unchanged, to return the exact proposal for each period, append the title sentence only for a non-blank title, return `null` for `none`, and reject a signed-out caller.
 - **SCOPE:** `convex/templates.ts` (read only, unchanged) · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.test.ts` (edit: one new `describe` block). No source change.
 - **STEPS:**
-  1. Code-map check: read `proposeForPage` and `PROPOSAL_REASON` (lines 92–156) in `convex/templates.ts`; confirm the three reason strings in SPEC match verbatim.
+  1. Code-map check: read `proposeForPage` and `PROPOSAL_REASON` (lines 92–156) in `convex/templates.ts`; confirm the three reason strings in SPEC match word for word.
   2. Append `describe("proposeForPage (TFV2-0238a)", …)` with the 4 TESTS cases (shared fake).
   3. Run DONE. If a case fails, stop and report `blocked: question — <case>`; do not change the source.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** change the reason copy or `convex/lib/templateCatalog.ts`; edit existing tests; call a model.
 - **REPORT:** `status / ticket: TFV2-0238a / evidence: <DONE output> / changed: convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing, unchanged:
@@ -18249,6 +18262,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Reasons (English only, returned as stored today; the UI owns Hebrew): daily `"A daily page gives this day a short outline you can fill in."`; weekly `"A weekly page groups the week into a few outcomes and a day-by-day list."`; monthly `"A monthly page holds the month as a theme, four weeks, and open loops."`. A non-blank trimmed `title` appends ` It fits "<title>".`. `periodType: "none"` → `null`. Auth: `requireUser`. Errors: `"Not authenticated"` → signed out.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
   1. Given `{ periodType: "weekly" }` / When it runs / Then it returns `{ templateId: "starter:weekly-page", name: "Weekly page", reason: "A weekly page groups the week into a few outcomes and a day-by-day list." }`.
   2. Given `{ periodType: "monthly", title: "  May  " }` / When it runs / Then `reason` is `A monthly page holds the month as a theme, four weeks, and open loops. It fits "May".`
@@ -18259,9 +18273,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0238b — Templates: `templates.applyToNote` (verify + tests) (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0238a · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0238a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0238a.
+- **WHEN:** after TFV2-0000a, TFV2-0238a.
 - **WHY:** PRD F-04/F-06 (a page made from a template). `applyToNote` exists (line 158); the existing test covers one starter only.
 - **GOAL:** `templates.applyToNote` is proven, unchanged, to insert a page from a starter or an owned template, default the title to the template name, and throw its exact errors.
 - **SCOPE:** `convex/templates.ts` (read only, unchanged) · test: `convex/templates.test.ts`.
@@ -18271,7 +18286,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append `describe("applyToNote (TFV2-0238b)", …)` with the 5 TESTS cases (shared fake).
   3. Run DONE. If a case fails, stop and report `blocked: question — <case>`; do not change the source.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** change `applyToNote` or the block envelope of `notes.body`; edit existing tests; touch `convex/notes.ts`.
 - **REPORT:** `status / ticket: TFV2-0238b / evidence: <DONE output> / changed: convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing, unchanged:
@@ -18284,10 +18299,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // insert: { userId, title: title.trim() || template.name, body: template.body, pinned: false, periodType: template.periodType, createdAt: now, updatedAt: now }
   ```
   Errors (exact → trigger): `"Not authenticated"` → signed out; `"Template not found"` → unknown `starter:` id, a string that is not a `templates` id, or a soft-deleted row; `"Access denied"` → another user's row. No user-facing copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
   1. Given an owned row `{ name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n" }` / When `applyToNote({ templateId, title: "  " })` runs / Then the new `notes` row has `title: "Brief"`, `body: "# Brief\n## Outcome\n"`, `periodType: "none"`, `pinned: false`, `userId` of the caller.
   2. Given `templateId: "starter:nope"` / When it runs / Then it rejects with `"Template not found"`; given `"not-an-id"` / Then it rejects with `"Template not found"`.
-  3. Given an owned row with `deletedAt: 5` / When it runs / Then it rejects with `"Template not found"`.
+  3. Given an owned row with `deletedAt: 1_700_000_000_500` / When it runs / Then it rejects with `"Template not found"`.
   4. Given a row of user B / When user A runs it / Then it rejects with `"Access denied"` and no `notes` row exists.
   5. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact); 0 notes written on any error (exact). Latency: UNKNOWN (no baseline).
@@ -18295,20 +18311,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0239c — Template run: `templates.apply` fills answers into a new page (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0238b · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0238b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0238b.
-- **WHY:** template-run screen (`@actions templates.apply`): the person answers one step per heading, then Tempo makes the page. A step is one heading of the template body, exactly as `sectionsFromBody` (`convex/lib/templateCatalog.ts`) lists it. Built before TFV2-0239a/b (which import `RUN_ANSWER_MAX` from here) because it needs no new table.
+- **WHEN:** after TFV2-0000a, TFV2-0238b.
+- **WHY:** template-run screen (`@actions templates.apply`): the person answers one step per heading, then Tempo makes the page. A step is one heading of the template body: the trimmed text of a line matching `/^#{1,6}\s+(.+?)\s*$/`, which is what `sectionsFromBody` (`convex/lib/templateCatalog.ts`) returns. Built before TFV2-0239a/b (which import `RUN_ANSWER_MAX` from here) because it needs no new table.
 - **GOAL:** A new mutation `templates.apply` inserts a `notes` page whose body is the template body with each given answer placed on the line after its heading, using the pure helper `fillSectionAnswers`.
 - **SCOPE:** `convex/templates.ts` · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.ts` (edit: new exports `RUN_ANSWER_MAX`, `fillSectionAnswers`, `apply`) · `convex/templates.test.ts` (edit: one new `describe` block) · `notes` (insert one row).
 - **STEPS:**
-  1. Code-map check: `grep -n "export const apply \|fillSectionAnswers" convex/templates.ts` → none; read `sectionsFromBody` and `PERIOD_BODY_MAX` (`convex/notes.ts` line 249).
-  2. Add `RUN_ANSWER_MAX`, `fillSectionAnswers` and `apply` exactly as SPEC, below `applyToNote`. Import `PERIOD_BODY_MAX` from `./notes`.
-  3. Append `describe("apply (TFV2-0239c)", …)` with the 7 TESTS cases (shared fake; the helper cases call `fillSectionAnswers` directly).
+  1. Code-map check: `grep -n "export const apply \|fillSectionAnswers" convex/templates.ts` → none; `grep -n "export function sectionsFromBody" convex/lib/templateCatalog.ts` → 1 line (returns the trimmed text of every line matching `/^#{1,6}\s+(.+?)\s*$/`, so `"starter:daily-page"` gives `["Today", "Intention", "Schedule", "Notes"]`); `grep -n "export const PERIOD_BODY_MAX = 100_000" convex/notes.ts` → 1 line; `grep -n "async function resolveTemplate" convex/templates.ts` → 1 line (a starter, or an owned live row; throws `"Template not found"` / `"Access denied"`). A missing line → `blocked: PATH_DRIFT — <which>`.
+  2. Add `RUN_ANSWER_MAX`, `fillSectionAnswers` and `apply` as the SPEC states, below `applyToNote`. Import `PERIOD_BODY_MAX` from `./notes`.
+  3. Append `describe("apply (TFV2-0239c)", …)` with the 11 TESTS cases (shared fake; the helper cases call `fillSectionAnswers` directly).
   4. Run DONE.
-- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 7 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 11 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** call a model; write JSON into `notes.body`; delete or read a run draft (TFV2-0239a/b, OPEN); change `applyToNote`; touch `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0239c / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18328,19 +18345,25 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```
   Handler order: `requireUser` → `resolveTemplate(ctx, user._id, args.templateId)` → for each key of `answers`: not in `sectionsFromBody(template.body)` → throw; value longer than `RUN_ANSWER_MAX` UTF-16 units → throw → `body = fillSectionAnswers(template.body, args.answers)`; `body.length > PERIOD_BODY_MAX` → throw → insert `{ userId, title: args.title?.trim() || template.name, body, pinned: false, periodType: template.periodType, createdAt: now, updatedAt: now }`.
   Errors (exact → trigger): `"Not authenticated"` → signed out; `"Template not found"` / `"Access denied"` → from `resolveTemplate` (unknown or deleted / another user's row); `"Step not found"` → an answers key that is not a heading of the template; `"Answer is too long"` → an answer over 4,000 characters; `"Page body is too long"` → the filled body over 100,000 characters. Blank answers are allowed and leave the heading empty. No user-facing copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
   1. Given body `"# Today\n\n## Intention\nOne line\n\n## Notes\n"` and answers `{ "Intention": "  Rest  ", "Notes": "" }` / When `fillSectionAnswers` runs / Then it returns `"# Today\n\n## Intention\nRest\nOne line\n\n## Notes\n"`.
   2. Given a body with two `## Notes` headings and answers `{ Notes: "A" }` / When `fillSectionAnswers` runs / Then `"A"` appears once, after the first `## Notes`.
   3. Given `templateId: "starter:daily-page"` and answers `{ Intention: "Rest" }` / When `apply` runs / Then the new `notes` row has `title: "Daily page"`, `periodType: "daily"`, and its body contains `"## Intention\nRest\n"`.
   4. Given answers `{ "Not a heading": "x" }` / When `apply` runs on `"starter:daily-page"` / Then it rejects with `"Step not found"` and no `notes` row exists.
-  5. Given an answer of 4,001 characters for `Intention` / When `apply` runs / Then it rejects with `"Answer is too long"`.
-  6. Given a row of user B / When user A runs `apply` on it / Then it rejects with `"Access denied"`; given `"starter:nope"` / Then it rejects with `"Template not found"`.
-  7. Given `makeSignedOutCtx()` / When `apply` runs / Then it rejects with `"Not authenticated"`.
-- **NUMBERS:** answer ≤ 4,000 characters (`RUN_ANSWER_MAX`, tested at 4,001); page body ≤ 100,000 characters (`PERIOD_BODY_MAX`, existing constant); 7 of 7 cases pass. Latency: UNKNOWN (no baseline).
+  5. Given an answer of exactly 4,000 characters (`"a".repeat(4000)`) for `Intention` / When `apply` runs on `"starter:daily-page"` / Then a `notes` row is inserted whose body contains that answer.
+  6. Given an answer of 4,001 characters (`"a".repeat(4001)`) for `Intention` / When `apply` runs / Then it rejects with `"Answer is too long"`.
+  7. Given an owned row with `body: "## A\n" + "x".repeat(99_993)` and answers `{ A: "y" }` / When `apply` runs / Then a `notes` row is inserted whose body has length exactly 100,000 (`"## A\ny\n"` + 99,993 `x`).
+  8. Given an owned row with `body: "## A\n" + "x".repeat(99_994)` and answers `{ A: "y" }` / When `apply` runs / Then it rejects with `"Page body is too long"` (filled length 100,001) and no `notes` row exists.
+  9. Given a row of user B / When user A runs `apply` on it with answers `{}` / Then it rejects with `"Access denied"`.
+  10. Given `templateId: "starter:nope"` / When `apply` runs with answers `{}` / Then it rejects with `"Template not found"`.
+  11. Given `makeSignedOutCtx()` / When `apply` runs on `"starter:daily-page"` with answers `{}` / Then it rejects with `"Not authenticated"`.
+- **NUMBERS:** answer ≤ 4,000 characters (`RUN_ANSWER_MAX`, tested at 4,000 and 4,001); page body ≤ 100,000 characters (`PERIOD_BODY_MAX = 100_000`, `export const` in `convex/notes.ts` line 249, tested at 100,000 and 100,001); 11 of 11 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0239a — Template run draft: `templates.saveRunDraft` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits CFG-009 (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-009, TFV2-0239c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-009, TFV2-0239c.
@@ -18350,11 +18373,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `saveRunDraft`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templateRunDrafts` (insert or patch one row).
 - **STEPS:**
   1. Code-map check: confirm `templateRunDrafts` and its index `by_userId_templateId` exist in `convex/schema.ts`; read `RUN_ANSWER_MAX` and `resolveTemplate` in `convex/templates.ts`.
-  2. Add `saveRunDraft` exactly as SPEC.
+  2. Add `saveRunDraft` as the SPEC states.
   3. Append `describe("saveRunDraft (TFV2-0239a)", …)` with the 6 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** call a model; keep more than one live draft per user and template; write answers to any other table; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0239a / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18376,9 +18399,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** one live draft per user and template (exact, case 1); answer ≤ 4,000 characters; 6 of 6 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-009 (are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
+- **OPEN:** inherits CFG-009 (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
 
 ### TFV2-0239b — Template run draft: `templates.getRunDraft` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0239a (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0239a.
@@ -18389,11 +18413,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **STEPS:**
   1. Code-map check: read `resolveTemplate` and `ownedTemplate` (typed `MutationCtx` today; they only use `ctx.db.get` and `ctx.db.normalizeId`, which `QueryCtx` has).
   2. Widen both helpers' first parameter to `ctx: QueryCtx | MutationCtx`.
-  3. Add `getRunDraft` exactly as SPEC.
-  4. Append `describe("getRunDraft (TFV2-0239b)", …)` with the 5 TESTS cases (shared fake).
+  3. Add `getRunDraft` as the SPEC states.
+  4. Append `describe("getRunDraft (TFV2-0239b)", …)` with the 6 TESTS cases (shared fake).
   5. Run DONE.
-- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 6 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** return another user's draft or a soft-deleted draft; call a model; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0239b / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -18408,15 +18432,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Errors (exact → trigger): `"Not authenticated"`; `"Template not found"` → unknown or deleted template; `"Access denied"` → another user's template. No saved draft → `null`. No user-facing copy.
 - **TESTS:**
   1. Given a saved draft `{ Intention: "Rest" }` for `"starter:daily-page"` / When `getRunDraft` runs / Then it returns `{ answers: { Intention: "Rest" }, updatedAt: <the row's updatedAt> }`.
-  2. Given no draft / When it runs / Then it returns `null`; given a draft with `deletedAt: 5` / Then `null`.
+  2. Given no draft / When it runs / Then it returns `null`; given a draft with `deletedAt: 1_700_000_000_500` / Then `null`.
   3. Given a draft row of user B for the same starter / When user A runs it / Then it returns `null` (A has none).
   4. Given `"starter:nope"` / When it runs / Then it rejects with `"Template not found"`.
-  5. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
-- **NUMBERS:** 5 of 5 cases pass (exact); at most 1 row read (`.take(1)`). Latency: UNKNOWN (no baseline).
+  5. Given a `templates` row of user B (`{ userId: "users:b", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }`) / When user A runs `getRunDraft({ templateId: <that row id> })` / Then it rejects with `"Access denied"`.
+  6. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
+- **NUMBERS:** 6 of 6 cases pass (exact); at most 1 row read (`.take(1)`). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0239a → CFG-009 (are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
+- **OPEN:** inherits TFV2-0239a (new: Are run drafts a dedicated `templateRunDrafts` table (this shape) or a field on `templates`?) — Amit.
 
 ### TFV2-0240a — Template builder: block helpers + `templates.insertBlock` (`convex/lib/templateBlocks.ts`, `convex/templates.ts`) — OPEN
+- **STATUS:** open — new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -18426,12 +18452,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/templateBlocks.ts` (new) · `convex/templates.ts` (edit: new exports `MAX_TEMPLATE_BLOCKS`, `insertBlock`; new private helper `editableTemplate`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.body`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: `ls convex/lib/templateBlocks.ts` → missing; `grep -n "insertBlock" convex/templates.ts` → none.
-  2. Create `convex/lib/templateBlocks.ts` with `TemplateBlocks`, `splitBlocks`, `joinBlocks` exactly as SPEC.
-  3. In `convex/templates.ts` add `MAX_TEMPLATE_BLOCKS`, `editableTemplate` and `insertBlock` exactly as SPEC.
+  2. Create `convex/lib/templateBlocks.ts` with `TemplateBlocks`, `splitBlocks`, `joinBlocks` as the SPEC states.
+  3. In `convex/templates.ts` add `MAX_TEMPLATE_BLOCKS`, `editableTemplate` and `insertBlock` as the SPEC states.
   4. Append `describe("insertBlock (TFV2-0240a)", …)` with the 7 TESTS cases (shared fake; helper cases call the helper directly).
   5. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 7 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** render blocks; call a model; touch `convex/notes.ts`, `convex/lib/blocks.ts` or `convex/schema.ts`; change starter bodies.
 - **REPORT:** `status / ticket: TFV2-0240a / evidence: <DONE output> / changed: convex/lib/templateBlocks.ts, convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -18468,6 +18494,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.
 
 ### TFV2-0240b — Template builder: `templates.moveBlock` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0240a.
@@ -18477,11 +18504,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `moveBlock`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.body`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `splitBlocks`, `joinBlocks` (`convex/lib/templateBlocks.ts`) and `editableTemplate` in `convex/templates.ts`.
-  2. Add `moveBlock` exactly as SPEC.
+  2. Add `moveBlock` as the SPEC states.
   3. Append `describe("moveBlock (TFV2-0240b)", …)` with the 5 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** change block text while moving (except the trailing-newline rule of `joinBlocks`); call a model; touch `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0240b / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18501,9 +18528,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeSignedOutCtx()` / Then `"Not authenticated"`; given a row of user B / Then `"Access denied"`.
 - **NUMBERS:** 5 of 5 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
+- **OPEN:** inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?) — Amit.
 
 ### TFV2-0240c — Template builder: `templates.duplicateBlock` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0240b (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0240b.
@@ -18513,11 +18541,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `duplicateBlock`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.body`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `splitBlocks`, `joinBlocks`, `MAX_TEMPLATE_BLOCKS` and `editableTemplate`.
-  2. Add `duplicateBlock` exactly as SPEC.
+  2. Add `duplicateBlock` as the SPEC states.
   3. Append `describe("duplicateBlock (TFV2-0240c)", …)` with the 4 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** rename the copy's heading; call a model; touch `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0240c / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18536,9 +18564,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`; given `"starter:journal"` / Then `"Starter templates cannot be changed"`.
 - **NUMBERS:** at most 50 blocks (`MAX_TEMPLATE_BLOCKS`); 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0240b, which inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
+- **OPEN:** inherits TFV2-0240b (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?) — Amit.
 
 ### TFV2-0240d — Template builder: `templates.removeBlock` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0240c (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0240c.
@@ -18548,11 +18577,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `removeBlock`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.body`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `splitBlocks`, `joinBlocks` and `editableTemplate`.
-  2. Add `removeBlock` exactly as SPEC.
+  2. Add `removeBlock` as the SPEC states.
   3. Append `describe("removeBlock (TFV2-0240d)", …)` with the 4 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** remove the head; call a model; touch `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0240d / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18571,9 +18600,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`; given a row of user B / Then `"Access denied"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0240c, which inherits TFV2-0240a (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids? — Amit.)
+- **OPEN:** inherits TFV2-0240c (new: Are template-builder blocks the `## ` sections of `templates.body`, addressed by 0-based index (this SPEC), or `json tempo` fenced blocks with stable ids?) — Amit.
 
 ### TFV2-0240e — Template builder: `templates.publish` (draft → live) (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0235a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0235a.
@@ -18583,11 +18613,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `publish`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates.status`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: confirm `templates.status` (CFG-008) in `convex/schema.ts`; read `ownedTemplate`.
-  2. Add `publish` exactly as SPEC (it uses `isStarterTemplateId` + `ownedTemplate`, not the TFV2-0240a helper, so it does not depend on the OPEN block model).
+  2. Add `publish` as the SPEC states (it uses `isStarterTemplateId` + `ownedTemplate`, not the TFV2-0240a helper, so it does not depend on the OPEN block model).
   3. Append `describe("publish (TFV2-0240e)", …)` with the 5 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** publish coach-made modules here (that is `modules.approve`, TFV2-0246b, which validates first); change `enabled`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0240e / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18607,9 +18637,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0235a → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0235a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0241a — Template sketch: `templates.saveSketch` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits CFG-010 (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-010, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-010, TFV2-0000a.
@@ -18619,11 +18650,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new exports `SKETCH_TEXT_MAX`, `saveSketch`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templateSketches` (insert or patch one row).
 - **STEPS:**
   1. Code-map check: confirm `templateSketches` and `by_userId_deletedAt` exist in `convex/schema.ts`.
-  2. Add `SKETCH_TEXT_MAX` and `saveSketch` exactly as SPEC.
+  2. Add `SKETCH_TEXT_MAX` and `saveSketch` as the SPEC states.
   3. Append `describe("saveSketch (TFV2-0241a)", …)` with the 4 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** call a model; turn a sketch into a template here; keep more than one live sketch per user; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0241a / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18643,9 +18674,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** sketch ≤ 2,000 characters (`SKETCH_TEXT_MAX`, same bound as `TEMPLATE_OUTLINE_MAX` in TFV2-0241c); one live row per user (exact); 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-010 (is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
+- **OPEN:** inherits CFG-010 (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
 
 ### TFV2-0241b — Template sketch: `templates.getSketch` (`convex/templates.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0241a (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0241a.
@@ -18655,11 +18687,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `getSketch`) · `convex/templates.test.ts` (edit: one new `describe` block). No table written.
 - **STEPS:**
   1. Code-map check: read `saveSketch` (TFV2-0241a).
-  2. Add `getSketch` exactly as SPEC.
+  2. Add `getSketch` as the SPEC states.
   3. Append `describe("getSketch (TFV2-0241b)", …)` with the 3 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 3 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** return another user's sketch; call a model; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0241b / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18677,9 +18709,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 3 of 3 cases pass (exact); at most 1 row read. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0241a → CFG-010 (is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
+- **OPEN:** inherits TFV2-0241a (new: Is the sketch draft a dedicated `templateSketches` row (this shape) or a field elsewhere?) — Amit.
 
 ### TFV2-0241c — Template sketch: `templates.proposeTemplate` (action: outline → template proposal) (`convex/templates.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0239c.
@@ -18688,12 +18721,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/templates.ts` · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.ts` (edit: new exports `TEMPLATE_OUTLINE_MAX`, `PROPOSE_TEMPLATE_SYSTEM`, `proposeTemplateFrom`, `proposeTemplate`) · `convex/templates.test.ts` (edit: one new `describe` block). No table written.
 - **STEPS:**
-  1. Code-map check: read `callLLM` and `AiCallOptions` (`convex/lib/ai_router.ts`), `readProposal` and `CoachProposal` (`convex/lib/coachPrompt.ts`), `requireApprovedForAi` (`convex/lib/aiGate.ts`).
-  2. Add the four exports exactly as SPEC; import `action` and `ActionCtx` from `./_generated/server`.
-  3. Append `describe("proposeTemplate (TFV2-0241c)", …)` with the 6 TESTS cases. Cases 1–5 call `proposeTemplateFrom` with a stub `callModel`; case 6 calls the action handler with a stub ctx. No case calls the network.
+  1. Code-map check: `grep -n "export async function callLLM\|export type AiCallOptions" convex/lib/ai_router.ts` → 2 lines (`AiCallOptions = { tier: AiTier; messages: AiMessage[]; maxTokens?: number; temperature?: number; responseFormat?: "text" | "json_object" }`); `grep -n "export function readProposal\|export type CoachProposal" convex/lib/coachPrompt.ts` → 2 lines (template branch: name trimmed and whitespace-collapsed, non-blank; body = Markdown with Tempo blocks removed, `\r\n` → `\n`, trimmed, non-blank; `period` is `"daily"`/`"weekly"` or else `"none"`; otherwise `null`); `grep -n "export async function requireApprovedForAi" convex/lib/aiGate.ts` → 1 line (it runs `ctx.runQuery(internal.approval.assertApprovedForAi, {})`). A missing line → `blocked: PATH_DRIFT — <which>`.
+  2. Add the four exports as the SPEC states; import `action` and `ActionCtx` from `./_generated/server`.
+  3. Append `describe("proposeTemplate (TFV2-0241c)", …)` with the 7 TESTS cases. Cases 1–6 call `proposeTemplateFrom` with a stub `callModel`; case 7 calls the action handler with a stub ctx. No case calls the network.
   4. Run DONE.
-- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 6 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 7 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** insert a template or any row; call `callLLM` in a test; add an SDK (HARD_RULES §2); change `readProposal`; use any model id other than what `callLLM` resolves.
 - **REPORT:** `status / ticket: TFV2-0241c / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18714,33 +18747,35 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     },
   });
   ```
-  The model call is `{ tier: "fast", messages: [{ role: "system", content: PROPOSE_TEMPLATE_SYSTEM }, { role: "user", content: outline.trim() }], responseFormat: "json_object", maxTokens: 1200, temperature: 0.3 }`. Errors (exact → trigger): `"Outline is required"` → outline blank after trim; `"Outline is too long"` → outline over 2,000 characters; `"Not authenticated"` / `"User not found"` / the pending-approval message → from `requireApprovedForAi` (runs `internal.approval.assertApprovedForAi`); model errors (`AiAuthError`, `AiUpstreamError`, …) propagate unchanged. Model JSON that is not an object, or fails `readProposal` → `null`. No user-facing copy (the system prompt is sent to the runtime model, not shown).
+  The model call is `{ tier: "fast", messages: [{ role: "system", content: PROPOSE_TEMPLATE_SYSTEM }, { role: "user", content: outline.trim() }], responseFormat: "json_object", maxTokens: 1200, temperature: 0.3 }`. Errors (exact → trigger): `"Outline is required"` → outline blank after trim; `"Outline is too long"` → outline over 2,000 characters; `"Not authenticated"` / `"User not found"` / the pending-approval message → from `requireApprovedForAi` (runs `internal.approval.assertApprovedForAi`); model errors (`AiAuthError`, `AiContextTooLargeError`, `AiRateLimitedError`, `AiUpstreamError` from `convex/lib/ai_errors.ts`) propagate unchanged and are not tested here (no network in tests); `"User not found"` and the pending-approval message also come from `requireApprovedForAi` unchanged, which this ticket tests once through its `"Not authenticated"` path (case 7). Model JSON that is not an object, or fails `readProposal` → `null`. No user-facing copy (the system prompt is sent to the runtime model, not shown).
 - **TESTS:**
   1. Given a stub returning `{ content: JSON.stringify({ name: "Morning check", period: "daily", body: "## Sleep\n## Mood" }) }` / When `proposeTemplateFrom(stub, "sleep, mood")` runs / Then it returns `{ kind: "template", name: "Morning check", body: "## Sleep\n## Mood", period: "daily" }`, and the stub got exactly one call whose `messages[0].content` equals `PROPOSE_TEMPLATE_SYSTEM` and `messages[1].content` equals `"sleep, mood"`.
   2. Given a stub returning `{ content: "not json" }` / When it runs / Then it returns `null`.
   3. Given a stub returning `{ content: JSON.stringify({ name: "", period: "daily", body: "## A" }) }` / When it runs / Then it returns `null`.
   4. Given outline `"   "` / When it runs / Then it rejects with `"Outline is required"` and the stub was never called.
-  5. Given an outline of 2,001 characters / When it runs / Then it rejects with `"Outline is too long"`.
-  6. Given a ctx `{ runQuery: async () => { throw new Error("Not authenticated"); } }` / When `run(templates.proposeTemplate, ctx, { outline: "x" })` runs / Then it rejects with `"Not authenticated"`.
-- **NUMBERS:** outline ≤ 2,000 characters (`TEMPLATE_OUTLINE_MAX`); exactly 1 model call per proposal; 6 of 6 cases pass. Model latency: UNKNOWN (no baseline; not a gate).
+  5. Given an outline of exactly 2,000 characters (`"a".repeat(2000)`) and the stub of case 3 / When it runs / Then it resolves `null` and the stub got exactly one call.
+  6. Given an outline of 2,001 characters (`"a".repeat(2001)`) / When it runs / Then it rejects with `"Outline is too long"` and the stub was never called.
+  7. Given a ctx `{ runQuery: async () => { throw new Error("Not authenticated"); } }` / When `run(templates.proposeTemplate, ctx, { outline: "x" })` runs / Then `await rejection(run(templates.proposeTemplate, ctx, { outline: "x" }))` equals `"Not authenticated"` (the standard `rejection` helper of CONVENTIONS §16, declared once at the top of `convex/templates.test.ts` unless `grep -n "async function rejection" convex/templates.test.ts` finds it; `run` from `./lib/testFakeCtx`, imported unless already imported).
+- **NUMBERS:** outline ≤ 2,000 characters (`TEMPLATE_OUTLINE_MAX`, tested at 2,000 and 2,001); exactly 1 model call per proposal; 7 of 7 cases pass. Model latency: UNKNOWN (no baseline; not a gate).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0241d — Template sketch: `templates.createFromProposal` (Accept a proposal) (`convex/templates.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241c · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0241c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0241c.
+- **WHEN:** after TFV2-0000a, TFV2-0241c.
 - **WHY:** template-sketch screen (`@actions templates.createFromProposal`): Accept on the proposal card saves it. The server re-checks the card the client sends back, as `coach.acceptProposal` does (`readProposal`).
 - **GOAL:** A new mutation `templates.createFromProposal` re-validates a `template` proposal and inserts it as the caller's template.
 - **SCOPE:** `convex/templates.ts` · test: `convex/templates.test.ts`.
 - **MUTATES:** `convex/templates.ts` (edit: new export `createFromProposal`) · `convex/templates.test.ts` (edit: one new `describe` block) · `templates` (insert one row).
 - **STEPS:**
   1. Code-map check: read `readProposal` (template branch) and `TemplateProposal` (TFV2-0241c).
-  2. Add `createFromProposal` exactly as SPEC.
+  2. Add `createFromProposal` as the SPEC states.
   3. Append `describe("createFromProposal (TFV2-0241d)", …)` with the 5 TESTS cases (shared fake).
   4. Run DONE.
 - **DONE:** `bun test convex/templates.test.ts` → `0 fail`, the 5 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/templates.test.ts` pasted into the PR.
 - **DO NOT:** call a model; write module fields (`status`/`enabled`/`summary`; missing reads as live, CFG-008); accept a proposal id (proposals are not stored); touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0241d / evidence: <DONE output> / changed: convex/templates.ts, convex/templates.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18752,6 +18787,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Order: `requireUser` → `const p = readProposal({ kind: "template", name: args.name, body: args.body, period: args.period })` → `p === null`, or `p.body` matches `/https?:\/\//i` or `/<script/i` → throw → insert `{ userId, name: p.name, periodType: p.period, body: p.body, createdAt: now, updatedAt: now }`. Errors (exact → trigger): `"Not authenticated"`; `"Proposal is invalid"` → blank name or body, or a link or script in the body. No user-facing copy.
+  Test setup (CONVENTIONS §16 origins): unless `grep -n 'from "./lib/testFakeCtx"' convex/templates.test.ts` already finds it, add `import { makeFakeCtx as makeSharedCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` below the existing imports (aliased because the file declares its own local `makeFakeCtx` at line 17; `makeFakeCtx(userId: string, extraUsers?: string[])` seeds `users` rows `{ _id, email: `${id}@example.com` }`, returns ids `"<table>:<n>"` from one counter, and `run(fn, ctx, args)` calls `fn._handler(ctx, args)`, existing in `convex/lib/testFakeCtx.ts`; `makeSignedOutCtx(): any` — `auth.getUserIdentity()` resolves `null`, created by TFV2-0000a). Unless `grep -n "async function rejection" convex/templates.test.ts` finds it, declare the standard `rejection` helper of CONVENTIONS §16 once below the imports: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`. Each case builds `const ctx = makeSharedCtx("users:a", ["users:b"]);` and, to act as user B on the same rows, `const asB = { ...ctx, auth: { getUserIdentity: async () => ({ subject: "users:b" }) } };`. A seeded template row is `await ctx.db.insert("templates", { userId: "users:a", name: "Brief", periodType: "none", body: "# Brief\n## Outcome\n", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })` with only the fields a case names changed; a row "of user B" has `userId: "users:b"`. A rejection is asserted as `expect(await rejection(run(fn, ctx, args))).toBe("<message>")`.
 - **TESTS:**
   1. Given `{ name: "Morning check", body: "## Sleep\n## Mood", period: "daily" }` / When it runs / Then a `templates` row exists with `name: "Morning check"`, `periodType: "daily"`, `body: "## Sleep\n## Mood"` (the body `readProposal` returns: Markdown kept, trimmed), and `get` on it returns `source: "user"`.
   2. Given `name: "  "` / When it runs / Then it rejects with `"Proposal is invalid"` and no row is inserted.
@@ -18763,6 +18799,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0242 — View module: pure spec validator `validateViewSpec` (`convex/lib/moduleValidation.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -18772,11 +18809,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/moduleValidation.ts` (new) · `convex/lib/moduleValidation.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: `ls convex/lib/moduleValidation.ts` → missing.
-  2. Create `convex/lib/moduleValidation.ts` exactly as SPEC (no imports from React, Convex or `@tempo/ui`; no Zod).
+  2. Create `convex/lib/moduleValidation.ts` as the SPEC states (no imports from React, Convex or `@tempo/ui`; no Zod).
   3. Create `convex/lib/moduleValidation.test.ts` with the 7 TESTS cases (`bun:test`).
   4. Run DONE.
 - **DONE:** `bun test convex/lib/moduleValidation.test.ts` → `7 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/moduleValidation.test.ts` pasted into the PR.
 - **DO NOT:** execute, `eval` or render the spec; import React or `packages/ui`; hard-code a catalog list in this file; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0242 / evidence: <DONE output> / changed: convex/lib/moduleValidation.ts, convex/lib/moduleValidation.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18787,11 +18824,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export const FORBIDDEN_STRING = /https?:\/\/|javascript:|<script|\beval\s*\(/i;
   /**
    * Walks the spec depth-first (object keys in insertion order, then array items). Problems, in walk order:
-   * - "not-an-object" when spec is not a plain object (null, array, string, number…), and nothing else is checked;
+   * - "not-an-object" when spec is not a plain object (null, an array, a string, a number, a boolean or undefined), and nothing else is checked;
+   * - an object's own "unknown-component"/"unknown-action" problems are added when the object is visited, before its children;
    * - "unknown-component:<value>" for every object with a string "type" not in catalog.components;
    * - "unknown-action:<value>" for every object with a string "action" not in catalog.actions;
    * - "forbidden-string:<path>" for every string value matching FORBIDDEN_STRING, path = keys/indexes joined by "." from the root;
    * - "too-large" once, and the walk stops, when more than maxNodes values or a depth over maxDepth is reached.
+   *   Every visited value is one node (the root, each object, each array, each leaf); the root has depth 0 and a value inside a depth-d object or array has depth d + 1.
    * ok === (problems.length === 0).
    */
   export function validateViewSpec(spec: unknown, catalog: ViewCatalog): ViewValidation;
@@ -18799,17 +18838,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Pure; throws nothing. Problems are codes for the UI to map, not user-facing copy.
 - **TESTS:**
   1. Given `{ root: "a", elements: { a: { type: "TaskBlock", props: {} } } }` and catalog `{ components: ["TaskBlock"], actions: ["setTaskDone"] }` / When validated / Then `{ ok: true, problems: [] }`.
-  2. Given an element `{ type: "Iframe" }` / Then `problems` equals `["unknown-component:Iframe"]`.
-  3. Given `{ root: "a", elements: { a: { type: "TaskBlock", on: { toggle: { action: "deleteAll" } } } } }` / Then `problems` equals `["unknown-action:deleteAll"]`.
-  4. Given `props: { label: "see https://x.y" }` under `elements.a` / Then `problems` equals `["forbidden-string:elements.a.props.label"]`; given `"<SCRIPT>"` and `"eval (1)"` strings / Then each yields one `forbidden-string:<path>`.
+  2. Given `{ root: "a", elements: { a: { type: "Iframe" } } }` and the case-1 catalog / Then `problems` equals `["unknown-component:Iframe"]`.
+  3. Given `{ root: "a", elements: { a: { type: "TaskBlock", on: { toggle: { action: "deleteAll" } } } } }` and the case-1 catalog / Then `problems` equals `["unknown-action:deleteAll"]`.
+  4. Given `{ root: "a", elements: { a: { type: "TaskBlock", props: { label: "see https://x.y" } } } }` and the case-1 catalog / Then `problems` equals `["forbidden-string:elements.a.props.label"]`; given `{ a: "<SCRIPT>" }` / Then `["forbidden-string:a"]`; given `{ b: "eval (1)" }` / Then `["forbidden-string:b"]`.
   5. Given `null`, `[]` and `"x"` / Then each returns `{ ok: false, problems: ["not-an-object"] }`.
-  6. Given an object nested 21 levels deep / Then `problems` equals `["too-large"]`; given an object with 501 leaf values / Then `problems` equals `["too-large"]`.
-  7. Given a spec with two unknown types and one forbidden string / Then all three problems are listed in walk order and `ok` is `false`.
-- **NUMBERS:** at most 500 nodes and depth 20 (`VIEW_SPEC_LIMITS`, tested at 501 and 21); 7 of 7 cases pass. Latency: n/a (pure).
+  6. Given `nest(n)` built in the test by `let v: unknown = "x"; for (let i = 0; i < n; i++) v = { a: v };` (its string leaf sits at depth n) and the case-1 catalog / Then `nest(20)` gives `{ ok: true, problems: [] }` and `nest(21)` gives `problems` equal to `["too-large"]`; given `Object.fromEntries(Array.from({ length: k }, (_, i) => ["k" + i, i]))` (k number leaves plus the root = k + 1 nodes) / Then k = 499 (500 nodes) gives `{ ok: true, problems: [] }` and k = 500 (501 nodes) gives `problems` equal to `["too-large"]`.
+  7. Given `{ elements: { a: { type: "X" }, b: { type: "Y", props: { label: "javascript:go" } } } }` and the case-1 catalog / Then `problems` equals `["unknown-component:X", "unknown-component:Y", "forbidden-string:elements.b.props.label"]` and `ok` is `false`.
+- **NUMBERS:** at most 500 nodes and depth 20 (`VIEW_SPEC_LIMITS`, tested at 500 and 501 nodes, depth 20 and 21); 7 of 7 cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0243 — View module: pick the view for a page type, with fallback (`convex/lib/moduleResolution.ts`) — OPEN
+- **STATUS:** open — inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); new: Where does a view module store its page type and json-render spec (a `json tempo` `view` block in `templates.body`, or new `templates` fields), which catalog does it use (`BLOCK_COMPONENT_TYPES` + `BLOCK_ACTION_NAMES` from `packages/ui/src/blocks/catalog.ts`, or a new view catalog), and when several enabled view modules target one page type, does the most recently updated one win (this SPEC)?
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242, CFG-008 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0242, CFG-008.
@@ -18819,11 +18859,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/moduleResolution.ts` (new) · `convex/lib/moduleResolution.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: read `validateViewSpec` (TFV2-0242).
-  2. Create `convex/lib/moduleResolution.ts` exactly as SPEC.
+  2. Create `convex/lib/moduleResolution.ts` as the SPEC states.
   3. Create the test with the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/moduleResolution.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/moduleResolution.test.ts` pasted into the PR.
 - **DO NOT:** render React; read the database; mutate pages; throw.
 - **REPORT:** `status / ticket: TFV2-0243 / evidence: <DONE output> / changed: convex/lib/moduleResolution.ts, convex/lib/moduleResolution.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18842,9 +18882,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a candidate whose `spec` getter throws / Then it is skipped and no exception escapes.
 - **NUMBERS:** 5 of 5 cases pass (exact). Latency: n/a (pure).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Where does a view module store its page type and json-render spec (a `json tempo` `view` block in `templates.body`, or new `templates` fields), which catalog does it use (`BLOCK_COMPONENT_TYPES` + `BLOCK_ACTION_NAMES` from `packages/ui/src/blocks/catalog.ts`, or a new view catalog), and when several enabled view modules target one page type, does the most recently updated one win (this SPEC)? — Amit. Also inherits CFG-008 (module columns on `templates` or a separate `modules` table?).
+- **OPEN:** inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?); new: Where does a view module store its page type and json-render spec (a `json tempo` `view` block in `templates.body`, or new `templates` fields), which catalog does it use (`BLOCK_COMPONENT_TYPES` + `BLOCK_ACTION_NAMES` from `packages/ui/src/blocks/catalog.ts`, or a new view catalog), and when several enabled view modules target one page type, does the most recently updated one win (this SPEC)? — Amit.
 
 ### TFV2-0244 — Component: CodeWidget (sandboxed iframe, `postMessage` allow-list) (`apps/web/components/modules/CodeWidget.tsx`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000b, TFV2-0023a, TFV2-0023b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000b, TFV2-0023a, TFV2-0023b.
@@ -18853,14 +18894,14 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `apps/web/components/modules/CodeWidget.tsx` · `apps/web/components/modules/CodeWidget.css` · `apps/web/app/e2e/components/code-widget/page.tsx` · test: `tests/e2e/screens/code-widget.spec.ts`.
 - **MUTATES:** `apps/web/components/modules/CodeWidget.tsx` (new) · `apps/web/components/modules/CodeWidget.css` (new) · `apps/web/app/e2e/components/code-widget/page.tsx` (new) · `tests/e2e/screens/code-widget.spec.ts` (new). No data.
 - **STEPS:**
-  1. Code-map check: `test -e apps/web/components/modules/CodeWidget.tsx` fails; `grep -n "@component CodeWidget " apps/web/app/tempo.css` prints nothing (Case B); `grep -n '"/e2e/components' apps/web/lib/e2eWiringRoutes.ts` shows the harness route (TFV2-0023a).
+  1. Code-map check: `test -e apps/web/components/modules/CodeWidget.tsx` fails; `grep -c "^export function \(openHarness\|expectDir\|trackConsoleErrors\|expectTargetSize\|expectMotionBudget\)" tests/e2e/helpers/harness.ts` prints `5` (TFV2-0000b); `grep -n "^\.tp-sr-only " apps/web/app/tempo.css` prints one line; `grep -n "@component CodeWidget " apps/web/app/tempo.css` prints nothing (Case B); `grep -n '"/e2e/components' apps/web/lib/e2eWiringRoutes.ts` shows the harness route (TFV2-0023a).
   2. Create `CodeWidget.css` with exactly the SPEC rules.
-  3. Create `CodeWidget.tsx` (`"use client"`; first local import `import "./CodeWidget.css";`) exactly as SPEC.
+  3. Create `CodeWidget.tsx` (`"use client"`; `import type React from "react";`; first local import `import "./CodeWidget.css";`) as the SPEC states.
   4. Create the harness page with the four SPEC states and the fixtures in SPEC; `onAction` and `onRetry` write to `<output data-testid="code-widget-log">` (CONVENTIONS §13).
   5. Create `tests/e2e/screens/code-widget.spec.ts` with the §22 spec skeleton (`openHarness(page, "code-widget", { lang })`) and the 6 TESTS bullets.
   6. Run DONE, then `bun run typecheck` and `bun run lint`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/code-widget.spec.ts --reporter=line` → `24 passed`, 0 failed.
-- **EVIDENCE:** the Playwright summary plus the typecheck and lint exit codes, pasted into the PR.
+- **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/code-widget.spec.ts --reporter=line` pasted into the PR.
 - **DO NOT:** add `allow-same-origin`, `allow-top-navigation`, `allow-popups` or `allow-forms` to `sandbox`; pass env vars, keys, cookies or user data into `srcDoc`; use `src=` URLs; call Convex or `fetch`; run the code in the app window; edit `apps/web/app/tempo.css`.
 - **REPORT:** `status / ticket: TFV2-0244 / evidence: <DONE output> / changed: <4 files> / unknowns / notes for ticket sync`; list STEPS 1–6 with evidence.
 - **SPEC:**
@@ -18876,8 +18917,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;
   };
   export const CODE_WIDGET_PAYLOAD_MAX_BYTES = 16_384;
-  export function CodeWidget(props: CodeWidgetProps): React.JSX.Element;
+  export function CodeWidget(props: CodeWidgetProps): React.JSX.Element; // file has `import type React from "react";` (CONVENTIONS §22)
   ```
+  **Relies on** (else stop with `blocked: PATH_DRIFT — <what differs>`): from `tests/e2e/helpers/harness.ts` (TFV2-0000b) `openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>` (opens `/e2e/components/<id>?lang=<lang>` and waits for `[data-testid="<id>-default"]`), `expectDir(page: Page, lang: HarnessLang): Promise<void>` (asserts `<html dir>` and `<html lang>`), `trackConsoleErrors(page: Page): string[]`, `expectTargetSize(page: Page, selector: string): Promise<void>` (every visible button inside is ≥ 24×24 CSS px), `expectMotionBudget(page: Page, selector: string): Promise<void>` (every transition/animation ≤ 0.25 s, ≤ 0.001 s with reduced motion), `VIEWPORTS` `{ mobile: { width: 390, height: 844 }, desktop: { width: 1280, height: 800 } }`; the harness route `/e2e/components/<id>` with one `[data-testid="<id>-<state>"]` section per state (TFV2-0023a, TFV2-0023b); `.tp-sr-only` (visually hidden, `apps/web/app/tempo.css` line 81); every `--tp-*` token in the stylesheet below is listed in CONVENTIONS §5.
   Markup: root `<div className="tp-code-widget" data-component="CodeWidget" data-state={shown}>` where `shown = state === "ready" && code.trim() === "" ? "error" : state`.
   - `ready`: `<iframe ref={frameRef} className="tp-code-widget__frame" sandbox="allow-scripts" srcDoc={code} title={title} referrerPolicy="no-referrer" />`.
   - `loading`: `<div className="tp-code-widget__loading" role="status" aria-busy="true"><span className="tp-sr-only">{copy.loading}</span></div>`.
@@ -18903,17 +18945,18 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   Empty and disabled: n/a (empty code renders the `error` view by the `shown` rule; the widget has no disabled mode). Success: the `default` state.
   RTL: logical properties only; the retry button sits at inline-end. Keyboard: the retry button is a native button reached by Tab; the frame is in the tab order as the browser places it. Screen reader: the frame's name is `title`; loading is a `status` with "Loading…"; error is an `alert`; offline is a `status`. Breakpoints: frame 240 px tall (`--tp-space-20` × 3) below 768 px, 320 px from 768 px; width fills up to `--tp-paper-max`. Motion: only the retry hover colour (`--tp-dur-fast`).
 - **TESTS:**
-  - Sandbox: Given `code-widget-default` / Then its `iframe` has `sandbox` exactly `"allow-scripts"`, no `src` attribute, and `title` `"Water tracker"`.
-  - Allow-list: Given `code-widget-default` / When the frame has loaded / Then `code-widget-log` text becomes `onAction:{"action":"setTaskDone","payload":{"blockId":"blk_1","done":true}}` (the `deleteEverything` message changes nothing); When `page.evaluate(() => window.postMessage({ type: "tempo-action", action: "setTaskDone", payload: { blockId: "blk_top" } }, "*"))` runs and 300 ms pass / Then the log text is unchanged.
-  - Error: Given `code-widget-error` / Then the `[role="alert"]` text is `This part has a problem.` (en) / `יש בעיה בחלק הזה.` (he) and the button reads `Try again` / `לנסות שוב`; When the button is clicked / Then the log text is `onRetry:null`.
-  - Offline: Given `code-widget-offline` / Then the `[role="status"]` text is the `offline` copy for the language and the section has no `button` and no `iframe`.
-  - Loading: Given `code-widget-loading` / Then `.tp-code-widget__loading` has `aria-busy="true"` and its `.tp-sr-only` text is `Loading…` / `בטעינה…`.
-  - Layout: Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="code-widget-error"]')` and `expectMotionBudget(page, '[data-testid="code-widget-error"]')` run / Then all pass; and Tab focus on the retry button gives a computed `outline-width` of at least `2px`.
+  1. Sandbox: Given `code-widget-default` / Then its `iframe` has `sandbox` exactly `"allow-scripts"`, no `src` attribute, and `title` `"Water tracker"`.
+  2. Allow-list: Given `code-widget-default` / When the frame has loaded / Then `code-widget-log` text becomes `onAction:{"action":"setTaskDone","payload":{"blockId":"blk_1","done":true}}` (the `deleteEverything` message changes nothing); When `page.evaluate(() => window.postMessage({ type: "tempo-action", action: "setTaskDone", payload: { blockId: "blk_top" } }, "*"))` runs and 300 ms pass / Then the log text is unchanged.
+  3. Error: Given `code-widget-error` / Then the `[role="alert"]` text is `This part has a problem.` (en) / `יש בעיה בחלק הזה.` (he) and the button reads `Try again` / `לנסות שוב`; When the button is clicked / Then the log text is `onRetry:null`.
+  4. Offline: Given `code-widget-offline` / Then the `[role="status"]` text is the `offline` copy for the language and the section has no `button` and no `iframe`.
+  5. Loading: Given `code-widget-loading` / Then `.tp-code-widget__loading` has `aria-busy="true"` and its `.tp-sr-only` text is `Loading…` / `בטעינה…`.
+  6. Layout: Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="code-widget-error"]')` and `expectMotionBudget(page, '[data-testid="code-widget-error"]')` run / Then all pass; and Tab focus on the retry button gives a computed `outline-width` of at least `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens` passes. Motion ≤ 250 ms (≤ 1 ms reduced) · DESIGN.md · `expectMotionBudget`. Payload ≤ 16,384 UTF-8 bytes (`CODE_WIDGET_PAYLOAD_MAX_BYTES`, product bound). 24 of 24 tests pass.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0245 — Code module: script runner in a Vercel Sandbox micro-VM (`convex/lib/sandboxRunner.ts`) — OPEN
+- **STATUS:** open — inherits CFG-039 (new: Approve `@vercel/sandbox` (pinned 3.9.1) for script modules, and set the run timeout (proposed 30 s), per-person run limits, the spend cap and the auth secret name for Vercel Sandbox?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-039 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-039.
@@ -18923,11 +18966,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/sandboxRunner.ts` (new) · `convex/lib/sandboxRunner.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: `grep -n "@vercel/sandbox" package.json` shows the CFG-039 pin.
-  2. Create `convex/lib/sandboxRunner.ts` exactly as SPEC; the real client is built only in `defaultSandboxDeps()`.
+  2. Create `convex/lib/sandboxRunner.ts` as the SPEC states; the real client is built only in `defaultSandboxDeps()`.
   3. Create the test with the 4 TESTS cases, all with a stub `SandboxDeps` (no network).
   4. Run DONE.
 - **DONE:** `bun test convex/lib/sandboxRunner.test.ts` → `4 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/sandboxRunner.test.ts` pasted into the PR.
 - **DO NOT:** run code with `eval`, `Function` or a child process; pass `process.env` or any secret into the sandbox; reuse a sandbox between runs; call the real service in tests.
 - **REPORT:** `status / ticket: TFV2-0245 / evidence: <DONE output> / changed: convex/lib/sandboxRunner.ts, convex/lib/sandboxRunner.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18947,9 +18990,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given two calls / Then `create` was called twice (a fresh sandbox per run).
 - **NUMBERS:** run timeout ≤ 30,000 ms (proposed, UNKNOWN until Amit answers; source TRD §1); 4 of 4 cases pass. Sandbox latency and price: UNKNOWN (Vercel Sandbox limits not decided).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** new: Approve `@vercel/sandbox` (pinned 3.9.1, CFG-039) for script modules, and set the run timeout (proposed 30 s), per-person run limits and the spend cap for Vercel Sandbox? — Amit.
+- **OPEN:** inherits CFG-039 (new: Approve `@vercel/sandbox` (pinned 3.9.1) for script modules, and set the run timeout (proposed 30 s), per-person run limits, the spend cap and the auth secret name for Vercel Sandbox?) — Amit.
 
 ### TFV2-0246a — Modules: `modules.getDraft` + `validateModuleBody` (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-008, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-008, TFV2-0000a.
@@ -18959,11 +19003,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (new) · `convex/modules.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: `ls convex/modules.ts` → missing; confirm CFG-008 fields on `templates`.
-  2. Create `convex/modules.ts` with `ModuleProblem`, `validateModuleBody`, the private helper `ownedDraft` and `getDraft` exactly as SPEC.
+  2. Create `convex/modules.ts` with `ModuleProblem`, `validateModuleBody`, the private helper `ownedDraft` and `getDraft` as the SPEC states.
   3. Create `convex/modules.test.ts` (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run`) with the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** call a model; write any row; return another user's draft; touch `convex/templates.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0246a / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -18989,9 +19033,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 6 of 6 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits CFG-008 (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0246b — Modules: `modules.approve` (draft → live after re-validation) (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0246a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0246a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0246a.
@@ -19001,11 +19046,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (edit: new export `approve`) · `convex/modules.test.ts` (edit: new cases) · `templates.status`, `templates.enabled`, `templates.summary`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `ownedDraft` and `validateModuleBody`; `sectionsFromBody` in `convex/lib/templateCatalog.ts`.
-  2. Add `MODULE_SUMMARY_SECTIONS` and `approve` exactly as SPEC.
+  2. Add `MODULE_SUMMARY_SECTIONS` and `approve` as the SPEC states.
   3. Add the 5 TESTS cases to `convex/modules.test.ts`.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `11 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** let a failed validation change any field; call a model for the summary; touch any page; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0246b / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19026,9 +19071,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** summary = at most 5 headings (`MODULE_SUMMARY_SECTIONS`); 11 of 11 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0246a → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0246a (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0246c — Modules: `modules.discardDraft` (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0246b (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0246b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0246b.
@@ -19038,11 +19084,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (edit: new export `discardDraft`) · `convex/modules.test.ts` (edit: new cases) · `templates.deletedAt`, `templates.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `ownedDraft`.
-  2. Add `discardDraft` exactly as SPEC.
+  2. Add `discardDraft` as the SPEC states.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `15 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** hard-delete; touch a live module or any `notes` row; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0246c / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19061,9 +19107,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 15 of 15 file cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0246b → TFV2-0246a → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0246b (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0247a — Plain mode: `modules.getPlainMode` (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits CFG-011 (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?); inherits TFV2-0246c (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-011, TFV2-0246c · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-011, TFV2-0246c.
@@ -19073,11 +19120,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (edit: new export `getPlainMode`, private helper `livePreferencesRow`) · `convex/modules.test.ts` (edit: new cases). No table written.
 - **STEPS:**
   1. Code-map check: confirm `plainMode` on `userPreferences` in `convex/schema.ts`; read `preferencesFor` in `convex/preferences.ts` (index `by_userId_deletedAt`).
-  2. Add `livePreferencesRow` and `getPlainMode` exactly as SPEC.
+  2. Add `livePreferencesRow` and `getPlainMode` as the SPEC states.
   3. Add the 3 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `18 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** change `convex/preferences.ts`; write anything; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0247a / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19092,9 +19139,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 18 of 18 file cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-011 (is `plainMode` stored on `userPreferences` (this shape) or on `users`?) and TFV2-0246c → CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits CFG-011 (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?); inherits TFV2-0246c (new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0247b — Plain mode: `modules.setPlainMode` (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0247a (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0247a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0247a.
@@ -19104,11 +19152,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (edit: new export `setPlainMode`) · `convex/modules.test.ts` (edit: new cases) · `userPreferences` (insert or patch `plainMode`, `updatedAt`).
 - **STEPS:**
   1. Code-map check: read `PREFERENCE_DEFAULTS` (exported from `convex/preferences.ts`).
-  2. Add `setPlainMode` exactly as SPEC.
+  2. Add `setPlainMode` as the SPEC states.
   3. Add the 3 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `21 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** flip `templates.enabled` on any row (plain mode hides user modules at read time, TFV2-0248a); disable built-ins; touch `convex/preferences.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0247b / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19122,27 +19170,29 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** one preferences row per user (exact); 21 of 21 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0247a → CFG-011 (is `plainMode` stored on `userPreferences` (this shape) or on `users`?) and CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0247a (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0248a — Modules: `modules.list` (built-in + user, with on/off) (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits CFG-037 (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?); inherits CFG-038 (new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?); inherits TFV2-0247b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-037, CFG-038, TFV2-0247b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-037, CFG-038, TFV2-0247b.
 - **WHY:** PRD F-43; Modules screen (`@data modules.list`, `ModuleCard` props `{ id, name, does, builtIn, madeByCoach, on }`, tempo.css line 1268). Built-ins are the 9 `STARTER_TEMPLATES`; their off switch is `userPreferences.disabledStarterTemplateIds` (CFG-037); who made a user module is `templates.madeBy` (CFG-038).
 - **GOAL:** A new query `modules.list` returns the built-in modules (catalog order) then the caller's live user modules (newest first), each with its on/off state; user modules are left out while plain mode is on.
 - **SCOPE:** `convex/modules.ts` · test: `convex/modules.test.ts`.
-- **MUTATES:** `convex/modules.ts` (edit: new exports `ModuleRow`, `list`) · `convex/modules.test.ts` (edit: new cases). No table written.
+- **MUTATES:** `convex/modules.ts` (edit: new exports `MODULE_LIST_MAX`, `ModuleRow`, `list`) · `convex/modules.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: confirm CFG-037 and CFG-038 fields in `convex/schema.ts`; read `STARTER_TEMPLATES` and `TEMPLATE_LIST_MAX` (TFV2-0234).
-  2. Add `ModuleRow` and `list` exactly as SPEC.
+  1. Code-map check: confirm CFG-037 and CFG-038 fields in `convex/schema.ts`; `grep -n "export const STARTER_TEMPLATES" convex/lib/templateCatalog.ts` prints line 18 (9 entries, each with `templateId`, `name`, `description`).
+  2. Add `MODULE_LIST_MAX`, `ModuleRow` and `list` as the SPEC states.
   3. Add the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `26 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** list drafts or deleted rows; expose a delete path; write anything; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0248a / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
   ```ts
+  export const MODULE_LIST_MAX = 200;
   export type ModuleRow = { moduleId: string; name: string; does: string; builtIn: boolean; madeByCoach: boolean; on: boolean };
   export const list = query({
     args: {},
@@ -19150,18 +19200,19 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: QueryCtx): Promise<ModuleRow[]> => { … },
   });
   ```
-  Built-ins: for each starter `{ moduleId: templateId, name, does: description, builtIn: true, madeByCoach: false, on: !disabled.includes(templateId) }` where `disabled = prefs?.disabledStarterTemplateIds ?? []`. User rows: `withIndex("by_userId_deletedAt", q => q.eq("userId", user._id).eq("deletedAt", undefined)).take(TEMPLATE_LIST_MAX)`, drop `status === "draft"`, sort `updatedAt` desc, map `{ moduleId: _id, name, does: summary ?? description ?? "", builtIn: false, madeByCoach: madeBy === "coach", on: enabled ?? true }`; omitted entirely when `prefs?.plainMode === true`. Errors: `"Not authenticated"`. `name`/`does` of built-ins are the catalog's English strings (the screen shows its own localised names for the 9 built-in ids).
+  Built-ins: for each starter `{ moduleId: templateId, name, does: description, builtIn: true, madeByCoach: false, on: !disabled.includes(templateId) }` where `disabled = prefs?.disabledStarterTemplateIds ?? []`. User rows: `withIndex("by_userId_deletedAt", q => q.eq("userId", user._id).eq("deletedAt", undefined)).take(MODULE_LIST_MAX)`, drop `status === "draft"`, sort `updatedAt` desc, map `{ moduleId: _id, name, does: summary ?? description ?? "", builtIn: false, madeByCoach: madeBy === "coach", on: enabled ?? true }`; omitted entirely when `prefs?.plainMode === true`. Errors: `"Not authenticated"`. `name`/`does` of built-ins are the catalog's English strings (the screen shows its own localised names for the 9 built-in ids).
 - **TESTS:**
   1. Given no rows / Then 9 rows, all `builtIn: true`, `on: true`, in `STARTER_TEMPLATES` order.
   2. Given `disabledStarterTemplateIds: ["starter:journal"]` / Then the `starter:journal` row has `on: false`.
   3. Given user rows "A" (`updatedAt` 1, `madeBy: "coach"`, `enabled: false`) and "B" (`updatedAt` 2) and a draft "C" / Then after the 9 built-ins come "B" (`on: true`, `madeByCoach: false`) then "A" (`on: false`, `madeByCoach: true`), and no "C".
   4. Given those rows and `plainMode: true` / Then only the 9 built-ins.
   5. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
-- **NUMBERS:** at most 200 user rows read (`TEMPLATE_LIST_MAX`); 26 of 26 file cases pass. Latency: UNKNOWN (no baseline).
+- **NUMBERS:** at most 200 user rows read (`MODULE_LIST_MAX`); 26 of 26 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-037 (is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?), CFG-038 (store who made a module as `templates.madeBy` (this shape)?), and TFV2-0247b → CFG-011, CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits CFG-037 (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?); inherits CFG-038 (new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?); inherits TFV2-0247b (new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0248b — Modules: `modules.setEnabled` (`convex/modules.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0248a (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0248a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0248a.
@@ -19171,11 +19222,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/modules.ts` (edit: new export `setEnabled`) · `convex/modules.test.ts` (edit: new cases) · `userPreferences.disabledStarterTemplateIds` (built-in) or `templates.enabled` (user module), plus `updatedAt`.
 - **STEPS:**
   1. Code-map check: read `starterById`, `isStarterTemplateId`, `livePreferencesRow`, `PREFERENCE_DEFAULTS`.
-  2. Add `setEnabled` exactly as SPEC.
+  2. Add `setEnabled` as the SPEC states.
   3. Add the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/modules.test.ts` → `32 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/modules.test.ts` pasted into the PR.
 - **DO NOT:** delete a module; change `status`; flip modules because of plain mode; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0248b / evidence: <DONE output> / changed: convex/modules.ts, convex/modules.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19192,12 +19243,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 32 of 32 file cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0248a → CFG-037, CFG-038, CFG-011, CFG-008 (are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
+- **OPEN:** inherits TFV2-0248a (new: Is a built-in module's off switch stored per person as `userPreferences.disabledStarterTemplateIds` (this shape)?; new: Store who made a module as `templates.madeBy` (this shape), and should coach-accepted templates be marked `"coach"`?; new: Is `plainMode` stored on `userPreferences` (this shape) or on `users`?; new: Are module `status`/`enabled`/`summary` columns on `templates` (this shape) or a separate `modules` table?) — Amit.
 
 ### TFV2-0249 — Scheduled jobs: @convex-dev/crons component install + config — superseded by CFG-036
 - **Status:** superseded by CFG-036; not a build ticket.
 
 ### TFV2-0250a — Scheduled jobs: cron check `isFiveFieldCron` (`convex/lib/cronSpec.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -19207,11 +19259,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/cronSpec.ts` (new) · `convex/lib/cronSpec.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: `ls convex/lib/cronSpec.ts` → missing.
-  2. Create `convex/lib/cronSpec.ts` exactly as SPEC.
+  2. Create `convex/lib/cronSpec.ts` as the SPEC states.
   3. Create the test with the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/cronSpec.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/cronSpec.test.ts` pasted into the PR.
 - **DO NOT:** accept 6-field (seconds) crons, `L`, `?`, `#` or names (`MON`, `JAN`); import anything.
 - **REPORT:** `status / ticket: TFV2-0250a / evidence: <DONE output> / changed: convex/lib/cronSpec.ts, convex/lib/cronSpec.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19234,6 +19286,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0250b — Scheduled jobs: `jobs.scheduleJob` (the person approves a job card) (`convex/jobs.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-012, TFV2-0250a, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-012, TFV2-0250a, TFV2-0000a.
@@ -19243,11 +19296,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/jobs.ts` (new) · `convex/jobs.test.ts` (new) · `jobs` (insert one row).
 - **STEPS:**
   1. Code-map check: `ls convex/jobs.ts` → missing; confirm `jobs` (CFG-012) in `convex/schema.ts`; read `preferencesFor` (`convex/preferences.ts`) and `requireApprovedUser`.
-  2. Create `convex/jobs.ts` with `targetPageTypeValidator`, `JOB_TASK_MAX` and `scheduleJob` exactly as SPEC.
+  2. Create `convex/jobs.ts` with `targetPageTypeValidator`, `JOB_TASK_MAX` and `scheduleJob` as the SPEC states.
   3. Create `convex/jobs.test.ts` (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run`) with the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** register a cron or schedule anything (TFV2-0251e wires that); call a model; edit `convex/crons.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0250b / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19275,20 +19328,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0252a — Scheduled jobs: `jobs.list` (`convex/jobs.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250b · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250b, CFG-012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0250b.
+- **WHEN:** after TFV2-0250b, CFG-012.
 - **WHY:** PRD F-47; Modules screen (`@data jobs.list`: task, schedule, last run, on/off). The cron is returned raw (UTC) with the job's time zone; the screen formats it, so no English schedule text comes from the backend (CONVENTIONS §11).
 - **GOAL:** A new query `jobs.list` returns the caller's non-deleted jobs, newest first, at most `JOBS_LIST_MAX`.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
 - **MUTATES:** `convex/jobs.ts` (edit: new exports `JOBS_LIST_MAX`, `JobRow`, `list`) · `convex/jobs.test.ts` (edit: new cases). No table written.
 - **STEPS:**
   1. Code-map check: read `scheduleJob` and the CFG-012 fields.
-  2. Add `JOBS_LIST_MAX`, `JobRow` and `list` exactly as SPEC.
+  2. Add `JOBS_LIST_MAX`, `JobRow` and `list` as the SPEC states.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `10 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** read another user's jobs; read `notes` for page titles; format the schedule into words; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0252a / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19302,30 +19356,32 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Read: `withIndex("by_userId_deletedAt", q => q.eq("userId", user._id).eq("deletedAt", undefined)).order("desc").take(JOBS_LIST_MAX)`, then sort by `createdAt` desc; missing optional fields map to `null`. Errors: `"Not authenticated"`.
+  Test seed (every field `list` reads; `makeFakeCtx("users:a", ["users:b"])`): `{ userId: "users:a", cron: "0 6 * * *", timeZone: "UTC", task: "Plan my day", targetPageType: "daily", enabled: true, approvedAt: 1_700_000_000_000, createdAt: 1_700_000_000_001, updatedAt: 1_700_000_000_001 }`, inserted with `ctx.db.insert("jobs", row)` before the call; per case only these fields differ: case 1 the second job has `createdAt`/`updatedAt` `1_700_000_000_002`; case 2 user B's job has `userId: "users:b"` and the caller's deleted job has `deletedAt: 1_700_000_000_005`; case 3 job i (1 to 50, or 1 to 51) has `createdAt`/`updatedAt` `1_700_000_000_000 + i`.
 - **TESTS:**
-  1. Given two jobs (`createdAt` 1 and 2), one with `lastRunAt: 5, lastRunResult: "ok", lastRunNoteId: <a notes id>` / Then both return, newest first, with exactly the SPEC fields and `null` for the missing run fields.
+  1. Given the two case-1 jobs, the newer one with `lastRunAt: 1_700_000_000_005, lastRunResult: "ok", lastRunNoteId` = the id of a `notes` row inserted first (`"notes:1"`) / Then both return, newest first, with exactly the SPEC fields and `null` for the missing run fields.
   2. Given a job of user B and a deleted job of the caller / Then neither is listed.
-  3. Given 51 jobs / Then 50 rows return.
+  3. Given 50 jobs / Then 50 rows return; given 51 jobs / Then 50 rows return.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
-- **NUMBERS:** at most 50 rows (`JOBS_LIST_MAX`, tested with 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
+- **NUMBERS:** at most 50 rows (`JOBS_LIST_MAX`, tested with 50 and 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0252b — Scheduled jobs: `jobs.setEnabled` (`convex/jobs.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252a · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252a, CFG-012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0252a.
+- **WHEN:** after TFV2-0252a, CFG-012.
 - **WHY:** PRD F-47; Modules screen (`@actions jobs.setEnabled`).
 - **GOAL:** A new mutation `jobs.setEnabled` turns one of the caller's jobs on or off.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
 - **MUTATES:** `convex/jobs.ts` (edit: new export `setEnabled`) · `convex/jobs.test.ts` (edit: new cases) · `jobs.enabled`, `jobs.updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `list` and `scheduleJob`.
-  2. Add `setEnabled` exactly as SPEC.
+  2. Add `setEnabled` as the SPEC states.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `14 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** delete jobs; change `approvedAt`; register or remove crons (TFV2-0251e); touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0252b / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19337,6 +19393,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Order: `requireUser` → row missing, deleted or `userId !== user._id` → throw → patch `{ enabled: args.enabled, updatedAt: now }`. Errors (exact → trigger): `"Not authenticated"`; `"Job not found"` → missing, deleted or another user's job (CONVENTIONS §16, new table).
+  Test seed job row (every field read; `makeFakeCtx("users:a", ["users:b"])`): `{ userId: "users:a", cron: "0 6 * * *", timeZone: "UTC", task: "Plan my day", targetPageType: "daily", enabled: true, approvedAt: 1_700_000_000_000, createdAt: 1_700_000_000_001, updatedAt: 1_700_000_000_001 }`, inserted with `ctx.db.insert("jobs", row)`; a case changes only the fields it names (user B's job: `userId: "users:b"`).
 - **TESTS:**
   1. Given an enabled job / When `setEnabled({ jobId, enabled: false })` runs / Then `enabled` is `false` and `list` shows `enabled: false`.
   2. Given a job of user B / Then `"Job not found"`.
@@ -19347,20 +19404,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0251a — Scheduled jobs: `jobs.jobForRun` (internal query) (`convex/jobs.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252b · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252b, CFG-012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0252b.
+- **WHEN:** after TFV2-0252b, CFG-012.
 - **WHY:** PRD F-47; TRD §5d. The run action (TFV2-0251c) has no `db`, so it reads the job through this internal query.
 - **GOAL:** A new internal query `jobs.jobForRun` returns what a run needs, or `null` when the job must not run.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
 - **MUTATES:** `convex/jobs.ts` (edit: new export `jobForRun`) · `convex/jobs.test.ts` (edit: new cases). No table written.
 - **STEPS:**
   1. Code-map check: read the CFG-012 fields.
-  2. Add `jobForRun` exactly as SPEC.
+  2. Add `jobForRun` as the SPEC states.
   3. Add the 3 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `17 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** make it public; return the row to a client; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0251a / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19372,6 +19430,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Returns `null` when the row is missing, `deletedAt` is set, `enabled !== true` or `approvedAt === undefined` (CFG-012: a job runs only when enabled and approved). No auth (internal; called only by `runJob`). No errors thrown.
+  Test seed job row (every field read; `makeFakeCtx("users:a", ["users:b"])`): `{ userId: "users:a", cron: "0 6 * * *", timeZone: "UTC", task: "Plan my day", targetPageType: "daily", enabled: true, approvedAt: 1_700_000_000_000, createdAt: 1_700_000_000_001, updatedAt: 1_700_000_000_001 }`, inserted with `ctx.db.insert("jobs", row)`; a case changes only the fields it names (user B's job: `userId: "users:b"`).
 - **TESTS:**
   1. Given an enabled approved job / Then `{ userId, task, timeZone, targetPageType }` of that row.
   2. Given `enabled: false`, or no `approvedAt`, or `deletedAt: 5` / Then `null` each.
@@ -19381,20 +19440,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0251b — Scheduled jobs: `jobs.recordRun` writes a run into its page (internal mutation) (`convex/jobs.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0251a · **Folds-in:** none
+- **STATUS:** open — new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0251a, CFG-012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0251a.
+- **WHEN:** after TFV2-0251a, CFG-012.
 - **WHY:** PRD F-47 ("each run's output lands in a page"); TRD §5d. Daily and weekly pages are found with the index `by_userId_deletedAt_pageType_date` (`convex/notes.ts` `findPeriodPage`, line 259).
 - **GOAL:** A new internal mutation `jobs.recordRun` appends a run's output to the job's target page (or records "didn't finish" and changes no page) and stores `lastRunAt`, `lastRunResult` and `lastRunNoteId`.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
 - **MUTATES:** `convex/jobs.ts` (edit: new exports `JOB_OUTPUT_MAX`, `recordRun`) · `convex/jobs.test.ts` (edit: new cases) · `notes` (patch one page body, or insert the job's plain page) · `jobs.lastRunAt`, `lastRunResult`, `lastRunNoteId`, `updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `findPeriodPage` and `localDateKey` (`convex/lib/voicePolicy.ts` line 153, `(now, timeZone) → "YYYY-MM-DD"`).
-  2. Add `JOB_OUTPUT_MAX` and `recordRun` exactly as SPEC.
+  2. Add `JOB_OUTPUT_MAX` and `recordRun` as the SPEC states.
   3. Add the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `22 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** write raw JSON into a page; write into another user's page; create daily or weekly pages (they need a page-meta block; only `notes.ensurePeriodPage` makes them); touch `convex/notes.ts` or `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0251b / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19418,6 +19478,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.
 
 ### TFV2-0251c — Scheduled jobs: `jobs.runJob` (internal action) (`convex/jobs.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0251b (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0251b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0251b.
@@ -19427,11 +19488,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/jobs.ts` (edit: new exports `JOB_RUN_SYSTEM`, `runJobWith`, `runJob`) · `convex/jobs.test.ts` (edit: new cases). Writes only through `recordRun`.
 - **STEPS:**
   1. Code-map check: read `callLLM`, `jobForRun`, `recordRun`.
-  2. Add the three exports exactly as SPEC.
+  2. Add the three exports as the SPEC states.
   3. Add the 4 TESTS cases (stub ctx and stub `callModel`; no network).
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `26 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** call `callLLM` in a test; retry beyond `callLLM`'s own retry; write a page directly; add an SDK.
 - **REPORT:** `status / ticket: TFV2-0251c / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19453,23 +19514,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given content `"   "` / Then `"didnt_finish"`.
 - **NUMBERS:** exactly 1 model call per run (cases 1, 3); 26 of 26 file cases pass. Model latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0251b (OPEN), and asks its own question: new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.
+- **OPEN:** inherits TFV2-0251b (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?) — Amit.
 
 ### TFV2-0251d — Scheduled jobs: `jobs.syncCron` registers or removes a job's runtime cron (internal mutation) (`convex/jobs.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** CFG-036, TFV2-0251c · **Folds-in:** none
+- **STATUS:** open — inherits TFV2-0251c (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?)
+- **Stage:** D · **Pass:** 1 · **Depends:** CFG-036, TFV2-0251c, CFG-012 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after CFG-036, TFV2-0251c.
+- **WHEN:** after CFG-036, TFV2-0251c, CFG-012.
 - **WHY:** TRD §1 and §5d ("@convex-dev/crons component for jobs registered at runtime per user"). CFG-036 installs `@convex-dev/crons` 0.2.3; its client `Crons` has `register(ctx, { kind: "cron", cronspec, tz? }, fn, args, name?)`, `get(ctx, { name })`, `delete(ctx, { name })` (package `dist/client/index.d.ts`). The cron is named `job:<jobId>`, so no id column is needed.
 - **GOAL:** A new internal mutation `jobs.syncCron` makes the component's cron for one job match the row: present (UTC cron → `internal.jobs.runJob`) when enabled, approved and not deleted, absent otherwise.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
-- **MUTATES:** `convex/jobs.ts` (edit: new exports `jobCronName`, `syncCron`) · `convex/jobs.test.ts` (edit: new cases; a `mock.module("@convex-dev/crons", …)` block at the top of the file) · `@convex-dev/crons` component rows (register / delete).
+- **MUTATES:** `convex/jobs.ts` (edit: new exports `jobCronName`, `syncCron`) · `convex/jobs.test.ts` (edit: new cases; a `mock.module("@convex-dev/crons", () => ({ Crons: FakeCrons }))` block at the top of the file) · `@convex-dev/crons` component rows (register / delete).
 - **STEPS:**
   1. Code-map check: `grep -n "crons" convex/convex.config.ts convex/_generated/api.d.ts` shows the component (CFG-036).
-  2. Add `jobCronName` and `syncCron` exactly as SPEC; build `new Crons(components.crons)` inside the handler (never at module top level, so the test mock applies).
+  2. Add `jobCronName` and `syncCron` as the SPEC states; build `new Crons(components.crons)` inside the handler (never at module top level, so the test mock applies).
   3. At the top of `convex/jobs.test.ts`, add `mock.module("@convex-dev/crons", () => ({ Crons: FakeCrons }))` where `FakeCrons` records `register`/`get`/`delete` calls in an exported-to-test array and keeps a name set; then add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `30 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/crons.ts` (system crons only); pass `tz` (crons are UTC); call the real component in tests; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0251d / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19498,12 +19560,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given an id with no row and no cron / Then neither `delete` nor `register` is called.
 - **NUMBERS:** at most 1 cron per job (cases 1–3); 30 of 30 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0251c (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.)
+- **OPEN:** inherits TFV2-0251c (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?) — Amit.
 
 ### TFV2-0251e — Scheduled jobs: schedule `syncCron` from `scheduleJob` and `setEnabled` (`convex/jobs.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0251d · **Folds-in:** none
+- **STATUS:** open — inherits TFV2-0251d (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0251d, CFG-012, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0251d.
+- **WHEN:** after TFV2-0251d, CFG-012, TFV2-0000a.
 - **WHY:** TRD §5d: an approved job must start running, and turning a job off must stop it. `scheduleJob` (TFV2-0250b) and `setEnabled` (TFV2-0252b) only write the row today.
 - **GOAL:** Both mutations schedule `internal.jobs.syncCron` for their job right after their write, with no other change.
 - **SCOPE:** `convex/jobs.ts` · test: `convex/jobs.test.ts`.
@@ -19514,7 +19577,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Add the 3 TESTS cases (the `scheduler.calls` recorder from TFV2-0000a).
   4. Run DONE.
 - **DONE:** `bun test convex/jobs.test.ts` → `33 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/jobs.test.ts` pasted into the PR.
 - **DO NOT:** call `syncCron` directly; schedule on an error path; change any other line; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0251e / evidence: <DONE output> / changed: convex/jobs.ts, convex/jobs.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:** No signature changes (`scheduleJob` and `setEnabled` as in TFV2-0250b / TFV2-0252b). The scheduled call is `ctx.scheduler.runAfter(0, internal.jobs.syncCron, { jobId })`; errors are unchanged and nothing is scheduled when a call throws.
@@ -19524,9 +19587,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `scheduleJob` with `cron: "bad"` / Then it rejects with `"Invalid schedule"` and `ctx.scheduler.calls` is empty.
 - **NUMBERS:** exactly 1 scheduled sync per successful call; 33 of 33 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0251d → TFV2-0251c (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)? — Amit.)
+- **OPEN:** inherits TFV2-0251d (new: (1) Does a job run make one `callLLM` call with the task as the prompt (this SPEC), or run the AI SDK `ToolLoopAgent` of TRD §5d (Q-12: is the AI SDK permitted)? (2) Which page does a run write to: the daily or weekly page for the run date when it exists, else one plain page per job reused on every run, and always that plain page for `project` and `plain` (this SPEC)?) — Amit.
 
 ### TFV2-0253a — Coach artifacts: shared base (`convex/lib/artifacts.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -19540,7 +19604,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Create `convex/lib/artifacts.test.ts` (`bun:test`) with the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `4 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** import Zod, React or `packages/ui`; persist anything; call a model.
 - **REPORT:** `status / ticket: TFV2-0253a / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19565,6 +19629,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0254 — Coach artifacts: Flashcard `parseFlashcard` + `stepCard` (`convex/lib/artifacts.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0253a.
@@ -19573,12 +19638,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/lib/artifacts.ts` · test: `convex/lib/artifacts.test.ts`.
 - **MUTATES:** `convex/lib/artifacts.ts` (edit: new exports) · `convex/lib/artifacts.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: read `cleanText`, `hasForbiddenText`, `Parsed`.
+  1. Code-map check: `grep -n "export type Parsed\|export const ARTIFACT_TEXT_MAX\|export function cleanText\|export function hasForbiddenText" convex/lib/artifacts.ts` → 4 lines matching **Relies on**; else stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add the SPEC exports.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `8 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** keep a streak or score; wrap from the last card to the first; persist anything.
 - **REPORT:** `status / ticket: TFV2-0254 / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19591,30 +19656,32 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function stepCard(index: number, total: number, dir: "next" | "prev"): number;
   ```
   Problems (all collected, in this order per card): `"cards-missing"` (not an object, no array, or empty), `"too-many-cards"` (over 50; nothing else checked), `"card-<i>-front"`, `"card-<i>-back"` (invalid text, `i` 0-based), `"forbidden-text"` (once, when any text matches).
+  **Relies on** (created by TFV2-0253a, in `convex/lib/artifacts.ts`): `export type Parsed<T> = { ok: true; value: T } | { ok: false; problems: string[] };` · `export const ARTIFACT_TEXT_MAX = 300;` · `export function cleanText(value: unknown, max: number): string | null` (whitespace runs collapsed to one space and trimmed; `null` when not a string, empty after cleaning, or longer than `max`) · `export function hasForbiddenText(value: string): boolean` (`true` when `/https?:\/\/|javascript:|<script/i` matches).
 - **TESTS:**
   1. Given `{ cards: [{ front: "Sun", back: "שמש" }, { front: " Moon ", back: "ירח" }] }` / Then `{ ok: true, value: { cards: [{ front: "Sun", back: "שמש" }, { front: "Moon", back: "ירח" }] } }`.
-  2. Given `{ cards: [] }` / Then problems `["cards-missing"]`; given 51 cards / Then `["too-many-cards"]`; given `{ cards: [{ front: "", back: "x" }] }` / Then `["card-0-front"]`.
-  3. Given a back of `"https://x.y"` / Then problems `["forbidden-text"]`.
+  2. Given `{ cards: [] }` / Then problems `["cards-missing"]`; given `{ cards: Array.from({ length: 51 }, () => ({ front: "a", back: "b" })) }` / Then `["too-many-cards"]`; given `{ cards: [{ front: "", back: "x" }] }` / Then `["card-0-front"]`.
+  3. Given `{ cards: [{ front: "Sun", back: "https://x.y" }] }` / Then problems `["forbidden-text"]`.
   4. Given `stepCard(1, 3, "next")` → `2`; `stepCard(2, 3, "next")` → `2`; `stepCard(0, 3, "prev")` → `0`; `stepCard(0, 0, "next")` → `0`.
 - **NUMBERS:** at most 50 cards (`FLASHCARD_MAX_CARDS`, tested at 51); 8 of 8 file cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0255 — Coach artifacts: Quiz `parseQuiz` + `answerQuiz` (`convex/lib/artifacts.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0254 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253a, TFV2-0254 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0254.
+- **WHEN:** after TFV2-0253a, TFV2-0254.
 - **WHY:** PRD F-28; components.md §2.2 (`Quiz`: one right answer, feedback is icon + words; tempo.css line 763 props `{ question, options: {id, text, correct}[] }`).
 - **GOAL:** A quiz spec is checked (2–6 options, unique ids, exactly one correct), and an answer is scored right or wrong with the correct option's id.
 - **SCOPE:** `convex/lib/artifacts.ts` · test: `convex/lib/artifacts.test.ts`.
 - **MUTATES:** `convex/lib/artifacts.ts` (edit: new exports) · `convex/lib/artifacts.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: read `cleanText`, `hasForbiddenText`.
+  1. Code-map check: `grep -n "export type Parsed\|export const ARTIFACT_TEXT_MAX\|export function cleanText\|export function hasForbiddenText" convex/lib/artifacts.ts` → 4 lines matching **Relies on**; else stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add the SPEC exports.
   3. Add the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `13 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** store scores; allow more than one correct option; persist anything.
 - **REPORT:** `status / ticket: TFV2-0255 / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19626,31 +19693,33 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function answerQuiz(quiz: QuizData, chosenId: string): { result: "right" | "wrong"; correctId: string };
   ```
   Problems (collected in this order): `"question"` (not `cleanText(…, 300)`), `"options-count"` (not an array of 2–6), `"option-<i>"` (id not `cleanText(…, 40)`, text not `cleanText(…, 300)`, or `correct` not boolean), `"duplicate-id"`, `"correct-count"` (not exactly one `correct: true`), `"forbidden-text"`. Errors: `"Option not found"` → `answerQuiz` with an unknown id.
+  **Relies on** (created by TFV2-0253a, in `convex/lib/artifacts.ts`): `export type Parsed<T> = { ok: true; value: T } | { ok: false; problems: string[] };` · `export const ARTIFACT_TEXT_MAX = 300;` · `export function cleanText(value: unknown, max: number): string | null` (whitespace runs collapsed to one space and trimmed; `null` when not a string, empty after cleaning, or longer than `max`) · `export function hasForbiddenText(value: string): boolean` (`true` when `/https?:\/\/|javascript:|<script/i` matches).
 - **TESTS:**
-  1. Given a valid quiz with options `a` (correct) and `b` / When `answerQuiz(quiz, "a")` / Then `{ result: "right", correctId: "a" }`.
-  2. Given `answerQuiz(quiz, "b")` / Then `{ result: "wrong", correctId: "a" }`.
-  3. Given two options both `correct: true` / Then `parseQuiz` problems include `"correct-count"`; given one option only / Then `["options-count"]`.
-  4. Given options with ids `"a"` and `"a"` / Then problems include `"duplicate-id"`; given question `" "` / Then problems include `"question"`.
-  5. Given `answerQuiz(quiz, "z")` / Then it throws `"Option not found"`.
+  1. Given `quiz = { question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }, { id: "b", text: "5", correct: false }] }` (`parseQuiz(quiz)` is `{ ok: true, value: quiz }`) / When `answerQuiz(quiz, "a")` / Then `{ result: "right", correctId: "a" }`.
+  2. Given the case-1 `quiz` / When `answerQuiz(quiz, "b")` / Then `{ result: "wrong", correctId: "a" }`.
+  3. Given `{ question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }, { id: "b", text: "5", correct: true }] }` / Then `parseQuiz` problems include `"correct-count"`; given `{ question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }] }` / Then `["options-count"]`.
+  4. Given `{ question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }, { id: "a", text: "5", correct: false }] }` / Then problems include `"duplicate-id"`; given `{ question: " ", options: [{ id: "a", text: "4", correct: true }, { id: "b", text: "5", correct: false }] }` / Then problems include `"question"`.
+  5. Given the case-1 `quiz` / When `answerQuiz(quiz, "z")` / Then it throws `"Option not found"`.
 - **NUMBERS:** 2–6 options (`QUIZ_OPTIONS`); exactly 1 correct; 13 of 13 file cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0256 — Coach artifacts: Checklist `parseChecklist` + `checklistProgress` (`convex/lib/artifacts.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0255 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253a, TFV2-0255 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0255.
+- **WHEN:** after TFV2-0253a, TFV2-0255.
 - **WHY:** PRD F-28; components.md §2.2 (`Checklist`, "2 of 5 done" — the words are the UI's; the counts come from here).
 - **GOAL:** A checklist spec is checked into `{ title, items: { text, done }[] }` and its done count is computed.
 - **SCOPE:** `convex/lib/artifacts.ts` · test: `convex/lib/artifacts.test.ts`.
 - **MUTATES:** `convex/lib/artifacts.ts` (edit: new exports) · `convex/lib/artifacts.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: read `cleanText`, `hasForbiddenText`.
+  1. Code-map check: `grep -n "export type Parsed\|export const ARTIFACT_TEXT_MAX\|export function cleanText\|export function hasForbiddenText" convex/lib/artifacts.ts` → 4 lines matching **Relies on**; else stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add the SPEC exports.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `17 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** persist or render; build copy strings.
 - **REPORT:** `status / ticket: TFV2-0256 / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19661,30 +19730,32 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function checklistProgress(data: ChecklistData): { done: number; total: number };
   ```
   Problems (in order): `"title"` (not `cleanText(…, 300)`), `"items-missing"` (no non-empty array), `"too-many-items"` (over 50), `"item-<i>"` (text invalid or `done` not boolean), `"forbidden-text"`.
+  **Relies on** (created by TFV2-0253a, in `convex/lib/artifacts.ts`): `export type Parsed<T> = { ok: true; value: T } | { ok: false; problems: string[] };` · `export const ARTIFACT_TEXT_MAX = 300;` · `export function cleanText(value: unknown, max: number): string | null` (whitespace runs collapsed to one space and trimmed; `null` when not a string, empty after cleaning, or longer than `max`) · `export function hasForbiddenText(value: string): boolean` (`true` when `/https?:\/\/|javascript:|<script/i` matches).
 - **TESTS:**
-  1. Given 5 items with 2 `done: true` / Then `checklistProgress` is `{ done: 2, total: 5 }`; with none done / Then `{ done: 0, total: 5 }`.
-  2. Given `{ title: "Pack", items: [] }` / Then problems `["items-missing"]`; given 51 items / Then `["too-many-items"]`.
-  3. Given an item `{ text: 7, done: false }` at index 1 / Then problems include `"item-1"`.
-  4. Given a valid list with `title: "  Pack  "` / Then `value.title` is `"Pack"`.
+  1. Given `{ title: "Pack", items: [{ text: "Socks", done: true }, { text: "Shirt", done: true }, { text: "Hat", done: false }, { text: "Book", done: false }, { text: "Charger", done: false }] }` / Then `checklistProgress` is `{ done: 2, total: 5 }`; with the same five items all `done: false` / Then `{ done: 0, total: 5 }`.
+  2. Given `{ title: "Pack", items: [] }` / Then problems `["items-missing"]`; given `{ title: "Pack", items: Array.from({ length: 51 }, () => ({ text: "a", done: false })) }` / Then `["too-many-items"]`.
+  3. Given `{ title: "Pack", items: [{ text: "Socks", done: false }, { text: 7, done: false }] }` / Then problems include `"item-1"`.
+  4. Given `{ title: "  Pack  ", items: [{ text: "Socks", done: false }] }` / Then `value.title` is `"Pack"`.
 - **NUMBERS:** at most 50 items (`CHECKLIST_MAX_ITEMS`, tested at 51); 17 of 17 file cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0257 — Coach artifacts: Tracker `parseTracker` + `logTracker` (`convex/lib/artifacts.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0256 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253a, TFV2-0256 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0256.
+- **WHEN:** after TFV2-0253a, TFV2-0256.
 - **WHY:** PRD F-28; components.md §2.2 (`Tracker`, `data-dir="inc"|"dec"`).
 - **GOAL:** A tracker spec is checked into `{ label, unit, value, goal }` and one step up or down is computed, never below 0.
 - **SCOPE:** `convex/lib/artifacts.ts` · test: `convex/lib/artifacts.test.ts`.
 - **MUTATES:** `convex/lib/artifacts.ts` (edit: new exports) · `convex/lib/artifacts.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: read `cleanText`, `hasForbiddenText`.
+  1. Code-map check: `grep -n "export type Parsed\|export const ARTIFACT_TEXT_MAX\|export function cleanText\|export function hasForbiddenText" convex/lib/artifacts.ts` → 4 lines matching **Relies on**; else stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Add the SPEC exports.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `21 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** allow negative values; persist anything.
 - **REPORT:** `status / ticket: TFV2-0257 / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19696,54 +19767,63 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function logTracker(value: number, dir: "inc" | "dec"): number;
   ```
   Problems (in order): `"label"` (not `cleanText(…, 80)`), `"unit"` (not `cleanText(…, 20)`), `"value"` (not an integer in `[0, 1000000]`), `"goal"` (not an integer in `[1, 1000000]`), `"forbidden-text"`.
+  **Relies on** (created by TFV2-0253a, in `convex/lib/artifacts.ts`): `export type Parsed<T> = { ok: true; value: T } | { ok: false; problems: string[] };` · `export const ARTIFACT_TEXT_MAX = 300;` · `export function cleanText(value: unknown, max: number): string | null` (whitespace runs collapsed to one space and trimmed; `null` when not a string, empty after cleaning, or longer than `max`) · `export function hasForbiddenText(value: string): boolean` (`true` when `/https?:\/\/|javascript:|<script/i` matches).
 - **TESTS:**
   1. Given `logTracker(4, "inc")` → `5`; `logTracker(0, "dec")` → `0`; `logTracker(1000000, "inc")` → `1000000`.
-  2. Given `{ label: "Water", unit: "glasses", value: 4, goal: 6 }` / Then `{ ok: true, value: <same> }`.
-  3. Given `goal: "6"` / Then problems `["goal"]`; given `value: -1` / Then `["value"]`.
-  4. Given `unit: ""` / Then problems `["unit"]`.
+  2. Given `{ label: "Water", unit: "glasses", value: 4, goal: 6 }` / Then `{ ok: true, value: { label: "Water", unit: "glasses", value: 4, goal: 6 } }`.
+  3. Given `{ label: "Water", unit: "glasses", value: 4, goal: "6" }` / Then problems `["goal"]`; given `{ label: "Water", unit: "glasses", value: -1, goal: 6 }` / Then `["value"]`.
+  4. Given `{ label: "Water", unit: "", value: 4, goal: 6 }` / Then problems `["unit"]`.
 - **NUMBERS:** value 0–1,000,000, goal 1–1,000,000 (`TRACKER_LIMITS`); 21 of 21 file cases pass. Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0253b — Coach artifacts: `makeArtifact` dispatcher (`convex/lib/artifacts.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0257 · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0254, TFV2-0255, TFV2-0256, TFV2-0257 · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0257.
-- **WHY:** PRD F-28; TRD §4b (`makeArtifact(spec)`: one entry point for the four kinds). Built after the four parsers (TFV2-0254…0257) because it calls them; registering it as an Agent tool is part of the coach Agent work (TFV2-0153, OPEN Q-12) and is not here.
+- **WHEN:** after TFV2-0254, TFV2-0255, TFV2-0256, TFV2-0257.
+- **WHY:** PRD F-28; TRD §4b (`makeArtifact(spec)`: one entry point for the four kinds). Built after the four parsers (TFV2-0254 to TFV2-0257) because it calls them; registering it as an Agent tool is part of the coach Agent work (TFV2-0153, OPEN Q-12) and is not here.
 - **GOAL:** `makeArtifact(spec)` checks `{ kind, data }` and returns the parsed artifact of that kind or its problems.
 - **SCOPE:** `convex/lib/artifacts.ts` · test: `convex/lib/artifacts.test.ts`.
 - **MUTATES:** `convex/lib/artifacts.ts` (edit: new exports) · `convex/lib/artifacts.test.ts` (edit: new cases). No table written.
 - **STEPS:**
-  1. Code-map check: read `parseFlashcard`, `parseQuiz`, `parseChecklist`, `parseTracker`.
-  2. Add `Artifact` and `makeArtifact` exactly as SPEC.
+  1. Code-map check: `grep -n "export function parseFlashcard\|export function parseQuiz\|export function parseChecklist\|export function parseTracker\|export type FlashcardData\|export type QuizData\|export type ChecklistData\|export type TrackerData" convex/lib/artifacts.ts` → 8 lines matching **Relies on**; else stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Add `PlainObject`, `isPlainObject`, `Artifact` and `makeArtifact` as the SPEC states.
   3. Add the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/artifacts.test.ts` → `26 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/artifacts.test.ts` pasted into the PR.
 - **DO NOT:** register a coach tool; save the artifact; call a model.
 - **REPORT:** `status / ticket: TFV2-0253b / evidence: <DONE output> / changed: convex/lib/artifacts.ts, convex/lib/artifacts.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
   ```ts
+  /** A plain object: typeof value is "object", value is not null and not an array. */
+  type PlainObject = Record<string, unknown>;
+  function isPlainObject(value: unknown): value is PlainObject {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
   export type Artifact =
     | { kind: "flashcard"; data: FlashcardData }
     | { kind: "quiz"; data: QuizData }
     | { kind: "checklist"; data: ChecklistData }
     | { kind: "tracker"; data: TrackerData };
-  /** spec not a plain object → ["not-an-object"]; kind not one of the four → ["unknown-kind"]; else the kind's parser on spec.data, wrapping its value as { kind, data }. */
+  /** isPlainObject(spec) false → ["not-an-object"]; kind not one of the four → ["unknown-kind"]; else the kind's parser on spec.data, wrapping its value as { kind, data }. */
   export function makeArtifact(spec: unknown): Parsed<Artifact>;
   ```
   Pure; throws nothing.
+  **Relies on** (in `convex/lib/artifacts.ts`): `export type FlashcardData = { cards: { front: string; back: string }[] };` and `export function parseFlashcard(data: unknown): Parsed<FlashcardData>` (TFV2-0254) · `export type QuizData = { question: string; options: { id: string; text: string; correct: boolean }[] };` and `export function parseQuiz(data: unknown): Parsed<QuizData>` (TFV2-0255) · `export type ChecklistData = { title: string; items: { text: string; done: boolean }[] };` and `export function parseChecklist(data: unknown): Parsed<ChecklistData>` (TFV2-0256) · `export type TrackerData = { label: string; unit: string; value: number; goal: number };` and `export function parseTracker(data: unknown): Parsed<TrackerData>` (TFV2-0257); each parser returns `{ ok: false, problems }` with `"forbidden-text"` when any text matches `/https?:\/\/|javascript:|<script/i`.
 - **TESTS:**
   1. Given `{ kind: "flashcard", data: { cards: [{ front: "a", back: "b" }] } }` / Then `{ ok: true, value: { kind: "flashcard", data: { cards: [{ front: "a", back: "b" }] } } }`.
-  2. Given a valid quiz spec / Then `ok: true`, `value.kind` is `"quiz"`.
+  2. Given `{ kind: "quiz", data: { question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }, { id: "b", text: "5", correct: false }] } }` / Then `ok: true`, `value.kind` is `"quiz"`.
   3. Given `{ kind: "poll", data: {} }` / Then `{ ok: false, problems: ["unknown-kind"] }`.
   4. Given `null` or `"x"` / Then `["not-an-object"]`.
-  5. Given a checklist whose item text holds `"<script>"` / Then `ok: false` and problems include `"forbidden-text"`.
+  5. Given `{ kind: "checklist", data: { title: "Pack", items: [{ text: "<script>", done: false }] } }` / Then `ok: false` and problems include `"forbidden-text"`.
 - **NUMBERS:** 26 of 26 file cases pass (exact). Latency: n/a (pure).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0258 — Billing: RevenueCat webhook `revenueCatWebhook` (verify + tests) (`convex/revenuecat.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -19752,22 +19832,23 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/revenuecat.ts` (read only, unchanged) · test: `convex/revenuecat.test.ts`.
 - **MUTATES:** `convex/revenuecat.test.ts` (new). No source, route or env change.
 - **STEPS:**
-  1. Code-map check: read `convex/revenuecat.ts` (68 lines) and `mapRevenueCatEventToUserType`.
-  2. Create `convex/revenuecat.test.ts` with the 7 TESTS cases. Each test sets `process.env.REVENUECAT_WEBHOOK_SECRET = "test-secret"` (or deletes it) and an `afterEach` restores the original value (delete when it was unset). The ctx is `{ runMutation: async (_ref, args) => { calls.push(args); return { updated: true }; } }`; `console.error` is replaced with a no-op spy for the test and restored.
+  1. Code-map check: `wc -l convex/revenuecat.ts` → `68`; `grep -n "export const revenueCatWebhook = httpAction" convex/revenuecat.ts` → line 15; `grep -n "export function mapRevenueCatEventToUserType" convex/lib/revenuecat_events.ts` → line 20; `grep -n "export const run" convex/lib/testFakeCtx.ts` → one line. Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Create `convex/revenuecat.test.ts` with the 7 TESTS cases. Each test sets `process.env.REVENUECAT_WEBHOOK_SECRET = "test-secret"` (or deletes it) and an `afterEach` restores the original value (delete when it was unset). The ctx is `{ runMutation: async (_ref, args) => { calls.push(args); return { updated: true }; } }`; `console.error` is replaced with a no-op spy for the test and restored. Each request is `new Request("https://example.convex.site/api/revenuecat-webhook", { method: "POST", headers: { Authorization: <header> }, body: <body> })` with header `"test-secret"` unless the case names another; an object body is passed as `JSON.stringify(<object>)`; call it as `await run(revenueCatWebhook, ctx, request)`.
   3. Run DONE. If a case fails, stop and report `blocked: question — <case>`; do not change the source.
 - **DONE:** `bun test convex/revenuecat.test.ts` → `7 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/revenuecat.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/revenuecat.ts` or `convex/http.ts`; use or print a real secret (the test value `"test-secret"` is a fake); log `REVENUECAT_WEBHOOK_SECRET`.
 - **REPORT:** `status / ticket: TFV2-0258 / evidence: <DONE output> / changed: convex/revenuecat.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing, unchanged: `export const revenueCatWebhook = httpAction(async (ctx: ActionCtx, request: Request): Promise<Response> => { … })`. Responses (exact status → body → trigger): `503` → `"Webhook not configured"` → env `REVENUECAT_WEBHOOK_SECRET` unset; `401` → `"Unauthorized"` → `Authorization` header not equal to the secret; `400` → `"Invalid JSON body"` → body not JSON; `400` → `"Missing event field"` → no `event`; `200` → `{"received":true,"eventType":<type>}` otherwise, also when `runMutation` throws (RevenueCat must not retry our errors). With `event.app_user_id` it calls `internal.users.updateSubscriptionStatus` with `{ userId: app_user_id, userType: mapRevenueCatEventToUserType(type), activeEntitlements: entitlement_ids ?? [], revenueCatEvent: type ?? "UNKNOWN" }`.
+  **Relies on:** `run(fn, ctx, args)` from `./lib/testFakeCtx` (line 74; calls `fn._handler(ctx, args)`) · `mapRevenueCatEventToUserType(eventType: string | undefined): RevenueCatUserType` from `./lib/revenuecat_events` (line 20): `"paid"` for `INITIAL_PURCHASE`, `RENEWAL`, `PRODUCT_CHANGE`, `UNCANCELLATION`; `"free"` otherwise and when `undefined`.
 - **TESTS:**
-  1. Given the secret unset / When a POST runs / Then status `503` and text `"Webhook not configured"`.
-  2. Given header `Authorization: wrong` / Then `401` and `"Unauthorized"`; `runMutation` not called.
+  1. Given the secret unset / When a POST with body `{}` runs / Then status `503` and text `"Webhook not configured"`.
+  2. Given the secret set and header `Authorization: wrong` with body `{}` / Then `401` and `"Unauthorized"`; `runMutation` not called.
   3. Given the right header and body `"not json"` / Then `400` and `"Invalid JSON body"`.
-  4. Given body `{}` / Then `400` and `"Missing event field"`.
+  4. Given the right header and body `{}` / Then `400` and `"Missing event field"`.
   5. Given `{ event: { type: "INITIAL_PURCHASE", app_user_id: "a@b.co", entitlement_ids: ["pro"] } }` / Then `200`, JSON `{ received: true, eventType: "INITIAL_PURCHASE" }`, and one call with `{ userId: "a@b.co", userType: "paid", activeEntitlements: ["pro"], revenueCatEvent: "INITIAL_PURCHASE" }`.
-  6. Given `{ event: { type: "EXPIRATION" } }` (no `app_user_id`) / Then `200` and `runMutation` not called.
-  7. Given a `runMutation` that throws / Then status `200` still.
+  6. Given `{ event: { type: "EXPIRATION" } }` (no `app_user_id`) / Then `200`, JSON `{ received: true, eventType: "EXPIRATION" }`, and `runMutation` not called.
+  7. Given a `runMutation` that throws `new Error("boom")` and body `{ event: { type: "RENEWAL", app_user_id: "a@b.co" } }` / Then status `200` and JSON `{ received: true, eventType: "RENEWAL" }`.
 - **NUMBERS:** 7 of 7 cases pass (exact); every documented status code has one case. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
@@ -19776,6 +19857,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **Status:** superseded by TFV2-0004; not a build ticket.
 
 ### TFV2-0260 — Billing: `assertClientMaySetUserType` exact message (verify + test) (`convex/lib/subscriptionGuards.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -19788,7 +19870,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Append the 1 TESTS case inside `describe("subscriptionGuards", …)` (the file's `afterEach` already restores `MOCK_PAYMENTS`).
   3. Run DONE.
 - **DONE:** `bun test convex/lib/subscriptionGuards.test.ts` → `4 pass`, `0 fail`.
-- **EVIDENCE:** the before (3 pass) and after (4 pass) summaries pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/subscriptionGuards.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/lib/subscriptionGuards.ts`; change the 3 existing tests; print the value of `MOCK_PAYMENTS`.
 - **REPORT:** `status / ticket: TFV2-0260 / evidence: <DONE output> / changed: convex/lib/subscriptionGuards.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing: `export function isMockPaymentsEnabled(): boolean` (`process.env.MOCK_PAYMENTS === "true"`); `export function assertClientMaySetUserType(userType: "free" | "paid"): void` — throws `new Error("Paid upgrades must go through RevenueCat checkout.")` only for `"paid"` with mock payments off. No user-facing copy.
@@ -19799,6 +19881,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0261b — Billing: `billing.getMine` (`convex/billing.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -19807,12 +19890,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/billing.ts` · test: `convex/billing.test.ts`.
 - **MUTATES:** `convex/billing.ts` (new) · `convex/billing.test.ts` (new). No table written.
 - **STEPS:**
-  1. Code-map check: `ls convex/billing.ts` → missing; read `subscriptionStates` in `convex/schema.ts` and `dailyMinutesFor`.
-  2. Create `convex/billing.ts` with `MyPlan` and `getMine` exactly as SPEC.
+  1. Code-map check: `ls convex/billing.ts` → missing; `grep -n "subscriptionStates: defineTable" convex/schema.ts` → one line; `grep -n "export function dailyMinutesFor" convex/lib/voicePolicy.ts` → one line; `grep -n "dailyMinutesPerUser: 15" convex/lib/voicePolicy.ts` → one line; `grep -n "export async function requireUser" convex/lib/requireUser.ts` → line 51; `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts` → one line (TFV2-0000a). Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Create `convex/billing.ts` with `MyPlan` and `getMine` as the SPEC states.
   3. Create `convex/billing.test.ts` with the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `4 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** return card data (never stored); invent `renewsAt`/`trialEndsAt`; write anything; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0261b / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19824,31 +19907,34 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: QueryCtx): Promise<MyPlan> => { … },
   });
   ```
-  `tier = user.entitlementTier ?? "none"`; `row = withIndex("by_userId", q => q.eq("userId", user._id)).first()`; no row → `plan: "none", interval: "none", status: "inactive", source: null`; else `plan`, `interval = row.billingCycle`, `status`, `source = row.source ?? null`; `liveMinutesPerDay = dailyMinutesFor(tier)`. Errors: `"Not authenticated"`. No user-facing copy.
+  `user = await requireUser(ctx)`; `tier = user.entitlementTier ?? "none"`; `row = withIndex("by_userId", q => q.eq("userId", user._id)).first()`; no row → `plan: "none", interval: "none", status: "inactive", source: null`; else `plan`, `interval = row.billingCycle`, `status`, `source = row.source ?? null`; `liveMinutesPerDay = dailyMinutesFor(tier)`. Errors: `"Not authenticated"`. No user-facing copy.
+  **Relies on:** `requireUser(ctx: QueryCtx | MutationCtx)` from `./lib/requireUser` (line 51): no identity → `"Not authenticated"`; user not found and no identity email → `"Not authenticated"`; otherwise not found → `"User not found"`; inactive account → `"This account is not active"`; returns the `users` row · `users.entitlementTier: v.optional(v.union(v.literal("none"), v.literal("basic"), v.literal("pro"), v.literal("max"), v.literal("god")))` · `subscriptionStates` fields `userId`, `plan` (none|trial|basic|pro|max), `billingCycle` (none|monthly|annual|lifetime), `status` (inactive|active|grace|cancelled), `trialUsed: v.boolean()`, `source?: string`, `createdAt`, `updatedAt`, index `by_userId` · `export function dailyMinutesFor(tier: string | undefined): number` from `./lib/voicePolicy` (`Math.min(TIER_LIVE_MINUTES[tier] ?? 0, VOICE_LIMITS.dailyMinutesPerUser)`, with `TIER_LIVE_MINUTES = { none: 0, basic: 30, pro: 90, max: 180, god: 180 }` and `dailyMinutesPerUser: 15`, so `dailyMinutesFor("max") === 15`) · `makeFakeCtx(userId: string, extraUsers: string[] = [])` and `run(fn, ctx, args)` (calls `fn._handler(ctx, args)`) from `./lib/testFakeCtx` (users rows `{ _id: id, email: `${id}@example.com` }`, inserted ids `"<table>:<n>"`); `makeSignedOutCtx()` from `./lib/testFakeCtx` (getUserIdentity → `null`; created by TFV2-0000a).
+  Test setup: `ctx = makeFakeCtx("users:a", ["users:b"])`; rows are inserted with `ctx.db.insert("subscriptionStates", <row>)`; the tier is set with `ctx.db.patch("users:a", { entitlementTier: "max" })`; the query runs as `run(getMine, ctx, {})`.
 - **TESTS:**
-  1. Given `entitlementTier: "max"` and a row `{ plan: "max", billingCycle: "lifetime", status: "active", trialUsed: true, source: "open_signup_grant" }` / Then `{ tier: "max", plan: "max", interval: "lifetime", status: "active", source: "open_signup_grant", liveMinutesPerDay: dailyMinutesFor("max") }`.
+  1. Given `entitlementTier: "max"` and a row `{ userId: "users:a", plan: "max", billingCycle: "lifetime", status: "active", trialUsed: true, source: "open_signup_grant", createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }` / Then `{ tier: "max", plan: "max", interval: "lifetime", status: "active", source: "open_signup_grant", liveMinutesPerDay: 15 }`.
   2. Given no row and no `entitlementTier` / Then `{ tier: "none", plan: "none", interval: "none", status: "inactive", source: null, liveMinutesPerDay: 0 }`.
-  3. Given a row of user B only / Then the caller gets the no-row result.
-  4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
-- **NUMBERS:** live minutes per day from `TIER_LIVE_MINUTES` (basic 30, pro 90, max 180; HARD_RULES §9), capped by `VOICE_LIMITS.dailyMinutesPerUser` as `dailyMinutesFor` does; 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
+  3. Given only the row `{ userId: "users:b", plan: "pro", billingCycle: "monthly", status: "active", trialUsed: true, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }` / Then the caller (`users:a`, no `entitlementTier`) gets `{ tier: "none", plan: "none", interval: "none", status: "inactive", source: null, liveMinutesPerDay: 0 }`.
+  4. Given `makeSignedOutCtx()` / When `run(getMine, makeSignedOutCtx(), {})` runs / Then it rejects with `"Not authenticated"`.
+- **NUMBERS:** live minutes per day = `dailyMinutesFor(tier)`: `TIER_LIVE_MINUTES` (basic 30, pro 90, max 180, god 180; HARD_RULES §9) held under `VOICE_LIMITS.dailyMinutesPerUser = 15`, so today every paid tier returns 15 and `none` returns 0; 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0261a — Billing: `billing.listTiers` (`convex/billing.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261b · **Folds-in:** none
+- **STATUS:** open — Q-02: Prices and billing tiers (values shown to users).
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0261b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0261b.
+- **WHEN:** after TFV2-0000a, TFV2-0261b.
 - **WHY:** PRD F-110, F-35; billing screen (`@data tiers = billing.listTiers`). Prices are Amit's (Q-02; REWRITE-PLAN-v2 §4.2: $1 for 3 weeks, $10, $20, $40, annual = 10 × monthly, against a later note "$20 and $50").
 - **GOAL:** A new query `billing.listTiers` returns the four tiers in order with live-voice minutes and the prices Amit sets.
 - **SCOPE:** `convex/billing.ts` · test: `convex/billing.test.ts`.
 - **MUTATES:** `convex/billing.ts` (edit: new exports `BILLING_TIERS`, `listTiers`) · `convex/billing.test.ts` (edit: new cases). No table written.
 - **STEPS:**
   1. Code-map check: read `TIER_LIVE_MINUTES`.
-  2. Add `BILLING_TIERS` with Amit's answered prices and `listTiers` exactly as SPEC.
+  2. Add `BILLING_TIERS` with Amit's answered prices and `listTiers` as the SPEC states.
   3. Add the 2 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `6 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** put a price in the code that Amit has not answered; return tier names (the screen localises them by id).
 - **REPORT:** `status / ticket: TFV2-0261a / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19864,23 +19950,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** prices: UNKNOWN until Q-02 is answered; live minutes 30 / 90 / 180 (HARD_RULES §9); 6 of 6 file cases pass.
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** Q-02 (prices and billing tiers shown to users): what are the trial, Basic, Pro and Max monthly and annual prices, and does the trial get Max's 180 live-voice minutes? — Amit.
+- **OPEN:** Q-02: Prices and billing tiers (values shown to users). — Amit.
 
 ### TFV2-0262 — Billing: `billing.checkout` (Polar checkout URL) (`convex/billing.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261a · **Folds-in:** none
+- **STATUS:** open — inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); new: Which Polar product ids (and env var names; proposed `POLAR_PRODUCT_<TIER>_<INTERVAL>`) map to each tier and interval, and does the web checkout move from the Polar sandbox to production?
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0261a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0261a.
+- **WHEN:** after TFV2-0000a, TFV2-0261a.
 - **WHY:** PRD F-110 ("Polar on web"); billing screen (`@actions billing.checkout({ tier, interval })`). The web app already has the Polar checkout route `apps/web/app/checkout/route.ts` (`GET /checkout?products=<productId>`, `@polar-sh/nextjs`, sandbox server) and `PaywallModal` reads `NEXT_PUBLIC_POLAR_MONTHLY_PRODUCT_ID` / `NEXT_PUBLIC_POLAR_YEARLY_PRODUCT_ID`. Product ids per tier are not decided.
 - **GOAL:** A new query `billing.checkout` returns the same-tab checkout path `/checkout?products=<productId>` for a tier and interval.
 - **SCOPE:** `convex/billing.ts` · test: `convex/billing.test.ts`.
 - **MUTATES:** `convex/billing.ts` (edit: new exports `POLAR_PRODUCT_ENV`, `checkout`) · `convex/billing.test.ts` (edit: new cases). No table written.
 - **STEPS:**
   1. Code-map check: read `apps/web/app/checkout/route.ts`.
-  2. Add `POLAR_PRODUCT_ENV` and `checkout` exactly as SPEC.
+  2. Add `POLAR_PRODUCT_ENV` and `checkout` as the SPEC states.
   3. Add the 4 TESTS cases (each sets and restores the env names it uses, with fake values `"prod_test"`).
   4. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `10 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** use Stripe; call Polar from Convex; read or print `POLAR_ACCESS_TOKEN`; fake a URL when a product id is missing.
 - **REPORT:** `status / ticket: TFV2-0262 / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19904,23 +19991,24 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 10 of 10 file cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0261a (Q-02 (prices and billing tiers shown to users)) and new: which Polar product ids (and env var names; proposed `POLAR_PRODUCT_<TIER>_<INTERVAL>`) map to each tier and interval, and does the web checkout move from the Polar sandbox to production? — Amit.
+- **OPEN:** inherits TFV2-0261a (Q-02: Prices and billing tiers (values shown to users).); new: Which Polar product ids (and env var names; proposed `POLAR_PRODUCT_<TIER>_<INTERVAL>`) map to each tier and interval, and does the web checkout move from the Polar sandbox to production? — Amit.
 
 ### TFV2-0263a — Billing: `billing.cancel` (`convex/billing.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261b · **Folds-in:** none
+- **STATUS:** open — new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key?
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0261b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0261b.
+- **WHEN:** after TFV2-0000a, TFV2-0261b.
 - **WHY:** PRD F-110 (cancelling is explicit; access stays until the period ends); trial-end screen (`@actions billing.cancel`). `subscriptionStates.status` already allows `"cancelled"`. A local status change does not stop Polar or RevenueCat from charging, so the provider call is undecided.
 - **GOAL:** A new mutation `billing.cancel` marks the caller's active plan as cancelled, idempotently.
 - **SCOPE:** `convex/billing.ts` · test: `convex/billing.test.ts`.
 - **MUTATES:** `convex/billing.ts` (edit: new export `cancel`) · `convex/billing.test.ts` (edit: new cases) · `subscriptionStates.status`, `updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: read `getMine`.
-  2. Add `cancel` exactly as SPEC.
+  2. Add `cancel` as the SPEC states.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** charge or refund; hard-delete the row; change `users.entitlementTier` (access stays until the period ends).
 - **REPORT:** `status / ticket: TFV2-0263a / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19938,20 +20026,21 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** new: Does `billing.cancel` only record the cancellation in `subscriptionStates` (this SPEC), or must it also cancel at Polar (web) or point to the store (RevenueCat, mobile), and with which API and key? — Amit.
 
 ### TFV2-0263b — Billing: `billing.acknowledgeConversion` (`convex/billing.ts`) — OPEN
-- **Stage:** D · **Pass:** 1 · **Depends:** CFG-014, TFV2-0261b · **Folds-in:** none
+- **STATUS:** open — inherits CFG-014 (new: Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag?)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, CFG-014, TFV2-0261b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after CFG-014, TFV2-0261b.
+- **WHEN:** after TFV2-0000a, CFG-014, TFV2-0261b.
 - **WHY:** PRD F-110 (the person agrees before a trial converts; no charge at that moment); trial-end screen (`@actions billing.acknowledgeConversion`). CFG-014 adds `subscriptionStates.conversionAcknowledgedAt`.
 - **GOAL:** A new mutation `billing.acknowledgeConversion` records the time the caller agreed to convert their trial.
 - **SCOPE:** `convex/billing.ts` · test: `convex/billing.test.ts`.
 - **MUTATES:** `convex/billing.ts` (edit: new export `acknowledgeConversion`) · `convex/billing.test.ts` (edit: new cases) · `subscriptionStates.conversionAcknowledgedAt`, `updatedAt` (patch).
 - **STEPS:**
   1. Code-map check: confirm `conversionAcknowledgedAt` (CFG-014) in `convex/schema.ts`.
-  2. Add `acknowledgeConversion` exactly as SPEC.
+  2. Add `acknowledgeConversion` as the SPEC states.
   3. Add the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** charge; change `plan` or `status`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0263b / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19966,9 +20055,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 4 of 4 new cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-014 (is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag?) — Amit.
+- **OPEN:** inherits CFG-014 (new: Is conversion consent stored on `subscriptionStates` (this shape) or as a `users` flag?) — Amit.
 
 ### TFV2-0264a — Billing: trial notice timing `nextTrialNotice` (`convex/lib/trialNotices.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** first.
@@ -19978,11 +20068,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/lib/trialNotices.ts` (new) · `convex/lib/trialNotices.test.ts` (new). No table written.
 - **STEPS:**
   1. Code-map check: `ls convex/lib/trialNotices.ts` → missing.
-  2. Create the file exactly as SPEC.
+  2. Create the file as the SPEC states.
   3. Create the test with the 5 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/lib/trialNotices.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/lib/trialNotices.test.ts` pasted into the PR.
 - **DO NOT:** send anything; read the clock (`now` is an argument); import Convex.
 - **REPORT:** `status / ticket: TFV2-0264a / evidence: <DONE output> / changed: convex/lib/trialNotices.ts, convex/lib/trialNotices.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -19993,7 +20083,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export function nextTrialNotice(args: { now: number; trialEndsAt: number; sent: readonly TrialNotice[] }): TrialNotice | null;
   ```
   Rule in words: send at most one notice per check, the most urgent one crossed; once `"1h"` is due, `"1d"` and `"3d"` are skipped. Pure; throws nothing.
-- **TESTS:**
+- **TESTS:** every case passes `now = 1_793_577_600_000` and `trialEndsAt = now + h * 3_600_000` for the stated `h` hours left (72 h → `1_793_836_800_000`, 73 h → `1_793_840_400_000`); 0 ms left is `trialEndsAt = now`; "the end in the past" is `trialEndsAt = now - 1`.
   1. Given 72 h left and `sent: []` / Then `"3d"`; given 73 h left / Then `null`.
   2. Given 24 h left and `sent: ["3d"]` / Then `"1d"`.
   3. Given 1 h left and `sent: ["3d", "1d"]` / Then `"1h"`; given 1 h left and `sent: []` / Then `"1h"`.
@@ -20004,6 +20094,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0264b — Billing: `billing.queueTrialNotices` (in-app notices before a trial converts) (`convex/billing.ts`, `convex/crons.ts`) — OPEN
+- **STATUS:** open — inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits CFG-040 (new: Store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: Is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)?
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-013, CFG-040, TFV2-0264a, TFV2-0261b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-013, CFG-040, TFV2-0264a, TFV2-0261b.
@@ -20013,12 +20104,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/billing.ts` (edit: new exports `TRIAL_NOTICE_COPY`, `TRIAL_SCAN_MAX`, `queueTrialNotices`) · `convex/crons.ts` (edit: one line, SPEC) · `convex/billing.test.ts` (edit: new cases) · `notifications` (insert) · `subscriptionStates.trialNoticesSent`, `updatedAt` (patch) · Convex cron schedule (one interval job).
 - **STEPS:**
   1. Code-map check: confirm `trialEndsAt`, `trialNoticesSent` and `by_trialEndsAt` in `convex/schema.ts`; read `nextTrialNotice` and `preferencesFor`.
-  2. Add the three exports exactly as SPEC.
+  2. Add the three exports as the SPEC states.
   3. In `convex/crons.ts` add, before `export default crons;`, exactly: `crons.interval("queue trial notices", { minutes: 15 }, internal.billing.queueTrialNotices, {});`.
   4. Add the 5 TESTS cases (`now` is passed in; the cron passes none, so the handler uses `args.now ?? Date.now()`).
   5. Run DONE.
-- **DONE:** `bun test convex/billing.test.ts` → `0 fail`, the 5 new cases passing; `bun run typecheck` → exit 0.
-- **EVIDENCE:** the `bun test` summary and typecheck exit code pasted into the PR.
+- **DONE:** `bun test convex/billing.test.ts` → `0 fail`, the 5 new cases passing.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** send email here (TFV2-0264c); notify for a trial that is not `status: "active"`; edit any other line of `convex/crons.ts`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0264b / evidence: <DONE output> / changed: convex/billing.ts, convex/crons.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -20046,9 +20137,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a trial ending in 5 days / Then `{ queued: 0 }`.
 - **NUMBERS:** at most 200 rows per run (`TRIAL_SCAN_MAX`); every 15 minutes, so a notice lands at most 15 minutes after its threshold (the 1-hour notice at least 45 minutes before the charge); thresholds from PRD F-110. Latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits CFG-013 (add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?) and CFG-040 (store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)? — Amit.
+- **OPEN:** inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits CFG-040 (new: Store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: Is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)? — Amit.
 
 ### TFV2-0264c — Billing: trial notice email `billing.emailTrialNotice` (`convex/billing.ts`) — OPEN
+- **STATUS:** open — inherits TFV2-0264b (inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits CFG-040 (new: Store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: Is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)?)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0264b · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0264b.
@@ -20058,12 +20150,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **MUTATES:** `convex/billing.ts` (edit: new exports `sendTrialNoticeEmail`, `emailTrialNotice`; one added line in `queueTrialNotices`) · `convex/billing.test.ts` (edit: new cases) · Convex scheduler; outbound email.
 - **STEPS:**
   1. Code-map check: read `RESEND_EMAILS_URL` and the request shape in `convex/lib/signInEmail.ts` (lines 149–185).
-  2. Add `sendTrialNoticeEmail` and `emailTrialNotice` exactly as SPEC.
+  2. Add `sendTrialNoticeEmail` and `emailTrialNotice` as the SPEC states.
   3. In `queueTrialNotices`, right after the notification insert, read `const user = await ctx.db.get(row.userId);` and, when `user?.email` is a non-empty string, add `await ctx.scheduler.runAfter(0, internal.billing.emailTrialNotice, { to: user.email, notice, lang });` (no email → no scheduled call).
   4. Add the 4 TESTS cases (stub `fetch`; fake env values `"re_test"` and `"Tempo <hi@example.com>"`).
   5. Run DONE.
 - **DONE:** `bun test convex/billing.test.ts` → `0 fail`, the 4 new cases passing.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/billing.test.ts` pasted into the PR.
 - **DO NOT:** send real email in tests; read, log or echo `AUTH_RESEND_KEY` or Resend's error body; add an email SDK.
 - **REPORT:** `status / ticket: TFV2-0264c / evidence: <DONE output> / changed: convex/billing.ts, convex/billing.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -20087,9 +20179,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `queueTrialNotices` queues one notice / Then `ctx.scheduler.calls` has one entry with `args: { to: "users:a@example.com", notice: "3d", lang: "en" }` (the fake user's email).
 - **NUMBERS:** one email per queued notice (case 4); 4 of 4 new cases pass. Email latency: UNKNOWN (no baseline).
 - **GATES:** n/a — OPEN (not buildable until Amit answers).
-- **OPEN:** inherits TFV2-0264b (inherits CFG-013 (add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?) and CFG-040 (store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)? — Amit.)
+- **OPEN:** inherits TFV2-0264b (inherits CFG-013 (new: Add `renewsAt` and `trialEndsAt` to `subscriptionStates` (this shape), or drop them from the billing contract?); inherits CFG-040 (new: Store sent trial notices as `subscriptionStates.trialNoticesSent` with index `by_trialEndsAt` (this shape)?); new: Is the notice copy in SPEC approved as the pre-charge notice (it names no price until Q-02 is answered)?) — Amit.
 
 ### TFV2-0265a — Preferences: `preferences.update` (verify + tests) (`convex/preferences.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after TFV2-0000a.
@@ -20098,11 +20191,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/preferences.ts` (read only, unchanged) · test: `convex/preferences.test.ts`.
 - **MUTATES:** `convex/preferences.test.ts` (new). No source change.
 - **STEPS:**
-  1. Code-map check: read `update` (lines 94–145) and `fromRow` in `convex/preferences.ts`; `ls convex/preferences.test.ts` → missing.
+  1. Code-map check: `grep -n "export const update = mutation" convex/preferences.ts` → line 94; `grep -n "Time zone is required" convex/preferences.ts` → one line; `grep -n "export const PREFERENCE_DEFAULTS" convex/preferences.ts` → line 35; `grep -n "export async function requireUser" convex/lib/requireUser.ts` → line 51; `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts` → one line (TFV2-0000a); `ls convex/preferences.test.ts` → missing. Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
   2. Create `convex/preferences.test.ts` (`bun:test`, `makeFakeCtx`, `makeSignedOutCtx`, `run`) with the 5 TESTS cases inside `describe("preferences.update", …)`.
   3. Run DONE. If a case fails, stop and report `blocked: question — <case>`; do not change the source.
 - **DONE:** `bun test convex/preferences.test.ts` → `5 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/preferences.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/preferences.ts` or `convex/users.test.ts`; change any default (`PREFERENCE_DEFAULTS` is product policy; Q-10 covers week start).
 - **REPORT:** `status / ticket: TFV2-0265a / evidence: <DONE output> / changed: convex/preferences.test.ts / unknowns / notes for ticket sync`; list STEPS 1–3 with evidence.
 - **SPEC:** Existing, unchanged:
@@ -20114,9 +20207,11 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   Base = the live row's values, or `PREFERENCE_DEFAULTS` (`theme: "system"`, `locale: "en"`, `weekStartsOn: 1`, `timeZone: "UTC"`, `emailReminders: true`, `inAppNotifications: true`, `coachWebSearch: false`) when there is no row or it is soft-deleted; a given field overrides it; the row is patched with `deletedAt: undefined` or inserted. Errors (exact → trigger): `"Not authenticated"` → signed out; `"Time zone is required"` → `timeZone` given and blank after trim.
+  **Relies on:** `requireUser(ctx: QueryCtx | MutationCtx)` from `./lib/requireUser` (line 51): no identity → `"Not authenticated"`; user not found and no identity email → `"Not authenticated"`; otherwise not found → `"User not found"`; inactive account → `"This account is not active"`; returns the `users` row · `userPreferences` fields `userId`, `theme`, `locale`, `weekStartsOn`, `timeZone`, `emailReminders`, `inAppNotifications`, `coachWebSearch?`, `createdAt`, `updatedAt`, `deletedAt?` · `makeFakeCtx(userId: string, extraUsers: string[] = [])` and `run(fn, ctx, args)` (calls `fn._handler(ctx, args)`) from `./lib/testFakeCtx` (users rows `{ _id: id, email: `${id}@example.com` }`, inserted ids `"<table>:<n>"`); `makeSignedOutCtx()` from `./lib/testFakeCtx` (getUserIdentity → `null`; created by TFV2-0000a) (TFV2-0000a also adds `.unique()`).
+  Test setup: `ctx = makeFakeCtx("users:a")`; seeded rows use `ctx.db.insert("userPreferences", <row>)`; calls are `run(update, ctx, <args>)`; rows are read back with `ctx.db.query("userPreferences").collect()`.
 - **TESTS:**
   1. Given no row / When `update({ locale: "he" })` runs / Then one `userPreferences` row exists with `locale: "he"` and every other field equal to `PREFERENCE_DEFAULTS`.
-  2. Given a row with `theme: "dark"` and `deletedAt: 5` / When `update({})` runs / Then the same row has `deletedAt` `undefined` and `theme: "system"` (a deleted row restarts from the defaults), and no second row exists.
+  2. Given the row `{ userId: "users:a", theme: "dark", locale: "en", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, coachWebSearch: false, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000, deletedAt: 5 }` / When `update({})` runs / Then the same row has `deletedAt` `undefined` and `theme: "system"` (a deleted row restarts from the defaults), and no second row exists.
   3. Given `update({ timeZone: "  Asia/Jerusalem  " })` / Then the stored `timeZone` is `"Asia/Jerusalem"`.
   4. Given `update({ timeZone: "   " })` / Then it rejects with `"Time zone is required"` and no row is written.
   5. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`.
@@ -20125,6 +20220,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **OPEN:** none.
 
 ### TFV2-0265b — Preferences: `analyticsOptIn` (default off) in `get` / `update` (`convex/preferences.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-015, TFV2-0265a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-015, TFV2-0265a.
@@ -20133,13 +20229,13 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/preferences.ts` · `convex/users.test.ts` · test: `convex/preferences.test.ts`.
 - **MUTATES:** `convex/preferences.ts` (edit: `preferencesValidator`, `Preferences`, `PREFERENCE_DEFAULTS`, `fromRow`, `update` args and `next`) · `convex/users.test.ts` (edit: add `analyticsOptIn: false,` after `coachWebSearch: false,` in the two `toEqual` objects of the first `preferences` test; nothing else) · `convex/preferences.test.ts` (edit: new cases) · `userPreferences.analyticsOptIn` (written by `update`).
 - **STEPS:**
-  1. Code-map check: confirm `analyticsOptIn` (CFG-015) in `convex/schema.ts`; `grep -n "coachWebSearch: false," convex/users.test.ts` shows the two `toEqual` objects.
-  2. Make the six edits in `convex/preferences.ts` exactly as SPEC.
+  1. Code-map check: confirm `analyticsOptIn` (CFG-015) in `convex/schema.ts`; `grep -n "analyticsOptIn" convex/schema.ts` → one line in `userPreferences`; `grep -n "coachWebSearch: false," convex/users.test.ts` → lines 261 and 271 (the two `toEqual` objects). Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Make the six edits in `convex/preferences.ts` as the SPEC states.
   3. Add `analyticsOptIn: false,` to the two expected objects in `convex/users.test.ts`.
   4. Add the 4 TESTS cases to `convex/preferences.test.ts`.
   5. Run DONE.
 - **DONE:** `bun test convex/preferences.test.ts` → `9 pass`, `0 fail`; `bun test convex/users.test.ts` → `0 fail`.
-- **EVIDENCE:** both `bun test` summaries pasted into the PR.
+- **EVIDENCE:** the summaries of `bun test convex/preferences.test.ts` and `bun test convex/users.test.ts` pasted into the PR.
 - **DO NOT:** change any other default; send analytics anywhere (TFV2-0310 reads this flag); change any other line of `convex/users.test.ts`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0265b / evidence: <DONE output> / changed: convex/preferences.ts, convex/users.test.ts, convex/preferences.test.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
@@ -20152,16 +20248,19 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // update next gains:           analyticsOptIn: args.analyticsOptIn ?? base.analyticsOptIn,
   ```
   `preferencesFor` returns the new field through `fromRow` with no further change. Errors unchanged (`"Not authenticated"`, `"Time zone is required"`). No user-facing copy.
+  **Relies on:** `userPreferences.analyticsOptIn: v.optional(v.boolean())` (created by CFG-015) · `makeFakeCtx(userId: string, extraUsers: string[] = [])` and `run(fn, ctx, args)` (calls `fn._handler(ctx, args)`) from `./lib/testFakeCtx` (users rows `{ _id: id, email: `${id}@example.com` }`, inserted ids `"<table>:<n>"`); `makeSignedOutCtx()` from `./lib/testFakeCtx` (getUserIdentity → `null`; created by TFV2-0000a).
+  Test setup: `ctx = makeFakeCtx("users:a")`; seeded rows use `ctx.db.insert("userPreferences", <row>)`; calls are `run(get, ctx, {})` and `run(update, ctx, <args>)`.
 - **TESTS:**
   1. Given no row / When `get` runs / Then `analyticsOptIn` is `false`.
   2. Given `update({ analyticsOptIn: true })` / When `get` runs / Then `analyticsOptIn` is `true`.
-  3. Given a row stored without `analyticsOptIn` / When `get` runs / Then `false`.
-  4. Given `analyticsOptIn: true` stored / When `update({ theme: "dark" })` runs / Then `get` still returns `analyticsOptIn: true`.
+  3. Given the row `{ userId: "users:a", theme: "system", locale: "en", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, coachWebSearch: false, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }` / When `get` runs / Then `false`.
+  4. Given the row `{ userId: "users:a", theme: "system", locale: "en", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, coachWebSearch: false, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000, analyticsOptIn: true }` / When `update({ theme: "dark" })` runs / Then `get` still returns `analyticsOptIn: true`.
 - **NUMBERS:** default off (exact, PRD privacy); 9 of 9 file cases pass; `convex/users.test.ts` 0 fail. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0266a — Profiles: `profiles.getMine` (`convex/profiles.ts`)
+- **STATUS:** approved-unsent
 - **Stage:** D · **Pass:** 1 · **Depends:** CFG-016, TFV2-0000a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
 - **WHEN:** after CFG-016, TFV2-0000a.
@@ -20170,12 +20269,12 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SCOPE:** `convex/profiles.ts` · test: `convex/profiles.test.ts`.
 - **MUTATES:** `convex/profiles.ts` (new) · `convex/profiles.test.ts` (new). No table written.
 - **STEPS:**
-  1. Code-map check: `ls convex/profiles.ts` → missing; confirm `callMe`/`address` (CFG-016) on `users`; read `preferencesFor`.
-  2. Create `convex/profiles.ts` with `MyProfile` and `getMine` exactly as SPEC.
+  1. Code-map check: `ls convex/profiles.ts` → missing; `grep -n "export async function preferencesFor" convex/preferences.ts` → line 70 `export async function preferencesFor(ctx: QueryCtx | MutationCtx, userId: Id<"users">): Promise<Preferences> {`; `grep -n "fullName: v.optional(v.string())" convex/schema.ts` → line 19; `grep -n "callMe: v.optional(v.string())" convex/schema.ts` → one line in `users` (CFG-016); `grep -n "export async function requireUser" convex/lib/requireUser.ts` → line 51; `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts` → one line (TFV2-0000a). Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Create `convex/profiles.ts` with `MyProfile` and `getMine` as the SPEC states.
   3. Create `convex/profiles.test.ts` with the 4 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/profiles.test.ts` → `4 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/profiles.test.ts` pasted into the PR.
 - **DO NOT:** return the placeholder name `"User"` (it is never stored; `convex/lib/entitlements.ts` `storedFullName`); return other `users` fields (role, tier, approval); touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0266a / evidence: <DONE output> / changed: convex/profiles.ts, convex/profiles.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -20188,30 +20287,33 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   });
   ```
   `{ email: user.email, fullName: user.fullName ?? null, callMe: user.callMe ?? null, address: user.address ?? null, lang: (await preferencesFor(ctx, user._id)).locale }`. Errors: `"Not authenticated"`. No user-facing copy.
+  **Relies on:** `requireUser(ctx: QueryCtx | MutationCtx)` from `./lib/requireUser` (line 51): no identity → `"Not authenticated"`; user not found and no identity email → `"Not authenticated"`; otherwise not found → `"User not found"`; inactive account → `"This account is not active"`; returns the `users` row · `preferencesFor(ctx: QueryCtx | MutationCtx, userId: Id<"users">): Promise<Preferences>` from `./preferences` (`convex/preferences.ts` line 70; reads the live `userPreferences` row by `by_userId_deletedAt` with `deletedAt` undefined, returns `PREFERENCE_DEFAULTS` (`locale: "en"`) when there is none; `locale` is `"en" | "he"`) · `users.email: v.string()`, `users.fullName: v.optional(v.string())` (`convex/schema.ts` line 19) · `users.callMe: v.optional(v.string())`, `users.address: v.optional(v.union(v.literal("fem"), v.literal("masc")))` (created by CFG-016) · `makeFakeCtx(userId: string, extraUsers: string[] = [])` and `run(fn, ctx, args)` (calls `fn._handler(ctx, args)`) from `./lib/testFakeCtx` (users rows `{ _id: id, email: `${id}@example.com` }`, inserted ids `"<table>:<n>"`); `makeSignedOutCtx()` from `./lib/testFakeCtx` (getUserIdentity → `null`; created by TFV2-0000a).
+  Test setup: `ctx = makeFakeCtx("users:a", ["users:b"])`; profile fields are set with `ctx.db.patch(<user id>, <fields>)`; the preferences row is `ctx.db.insert("userPreferences", { userId: "users:a", theme: "system", locale: "he", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 })`; the query runs as `run(getMine, ctx, {})`.
 - **TESTS:**
   1. Given the caller's user row patched with `fullName: "Maya Cohen"`, `callMe: "Maya"`, `address: "fem"` and a preferences row with `locale: "he"` / Then `{ email: "users:a@example.com", fullName: "Maya Cohen", callMe: "Maya", address: "fem", lang: "he" }`.
   2. Given a bare user and no preferences / Then `{ email: "users:a@example.com", fullName: null, callMe: null, address: null, lang: "en" }`.
-  3. Given another user's profile fields set / Then the caller's result is unchanged by them.
-  4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
+  3. Given `users:b` patched with `{ fullName: "Dan Levi", callMe: "Dan", address: "masc" }` and nothing set on `users:a` / Then the caller gets `{ email: "users:a@example.com", fullName: null, callMe: null, address: null, lang: "en" }`.
+  4. Given `makeSignedOutCtx()` / When `run(getMine, makeSignedOutCtx(), {})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0266b — Profiles: `profiles.update` (`convex/profiles.ts`)
-- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266a · **Folds-in:** none
+- **STATUS:** approved-unsent
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0000a, TFV2-0266a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
-- **WHEN:** after TFV2-0266a.
+- **WHEN:** after TFV2-0000a, TFV2-0266a.
 - **WHY:** settings-profile screen (`@actions profiles.update`). Email changes are not here (magic-link account email); the language is changed with `preferences.update({ locale })`.
 - **GOAL:** A new mutation `profiles.update` changes the caller's full name, what to call them and their Hebrew form of address.
 - **SCOPE:** `convex/profiles.ts` · test: `convex/profiles.test.ts`.
 - **MUTATES:** `convex/profiles.ts` (edit: new exports `PROFILE_LIMITS`, `update`) · `convex/profiles.test.ts` (edit: new cases) · `users.fullName`, `users.callMe`, `users.address`, `users.updatedAt` (patch).
 - **STEPS:**
-  1. Code-map check: read `getMine`.
-  2. Add `PROFILE_LIMITS` and `update` exactly as SPEC.
+  1. Code-map check: `grep -n "export const getMine = query" convex/profiles.ts` → one line (TFV2-0266a); `grep -n "callMe: v.optional(v.string())" convex/schema.ts` → one line in `users` (CFG-016); `grep -n "export async function requireUser" convex/lib/requireUser.ts` → line 51; `grep -n "export function makeSignedOutCtx" convex/lib/testFakeCtx.ts` → one line (TFV2-0000a). Any difference → stop with `blocked: PATH_DRIFT — <what differs>`.
+  2. Add `PROFILE_LIMITS` and `update` as the SPEC states.
   3. Add the 6 TESTS cases.
   4. Run DONE.
 - **DONE:** `bun test convex/profiles.test.ts` → `10 pass`, `0 fail`.
-- **EVIDENCE:** the `bun test` summary lines pasted into the PR.
+- **EVIDENCE:** the summary of `bun test convex/profiles.test.ts` pasted into the PR.
 - **DO NOT:** change `email`, `role`, `entitlementTier` or approval fields; store `"User"` as a name; change `userPreferences`; touch `convex/schema.ts`.
 - **REPORT:** `status / ticket: TFV2-0266b / evidence: <DONE output> / changed: convex/profiles.ts, convex/profiles.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
 - **SPEC:**
@@ -20223,15 +20325,17 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     handler: async (ctx: MutationCtx, args: { fullName?: string; callMe?: string; address?: "fem" | "masc" }): Promise<null> => { … },
   });
   ```
-  Each given text has whitespace runs collapsed to one space and is trimmed. `fullName`: empty or exactly `"User"` → throw `"Name is required"`; over 100 → throw `"Name is too long"`; else set. `callMe`: empty → removed (patch `callMe: undefined`); over 50 → throw `"Name is too long"`; else set. `address`: set as given. All checks run before one patch `{ …changes, updatedAt: now }`. Errors (exact → trigger): `"Not authenticated"`; `"Name is required"`; `"Name is too long"`. No user-facing copy.
+  Each given text has whitespace runs collapsed to one space and is trimmed; lengths are counted in code points, `[...text].length` (so `"😀".repeat(100)` is 100). `fullName`: empty or exactly `"User"` → throw `"Name is required"`; over 100 → throw `"Name is too long"`; else set. `callMe`: empty → removed (patch `callMe: undefined`); over 50 → throw `"Name is too long"`; else set. `address`: set as given. All checks run before one patch `{ …changes, updatedAt: now }`. Errors (exact → trigger): `"Not authenticated"`; `"Name is required"`; `"Name is too long"`. No user-facing copy.
+  **Relies on:** `requireUser(ctx: QueryCtx | MutationCtx)` from `./lib/requireUser` (line 51): no identity → `"Not authenticated"`; user not found and no identity email → `"Not authenticated"`; otherwise not found → `"User not found"`; inactive account → `"This account is not active"`; returns the `users` row · `getMine` and `export type MyProfile = { email: string; fullName: string | null; callMe: string | null; address: "fem" | "masc" | null; lang: "en" | "he" }` in `convex/profiles.ts` (created by TFV2-0266a) · `users.fullName: v.optional(v.string())` (`convex/schema.ts` line 19), `users.updatedAt: v.optional(v.number())` · `users.callMe`, `users.address` (created by CFG-016) · `makeFakeCtx(userId: string, extraUsers: string[] = [])` and `run(fn, ctx, args)` (calls `fn._handler(ctx, args)`) from `./lib/testFakeCtx` (users rows `{ _id: id, email: `${id}@example.com` }`, inserted ids `"<table>:<n>"`); `makeSignedOutCtx()` from `./lib/testFakeCtx` (getUserIdentity → `null`; created by TFV2-0000a).
+  Test setup: `ctx = makeFakeCtx("users:a")`; calls are `run(update, ctx, <args>)`; the row is read with `ctx.db.get("users:a")`.
 - **TESTS:**
   1. Given `update({ fullName: "  Maya   Cohen ", callMe: "Maya", address: "fem" })` / Then the user row has `fullName: "Maya Cohen"`, `callMe: "Maya"`, `address: "fem"`, and `getMine` returns them.
-  2. Given `callMe: "Maya"` stored / When `update({ callMe: "  " })` / Then `callMe` is `undefined` and `fullName` is unchanged.
-  3. Given `update({ fullName: "" })` or `update({ fullName: "User" })` / Then `"Name is required"` and nothing changes.
-  4. Given a 101-character `fullName` / Then `"Name is too long"`; given a 51-character `callMe` / Then `"Name is too long"`.
-  5. Given `update({ fullName: "Maya", callMe: "x".repeat(51) })` / Then it rejects and `fullName` is unchanged (no partial write).
+  2. Given `users:a` patched with `{ fullName: "Maya Cohen", callMe: "Maya" }` / When `update({ callMe: "  " })` / Then `callMe` is `undefined` and `fullName` is unchanged.
+  3. Given `users:a` patched with `{ fullName: "Maya Cohen" }` / When `update({ fullName: "" })` or `update({ fullName: "User" })` runs / Then `"Name is required"` and `fullName` stays `"Maya Cohen"`.
+  4. Given `fullName: "😀".repeat(100)` / Then it is stored (100 code points); given `fullName: "a".repeat(101)` / Then `"Name is too long"`; given `callMe: "x".repeat(50)` / Then it is stored; given `callMe: "x".repeat(51)` / Then `"Name is too long"`.
+  5. Given `update({ fullName: "Maya", callMe: "x".repeat(51) })` on a bare `users:a` / Then it rejects with `"Name is too long"` and `fullName` stays `undefined` (no partial write).
   6. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
-- **NUMBERS:** full name ≤ 100, call-me ≤ 50 characters (`PROFILE_LIMITS`, tested at 101 / 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
+- **NUMBERS:** full name ≤ 100, call-me ≤ 50 characters (`PROFILE_LIMITS`, tested at 100 / 101 and 50 / 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
