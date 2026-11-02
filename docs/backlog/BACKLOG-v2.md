@@ -3615,7 +3615,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   "use client";
   import { notFound } from "next/navigation";
   import { isE2EBypass } from "@/lib/e2e/e2eState";
-  export default function ComponentHarnessIndex(): JSX.Element {
+  export default function ComponentHarnessIndex(): React.JSX.Element {
     if (!isE2EBypass({ NODE_ENV: process.env.NODE_ENV, NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS })) notFound();
     return <main data-testid="component-harness-index"><h1>Component harness</h1></main>;
   }
@@ -3650,7 +3650,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/app/e2e/components/layout.tsx (server component)
   import { type ReactNode, Suspense } from "react";
   import { HarnessFrame } from "@/lib/e2e/HarnessFrame";
-  export default function ComponentHarnessLayout({ children }: { children: ReactNode }): JSX.Element {
+  export default function ComponentHarnessLayout({ children }: { children: ReactNode }): React.JSX.Element {
     return <Suspense fallback={null}><HarnessFrame>{children}</HarnessFrame></Suspense>;
   }
 
@@ -3662,7 +3662,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import { dirFor, resolveLang } from "@/lib/i18n";
   import { isE2EBypass } from "./e2eState";
   export type HarnessTheme = "light" | "dark";
-  export function HarnessFrame({ children }: { children: ReactNode }): JSX.Element {
+  export function HarnessFrame({ children }: { children: ReactNode }): React.JSX.Element {
     if (!isE2EBypass({ NODE_ENV: process.env.NODE_ENV, NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS })) notFound();
     const params = useSearchParams();
     const lang = resolveLang(params.get("lang"), null);
@@ -3711,7 +3711,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { noName: "הפרופיל שלך" },
   };
   export type AvatarProps = { name: string; initials?: string };
-  export function Avatar({ name, initials }: AvatarProps): JSX.Element {
+  export function Avatar({ name, initials }: AvatarProps): React.JSX.Element {
     const { lang } = useLocale();
     const trimmed = name.trim();
     const letters = (initials ?? initialsFor({ greetingName: trimmed })).trim();
@@ -3790,7 +3790,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { label: "חיפוש או מעבר אל" },
   };
   export type CommandTriggerProps = { onOpen: () => void };
-  export function CommandTrigger({ onOpen }: CommandTriggerProps): JSX.Element {
+  export function CommandTrigger({ onOpen }: CommandTriggerProps): React.JSX.Element {
     const { lang } = useLocale();
     return (
       <button className="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger" onClick={onOpen}>
@@ -3868,8 +3868,8 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   export type PageTitleProps = { title: string; id?: string };
   export type HeadingProps = { level: 2 | 3; text: string; id?: string };
-  export function PageTitle({ title, id }: PageTitleProps): JSX.Element; // <h1 className="tp-page-title" data-component="PageTitle" id={id} dir="auto">{title}</h1>
-  export function Heading({ level, text, id }: HeadingProps): JSX.Element; // level 2 → <h2 className="tp-h2" data-component="Heading" dir="auto">; level 3 → <h3 className="tp-h3" …>
+  export function PageTitle({ title, id }: PageTitleProps): React.JSX.Element; // <h1 className="tp-page-title" data-component="PageTitle" id={id} dir="auto">{title}</h1>
+  export function Heading({ level, text, id }: HeadingProps): React.JSX.Element; // level 2 → <h2 className="tp-h2" data-component="Heading" dir="auto">; level 3 → <h3 className="tp-h3" …>
   ```
   No copy of its own (the text is the person's or the caller's). Sections in order: `default` (`PageTitle` "Moving day"), `hebrew` (`PageTitle` "יום מעבר"), `long` (`PageTitle` "A very long page title that has to wrap onto a second line on a phone screen without overflowing"), `h2` (`Heading` level 2 "This afternoon"), `h3` (`Heading` level 3 "Errands"). `loading`/`empty`/`error`/`offline`/`success`/`disabled`: n/a (static typography). RTL: `dir="auto"` makes a Hebrew title right-aligned on an English page and vice versa. Keyboard/screen reader: real heading elements, levels 1–3. Motion: none.
 - **TESTS:** (cases 1–4 loop viewports × langs)
@@ -3898,7 +3898,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   export type TagProps = { name: string; href?: string };
-  export function Tag({ name, href }: TagProps): JSX.Element;
+  export function Tag({ name, href }: TagProps): React.JSX.Element;
   // href → <a className="tp-tag" data-component="Tag" href={href} dir="auto">{name}</a>
   // else → <span className="tp-tag" data-component="Tag" dir="auto">{name}</span>
   ```
@@ -3929,7 +3929,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   type CopyKey = "create";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { create: "Create the page {title}" }, he: { create: "ליצור את הדף {title}" } };
   export type WikilinkProps = { title: string; href: string | null; onCreate?: (title: string) => void };
-  export function Wikilink({ title, href, onCreate }: WikilinkProps): JSX.Element;
+  export function Wikilink({ title, href, onCreate }: WikilinkProps): React.JSX.Element;
   // href !== null → <a className="tp-wikilink" data-component="Wikilink" href={href} dir="auto">{title}</a>
   // href === null → <button type="button" className="tp-wikilink" data-component="Wikilink" data-unresolved="true" dir="auto"
   //                   aria-label={COPY[lang].create.replace("{title}", title)} onClick={() => onCreate?.(title)}>{title}</button>
@@ -3960,7 +3960,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type ChipKind = "neutral" | "fixed" | "flex" | "done";
   export type ChipProps = { kind: ChipKind; label: string };
   const ICON: Record<ChipKind, TpIconName | null> = { neutral: null, fixed: "pin", flex: "refresh", done: "check" };
-  export function Chip({ kind, label }: ChipProps): JSX.Element;
+  export function Chip({ kind, label }: ChipProps): React.JSX.Element;
   // <span className={kind === "neutral" ? "tp-chip" : `tp-chip tp-chip--${kind}`} data-component="Chip" data-kind={kind}>
   //   {ICON[kind] ? <TpIcon name={ICON[kind]} size="sm" /> : null}<span>{label}</span></span>
   ```
@@ -3992,7 +3992,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
     label: string; variant?: ButtonVariant; size?: ButtonSize; icon?: TpIconName; iconOnly?: boolean;
   };
-  export function Button({ label, variant = "secondary", size = "md", icon, iconOnly = false, type = "button", className, ...rest }: ButtonProps): JSX.Element;
+  export function Button({ label, variant = "secondary", size = "md", icon, iconOnly = false, type = "button", className, ...rest }: ButtonProps): React.JSX.Element;
   // classes: "tp-btn", `tp-btn--${variant}`, size === "sm" ? "tp-btn--sm" : "", iconOnly ? "tp-btn--icon" : "", className
   // iconOnly → aria-label={label}, children = <TpIcon name={icon ?? "plus"} size={size === "sm" ? "sm" : "md"} />
   // else → children = {icon ? <TpIcon name={icon} size="sm" /> : null}<span>{label}</span>
@@ -4024,7 +4024,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   export type KbdPlatform = "mac" | "other";
   export type KbdProps = { keys: readonly string[]; platform?: KbdPlatform };
-  export function Kbd({ keys, platform = "other" }: KbdProps): JSX.Element;
+  export function Kbd({ keys, platform = "other" }: KbdProps): React.JSX.Element;
   // text = keys.map((k) => (k === "Mod" ? (platform === "mac" ? "⌘" : "Ctrl") : k)).join(" ")
   // <kbd className="tp-kbd tp-num" data-component="Kbd" dir="ltr">{text}</kbd>
   ```
@@ -4051,7 +4051,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   export type CardProps = { title?: string; icon?: TpIconName; as?: "section" | "div"; children: ReactNode };
-  export function Card({ title, icon, as = "section", children }: CardProps): JSX.Element;
+  export function Card({ title, icon, as = "section", children }: CardProps): React.JSX.Element;
   // <Tag className="tp-card" data-component="Card" aria-label={as === "section" && title ? title : undefined}>
   //   {title ? <div className="tp-card__head">{icon ? <TpIcon name={icon} size="sm" /> : null}<span className="tp-card__title" dir="auto">{title}</span></div> : null}
   //   {children}
@@ -4085,7 +4085,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { add: "הוספת בלוק מתחת", options: "אפשרויות בלוק" },
   };
   export type BlockHandleProps = { onAdd: () => void; onOptions: () => void; optionsOpen?: boolean };
-  export function BlockHandle({ onAdd, onOptions, optionsOpen = false }: BlockHandleProps): JSX.Element;
+  export function BlockHandle({ onAdd, onOptions, optionsOpen = false }: BlockHandleProps): React.JSX.Element;
   // <div className="tp-block__handle" data-component="BlockHandle">
   //   <button type="button" className="tp-btn tp-btn--ghost" aria-label={copy.add} onClick={onAdd}><TpIcon name="plus" size="sm" /></button>
   //   <button type="button" className="tp-btn tp-btn--ghost" aria-label={copy.options} aria-haspopup="menu" aria-expanded={optionsOpen} onClick={onOptions}><TpIcon name="grip" size="sm" /></button>
@@ -4147,7 +4147,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { message: "הודעה", placeholder: "עזרה בבחירת דבר אחד לאחר הצהריים", hint: "Enter לשליחה · Shift+Enter לשורה חדשה", send: "שליחה" },
   };
   export type ComposerProps = { onSend: (text: string) => void; disabled?: boolean };
-  export function Composer({ onSend, disabled = false }: ComposerProps): JSX.Element;
+  export function Composer({ onSend, disabled = false }: ComposerProps): React.JSX.Element;
   ```
   Markup: `<form className="tp-composer" data-component="Composer" onSubmit>` → `<div className="tp-composer__box">` → `<label className="tp-sr-only" htmlFor={id}>{message}</label>`, `<textarea id={id} className="tp-composer__input" rows={2} dir="auto" aria-label={message} placeholder={placeholder}>`, `<div className="tp-composer__bar"><button type="submit" className="tp-btn tp-btn--sm tp-composer__send" disabled={disabled || text.trim() === ""}><TpIcon name="send" size="sm" /><span>{send}</span></button></div>`; then `<p className="tp-composer__hint">` with the hint, where "Enter" and "Shift+Enter" are wrapped in `<span className="tp-num">`. `id` from `useId()`. Behaviour: Enter without Shift and not during IME composition (`event.nativeEvent.isComposing`) submits; submit calls `onSend(text.trim())` only when the trim is non-empty and `disabled` is false, then clears the textarea; Shift+Enter inserts a newline. States (sections): `default`, `disabled` (`disabled: true`, the "thinking" state: typing allowed, send disabled). `loading`/`empty`/`error`/`offline`/`success`: `empty` = send disabled while the text is blank; `success` = cleared after send; `loading`/`error`/`offline` n/a (the screen owns them). RTL: `dir="auto"` per message. Motion: send button 120 ms.
 - **TESTS:** (cases 1–4 loop viewports × langs)
@@ -4202,7 +4202,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   export type SkeletonWidth = 40 | 60 | 80 | 100;
   export type SkeletonProps = { width?: SkeletonWidth; block?: boolean };
-  export function Skeleton({ width = 100, block = false }: SkeletonProps): JSX.Element;
+  export function Skeleton({ width = 100, block = false }: SkeletonProps): React.JSX.Element;
   // <span className="tp-skeleton" data-component="Skeleton" aria-hidden="true"
   //   style={{ display: "block", inlineSize: `${width}%`, blockSize: block ? "var(--tp-space-20)" : undefined }} />
   ```
@@ -4230,7 +4230,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   export type EmptyProps = { icon?: TpIconName; title: string; body?: string; action?: ReactNode };
-  export function Empty({ icon, title, body, action }: EmptyProps): JSX.Element;
+  export function Empty({ icon, title, body, action }: EmptyProps): React.JSX.Element;
   // <div className="tp-empty" data-component="Empty">
   //   {icon ? <TpIcon name={icon} /> : null}
   //   <p><strong dir="auto">{title}</strong></p>
@@ -4262,7 +4262,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   export type GlassProps = { as?: "div" | "header" | "nav" | "aside"; className?: string; children: ReactNode };
-  export function Glass({ as = "div", className, children }: GlassProps): JSX.Element;
+  export function Glass({ as = "div", className, children }: GlassProps): React.JSX.Element;
   // <Tag className={["tp-glass", className].filter(Boolean).join(" ")} data-component="Glass">{children}</Tag>
   ```
   Harness sections (EN / HE text): `glass` (`<Glass><p>Floating bar</p></Glass>` / "סרגל צף"), `helpers` (`<p>At <span className="tp-num tp-mono">12:30</span></p>` / `<p>ב־<span className="tp-num tp-mono">12:30</span></p>`, `<span className="tp-sr-only">Hidden label</span>` / "תווית מוסתרת", and `<svg className="tp-icon tp-icon--flip" aria-hidden="true"><use href="#i-chevron" /></svg>`). States: `default` glass, `glass-off` fallback; others n/a (a surface, not a control). Motion: none (blur is static).
@@ -4292,7 +4292,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { minutes: "{n} min" }, he: { minutes: "{n} דק׳" } };
   export type TaskBlockItem = { id: string; title: string; durationMin?: number; done: boolean };
   export type TaskBlockProps = { tasks: readonly TaskBlockItem[]; onToggle: (id: string, done: boolean) => void };
-  export function TaskBlock({ tasks, onToggle }: TaskBlockProps): JSX.Element | null; // null when tasks is empty
+  export function TaskBlock({ tasks, onToggle }: TaskBlockProps): React.JSX.Element | null; // null when tasks is empty
   // <div className="tp-block-task" data-component="TaskBlock">{tasks.map((t) =>
   //   <div className="tp-task-row" data-done={t.done ? "true" : undefined} key={t.id}>
   //     <button type="button" className="tp-check" role="checkbox" aria-checked={t.done} aria-labelledby={`task-${t.id}`} onClick={() => onToggle(t.id, !t.done)}>
@@ -4332,7 +4332,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { group: "אנרגיה", quiet: "שקט", steady: "יציב", push: "דחיפה" },
   };
   export type EnergyBlockProps = { value: EnergyLevel | null; onChange: (level: EnergyLevel) => void };
-  export function EnergyBlock({ value, onChange }: EnergyBlockProps): JSX.Element;
+  export function EnergyBlock({ value, onChange }: EnergyBlockProps): React.JSX.Element;
   // <div className="tp-block-energy" data-component="EnergyBlock"><div className="tp-seg" role="radiogroup" aria-label={copy.group}>
   //   {LEVELS.map((l) => <button type="button" className="tp-seg__opt" role="radio" aria-checked={value === l}
   //     tabIndex={(value ?? "quiet") === l ? 0 : -1} onClick={() => onChange(l)} onKeyDown={arrows}>{copy[l]}</button>)}</div></div>
@@ -4369,7 +4369,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export type BacklinkRow = { id: string; title: string; context: string };
   export type BacklinksProps = { links: readonly BacklinkRow[] | undefined };
-  export function Backlinks({ links }: BacklinksProps): JSX.Element;
+  export function Backlinks({ links }: BacklinksProps): React.JSX.Element;
   // <section className="tp-backlinks" data-component="Backlinks" aria-labelledby={headId}>
   //   <div className="tp-backlinks__head"><h2 className="tp-eyebrow" id={headId}>{copy.head}</h2>{links?.length ? <span className="tp-num">{links.length}</span> : null}</div>
   //   links === undefined → <div role="status"><span className="tp-sr-only">{copy.loading}</span><span className="tp-skeleton" aria-hidden="true" style={{ display: "block", inlineSize: "80%" }} /></div>
@@ -4402,7 +4402,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   export type PageMeta = { pageType?: "daily" | "weekly" | "project" | "plain" | "template"; date?: string; tags?: readonly string[] };
   export type PageMetaBlockProps = { meta: PageMeta };
-  export function PageMetaBlock({ meta }: PageMetaBlockProps): JSX.Element;
+  export function PageMetaBlock({ meta }: PageMetaBlockProps): React.JSX.Element;
   // <div className="tp-block-meta" data-component="PageMetaBlock" aria-hidden="true" data-page-type={meta.pageType} />
   ```
   No children, no copy. Sections: `daily` (`{ pageType: "daily", date: "2026-11-02", tags: ["home"] }`), `plain` (`{ pageType: "plain" }`). The only state is "hidden"; every other state is n/a (nothing is drawn). Motion: none.
@@ -4435,7 +4435,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     pending?: boolean;                     // true → button disabled + aria-busy="true"
     onUndo: (args: { blockId: string }) => void;
   };
-  export function BrokenBlock(props: BrokenBlockProps): JSX.Element;
+  export function BrokenBlock(props: BrokenBlockProps): React.JSX.Element;
   ```
   Markup (Case A: classes from the `@component BrokenBlock` block of `tempo.css`, no stylesheet): root `<div className="tp-block-broken" data-component="BrokenBlock" data-status={status}>`; then `<TpIcon name={status === "restored" ? "check" : "info"} size="sm" />` (aria-hidden by TpIcon); then `<span className="tp-block-broken__text" role="status">{status === "restored" ? copy.restored : copy.text}</span>`; then, only when `canUndo && status === "broken"`, `<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm tp-block-broken__action" data-action="broken-undo" disabled={pending === true} aria-busy={pending === true ? "true" : undefined} onClick={() => onUndo({ blockId })}><TpIcon name="undo" size="sm" /><span>{copy.undo}</span></button>`.
   Copy (`COPY: Record<Lang, Record<"text" | "undo" | "restored", string>>`):
@@ -4479,7 +4479,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onUse: (args: { templateId: string }) => void;
     onDismiss: (args: { templateId: string }) => void;
   };
-  export function TemplateBlock(props: TemplateBlockProps): JSX.Element;
+  export function TemplateBlock(props: TemplateBlockProps): React.JSX.Element;
   ```
   Markup (Case A, classes of `@component TemplateBlock`): root `<section className="tp-template-offer" data-component="TemplateBlock" data-status={status} aria-labelledby={titleId}>`; head `<div className="tp-template-offer__head"><span className="tp-template-offer__icon"><TpIcon name="template" /></span><div><h3 className="tp-template-offer__title" id={titleId}>{copy.title.replace("{name}", template.name)}</h3><p className="tp-template-offer__desc">{copy.desc}</p></div></div>`; the template name sits inside the title as `<bdi dir="auto">` (render the title as `copy.title` split around `{name}`); `<ul className="tp-template-offer__adds">` with one `<li dir="auto">` per `adds` item; `<div className="tp-template-offer__actions">` with `<button type="button" className="tp-btn tp-btn--primary" data-action="template-use" onClick={() => onUse({ templateId: template.id })}><TpIcon name="check" size="sm" /><span>{copy.use}</span></button>` and `<button type="button" className="tp-btn tp-btn--ghost" data-action="template-dismiss" onClick={() => onDismiss({ templateId: template.id })}>{copy.notNow}</button>` (both `disabled={pending === true}`; the primary also `aria-busy="true"` when pending); `<p className="tp-template-offer__note" role="status">` rendered only when `status !== "offered"`, holding `<TpIcon name="check" size="sm" />` and `copy.used` (status `used`) or `copy.dismissed` (status `dismissed`). tempo.css hides `__actions` for `used`/`dismissed` and `__adds` for `dismissed`; the component also does not render the buttons when `status !== "offered"` (so they are absent, not just hidden).
   Copy (`COPY: Record<Lang, Record<"title" | "desc" | "use" | "notNow" | "used" | "dismissed", string>>`):
@@ -4532,7 +4532,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type EventBlockProps = { events: EventBlockItem[]; timeZone: string }; // IANA zone from userPreferences.timeZone
   /** "HH:MM", 24-hour, in timeZone: new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(ms) */
   export function formatEventTime(ms: number, timeZone: string): string;
-  export function EventBlock(props: EventBlockProps): JSX.Element | null; // null when events.length === 0
+  export function EventBlock(props: EventBlockProps): React.JSX.Element | null; // null when events.length === 0
   ```
   Markup (Case A, `@component EventBlock` classes): root `<ul className="tp-block-event" role="list" data-component="EventBlock" aria-label={copy.label}>`; per item `<li className="tp-event" data-kind={kind} key={id}>` containing `<span className="tp-event__time"><span>{formatEventTime(startsAtMs, timeZone)}</span>{endsAtMs !== undefined && <span>{formatEventTime(endsAtMs, timeZone)}</span>}</span>` and `<div className="tp-event__body"><span className="tp-event__title" dir="auto">{title}</span><span className="tp-event__meta">{note && <span dir="auto">{note}</span>}{place && <span className="tp-event__place"><TpIcon name="pin" size="sm" /><span dir="auto">{place}</span></span>}<span className={kind === "fixed" ? "tp-chip tp-chip--fixed" : "tp-chip tp-chip--flex"}>{kind === "fixed" ? copy.fixed : copy.flex}</span></span></div>`. When the end time exists, a `tp-sr-only` span inside `__time` reads `copy.to` between the two times (EN "to" / HE "עד") so a screen reader says "14:00 to 14:45".
   Copy (`COPY: Record<Lang, Record<"label" | "fixed" | "flex" | "to", string>>`):
@@ -4580,7 +4580,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   /** 0 = Sunday … 6 = Saturday: new Date(Date.UTC(y, m - 1, d)).getUTCDay() for "y-m-d". */
   export function weekdayIndex(localDate: string): number;
-  export function HabitBlock(props: HabitBlockProps): JSX.Element;
+  export function HabitBlock(props: HabitBlockProps): React.JSX.Element;
   ```
   Markup (Case A, `@component HabitBlock` classes + Stage 1 `tp-card`, `tp-btn`): root `<section className="tp-card tp-habit" data-component="HabitBlock" data-logged={String(loggedToday)} aria-labelledby={nameId}>`; head `<div className="tp-habit__head"><span className="tp-habit__name" id={nameId} dir="auto">{habit.name}</span>{habit.when && <span className="tp-habit__when" dir="auto">{habit.when}</span>}<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm tp-habit__log" aria-pressed={loggedToday} disabled={pending === true} aria-busy={pending === true ? "true" : undefined} onClick={() => onToggleLog({ habitId: habit.id, logged: !loggedToday })}><TpIcon name="check" size="sm" /><span>{loggedToday ? copy.logged : copy.log}</span></button></div>`; days `<ul className="tp-habit-days" role="list" aria-label={copy.days}>` with one `<li className="tp-habit-day" data-done={String(isDone)} data-today={day.today ? "true" : undefined}>` per item, where `isDone = day.today ? loggedToday : day.done`, holding `<span className="tp-habit-day__dot" aria-hidden="true"><TpIcon name="check" /></span><span className="tp-habit-day__label">{day.today ? copy.today : copy.weekdays[weekdayIndex(day.localDate)]}</span><span className="tp-sr-only">{isDone ? copy.dayDone : copy.dayOpen}</span>`; then `<p className="tp-habit__summary">{copy.summary}</p>`.
   Copy (`COPY: Record<Lang, { log: string; logged: string; days: string; today: string; dayDone: string; dayOpen: string; summary: string; weekdays: readonly [string, string, string, string, string, string, string] }>`):
@@ -4631,7 +4631,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     busy?: boolean;            // true → the three buttons are disabled
     onRespond: (args: { nagId: string; choice: NagChoice }) => void;
   };
-  export function NagBlock(props: NagBlockProps): JSX.Element;
+  export function NagBlock(props: NagBlockProps): React.JSX.Element;
   ```
   Markup (Case A, `@component NagBlock` classes): root `<section className="tp-nag" data-component="NagBlock" data-status={status} aria-labelledby={labelId}>`; `<span className="tp-nag__label" id={labelId}>{copy.label}</span>`; `<p className="tp-nag__phrase" dir="auto">{nag.phrase}</p>`; when `at` or `about` is set, `<span className="tp-nag__meta">` with `{at && <span>{copy.at with <span className="tp-num tp-mono">{at}</span>}</span>}{about && <span>{copy.about with <bdi dir="auto">{about}</bdi>}</span>}`; when `status === "pending"`, `<div className="tp-nag__actions">` with three `<button type="button" disabled={busy === true} data-action="nag" data-choice=…>`: `now` (`tp-btn tp-btn--secondary`, `copy.now`), `snooze` (`tp-btn tp-btn--secondary`, `copy.snooze` with `{n}` = `snoozeMinutes`), `nottoday` (`tp-btn tp-btn--ghost`, `copy.notToday`), each `onClick={() => onRespond({ nagId: nag.id, choice })}`; when `status !== "pending"`, `<p className="tp-nag__note" role="status">` with `copy.noteNow` (`done`), `copy.noteSnoozed` with `{n}` (`snoozed`) or `copy.noteNotToday` (`nottoday`). No `<svg>`, no `TpIcon`.
   Copy (`COPY: Record<Lang, Record<"label" | "at" | "about" | "now" | "snooze" | "notToday" | "noteNow" | "noteSnoozed" | "noteNotToday", string>>`):
@@ -4675,7 +4675,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:** Existing component (code truth, not to change):
   ```tsx
   // apps/web/components/today/NextUpCard.tsx ("use client")
-  export function NextUpCard({ tasks }: { tasks: readonly NextUpTask[] }): JSX.Element;
+  export function NextUpCard({ tasks }: { tasks: readonly NextUpTask[] }): React.JSX.Element;
   // apps/web/lib/next-up.ts
   export type NextUpTask = { _id: string; title: string; status: "todo" | "in_progress" | "done" | "cancelled"; priority: "low" | "medium" | "high"; energy?: "low" | "medium" | "high"; timeEstimate?: number; dueAt?: number };
   ```
@@ -4722,7 +4722,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     children: ReactNode;
     foot?: ReactNode;   // language switch, "New here?" link
   };
-  export function AuthCard(props: AuthCardProps): JSX.Element;
+  export function AuthCard(props: AuthCardProps): React.JSX.Element;
   ```
   Markup (Case A, `@component AuthCard` classes): `<div className="tp-auth-card" data-component="AuthCard">`; `<Link className="tp-auth-card__brand" href="/">Tempo</Link>`; when `title` is set, `<div><h1 className="tp-auth-card__title">{title}</h1>{lede && <p className="tp-auth-card__lede">{lede}</p>}</div>`; then `{children}`; when `foot` is set, `<div className="tp-auth-card__foot">{foot}</div>`.
   Copy: none of its own. "Tempo" stays in Latin letters in both languages (CONVENTIONS §12); title, lede, children and foot are passed in by the screen with their own EN/HE copy.
@@ -4766,7 +4766,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     invalid?: boolean;                   // true → aria-invalid="true" + error line
     disabled?: boolean;
   };
-  export function EmailField(props: EmailFieldProps): JSX.Element;
+  export function EmailField(props: EmailFieldProps): React.JSX.Element;
   ```
   Markup (Case A: `Field` + `TextInput` classes): `<div className="tp-field" data-component="EmailField">`; `<label className="tp-label" htmlFor={id}>{copy.label}</label>`; `<input className="tp-input" id={id} name="email" type="email" autoComplete="email" inputMode="email" dir="ltr" spellCheck={false} required placeholder={EMAIL_PLACEHOLDER} value={value} disabled={disabled === true} aria-invalid={invalid === true ? "true" : undefined} aria-describedby={describedBy} onChange={(e) => onChange(e.target.value)} />` where `describedBy` joins, in order, `${id}-help` (when `help`) and `${id}-error` (when `invalid`) with one space, or is `undefined` when both are absent; `{help && <p className="tp-help" id={`${id}-help`}>{help}</p>}`; `{invalid && <p className="tp-error-text" id={`${id}-error`}><TpIcon name="alert" size="sm" /><span>{before}<span className="tp-ltr">{EMAIL_PLACEHOLDER}</span>{after}</span></p>}` where `before`/`after` are `copy.error` split on `{example}`.
   Copy (`COPY: Record<Lang, Record<"label" | "error", string>>`):
@@ -4809,7 +4809,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onContinue: () => void;
     busy?: boolean;            // true → disabled + aria-busy="true"
   };
-  export function GuestButton(props: GuestButtonProps): JSX.Element; // returns a fragment: button + help line
+  export function GuestButton(props: GuestButtonProps): React.JSX.Element; // returns a fragment: button + help line
   ```
   Markup (Case A, Stage 1 `.tp-btn` + `.tp-btn--secondary` + `.tp-btn--block`, `.tp-help`): `<><button type="button" className="tp-btn tp-btn--secondary tp-btn--block" data-component="GuestButton" aria-describedby={helpId} disabled={busy === true} aria-busy={busy === true ? "true" : undefined} onClick={() => onContinue()}><TpIcon name="user" size="sm" /><span>{copy.label}</span></button><p className="tp-help" id={helpId}>{copy.help}</p></>`.
   Copy (`COPY: Record<Lang, Record<"label" | "help", string>>`):
@@ -4843,7 +4843,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/DividerText.tsx ("use client")
-  export function DividerText(): JSX.Element; // <p className="tp-divider-text" data-component="DividerText">{copy.or}</p>
+  export function DividerText(): React.JSX.Element; // <p className="tp-divider-text" data-component="DividerText">{copy.or}</p>
   ```
   Copy (`COPY: Record<Lang, Record<"or", string>>`): `or` EN: "or" / HE: "או".
   States: `default` only (it has no data and no interaction).
@@ -4884,7 +4884,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     actions?: ReactNode;            // buttons / links
     focusTitleOnMount?: boolean;    // true → the h1 receives focus once after mount
   };
-  export function StatusPanel(props: StatusPanelProps): JSX.Element;
+  export function StatusPanel(props: StatusPanelProps): React.JSX.Element;
   ```
   Markup (Case A, `@component StatusPanel` classes): `<section className="tp-status-panel" data-component="StatusPanel" data-tone={tone === "done" ? "done" : undefined} aria-labelledby={titleId}>`; `<span className="tp-status-panel__icon"><TpIcon name={icon} className="tp-icon--xl" /></span>`; `<h1 className="tp-status-panel__title" id={titleId} tabIndex={-1} ref={titleRef}>{title}</h1>`; `<p className="tp-status-panel__body">{body}</p>`; `{meta && <p className="tp-status-panel__meta tp-ltr" dir="ltr">{meta}</p>}`; `{children}`; `{actions && <div className="tp-status-panel__actions">{actions}</div>}`. `useEffect(() => { if (focusTitleOnMount) titleRef.current?.focus(); }, [focusTitleOnMount]);`.
   Copy: none of its own; every string is a prop with EN/HE given by the screen.
@@ -4926,7 +4926,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     sending: boolean;                                // true → button disabled, "Sending…"
     send: "ok" | "fail" | "rate-limit" | "hang";     // what a valid submit does in forced mode
   };
-  export default function SignInPage(): JSX.Element; // <Suspense fallback={null}><SignInScreen /></Suspense>
+  export default function SignInPage(): React.JSX.Element; // <Suspense fallback={null}><SignInScreen /></Suspense>
   // apps/web/lib/e2e/fixtures/sign-in.ts
   import type { SignInView } from "@/app/sign-in/page";
   export const FIXTURES: Record<"default" | "loading" | "empty" | "invalid" | "sending" | "error" | "rate-limited" | "offline", SignInView>;
@@ -5048,7 +5048,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     online: boolean;
     resend: "ok" | "fail" | "rate-limit" | "hang";   // forced-mode outcome of Resend
   };
-  export default function LinkSentPage(): JSX.Element; // <Suspense fallback={null}><LinkSentScreen /></Suspense>
+  export default function LinkSentPage(): React.JSX.Element; // <Suspense fallback={null}><LinkSentScreen /></Suspense>
   // apps/web/lib/e2e/fixtures/link-sent.ts
   import type { LinkSentView } from "@/app/link-sent/page";
   export const FIXTURES: Record<"default" | "ready" | "resending" | "resent" | "error" | "rate-limited" | "offline" | "empty", LinkSentView>;
@@ -5166,7 +5166,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     initialError: boolean;                      // true → the save-error notice shows at once
     save: "ok" | "fail" | "hang";               // every save: resolve, reject, never settle
   };
-  export function OnboardingFlow({ fixture }: { fixture?: OnboardingFixture } = {}): JSX.Element;
+  export function OnboardingFlow({ fixture }: { fixture?: OnboardingFixture } = {}): React.JSX.Element;
   ```
   Data: `const liveProfile = useQuery(api.users.getProfile, fixture ? "skip" : {});` `const liveCoach = useQuery(api.coach.getSettings, !fixture && liveProfile ? {} : "skip");` `const profile = fixture ? (fixture.profile ?? undefined) : liveProfile;` `const coach = fixture ? { dial: fixture.dial } : liveCoach;` `const liveOnline = useOnline(); const online = fixture ? fixture.online : liveOnline;`. Saves: `const fixtureSave = (): Promise<void> => fixture?.save === "fail" ? Promise.reject(new Error("fixture save")) : fixture?.save === "hang" ? new Promise<void>(() => {}) : Promise.resolve();` then, when `fixture` is set, `completeOnboarding = async (_a: { fullName?: string }) => { await fixtureSave(); return { onboardedAt: 0 }; }`, `setCoachDial = async (_a: { dial: number }) => { await fixtureSave(); return { success: true as const }; }`, `createNote = async (_a: { title: string; body: string }) => { await fixtureSave(); return "fixture-note" as Id<"notes">; }`, `updateNote = async (_a: { noteId: Id<"notes">; body: string }) => { await fixtureSave(); return _a.noteId; }`, `updatePreferences = async (_a: { locale: Lang }) => null`; otherwise the existing `useMutation(...)` values (all five `useMutation` calls still run every render, in the same order, so hooks never change).
   Offline notice (replaces `StateOffline`): `{online ? null : <output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text"><span className="tp-notice__title">{t("set.onb.offTitle")}</span> <span>{t("set.onb.offBody")}</span></span></output>}` (same markup `StateOffline` renders today).
@@ -5205,7 +5205,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```tsx
   // apps/web/app/(bare)/onboarding/page.tsx ("use client")
   export type OnboardingView = OnboardingFixture;   // re-export of the TFV2-0061a type, for the fixtures file
-  export default function Page(): JSX.Element;       // <Suspense fallback={null}><OnboardingRoute /></Suspense>
+  export default function Page(): React.JSX.Element;       // <Suspense fallback={null}><OnboardingRoute /></Suspense>
   // apps/web/lib/e2e/fixtures/onboarding.ts
   import type { OnboardingView } from "@/app/(bare)/onboarding/page";
   export const FIXTURES: Record<"default" | "loading" | "error" | "offline" | "slow-save" | "step-2" | "step-3" | "step-4" | "step-5", OnboardingView>;
@@ -5256,9 +5256,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
        onTitleChange, onBodyChange, onTogglePin, onAskDelete, onConfirmDelete, onCancelDelete, backHref?, lead?, canDelete? */
     backlinks: readonly BacklinkRow[] | undefined;   // passed to <Backlinks links>: undefined → its loading line, [] → its empty line
   };
-  export function PageEditorView(props: PageEditorViewProps): JSX.Element;
+  export function PageEditorView(props: PageEditorViewProps): React.JSX.Element;
   // apps/web/components/notes/NotesScreen.tsx
-  export function NoteLoading(): JSX.Element;
+  export function NoteLoading(): React.JSX.Element;
   ```
   `NoteLoading` markup (tempo.css `@component StateLoading`, the five rows of `page-editor.html`): `<div className="tp-page" data-component="PageLayout"><div className="tp-state--loading" role="status" data-component="StateLoading"><span className="tp-sr-only">{t("notes.loadingNote")}</span><div className="tp-skel-list" aria-hidden="true"><div className="tp-skeleton tp-skeleton--w100" /><div className="tp-skeleton tp-skeleton--w80" /><div className="tp-skel-row"><span className="tp-skeleton tp-skel-row__box" /><span className="tp-skel-row__lines"><span className="tp-skeleton tp-skeleton--w60" /><span className="tp-skeleton tp-skeleton--sm tp-skeleton--w40" /></span></div><div className="tp-skel-row"><span className="tp-skeleton tp-skel-row__box" /><span className="tp-skel-row__lines"><span className="tp-skeleton tp-skeleton--w80" /><span className="tp-skeleton tp-skeleton--sm tp-skeleton--w40" /></span></div><div className="tp-skeleton tp-skeleton--w60" /></div></div></div>`.
   Existing copy used (keys unchanged, EN / HE): `page.titleLabel` "Note title" / "כותרת הפתק" · `page.untitled` "Untitled" / "ללא כותרת" · `page.pin` "Pin" / "הצמדה" · `page.unpin` "Unpin" / "ביטול הצמדה" · `page.confirmDelete` "Confirm delete" / "אישור מחיקה" · `page.cancel` "Cancel" / "ביטול" · `page.menu` "Page options" / "אפשרויות דף" · `page.back` "← Back to notes" / "→ חזרה לפתקים" · `page.saving` "Saving…" / "שומר…" · `page.saved` "Saved" / "נשמר" · `notes.loadingNote` "Loading note." / "טוענים את הפתק.". (HE `page.saving` "שומר…" is masculine singular; listed under notes for ticket sync, not changed here.) Backlinks copy comes from TFV2-0044 (EN / HE): `head` "Linked here" / "מקושר לכאן", `empty` "Nothing links here yet." / "עוד אין קישורים לכאן.", `loading` "Loading…" / "בטעינה…".
@@ -5301,7 +5301,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | { kind: "loading" }
     | { kind: "error" }
     | { kind: "not-found" };
-  export default function Page(): JSX.Element; // <Suspense fallback={null}><NoteRoute /></Suspense>
+  export default function Page(): React.JSX.Element; // <Suspense fallback={null}><NoteRoute /></Suspense>
   // apps/web/lib/e2e/fixtures/notes-id.ts
   import type { NoteScreenView } from "@/app/(tempo)/notes/[id]/page";
   export const FIXTURES: Record<"default" | "empty" | "saving" | "offline" | "loading" | "error" | "not-found", NoteScreenView>;
@@ -5363,7 +5363,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRemove: (args: { id: string }) => Promise<{ undoUntilMs: number }>;
     onRestore: (args: { id: string }) => Promise<{ success: boolean }>;
   };
-  export function NotesList(props: NotesListProps): JSX.Element;
+  export function NotesList(props: NotesListProps): React.JSX.Element;
   ```
   Behaviour kept from today: `visible = filterByPeriod(notes ?? [], type).sort((a, b) => Number(b.pinned) - Number(a.pinned))`; the count line (`notes.loading` while `notes === undefined`, else `notes.count.one` / `notes.count.many` with `{n}`); the form (empty title → `titleMissing`, focus `#nt-new-title`, hint; else `perform(() => onCreate({ title: title.trim(), periodType }))`); search input → `onSearchChange(value)`; pinned-only button `aria-pressed={pinnedOnly}` → `onPinnedOnlyChange(!pinnedOnly)`; `PeriodFilter value={type}`; pin → `perform(() => onTogglePin({ id }))`; delete → confirm → `perform(async () => { const r = await onRemove({ id }); add { id, undoUntilMs: r.undoUntilMs } to removed; clear pendingDelete })`; Undo → after `Date.now() >= undoUntilMs` show `notes.undoEnded`, else `const r = await onRestore({ id })`, drop the notice, and show `notes.undoEnded` when `!r.success`; any thrown error → `notes.error` notice. The "New note" button is `disabled={busy || !canCreate}`.
   New loading markup (replaces the list section while `notes === undefined`): `<div className="tp-state--loading" role="status" data-component="StateLoading"><span className="tp-sr-only">{t("notes.loading")}</span><div className="tp-skel-list" aria-hidden="true">` + five `<div className="tp-skel-row"><span className="tp-skeleton tp-skel-row__box" /><span className="tp-skel-row__lines"><span className="tp-skeleton tp-skeleton--w{W}" /><span className="tp-skeleton tp-skeleton--sm tp-skeleton--w40" /></span></div>` with W = 80, 60, 100, 40, 80 + `</div></div>`. Empty / no-match keep today's `.tp-empty` block, shown only when `notes !== undefined && visible.length === 0`.
@@ -5409,7 +5409,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | { kind: "ready"; online: boolean; notes: NotesListNote[]; create: "ok" | "fail" | "hang" }
     | { kind: "loading" }
     | { kind: "error" };
-  export default function Page(): JSX.Element; // <Suspense fallback={null}><NotesRoute /></Suspense>
+  export default function Page(): React.JSX.Element; // <Suspense fallback={null}><NotesRoute /></Suspense>
   // apps/web/lib/e2e/fixtures/notes.ts
   import type { NotesScreenView } from "@/app/(tempo)/notes/page";
   export const FIXTURES: Record<"default" | "empty" | "loading" | "error" | "offline" | "save-error", NotesScreenView>;
@@ -5466,7 +5466,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     templates: NewPageTemplate[];
     create: "ok" | "fail" | "hang";                      // forced-mode outcome of Use / Start a plain note
   };
-  export default function Page(): JSX.Element; // <Suspense fallback={null}><NewPageRoute /></Suspense>
+  export default function Page(): React.JSX.Element; // <Suspense fallback={null}><NewPageRoute /></Suspense>
   // apps/web/lib/e2e/fixtures/notes-new.ts
   import type { NewPageView } from "@/app/(tempo)/notes/new/page";
   export const FIXTURES: Record<"default" | "empty" | "no-offer" | "loading" | "error" | "offline" | "creating" | "create-error", NewPageView>;
@@ -8569,7 +8569,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/components/layout/PageLayout.tsx
   import type { ReactNode } from "react";
   export type PageLayoutProps = { width?: "default" | "wide" | "narrow"; children: ReactNode }; // default "default"
-  export function PageLayout({ width = "default", children }: PageLayoutProps): JSX.Element;
+  export function PageLayout({ width = "default", children }: PageLayoutProps): React.JSX.Element;
   // <div className={width === "default" ? "tp-page" : `tp-page tp-page--${width}`} data-component="PageLayout" data-width={width}>{children}</div>
   ```
   Copy: none (no visible strings). States (harness order): `default`, `wide`, `narrow`; no data states.
@@ -8602,7 +8602,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/components/layout/Surface.tsx
   import type { ReactNode } from "react";
   export type SurfaceProps = { children: ReactNode; labelledBy?: string }; // labelledBy = id of a heading inside children
-  export function Surface({ children, labelledBy }: SurfaceProps): JSX.Element;
+  export function Surface({ children, labelledBy }: SurfaceProps): React.JSX.Element;
   // labelledBy ? <section className="tp-surface" data-component="Surface" aria-labelledby={labelledBy}>{children}</section>
   //            : <div className="tp-surface" data-component="Surface">{children}</div>
   ```
@@ -8635,7 +8635,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   // apps/web/components/layout/PageHeader.tsx
   import type { ReactNode } from "react";
   export type PageHeaderProps = { title: string; subtitle?: string; actions?: ReactNode };
-  export function PageHeader({ title, subtitle, actions }: PageHeaderProps): JSX.Element;
+  export function PageHeader({ title, subtitle, actions }: PageHeaderProps): React.JSX.Element;
   // <header className="tp-pagehead" data-component="PageHeader">
   //   <div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1>{subtitle && <p className="tp-pagehead__sub">{subtitle}</p>}</div>
   //   {actions && <div className="tp-pagehead__actions">{actions}</div>}
@@ -8676,7 +8676,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     children?: ReactNode;   // filters, rendered inline between grow and end
     end?: ReactNode;        // sort menu, "Showing N" line; pinned to the inline end
   };
-  export function Toolbar({ label, grow, children, end }: ToolbarProps): JSX.Element;
+  export function Toolbar({ label, grow, children, end }: ToolbarProps): React.JSX.Element;
   // <div className="tp-toolbar" data-component="Toolbar" role="group" aria-label={label}>
   //   {grow && <div className="tp-toolbar__grow">{grow}</div>}{children}{end && <div className="tp-toolbar__end">{end}</div>}
   // </div>
@@ -8718,7 +8718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     as?: "h2" | "h3";                            // default "h2"
     children?: ReactNode;
   };
-  export function Section({ id, title, count, action, as = "h2", children }: SectionProps): JSX.Element;
+  export function Section({ id, title, count, action, as = "h2", children }: SectionProps): React.JSX.Element;
   // <section className="tp-section" data-component="Section" aria-labelledby={`${id}-title`}>
   //   <div className="tp-section__head">
   //     <Heading className="tp-section__title" id={`${id}-title`}>{title}</Heading>   // Heading = as
@@ -8757,7 +8757,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   import type { ReactNode } from "react";
   export type CardGridProps = { size?: "sm" | "md"; label?: string; children: ReactNode };
-  export function CardGrid({ size = "md", label, children }: CardGridProps): JSX.Element;
+  export function CardGrid({ size = "md", label, children }: CardGridProps): React.JSX.Element;
   ```
   Markup: `<div className={size === "sm" ? "tp-cards tp-cards--sm" : "tp-cards"} data-component="CardGrid" role={label ? "group" : undefined} aria-label={label}>{children}</div>`. Layout comes only from tempo.css: `.tp-cards` = `grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--tp-space-20) * 3.5)), 1fr))` (280 px minimum), gap `--tp-space-4`; `.tp-cards--sm` = minimum `calc(var(--tp-space-20) * 2.25)` (180 px). States (harness order): `default` (size "md", label "Cards"), `sm` (size "sm", no label). Loading/empty/error/offline/success/disabled: n/a — presentational container; the mounting screen owns data states. No copy (the `label` string is supplied localised by the caller). RTL: grid flows from inline-start automatically (no physical properties). Keyboard/screen reader: not focusable; with `label` it is announced as a named group. Breakpoints: no media queries; columns follow container width. Motion: none.
 - **TESTS:**
@@ -8786,7 +8786,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { ReactNode } from "react";
   export type NoticeTone = "neutral" | "info" | "caution" | "done" | "danger";
   export type NoticeProps = { tone: NoticeTone; title: string; body?: string; action?: ReactNode; live?: "status" | "alert" | "off" };
-  export function Notice(props: NoticeProps): JSX.Element;
+  export function Notice(props: NoticeProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-notice" data-tone={tone} data-component="Notice" role={r}>` where `r = live === "off" ? undefined : (live ?? (tone === "danger" ? "alert" : "status"))`; children: `<span className="tp-notice__icon"><TpIcon name={ICON[tone]} /></span>`, `<div className="tp-notice__text"><p className="tp-notice__title"><span className="tp-sr-only">{copy[tone]}: </span><span dir="auto">{title}</span></p>{body ? <p dir="auto">{body}</p> : null}</div>`, and when `action` is set `<div className="tp-notice__action">{action}</div>`. `ICON = { neutral: "info", info: "info", caution: "alert", done: "check", danger: "alert" }`. Colours come from tempo.css (`[data-tone="info"]` → `--tp-info-wash`/`--tp-info`, `caution` → `--tp-caution-wash`/`--tp-caution`, `done` → `--tp-done-wash`/`--tp-done`, `danger` → `--tp-danger-wash`/`--tp-danger`, `neutral` → `--tp-sunken`/`--tp-ink-muted`); radius `--tp-radius-lg`.
   COPY (sr-only tone word, keys = tones): `neutral` EN "Note" / HE "הערה" · `info` EN "Info" / HE "מידע" · `caution` EN "Heads up" / HE "לתשומת לב" · `done` EN "Done" / HE "הושלם" · `danger` EN "Problem" / HE "בעיה". Title, body and action label are supplied localised by the caller.
@@ -8820,7 +8820,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { ReactNode } from "react";
   export type BadgeTone = "neutral" | "done" | "info" | "caution";
   export type BadgeProps = { label: string; tone?: BadgeTone; icon?: ReactNode };
-  export function Badge({ label, tone = "neutral", icon }: BadgeProps): JSX.Element;
+  export function Badge({ label, tone = "neutral", icon }: BadgeProps): React.JSX.Element;
   ```
   Markup: `<span className="tp-badge" data-tone={tone} data-component="Badge">{icon ?? null}<span dir="auto">{label}</span></span>`. Styling from tempo.css only: min-height `--tp-space-6`, padding-inline `--tp-space-2`, radius `--tp-radius-pill`, `--tp-text-xs` weight 600; neutral `--tp-sunken`/`--tp-ink-muted`, done `--tp-done-wash`/`--tp-done`, info `--tp-info-wash`/`--tp-info`, caution `--tp-caution-wash`/`--tp-caution`. No built-in copy (label is supplied localised). States (harness order, label in brackets): `neutral` ["Built in"], `done` ["Done"], `info` ["Your plan"], `caution` ["Ends soon"], `with-icon` (tone `info`, label "Made by the coach", icon `<svg aria-hidden="true" data-testid="badge-icon" width="16" height="16" />`). Loading/empty/error/offline/success/disabled: n/a — static label. RTL: inline-flex follows direction; label `dir="auto"`. Keyboard/screen reader: not focusable; read as plain text. Breakpoints: none (`white-space: nowrap`). Motion: none.
 - **TESTS:**
@@ -8849,7 +8849,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { ReactNode } from "react";
   export type PageHeadVariant = "daily" | "weekly" | "project" | "note";
   export type PageHeadProps = { variant: PageHeadVariant; title: string; meta?: ReactNode; actions?: ReactNode; children?: ReactNode };
-  export function PageHead(props: PageHeadProps): JSX.Element;
+  export function PageHead(props: PageHeadProps): React.JSX.Element;
   ```
   Markup: `<header className="tp-page-head" data-variant={variant} data-component="PageHead"><div className="tp-page-head__row"><h1 className="tp-page-title" dir="auto">{title}</h1>{actions ? <div className="tp-page-head__actions">{actions}</div> : null}</div>{meta ? <div className="tp-page-meta">{meta}</div> : null}{children}</header>`. `children` is the slot under the meta line (the weekly page puts its WeekStrip there). Spacing and type from tempo.css: grid gap `--tp-space-3`; title `--tp-text-3xl` (≥ 768 px) / `--tp-text-2xl` (< 768 px), `note` variant title `--tp-text-2xl`; meta `--tp-text-sm` `--tp-ink-muted`. No built-in copy. States (harness order): `daily` (title "Monday, 2 November", meta "3 open · 1 event"), `weekly` (title "Week 45", children `<div data-testid="page-head-strip">strip</div>`), `project` (title "Kitchen reset", actions `<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm">Edit</button>`), `note` (title "Ideas for the garden", no meta). Loading/empty/error/offline/success/disabled: n/a — static header. RTL: row is flex with logical gaps; actions at inline-end. Keyboard/screen reader: the `h1` is the page's only top-level heading; actions are native buttons. Breakpoints: row wraps (`flex-wrap`) at 390. Motion: none.
 - **TESTS:**
@@ -8878,7 +8878,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type WeekStripDay = { date: string /* YYYY-MM-DD */; dow: string /* localised short name */; n: number /* day of month */; count: number /* open tasks */; today: boolean };
   export type WeekStripProps = { label: string; days: WeekStripDay[]; selected: string; onSelect: (date: string) => void };
-  export function WeekStrip(props: WeekStripProps): JSX.Element;
+  export function WeekStrip(props: WeekStripProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-week-strip" role="group" aria-label={label} data-component="WeekStrip">` then one `<button type="button" className="tp-week-strip__day" aria-pressed={day.date === selected} aria-current={day.today ? "date" : undefined} tabIndex={day.date === selected ? 0 : -1} data-date={day.date} onClick={() => onSelect(day.date)}>` per day containing `<span className="tp-week-strip__dow">{day.dow}</span><span className="tp-week-strip__n tp-num">{day.n}</span><span className="tp-week-strip__count">…</span>`. Count span: when `count > 0` → `<span className="tp-num">{count}</span> {copy.open}`; when `count === 0` → `{copy.none}`. If no day matches `selected`, the first button gets `tabIndex={0}`.
   COPY: `open` EN "open" / HE "פתוחות" · `none` EN "Nothing open" / HE "אין משימות פתוחות".
@@ -8910,7 +8910,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type ProjectStatusValue = "idea" | "active" | "paused" | "done";
   export type ProjectStatusProps = { status: ProjectStatusValue };
-  export function ProjectStatus({ status }: ProjectStatusProps): JSX.Element;
+  export function ProjectStatus({ status }: ProjectStatusProps): React.JSX.Element;
   ```
   Markup: `<span className="tp-status" data-status={status} data-component="ProjectStatus"><TpIcon name={ICON[status]} size="sm" /><span>{copy[status]}</span></span>` with `ICON = { idea: "sparkle", active: "play", paused: "pause", done: "check" }`. COPY: `idea` EN "Idea" / HE "רעיון" · `active` EN "Active" / HE "פעיל" · `paused` EN "Paused" / HE "מושהה" · `done` EN "Done" / HE "הושלם". Styling from tempo.css: min-height 28 px, padding-inline `--tp-space-2`, radius `--tp-radius-sm`, `--tp-text-xs` weight 600; idea `--tp-sunken`/`--tp-ink-muted`, active `--tp-info-wash`/`--tp-info`, paused `--tp-caution-wash`/`--tp-caution`, done `--tp-done-wash`/`--tp-done`. States (harness order): `idea`, `active`, `paused`, `done`. Loading/empty/error/offline/success/disabled: n/a — static label. RTL: inline-flex follows direction. Screen reader: reads the word; icon `aria-hidden`. Breakpoints: none. Motion: none.
 - **TESTS:**
@@ -8938,9 +8938,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   import type { ReactNode } from "react";
   export type ListProps = { label: string; children: ReactNode };
-  export function List({ label, children }: ListProps): JSX.Element; // <ul className="tp-list" aria-label={label} data-component="List">{children}</ul>
+  export function List({ label, children }: ListProps): React.JSX.Element; // <ul className="tp-list" aria-label={label} data-component="List">{children}</ul>
   export type ListRowProps = { title: string; icon?: ReactNode; meta?: ReactNode; end?: ReactNode; href?: string; onClick?: () => void; current?: boolean };
-  export function ListRow(props: ListRowProps): JSX.Element;
+  export function ListRow(props: ListRowProps): React.JSX.Element;
   ```
   `ListRow` returns `<li data-component="ListRow">` wrapping one inner element with class `tp-list-row`: `<a href={href}>` when `href` is set; else `<button type="button" onClick={onClick}>` when `onClick` is set; else `<div>`. Inner content, always in this order: `<span className="tp-list-row__icon" aria-hidden="true">{icon}</span>` (rendered even when empty so the three-column grid holds), `<span className="tp-list-row__body"><span className="tp-list-row__title" dir="auto">{title}</span>{meta ? <span className="tp-list-row__meta">{meta}</span> : null}</span>`, `<span className="tp-list-row__end">{end}</span>`. `current`: on the inner element `aria-current="page"` for a link, `aria-current="true"` otherwise. Styling from tempo.css: grid `auto minmax(0,1fr) auto`, gap `--tp-space-3`, min-height `calc(var(--tp-touch) + var(--tp-space-3))` = 56 px, padding `--tp-space-2` `--tp-space-3`, bottom border `--tp-line` (none on the last row), title weight 500 single-line ellipsis, meta `--tp-text-sm` `--tp-ink-muted`; current row `--tp-hover` + `--tp-radius-md`. No built-in copy. States (harness order, list label "Rows"): `link` (title "Call the bank", meta "Today", href), `button` (title "Water the plants", meta "Every morning", onClick), `static` (title "Read 10 pages", end `<input type="checkbox" aria-label="Done" />`), `current` (link row, title "Inbox", current). Loading/empty/error/offline/success/disabled: n/a — the screen owns data states. RTL: icon at inline-start, end slot at inline-end (grid follows `dir`). Keyboard: link and button rows are focusable and show the global accent focus ring with `--tp-radius-md`; Enter activates. Breakpoints: same at 390 / 1280 (title truncates). Motion: none (hover background only).
 - **TESTS:**
@@ -8970,7 +8970,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type SegmentedOption = { value: string; label: string };
   export type SegmentedProps = { label: string; options: SegmentedOption[]; value: string; onChange: (value: string) => void; block?: boolean };
-  export function Segmented(props: SegmentedProps): JSX.Element;
+  export function Segmented(props: SegmentedProps): React.JSX.Element;
   ```
   Markup: `<div className={block ? "tp-segmented tp-segmented--block" : "tp-segmented"} role="radiogroup" aria-label={label} data-component="Segmented">` then per option `<button type="button" role="radio" className="tp-seg__opt" aria-checked={o.value === value} tabIndex={o.value === value ? 0 : -1} data-value={o.value} onClick={() => onChange(o.value)}>{o.label}</button>`; if no option matches `value`, the first option has `tabIndex={0}`. Keyboard: ArrowRight/ArrowDown → next option when `useLocale().dir === "ltr"`; in `rtl` ArrowRight → previous and ArrowLeft → next (ArrowDown stays next, ArrowUp stays previous); ends wrap around; Home → first, End → last; every move focuses the option and calls `onChange(value)`; Space/Enter on the focused option call `onChange`. Styling from tempo.css: track `--tp-sunken`, padding/gap `--tp-space-1`, radius `--tp-radius-md`; option min-height `calc(var(--tp-touch) - var(--tp-space-2))` = 36 px, `--tp-text-sm` 600; selected `--tp-paper` + `--tp-line-control` border + `--tp-shadow-whisper` + a 6 px `--tp-ink` dot (`::before`). No built-in copy. States (harness order): `default` (label "View", options Day/Week/Month with values `day`/`week`/`month`, value `day`), `block` (same options, value `week`, `block`). Loading/empty/error/offline/success/disabled: n/a. RTL: options flow right-to-left; arrows follow reading direction as above. Screen reader: radiogroup named by `label`, each option "radio, checked/not checked". Breakpoints: `--block` stretches options equally (the caller sets `block` on phone layouts). Motion: none.
 - **TESTS:**
@@ -8999,7 +8999,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type SearchInputProps = { id: string; label: string; value: string; onChange: (value: string) => void; placeholder?: string; labelHidden?: boolean };
-  export function SearchInput(props: SearchInputProps): JSX.Element;
+  export function SearchInput(props: SearchInputProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-search" data-component="SearchInput"><label className={labelHidden ? "tp-label tp-sr-only" : "tp-label"} htmlFor={id}>{label}</label><div className="tp-search__box"><span className="tp-search__icon"><TpIcon name="search" /></span><input id={id} className="tp-input" type="search" dir="auto" autoComplete="off" value={value} placeholder={placeholder ?? copy.placeholder} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape" && value !== "") { e.preventDefault(); onChange(""); } }} /></div></div>`. COPY: `placeholder` EN "Search…" / HE "חיפוש…". Styling from tempo.css: input min-height `--tp-touch`, border `--tp-line-control`, radius `--tp-radius-md`, `--tp-text-md`, padding-inline-start `--tp-space-10` for the icon at inline-start `--tp-space-3`. States (harness order): `default` (id "search-a", label "Search tasks", value ""), `hidden-label` (id "search-b", label "Search notes", `labelHidden`, value "bank", placeholder "Find a note"). Loading/empty/error/offline/success/disabled: n/a — results states belong to the screen. RTL: icon sits at inline-start (right in Hebrew); typed text `dir="auto"`. Keyboard: native input; Escape clears a non-empty value (an empty value leaves Escape to the browser). Screen reader: the label names the searchbox even when visually hidden. Breakpoints: fills its container at all widths. Motion: border-color transition `--tp-dur-fast` (120 ms).
 - **TESTS:**
@@ -9028,7 +9028,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type SortOption = { value: string; label: string };
   export type SortMenuProps = { label: string; options: SortOption[]; value: string; onChange: (value: string) => void };
-  export function SortMenu(props: SortMenuProps): JSX.Element;
+  export function SortMenu(props: SortMenuProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-menu" data-component="SortMenu">` containing the trigger `<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" aria-haspopup="menu" aria-expanded={open} aria-controls={listId}><TpIcon name="sort" size="sm" /><span>{label}: {current?.label ?? ""}</span></button>` and, only while open, `<div id={listId} className="tp-menu__list tp-glass" role="menu" aria-label={label}><div className="tp-menu__label" role="presentation">{label}</div>{options.map((o) => <button type="button" role="menuitemradio" className="tp-menu__item" aria-checked={o.value === value} data-menu-value={o.value} tabIndex={-1}><span className="tp-menu__check" aria-hidden="true"><TpIcon name="check" size="sm" /></span>{o.label}</button>)}</div>`. Behaviour: click on the trigger toggles; on open focus moves to the checked item (or the first); ArrowDown/ArrowUp move focus with wrap; Home/End first/last; Enter/Space or click on an item → `onChange(o.value)`, close, focus the trigger; Escape → close, focus the trigger; Tab → close (focus continues naturally); a `pointerdown` outside the root → close. No built-in copy (`label` is supplied localised by the screen; list screens pass "Sort" / "מיון"). Styling from tempo.css: list absolute at `top: calc(100% + var(--tp-space-1))`, `inset-inline-end: 0`, z-index 30, radius `--tp-radius-lg`, glass; items min-height `--tp-touch`, radius `--tp-radius-md`, `--tp-text-sm`; checked item weight 600 with the check visible. States (harness order): `default` (label "Sort", options Newest/Oldest/A–Z with values `new`/`old`/`az`, value `new`); the `open` state is reached by clicking (TESTS). Loading/empty/error/offline/success/disabled: n/a. RTL: the list aligns to inline-end (left edge in Hebrew) through `inset-inline-end`. Screen reader: trigger announces "Sort: Newest, menu, collapsed/expanded"; items are menuitemradio with checked state. Breakpoints: same at 390 / 1280. Motion: open uses `tp-pop` for `--tp-dur-base` (180 ms); reduced motion instant (tempo.css global rule).
 - **TESTS:**
@@ -9057,7 +9057,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type LoadMoreProps = { shown: number; total: number; onLoadMore: () => void; loading?: boolean };
-  export function LoadMore(props: LoadMoreProps): JSX.Element | null;
+  export function LoadMore(props: LoadMoreProps): React.JSX.Element | null;
   ```
   When `total === 0` it returns `null`. Otherwise: `<div className="tp-load-more" data-component="LoadMore"><p className="tp-load-more__status" aria-live="polite">{copy.showing} <span className="tp-num">{shown}</span> {copy.of} <span className="tp-num">{total}</span></p>{shown < total ? <button type="button" className="tp-btn tp-btn--secondary" onClick={onLoadMore} disabled={loading} aria-busy={loading ? "true" : undefined}>{loading ? copy.loading : copy.more}</button> : null}</div>`. COPY: `showing` EN "Showing" / HE "מוצגים" · `of` EN "of" / HE "מתוך" · `more` EN "Show more" / HE "להציג עוד" · `loading` EN "Loading…" / HE "בטעינה…". Styling from tempo.css: centred grid, gap `--tp-space-2`, padding-block `--tp-space-6`; status `--tp-text-sm` `--tp-ink-muted`; button min-height `--tp-touch`. States (harness order): `default` (shown 20, total 48), `loading` (20, 48, loading), `complete` (48, 48), `none` (0, 0 → renders nothing). Error/offline/empty/success/disabled: n/a — the list screen owns them; `loading` is the disabled state. RTL: sentence reads right-to-left; numbers stay LTR via `.tp-num`. Keyboard: native button, Enter/Space. Screen reader: status is `aria-live="polite"` so a new count is announced. Breakpoints: centred at all widths. Motion: button background transition `--tp-dur-fast`.
 - **TESTS:**
@@ -9087,7 +9087,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type DotKind = "event" | "fixed" | "flex" | "done" | "habit";
   export type DotProps = { kind: DotKind };
-  export function Dot({ kind }: DotProps): JSX.Element; // <span className={`tp-dot tp-dot--${kind}`} aria-hidden="true" data-component="Dot" data-kind={kind} />
+  export function Dot({ kind }: DotProps): React.JSX.Element; // <span className={`tp-dot tp-dot--${kind}`} aria-hidden="true" data-component="Dot" data-kind={kind} />
   ```
   Shapes from tempo.css (8 px = `--tp-space-2`, round): `event` filled `--tp-ink-muted` (no modifier rule exists, so the base rule applies), `fixed` filled `--tp-info`, `flex` 1.5 px ring `--tp-caution` with transparent fill, `done` filled `--tp-done`, `habit` 1.5 px ring `--tp-ink-muted`. No copy. States: `default` only; loading/empty/error/offline/success/disabled n/a (static decoration). Screen reader: hidden (`aria-hidden`). Keyboard: not focusable. RTL/breakpoints: none. Motion: none.
 - **TESTS:**
@@ -9116,7 +9116,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { DotKind } from "./Dot";
   export type MonthGridDay = { date: string /* YYYY-MM-DD */; n: number /* day of month */; outside: boolean; today: boolean; dots: DotKind[] };
   export type MonthGridProps = { title: string; weekStartsOn: 0 | 1 | 6; days: MonthGridDay[] /* whole weeks, first day = weekStartsOn */; selected: string; onSelectDay: (date: string) => void; onPrev: () => void; onNext: () => void };
-  export function MonthGrid(props: MonthGridProps): JSX.Element;
+  export function MonthGrid(props: MonthGridProps): React.JSX.Element;
   ```
   Markup: `<section className="tp-month" data-component="MonthGrid" aria-labelledby={titleId}>`; head `<div className="tp-month__head"><h2 className="tp-month__title" id={titleId}>{title}</h2><button type="button" className="tp-btn tp-btn--ghost tp-btn--icon tp-btn--sm" aria-label={copy.prev} onClick={onPrev}><TpIcon name="chevron" className="tp-icon--back" /></button><button type="button" className="tp-btn tp-btn--ghost tp-btn--icon tp-btn--sm" aria-label={copy.next} onClick={onNext}><TpIcon name="chevron" flip /></button></div>`; grid `<div className="tp-month__grid">` holding 7 header cells `<div className="tp-month__dow" aria-hidden="true">{DOW_SHORT[lang][(weekStartsOn + i) % 7]}</div>` (i = 0…6) followed by one day button per `days` entry: `<button type="button" className="tp-month__day" data-date={d.date} data-outside={d.outside ? "true" : undefined} aria-current={d.today ? "date" : undefined} aria-pressed={d.date === selected} aria-label={dayLabel(d)} tabIndex={d.date === selected ? 0 : -1} onClick={() => onSelectDay(d.date)}><span className="tp-month__n tp-num">{d.n}</span><span className="tp-month__dots" aria-hidden="true">{d.dots.slice(0, 3).map((k, i) => <Dot key={i} kind={k} />)}</span>{d.dots.length > 0 ? <span className="tp-month__count"><span className="tp-num">{d.dots.length}</span> {d.dots.length === 1 ? copy.item : copy.items}</span> : null}</button>`. If no day matches `selected`, the first non-outside day gets `tabIndex={0}`.
   `dayLabel(d)` = `${DOW_LONG[lang][new Date(`${d.date}T00:00:00Z`).getUTCDay()]} ${d.n}` + (dots > 0 ? `, ${count} ${item|items}` : `, ${copy.nothing}`) + (d.today ? `, ${copy.today}` : "").
@@ -9152,7 +9152,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type WeekColumnsItem = { id: string; time: string /* preformatted by the caller in the form "HH:MM–HH:MM" or a localised word; the component prints it as is */; title: string; kind: "fixed" | "flex" | "task" };
   export type WeekColumnsDay = { date: string; dow: string; n: number; today: boolean; items: WeekColumnsItem[] };
   export type WeekColumnsProps = { label: string; days: WeekColumnsDay[]; onOpenItem?: (id: string) => void };
-  export function WeekColumns(props: WeekColumnsProps): JSX.Element;
+  export function WeekColumns(props: WeekColumnsProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-week" role="region" aria-label={label} tabIndex={0} data-component="WeekColumns">` (focusable so keyboard users can scroll it), then per day `<section className="tp-week__col" aria-current={day.today ? "date" : undefined} aria-labelledby={headId}><h3 className="tp-week__head" id={headId}><span>{day.dow}</span> <strong className="tp-num">{day.n}</strong></h3>{items}</section>`. Each item: `<div className="tp-week__item" data-kind={item.kind}><span className="tp-week__time">{item.time}</span>{onOpenItem ? <button type="button" className="tp-btn tp-btn--link tp-week__title" onClick={() => onOpenItem(item.id)} dir="auto">{item.title}</button> : <span className="tp-week__title" dir="auto">{item.title}</span>}<span className="tp-week__kind">{copy[item.kind]}</span></div>`. A day with no items renders `<p className="tp-week__kind">{copy.free}</p>`. COPY: `fixed` EN "Fixed" / HE "קבוע" · `flex` EN "Flexible" / HE "גמיש" · `task` EN "Task" / HE "משימה" · `free` EN "Nothing planned" / HE "אין תוכניות". Styling from tempo.css: 7 columns each ≥ `calc(var(--tp-space-20) + var(--tp-space-12))` (128 px) with `overflow-x: auto` on `.tp-week`; column `--tp-ground`, today `--tp-sunken`; item `--tp-paper`, 4 px inline-start edge solid `--tp-info` (fixed), dashed `--tp-caution` (flex), `--tp-line-control` (task); time `--tp-font-mono` LTR-isolated. Harness fixture (label "Week of 2 November"): 7 days 2026-11-02…08, dow Mon…Sun, n 2…8, today 2026-11-03; Mon items `{ id: "a", time: "09:00–10:00", title: "Dentist", kind: "fixed" }` and `{ id: "b", time: "14:00", title: "Write report", kind: "flex" }`; Wed item `{ id: "c", time: "All day", title: "Pay rent", kind: "task" }`; other days empty. States (harness order): `default` (with `onOpenItem`), `static` (same days, no `onOpenItem`). Loading/empty/error/offline/success/disabled: n/a — the screen owns them. RTL: columns flow right-to-left; the colour edge is on the inline-start side; times stay LTR. Screen reader: region named by `label`; each column a section named by its heading; kind word read after each title (never colour alone). Breakpoints: at 390 and 768 the row is wider than the container and scrolls inside `.tp-week`; at 1280 the 7 columns fit when the container is ≥ 950 px. Motion: none.
 - **TESTS:**
@@ -9184,7 +9184,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type DayTimelineViewProps = { label: string; startHour: number; endHour: number; items: DayTimelineItem[]; nowMinute?: number; cols?: number; onOpenItem?: (id: string) => void };
   export function formatMinute(m: number): string; // `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`; 0 → "00:00", 1440 → "24:00"
   export function placeItem(item: DayTimelineItem, startHour: number, endHour: number): { row: number; span: number } | null;
-  export function DayTimelineView(props: DayTimelineViewProps): JSX.Element;
+  export function DayTimelineView(props: DayTimelineViewProps): React.JSX.Element;
   ```
   `placeItem`: `lo = startHour * 60`, `hi = endHour * 60`; returns `null` when `item.endMinute <= lo` or `item.startMinute >= hi` or `item.endMinute <= item.startMinute`; else `s = max(item.startMinute, lo)`, `e = min(item.endMinute, hi)`, `row = floor((s - lo) / 30) + 1`, `span = max(1, ceil((e - s) / 30))`.
   Markup: `<section className="tp-timeline" aria-label={label} data-component="DayTimeline">`; `<ol className="tp-timeline__hours" aria-hidden="true">` with one `<li className="tp-timeline__hour">{formatMinute(h * 60)}</li>` for each `h` from `startHour` to `endHour - 1`; `<ol className="tp-timeline__items" style={{ "--cols": cols ?? 1 } as CSSProperties}>` holding, for each item with a non-null placement, `<li className="tp-timeline__item" data-kind={item.kind} data-id={item.id} style={{ "--row": row, "--span": span, "--col": item.col ?? 1 } as CSSProperties}><span className="tp-timeline__time">{formatMinute(item.startMinute)}–{formatMinute(item.endMinute)}</span>{onOpenItem ? <button type="button" className="tp-btn tp-btn--link tp-timeline__title" dir="auto" onClick={() => onOpenItem(item.id)}>{item.title}</button> : <span className="tp-timeline__title" dir="auto">{item.title}</span>}<span className={`tp-chip tp-chip--${item.kind}`}>{copy[item.kind]}</span></li>`, and when `nowMinute` is within `[lo, hi)` a last `<li className="tp-timeline__now" style={{ "--row": floor((nowMinute - lo) / 30) + 1 } as CSSProperties}><span>{copy.now} <span className="tp-num">{formatMinute(nowMinute)}</span></span></li>`. Items whose placement is null are not rendered.
@@ -9218,7 +9218,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { ReactNode } from "react";
   export type KanbanColumn = { id: string; name: string; cards: ReactNode[] /* each a KanbanCard <li> */; emptyText?: string };
   export type KanbanProps = { label: string; columns: KanbanColumn[] };
-  export function Kanban(props: KanbanProps): JSX.Element;
+  export function Kanban(props: KanbanProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-kanban" role="region" aria-label={label} tabIndex={0} data-component="Kanban">` then per column `<section className="tp-kanban__col" aria-labelledby={nameId} data-column={col.id}><div className="tp-kanban__head"><h3 className="tp-kanban__name" id={nameId} dir="auto">{col.name}</h3><span className="tp-kanban__count"><span className="tp-num">{col.cards.length}</span><span className="tp-sr-only"> {col.cards.length === 1 ? copy.card : copy.cards}</span></span></div><ul className="tp-kanban__list">{col.cards}</ul>{col.cards.length === 0 ? <p className="tp-kanban__empty">{col.emptyText ?? copy.empty}</p> : null}</section>`. COPY: `card` EN "card" / HE "כרטיס" · `cards` EN "cards" / HE "כרטיסים" · `empty` EN "Nothing here yet." / HE "עוד אין כאן כלום.". Styling from tempo.css: columns `grid-auto-flow: column`, each ≥ `calc(var(--tp-space-20) * 3.25)` (260 px), gap `--tp-space-4`, `overflow-x: auto`; column `--tp-sunken`, radius `--tp-radius-lg`; under 768 px each column is `calc(100vw - var(--tp-space-16))` wide with `scroll-snap-type: x proximity` and `scroll-snap-align: start`. States (harness order; label "Project board"): `default` (columns `todo` "To do" with 2 cards, `doing` "Doing" with 1 card, `done` "Done" with 0 cards and no `emptyText`), `custom-empty` (one column `ideas` "Ideas", 0 cards, `emptyText` "Drop ideas here"). Column names and `emptyText` are supplied localised by the caller. Loading/error/offline/success/disabled: n/a — the screen owns them. RTL: columns flow right-to-left; snap aligns to the inline start. Keyboard: the board is focusable (arrow keys scroll it natively); cards' own buttons are reachable by Tab. Screen reader: region named by `label`, each column a section named by its heading, count announced as "2 cards". Breakpoints: snap-scroll < 768 px; ≥ 1024 px all three columns fit when the container is ≥ 812 px. Motion: none.
 - **TESTS:**
@@ -9247,7 +9247,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type KanbanCardData = { id: string; title: string; meta?: string[] };
   export type KanbanCardProps = { card: KanbanCardData; prevColumnName: string | null; nextColumnName: string | null; onMovePrev: (cardId: string) => void; onMoveNext: (cardId: string) => void; moved?: boolean };
-  export function KanbanCard(props: KanbanCardProps): JSX.Element;
+  export function KanbanCard(props: KanbanCardProps): React.JSX.Element;
   ```
   Markup: `<li className="tp-kanban-card" data-component="KanbanCard" data-card={card.id} data-moved={moved ? "true" : undefined}><span className="tp-kanban-card__title" dir="auto">{card.title}</span>{card.meta && card.meta.length > 0 ? <span className="tp-kanban-card__meta">{card.meta.map((m) => <span key={m} dir="auto">{m}</span>)}</span> : null}<div className="tp-kanban-card__move">{prev}{next}</div></li>`. `prev` = `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" disabled={prevColumnName === null} aria-label={prevColumnName === null ? undefined : fill(copy.moveTo, card.title, prevColumnName)} onClick={() => onMovePrev(card.id)}><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{prevColumnName ?? copy.back}</span></button>`; `next` the same with `nextColumnName`, `copy.forward`, `onMoveNext`, and `<TpIcon name="chevron" size="sm" flip />` after the text. `fill(t, title, column)` replaces `{title}` and `{column}`. COPY: `moveTo` EN "Move “{title}” to {column}" / HE "להעביר את „{title}” אל {column}" · `back` EN "Back" / HE "אחורה" · `forward` EN "Forward" / HE "קדימה". Styling from tempo.css: card `--tp-paper`, 1 px `--tp-line` border, radius `--tp-radius-md`, padding `--tp-space-3`; move row top border `--tp-line`, buttons `--tp-ink-muted`; disabled buttons at opacity 0.55. States (harness order): `middle` (card `{ id: "k1", title: "Paint the hall", meta: ["Fri", "2 steps"] }`, prev "To do", next "Done"), `first` (card `k2` "Buy tiles", prev null, next "Doing"), `last` (card `k3` "Fix the tap", prev "Doing", next null), `moved` (card `k4` "Hang shelves", prev "To do", next "Done", `moved`). Loading/empty/error/offline/success: n/a; disabled = an edge button. RTL: the back chevron points to inline-start and the forward chevron to inline-end in both directions (`tp-icon--back`, `flip`). Keyboard: native buttons, Enter/Space; disabled buttons are skipped by Tab. Screen reader: enabled buttons announce "Move “Paint the hall” to Done"; disabled ones read "Back"/"Forward", dimmed. Breakpoints: same at 390 / 1280. Motion: `moved` plays `tp-enter` for `--tp-dur-slow` (240 ms); reduced motion instant.
 - **TESTS:**
@@ -9276,7 +9276,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type ChartSummaryProps = { id: string; text: string };
-  export function ChartSummary({ id, text }: ChartSummaryProps): JSX.Element; // <figcaption id={id} className="tp-chart__summary" dir="auto" data-component="ChartSummary">{text}</figcaption>
+  export function ChartSummary({ id, text }: ChartSummaryProps): React.JSX.Element; // <figcaption id={id} className="tp-chart__summary" dir="auto" data-component="ChartSummary">{text}</figcaption>
   ```
   Must be rendered inside a `<figure>` (BarChart / LineChart do this). Styling from tempo.css: `--tp-text-sm`, `--tp-ink-muted`, `max-width: var(--tp-measure)`. No built-in copy. States: `default`; loading/empty/error/offline/success/disabled n/a. RTL: `dir="auto"`. Screen reader: read as the figure's caption. Breakpoints: wraps within the measure. Motion: none.
 - **TESTS:**
@@ -9304,7 +9304,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type BarChartBar = { label: string; value: number; pct: number /* 0–100 bar height */; highlight?: boolean };
   export type BarChartProps = { title: string; bars: BarChartBar[]; summary: string };
   export function clampPct(pct: number): number; // Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0
-  export function BarChart(props: BarChartProps): JSX.Element;
+  export function BarChart(props: BarChartProps): React.JSX.Element;
   ```
   Markup: `<figure className="tp-chart" data-component="BarChart" aria-labelledby={titleId}><p className="tp-chart__title" id={titleId} dir="auto">{title}</p>{bars.length > 0 ? <ol className="tp-chart__bars">{bars.map((b, i) => <li key={i} className="tp-chart__bar" data-highlight={b.highlight ? "true" : undefined} style={{ "--pct": clampPct(b.pct) } as CSSProperties}><span className="tp-chart__value tp-num">{b.value}</span><span className="tp-chart__track" aria-hidden="true"><span className="tp-chart__fill" /></span><span className="tp-chart__label" dir="auto">{b.label}</span></li>)}</ol> : null}<ChartSummary id={summaryId} text={summary} /></figure>`. No built-in copy (title, labels, summary supplied localised). Styling from tempo.css: bars `grid-auto-flow: column`, equal widths, gap `--tp-space-2`; track height `calc(var(--tp-space-20) * 1.75)` (140 px); fill `--tp-ink-muted` (highlight `--tp-ink`), top radius `--tp-radius-sm`; value/label `--tp-text-xs`. States (harness order): `default` (title "Tasks done per day", bars Mon 2/40, Tue 5/100 highlight, Wed 0/0, Thu 3/60, Fri 4/80, Sat 1/20, Sun 0/0 — written `{ label, value, pct }`; summary "Tuesday was your busiest day, with 5 tasks done."), `empty` (title "Tasks done per day", bars [], summary "Nothing to show yet."). Loading/error/offline/success/disabled: n/a — the screen owns them; `empty` is the no-data rendering. RTL: bars run right-to-left (Monday at the right); values stay LTR (`.tp-num`, tempo.css `direction: ltr`). Screen reader: figure named by the title; each bar reads its value and label as text; the caption is the summary. Breakpoints: full container width at 390 and 1280 (bars shrink, labels ellipsize). Motion: none.
 - **TESTS:**
@@ -9334,7 +9334,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type LineChartPoint = { label: string; value: number };
   export type LineChartProps = { title: string; points: LineChartPoint[]; summary: string; max?: number };
   export function chartPoints(points: LineChartPoint[], max?: number): { x: number; y: number }[];
-  export function LineChart(props: LineChartProps): JSX.Element;
+  export function LineChart(props: LineChartProps): React.JSX.Element;
   ```
   Geometry (viewBox `0 0 320 160`): `m = max ?? Math.max(1, ...points.map((p) => p.value))`; for `n` points, `x_i = n === 1 ? 160 : 24 + (i * 272) / (n - 1)`; `y_i = 136 - (Math.min(Math.max(p.value, 0), m) / m) * 112`; `chartPoints` returns those values rounded to 2 decimals.
   Markup: `<figure className="tp-chart" data-component="LineChart"><p className="tp-chart__title" id={titleId} dir="auto">{title}</p><svg className="tp-chart__svg" viewBox="0 0 320 160" role="img" aria-labelledby={`${titleId} ${summaryId}`} direction="ltr"><line className="tp-chart__grid" x1="24" y1="24" x2="296" y2="24" /><line className="tp-chart__grid" x1="24" y1="80" x2="296" y2="80" /><line className="tp-chart__axis" x1="24" y1="136" x2="296" y2="136" />{n > 1 ? <polyline className="tp-chart__line" points={xy.map((p) => `${p.x},${p.y}`).join(" ")} /> : null}{points.map((p, i) => <g key={i}><circle className="tp-chart__point" cx={xy[i].x} cy={xy[i].y} r="3.5" /><text x={xy[i].x} y={xy[i].y - 8} textAnchor="middle">{p.value}</text><text x={xy[i].x} y="154" textAnchor="middle">{p.label}</text></g>)}</svg><ChartSummary id={summaryId} text={summary} /></figure>`. With 0 points only the grid and axis render. No built-in copy. Styling from tempo.css: line `currentColor` (`--tp-ink`) 2 px; points `--tp-paper` fill with ink stroke; grid `--tp-line`; axis `--tp-line-control`; text `--tp-text-xs` `--tp-ink-muted`. States (harness order): `default` (title "Steps per week", points W1 1, W2 3, W3 2, W4 4; summary "Steps went up from 1 to 4 over four weeks."), `single` (title "Steps per week", one point W1 2; summary "One week so far."), `empty` (title "Steps per week", no points, summary "Nothing to show yet."). Loading/error/offline/success/disabled: n/a. RTL: the SVG does not mirror (`direction="ltr"`); the title and summary follow the page direction. Screen reader: the SVG is one image named by title + summary. Breakpoints: scales with the container (`width: 100%; height: auto`). Motion: none.
@@ -9364,7 +9364,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   import type { ReactNode } from "react";
   export type FormProps = { label: string; onSubmit: () => void; children: ReactNode; actions: ReactNode; busy?: boolean };
-  export function Form(props: FormProps): JSX.Element;
+  export function Form(props: FormProps): React.JSX.Element;
   ```
   Markup: `<form className="tp-form" aria-label={label} aria-busy={busy ? "true" : undefined} data-component="Form" onSubmit={(e) => { e.preventDefault(); if (!busy) onSubmit(); }}>{children}<div className="tp-form__actions">{actions}</div></form>`. Native constraint validation stays on (the browser blocks the submit event while a `required` field is empty). No built-in copy (`label` supplied localised). Styling from tempo.css: grid gap `--tp-space-5`, `max-width: var(--tp-measure)`; actions flex-wrap gap `--tp-space-2`. States (harness order): `default` (label "New goal"), `busy` (label "New goal", `busy`). Loading/empty/error/offline/success/disabled: field-level states belong to the fields; `busy` blocks a second submit while the screen saves. RTL: actions follow `dir`. Keyboard: Enter in a text field submits (native); the submit button submits. Screen reader: the form is a landmark named by `label`; `aria-busy` while saving. Breakpoints: full width up to the measure at all sizes. Motion: none.
 - **TESTS:**
@@ -9396,7 +9396,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type TextInputType = "text" | "email" | "url" | "tel" | "search" | "password";
   export type TextInputProps = { id: string; label: string; value: string; onChange: (value: string) => void; type?: TextInputType; help?: string; error?: string; optional?: boolean; disabled?: boolean; placeholder?: string; autoComplete?: string; required?: boolean; maxLength?: number };
-  export function TextInput(props: TextInputProps): JSX.Element;
+  export function TextInput(props: TextInputProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-field" data-component="TextInput"><label className="tp-label" htmlFor={id}>{label}{optional ? <span className="tp-label__opt"> {copy.optional}</span> : null}</label><input id={id} className="tp-input" type={type ?? "text"} value={value} onChange={(e) => onChange(e.target.value)} dir={LTR_TYPES.has(type) ? "ltr" : "auto"} autoComplete={autoComplete ?? (type === "email" ? "email" : undefined)} placeholder={placeholder} required={required} maxLength={maxLength} disabled={disabled} aria-invalid={error ? "true" : undefined} aria-describedby={describedBy} />{help ? <p className="tp-help" id={`${id}-help`}>{help}</p> : null}{error ? <p className="tp-error-text" id={`${id}-error`}><TpIcon name="alert" size="sm" /><span>{error}</span></p> : null}</div>` with `LTR_TYPES = new Set(["email", "url", "tel", "password"])` and `describedBy` = the present ids among `${id}-help`, `${id}-error` joined by a space, or `undefined`. COPY: `optional` EN "(optional)" / HE "(לא חובה)". Help, error, label and placeholder are supplied localised. Styling from tempo.css: field grid gap `--tp-space-1`; label `--tp-text-sm` 600; input min-height `--tp-touch`, border `--tp-line-control`, radius `--tp-radius-md`, `--tp-text-md`; invalid border + 1 px ring `--tp-danger`; disabled `--tp-sunken`; help `--tp-ink-muted`; error `--tp-danger` 600 with icon. States (harness order): `default` (id "ti-name", label "Name", value ""), `help` (id "ti-call", label "What should the coach call you?", help "A first name is enough.", value "Dana"), `error` (id "ti-title", label "Title", value "", error "Add a title to save.", required), `disabled` (id "ti-locked", label "Plan", value "Basic", disabled), `optional` (id "ti-place", label "Place", optional, value ""), `email` (id "ti-email", label "Email", type "email", value "dana@example.com"). Loading/empty/offline/success: n/a — the form/screen owns them. RTL: label and help follow `dir`; email/url/tel/password input text is LTR even in Hebrew. Keyboard: native input. Screen reader: label names the input; help and error are read as its description; `aria-invalid` on error. Breakpoints: full width at all sizes. Motion: border-color transition `--tp-dur-fast`.
 - **TESTS:**
@@ -9425,7 +9425,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type TextareaProps = { id: string; label: string; value: string; onChange: (value: string) => void; rows?: number; help?: string; error?: string; optional?: boolean; disabled?: boolean; placeholder?: string; maxLength?: number };
-  export function Textarea(props: TextareaProps): JSX.Element;
+  export function Textarea(props: TextareaProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-field" data-component="Textarea"><label className="tp-label" htmlFor={id}>{label}{optional ? <span className="tp-label__opt"> {copy.optional}</span> : null}</label>{textarea}{help ? <p className="tp-help" id={`${id}-help`}>{help}</p> : null}{error ? <p className="tp-error-text" id={`${id}-error`}><TpIcon name="alert" size="sm" /><span>{error}</span></p> : null}</div>` where `describedBy` = the present ids among `${id}-help`, `${id}-error` joined by a space, or `undefined`, and `{textarea}` is `<textarea id={id} className="tp-textarea" rows={rows ?? 4} dir="auto" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} disabled={disabled} aria-invalid={error ? "true" : undefined} aria-describedby={describedBy} />` in place of the input, root `data-component="Textarea"`, help `${id}-help`, error `${id}-error` with `<TpIcon name="alert" size="sm" />`. COPY: `optional` EN "(optional)" / HE "(לא חובה)". Styling from tempo.css: padding `--tp-space-3`, `--tp-leading-body`, border `--tp-line-control`, radius `--tp-radius-md`; invalid `--tp-danger`; disabled `--tp-sunken`. States (harness order): `default` (id "ta-dump", label "What's on your mind?", value "", rows 6), `help` (id "ta-why", label "Why it matters", help "One sentence is plenty.", optional, value ""), `error` (id "ta-body", label "Entry", value "", error "Write a line to save."), `disabled` (id "ta-old", label "Entry", value "Yesterday was calm.", disabled). Loading/empty/offline/success: n/a. RTL: `dir="auto"` picks direction from the first strong character of the text. Keyboard: native textarea (Enter inserts a newline). Screen reader: the label names the textarea; help and error are read as its description; `aria-invalid` on error. Breakpoints: full width; user can resize vertically. Motion: border-color transition `--tp-dur-fast`.
 - **TESTS:**
@@ -9454,7 +9454,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type SelectOption = { value: string; label: string };
   export type SelectProps = { id: string; label: string; value: string; options: SelectOption[]; onChange: (value: string) => void; help?: string; error?: string; optional?: boolean; disabled?: boolean };
-  export function Select(props: SelectProps): JSX.Element;
+  export function Select(props: SelectProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-field" data-component="Select"><label className="tp-label" htmlFor={id}>{label}{optional ? <span className="tp-label__opt"> {copy.optional}</span> : null}</label><div className="tp-select"><select id={id} className="tp-select__input" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} aria-invalid={error ? "true" : undefined} aria-describedby={describedBy}>{options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select><span className="tp-select__icon" aria-hidden="true"><TpIcon name="down" /></span></div>{help ? <p className="tp-help" id={`${id}-help`}>{help}</p> : null}{error ? <p className="tp-error-text" id={`${id}-error`}><TpIcon name="alert" size="sm" /><span>{error}</span></p> : null}</div>`; `describedBy` = the present ids among `${id}-help`, `${id}-error` joined by a space, or `undefined`. COPY: `optional` EN "(optional)" / HE "(לא חובה)". Styling from tempo.css: `appearance: none`, padding-inline-end `--tp-space-10`, chevron at inline-end `--tp-space-3`, border `--tp-line-control`, radius `--tp-radius-md`, min-height `--tp-touch`. States (harness order): `default` (id "sel-energy", label "Energy", options Low/Medium/High with values `low`/`medium`/`high`, value `medium`), `error` (id "sel-repeat", label "Repeat", options Never/Daily/Weekly with values `never`/`daily`/`weekly`, value `never`, help "How often it comes back.", error "Pick how often."), `disabled` (id "sel-plan", label "Plan", one option Basic/`basic`, disabled). Loading/empty/offline/success: n/a. RTL: chevron at inline-end (left in Hebrew). Keyboard: native select. Screen reader: label names the combobox; help/error as description. Breakpoints: full width. Motion: border-color transition `--tp-dur-fast`.
 - **TESTS:**
@@ -9482,7 +9482,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type SwitchProps = { id: string; label: string; checked: boolean; onChange: (checked: boolean) => void; help?: string; disabled?: boolean };
-  export function Switch(props: SwitchProps): JSX.Element;
+  export function Switch(props: SwitchProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-field" data-component="Switch"><span className="tp-label" id={`${id}-label`}>{label}</span><button type="button" id={id} className="tp-switch" role="switch" aria-checked={checked} aria-labelledby={`${id}-label`} aria-describedby={help ? `${id}-help` : undefined} disabled={disabled} onClick={() => onChange(!checked)}><span className="tp-switch__track" aria-hidden="true"><span className="tp-switch__thumb" /></span><span className="tp-switch__state" aria-hidden="true">{checked ? copy.on : copy.off}</span></button>{help ? <p className="tp-help" id={`${id}-help`}>{help}</p> : null}</div>`. COPY: `on` EN "On" / HE "פועל" · `off` EN "Off" / HE "כבוי". Styling from tempo.css: button min-height `--tp-touch`; track `calc(var(--tp-space-10) + var(--tp-space-1))` × `--tp-space-6`, radius `--tp-radius-pill`, `--tp-line-control` border, `--tp-sunken` (on: `--tp-ink`); thumb `--tp-space-4`, moves `--tp-space-5` toward inline-end (mirrored by the `[dir="rtl"]` rule); transitions `--tp-dur-fast`; disabled opacity 0.55. States (harness order): `off` (id "sw-a", label "Morning reminder", checked false, help "A nudge at 8:00."), `on` (id "sw-b", label "Plain mode", checked true), `disabled` (id "sw-c", label "Read aloud", checked false, disabled). Loading/empty/error/offline/success: n/a. RTL: the thumb travels right-to-left when on. Keyboard: Space/Enter toggle (native button). Screen reader: "Morning reminder, switch, off/on"; the visible word is hidden from assistive tech because `aria-checked` already says it. Breakpoints: same at all widths. Motion: thumb transform + track colour, `--tp-dur-fast` (120 ms); reduced motion instant.
 - **TESTS:**
@@ -9511,7 +9511,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type CheckboxProps = { id: string; label: string; checked: boolean; onChange: (checked: boolean) => void; hint?: string; disabled?: boolean };
-  export function Checkbox(props: CheckboxProps): JSX.Element;
+  export function Checkbox(props: CheckboxProps): React.JSX.Element;
   ```
   Markup: `<label className="tp-choice" htmlFor={id} data-component="Checkbox"><input id={id} type="checkbox" className="tp-checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} aria-describedby={hint ? `${id}-hint` : undefined} /><span className="tp-choice__text"><span dir="auto">{label}</span>{hint ? <span className="tp-choice__hint" id={`${id}-hint`} dir="auto">{hint}</span> : null}</span></label>`. No built-in copy. Styling from tempo.css: row flex gap `--tp-space-3`, min-height `--tp-touch`, padding-block `--tp-space-2`; box 22 px, border `--tp-line-control`, radius `--tp-radius-sm`; checked `--tp-done` with a `--tp-paper` tick; hint `--tp-text-sm` `--tp-ink-muted`; transitions `--tp-dur-fast`. States (harness order): `default` (id "cb-a", label "Remind me tomorrow", unchecked), `checked` (id "cb-b", label "Show weekends", checked, hint "Saturday and Sunday appear in the week view."), `disabled` (id "cb-c", label "Sync with phone", unchecked, disabled). Loading/empty/error/offline/success: n/a. RTL: box at inline-start. Keyboard: Space toggles (native). Screen reader: checkbox named by the label, hint as description. Breakpoints: same at all widths. Motion: colour/tick transitions 120 ms.
 - **TESTS:**
@@ -9540,9 +9540,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   import type { ReactNode } from "react";
   export type RadioGroupProps = { legend: string; hint?: string; children: ReactNode };
-  export function RadioGroup(props: RadioGroupProps): JSX.Element; // <div className="tp-field" role="radiogroup" aria-labelledby={legendId} aria-describedby={hint ? hintId : undefined} data-component="RadioGroup"><p className="tp-label" id={legendId}>{legend}</p>{hint ? <p className="tp-help" id={hintId}>{hint}</p> : null}{children}</div>
+  export function RadioGroup(props: RadioGroupProps): React.JSX.Element; // <div className="tp-field" role="radiogroup" aria-labelledby={legendId} aria-describedby={hint ? hintId : undefined} data-component="RadioGroup"><p className="tp-label" id={legendId}>{legend}</p>{hint ? <p className="tp-help" id={hintId}>{hint}</p> : null}{children}</div>
   export type RadioProps = { id: string; name: string; value: string; label: string; checked: boolean; onChange: (value: string) => void; hint?: string; disabled?: boolean };
-  export function Radio(props: RadioProps): JSX.Element; // <label className="tp-choice" htmlFor={id} data-component="Radio"><input id={id} type="radio" className="tp-radio" name={name} value={value} checked={checked} disabled={disabled} onChange={() => onChange(value)} aria-describedby={hint ? `${id}-hint` : undefined} /><span className="tp-choice__text"><span dir="auto">{label}</span>{hint ? <span className="tp-choice__hint" id={`${id}-hint`} dir="auto">{hint}</span> : null}</span></label>
+  export function Radio(props: RadioProps): React.JSX.Element; // <label className="tp-choice" htmlFor={id} data-component="Radio"><input id={id} type="radio" className="tp-radio" name={name} value={value} checked={checked} disabled={disabled} onChange={() => onChange(value)} aria-describedby={hint ? `${id}-hint` : undefined} /><span className="tp-choice__text"><span dir="auto">{label}</span>{hint ? <span className="tp-choice__hint" id={`${id}-hint`} dir="auto">{hint}</span> : null}</span></label>
   ```
   No built-in copy. Styling from tempo.css: row flex gap `--tp-space-3`, min-height `--tp-touch`, padding-block `--tp-space-2`; box 22 px, border `--tp-line-control`, round (`border-radius: 50%`); checked `--tp-ink` border and a 10 px `--tp-ink` dot scaled in over `--tp-dur-fast`. States (harness order): `default` (group legend "Energy for this task", hint "Pick what it takes.", radios name "energy": `low` "Low", `medium` "Medium" (hint "Some focus"), `high` "High"; value `medium`), `disabled` (group legend "Size", radios name "size": `s` "Small", `l` "Large" disabled; value `s`). Loading/empty/error/offline/success: n/a. RTL: dot box at inline-start. Keyboard: native radio behaviour — Tab enters the group at the checked radio, arrow keys move and select within the same `name`. Screen reader: "Energy for this task, radio group, Pick what it takes."; each radio named by its label. Breakpoints: same at all widths. Motion: dot scale 120 ms.
 - **TESTS:**
@@ -9572,7 +9572,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type DialWord = "quiet" | "steady" | "push";
   export function dialWord(value: number): DialWord; // v = clamp(round(value), 0, 10); v <= 3 → "quiet"; v <= 7 → "steady"; else "push"
   export type DialProps = { id: string; label: string; value: number; onChange: (value: number) => void; disabled?: boolean };
-  export function Dial(props: DialProps): JSX.Element;
+  export function Dial(props: DialProps): React.JSX.Element;
   ```
   `v = Math.min(10, Math.max(0, Math.round(value)))`. Markup: `<div className="tp-dial" data-component="Dial"><div className="tp-dial__head"><label className="tp-label" htmlFor={id}>{label}</label><span className="tp-dial__value" aria-hidden="true"><span className="tp-dial__num tp-num" data-dial-num="">{v}</span><span className="tp-dial__of">{copy.of} <span className="tp-num">10</span></span><span className="tp-dial__word" data-dial-word="">{copy[dialWord(v)]}</span></span></div><input id={id} type="range" className="tp-slider" min={0} max={10} step={1} value={v} disabled={disabled} aria-valuetext={copy.valuetext.replace("{n}", String(v)).replace("{word}", copy[dialWord(v)])} onChange={(e) => onChange(Number(e.target.value))} /><div className="tp-dial__scale" aria-hidden="true"><span>{copy.quiet}</span><span>{copy.steady}</span><span>{copy.push}</span></div></div>`. COPY: `quiet` EN "Quiet" / HE "שקט" · `steady` EN "Steady" / HE "יציב" · `push` EN "Push" / HE "דחיפה" · `of` EN "of" / HE "מתוך" · `valuetext` EN "{n} of 10, {word}" / HE "{n} מתוך 10, {word}". Styling from tempo.css: number `--tp-font-serif` `--tp-text-2xl`; "of 10" `--tp-text-sm` `--tp-ink-muted`; word chip `--tp-sunken`, radius `--tp-radius-sm`; slider min-height `--tp-touch`, `accent-color: var(--tp-ink)`; scale `--tp-text-xs`. States (harness order): `quiet` (id "dial-a", label "Coach voice", value 2), `push` (id "dial-b", label "Coach voice", value 9), `disabled` (id "dial-c", label "Coach voice", value 5, disabled). Loading/empty/error/offline/success: n/a. RTL: the range input inherits `dir="rtl"` (0 at the right); the scale words mirror. Keyboard: native range — ArrowUp/ArrowRight (LTR) increase, Home → 0, End → 10. Screen reader: "Coach voice, slider, 2 of 10, Quiet". Breakpoints: full width. Motion: none beyond native thumb movement.
 - **TESTS:**
@@ -9602,7 +9602,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   import type { ReactNode } from "react";
   export type StateEmptyProps = { title: string; body?: string; icon?: ReactNode; action?: ReactNode };
-  export function StateEmpty(props: StateEmptyProps): JSX.Element;
+  export function StateEmpty(props: StateEmptyProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-state tp-state--empty" data-component="StateEmpty"><span className="tp-state__icon" aria-hidden="true">{icon ?? <TpIcon name="leaf" size="lg" />}</span><h2 className="tp-state__title" dir="auto">{title}</h2>{body ? <p className="tp-state__body" dir="auto">{body}</p> : null}{action ? <div className="tp-state__actions">{action}</div> : null}</div>`. No built-in copy. Styling from tempo.css: centred grid gap `--tp-space-3`, padding `--tp-space-12` `--tp-space-4`; icon disc `--tp-space-12` on `--tp-sunken`; title `--tp-font-serif` `--tp-text-xl`; body max 44ch `--tp-ink-muted`. States (harness order): `with-action` (title "No tasks yet. An empty list is a good place to start.", body "Add one from quick add, or dump everything in a brain dump and pick from there.", action `<button type="button" className="tp-btn tp-btn--secondary">Open brain dump</button>`), `title-only` (title "Nothing on this day. A free day is allowed."). Loading/error/offline/success/disabled: n/a — sibling components (TFV2-0121…0123). RTL: centred text; `dir="auto"` on user-facing strings. Screen reader: the `h2` is announced; icon hidden. Breakpoints: same at all widths. Motion: none.
 - **TESTS:**
@@ -9629,7 +9629,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type StateLoadingProps = { label: string; rows?: number };
-  export function StateLoading({ label, rows = 3 }: StateLoadingProps): JSX.Element;
+  export function StateLoading({ label, rows = 3 }: StateLoadingProps): React.JSX.Element;
   ```
   `n = Math.min(8, Math.max(1, Math.round(rows)))`. Markup: `<div className="tp-state--loading" role="status" data-component="StateLoading"><span className="tp-sr-only">{label}</span><div className="tp-skel-list" aria-hidden="true">{Array.from({ length: n }, (_, i) => <div key={i} className="tp-skel-row"><div className="tp-skeleton tp-skel-row__box" /><div className="tp-skel-row__lines"><div className={`tp-skeleton tp-skeleton--sm ${WIDTHS[i % 3]}`} /><div className="tp-skeleton tp-skeleton--sm tp-skeleton--w100" /></div></div>)}</div></div>` with `WIDTHS = ["tp-skeleton--w60", "tp-skeleton--w40", "tp-skeleton--w80"]`. No built-in copy: `label` is the caller's localised sentence (each screen ticket gives its own; the tasks screen passes "Loading your tasks" / "טוענים את המשימות שלך"). Styling from tempo.css: list gap `--tp-space-4`; box 22 px radius `--tp-radius-sm`; bars `--tp-space-3` tall on `--tp-sunken` with the shimmer gradient only under `prefers-reduced-motion: no-preference`. States (harness order): `default` (label "Loading your tasks", rows default), `many` (label "Loading habits", rows 12 → clamped to 8). Only the loading state exists here. RTL: rows follow `dir`. Screen reader: `role="status"` announces the label once. Breakpoints: full width. Motion: the shimmer is a 1.4 s background loop (locked tempo.css line 465), not a transition; under reduced motion it is removed (global rule sets `0.01ms`, one iteration).
 - **TESTS:**
@@ -9656,7 +9656,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type StateErrorProps = { what: string /* the whole localised sentence; each screen ticket gives its own (the tasks screen's is "Couldn't load your tasks." / "לא הצלחנו לטעון את המשימות שלך.") */; onRetry: () => void; retrying?: boolean };
-  export function StateError(props: StateErrorProps): JSX.Element;
+  export function StateError(props: StateErrorProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-state tp-state--error" role="alert" data-component="StateError"><span className="tp-state__icon" aria-hidden="true"><TpIcon name="alert" size="lg" /></span><h2 className="tp-state__title" dir="auto">{what}</h2><p className="tp-state__body">{copy.safe}</p><div className="tp-state__actions"><button type="button" className="tp-btn tp-btn--secondary" onClick={onRetry} disabled={retrying} aria-busy={retrying ? "true" : undefined}><TpIcon name="refresh" /><span>{retrying ? copy.retrying : copy.retry}</span></button></div></div>`. COPY: `safe` EN "Your data is safe." / HE "המידע שלך שמור." · `retry` EN "Try again" / HE "לנסות שוב" · `retrying` EN "Trying again…" / HE "מנסים שוב…". Styling from tempo.css: centred grid gap `--tp-space-3`, padding `--tp-space-12` `--tp-space-4`; icon disc `--tp-space-12` on `--tp-sunken`; title `--tp-font-serif` `--tp-text-xl`; body max 44ch `--tp-ink-muted`; actions centred. States (harness order): `default` (what "Couldn't load your tasks."), `retrying` (what "Couldn't load your tasks.", retrying). Default/empty/loading/offline/success: n/a — siblings; `retrying` is the disabled state. RTL: centred; icon unchanged. Keyboard: native button. Screen reader: `role="alert"` announces the sentence and "Your data is safe." Breakpoints: same at all widths. Motion: button transitions 120 ms.
 - **TESTS:**
@@ -9684,7 +9684,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type StateOfflineProps = { text?: string };
-  export function StateOffline({ text }: StateOfflineProps): JSX.Element;
+  export function StateOffline({ text }: StateOfflineProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline"><span className="tp-notice__icon" aria-hidden="true"><TpIcon name="wifi-off" /></span><p className="tp-notice__text">{text ?? copy.offline}</p></div>`. COPY: `offline` EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור." (CONVENTIONS §12 glossary, gender-neutral). Styling from tempo.css: caution wash `--tp-caution-wash`, icon `--tp-caution`, radius `--tp-radius-lg`, sticky at `calc(var(--tp-topbar-h) + var(--tp-space-4))`, z-index 15, margin-bottom `--tp-space-4`. States (harness order): `default` (no `text`), `custom` (text "You're offline. These charts are from your last visit." — a screen-supplied variant). Only the offline state exists here. RTL: icon at inline-start. Screen reader: `role="status"` (polite). Breakpoints: full width at all sizes. Motion: none.
 - **TESTS:**
@@ -9738,7 +9738,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onDismissUndo: () => void;
     onRetry: () => void;
   };
-  export function TodayView(props: TodayViewProps): JSX.Element;
+  export function TodayView(props: TodayViewProps): React.JSX.Element;
   ```
   Local UI state only: `composerOpen: boolean` (false), `draft: string` (""). Imports allowed: React, `useLocale` + type `Lang`, `TpIcon` (`@/components/tempo/TpIcon`), `NextUpCard`, `PageHead`, `StateEmpty`, `StateLoading`, `StateError`, `StateOffline`, type `NextUpTask`.
 
@@ -9961,7 +9961,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onAddAccepted: () => void;
     onSavePage: () => void;
   };
-  export function BrainDumpReview(props: BrainDumpReviewProps): JSX.Element;
+  export function BrainDumpReview(props: BrainDumpReviewProps): React.JSX.Element;
   ```
   Derived: `visible = items.filter((i) => i.choice !== "rejected")`; `acceptedCount = items.filter((i) => i.choice === "accepted").length`; `busy = adding || saving`.
   Markup: `<section className="tp-section" data-component="BrainDumpReview" aria-labelledby="bd-order">` →
@@ -10052,7 +10052,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onLeaveCrisis: () => void;
     onRetry: () => void;
   };
-  export function BrainDumpView(props: BrainDumpViewProps): JSX.Element;
+  export function BrainDumpView(props: BrainDumpViewProps): React.JSX.Element;
   ```
   `busy = state === "loading" || data.adding || data.saving`.
   **Markup:** root `<div className="tp-page tp-page--narrow" data-component="BrainDumpView" data-testid="brain-dump-view" data-state={state}>`.
@@ -10224,7 +10224,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onAddBlock: () => void;
     onRetry: () => void;
   };
-  export function PlanView(props: PlanViewProps): JSX.Element;
+  export function PlanView(props: PlanViewProps): React.JSX.Element;
   ```
   Helpers inside the file (not exported): `locale = lang === "he" ? "he-IL" : "en-GB"`; `utc(date) = new Date(\`${date}T12:00:00Z\`)`; `dayTitle = anchor === "" ? "" : new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(utc(anchor))`; `weekTitle = week.length === 7 ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC" }).formatRange(utc(week[0].date), utc(week[6].date)) : ""`; `monthTitle = anchor === "" ? "" : new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(utc(anchor))` (no title is formatted from a blank date or a short week: `Intl` throws `RangeError` on an invalid `Date`; the View never reads the clock); `DOW_SHORT` (index = JS weekday, 0 = Sunday) EN `["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]` / HE `["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"]` (same lists as TFV2-0102's MonthGrid); `startHour = Math.min(8, ...dayItems.map((i) => Math.floor(i.startMinute / 60)))`, `endHour = Math.min(24, Math.max(18, ...dayItems.map((i) => Math.ceil(i.endMinute / 60))))` (design shows 08:00–17:00; items outside widen the range instead of being clipped).
   **Markup:** `<div className="tp-page tp-page--wide" data-component="PlanView" data-testid="plan-view" data-state={state} data-mode={data.mode}>` →
@@ -10393,7 +10393,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onOpen: (args: { taskId: string }) => void;
     onLoadMore: () => void;
   };
-  export function TaskGroups(props: TaskGroupsProps): JSX.Element;
+  export function TaskGroups(props: TaskGroupsProps): React.JSX.Element;
   ```
   Layout (composes existing tempo.css classes; no stylesheet): root `<div className="tp-section" data-component="TaskGroups">` (`.tp-section` is the existing grid with `--tp-space-3` gap; the design page's local `tk-groups` class is not in tempo.css and is not used) holding one `<section className="tp-section" data-component="Section" data-group={key} aria-labelledby={headingId}>` per non-empty group (`headingId` from `React.useId()` + key). Section head `<div className="tp-section__head"><h2 className="tp-section__title" id={headingId}>{title}</h2>{count}</div>` where `count` is `<span className="tp-section__count">` holding `copy.openCount` with `{n}` in `<span className="tp-num">` (n = tasks with `done === false`) for "today" and "week", `copy.laterSub` for "later", nothing for "checklists". Rows sit in `<ul className="tp-block-task" role="list" data-component="TaskBlock">`; the "checklists" group wraps each of its tasks in `<div className="tp-card" data-check-card>` holding a one-row `ul.tp-block-task`. Row: `<li className="tp-task-row" data-component="TaskRow" data-done={done ? "true" : "false"}>` → (1) `<button type="button" className="tp-check" aria-pressed={done} aria-label={done ? copy.markOpen : copy.markDone (with {title} filled)} onClick={() => onToggle({ taskId: id })}><span className="tp-check__box"><TpIcon name="check" /></span></button>`; (2) `<div className="tp-task-row__body"><span className="tp-task-row__title" dir="auto">{title}</span><span className="tp-task-row__meta">…</span></div>`; (3) `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" aria-label={copy.edit with {title}} onClick={() => onOpen({ taskId: id })}><TpIcon name="edit" size="sm" /></button>`. Meta, in this order, each only when its data exists: when `done`: `<span className="tp-chip tp-chip--done">{copy.done}</span>` then `doneTime` in `<span className="tp-num tp-mono">`; when not done: in "week"/"later" with `dueDate` → `<span>{copy.dow[weekday]} <span className="tp-num">{day}</span></span>` (weekday from `new Date(dueDate + "T00:00:00Z").getUTCDay()`, day = `Number(dueDate.slice(8))`); in "today" with `dueTime` → `<span>{copy.before} <span className="tp-num tp-mono">{dueTime}</span></span>`; `minutes` → `<span><span className="tp-num">{minutes}</span> {copy.min}</span>`; energy chip `<span className="tp-chip"><TpIcon name="energy" size="sm" /><span>{copy.energy[energy]}</span></span>`; priority chip `<span className="tp-chip"><TpIcon name="flag" size="sm" /><span>{copy.priority[priority]}</span></span>`; when `steps.length > 0` → `<span className="tp-checklist__count">` with `copy.stepsDone` (`{done}` and `{total}` each in `.tp-num`). Steps list (any group, rendered inside `.tp-task-row__body` right after the meta span, only when `steps.length > 0`, as `TaskViewsScreen.tsx` does today): `<ul className="tp-checklist" data-component="Checklist" aria-label={copy.stepsOf with {title}}>`, one `<li className="tp-checklist__item"><label className="tp-choice"><input type="checkbox" className="tp-checkbox" checked={step.done} onChange={() => onToggleStep({ taskId: id, stepId: step.id })} /><span className="tp-choice__text tp-checklist__text" dir="auto">{step.text}</span></label></li>` per step. After the "later" section's list, when `laterShown < laterTotal`: `<LoadMore shown={laterShown} total={laterTotal} onLoadMore={onLoadMore} loading={loadingMore} />`.
   Group titles: today `copy.today`, week `copy.week`, checklists `copy.checklists`, later `copy.later`.
@@ -10487,7 +10487,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onUndo: () => void;
     onDismissToast: () => void;
   };
-  export function TasksView(props: TasksViewProps): JSX.Element;
+  export function TasksView(props: TasksViewProps): React.JSX.Element;
   ```
   Layout, top to bottom, inside `<div className="tp-page tp-page--wide" data-component="TasksView">`:
   1. `<header className="tp-pagehead" data-component="PageHeader">` → `<div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div>` and `<div className="tp-pagehead__actions"><a className="tp-btn tp-btn--secondary" href="/brain-dump"><TpIcon name="inbox" size="sm" /><span>{copy.dump}</span></a></div>` (all states).
@@ -10656,7 +10656,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onClose: () => void;        // Close button, Cancel, Esc, scrim click
     onRetry: () => void;
   };
-  export function TaskSheetView(props: TaskSheetViewProps): JSX.Element;
+  export function TaskSheetView(props: TaskSheetViewProps): React.JSX.Element;
   ```
   Markup (fragment root): `<div className="tp-sheet-scrim" aria-hidden="true" onClick={onClose} />` then `<section className="tp-sheet tp-glass" role="dialog" aria-modal="true" aria-labelledby={titleId} data-component="MobileSheet" data-view="TaskSheetView" onKeyDown={trap}>`:
   - `<span className="tp-sheet__grabber" aria-hidden="true" />`;
@@ -10807,7 +10807,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onLoadMore: () => void;
     onRetry: () => void;
   };
-  export function JournalView(props: JournalViewProps): JSX.Element;
+  export function JournalView(props: JournalViewProps): React.JSX.Element;
   ```
   Layout inside `<div className="tp-page" data-component="JournalView">`:
   1. `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>` (all states).
@@ -10926,7 +10926,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSave: (values: AddEventValues) => void;
     onClose: () => void;        // Close, Cancel, Esc, scrim
   };
-  export function AddEventSheet(props: AddEventSheetProps): JSX.Element;
+  export function AddEventSheet(props: AddEventSheetProps): React.JSX.Element;
   ```
   Markup (fragment root): `<div className="tp-sheet-scrim" aria-hidden="true" onClick={onClose} />` and `<section className="tp-sheet tp-glass" role="dialog" aria-modal="true" aria-labelledby={titleId} data-component="MobileSheet" data-view="AddEventSheet" onKeyDown={trap}>` → `<span className="tp-sheet__grabber" aria-hidden="true" />`; `<div className="tp-sheet__head"><h2 className="tp-sheet__title" id={titleId}>{copy.title}</h2><button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" aria-label={copy.close} onClick={onClose}><TpIcon name="x" /></button></div>`; `<div className="tp-sheet__body">{!online && <StateOffline />}<form className="tp-form" data-component="Form" id={formId} noValidate onSubmit={submit}>` with, in order: `<TextInput id={nameId} label={copy.name} placeholder={copy.namePh} value={v.title} onChange=… error={nameError ? copy.nameErr : undefined} autoComplete="off" />`; a `.tp-field` with `<label className="tp-label" htmlFor={dateId}>{copy.date}</label><input className="tp-input tp-num" id={dateId} type="date" dir="ltr" value={v.date} …/>`; `<div className="tp-toolbar">` with two `.tp-field`s: start (`<label htmlFor={startId}>{copy.start}</label><input className="tp-input tp-num" id={startId} type="time" step={300} dir="ltr" …/>`) and end (`copy.end`, same input with `aria-invalid={endError || undefined}` and `aria-describedby={endError ? endErrId : undefined}`, then `{endError && <p className="tp-error-text" id={endErrId} role="alert">{copy.endErr}</p>}`); `<RadioGroup legend={copy.kind}><Radio id={fixedId} name={kindName} value="fixed" label={copy.fixed} hint={copy.fixedHint} checked={v.kind === "fixed"} onChange=… /><Radio id={flexId} name={kindName} value="flex" label={copy.flex} hint={copy.flexHint} checked={v.kind === "flex"} onChange=… /></RadioGroup>`; `<TextInput id={placeId} label={copy.place} optional value={v.place} onChange=… autoComplete="off" />`. Foot `<div className="tp-sheet__foot"><button type="submit" form={formId} className="tp-btn tp-btn--primary" disabled={saving} aria-busy={saving || undefined}><TpIcon name="check" size="sm" /><span>{copy.save}</span></button><button type="button" className="tp-btn tp-btn--ghost" onClick={onClose}>{copy.cancel}</button></div>`.
   Behaviour: local form state `v` starts `{ title: "", date: initialDate, start: "10:00", end: "11:00", kind: "fixed", place: "" }` (the design's defaults). Submit: `title = v.title.trim()`; empty → `nameError`, focus name, no callback; `v.end <= v.start` (string compare of "HH:MM") → `endError`, focus end, no callback; else `onSave({ ...v, title, place: v.place.trim() })`. Editing a field clears its error. Focus: name input on mount; Tab / Shift+Tab wrap inside the section; Esc calls `onClose`; on unmount focus returns to the element focused at mount.
@@ -11014,7 +11014,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onUndo: () => void;
     onDismissToast: () => void;
   };
-  export function CalendarView(props: CalendarViewProps): JSX.Element;
+  export function CalendarView(props: CalendarViewProps): React.JSX.Element;
   ```
   Layout inside `<div className="tp-page tp-page--wide" data-component="CalendarView">`:
   1. `<header className="tp-pagehead" data-component="PageHeader">` → text (`<h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p>`) and, in states `default` / `empty`, `<div className="tp-pagehead__actions"><button type="button" className="tp-btn tp-btn--secondary" aria-haspopup="dialog" aria-expanded={data.sheet.open} onClick={onOpenAdd}><TpIcon name="plus" size="sm" /><span>{copy.add}</span></button></div>`.
@@ -11157,7 +11157,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCloseToast: (habitId: string) => void;
     onRetry: () => void;
   };
-  export function HabitsView(props: HabitsViewProps): JSX.Element;
+  export function HabitsView(props: HabitsViewProps): React.JSX.Element;
   ```
   **Layout** (390 px base, classes exactly as listed; no inline styles): root `<div className="tp-page" data-component="PageLayout" data-view="HabitsView">`. 1) Header `<header className="tp-pagehead" data-component="PageHeader">` → `<div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div>` and, only in `default`, `<div className="tp-pagehead__actions">{newButton}</div>`. `newButton` = `<button type="button" className="tp-btn tp-btn--secondary" data-component="Button" aria-controls="new-habit" aria-expanded={sheetOpen}>` with `<TpIcon name="plus" size="sm" />` + `<span>{newHabit}</span>`; click opens the sheet. 2) `online === false` → `<StateOffline />` (default text) directly under the header in every state. 3) `data.saveError` → `<Notice tone="caution" title={saveError} live="alert" />`. 4) State body: `loading` → `<StateLoading label={loading} rows={4} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `empty` → `<StateEmpty icon={<TpIcon name="habit" size="lg" />} title={emptyTitle} body={emptyBody} action={newButton} />` then the quick-add form; `default` → `<section className="tp-section" data-component="Section" aria-labelledby="hb-today">` with `<div className="tp-section__head"><h2 className="tp-section__title" id="hb-today"><span>{today}</span> · <span>{longDate(todayKey)}</span></h2><span className="tp-section__count"><span className="tp-num">{loggedCount}</span> <span>{of}</span> <span className="tp-num">{habits.length}</span> <span>{loggedTodayWord}</span></span></div>`, `<p className="tp-muted tp-small">{localDay with {day} = weekday-long name of todayKey}</p>`, `<div className="hb-list">` with one card per habit, then the quick-add form, then `{suggestions}`. 5) Card: `<article className="tp-surface tp-block-habit hb-card" data-component="HabitBlock">` → `<div className="tp-habit" data-habit={id} data-logged={String(loggedToday)}>` → head `<div className="tp-habit__head">` with `<a className="tp-habit__name" id={\`hb-${id}-name\`} href={\`/habits/${id}\`} dir="auto">{name}</a>`, `<span className="tp-habit__when">{cadence === "weekly" ? rhythmWeekly : rhythmDaily}</span>`, and `<button type="button" className="tp-btn tp-btn--secondary tp-habit__log" aria-pressed={loggedToday} aria-describedby={\`hb-${id}-name\`} aria-label={label + (loggedToday ? unlogSr : logSr).replace("{name}", name)}>` (`label` = `logged` or `log`) holding `<TpIcon name="check" size="sm" />` + `<span>{label}</span>`; click → `onToggleToday(id)`. Then `<ol className="tp-habit-days" aria-label={last7}>` with 7 `<li className="tp-habit-day" data-done={String(done)} data-today={isToday ? "true" : undefined}>` each holding `<span className="tp-habit-day__dot" aria-hidden="true"><TpIcon name="check" /></span>`, `<span className="tp-habit-day__label"><span>{dow[weekday]}</span> <span className="tp-num">{day}</span></span>`, `<span className="tp-sr-only">{done ? dayDone : dayOpen}</span>`, where `done` = `isToday ? loggedToday : loggedDates.includes(localDate)`. Then `<p className="tp-habit__summary">` rendering `summary` with `{n}` = count of done days and `{total}` = `7`, each number in `<span className="tp-num">`. 6) Quick-add form (in `default` and `empty`): `<form className="tp-toolbar" data-component="Toolbar" noValidate>` → `<div className="tp-field tp-toolbar__grow"><label className="tp-sr-only" htmlFor="habits-library-name">{quickLabel}</label><input className="tp-input" id="habits-library-name" type="text" dir="auto" autoComplete="off" maxLength={HABIT_NAME_MAX} placeholder={placeholder} aria-invalid={invalid || undefined} aria-describedby={invalid ? "hb-quick-error" : undefined} />{invalid ? <p className="tp-error-text" id="hb-quick-error">{quickError}</p> : null}</div>` and `<button className="tp-btn tp-btn--secondary" type="submit" disabled={busy}><TpIcon name="plus" size="sm" /><span>{quickAdd}</span></button>`. 7) Sheet: when open, `<HabitSheet id="new-habit" title={newHabit} initial={{ name: "", cadence: "daily" }} onSubmit={onCreate} onClose={() => setSheetOpen(false)} />`. 8) Toasts: when `data.toasts.length > 0`, `<div className="tp-toast-region">` with one `<UndoToast key={habitId} title={added} undoUntilMs={undoUntilMs} onUndo={() => onUndoCreate(habitId)} onClose={() => onCloseToast(habitId)} />` each. Tokens come only from tempo.css/habits.css classes: `.hb-list` gap `--tp-space-4`, `.hb-card` gap `--tp-space-3`, dot `calc(var(--tp-space-6) + var(--tp-space-1))` = 28 px with `--tp-line-control` ring and `--tp-done` fill.
   **Behaviour:** `longDate(key)` = `Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })`; `locale` = `"he-IL"` for `he`, else `"en-GB"`. Quick add submit: `preventDefault()`; if a submit is already running (a `useRef(false)` flag set before the first `await`) do nothing; trimmed name empty → `invalid = true`, focus the input, no callback; else `invalid = false`, `busy = true`, `await onCreate({ name, cadence: "daily" })`; on success clear the input; on rejection keep the text (the route shows `saveError`); finally `busy = false` and clear the flag. Typing clears `invalid` once the trimmed value is not empty. `loggedCount` = habits with `loggedToday`.
@@ -11338,7 +11338,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSaveEdit: (draft: HabitDetailDraft) => Promise<void>; // rejects when the save failed (HabitSheet shows its own error)
     onRetry: () => void;
   };
-  export function HabitDetailView(props: HabitDetailViewProps): JSX.Element;
+  export function HabitDetailView(props: HabitDetailViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page" data-component="PageLayout" data-view="HabitDetailView">`, first child always the back link `<Link className="tp-btn tp-btn--ghost" href="/habits">` (`next/link`) with `<TpIcon name="chevron" size="sm" className="tp-icon--back" />` + `<span>{back}</span>`. `loading` → `<StateLoading label={loading} rows={6} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `not-found` → `<StateEmpty icon={<TpIcon name="habit" size="lg" />} title={gone} />`. `default` / `empty`: 1) `<header className="tp-pagehead" data-component="PageHeader">` with `<div className="tp-pagehead__text"><h1 className="tp-pagehead__title" dir="auto">{habit.name}</h1><p className="tp-pagehead__sub">{cadence === "weekly" ? subWeekly : subDaily}</p></div>` and `<div className="tp-pagehead__actions"><button type="button" className="tp-btn tp-btn--ghost" aria-controls="edit-habit" aria-expanded={editOpen}><TpIcon name="edit" size="sm" /><span>{edit}</span></button></div>`. 2) `online === false` → `<StateOffline />` (also shown in `loading`). 3) `saveError` → `<Notice tone="caution" title={saveError} live="alert" />`. 4) `empty` only → `<StateEmpty icon={<TpIcon name="habit" size="lg" />} title={emptyTitle} body={emptyBody} />`. 5) `<div className="hd-stack"><section className="tp-surface tp-block-habit" data-component="HabitBlock" aria-labelledby="hd-grid-title"><div className="tp-habit hd-card" data-habit={habit.id} data-logged={String(summary.todayLogged)}>`: head `<div className="tp-habit__head">` = `<h2 className="tp-habit__name tp-h3" id="hd-grid-title">{grid}</h2>`, `<span className="tp-habit__when"><span>{todayIs}</span> <span>{shortDate(todayKey)}</span></span>`, `<button type="button" className="tp-btn tp-btn--primary tp-habit__log" aria-pressed={summary.todayLogged} data-component="Button">` (`<TpIcon name="check" size="sm" />` + `<span>{todayLogged ? logged : log}</span>`; click → `onToggleDay(todayKey)`). Grid `<div className="hd-grid" role="group" aria-labelledby="hd-grid-title" data-testid="habit-six-week-grid">`: header row `<div className="hd-row" aria-hidden="true"><span /><ol className="tp-habit-days">` with 7 `<li className="tp-habit-day"><span className="tp-habit-day__label">{dow[(weekStartsOn + i) % 7]}</span></li>`; then one `<div className="hd-row" data-week={week.startDate}>` per week = `<span className="tp-small tp-muted">` (start date as day in `<span className="tp-num">` + short month from `formatToParts({ day: "numeric", month: "short" })`) and `<ol className="tp-habit-days" aria-label={last ? thisWeek : week.replace("{date}", dayMonthLong(startDate))}>`; each cell: future → `<li className="tp-habit-day" aria-hidden="true" data-date={localDate}><span className="tp-habit-day__label tp-num">{day}</span></li>`; else `<li className="tp-habit-day" data-date={localDate} data-done={String(checked)} data-today={isToday ? "true" : undefined}><button type="button" className="hd-day" aria-pressed={checked} aria-current={isToday ? "date" : undefined}>` with `<span className="tp-habit-day__dot" aria-hidden="true"><TpIcon name="check" /></span>`, `<span className="tp-habit-day__label tp-num" aria-hidden="true">{day}</span>`, `<span className="tp-sr-only">{longDate(localDate)}, {checked ? dayDone : dayOpen}</span>`; click → `onToggleDay(localDate)`. 6) `<output className="tp-habit__summary" id="hd-summary" data-component="ChartSummary">` = (`logged > 0 && total > 1` → `sum` with `{n}`/`{total}` in `.tp-num` spans, then a space) + (`easiestWeekday !== null` → `easy<k>` then a space) + (`todayLogged ? todayDone : todayOpen`). 7) Edit sheet when open: `<HabitSheet id="edit-habit" title={edit} initial={{ name: habit.name, cadence: habit.cadence }} submitVariant="secondary" onSubmit={onSaveEdit} onClose={() => setEditOpen(false)} />`; `HabitSheet` is the existing `apps/web/components/habits/HabitSheet.tsx` (not edited; props `{ id: string; title: string; initial: { name: string; cadence: "daily" | "weekly" }; submitVariant?: "primary" | "secondary"; onSubmit: (draft: HabitDraft) => Promise<void>; onClose: () => void }`, with `HabitDraft = { name: string; cadence: "daily" | "weekly" }` exported from the same file; its own copy comes from the `hb.nh.*` keys and `kb61Copy`). Date helpers (UTC noon of the key): `shortDate` = `{ weekday: "short", day: "numeric", month: "short" }`, `dayMonthLong` = `{ day: "numeric", month: "long" }`, `longDate` = `{ weekday: "long", day: "numeric", month: "long" }`, locale `he-IL` / `en-GB`, `timeZone: "UTC"`. Spacing/size tokens come from habits.css/tempo.css: `.hd-stack` gap `--tp-space-6`, `.hd-grid` gap `--tp-space-2`, `.hd-row` first column `calc(var(--tp-space-12) + var(--tp-space-2))`, dot 28 px.
   **States** (harness order): `default`, `empty` (habit present, nothing logged in the grid), `sunday-start` (`default` data with `weekStartsOn: 0`), `loading`, `error`, `not-found`, `offline` (`default` + `online: false`), `save-error` (`default` + `saveError: true`), `edit` (same as `default`; the test opens the sheet there). No disabled state: offline keeps the grid and Log today usable. Paused and the reminder-in-your-own-words block from the design are out of scope (no `habits.pause` / `nags.getForHabit`; the builder lists this under REPORT `notes for ticket sync`).
@@ -11478,7 +11478,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onNewRoutine: (title: string) => void; // title = COPY.newRoutine in the current language
     onRetry: () => void;
   };
-  export function RoutinesView(props: RoutinesViewProps): JSX.Element;
+  export function RoutinesView(props: RoutinesViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="RoutinesView">`. 1) `<header className="tp-pagehead" data-component="PageHeader">` with `.tp-pagehead__text` (`h1.tp-pagehead__title` {title}, `p.tp-pagehead__sub` {sub}) and, in `default` only, `.tp-pagehead__actions` holding `newButton` = `<button type="button" className="tp-btn tp-btn--secondary" disabled={creating}>` + `<TpIcon name="plus" size="sm" />` + `<span>{newRoutine}</span>`, click → `onNewRoutine(copy.newRoutine)`. 2) `online === false` → `<StateOffline />`. 3) `saveError` → `<Notice tone="caution" title={saveError} live="alert" />`. 4) `loading` → `<StateLoading label={loading} rows={3} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `empty` → `<StateEmpty icon={<TpIcon name="list" size="lg" />} title={emptyTitle} body={emptyBody} action={newButton} />` then `how`; `default` → `<CardGrid label={title}>` with one card per routine, then `<p className="tp-muted tp-small">{note}</p>`, then `how`. 5) Card: `<article className="tp-surface rt-card" data-component="Surface" data-routine={id} aria-labelledby={\`rt-${id}\`}>` → `<div className="rt-card__head"><h2 className="tp-h3 rt-card__name" id={\`rt-${id}\`}><Link href={\`/routines/${id}\`} dir="auto">{title || untitled}</Link></h2>{fitsNow ? <Badge label={fits} tone="info" icon={<TpIcon name="sun" size="sm" />} /> : null}</div>`; `<p className="rt-card__meta tp-small tp-muted">` with `<span><span className="tp-num">{stepCount}</span> <span>{stepCount === 1 ? step : steps}</span></span>`, when `minutes !== null` `<span><span>{about}</span> <span className="tp-num">{minutes}</span> <span>{min}</span></span>`, when `usualTime` `<span>` rendering the `usually` template with `{time}` = `<span className="tp-num tp-mono">{usualTime}</span>`; when `firstSteps.length > 0` `<ol className="rt-steps" aria-label={first}>` with `<li dir="auto">` each; when `stepCount > 3` `<p className="tp-small tp-muted">` rendering `andMore` with `{n}` = `stepCount - 3` in `.tp-num`; `<div className="rt-card__actions">`: `stepCount === 0` → `<Link className="tp-btn tp-btn--secondary" href={\`/notes/${id}\`}><TpIcon name="plus" size="sm" /><span>{addSteps}</span><span className="tp-sr-only"> {title || untitled}</span></Link>`; else `<Link className={fitsNow ? "tp-btn tp-btn--primary" : "tp-btn tp-btn--secondary"} href={\`/routines/${id}\`} data-component={fitsNow ? "Button" : undefined}><TpIcon name="play" size="sm" flip /><span>{start}</span><span className="tp-sr-only"> {title || untitled}</span></Link>` (`fitsNow` = `id === fitsNowId`). 6) `how` = `<p className="tp-muted tp-small" data-testid="routines-how">` rendering the `how` template with `{tag}` = `<span className="tp-tag" dir="ltr">{ROUTINE_TAG.slice(1)}</span>` and `{example}` = `<span className="tp-mono" dir="ltr">{\`${ROUTINE_TAG} 07:30\`}</span>`. Layout tokens come from CardGrid (`.tp-cards`, 280 px min column, gap `--tp-space-4`) and habits.css (`.rt-card` gap `--tp-space-3`).
   **States** (harness order): `default` (three cards), `empty`, `loading`, `error`, `offline` (`default` + `online: false`), `save-error` (`default` + `saveError: true`), `creating` (`default` + `creating: true`: New routine disabled). The design's "Paused at step N / Resume" and "Last done" are out of scope: runs are kept only in the browser tab today (the builder lists this under REPORT `notes for ticket sync`).
@@ -11602,7 +11602,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onBack: () => void;
     onRetry: () => void;
   };
-  export function RoutineDetailView(props: RoutineDetailViewProps): JSX.Element;
+  export function RoutineDetailView(props: RoutineDetailViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="RoutineDetailView">`, first child the back link `<Link className="tp-btn tp-btn--ghost" href="/routines">` (`<TpIcon name="chevron" size="sm" className="tp-icon--back" />` + `<span>{back}</span>`). `loading` → `<StateLoading label={loading} rows={3} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `not-found` → `<StateEmpty icon={<TpIcon name="list" size="lg" />} title={gone} />`. Other states: header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title" dir="auto">{title || untitled}</h1><p className="tp-pagehead__sub">{sub}</p></div></header>`, then `online === false` → `<StateOffline />`. `empty` → `<StateEmpty icon={<TpIcon name="list" size="lg" />} title={emptyTitle} body={emptyBody} action={editLink("secondary")} />`. `default` / `paused` / `finished` → `<div className="tp-split" data-component="Split">` holding: (a) `finished`: `<section className="tp-status-panel" data-tone="done" data-component="StatusPanel" aria-labelledby="rd-finish-title">` = `<span className="tp-status-panel__icon"><TpIcon name="leaf" size="lg" /></span>`, `<h2 className="tp-status-panel__title" id="rd-finish-title" tabIndex={-1}>{finTitle}</h2>`, `<p className="tp-status-panel__body"><span>{finDone}</span> <span className="tp-num">{doneCount}</span> · <span>{finSkipped}</span> <span className="tp-num">{skippedCount}</span>. <span>{finBody}</span></p>`, `<div className="tp-status-panel__actions"><Link className="tp-btn tp-btn--secondary" href="/today"><TpIcon name="today" size="sm" /><span>{finToday}</span></Link><Link className="tp-btn tp-btn--ghost" href="/routines"><span>{back}</span></Link></div>`; otherwise `<section className="tp-surface rd-guide" data-component="Surface" aria-labelledby="rd-step-title" id="rd-guide">` = `<output className="tp-eyebrow block" aria-live="polite" id="rd-progress">` rendering `progress` with `{n}` = `index + 1`, `{total}` = steps count in `.tp-num`; `<ol className="rd-dots" aria-hidden="true">` with `<li><span className={\`tp-dot tp-dot--${DOT[status]}\`} /></li>` per status (`DOT = { done: "done", now: "fixed", skipped: "flex", next: "habit" }`); `<div className="rd-step"><h2 className="tp-page-title" id="rd-step-title" tabIndex={-1} dir="auto">{step.title}</h2>{step.note ? <p className="tp-muted" dir="auto">{step.note}</p> : null}{step.minutes ? <p className="tp-small tp-muted"><TpIcon name="clock" size="sm" /> <span>{about}</span> <span className="tp-num">{step.minutes}</span> <span>{min}</span></p> : null}</div>`; `paused` → `<Notice tone="info" title={pausedTitle} body={pausedBody} live="status" />`; `<output className="tp-muted tp-small block" aria-live="polite" data-testid="routine-said">{said ? copy[SAID[said]] : ""}</output>`; `<div className="rd-actions">` = Done `<button type="button" className="tp-btn tp-btn--primary" disabled={paused} data-component="Button">` (`check` icon + {done}) → `onDone()`; Skip `<button type="button" className="tp-btn tp-btn--secondary" disabled={paused}>` (`arrow` icon `flip` + {skip}) → `onSkip()`; Pause `<button type="button" className="tp-btn tp-btn--ghost" aria-pressed={paused}>` (`play` icon + {resume} when paused, else `pause` icon + {pause}) → `onTogglePause()`; Back (only when `index > 0`) `<button type="button" className="tp-btn tp-btn--ghost" disabled={paused}>` (`undo` icon + {backStep}) → `onBack()`. (b) always: `<section className="tp-section rd-aside" data-component="Section" aria-labelledby="rd-all">` = `<div className="tp-section__head"><h2 className="tp-section__title" id="rd-all">{all}</h2>{minutes !== null ? <span className="tp-section__count"><span>{about}</span> <span className="tp-num">{minutes}</span> <span>{min}</span></span> : null}</div>`, `<List label={all}>` with one `<ListRow title={step.title} icon={<TpIcon name={ICON[status]} size="sm" flip={status === "now" || status === "skipped"} />} end={copy[WORD[status]]} current={status === "now"} />` per step (`ICON = { done: "check", now: "play", skipped: "arrow", next: "clock" }`), then `editLink("ghost")` = `<Link className={\`tp-btn tp-btn--${variant}\`} href={\`/notes/${routine.id}\`}><TpIcon name="edit" size="sm" /><span>{edit}</span></Link>`. `step` = `steps[Math.min(index, steps.length - 1)]`; `doneCount`/`skippedCount` count `statuses`.
   **Behaviour:** local `said: "done" | "skipped" | "reopened" | "resumed" | null`, initial `data.resumed ? "resumed" : null`; Done → `said = "done"`, Skip → `"skipped"`, Back → `"reopened"`, Pause/Resume → `null`; `SAID = { done: "saidDone", skipped: "saidSkipped", reopened: "saidReopened", resumed: "saidResumed" }`. After Done, Skip or Back a `useRef` flag makes the next render's effect focus `#rd-step-title`, or `#rd-finish-title` when `state === "finished"`.
@@ -11773,7 +11773,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCloseToast: () => void;
     onRetry: () => void;
   };
-  export function GoalsView(props: GoalsViewProps): JSX.Element;
+  export function GoalsView(props: GoalsViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page tp-page--wide gl-stack" data-component="PageLayout" data-view="GoalsView">`. 1) `<header className="tp-pagehead" data-component="PageHeader">` = `.tp-pagehead__text` (`h1.tp-pagehead__title` {title}, `p.tp-pagehead__sub` {sub}) and `<div className="tp-pagehead__actions">` with `<Link className="tp-btn tp-btn--secondary" href="/goals/progress"><TpIcon name="chart" size="sm" /><span>{progress}</span></Link>` always, plus in `default` / `filtered-empty` `<button id="gl-new" type="button" className="tp-btn tp-btn--primary" data-component="Button" disabled={creating} aria-busy={creating}><TpIcon name="plus" size="sm" /><span>{newGoal}</span></button>` (opens the name form). 2) `online === false` → `<StateOffline />`. 3) `saveError` → `<Notice tone="caution" title={saveError} live="alert" />`. 4) `loading` → `<StateLoading label={loading} rows={3} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `empty` → `<StateEmpty icon={<TpIcon name="flag" size="lg" />} title={emptyTitle} body={emptyBody} action={naming ? nameForm : <button id="gl-first" type="button" className="tp-btn tp-btn--secondary" disabled={creating}><TpIcon name="plus" size="sm" /><span>{firstGoal}</span></button>} />`; `default` / `filtered-empty` → `{naming ? nameForm : null}`, then `<div className="tp-toolbar" data-component="Toolbar">` = `<Segmented label={show} options={[{ value: "all", label: all }, { value: "active", label: active }, { value: "resting", label: resting }, { value: "done", label: done }]} value={filter} onChange={(v) => onFilterChange(v as GoalsFilter)} />` + `<span className="tp-muted tp-small tp-toolbar__end" aria-live="polite" data-testid="goals-count">` rendering `goals.length === 1 ? countOne : countMany` with `{n}` in `.tp-num`; then `default` → `<CardGrid label={title}>` with one card per goal; `filtered-empty` → `<StateEmpty icon={<TpIcon name="filter" size="lg" />} title={filteredTitle} body={filteredBody} action={<button type="button" className="tp-btn tp-btn--secondary" onClick={() => onFilterChange("all")}><span>{showAll}</span></button>} />`. 5) Card: `<article className="tp-card gl-card" data-component="Card" data-status={status} aria-labelledby={\`goal-${id}-title\`}>` = `<div className="tp-card__head"><Badge label={statusWord} tone={TONE[status]} icon={<TpIcon name={ICON[status]} size="sm" />} /></div>` (`TONE = { active: "info", resting: "neutral", done: "done" }`, `ICON = { active: "play", resting: "pause", done: "check" }`), `<h2 className="tp-h3" id={\`goal-${id}-title\`}><Link href={\`/goals/${id}\`} id={\`goal-${id}-link\`} dir="auto">{title}</Link></h2>`, `<p className="tp-muted" dir="auto">{why ?? whyDraft}</p>`, and for `resting` `<p className="tp-small gl-card__foot"><TpIcon name="pause" size="sm" /><span>{restingNote}</span></p>`. 6) `nameForm` = `<form className="gx-add text-start" data-component="InlineAdd" noValidate>` = `<label className="tp-field" htmlFor="gl-name"><span className="tp-label">{nameLabel}</span><input id="gl-name" className="tp-input" dir="auto" autoComplete="off" placeholder={namePlaceholder} aria-invalid={nameEmpty || undefined} aria-describedby={nameEmpty ? "gl-name-hint" : undefined} /></label>`, `<button className="tp-btn tp-btn--primary" type="submit" disabled={creating} aria-busy={creating}><TpIcon name="plus" size="sm" /><span>{add}</span></button>`, `<button className="tp-btn tp-btn--ghost" type="button">{cancel}</button>`, and when `nameEmpty` `<p className="tp-help basis-full" id="gl-name-hint"><output>{nameHint}</output></p>`. 7) `toast` → `<div className="tp-toast-region"><UndoToast title={added} undoUntilMs={toast.undoUntilMs} onUndo={() => onUndoCreate(toast.goalId)} onClose={onCloseToast} /></div>`; `UndoToast` is the existing `apps/web/components/habits/UndoToast.tsx` (`import { UndoToast } from "@/components/habits/UndoToast"`; not edited; props `{ title: string; undoUntilMs: number; onUndo: () => Promise<void>; onClose: () => void }`; its copy is `hr.toast.sub` "You can undo for" / "אפשר לבטל עוד", `hr.toast.undo` "Undo" / "ביטול", `hr.toast.dismiss` "Dismiss" / "סגירה"); it is not the `UndoToast` in `apps/web/components/goals/shared.tsx`. Layout tokens from goals.css/CardGrid: `.gl-stack` gap `--tp-space-6`, `.tp-cards` 280 px columns gap `--tp-space-4`.
   **Behaviour:** local `naming`, `name`, `nameEmpty`, `focusTarget: string | null`. Opening the form (`#gl-new` or `#gl-first`) sets `naming = true` and focuses `#gl-name`. Submit: `preventDefault()`; trimmed name empty → `nameEmpty = true`, focus `#gl-name`, no callback; else `nameEmpty = false`, `const id = await onCreate(title)`, then `naming = false`, clear `name`, focus `#goal-<id>-link` on the next render (an effect retries until the element exists, then clears `focusTarget`); a rejection keeps the form open with its text. Typing a non-empty value clears `nameEmpty`. Cancel or Escape in the input: `naming = false`, focus `#gl-first` when `state === "empty"`, else `#gl-new`.
@@ -11908,7 +11908,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSetStatus: (status: GoalDetailStatus) => void;
     onRetry: () => void;
   };
-  export function GoalDetailView(props: GoalDetailViewProps): JSX.Element;
+  export function GoalDetailView(props: GoalDetailViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page gd-stack" data-component="PageLayout" data-view="GoalDetailView">`, first child the back link `<Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/goals"><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{back}</span></Link>`. `loading` → `<StateLoading label={loading} rows={2} />`; `error` → `<StateError what={error} onRetry={onRetry} />`; `not-found` → `<StateEmpty icon={<TpIcon name="flag" size="lg" />} title={gone} action={<Link className="tp-btn tp-btn--secondary" href="/goals"><span>{back}</span></Link>} />`. `default`: 1) `<header className="tp-pagehead" data-component="PageHeader">` = `<div className="tp-pagehead__text"><h1 className="tp-pagehead__title"><input className="gx-title-input" aria-label={titleLabel} dir="auto" value={title} /></h1><div className="tp-pagehead__sub gd-meta"><Badge label={statusWord} tone={TONE[status]} icon={<TpIcon name={ICON[status]} size="sm" />} /></div></div>` (`TONE = { active: "info", resting: "neutral", done: "done" }`, `ICON = { active: "play", resting: "pause", done: "check" }`) and `<div className="tp-pagehead__actions gd-status"><Select id="gd-status" label={statusLabel} value={status} options={[{ value: "active", label: active }, { value: "resting", label: resting }, { value: "done", label: done }]} onChange={(v) => v !== status && onSetStatus(v as GoalDetailStatus)} /></div>`. 2) `online === false` → `<StateOffline />`. 3) `saveError` → `<Notice tone="caution" title={saveError} live="alert" />`. 4) `<div className="gd-stack">` = `<section className="tp-section gd-why" data-component="Section" aria-labelledby="why-h"><div className="tp-section__head"><h2 className="tp-section__title" id="why-h">{whyHeading}</h2></div><div className="tp-surface" data-component="Surface"><textarea className="gd-why__input" aria-labelledby="why-h" dir="auto" spellCheck placeholder={whyDraft} value={why} /></div></section>` and `<StateEmpty icon={<TpIcon name="flag" size="lg" />} title={emptyTitle} body={emptyBody} />`. Tokens via goals.css (`.gd-stack` gap `--tp-space-6`) and the composed components.
   **Behaviour (title):** local `title`, initialised from `goal.title` and re-synced whenever `goal.title` changes while the input is not focused (a `useRef` focus flag). Enter blurs the input. On blur: `next = title.trim()`; empty → restore `goal.title`, no callback; `next !== goal.title` → `onSaveTitle(next)`. **Behaviour (why):** local `why` (initial `goal.why ?? ""`) and `savedWhy` ref (initial the same); both re-sync from `goal.why` while the textarea is not focused. Each change sets `why` and restarts a `window.setTimeout(WHY_SAVE_DELAY_MS)` that calls `saveWhy(value)`. `saveWhy(value)`: clear the timer; if `value === savedWhy.current` do nothing; else `onSaveWhy(value.trim() ? value : null).then(() => { savedWhy.current = value; })` (a rejection leaves `savedWhy` unchanged, so blur tries again). On blur: if `why !== savedWhy.current` call `saveWhy(why)`; else re-sync from `goal.why`. The timer is cleared on unmount. **Behaviour (status):** the Select change calls `onSetStatus` only when the value differs.
@@ -15695,7 +15695,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     panelId?: string;
     children: ReactNode;
   };
-  export function CoachPanelShell({ onClose, modal = false, panelId = "coach-panel", children }: CoachPanelShellProps): JSX.Element;
+  export function CoachPanelShell({ onClose, modal = false, panelId = "coach-panel", children }: CoachPanelShellProps): React.JSX.Element;
 
   // apps/web/components/coach/CoachPanel.tsx (whole body after the change)
   "use client";
@@ -15703,7 +15703,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import { useCoachPageId } from "./CoachPage";
   import { CoachPanelShell } from "./CoachPanelShell";
   /** CoachPanel (coach.html): the coach beside the page, drawn in CoachPanelShell. */
-  export function CoachPanel({ onClose, modal = false }: { onClose: () => void; modal?: boolean }): JSX.Element {
+  export function CoachPanel({ onClose, modal = false }: { onClose: () => void; modal?: boolean }): React.JSX.Element {
     const pageId = useCoachPageId();
     return (
       <CoachPanelShell onClose={onClose} modal={modal}>
@@ -15751,7 +15751,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   type CopyKey = "you";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { you: "You" }, he: { you: "אני" } };
   export type UserMessageProps = { text: string };
-  export function UserMessage({ text }: UserMessageProps): JSX.Element;
+  export function UserMessage({ text }: UserMessageProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-msg tp-msg--user" data-component="UserMessage"><span className="tp-msg__who">{copy.you}</span><p className="tp-msg__text" dir="auto">{text}</p></div>`. The Hebrew label is "אני" (the person's own line; a neutral first-person word instead of the gendered "את" of the design file and the slash form "את/ה" of `coachChat.you`). Styling from tempo.css: who `--tp-text-xs` 600 `--tp-ink-muted`; text max 60ch, bubble `--tp-sunken`, padding `--tp-space-3`/`--tp-space-4`, radius `--tp-radius-lg` with the end-end corner `--tp-radius-sm`. States (harness order): `default` (text "Can you add “call the bank” before noon?"), `hebrew` (text "אפשר להוסיף ״להתקשר לבנק״ לפני הצהריים?"). Loading / empty / error / offline / success / disabled: n/a (a sent message has none; the thread owns them). RTL: the bubble sits at the inline end (left in Hebrew); each message's text direction follows its own content (`dir="auto"`). Keyboard: nothing focusable. Screen reader: reads the label then the text. Breakpoints: none (the bubble is at most 60ch at every width). Motion: none.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
@@ -15827,7 +15827,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export type TypingIndicatorVariant = "writing" | "opening";
   export type TypingIndicatorProps = { variant: TypingIndicatorVariant };
-  export function TypingIndicator({ variant }: TypingIndicatorProps): JSX.Element;
+  export function TypingIndicator({ variant }: TypingIndicatorProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-typing" role="status" data-component="TypingIndicator" data-variant={variant}><span className="tp-typing__dots" aria-hidden="true"><span /><span /><span /></span><span>{copy[variant]}</span></div>`. `writing` = the coach's reply is arriving; `opening` = a conversation is loading (the screen's loading state). Styling from tempo.css: `--tp-text-sm`, `--tp-ink-muted`, gap `--tp-space-2`, dots 6 px `--tp-ink-muted`. States (harness order): `writing`, `opening`. Loading / empty / error / offline / success / disabled: n/a (this component is itself the loading signal). RTL: dots sit at the inline start, before the words. Keyboard: nothing focusable. Screen reader: the status is announced politely with its words only (dots are `aria-hidden`). Breakpoints: none. Motion: the dot pulse is tempo.css's `tp-typing` loop (1.2 s, staggered 0.2 s / 0.4 s) and exists only when motion is allowed; under `prefers-reduced-motion: reduce` the dots are still (`animation-name: none`).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
@@ -15865,7 +15865,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { read: "הקראה", stop: "עצירת ההקראה" },
   };
   export type ReadAloudButtonProps = { pressed: boolean; onToggle: (next: boolean) => void; disabled?: boolean };
-  export function ReadAloudButton({ pressed, onToggle, disabled = false }: ReadAloudButtonProps): JSX.Element;
+  export function ReadAloudButton({ pressed, onToggle, disabled = false }: ReadAloudButtonProps): React.JSX.Element;
   ```
   Markup: `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" data-component="ReadAloudButton" aria-pressed={pressed} disabled={disabled} onClick={() => onToggle(!pressed)}><TpIcon name={pressed ? "pause" : "volume"} size="sm" /><span data-label="">{pressed ? copy.stop : copy.read}</span></button>`. The visible label is the accessible name (no extra `aria-label`). Styling from tempo.css: ghost button 36 px tall (`.tp-btn--sm`), colour `--tp-ink-muted`, pressed `--tp-hover` background and `--tp-ink` text. States (harness order): `idle` (`pressed` false), `playing` (`pressed` true), `disabled` (`pressed` false, `disabled`). Loading / empty / error / offline / success: n/a (the screen stops reading and resets `pressed` on a speech error). RTL: icon at the inline start. Keyboard: native button (Enter, Space). Screen reader: "Read aloud, toggle button, not pressed" / "Stop reading, toggle button, pressed". Breakpoints: none. Motion: background transition `--tp-dur-fast` (120 ms).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
@@ -15910,7 +15910,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     /** Omit to show no Read aloud toggle. */
     readAloud?: { pressed: boolean; onToggle: (next: boolean) => void };
   };
-  export function CoachMessage({ text, streaming = false, readAloud }: CoachMessageProps): JSX.Element;
+  export function CoachMessage({ text, streaming = false, readAloud }: CoachMessageProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-msg" data-component="CoachMessage" aria-busy={streaming ? true : undefined}><span className="tp-msg__who">{copy.coach}</span><p className="tp-msg__text" dir="auto">{text}</p>{streaming ? <TypingIndicator variant="writing" /> : readAloud ? <div className="tp-msg__actions"><ReadAloudButton pressed={readAloud.pressed} onToggle={readAloud.onToggle} /></div> : null}</div>`. Styling from tempo.css: who `--tp-text-xs` 600 `--tp-ink-muted`; text max 60ch on the page ground (no bubble); actions gap `--tp-space-1`. States (harness order): `default` (text "Of course. Here is exactly what I would add. Nothing changes until you say yes.", with `readAloud`), `streaming` (text "Start with the bank call. It's ten minutes, and once it's done", `streaming`), `plain` (text "Hi. Ask me to plan, shrink or sort anything.", no `readAloud`), `hebrew` (text "בטח. זה בדיוק מה שהמאמן היה מוסיף. שום דבר לא משתנה בלי אישור.", with `readAloud`). Loading / empty / error / offline / success / disabled: n/a (the thread and screen own them; `streaming` is the in-progress state). RTL: label at the inline start; each message's text direction follows its content (`dir="auto"`). Keyboard: only the Read aloud button is focusable. Screen reader: label then text; while streaming the message is `aria-busy` and the status "Coach is writing" is announced. Breakpoints: none. Motion: none of its own (the typing dots follow TFV2-0205).
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
@@ -15965,7 +15965,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   /** Local calendar days between updatedAt and nowMs in timeZone (keys from Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })):
    *  diff ≤ 0 → "today"; 1–7 → "week"; ≥ 8 → "earlier". diff = (Date.UTC of nowMs's key − Date.UTC of updatedAt's key) / 86_400_000. */
   export function chatHistoryGroupKey(updatedAt: number, nowMs: number, timeZone: string): ChatHistoryGroupKey;
-  export function ChatHistoryList({ groups, currentId = null, onOpen }: ChatHistoryListProps): JSX.Element;
+  export function ChatHistoryList({ groups, currentId = null, onOpen }: ChatHistoryListProps): React.JSX.Element;
   ```
   Markup: `<div data-component="ChatHistoryList">`; for each group with at least one thread, in the order given: `<section aria-labelledby={`${uid}-${key}`}><h2 className="tp-chat-group" id={`${uid}-${key}`}>{copy[key]}</h2><ul className="tp-chat-list" role="list">` and per thread `<li><a className="tp-chat-row" href={href} aria-current={id === currentId ? "page" : undefined} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); onOpen(id); }}><span className="tp-chat-row__title" dir="auto">{title.trim() === "" ? copy.untitled : title}</span><span className="tp-chat-row__time tp-num">{time}</span>{lastLine ? <span className="tp-chat-row__last" dir="auto">{lastLine}</span> : null}</a></li>`, closing `</ul></section>`. `uid` from `useId()`. Styling from tempo.css: group label `--tp-text-xs` 600 `--tp-ink-muted`; row padding `--tp-space-3`, radius `--tp-radius-md`; title `--tp-text-sm` 600 one line with ellipsis; time `--tp-text-xs` LTR isolate tabular; last line `--tp-text-sm` `--tp-ink-muted`, `-webkit-line-clamp: 2`; current row `--tp-paper` + `--tp-shadow-card`; hover `--tp-hover`.
   Harness fixtures (typed `ChatHistoryGroup[]`, test data): `T1 = { id: "t1", title: "A lighter Monday", lastLine: "Coach: Done. “Call the bank” is on Today.", time: "09:12", href: "/coach/t1" }`; `T2 = { id: "t2", title: "Thursday talk, three slides", lastLine: "word ".repeat(120).trim(), time: "08:05", href: "/coach/t2" }`; `T3 = { id: "t3", title: "Email Dana about the lease", lastLine: "You: I keep avoiding this email.", time: "Wed 7 Oct", href: "/coach/t3" }`; `T4 = { id: "t4", title: "Yoni's birthday", lastLine: "Coach: Added “Buy Yoni a gift” to Wednesday.", time: "Fri 18 Sep", href: "/coach/t4" }`; `T5 = { id: "t5", title: "", lastLine: null, time: "10:00", href: "/coach/t5" }`. States in order: `default` (groups today [T1, T2], week [T3], earlier [T4]; `currentId` "t1"), `single` (earlier [T4] only, today and week empty), `empty` (all three groups with `threads: []`), `untitled` (today [T5]). Every `onOpen` logs `onOpen:"<id>"`. Below the sections the harness renders `<output data-testid="chat-history-list-keys">{JSON.stringify({ utc: [NOW, Date.UTC(2026, 9, 12, 0, 30), Date.UTC(2026, 9, 11, 23, 30), Date.UTC(2026, 9, 5, 9, 0), Date.UTC(2026, 9, 4, 9, 0), Date.UTC(2026, 9, 13, 9, 0)].map((t) => chatHistoryGroupKey(t, NOW, "UTC")), jerusalem: chatHistoryGroupKey(Date.UTC(2026, 9, 11, 23, 30), NOW, "Asia/Jerusalem") })}</output>` with `const NOW = Date.UTC(2026, 9, 12, 9, 0);`.
@@ -16022,7 +16022,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onModeChange: (mode: ChatSearchMode) => void;
     onSearch: (request: ChatSearchRequest) => void;
   };
-  export function ChatSearch(props: ChatSearchProps): JSX.Element;
+  export function ChatSearch(props: ChatSearchProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-toolbar" role="search" data-component="ChatSearch"><div className="tp-toolbar__grow"><SearchInput id={id} label={copy.label} placeholder={copy.placeholder} value={query} onChange={onQueryChange} /></div>{meaningAvailable ? <Segmented label={copy.modeLabel} options={[{ value: "meaning", label: copy.meaning }, { value: "words", label: copy.words }]} value={mode} onChange={(v) => onModeChange(v === "meaning" ? "meaning" : "words")} /> : null}</div>`.
   Debounce: `effectiveMode = meaningAvailable ? mode : "words"`; `request = { query: query.trim(), mode: effectiveMode }`; a `useRef` holds the key `` `${request.mode}|${request.query}` `` of the last request sent, initialised with the key of the first render (so mounting sends nothing); a `useEffect` on `[request.query, request.mode]` clears any pending timer and, when the key differs from the last one sent, sets `window.setTimeout(() => { last.current = key; onSearch(request); }, SEARCH_DEBOUNCE_MS)`; the effect's cleanup clears the timer. An empty query is a valid request (the screen shows the full list).
@@ -16071,7 +16071,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     autoFocus?: boolean;
   };
   export const CRISIS_PHONE_PATTERN = /^\+?[0-9]{2,15}$/;
-  export function CrisisCard({ card, autoFocus = false }: CrisisCardProps): JSX.Element;
+  export function CrisisCard({ card, autoFocus = false }: CrisisCardProps): React.JSX.Element;
   ```
   Markup: `<section ref className="tp-crisis" data-component="CrisisCard" aria-labelledby={titleId} tabIndex={-1}><h2 className="tp-crisis__title" id={titleId}>{card.title}</h2><p className="tp-crisis__body">{card.body}</p>{card.resources.length > 0 ? <ul className="tp-crisis__list" role="list">{…}</ul> : null}<p className="tp-crisis__note">{copy.note}</p><p className="tp-crisis__note">{copy.notTherapist}</p></section>`; each resource `<li className="tp-crisis__item"><span className="tp-crisis__item-text"><span className="tp-crisis__name" dir="auto">{label}</span><span className="tp-crisis__detail"><span dir="auto">{detail}</span>{phoneOk ? <> <span className="tp-num tp-mono">{phone}</span></> : null}</span></span>{phoneOk ? <a className="tp-btn tp-btn--secondary" href={`tel:${phone}`}><TpIcon name="phone" size="sm" /><span>{copy.call}</span> <span className="tp-num">{phone}</span></a> : null}{urlOk ? <a className="tp-btn tp-btn--secondary" href={url} target="_blank" rel="noopener noreferrer"><TpIcon name="link" size="sm" /><span>{copy.open}</span></a> : null}</li>` where `phoneOk = phone !== undefined && CRISIS_PHONE_PATTERN.test(phone)` and `urlOk = url !== undefined && url.startsWith("https://")`. `titleId` from `useId()`. `useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus])`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong` with a 4 px `--tp-ink` inline-start rule, padding `--tp-space-5`; title `--tp-font-serif` `--tp-text-xl`; items on `--tp-ground`, radius `--tp-radius-md`; note `--tp-text-xs` `--tp-ink-muted`. No animation or transition on the card.
   Harness fixtures (test data): `GENERIC` = the committed `CRISIS_CARD` text: title "You are not alone, and help is available", body "What you wrote matters. If you might act on these thoughts or you are in danger, please contact your local emergency number now. Country-specific helpline numbers are not set up in Tempo yet, so this card cannot show one for your location.", resources `[{ label: "Emergency services", detail: "Call your local emergency number if you are in immediate danger." }, { label: "A crisis line near you", detail: "Search for a suicide or crisis helpline in your country and call or text them." }, { label: "Someone you trust", detail: "Tell a friend, family member or doctor how you feel. You do not have to wait for a good moment." }]`; `CONTACTS` = title "Fixture card with contacts", body "Fixture body.", resources `[{ label: "Line A", detail: "Any hour.", phone: "1201" }, { label: "Chat B", detail: "By chat.", url: "https://example.org/chat" }, { label: "Line C", detail: "Emergency.", phone: "101" }]`; `UNSAFE` = title "Fixture card with unsafe values", body "Fixture body.", resources `[{ label: "Bad link", detail: "Should show no link.", url: "javascript:alert(1)" }, { label: "Bad phone", detail: "Should show no call button.", phone: "12-ab" }]`. States in order: `default` (`GENERIC`, `autoFocus`), `with-contacts` (`CONTACTS`), `unsafe` (`UNSAFE`). Loading / empty / error / offline / success / disabled: n/a (the card is shown only once the screen has it; while `crisis.resourcesCard` loads the screen shows the existing `FALLBACK_CARD` text through this same component). RTL: the inline-start rule and items mirror; numbers are LTR isolates. Keyboard: the card is focusable programmatically (`tabIndex={-1}`); links are in tab order. Screen reader: a region named by the card title. Breakpoints: items wrap their action under the text when narrow (`flex-wrap`). Motion: none.
@@ -16121,7 +16121,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     actionText: string;
     onDone: () => void;
   };
-  export function GroundingCard({ id, actionText, onDone }: GroundingCardProps): JSX.Element;
+  export function GroundingCard({ id, actionText, onDone }: GroundingCardProps): React.JSX.Element;
   ```
   Behaviour: `const [step, setStep] = useState(0)`; `useEffect` starts `window.setInterval(() => setStep((s) => (s + 1) % 3), BREATH_STEP_MS)` and clears it on unmount; `phase = BREATH_ORDER[step]`. `const [done, setDone] = useState(false)`; Done click → if not done: `setDone(true); onDone();`. Markup: `<section className="tp-grounding" id={id} aria-labelledby={`${id}-title`} data-component="GroundingCard"><h2 className="tp-grounding__title" id={`${id}-title`}>{copy.title}</h2><p className="tp-grounding__body">{copy.body}</p><div className="tp-breath" data-phase={phase}><div className="tp-breath__track" aria-hidden="true"><span className="tp-breath__line" /></div><p className="tp-breath__label" aria-live="polite">{copy[phase]}</p></div><div className="tp-grounding__action"><span className="tp-grounding__action-text"><span>{copy.lead}</span> <span className="tp-num">{GROUNDING_ACTION_SECONDS}</span> <span>{copy.seconds}</span> <span dir="auto">{actionText}</span></span><button className="tp-btn tp-btn--secondary" type="button" disabled={done} onClick={…}><TpIcon name="check" size="sm" /><span>{copy.done}</span></button></div>{done ? <p className="tp-small tp-muted" data-grounding-done="">{copy.after}</p> : null}</section>`. Styling from tempo.css: card `--tp-paper`, border `--tp-line-strong`, padding `--tp-space-5`, gap `--tp-space-4`; title `--tp-font-serif` `--tp-text-xl`; track `--tp-space-1` tall on `--tp-sunken`, line `--tp-ink`, `transition: transform var(--tp-dur-slow) var(--tp-ease-out)`; label `--tp-font-serif` `--tp-text-lg`; action row on `--tp-ground`.
   States (harness order): `default` (id "grounding-a", actionText "Stand up and drink a sip of water."), `hebrew` (id "grounding-b", actionText "לקום ולשתות לגימה של מים."). `done` is reached by clicking Done (TESTS 4). Loading / empty / error / offline / disabled: n/a (fixed copy, no data load; the Done button is disabled only after it was pressed). RTL: the line grows from the inline start (`[dir="rtl"] .tp-breath__line { transform-origin: right center }`, tempo.css line 1138). Keyboard: Done is the only control. Screen reader: the region is named by the title; the phase word is a polite live region, so each new word is read. Breakpoints: the action row wraps when narrow. Motion: line transform 240 ms; instant under reduced motion; the word keeps stepping.
@@ -16171,7 +16171,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     /** The last save failed (the screen shows the saved value again). */
     error?: boolean;
   };
-  export function CoachDial({ value, onCommit, disabled = false, error = false }: CoachDialProps): JSX.Element;
+  export function CoachDial({ value, onCommit, disabled = false, error = false }: CoachDialProps): React.JSX.Element;
   ```
   Behaviour: `const [draft, setDraft] = useState(value)`; `useEffect(() => setDraft(value), [value])` (a new saved value replaces the draft); Dial `onChange(next)` → `setDraft(next)`, clear the pending timer, then `timer = window.setTimeout(() => { if (next !== value) onCommit(next); }, COACH_DIAL_COMMIT_MS)`; the timer is cleared on unmount. Markup: `<section className="tp-card" data-component="CoachDial" aria-label={copy.title} aria-describedby={helpId}><Dial id={dialId} label={copy.label} value={draft} onChange={…} disabled={disabled} /><p className="tp-help" id={helpId}>{copy.help}</p>{error ? <p className="tp-help" role="alert">{copy.error}</p> : null}</section>`; `dialId`, `helpId` from `useId()`. The Dial's own words are TFV2-0119's ("Quiet" / "שקט", "Steady" / "יציב", "Push" / "דחיפה"; "{n} of 10, {word}" / "{n} מתוך 10, {word}"); the help line uses the same Hebrew words. Styling from tempo.css: card `--tp-paper`, border `--tp-line`, radius `--tp-radius-lg`, padding `--tp-space-4`; help `--tp-text-sm` `--tp-ink-muted`.
   States (harness order): `default` (value 4), `disabled` (value 7, `disabled`), `error` (value 2, `error`). Loading / empty / offline / success: n/a (the screen shows the dial only after `coach.getSettings` answers; offline the screen passes `disabled`). RTL: the slider runs right-to-left (0 at the right, TFV2-0119). Keyboard: native range (Arrow keys ±1, Home 0, End 10). Screen reader: a region "Coach style" described by the help line, holding the slider "How much should the coach push?, 4 of 10, Steady". Breakpoints: full width at every size (inside a bottom sheet on phones, chosen by the screen). Motion: none beyond the native thumb.
@@ -16216,7 +16216,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onPress: () => void;
     disabled?: boolean;
   };
-  export function PanicButton({ expanded, controls, onPress, disabled = false }: PanicButtonProps): JSX.Element;
+  export function PanicButton({ expanded, controls, onPress, disabled = false }: PanicButtonProps): React.JSX.Element;
   ```
   Markup: `<button type="button" className="tp-panic" data-component="PanicButton" aria-controls={controls} aria-expanded={expanded} disabled={disabled} onClick={onPress}><TpIcon name="lifebuoy" size="sm" /><span>{copy.label}</span></button>`. Styling from tempo.css: pill (`--tp-radius-pill`), min-height `--tp-touch` (44 px), padding-inline `--tp-space-4`, border 1.5 px `--tp-line-control`, `--tp-paper` ground, `--tp-ink` text `--tp-text-sm` 600, hover `--tp-hover`; focus ring is the global `:focus-visible` outline (`--tp-focus-w`, `--tp-accent`) with a pill radius (line 595). States (harness order): `closed` (`expanded` false, `controls` "grounding"), `open` (`expanded` true, `controls` "grounding"), `disabled` (`expanded` false, `disabled`; the screen disables it during a crisis hold). Loading / empty / error / offline / success: n/a (pressing needs no network to show the card; the screen shows the card at once). RTL: icon at the inline start. Keyboard: native button (Enter, Space). Screen reader: "I'm overwhelmed, button, collapsed / expanded". Breakpoints: none. Motion: none of its own.
 - **TESTS:** (the CONVENTIONS §22 spec skeleton: `openHarness(page, "<kebab>", { lang })` per viewport × language, locators scoped to each state section, harness callbacks per CONVENTIONS §13 logged to `<kebab>-log`, `trackConsoleErrors` → `[]`)
@@ -16293,7 +16293,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onReject: () => void;
     onUndo: () => void;
   };
-  export function ProposalCard(props: ProposalCardProps): JSX.Element;
+  export function ProposalCard(props: ProposalCardProps): React.JSX.Element;
   ```
   Shell markup: `<section className="tp-proposal" data-component="ProposalCard" data-kind={proposal.kind} data-status={status} aria-labelledby={`${id}-title`} aria-busy={busy ? true : undefined}>` → head `<div className="tp-proposal__head"><span className="tp-proposal__kind"><TpIcon name={icon} size="sm" /><span>{kindLabel}</span></span><strong id={`${id}-title`} dir="auto">{head}</strong><span className="tp-proposal__target">{target}</span></div>` → the variant body → if `status === "pending"`: `<div className="tp-proposal__actions">` with Accept `<button type="button" className={primary ? "tp-btn tp-btn--primary" : "tp-btn tp-btn--secondary"} data-action="accept" disabled={busy || (editable && draft.trim() === "")} onClick={accept}><TpIcon name="check" size="sm" /><span>{copy.accept}</span></button>`, Edit (editable kinds only) `<button type="button" className="tp-btn tp-btn--secondary" data-action="edit" aria-pressed={editing} disabled={busy} onClick={() => setEditing(!editing)}><TpIcon name="edit" size="sm" /><span>{editing ? copy.doneEditing : copy.edit}</span></button>`, Reject `<button type="button" className="tp-btn tp-btn--ghost" data-action="reject" disabled={busy} onClick={onReject}><span>{copy.reject}</span></button>`; else the note `<p className="tp-proposal__note" role="status"><TpIcon name={status === "accepted" ? "check" : "undo"} size="sm" /><span>{noteText}</span>{left ? <button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" data-action="undo" disabled={busy} onClick={onUndo}><TpIcon name="undo" size="sm" /><span>{copy.undo}</span><span className="tp-num tp-mono" aria-hidden="true">{left}</span></button> : null}</p>` → if `error`: `<p className="tp-proposal__note" role="alert">{copy.error}</p>`.
   Note text: `left = useCountdown(status === "accepted" ? undoUntilMs : undefined)`; accepted with `left` → `<>{copy.acceptedLead} <span className="tp-num">{PROPOSAL_UNDO_MINUTES}</span> {copy.acceptedTail}</>`; accepted without `left` → `copy.kept`; rejected → `copy.rejected`; undone → `copy.undone`.
@@ -16543,9 +16543,9 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onConfirm?: (id: string) => void; // guess rows only
     forgetButtonRef?: (el: HTMLButtonElement | null) => void; // lets the screen move focus
   };
-  export function MemoryItem(props: MemoryItemProps): JSX.Element;
+  export function MemoryItem(props: MemoryItemProps): React.JSX.Element;
   export type MemoryListProps = { label: string; children: ReactNode };
-  export function MemoryList({ label, children }: MemoryListProps): JSX.Element;
+  export function MemoryList({ label, children }: MemoryListProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
     | key | EN | HE |
@@ -16607,7 +16607,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   import type { ImportChoice, ImportItem } from "@/lib/you/memory";
   export type ImportChange = { id: string; choice?: ImportChoice; text?: string };
   export type ImportReviewProps = { items: ImportItem[]; onChange: (change: ImportChange) => void };
-  export function ImportReview({ items, onChange }: ImportReviewProps): JSX.Element;
+  export function ImportReview({ items, onChange }: ImportReviewProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -16665,7 +16665,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type ExportStatus = "idle" | "working" | "ready" | "error";
   export type ExportAreaProps = { status: ExportStatus; fileName?: string; disabled?: boolean; onExport: () => void };
-  export function ExportArea({ status, fileName, disabled = false, onExport }: ExportAreaProps): JSX.Element;
+  export function ExportArea({ status, fileName, disabled = false, onExport }: ExportAreaProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -16990,7 +16990,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type MemoryAddError = "empty" | "long" | "failed";
   export type MemoryAddFormProps = { value: string; onChange: (value: string) => void; onSubmit: () => void; error?: MemoryAddError; saving?: boolean };
-  export function MemoryAddForm({ value, onChange, onSubmit, error, saving = false }: MemoryAddFormProps): JSX.Element;
+  export function MemoryAddForm({ value, onChange, onSubmit, error, saving = false }: MemoryAddFormProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -17333,7 +17333,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     busy?: boolean;            // the screen is reading the file
     onFind: () => void;
   };
-  export function ImportTextStep(props: ImportTextStepProps): JSX.Element;
+  export function ImportTextStep(props: ImportTextStepProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -18670,7 +18670,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;
   };
   export const CODE_WIDGET_PAYLOAD_MAX_BYTES = 16_384;
-  export function CodeWidget(props: CodeWidgetProps): JSX.Element;
+  export function CodeWidget(props: CodeWidgetProps): React.JSX.Element;
   ```
   Markup: root `<div className="tp-code-widget" data-component="CodeWidget" data-state={shown}>` where `shown = state === "ready" && code.trim() === "" ? "error" : state`.
   - `ready`: `<iframe ref={frameRef} className="tp-code-widget__frame" sandbox="allow-scripts" srcDoc={code} title={title} referrerPolicy="no-referrer" />`.
@@ -20245,7 +20245,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     canToggle: boolean;                // false → no switch, an "Always on" badge instead
     onToggle: (change: { moduleId: string; on: boolean }) => void;
   };
-  export function ModuleCard({ module, canToggle, onToggle }: ModuleCardProps): JSX.Element;
+  export function ModuleCard({ module, canToggle, onToggle }: ModuleCardProps): React.JSX.Element;
   ```
   - **Copy** (`type CopyKey = "builtIn" | "coach" | "you" | "alwaysOn" | "on" | "off"`):
     | key | EN | HE |
@@ -20300,7 +20300,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type ModuleProblem = "link" | "script" | "view";
   export type ModuleSummaryProps = { summary: string; checkOk: boolean; problems: ModuleProblem[] };
-  export function ModuleSummary({ summary, checkOk, problems }: ModuleSummaryProps): JSX.Element;
+  export function ModuleSummary({ summary, checkOk, problems }: ModuleSummaryProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -20353,7 +20353,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type PlainModeBannerProps = { on: boolean };
-  export function PlainModeBanner({ on }: PlainModeBannerProps): JSX.Element | null;
+  export function PlainModeBanner({ on }: PlainModeBannerProps): React.JSX.Element | null;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -20448,7 +20448,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     timeZone: string;   // IANA zone from userPreferences.timeZone
     onToggle: (change: { jobId: string; enabled: boolean }) => void;
   };
-  export function ScheduledJobRow(props: ScheduledJobRowProps): JSX.Element;
+  export function ScheduledJobRow(props: ScheduledJobRowProps): React.JSX.Element;
   ```
   - **Copy:**
     | key | EN | HE |
@@ -20522,7 +20522,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onToggleJob: (change: { jobId: string; enabled: boolean }) => void;
     onRetry: () => void;
   };
-  export function ModulesView(props: ModulesViewProps): JSX.Element;
+  export function ModulesView(props: ModulesViewProps): React.JSX.Element;
   ```
   **Layout** (390 px base; classes exactly as listed): root `<div className="tp-page" data-component="PageLayout" data-view="ModulesView" data-plain={plainMode ? "on" : "off"}>`.
   1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div>` + (when `state === "default" && onAskCoach`) `<div className="tp-pagehead__actions"><button type="button" className="tp-btn tp-btn--primary" onClick={onAskCoach}><TpIcon name="coach" size="sm" /><span>{ask}</span></button></div>` `</header>`. This is the only `.tp-btn--primary` on the screen.
@@ -20677,7 +20677,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onAskCoachToFix?: () => void;
     onRetry: () => void;
   };
-  export function ModulePreviewView(props: ModulePreviewViewProps): JSX.Element;
+  export function ModulePreviewView(props: ModulePreviewViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="ModulePreviewView">`.
   1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text">` — `default`: `<p className="tp-small tp-muted" data-eyebrow="">{eyebrow}</p><h1 className="tp-pagehead__title" dir="auto">{draft.name}</h1><p className="tp-pagehead__sub">{sub}</p>`; other states: `<h1 className="tp-pagehead__title">{title}</h1>` `</div></header>`.
@@ -20809,7 +20809,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     title: string;          // stored artifact title; "" shows copy.untitled
     children: ReactNode;    // the body: a Flashcard / Quiz / Checklist / Tracker, which render their own .tp-artifact__body (+ .tp-artifact__foot)
   };
-  export function CoachArtifact(props: CoachArtifactProps): JSX.Element;
+  export function CoachArtifact(props: CoachArtifactProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; values from `page-blocks.html` keys `art.*`):
     | key | EN | HE |
@@ -20864,7 +20864,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onFlip?: (event: { index: number; side: FlashcardSide }) => void;  // side = the side now shown
     onStep?: (event: { index: number }) => void;                        // index = the card now shown (0-based)
   };
-  export function Flashcard(props: FlashcardProps): JSX.Element;
+  export function Flashcard(props: FlashcardProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; values from `page-blocks.html` keys `card.*`, HE already gender-neutral):
     | key | EN | HE |
@@ -20929,7 +20929,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     disabled?: boolean;                 // read-only: radios and Check disabled, no feedback
     onCheck?: (event: { optionId: string; correct: boolean }) => void;
   };
-  export function Quiz(props: QuizProps): JSX.Element;
+  export function Quiz(props: QuizProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; values from `page-blocks.html` keys `qz.*` / `quiz.*`, HE `quiz.pick` rewritten gender-neutral per CONVENTIONS §12):
     | key | EN | HE |
@@ -20986,7 +20986,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     disabled?: boolean;                                          // read-only: every checkbox disabled
     onToggle: (event: { id: string; done: boolean }) => void;   // done = the new value
   };
-  export function Checklist(props: ChecklistProps): JSX.Element;
+  export function Checklist(props: ChecklistProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; `of` / `done` from `page-blocks.html` keys `checklist.of` / `checklist.done`):
     | key | EN | HE |
@@ -21040,7 +21040,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     disabled?: boolean;           // read-only: both buttons disabled
     onStep: (event: { delta: 1 | -1; value: number }) => void;  // value = the new value
   };
-  export function Tracker(props: TrackerProps): JSX.Element;
+  export function Tracker(props: TrackerProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; from `page-blocks.html` keys `tr.goal` / `tr.goal2` / `tr.dec` / `tr.inc`, with the artifact-specific "before Thursday" removed and the HE button labels made gender-neutral per CONVENTIONS §12):
     | key | EN | HE |
@@ -21097,7 +21097,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   export type BillingInterval = "monthly" | "annual";
   export type TierCardTier = { id: TierId; liveMinutesPerDay: number; monthlyPriceUsd: number | null; annualPriceUsd: number | null };
   export type TierCardProps = { tier: TierCardTier; interval: BillingInterval; current: boolean; disabled?: boolean; onChoose?: (id: TierId) => void };
-  export function TierCard(props: TierCardProps): JSX.Element;
+  export function TierCard(props: TierCardProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; from `billing.html`, HE made gender-neutral per CONVENTIONS §12 (including `f.coach`); the trial line drops the hard-coded "$10" because prices are never written in copy):
     | key | EN | HE |
@@ -21173,7 +21173,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     | { kind: "trial"; endsAtMs: number | null; timeZone: string }       // on the trial; endsAtMs null = end date unknown
     | { kind: "grace" }                                                   // status "grace": last payment did not go through
     | { kind: "cancelled"; endsAtMs: number | null; timeZone: string };  // cancelled, access until endsAtMs (null = unknown)
-  export function BillingNotice(props: BillingNoticeProps): JSX.Element;
+  export function BillingNotice(props: BillingNoticeProps): React.JSX.Element;
   ```
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`; early copy from `billing.html` `early.*`, HE rewritten gender-neutral per CONVENTIONS §12; region / plan / none / prices from the existing `set.billing.*` strings with the gendered HE `pricesBody` rewritten):
     | key | EN | HE |
@@ -21253,7 +21253,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCancel: () => void;
     onRetry: () => void;
   };
-  export function BillingView(props: BillingViewProps): JSX.Element;
+  export function BillingView(props: BillingViewProps): React.JSX.Element;
   ```
   - **Layout** (390 px base; classes exactly as listed; no inline styles): root `<div className="tp-page" data-component="PageLayout" data-view="BillingView">`.
     1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`.
@@ -21409,7 +21409,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCancel: () => void;
     onRetry: () => void;
   };
-  export function TrialEndView(props: TrialEndViewProps): JSX.Element;
+  export function TrialEndView(props: TrialEndViewProps): React.JSX.Element;
   ```
   - **Helpers (module-private):** `formatUsd(n)` = `new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }).format(n)`; `formatWhen(ms, timeZone, lang)` = `new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(ms)`; `fill(template, key, node)` splits the template on `"{" + key + "}"` and returns `[before, <span className="tp-num">{node}</span>, after]`.
   - **Layout** (root `<div className="tp-auth" data-view="TrialEndView">` holding one `AuthCard`; classes exactly as listed):
@@ -21609,7 +21609,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onDuplicate: (templateId: string) => Promise<void>;
     onRetry: () => void;
   };
-  export function TemplatesView(props: TemplatesViewProps): JSX.Element;
+  export function TemplatesView(props: TemplatesViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="TemplatesView">`.
   1. Header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div><div className="tp-pagehead__actions"><a className="tp-btn tp-btn--secondary" href="/templates/builder"><TpIcon name="plus" size="sm" /><span>{newTemplate}</span></a>{onAskCoach ? <button type="button" className="tp-btn tp-btn--primary" onClick={onAskCoach}><TpIcon name="sparkle" size="sm" /><span>{ask}</span></button> : null}</div></header>`.
@@ -21740,7 +21740,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSave: (draft: BuilderDraft) => Promise<void>;   // resolves when saved; rejects when it did not go through
     onRetry: () => void;                   // state "error" only
   };
-  export function TemplateBuilderView(props: TemplateBuilderViewProps): JSX.Element;
+  export function TemplateBuilderView(props: TemplateBuilderViewProps): React.JSX.Element;
   ```
   Imports: `TemplateBodyEditor` from `./TemplateBodyEditor`; `ReadView` from `@/components/editor/ReadView`; `StateLoading` from `@/components/states/StateLoading`; `StateError` from `@/components/states/StateError`; `TpIcon`, `TpIconSprite` from `@/components/tempo/TpIcon`; `useLocale` from `@/components/providers/LocaleProvider`; `templatePageDraft` from `@/lib/template-pages`; `dayTokens` from `@/lib/editor/markdown-model`; `type Lang` from `@/lib/i18n`.
   **Frame** (every state; the `(bare)` layout has no shell): root `<div data-component="TemplateBuilderView" data-view="TemplateBuilderView">` containing `<TpIconSprite />`; `<a className="tp-skip" href="#main">{skip}</a>`; `<header className="tp-mtopbar tp-glass bld-top" data-component="MobileTopBar">` with `<a className="tp-btn tp-btn--ghost" href="/templates"><TpIcon name="chevron" size="sm" className="tp-icon--back" /><span>{back}</span></a>`, `<span className="tp-mtopbar__title">{title}</span>` and `<div className="bld-top__end">` holding, in order: the status `<output className="tp-muted tp-small tp-topbar__hide-sm" data-status="">{status}</output>` (only in `default` and only when `online`), the theme button `<button type="button" className="tp-btn tp-btn--ghost tp-btn--icon" aria-pressed={dark} aria-label={dark ? themeLight : themeDark} onClick={onToggleTheme}><TpIcon name={dark ? "sun" : "moon"} /></button>`, and in `default` only the Save button `<button type="button" className="tp-btn tp-btn--primary tp-btn--sm" disabled={!canSave} onClick={save}><TpIcon name="check" size="sm" /><span>{pending ? saving : save}</span></button>`. Then `<main className="tp-app__main bld-main" id="main" tabIndex={-1}>` with `<h1 className="tp-sr-only">{title}</h1>`, then `!online` → the offline banner `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`, then the state body.
@@ -21884,7 +21884,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;                             // state "error" only
   };
   export const RUN_ANSWER_MAX_CHARS = 4000;          // same bound as RUN_ANSWER_MAX (TFV2-0239c); not imported from convex/
-  export function TemplateRunView(props: TemplateRunViewProps): JSX.Element;
+  export function TemplateRunView(props: TemplateRunViewProps): React.JSX.Element;
   ```
   Imports: `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `StateLoading`, `StateError` from `@/components/states/…`; `TpIcon`, `TpIconSprite` from `@/components/tempo/TpIcon`; `useLocale`; `type Lang`.
   **Steps model:** `headings = [...new Set(template.sections)]` (first occurrence order; `templates.apply` fills only the first heading of a name). Step index `0` is the page-name step; step `i ≥ 1` is `headings[i - 1]`. `total = headings.length + 1`.
@@ -22061,7 +22061,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSave: (draft: EditorDraft) => Promise<void>;    // name and description already trimmed; rejects when it did not go through
     onRetry: () => void;                              // state "error" only
   };
-  export function TemplateEditorView(props: TemplateEditorViewProps): JSX.Element;
+  export function TemplateEditorView(props: TemplateEditorViewProps): React.JSX.Element;
   ```
   Imports: the eight helpers and the types `SectionedBody`, `SectionKind`, `TemplateSection` from `@/lib/template-sections`; `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `StateLoading`, `StateError` from `@/components/states/…`; `TpIcon`; `useLocale`; `type Lang`.
   **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="TemplateEditorView">`; `!online` → `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`; then by state: `loading` → `<StateLoading label={loading} rows={5} />`; `error` → `<StateError what={loadError} onRetry={onRetry} />`; `missing` → `<div className="tp-state tp-state--error" role="alert" data-component="StateError" data-missing=""><h1 className="tp-state__title">{missing}</h1><p className="tp-state__body">{missingHint}</p><div className="tp-state__actions"><a className="tp-btn tp-btn--secondary" href="/templates">{backToTemplates}</a></div></div>`; `default` → the form below (`readOnly = template.source === "starter"`, `id = encodeURIComponent(template.templateId)`).
@@ -22209,7 +22209,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onAccept: (proposal: SketchProposal) => Promise<string>;          // resolves the new template id; rejects when it did not save
     onUndoAccept: (templateId: string) => Promise<void>;
   };
-  export function TemplateSketchView(props: TemplateSketchViewProps): JSX.Element;
+  export function TemplateSketchView(props: TemplateSketchViewProps): React.JSX.Element;
   ```
   Imports: `Notice` from `@/components/layout/Notice`; `StateLoading`, `StateError` from `@/components/states/…`; `UndoToast`, `UNDO_WINDOW_MS` from `@/components/habits/UndoToast`; `SKETCH_MAX_CHARS` from `@/lib/template-sketch`; `splitSections` from `@/lib/template-sections`; `TpIcon`; `useLocale`; `type Lang`.
   **Layout:** root `<div className="tp-page tp-page--wide" data-component="PageLayout" data-view="TemplateSketchView">`; `!online` → `<output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline"><span className="tp-notice__icon"><TpIcon name="wifi-off" size="sm" /></span><span className="tp-notice__text">{offline}</span></output>`; header `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{h1}</h1><p className="tp-pagehead__sub">{sub}</p></div><div className="tp-pagehead__actions">{draftStatus ? <output className="tp-muted tp-small" data-draft-status="">{draftStatus === "saving" ? draftSaving : draftSaved}</output> : null}<a className="tp-btn tp-btn--ghost" href="/templates/builder"><TpIcon name="template" size="sm" /><span>{self}</span></a></div></header>`; `state === "loading"` → `<StateLoading label={loading} rows={4} />` and nothing else; else `<div className="tp-split tp-split--even" data-component="Split">` with two `.sk-col` columns:
@@ -22392,7 +22392,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     desc?: string;         // localised by the caller
     children?: ReactNode;  // SettingRow elements or any body (a dial, a form)
   };
-  export function SettingsSection({ id, title, desc, children }: SettingsSectionProps): JSX.Element;
+  export function SettingsSection({ id, title, desc, children }: SettingsSectionProps): React.JSX.Element;
   // <section className="tp-settings-section" aria-labelledby={`${id}-title`} data-component="SettingsSection">
   //   <div className="tp-settings-section__head">
   //     <h2 className="tp-settings-section__title" id={`${id}-title`}>{title}</h2>
@@ -22445,7 +22445,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     stack?: boolean;     // control wraps onto its own full-width line
     tone?: "danger";     // destructive row: label in --tp-danger
   };
-  export function SettingRow({ id, label, help, status, control, stack = false, tone }: SettingRowProps): JSX.Element;
+  export function SettingRow({ id, label, help, status, control, stack = false, tone }: SettingRowProps): React.JSX.Element;
   // <div className={stack ? "tp-setting-row tp-setting-row--stack od-row" : "tp-setting-row od-row"} data-tone={tone} data-component="SettingRow">
   //   <div className="tp-setting-row__text">
   //     <span className="tp-setting-row__label" id={`${id}-label`}>{label}</span>
@@ -22511,7 +22511,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onConfirm: () => void;
     onCancel: () => void;
   };
-  export function ConfirmDialog(props: ConfirmDialogProps): JSX.Element | null;
+  export function ConfirmDialog(props: ConfirmDialogProps): React.JSX.Element | null;
   ```
   - **Markup** (`open === false` → `null`):
     `<div className="tp-sheet-scrim" aria-hidden="true" data-testid={`${id}-scrim`} onClick={busy ? undefined : onCancel} />` then
@@ -22575,7 +22575,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;             // reload after "error"
   };
   export const ASK_FOUNDER_SUBJECT_MAX = 120;
-  export function AskFounderView(props: AskFounderViewProps): JSX.Element;
+  export function AskFounderView(props: AskFounderViewProps): React.JSX.Element;
   ```
   - **Imports:** `useEffect`, `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `TpIcon` from `@/components/tempo/TpIcon`; `Form` from `@/components/forms/Form`; `TextInput` from `@/components/forms/TextInput`; `Textarea` from `@/components/forms/Textarea`; `Radio`, `RadioGroup` from `@/components/forms/Radio`; `Notice` from `@/components/layout/Notice`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `SettingsSection` from `@/components/settings/SettingsSection`.
   - **Layout** (390 px base; classes exactly as listed): root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="AskFounderView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />` (default §12 line) in every state. 3) Body by `state`: `loading` → `<StateLoading label={copy.loading} rows={3} />`; `error` → `<StateError what={copy.loadError} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` with `sending === "sent"` → the **Sent panel**; `default` otherwise → the **form section**.
@@ -22745,7 +22745,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     tabIndex?: number;     // the marketing <main id="main" tabIndex={-1}> skip-link target
     children: ReactNode;
   };
-  export function Container({ as = "div", id, className, tabIndex, children }: ContainerProps): JSX.Element;
+  export function Container({ as = "div", id, className, tabIndex, children }: ContainerProps): React.JSX.Element;
   ```
   - **Markup:** `const Tag = as;` → `<Tag id={id} tabIndex={tabIndex} className={className ? \`tp-container ${className}\` : "tp-container"} data-component="Container">{children}</Tag>`.
   - **Copy:** none. The component has no visible strings of its own.
@@ -22788,7 +22788,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     current: MarketingPage;     // which marketing page is showing
     languageSwitch: ReactNode;  // the screen passes <LanguageSwitch current={lang} onChoose={setLang} />
   };
-  export function SiteHeader({ current, languageSwitch }: SiteHeaderProps): JSX.Element;
+  export function SiteHeader({ current, languageSwitch }: SiteHeaderProps): React.JSX.Element;
   ```
   - **Imports:** `Link` from `next/link`; `type ReactNode` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`. `const { lang } = useLocale(); const copy = COPY[lang];`
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
@@ -22862,7 +22862,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     secondary?: HeroAction;
     note?: string;
   };
-  export function Hero({ titleId, eyebrow, title, lede, primary, secondary, note }: HeroProps): JSX.Element;
+  export function Hero({ titleId, eyebrow, title, lede, primary, secondary, note }: HeroProps): React.JSX.Element;
   ```
   - **Imports:** `Link` from `next/link` only.
   - **Markup:**
@@ -22928,7 +22928,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     flip?: boolean;           // default false
     headingLevel?: 2 | 3;     // default 3
   };
-  export function FeatureRow({ titleId, eyebrow, title, body, figure, flip = false, headingLevel = 3 }: FeatureRowProps): JSX.Element;
+  export function FeatureRow({ titleId, eyebrow, title, body, figure, flip = false, headingLevel = 3 }: FeatureRowProps): React.JSX.Element;
   ```
   - **Markup:** `const Heading = headingLevel === 2 ? "h2" : "h3";`
     ```tsx
@@ -22981,7 +22981,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type HowItWorksStep = { title: string; body: string };
   export type HowItWorksProps = { steps: HowItWorksStep[]; labelledBy?: string }; // labelledBy = id of the section heading
-  export function HowItWorks({ steps, labelledBy }: HowItWorksProps): JSX.Element;
+  export function HowItWorks({ steps, labelledBy }: HowItWorksProps): React.JSX.Element;
   ```
   - **Markup:** `<ol className="tp-steps" data-component="HowItWorks" aria-labelledby={labelledBy}>{steps.map((step, index) => <li className="tp-step" key={step.title}><span className="tp-step__num" aria-hidden="true">{index + 1}</span><h3 className="tp-step__title">{step.title}</h3><p className="tp-step__body">{step.body}</p></li>)}</ol>`.
   - **Copy:** none built in; every visible string is a prop. Digits inside a Hebrew `body` are the caller's to isolate (the landing screen wraps them in U+2066/U+2069, TFV2-0303b).
@@ -23022,7 +23022,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   export type QuoteProps = { text: string; by: string };
-  export function Quote({ text, by }: QuoteProps): JSX.Element;
+  export function Quote({ text, by }: QuoteProps): React.JSX.Element;
   ```
   - **Markup:** `<figure className="tp-quote" data-component="Quote"><blockquote dir="auto">{text}</blockquote><figcaption dir="auto">{by}</figcaption></figure>`.
   - **Copy:** none built in; both strings are props.
@@ -23064,7 +23064,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     interval: BillingInterval;  // the landing passes "monthly"
     joinHref: string;           // the landing passes "/sign-up"
   };
-  export function Pricing({ tiers, interval, joinHref }: PricingProps): JSX.Element;
+  export function Pricing({ tiers, interval, joinHref }: PricingProps): React.JSX.Element;
   /** True only when at least one paid tier exists and every tier whose id is not "trial" has non-null prices with Math.round(annualPriceUsd * 100) === Math.round(monthlyPriceUsd * 1000). */
   export function showsAnnualNote(tiers: TierCardTier[]): boolean;
   ```
@@ -23124,7 +23124,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   ```ts
   export type FaqItem = { id: string; q: string; a: string };
   export type FAQProps = { items: FaqItem[] };
-  export function FAQ({ items }: FAQProps): JSX.Element;
+  export function FAQ({ items }: FAQProps): React.JSX.Element;
   ```
   - **Imports:** `TpIcon` from `@/components/tempo/TpIcon` only.
   - **Markup:** `<div className="tp-faq" data-component="FAQ">{items.map((item) => <details key={item.id} data-faq-id={item.id}><summary><span>{item.q}</span><TpIcon name="down" className="tp-faq__icon" /></summary><p className="tp-faq__answer">{item.a}</p></details>)}</div>`.
@@ -23172,7 +23172,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     current: MarketingPage;
     languageSwitch: ReactNode;  // the screen passes <LanguageSwitch current={lang} long onChoose={setLang} />
   };
-  export function SiteFooter({ current, languageSwitch }: SiteFooterProps): JSX.Element;
+  export function SiteFooter({ current, languageSwitch }: SiteFooterProps): React.JSX.Element;
   ```
   - **Imports:** `Link` from `next/link`; `type ReactNode` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `type MarketingPage` from `./SiteHeader`.
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11):
@@ -23238,7 +23238,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     long?: boolean;                    // false (default): "EN" / "עב" (header); true: "English" / "עברית" (footer)
     onChoose: (lang: Lang) => void;    // the screen passes useLocale().setLang
   };
-  export function LanguageSwitch({ current, long = false, onChoose }: LanguageSwitchProps): JSX.Element;
+  export function LanguageSwitch({ current, long = false, onChoose }: LanguageSwitchProps): React.JSX.Element;
   ```
   - **Imports:** `type MouseEvent` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`.
   - **Copy** (one `COPY: Record<Lang, Record<"label", string>>`, CONVENTIONS §11): `label` — EN "Language" / HE "שפה". The language names are fixed, not translated, and each link carries its own `lang`: `NAMES = { en: { short: "EN", long: "English" }, he: { short: "עב", long: "עברית" } } as const`.
@@ -23291,10 +23291,10 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0303a / evidence: <DONE output> / changed: apps/web/components/marketing/LandingFigures.tsx, apps/web/app/e2e/components/landing-figures/page.tsx, tests/e2e/screens/landing-figures.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
-  export function PagesFigure(): JSX.Element;      // "Today" + two task rows
-  export function TemplatesFigure(): JSX.Element;  // "Templates" + three list rows
-  export function CoachFigure(): JSX.Element;      // one pending task proposal
-  export function VoiceFigure(): JSX.Element;      // three transcript lines + an action confirmation
+  export function PagesFigure(): React.JSX.Element;      // "Today" + two task rows
+  export function TemplatesFigure(): React.JSX.Element;  // "Templates" + three list rows
+  export function CoachFigure(): React.JSX.Element;      // one pending task proposal
+  export function VoiceFigure(): React.JSX.Element;      // three transcript lines + an action confirmation
   ```
   - **Imports:** `useId` from `react`; `TpIcon` from `@/components/tempo/TpIcon`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`. Each function starts `const { lang } = useLocale(); const copy = COPY[lang];`.
   - **Copy** (one `COPY: Record<Lang, Record<CopyKey, string>>`, CONVENTIONS §11; `{n}` is replaced as stated in Markup):
@@ -23379,7 +23379,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
       const { lang } = await searchParams;
       return META[isLang(lang) ? lang : "en"];
     }
-    export default function Page(): JSX.Element {
+    export default function Page(): React.JSX.Element {
       return <Suspense fallback={null}><LandingScreen /></Suspense>;
     }
     ```
@@ -23387,7 +23387,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     ```ts
     export type LandingState = "default" | "empty" | "loading" | "error" | "offline" | "prices-loading";
     export type LandingView = { online: boolean; tiers: TierCardTier[] | null }; // null = prices still loading
-    export function LandingScreen(): JSX.Element;
+    export function LandingScreen(): React.JSX.Element;
     ```
     Body: `const forced = useE2EState(); const liveOnline = useOnline(); const { lang, setLang } = useLocale(); const copy = COPY[lang]; const liveTiers = useQuery(api.billing.listTiers, forced !== null ? "skip" : {});` `const key: LandingState = forced !== null && forced in FIXTURES ? (forced as LandingState) : "default";` `const view: LandingView = forced !== null ? FIXTURES[key] : { online: liveOnline, tiers: liveTiers ?? null };` `useEffect(() => { document.title = copy.docTitle; }, [copy.docTitle]);` (the server picks the title from `?lang=` only; this follows a saved choice). Every rendered copy string passes through `const isolate = (text: string): string => text.replace(/\d+/g, (digits) => \`\u2066${digits}\u2069\`);` so digits are LTR isolates inside Hebrew (CONVENTIONS §12).
   - **Page structure** (in order):
@@ -23526,7 +23526,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     ```ts
     export type AboutState = "default" | "empty" | "loading" | "error" | "offline";
     export type AboutView = { online: boolean };
-    export default function Page(): JSX.Element; // <Suspense fallback={null}><AboutScreen /></Suspense>
+    export default function Page(): React.JSX.Element; // <Suspense fallback={null}><AboutScreen /></Suspense>
     ```
     `AboutScreen`: `const forced = useE2EState(); const liveOnline = useOnline(); const { lang, setLang } = useLocale(); const copy = COPY[lang];` `const key: AboutState = forced !== null && forced in FIXTURES ? (forced as AboutState) : "default";` `const online = forced !== null ? FIXTURES[key].online : liveOnline;` `useEffect(() => { document.title = copy.docTitle; }, [copy.docTitle]);` Every rendered copy string with digits passes through `const isolate = (text: string): string => text.replace(/\d+/g, (digits) => \`\u2066${digits}\u2069\`);` (only `p3Body` has one).
   - **Page structure:**
@@ -23624,7 +23624,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     ```ts
     export type ChangelogState = "default" | "empty" | "loading" | "error" | "offline";
     export type ChangelogView = { online: boolean };
-    export default function Page(): JSX.Element; // <Suspense fallback={null}><ChangelogScreen /></Suspense>
+    export default function Page(): React.JSX.Element; // <Suspense fallback={null}><ChangelogScreen /></Suspense>
     const KIND: Record<ChangeKind, { label: "kindNew" | "kindBetter" | "kindFixed"; icon: TpIconName; flip: boolean; tone: BadgeTone }> = {
       new: { label: "kindNew", icon: "sparkle", flip: false, tone: "info" },
       better: { label: "kindBetter", icon: "arrow", flip: true, tone: "neutral" },
@@ -23743,7 +23743,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSignOut: () => void;
     onRetry: () => void;
   };
-  export function ProfileView(props: ProfileViewProps): JSX.Element;
+  export function ProfileView(props: ProfileViewProps): React.JSX.Element;
   ```
   - **Imports:** `useEffect`, `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `Form`, `TextInput`, `Select`, `Radio` + `RadioGroup` from `@/components/forms/<Name>`; `StateEmpty`, `StateLoading`, `StateError`, `StateOffline` from `@/components/states/<Name>`; `SettingsSection`, `SettingRow` from `@/components/settings/<Name>`.
   - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="ProfileView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />` in every state. 3) Body: `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` → `<div className="sp-body">` with two sections:
@@ -23972,7 +23972,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onDial: (value: number) => void;   // every slider move
     onRetry: () => void;
   };
-  export function PreferencesView(props: PreferencesViewProps): JSX.Element;
+  export function PreferencesView(props: PreferencesViewProps): React.JSX.Element;
   ```
   - **Imports:** `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `SettingsSwitch`, `Segmented` from `@/components/settings/controls`; `SettingsSection`, `SettingRow` from `@/components/settings/<Name>`; `Dial` from `@/components/forms/Dial`; `Badge` from `@/components/layout/Badge`; the four State components.
   - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="PreferencesView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p><output className="tp-help">{status}</output></div></header>` — the `output` is always rendered (empty when `status === ""`). 2) `online === false` → `<StateOffline />`. 3) Body: `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `loading` → `<div className="pr-body"><StateLoading label={copy.loading} rows={5} />{extra}</div>`; `default` → `<div className="pr-body">` with, in order: `saveError` → `<p className="tp-error-text" role="alert"><TpIcon name="alert" size="sm" /><span>{copy.saveError}</span></p>`; the three sections; `{extra}`.
@@ -24179,7 +24179,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onSignOutRetry: () => void;
     onRetry: () => void;
   };
-  export function PrivacyView(props: PrivacyViewProps): JSX.Element;
+  export function PrivacyView(props: PrivacyViewProps): React.JSX.Element;
   ```
   - **Imports:** `useRef`, `useState` from `react`; `Link` from `next/link`; `useLocale`; `type Lang`; `TpIcon`; `SettingsSwitch` from `@/components/settings/controls`; `SettingsSection`, `SettingRow`, `ConfirmDialog` from `@/components/settings/<Name>`; `Notice`, `Badge` from `@/components/layout/<Name>`; the four State components.
   - **Layout:** root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-view="PrivacyView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{copy.title}</h1><p className="tp-pagehead__sub">{copy.sub}</p></div></header>`. 2) `online === false` → `<StateOffline />`. 3) Body: `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `signed-out` → `<StateEmpty title={copy.signedOutTitle} action={<Link href="/sign-in" className="tp-btn tp-btn--secondary" data-component="Button">{copy.signIn}</Link>} />`; `default` with `deletion === "signed-out-failed"` → `<Notice tone="danger" title={copy.deletedSignOut} live="alert" action={<button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" data-component="Button" onClick={onSignOutRetry}>{copy.signOutRetry}</button>} />` and nothing else; `default` otherwise → `<div className="pv-body">` with three sections, then the dialog:
@@ -24732,7 +24732,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     /** "floating" (default) is fixed to the viewport corner; "inline" sits in the flow (harness). */
     placement?: "floating" | "inline";
   };
-  export function InstallPrompt({ busy, onInstall, onDismiss, placement = "floating" }: InstallPromptProps): JSX.Element;
+  export function InstallPrompt({ busy, onInstall, onDismiss, placement = "floating" }: InstallPromptProps): React.JSX.Element;
   ```
   Markup (exact): `<aside className="tp-install-prompt tp-notice" data-component="InstallPrompt" data-tone="info" data-placement={placement} aria-labelledby={titleId}>` (`const titleId = useId();`) → `<span className="tp-notice__icon"><TpIcon name="download" size="sm" /></span>` → `<span className="tp-notice__text"><span className="tp-notice__title" id={titleId}>{copy.title}</span><span>{copy.body}</span></span>` → `<span className="tp-notice__action tp-install-prompt__actions"><button type="button" className="tp-btn tp-btn--primary tp-btn--sm" onClick={onInstall} disabled={busy} aria-busy={busy}>{busy ? copy.installing : copy.install}</button><button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" onClick={onDismiss}>{copy.notNow}</button></span>`.
   - Stylesheet `InstallPrompt.css` (Case B, every rule):
@@ -24798,7 +24798,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   const getSnapshot = (): InstallState => store?.getState() ?? "unavailable";
   const getServerSnapshot = (): InstallState => "unavailable";
 
-  export function InstallPromptMount(): JSX.Element | null {
+  export function InstallPromptMount(): React.JSX.Element | null {
     const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
     if (state !== "available" && state !== "prompting") return null;
     return <InstallPrompt busy={state === "prompting"} onInstall={() => void store?.prompt()} onDismiss={() => store?.dismiss()} />;
@@ -24888,7 +24888,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     /** Already-translated change lines, in display order. */
     changes: readonly { kind: ChangeKind; text: string }[];
   };
-  export function ChangelogEntry({ version, date, changes }: ChangelogEntryProps): JSX.Element;
+  export function ChangelogEntry({ version, date, changes }: ChangelogEntryProps): React.JSX.Element;
   ```
   Markup (exact, same as the page): `const headId = \`v${version.replace(/\W/g, "-")}\`;` → `<article className="cl-entry" aria-labelledby={headId} data-component="ChangelogEntry">` → `<div className="cl-entry__head"><h2 className="tp-h2" id={headId}><span>{copy.version}</span> <span className="tp-num">{version}</span></h2><time className="tp-muted tp-num" dateTime={date}>{changelogDate(date, lang)}</time></div>` → when `changes.length > 0`: `<ul className="cl-changes">` with one `<li className="cl-change" key={\`${index}-${change.kind}\`}>` per change: `<span className="tp-badge" data-tone={KIND[kind].tone}><TpIcon name={KIND[kind].icon} size="sm" /><span>{copy[kind]}</span></span>` then `<span>{change.text}</span>`; when empty, no `<ul>`.
   - Tokens (from the existing classes): `.tp-h2` heading size, `--tp-ink-muted` date (`.tp-muted`), badge `--tp-info-wash`/`--tp-info` (new), neutral (better), `--tp-done-wash`/`--tp-done` (fixed); spacing `--tp-space-4` (`.cl-entry` gap), `--tp-space-10` block padding, `--tp-space-3` between changes; `1px solid var(--tp-line)` top border.
@@ -26846,7 +26846,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     disabled?: boolean;     // true → not pressable (a save is in flight)
     onFlip: (next: FlashcardSide) => void; // called with the other side
   };
-  export function Flashcard(props: FlashcardProps): JSX.Element;
+  export function Flashcard(props: FlashcardProps): React.JSX.Element;
   ```
   Copy (`type CopyKey = "question" | "answer" | "counter" | "hintFront" | "hintBack"; const COPY: Record<Lang, Record<CopyKey, string>>`; read with `const { lang } = usePrefs(); const copy = COPY[lang];`):
 
@@ -26916,7 +26916,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCheck: () => void;
     onNext: () => void;
   };
-  export function Quiz(props: QuizProps): JSX.Element;
+  export function Quiz(props: QuizProps): React.JSX.Element;
   ```
   Copy (`type CopyKey = "counter" | "check" | "next" | "correct" | "notQuite" | "answerIs" | "correctAnswer" | "yourAnswer"`; `const { lang, colors } = usePrefs(); const copy = COPY[lang];`):
 
@@ -29180,7 +29180,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
       onDelete: (keyId: string) => void;
       onRetry: () => void;
     };
-    export function ByokKeyVault(props: ByokKeyVaultProps): JSX.Element;
+    export function ByokKeyVault(props: ByokKeyVaultProps): React.JSX.Element;
     ```
     Imports: `useRef`, `useState`, `type FormEvent` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `BYOK_MAX_KEYS` from `@/convex/lib/byokInput`. Copy through one `COPY: Record<Lang, Record<CopyKey, string>>` constant (§11); `{n}` and `{label}` placeholders filled with `.replace`; a number placed into a string is wrapped as `\u2066<n>\u2069` (LTR isolate).
   - **Structure** (root `<div data-component="ByokKeyVault" aria-busy={status === "loading" ? "true" : undefined}>`, in order):
@@ -30349,7 +30349,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     /** The element for the title: "h2" alone, Radix `Dialog.Title` inside VoiceCall. */
     titleAs?: ElementType;
   };
-  export function VoiceCallView(props: VoiceCallViewProps): JSX.Element;
+  export function VoiceCallView(props: VoiceCallViewProps): React.JSX.Element;
   ```
   Body: the current `VoiceCall` body from `const { t } = useLocale();` through the closing `</section>`, unchanged, except (a) `props.open` is not read, (b) `<Dialog.Title className="tp-call__title">{t("vc.title")}</Dialog.Title>` becomes `<TitleAs className="tp-call__title">{t("vc.title")}</TitleAs>` with `const TitleAs = props.titleAs ?? "h2";`, (c) no `Dialog` import.
   VoiceCall (`"use client"`):
@@ -30510,7 +30510,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { transcript: "מה נאמר", you: "אני", coach: "המאמן", notSent: "לא נשלח. אפשר לומר שוב." },
   };
   export type LiveTranscriptProps = { lines: readonly CallLine[]; onReadAloud?: (line: CallLine) => void };
-  export function LiveTranscript({ lines, onReadAloud }: LiveTranscriptProps): JSX.Element | null;
+  export function LiveTranscript({ lines, onReadAloud }: LiveTranscriptProps): React.JSX.Element | null;
   ```
   Body: `const { lang } = useLocale(); const copy = COPY[lang]; const [reading, setReading] = useState<string | null>(null); if (lines.length === 0) return null;` then `<ol className="tp-call__transcript" aria-live="polite" aria-label={copy.transcript} data-component="LiveTranscript">`, one `<li className="tp-call-line" data-who={line.who} data-live={line.live || undefined} key={line.id}>` per line holding `<span className="tp-call-line__who">{line.who === "you" ? copy.you : copy.coach}</span>`, `<span className="tp-call-line__text" dir="auto">{line.text}</span>`, `{line.notSent ? <span className="tp-muted tp-small" data-component="CallLineNotSent">{copy.notSent}</span> : null}` and, when `line.who === "coach" && onReadAloud`, `<ReadAloudButton pressed={reading === line.id} onToggle={(next) => { setReading(next ? line.id : null); onReadAloud(line); }} />`.
   Tokens (tempo.css): list `--tp-paper` ground, `1px solid var(--tp-line)`, `--tp-radius-lg`, `--tp-space-4` padding, `--tp-space-3` gap, max height `38vh`; who label `--tp-text-xs` `--tp-ink-muted`; live text `--tp-ink-muted`. States (harness order): `default` (`[{ id: "l1", who: "you", text: "What should I do first?" }, { id: "l2", who: "coach", text: "Start with the email to Dana." }]`, with `onReadAloud`); `live` (`[{ id: "you-live", who: "you", text: "and then the", live: true }]`); `not-sent` (`[{ id: "l3", who: "you", text: "Move the dentist", notSent: true }]`); `no-read` (the `default` lines, no `onReadAloud`); `empty` (`[]`). Loading / error / offline / success / disabled: n/a (the call shows them). RTL: each text `dir="auto"`; the read-aloud toggle sits at the inline end (grid column 2). Keyboard: only the Read aloud toggles are focusable (Enter/Space). Screen reader: a polite live list named "What was said" / "מה נאמר"; each line starts with its who label.
@@ -30554,7 +30554,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { mute: "כיבוי המיקרופון", unmute: "הפעלת המיקרופון", micOn: "המיקרופון פועל", micOff: "המיקרופון כבוי" },
   };
   export type MicToggleProps = { on: boolean; onToggle: () => void };
-  export function MicToggle({ on, onToggle }: MicToggleProps): JSX.Element;
+  export function MicToggle({ on, onToggle }: MicToggleProps): React.JSX.Element;
   ```
   Markup: `<div className="tp-call__micwrap" data-component="MicToggle"><button className="tp-call__mic" type="button" aria-pressed={on} aria-label={on ? copy.mute : copy.unmute} onClick={onToggle}><TpIcon name={on ? "mic" : "mic-off"} /></button><span className="tp-call__mic-label" aria-hidden="true">{on ? copy.micOn : copy.micOff}</span></div>` (`TpIcon` from `@/components/tempo/TpIcon`, `useLocale` from `@/components/providers/LocaleProvider`, `Lang` from `@/lib/i18n`). Tokens (tempo.css): 96 px circle (`calc(var(--tp-space-20) + var(--tp-space-4))`), on = `--tp-accent` / `--tp-on-accent`, off = `--tp-paper` / `--tp-ink` with `2px solid var(--tp-line-control)`, icon `--tp-space-8`, label `--tp-text-sm` 600, press scale via `--tp-dur-fast`. States: `on` (`on: true`), `off` (`on: false`). Loading / empty / error / offline / success: n/a; disabled n/a (the call hides the mic when controls do not show). RTL: centred column, no direction-specific layout. Keyboard: native button (Enter, Space). Screen reader: "Turn mic off, toggle button, pressed" / "Turn mic on, toggle button, not pressed"; the visible word is `aria-hidden` (it repeats the state). Breakpoints: none. Motion: 120 ms scale on press.
 - **TESTS:**
@@ -30591,7 +30591,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   type CopyKey = "interrupt";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { interrupt: "Interrupt" }, he: { interrupt: "לקטוע" } };
   export type InterruptProps = { enabled: boolean; onInterrupt: () => void };
-  export function Interrupt({ enabled, onInterrupt }: InterruptProps): JSX.Element;
+  export function Interrupt({ enabled, onInterrupt }: InterruptProps): React.JSX.Element;
   ```
   Markup: `<button className="tp-btn tp-btn--secondary" type="button" data-action="call-interrupt" data-component="Interrupt" disabled={!enabled} onClick={onInterrupt}><TpIcon name="hand" size="sm" /><span>{copy.interrupt}</span></button>`. Tokens: Stage 1 secondary button (`--tp-paper` ground, `1px solid var(--tp-line-control)`, `--tp-radius-md`, 44 px tall via `--tp-touch`); disabled uses the Stage 1 disabled opacity. States: `enabled`, `disabled`. Loading / empty / error / offline / success: n/a. RTL: icon at the inline start. Keyboard: native button; disabled is skipped by Tab. Screen reader: "Interrupt, button" / "לקטוע, לחצן", announced dimmed when disabled. Breakpoints: none. Motion: Stage 1 button transition (≤ 120 ms).
 - **TESTS:**
@@ -30628,7 +30628,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   type CopyKey = "end";
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { end: "End call" }, he: { end: "סיום שיחה" } };
   export type EndCallProps = { onEnd: () => void };
-  export function EndCall({ onEnd }: EndCallProps): JSX.Element;
+  export function EndCall({ onEnd }: EndCallProps): React.JSX.Element;
   ```
   Body: `const fired = useRef(false);` and `<button className="tp-btn tp-btn--danger" type="button" data-action="call-end" data-component="EndCall" onClick={() => { if (fired.current) return; fired.current = true; onEnd(); }}><TpIcon name="phone-off" size="sm" /><span>{copy.end}</span></button>`. (The button unmounts when the call ends, because `VoiceCallView` shows Back instead, so a new call gets a fresh guard.) Tokens: Stage 1 danger button (`--tp-danger` ground, `--tp-on-accent` text, `--tp-radius-md`, `--tp-touch` height). States: `default`. Loading / empty / error / offline / success / disabled: n/a. RTL: icon at the inline start. Keyboard: native button. Screen reader: "End call, button" / "סיום שיחה, לחצן". Breakpoints: none. Motion: Stage 1 button transition.
 - **TESTS:**
@@ -30668,7 +30668,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { hold: "להחזיק כדי לדבר", release: "מקשיבים… אפשר לשחרר כדי לשלוח", help: "מחזיקים עם הסמן, או מחזיקים רווח או Enter. משחררים כדי לשלוח." },
   };
   export type PushToTalkProps = { onPressStart: () => void; onPressEnd: () => void };
-  export function PushToTalk({ onPressStart, onPressEnd }: PushToTalkProps): JSX.Element;
+  export function PushToTalk({ onPressStart, onPressEnd }: PushToTalkProps): React.JSX.Element;
   ```
   Body: `const [holding, setHolding] = useState(false); const helpId = useId();` `const start = () => { if (holding) return; setHolding(true); onPressStart(); };` `const end = () => { if (!holding) return; setHolding(false); onPressEnd(); };` `const onKey = (event: KeyboardEvent<HTMLButtonElement>, down: boolean) => { if (event.key !== " " && event.key !== "Enter") return; event.preventDefault(); if (down) start(); else end(); };` Markup: `<><button className="tp-ptt" type="button" data-pressed={holding} aria-pressed={holding} aria-describedby={helpId} data-component="PushToTalk" onPointerDown={start} onPointerUp={end} onPointerLeave={end} onKeyDown={(event) => onKey(event, true)} onKeyUp={(event) => onKey(event, false)}><TpIcon name="mic" size="sm" /><span data-label="">{holding ? copy.release : copy.hold}</span></button><span className="tp-sr-only" id={helpId}>{copy.help}</span></>`. Tokens (tempo.css): pill (`--tp-radius-pill`), min height `--tp-space-16`, `2px solid var(--tp-line-control)`, `--tp-paper` / `--tp-ink`; held = `--tp-ink` ground, `--tp-paper` text, scale 0.98 over `--tp-dur-fast`. States: `default` (not held); held is reached by the TESTS interactions. Loading / empty / error / offline / success / disabled: n/a (the call hides it without controls). RTL: icon at the inline start. Keyboard: Space or Enter held = talking, released = send (key repeat is ignored because `start` returns while holding). Screen reader: "Hold to talk, toggle button, not pressed", described by the help text. Breakpoints: none. Motion: 120 ms scale.
 - **TESTS:**
@@ -30709,7 +30709,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { before: "נשארו", beforeOne: "נשארה", after: "דקות היום", afterOne: "דקה היום", low: "הזמן כמעט נגמר" },
   };
   export type CallMinutesProps = { minutesLeft: number };
-  export function CallMinutes({ minutesLeft }: CallMinutesProps): JSX.Element;
+  export function CallMinutes({ minutesLeft }: CallMinutesProps): React.JSX.Element;
   ```
   Body: `const low = minutesLow(minutesLeft); const one = minutesLeft === 1; const before = one ? copy.beforeOne : copy.before; const after = one ? copy.afterOne : copy.after;` Markup: `<span className="tp-call__minutes" data-low={low || undefined} data-component="CallMinutes"><TpIcon name="clock" size="sm" />{before ? <span>{before}</span> : null}{before ? " " : null}<span className="tp-num">{minutesLeft}</span> <span>{after}</span>{low ? <span> · {copy.low}</span> : null}</span>` (`minutesLow` from `@/lib/voice-call`). Tokens (tempo.css): pill `--tp-radius-pill`, `--tp-space-3` inline padding, `--tp-text-xs` 600, `--tp-sunken` / `--tp-ink-muted`; low `--tp-caution-wash` / `--tp-caution`. States (harness order): `plenty` (12), `low` (5), `one` (1), `none` (0). Loading / empty / error / offline / success / disabled: n/a (hidden until the server sends a number). RTL: the number is an LTR isolate (`.tp-num`); Hebrew reads "נשארו 12 דקות היום". Screen reader: plain text, read in order. Breakpoints: none. Motion: none.
 - **TESTS:**
@@ -30750,7 +30750,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     he: { undo: "ביטול", undone: "בוטל. שום דבר לא נוסף." },
   };
   export type CallActionConfirmProps = { text: string; undone: boolean; onUndo: () => void };
-  export function CallActionConfirm({ text, undone, onUndo }: CallActionConfirmProps): JSX.Element;
+  export function CallActionConfirm({ text, undone, onUndo }: CallActionConfirmProps): React.JSX.Element;
   ```
   Markup: `<output className="tp-call-action" data-component="CallActionConfirm" data-undone={undone || undefined}><span className="tp-call-action__icon"><TpIcon name={undone ? "undo" : "check"} size="sm" /></span><span className="tp-call-action__text" dir="auto">{undone ? copy.undone : text}</span>{undone ? null : <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={onUndo}><TpIcon name="undo" size="sm" /><span>{copy.undo}</span></button>}</output>`. `text` is the caller's sentence (data, shown as given). Tokens (tempo.css): `--tp-paper`, `1px solid var(--tp-line)`, `--tp-radius-lg`, icon `--tp-done` (undone `--tp-ink-muted`), text `--tp-text-sm`; entry `tp-rise` `--tp-dur-slow`. States: `default` (`text: "Added “call the bank” to Today"`, `undone: false`), `undone` (`undone: true`). Loading / empty / error / offline / disabled: n/a. RTL: tempo.css swaps the asymmetric padding under `[dir="rtl"]`; text `dir="auto"`. Keyboard: the Undo button. Screen reader: `<output>` is a status region, so the sentence and the undone line are announced. Breakpoints: none (width `min(100%, 60ch)`). Motion: 240 ms rise.
 - **TESTS:**
@@ -30787,7 +30787,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   const COPY: Record<Lang, Record<CopyKey, string>> = { en: { label: "Call language" }, he: { label: "שפת השיחה" } };
   const NAME: Record<Lang, string> = { en: "English", he: "עברית" };
   export type LanguageChipProps = { lang: Lang; onChange: (next: Lang) => void };
-  export function LanguageChip({ lang, onChange }: LanguageChipProps): JSX.Element;
+  export function LanguageChip({ lang, onChange }: LanguageChipProps): React.JSX.Element;
   ```
   Markup: `const other: Lang = lang === "en" ? "he" : "en";` `<button className="tp-lang-chip" type="button" aria-label={copy.label + ": " + NAME[lang]} data-component="LanguageChip" data-lang={lang} onClick={() => onChange(other)}><TpIcon name="globe" size="sm" /><span lang={lang} data-lang-current="">{NAME[lang]}</span><span className="tp-lang-chip__other" lang={other}>{NAME[other]}</span></button>`. Tokens (tempo.css): pill, `--tp-touch` min height, `1px solid var(--tp-line-control)`, `--tp-paper` / `--tp-ink`, `--tp-text-sm` 600; the other name `--tp-ink-muted` 400. States: `english` (`lang: "en"`), `hebrew` (`lang: "he"`). Loading / empty / error / offline / success / disabled: n/a. RTL: flex row mirrors; each name keeps its own `lang`. Keyboard: native button. Screen reader: "Call language: English, button" / "שפת השיחה: עברית, לחצן". Breakpoints: none. Motion: none.
 - **TESTS:**
@@ -30907,7 +30907,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     if (availability.available) return true;
     return availability.reason === "language" || availability.reason === "budget" || availability.reason === "resting";
   }
-  export function VoiceStartButton({ availability, disabled, onStart }: VoiceStartButtonProps): JSX.Element | null;
+  export function VoiceStartButton({ availability, disabled, onStart }: VoiceStartButtonProps): React.JSX.Element | null;
   ```
   Body: `const { lang } = useLocale(); const copy = COPY[lang]; const reasonId = useId(); if (!availability || !voiceStartShown(availability)) return null; const reason = availability.available || availability.reason === null ? null : unavailableText(availability.reason, lang);` Markup: `<span data-component="VoiceStart" style={{ marginInlineStart: "auto", display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "var(--tp-space-2)" }}><button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={disabled || !availability.available} aria-describedby={reason ? reasonId : undefined} onClick={onStart}><TpIcon name="mic" size="sm" /><span>{copy.talk}</span></button>{reason ? <span className="tp-muted tp-small" id={reasonId} data-reason={availability.reason ?? undefined}>{reason}</span> : null}</span>`.
   CoachChat: add `import { VoiceStartButton, voiceStartShown } from "./voice/VoiceStartButton";`; replace the inline Talk block with `<VoiceStartButton availability={voiceAvailability} disabled={!conversationId || busy || waitingForPage || voice.open} onStart={() => void voice.start()} />`; the send button's `style={voiceAvailability?.available ? undefined : { marginInlineStart: "auto" }}` becomes `style={voiceStartShown(voiceAvailability) ? undefined : { marginInlineStart: "auto" }}`. The `voiceAvailability` query line is unchanged.
@@ -32132,7 +32132,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onLoadMore: () => void;
     onRetry: () => void;
   };
-  export function MarketplaceView(props: MarketplaceViewProps): JSX.Element;
+  export function MarketplaceView(props: MarketplaceViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page" data-component="PageLayout" data-view="MarketplaceView">`: 1) `<PageHeader title={copy.title} subtitle={copy.subtitle} />`. 2) `<Toolbar label={copy.toolbar} grow={<SearchInput id="marketplace-search" label={copy.search} labelHidden placeholder={copy.searchPh} value={query} onChange={onQueryChange} />} end={<SortMenu label={copy.sort} options={[{ value: "popular", label: copy.popular }, { value: "recent", label: copy.recent }]} value={sort} onChange={(v) => onSortChange(v as MarketplaceSort)} />}><Select id="marketplace-category" label={copy.category} value={category} options={[all, planning, coach, learning, habits, wellbeing, other] mapped to { value, label: copy[<value>] }} onChange={(v) => onCategoryChange(v as MarketplaceCategory | "all")} /></Toolbar>` (the toolbar stays visible in every state). 3) `{!online && <StateOffline />}`. 4) By state: `loading` → `<StateLoading label={copy.loading} rows={5} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `ready` with no items → when `query.trim() !== "" || category !== "all"` `<StateEmpty title={copy.noMatchTitle} body={copy.noMatchBody} />`, else `<StateEmpty title={copy.emptyTitle} body={copy.emptyBody} />`; `ready` with items → `<List label={copy.title}>` with one `<ListRow href={\`/marketplace/${item.slug}\`} title={item.name} meta={…} />` per item, where `meta` = `<span className="tp-small" dir="auto">{summary}</span>`, `<span className="tp-small tp-muted">{copy.by with {name} = authorName inside <bdi dir="auto">}</span>`, `<Badge label={copy[category]} />`, `<span className="tp-small tp-muted">{installs}</span>`, `<span className="tp-small tp-muted">{rating}</span>`; then, when `hasMore`, `<Button variant="secondary" label={copy.more} disabled={loadingMore} aria-busy={loadingMore || undefined} onClick={onLoadMore} />`.
   `installs` = `installCount === 1 ? copy.installOne : copy.installMany` with `{n}` in `<span className="tp-num">`. `rating` = `ratingCount === 0 || ratingAverage === null ? copy.noRatings : (ratingCount === 1 ? copy.ratingOne : copy.ratingMany)` with `{avg}` = `ratingAverage.toLocaleString(lang === "he" ? "he-IL" : "en-GB", { maximumFractionDigits: 1 })` and `{count}` each in `<span className="tp-num">`.
@@ -32345,7 +32345,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onApprove: (granted: PluginPermissionName[]) => void; // ticked permissions, in the order of `permissions`
     onCancel: () => void;                                  // Cancel, Close, Esc, scrim
   };
-  export function InstallConfirm(props: InstallConfirmProps): JSX.Element;
+  export function InstallConfirm(props: InstallConfirmProps): React.JSX.Element;
   ```
   **Markup:** fragment of `<div className="tp-sheet-scrim" aria-hidden="true" onClick={onCancel} />` and `<section className="tp-sheet tp-glass" role="dialog" aria-modal="true" aria-labelledby={titleId} data-component="MobileSheet" data-view="InstallConfirm" data-state={state} onKeyDown={trap}>`: grabber; head `<h2 className="tp-sheet__title" id={titleId}>{copy.title with {name} in <bdi dir="auto">}</h2>` + `<Button label={copy.close} variant="ghost" icon="x" iconOnly onClick={onCancel} />`; body: `{!online && <StateOffline text={copy.offline} />}`, `<p className="tp-small tp-muted">{copy.by with {name} = authorName in <bdi dir="auto">}</p>`, `<h3 className="tp-h3">{copy.mayDo}</h3>`, then `permissions.length === 0` → `<p className="tp-body">{copy.none}</p>`, else `<p className="tp-small tp-muted" id={hintId}>{copy.hint}</p>` and one `<Checkbox id={\`install-perm-${p}\`} label={PLUGIN_PERMISSION_COPY[lang][p]} checked={ticked.has(p)} onChange=… disabled={state === "installing"} />` per permission; `<p className="tp-small">{copy.sandbox}</p>`; `<p className="tp-small tp-muted">{copy.note}</p>`; `{state === "error" && <p className="tp-error-text" role="alert">{copy.error}</p>}`; `{state === "installing" && <p className="tp-sr-only" role="status">{copy.installing}</p>}`. Foot: `<Button variant="primary" label={copy.install} disabled={state === "installing" || !online} aria-busy={state === "installing" || undefined} onClick={() => onApprove(permissions.filter((p) => ticked.has(p)))} />` then `<Button variant="ghost" label={copy.cancel} onClick={onCancel} />`. `ticked` is local state, empty on mount. Focus moves to Cancel on mount; Tab wraps inside the section; Esc → `onCancel`; focus returns to the opener on unmount.
   **COPY** (component strings):
@@ -32426,7 +32426,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onUndoInstall: () => void;
     onRetry: () => void;
   };
-  export function PluginDetailView(props: PluginDetailViewProps): JSX.Element;
+  export function PluginDetailView(props: PluginDetailViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page" data-component="PageLayout" data-view="PluginDetailView">`; first child always `<Link className="tp-btn tp-btn--ghost" href="/marketplace">` (`next/link`) with `<TpIcon name="chevron" size="sm" className="tp-icon--back" />` + `<span>{copy.back}</span>`. Then `{!online && <StateOffline />}` (from `@/components/states/StateOffline`). By state: `loading` → `<StateLoading label={copy.loading} rows={4} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`; `not-found` → `<StateEmpty title={copy.notFound} body={copy.notFoundBody} />`; `ready` →
   1. `<PageHeader title={detail.name} subtitle={copy.by with {name}} actions={installed ? <Button variant="secondary" label={copy.installed} disabled /> : <Button variant="primary" label={copy.install} disabled={!online || detail.status !== "published"} onClick={onInstallClick} />} />`.
@@ -33208,7 +33208,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   }
   // apps/web/components/desktop/DesktopHandoff.tsx ("use client")
   export type DesktopHandoffProps = { link: string | null };
-  export function DesktopHandoff(props: DesktopHandoffProps): JSX.Element;
+  export function DesktopHandoff(props: DesktopHandoffProps): React.JSX.Element;
   ```
   **Markup:** `<main className="tp-page" id="main">` → `<div className="tp-state" data-component="DesktopHandoff" data-state={link ? "opening" : "invalid"}>`. `opening`: `<h1 className="tp-state__title">{openingTitle}</h1>`, `<p className="tp-state__body">{openingBody}</p>`, `<div className="tp-state__actions"><a className="tp-btn tp-btn--primary" href={link} data-testid="desktop-handoff-open">{openButton}</a></div>`, `<p className="tp-state__body tp-small">{closeHint}</p>`; one `useEffect(() => { if (link) window.location.assign(link); }, [link])` guarded by a `useRef` so it runs once. `invalid`: `<h1 className="tp-state__title">{invalidTitle}</h1>`, `<p className="tp-state__body">{invalidBody}</p>`, no link. "Tempo Flow" stays Latin (CONVENTIONS §12).
   **COPY** (`type CopyKey = "openingTitle" | "openingBody" | "openButton" | "closeHint" | "invalidTitle" | "invalidBody"`; `const { lang } = useLocale()`):
@@ -33581,7 +33581,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;
   };
   export const OFFLINE_PAGES_MAX = 200; // shown in the help text; equals PAGE_CACHE_MAX_PAGES (TFV2-0421a)
-  export function DesktopSettingsView(props: DesktopSettingsViewProps): JSX.Element;
+  export function DesktopSettingsView(props: DesktopSettingsViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page" data-component="PageLayout" data-view="DesktopSettingsView">`. 1) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{title}</h1><p className="tp-pagehead__sub">{sub}</p></div></header>`. 2) `notice !== null` → `<div className="tp-notice" data-component="Notice" data-tone={notice === "cleared" ? "done" : "caution"} role={notice === "cleared" ? "status" : "alert"}><div className="tp-notice__text"><p className="tp-notice__title">{copy[notice]}</p></div></div>`. 3) `loading` → `<div className="tp-state" role="status" aria-busy="true"><p className="tp-state__body">{loading}</p></div>`; `error` → `<div className="tp-state tp-state--error" data-component="StateError" role="alert"><p className="tp-state__title">{error}</p><p className="tp-state__body">{safe}</p><div className="tp-state__actions"><button type="button" className="tp-btn tp-btn--secondary" onClick={onRetry}>{retry}</button></div></div>`; `not-desktop` → `<div className="tp-state" data-state="not-desktop"><p className="tp-state__title">{notDesktopTitle}</p><p className="tp-state__body">{notDesktopBody}</p></div>`. 4) `default` → three `<section className="tp-settings-section" data-component="SettingsSection" aria-labelledby="<id>">` each with `<div className="tp-settings-section__head"><h2 className="tp-settings-section__title" id="<id>">…</h2></div>` then rows `<div className="tp-setting-row" data-component="SettingRow" data-key="<key>"><div className="tp-setting-row__text"><span className="tp-setting-row__label" id="<rowId>">{label}</span><span className="tp-small tp-muted" id="<rowId>-help">{help}</span></div><div className="tp-setting-row__control">{control}</div></div>`:
   - section `ds-app` {appSection}: row `launchAtLogin` (rowId `ds-launch`, control `<SettingsSwitch id="ds-launch-switch" checked={settings.launchAtLogin} labelledBy="ds-launch" describedBy="ds-launch-help" locked={pending !== null} onChange={(next) => onToggle({ key: "launchAtLogin", next })} />`); row `closeToTray` (rowId `ds-tray`, same pattern).
@@ -33713,7 +33713,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onFinish: () => void;
     onSkip: () => void;
   };
-  export function DesktopWelcomeView(props: DesktopWelcomeViewProps): JSX.Element;
+  export function DesktopWelcomeView(props: DesktopWelcomeViewProps): React.JSX.Element;
   ```
   **Layout:** root `<main className="tp-page" id="main" data-component="PageLayout" data-view="DesktopWelcomeView" data-step={step}>`. 1) `<p className="tp-small tp-muted" aria-live="polite">{stepOf}</p>` with `{n}` = 1 or 2 and `{total}` = 2, each in `<span className="tp-num">`. 2) `<header className="tp-pagehead" data-component="PageHeader"><div className="tp-pagehead__text"><h1 className="tp-pagehead__title">{step === "welcome" ? welcomeTitle : choicesTitle}</h1><p className="tp-pagehead__sub">{step === "welcome" ? welcomeBody : choicesBody}</p></div></header>`. 3) `saveError` → `<div className="tp-notice" data-component="Notice" data-tone="caution" role="alert"><div className="tp-notice__text"><p className="tp-notice__title">{saveErrorText}</p></div></div>`.
   - `welcome`: `<section className="tp-settings-section" data-component="SettingsSection" aria-labelledby="dw-lang"><div className="tp-setting-row" data-component="SettingRow"><div className="tp-setting-row__text"><span className="tp-setting-row__label" id="dw-lang">{language}</span></div><div className="tp-setting-row__control"><Segmented labelledBy="dw-lang" value={lang} onChange={onLang} options={[{ value: "en", label: "English", lang: "en" }, { value: "he", label: "עברית", lang: "he" }]} /></div></div></section>`; actions `<div className="tp-pagehead__actions">` = `<button type="button" className="tp-btn tp-btn--primary" onClick={onNext}>{continueLabel}</button>` and `<button type="button" className="tp-btn tp-btn--ghost" disabled={saving} onClick={onSkip}>{skip}</button>`.
@@ -34609,7 +34609,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onOpenSettings: () => void; // denied
     onDone: () => void;         // granted, unsupported
   };
-  export function EnablePushCard(props: EnablePushCardProps): JSX.Element;
+  export function EnablePushCard(props: EnablePushCardProps): React.JSX.Element;
   ```
   Imports: `Bell`, `BellOff`, `Check`, `WifiOff` from `lucide-react-native`; `View` from `react-native`; `usePrefs` from `./prefs`; `Button`, `Card`, `T` from `./primitives`; `StateLoading` from `./states`; `type Lang` from `@/lib/v3/i18n`.
   Markup: root `<View testID="enable-push-card">`. `loading` renders only `<StateLoading label={copy.loading} rows={3} />`. Every other status renders `<Card>` holding: a head row `<View testID="enable-push-card-head" style={{ flexDirection: p.row, alignItems: "center", gap: 12 }}>` with the icon (`size={24}`, `color={c.accent}`; `Check` for granted, `BellOff` for denied and unsupported, `WifiOff` for offline, `Bell` otherwise) and `<T size="xl" serif weight="500" accessibilityRole="header">{title}</T>`; then `<T tone="muted" style={{ marginTop: 8 }}>{body}</T>`; then `<View style={{ gap: 8, marginTop: 16 }}>` with the buttons below (`Button` from primitives, `block`). `p = usePrefs()`, `c = p.colors`, `copy = COPY[p.lang]`.
@@ -34730,7 +34730,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onOpenSettings: () => void;
     onRetry: () => void;
   };
-  export function NotificationPrefsList(props: NotificationPrefsListProps): JSX.Element;
+  export function NotificationPrefsList(props: NotificationPrefsListProps): React.JSX.Element;
   ```
   Markup: root `<View testID="notification-prefs-list" style={{ gap: 16 }}>`.
   - `loading` → only `<StateLoading label={copy.loading} rows={4} />`.
@@ -34851,7 +34851,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onCancel: () => void;
   };
   export const SHUTTER_SIZE = 72;
-  export function CameraCapture(props: CameraCaptureProps): JSX.Element;
+  export function CameraCapture(props: CameraCaptureProps): React.JSX.Element;
   ```
   Markup: root `<View testID="camera-capture" style={{ gap: 16 }}>`; first child `<T size="xl" serif weight="500" accessibilityRole="header">{purpose === "note" ? copy.titleNote : copy.titleScan}</T>`. Then per status:
   - `requesting`: `<T tone="muted">{copy.permissionBody}</T>`, `<Button block variant="primary" label={copy.allow} onPress={onAllow} />`, `<Button block variant="ghost" label={copy.cancel} onPress={onCancel} />`.
@@ -35916,7 +35916,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onApprove: () => void;
     onCancel: () => void;  // Cancel, Close, Esc and scrim
   };
-  export function ExternalWriteConfirm(props: ExternalWriteConfirmProps): JSX.Element;
+  export function ExternalWriteConfirm(props: ExternalWriteConfirmProps): React.JSX.Element;
   ```
   **Markup** (fragment root): `<div className="tp-sheet-scrim" aria-hidden="true" onClick={onCancel} />` and `<section className="tp-sheet tp-glass" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} data-component="MobileSheet" data-view="ExternalWriteConfirm" data-action={action} data-state={state} onKeyDown={trap}>` containing: `<span className="tp-sheet__grabber" aria-hidden="true" />`; `<div className="tp-sheet__head"><h2 className="tp-sheet__title" id={titleId}>{copy.title}</h2><Button label={copy.close} variant="ghost" icon="x" iconOnly onClick={onCancel} /></div>`; `<div className="tp-sheet__body">` with, in order: `{!online && <StateOffline text={copy.offline} />}`, `<p id={bodyId} className="tp-body">{body}</p>`, `<p className="tp-small tp-muted">{copy.note}</p>`, `{state === "error" && <p className="tp-error-text" role="alert">{copy.error}</p>}`, `{state === "writing" && <p className="tp-sr-only" role="status">{copy.writing}</p>}`; `<div className="tp-sheet__foot">` with the approve `Button` then `<Button label={copy.cancel} variant="ghost" onClick={onCancel} />`.
   **Body:** the template `copy.add` / `copy.change` / `copy.remove` (by `action`) is split on `{title}`, `{when}`, `{calendar}` and rendered as text runs with `<bdi dir="auto">{eventTitle}</bdi>`, `<span className="tp-num">{when}</span>`, `<bdi dir="auto">{calendarName}</bdi>` in the placeholder positions.
@@ -37435,7 +37435,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     onRetry: () => void;
   };
   export const FAMILY_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  export function FamilyView(props: FamilyViewProps): JSX.Element;
+  export function FamilyView(props: FamilyViewProps): React.JSX.Element;
   ```
   **Layout:** root `<div className="tp-page" data-component="PageLayout" data-view="FamilyView">`; first child `<PageHeader title={copy.title} subtitle={copy.subtitle} />`; then `{!online && <StateOffline />}`; then by state:
   - `loading` → `<StateLoading label={copy.loading} rows={3} />`; `error` → `<StateError what={copy.error} onRetry={onRetry} />`.

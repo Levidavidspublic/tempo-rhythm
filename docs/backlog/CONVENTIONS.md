@@ -1,4 +1,4 @@
-# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026
+# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026
 
 One source of truth for every ticket in [`BACKLOG-v2.md`](./BACKLOG-v2.md). Decided once here so no
 ticket re-decides it. Verified against this repo at branch `docs/source-2026-11-01`
@@ -20,6 +20,12 @@ file wins and the ticket is out of date.
 | Lint | `bun run lint` |
 | Typecheck | `bun run typecheck` |
 | Build | `bun run build` |
+
+| One browser suite (`tests/unit/kb-*.test.tsx`, a ticket's DONE) | `bun test tests/unit/kb-<n>.test.tsx --max-concurrency=1` — the exact command `scripts/test-suites.ts` runs for one suite |
+
+No other command forms. Never `bun run test:browser <path>` or `bun run test <path>` in a STEP, DONE,
+EVIDENCE or TEST. EVIDENCE names the same command as DONE, word for word: "the summary of
+`<DONE command>` pasted into the PR".
 
 **`bun test <path>` runs one file. `bun run test <path>` is WRONG and does not run the file:**
 `scripts/test-suites.ts` treats any extra argument as a *browser-suite name filter*, finds no
@@ -297,6 +303,11 @@ noun for a one-word button and an infinitive for a phrase):
 - Callback props get a harness handler that writes the call into one shared element:
   `<output data-testid="<id>-log">` whose text becomes `<propName>:<JSON of the first argument>`
   (for example `onToggle:{"id":"job-1","on":false}`). Specs assert this text; nothing else records calls.
+  Exact form by argument count: one argument → `` `${name}:${JSON.stringify(a)}` ``; no argument → `` `${name}:` ``
+  (nothing after the colon); two or more → `` `${name}:${JSON.stringify([a, b, …])}` `` (a JSON array of all of
+  them). A harness page writes it with one helper declared in the page:
+  `const log = (name: string) => (...args: unknown[]) => setLog(args.length === 0 ? `${name}:` : `${name}:${JSON.stringify(args.length === 1 ? args[0] : args)}`);`
+  with `const [logText, setLog] = useState("");` and `<output data-testid="<id>-log">{logText}</output>`.
 - Components take **all** data and every action through props. A component never calls `useQuery`,
   `useMutation`, `useAction` or `fetch`; only a screen does (§14).
 - Mobile harness routes live at `apps/mobile/app/e2e/<id>.tsx` and follow the same rules. The route
@@ -338,7 +349,7 @@ export const VIEWPORTS = {
 export type HarnessLang = "en" | "he";
 /** Opens /e2e/components/<id>?lang=<lang>&theme=<theme> and waits for [data-testid="<id>-default"] or the first state section. */
 export function openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>;
-/** Opens <route>?state=<state>&lang=<lang> and waits for network idle. */
+/** Opens <route>?state=<state>&lang=<lang>, then page.waitForLoadState("networkidle"). */
 export function openScreen(page: Page, route: string, opts: { state: string; lang?: HarnessLang }): Promise<void>;
 /** Asserts <html dir> and <html lang>. */
 export function expectDir(page: Page, lang: HarnessLang): Promise<void>;
@@ -385,6 +396,39 @@ export function tempoGate(input: { isLoading: boolean; isAuthenticated: boolean;
 export function useE2EMobile(): string | null;
 ```
 
+**The mobile spec skeleton** (a mobile ticket may write "the §15 mobile spec skeleton"; it states only its
+path, its states and its bullets). File `tests/e2e/mobile/<name>.spec.ts`:
+
+```ts
+import { expect, test } from "@playwright/test";
+import { VIEWPORTS, expectTargetSize, trackConsoleErrors } from "../helpers/harness"; // only the helpers it uses
+import { type Key, translate } from "../../../apps/mobile/lib/v3/i18n"; // pure module, no React Native imports
+
+test.skip(!!process.env.PLAYWRIGHT_BASE_URL, "local webServer only");
+const NOISE = /example\.convex\.cloud|WebSocket/i;
+
+for (const [vpName, vp] of [["mobile", VIEWPORTS.mobile], ["desktop", VIEWPORTS.desktop]] as const) {
+  for (const lang of ["en", "he"] as const) {
+    test(`<bullet name> · ${vpName} · ${lang}`, async ({ page }) => {
+      const errors = trackConsoleErrors(page);
+      await page.setViewportSize(vp);
+      // screen route: the language comes from the phone store (AsyncStorage on web = localStorage, key "tempo.v3.lang")
+      await page.addInitScript((l) => localStorage.setItem("tempo.v3.lang", l), lang);
+      await page.goto("/<path>?state=<state>");        // harness route instead: page.goto(`/e2e/<id>?lang=${lang}`), no init script
+      await page.waitForLoadState("networkidle");
+      const k = (key: Key<"<screen>">) => translate(lang, "<screen>", key);
+      // … the bullet's assertions; text is matched with k("<key>"), never a hard-coded string unless the SPEC says the string is literal in the code …
+      expect(errors.filter((m) => !NOISE.test(m))).toEqual([]);
+    });
+  }
+}
+```
+
+The language loads asynchronously, so the first assertion of every test is a web-first `expect(…).toHaveText(…)` /
+`toBeVisible()` on a translated string (it waits). `<html dir>` is not asserted on mobile web; direction is
+asserted through the element's computed `direction` or `flex-direction` as the SPEC states. DONE count =
+4 × bullets (+1 per `(once)` bullet).
+
 Mobile specs live in `tests/e2e/mobile/` and run under `playwright.mobile.config.ts` (CFG-031: Expo web
 on `http://localhost:8081`, env `EXPO_PUBLIC_TEMPO_E2E=1`,
 `EXPO_PUBLIC_CONVEX_URL=https://example.convex.cloud`). CFG-032 makes `(tempo)` routes render signed
@@ -425,7 +469,26 @@ CFG-031, CFG-032 and TFV2-0000d.
   `boundedQuery` from TFV2-0001). "Bytes" is UTF-8 (§7 H).
 - **Tests** use `bun:test`, `makeFakeCtx`, `makeSignedOutCtx` and `run` from
   `convex/lib/testFakeCtx.ts` (TFV2-0000a adds `makeSignedOutCtx`, `db.delete`, `db.replace`,
-  `.unique()` and a `scheduler.runAfter` recorder). Seed rows with `await ctx.db.insert("<table>", {…})`
+  `.unique()` and a `scheduler.runAfter` recorder).
+- **Every test helper a TESTS bullet uses has a stated origin**, one of: (a) the four exports above
+  (`import { makeFakeCtx, makeSignedOutCtx, run } from "./lib/testFakeCtx";` from `convex/`, `"./testFakeCtx"` from
+  `convex/lib/`); (b) the standard `rejection` helper below; (c) a helper that already exists in the test
+  file being edited — the ticket names it with its exact signature and line ("`makeWorld(): World`, line 40 of
+  `convex/voice.test.ts`") and STEP 1 greps for it; (d) a helper the ticket defines, written out in full in SPEC.
+  No other helper names (`world`, `signedOutCtx`, `seed…`) appear without one of these origins.
+- **The standard `rejection` helper** — declared once at the top of a test file that needs it (or reused if the
+  file already has a function of this exact name and behaviour):
+
+  ```ts
+  async function rejection(p: unknown): Promise<string> {
+    try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); }
+    throw new Error("expected a rejection");
+  }
+  ```
+
+  A `ConvexError` code is read the same way only when the module throws `new ConvexError("<code>")` (its
+  `message` is the code); a module that throws `new ConvexError({ code })` is asserted with
+  `expect(p).rejects.toMatchObject({ data: { code: "<code>" } })` — the ticket says which, from the code. Seed rows with `await ctx.db.insert("<table>", {…})`
   before calling `run(fn, ctx, args)`. A test asserts a returned value or a stored row, never only
   that "no error was thrown".
 - **Schema:** a build ticket never edits `convex/schema.ts`. A table or field it needs comes from a
@@ -503,6 +566,21 @@ else; the SPEC quotes the exact line(s); the file counts toward the 3-file limit
 - A ticket that depends on an `OPEN` ticket is `OPEN` and says
   `OPEN: inherits <id> (<Q-nn>: <question>) — Amit.` A ticket with its own question writes
   `OPEN: <Q-nn or new>: <exact question> — Amit.`
+- Exact forms (fix round 1). The question text is the register's own wording for a `Q-nn` (copied from
+  the table below, word for word), and for a `new:` question the exact text of the line that asks it:
+  - own register question: `- **OPEN:** Q-08: forget: soft delete with 30-day grace vs complete hard delete. — Amit.`
+  - own new question: `- **OPEN:** new: <one exact question ending in ?> — Amit.` (a CFG ticket's own shape question
+    is a `new:` question too);
+  - inherited: `- **OPEN:** inherits <id> (<Q-nn or new>: <the parent's question, word for word>) — Amit.` —
+    `<id>` is the ticket in this ticket's `Depends` that is OPEN; several parents are joined with `; inherits`
+    in `Depends` order; a chain is not spelled out (name the direct parent and its root question only);
+  - both: the inherited part first, then `; new: <question> — Amit.`
+- A question goes only on tickets whose build it changes. Work the question does not touch is split into its
+  own non-OPEN ticket (`a`), and only the dependent part (`b`) is OPEN. A ticket never ships a fallback that
+  hides a check ("print UNKNOWN and exit 0", "skip when unavailable"): a check that cannot run fails, or the
+  ticket is OPEN with that question.
+- Config-lane work (§18 file list) always has a `CFG-NNN` id and lives in the Groundwork section; a TFV2 id
+  that held config work is a stub `— superseded by CFG-NNN`.
 - `OPEN: none.` is written only when nothing is left to decide. On an `OPEN` ticket,
   `GATES: n/a — OPEN (not buildable until Amit answers).` and nothing else. Its title ends `— OPEN`.
 - A ticket replaced by another is a stub: title `— superseded by <id>`, one line
@@ -577,9 +655,16 @@ Every ticket must stand alone as one GitHub issue. A ticket never relies on a ra
   `page.getByTestId("<id>-<state>").locator(…)`.
 
 **Code facts (read from `integration`):**
-- Icons: `TpIcon` from `@/components/tempo/TpIcon`, props `{ name: string; size?: "sm" | "md" | "lg"; flip?: boolean; className?: string }`,
-  renders `<svg class="tp-icon" aria-hidden="true"><use href="#i-<name>"/></svg>`. The sprite
-  (`TpIconSprite`) is not mounted in the harness: specs assert the `use[href="#i-<name>"]` element.
+- Icons: `TpIcon` from `@/components/tempo/TpIcon`, props `{ name: TpIconName; size?: "sm" | "md" | "lg"; flip?: boolean; className?: string }`
+  where `TpIconName` is `keyof typeof ICONS` (the quoted keys of the `ICONS` object in that file, so an unknown
+  name fails typecheck); renders `<svg class="tp-icon" aria-hidden="true"><use href="#i-<name>"/></svg>`
+  (plus `tp-icon--sm` / `tp-icon--lg` / `tp-icon--flip`). The sprite (`TpIconSprite`) is not mounted in the
+  harness: specs assert the `use[href="#i-<name>"]` element. Every icon name a ticket uses is checked in its
+  code-map STEP with `grep -n '^  "<name>":' apps/web/components/tempo/TpIcon.tsx` (one line expected).
+- **React 19 types:** `@types/react` ^19.2.7 has no global `JSX` namespace and the repo declares none. A
+  component's return type is written `React.JSX.Element` (or `React.JSX.Element | null`), never bare
+  `JSX.Element`, and the file has `import type React from "react";` unless it already imports `React`
+  (`import * as React from "react";` also satisfies it). Children are typed `React.ReactNode` the same way.
 - `apps/web/app/tempo.css`: the global focus ring is `:focus-visible` (line 91,
   `var(--tp-focus-w) solid var(--tp-accent)`); the skeleton shimmer `.tp-skeleton` is a 1.4 s
   infinite loop (line 465), so no spec runs `expectMotionBudget` on a `loading` section; reduced motion
@@ -600,3 +685,97 @@ Every ticket must stand alone as one GitHub issue. A ticket never relies on a ra
   props-only View component (web component kind, harness + spec), a `b` ticket replaces the route
   `page.tsx` to feed it (screen kind, fixtures + wiring line + spec). The old screen component stays
   in the repo, unimported, unless a ticket deletes it by name.
+
+## 23. Self-contained tickets and test mechanics (fix round 1, 2 Nov 2026)
+
+Five independent reviews of the Opus rewrite found these gaps. Each rule below is fixed once here;
+tickets cite the sub-section (`§23.3`) or write the fact inline.
+
+### 23.1 Every spec follows its template, and DONE counts it
+
+- Every web e2e spec (component, screen, and a spec over existing code such as the shell) uses the §22
+  spec skeleton: the viewport × language loop, `trackConsoleErrors` first and `expect(errors).toEqual([])`
+  last (screen specs drop `/example\.convex\.cloud|WebSocket/i` first), `openHarness` / `openScreen`.
+  Every mobile spec uses the §15 mobile spec skeleton.
+- A bullet that must run once (a click that changes global state, a vitals measurement) is marked
+  `(once)` and names its single viewport and language. DONE is then exactly
+  `4 × <loop bullets> + <once bullets> passed`, written as a number (`→ 20 passed`), and the TESTS list
+  is numbered so the count can be checked by reading.
+
+### 23.2 The CSS custom-property probe (checking that a token is applied)
+
+A spec never hard-codes a token's pixel value. It compares the element's computed value with the value
+the browser computes for the token in the same place:
+
+```ts
+async function tokenValue(scope: Locator, cssProp: string, token: string): Promise<string> {
+  return scope.evaluate((el, [p, t]) => {
+    const probe = document.createElement("div");
+    probe.style.setProperty(p, `var(${t})`);
+    el.appendChild(probe);
+    const out = getComputedStyle(probe).getPropertyValue(p);
+    probe.remove();
+    return out;
+  }, [cssProp, token] as const);
+}
+// usage: expect(await title.evaluate((el) => getComputedStyle(el).fontSize))
+//          .toBe(await tokenValue(page.getByTestId("<id>-default"), "font-size", "--tp-text-2xl"));
+```
+
+`scope` is the state section (so theme and `dir` resolve as for the element). The helper is declared at
+the top of the spec that uses it, exactly as above (`import type { Locator } from "@playwright/test";`).
+Colours are compared the same way (`"color"`, `"--tp-ink"`), so the check is independent of theme values.
+
+### 23.3 No pointers: write the rule, the code and the data in the ticket
+
+- Never "exactly as `<file>` lines N–M", "copied verbatim from TFV2-…", "same as the other ticket",
+  "see …". Write the logic out (step by step, or as code), and inline every fixture and string.
+- A name that another ticket creates (a constant, prop, function, type, CSS id, field) is quoted with its
+  exact definition and the creating ticket's id, for example
+  ``PROPOSAL_UNDO_MINUTES = 5` (`export const`, `convex/proposals.ts`, created by TFV2-0213a)``, and that
+  ticket is in `Depends`. A name from existing code is quoted with its definition and file.
+- No `...` or `…` gaps inside SPEC types, props, objects or fixtures: every field is written. The only
+  allowed `{ … }` is a function body whose behaviour the SPEC states in full in prose or steps.
+
+### 23.4 Contracts of what a ticket composes
+
+- Every component, helper, hook, CSS class, `data-*` attribute and icon a ticket relies on but does not
+  create is listed in SPEC under **Relies on** with the exact part of its contract the ticket depends on:
+  props it is given, behaviour (for example "`HabitSheet` calls `onClose()` after `onSubmit` resolves"),
+  the DOM it renders that a test selects, and for a pure helper the exact outputs for the inputs the test
+  uses (for example `speechSentences("A.  B")` → `["A.", "B"]`).
+- STEP 1 (code-map) checks each one with an exact command and the expected result: `grep -n` for a prop or
+  behaviour line, `grep -n "\.<class>\b" apps/web/app/tempo.css apps/web/app/v3/*.css` for every class,
+  the §22 icon grep for every icon. If a check fails, the builder stops with
+  `blocked: PATH_DRIFT — <what differs>`; a ticket never relies on an unchecked contract.
+- Layout claims agree with the math the SPEC gives (columns × min width + gaps ≤ container width at each
+  breakpoint, with the container width stated, including the §4 harness frame's width when the test runs in
+  the harness).
+
+### 23.5 Forced and harness modes never contact Convex
+
+- In a route, `const forced = useE2EState();` is read first. When `forced !== null` the route returns
+  `<View {...FIXTURES[forced]} />` directly — **outside** `ProfileReady` (which calls `users.getProfile`)
+  and with every `useQuery` given `"skip"` — so no Convex call is made.
+- Every value the forced View shows comes from the fixture, including "today", the anchor date and
+  counts: the fixture holds the date key (`today: "2026-11-02"`), and the route never computes them from
+  `Date.now()` in forced mode.
+
+### 23.6 Errors, limits and agreement between SPEC and TESTS
+
+- Every error the SPEC lists has exactly one TESTS case with its exact trigger; every TESTS error is in the
+  SPEC. Signed out (`"Not authenticated"`) and, for a row id, the other-user case are always included.
+- Every limit is tested on both sides: at `n` (accepted, or exactly `n` returned) and at `n + 1` (rejected,
+  or capped at `n`). A time window of D days is tested at D (inside) and D + 1 (outside): a 30-day window
+  is tested with 30 and 31.
+- Every prop, callback, constant and string named in TESTS exists in SPEC with the same name, and every
+  SPEC behaviour a TESTS bullet covers says the same thing in both places (no CSS hex in a comment when
+  DO NOT forbids hex; no "two per row" where the grid math gives three).
+
+### 23.7 Test data is fully seeded
+
+- Every seeded row and fixture lists every field the code reads, each with an exact value: strings in quotes,
+  numbers as numbers, ids as the fake ctx returns them (`"tasks:1"`), and timestamps as fixed epoch-ms
+  literals (`updatedAt: 1_793_577_600_000`), never `Date.now()` unless the assertion is relative to it.
+- A shape word in a test ("plain object", "a draft row", "a quiz block") is defined once in the SPEC as a
+  TypeScript type or literal.
