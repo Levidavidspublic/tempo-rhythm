@@ -272,8 +272,6 @@ console.log(JSON.stringify({
 }));
 `;
 
-const PROBE_TIMEOUT_MS = 20_000;
-
 interface BundleProbe {
   success: boolean;
   inputs: string[];
@@ -287,18 +285,12 @@ function bundleInOwnProcess(entry: string): BundleProbe {
     env: { ...process.env, TEMPO_BUNDLE_ENTRY: entry },
     encoding: "utf8",
     // Below the 30s test budget, so a hung build fails with its own message, not a test timeout.
-    // `spawnSync` blocks the test thread, so the test's own timeout can never interrupt a wedged
-    // child: bound it here, and SIGKILL a build that ignores the default SIGTERM.
-    timeout: PROBE_TIMEOUT_MS,
+    timeout: 20_000,
     killSignal: "SIGKILL",
   });
+  if (child.error) throw new Error(`bun build probe did not finish within 20s: ${child.error.message}`);
   const stdout = child.stdout ?? "";
   const stderr = child.stderr ?? "";
-  if (child.signal)
-    throw new Error(
-      `bun build probe killed by ${child.signal} after ${PROBE_TIMEOUT_MS}ms:\n${stderr}`
-    );
-  if (child.error) throw new Error(`bun build probe did not finish within 20s: ${child.error.message}`);
   if (child.status !== 0) throw new Error(`bun build probe exited ${child.status}:\n${stderr}`);
   try {
     return JSON.parse(stdout.trim().split("\n").at(-1) ?? "") as BundleProbe;
