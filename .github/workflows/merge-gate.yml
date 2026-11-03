@@ -59,7 +59,7 @@ jobs:
       - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
       - env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          JEV_MODEL: ${{ vars.JEV_MODEL || 'typesafe/jev-router' }}
+          JEV_MODEL: ${{ vars.JEV_MODEL || '~typesafe/jev-latest' }}
         run: bun scripts/factory/merge-gate.mjs jev
 
   coderabbit:
