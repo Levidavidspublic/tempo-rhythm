@@ -44,6 +44,22 @@ Ranges are rewritten by sub-agents in `docs/backlog/work/` and spliced in here o
 The ticket count and the split map are listed below and updated after each range.
 
 <!-- rewrite-status:start -->
+**Fix round 3 (3 Nov 2026, Opus 5.5 lead + range sub-agents, against `integration` 27e63227).** Every `approved-unsent`
+ticket was re-checked against the bar and the reviewer's defects (session dcbb336e). STATUS counts are unchanged:
+514 `approved-unsent` (492 TFV2 + 22 CFG) and 269 `open` (232 TFV2 + 37 CFG); 25 stubs; 808 entries. No ids were
+added, split or removed, so the split map below is unchanged. Groundwork: CONVENTIONS §1 (exact whole-file totals, no
+`-t`, no symbolic counts), §11 (COPY imports, copy-only cells), §13 (log form), §15 (native checkbox target size),
+§21 (Jev id `~typesafe/jev-latest`), §23.8 (valid block ids, non-secret fixtures). Commits (on #1352): groundwork
+5dff9263 · TFV2-0000a–0023b + TFV2-0087–0132b 179a4014 · TFV2-0065a–0086 d9b35961 · TFV2-0024–0064 e5db19ff ·
+TFV2-0189–0243 9cd849a9 · TFV2-0133a–0188b fafb861d · TFV2-0244–0291b 758cab9d · TFV2-0292–0337a d4571716 ·
+TFV2-0337b–0360d 23cf1bb7 · TFV2-0361a–0408 34eaafc7 · TFV2-0409a–0456 861e3d43 · whole-file check: the commit that
+adds this paragraph. Whole-file check after round 3: every `Depends` id exists, is earlier and is not a stub; no
+approved ticket depends on an OPEN one; `WHEN` matches `Depends`; OPEN tickets name their inherited parent and carry
+only the n/a GATES line; no `-t` filter, symbolic DONE or `?? null` log on an approved ticket; every approved ticket
+that adds tests to a file another approved ticket also adds to has that ticket in its `Depends` closure, with rising
+totals; the existing-test counts quoted in DONE match `bun test` on `integration`; `gitleaks dir docs/backlog` finds
+nothing.
+
 **STATUS counts (fix round 1, 2 Nov 2026; Amit's rule, CONVENTIONS §19):** every build ticket carries exactly one STATUS line.
 
 | STATUS | TFV2 | CFG | Total |
@@ -37474,27 +37490,27 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 
 ### TFV2-0433d — Web: `/.well-known/*` is public (`apps/web/lib/rootEntry.ts`)
 - **STATUS:** approved-unsent
-- **Stage:** F · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **Stage:** F · **Pass:** 1 · **Depends:** TFV2-0059a · **Folds-in:** none
 - **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`; lane per `factory/SLOTS.md`.
-- **WHEN:** first.
-- **WHY:** PRD §4.11 F-122. Apple and Google fetch `https://<host>/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` without cookies to verify app links. `apps/web/proxy.ts` runs on both paths (its matcher skips static extensions but `js(?!on)` keeps `.json`, and the AASA file has no extension) and sends signed-out requests that are not in `PUBLIC_ROUTE_PATTERNS` to `/sign-in` (`decideEntryRedirect` in `apps/web/lib/rootEntry.ts`). `apps/web/lib/rootEntry.test.ts` pins the exact list (`toEqual`).
+- **WHEN:** after TFV2-0059a.
+- **WHY:** PRD §4.11 F-122. Apple and Google fetch `https://<host>/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` without cookies to verify app links. `apps/web/proxy.ts` runs on both paths (its matcher skips static extensions but `js(?!on)` keeps `.json`, and the AASA file has no extension) and sends signed-out requests that are not in `PUBLIC_ROUTE_PATTERNS` to `/sign-in` (`decideEntryRedirect` in `apps/web/lib/rootEntry.ts`). `apps/web/lib/rootEntry.test.ts` pins the exact list (`toEqual`). TFV2-0059a (earlier, same two files) adds `"/link-sent"` after `"/sign-up"` and one test, so this ticket depends on it and starts from its 10 patterns and 9 tests (CONVENTIONS §1).
 - **GOAL:** Signed-out requests to `/.well-known/…` reach their route instead of redirecting to sign-in.
 - **SCOPE:** `apps/web/lib/rootEntry.ts` · test: `apps/web/lib/rootEntry.test.ts`.
 - **MUTATES:** `apps/web/lib/rootEntry.ts` (edit: two lines in `PUBLIC_ROUTE_PATTERNS`) · `apps/web/lib/rootEntry.test.ts` (edit: one list entry, one new test) · web route protection (one public pattern added).
 - **STEPS:**
-  1. Code-map check: `grep -n '"/api/mcp",' apps/web/lib/rootEntry.ts` (last entry); `grep -n "toEqual(\[" apps/web/lib/rootEntry.test.ts` (the pinned list).
+  1. Code-map check: `grep -n '"/link-sent",' apps/web/lib/rootEntry.ts` (one line, from TFV2-0059a; none: stop with `blocked: BLOCKED_DEPENDENCY — TFV2-0059a`); `grep -cE '^\s*(test|it)\(' apps/web/lib/rootEntry.test.ts` → `9`; `grep -n '"/api/mcp",' apps/web/lib/rootEntry.ts` (last entry); `grep -n "toEqual(\[" apps/web/lib/rootEntry.test.ts` (the pinned list).
   2. In `PUBLIC_ROUTE_PATTERNS`, after `"/api/mcp",`, add the comment line `  // App-link files: Apple and Google fetch them without a session.` and the line `  "/.well-known/(.*)",`.
   3. In `rootEntry.test.ts`, add `"/.well-known/(.*)",` as the last item of the pinned `toEqual([...])` list, add `import { pathToRegexp } from "path-to-regexp";` after the existing imports, and add the TESTS case 2 as a new `test("matches /.well-known files as public routes", …)` inside `describe("default entry")`.
   4. Run DONE, then `bun run typecheck`.
-- **DONE:** `bun test apps/web/lib/rootEntry.test.ts` → `9 pass`, `0 fail`; `bun run typecheck` → exit 0.
+- **DONE:** `bun test apps/web/lib/rootEntry.test.ts` → `10 pass`, `0 fail`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the `bun test` summary and the typecheck exit code, pasted into the PR.
 - **DO NOT:** make any other path public; change `decideEntryRedirect` or the proxy matcher; edit `apps/web/proxy.ts`.
 - **REPORT:** `status / ticket: TFV2-0433d / evidence: <DONE output> / changed: apps/web/lib/rootEntry.ts, apps/web/lib/rootEntry.test.ts / unknowns / notes for ticket sync`; list STEPS 1–4 with evidence.
-- **SPEC:** `PUBLIC_ROUTE_PATTERNS` becomes `["/", "/sign-in", "/sign-up", "/terms", "/privacy", "/contact", "/success", "/api/health", "/api/mcp", "/.well-known/(.*)"]` (pattern syntax as `createRouteMatcher` in `apps/web/proxy.ts` uses, the same `(.*)` form as `apps/web/lib/e2eWiringRoutes.ts`). No copy, no errors.
+- **SPEC:** `PUBLIC_ROUTE_PATTERNS` becomes `["/", "/sign-in", "/sign-up", "/link-sent", "/terms", "/privacy", "/contact", "/success", "/api/health", "/api/mcp", "/.well-known/(.*)"]` (pattern syntax as `createRouteMatcher` in `apps/web/proxy.ts` uses, the same `(.*)` form as `apps/web/lib/e2eWiringRoutes.ts`). No copy, no errors.
 - **TESTS:**
-  1. Given the updated pinned list test / Then `PUBLIC_ROUTE_PATTERNS` equals the ten entries in SPEC, in order.
+  1. Given the updated pinned list test / Then `PUBLIC_ROUTE_PATTERNS` equals the eleven entries in SPEC, in order.
   2. Given `const isPublic = (path: string) => PUBLIC_ROUTE_PATTERNS.some((pattern) => pathToRegexp(pattern).test(path));` (the same compile-and-test that `createRouteMatcher` from `@convex-dev/auth/nextjs/server` 0.0.91 runs on `req.nextUrl.pathname` for `apps/web/proxy.ts` line 10; `path-to-regexp` 6.3.0 is installed at the root, `bun.lock` line 1669; the matcher module itself imports `server-only` and cannot load under bun) / Then `isPublic("/.well-known/assetlinks.json")` and `isPublic("/.well-known/apple-app-site-association")` are `true`, `isPublic("/today")` and `isPublic("/well-known/assetlinks.json")` are `false`, and `decideEntryRedirect({ ...signedOut, isPublicRoute: isPublic("/.well-known/assetlinks.json"), pathname: "/.well-known/assetlinks.json", search: "" })` returns `null` (before this change `isPublic` returns `false` there and the redirect is `"/sign-in?next=%2F.well-known%2Fassetlinks.json"`).
-- **NUMBERS:** 9 of 9 tests pass (8 existing + 1, exact). Public patterns 10 (exact). Latency: n/a.
+- **NUMBERS:** 10 of 10 tests pass (8 on `integration` + 1 from TFV2-0059a + 1 here, exact). Public patterns 11 (exact). Latency: n/a.
 - **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
