@@ -44,6 +44,17 @@ Ranges are rewritten by sub-agents in `docs/backlog/work/` and spliced in here o
 The ticket count and the split map are listed below and updated after each range.
 
 <!-- rewrite-status:start -->
+**Fix round 4 (3 Nov 2026, Opus 5.5 lead + sub-agents, against `integration` 27e63227), after the morning's independent review.**
+Groundwork TFV2-0000b (openHarness waits on `section[data-testid^="<id>-"]`; measureVitals LCP = last entry, throws
+"no LCP entry"; CLS = sum without recent input; 8 cases) and TFV2-0000c/d (24-character cap tested at 24 and 25; 7 cases).
+The 8 sampled tickets (CFG-042, TFV2-0023, 0064, 0133a, 0144, 0148, 0303a, 0308a) fixed. Pattern sweep over every
+`approved-unsent` ticket: biome-ignore lines for kept ARIA roles (CONVENTIONS §23.9), no `role="list"` on lists,
+`as CopyKey` on built keys (§11), REPORT file lists, Relies on blocks with STEP 1 greps on screen/View tickets (§23.4),
+every NUMBER tied to a test, gate specs assert the real outcome, STEP grep counts match `integration`, whole-file DONE
+totals (shared files: §1; regression checks use a STEP 1 baseline). Browser-test routing: see
+[`ROUTING-PROPOSAL-2026-11-03.md`](./ROUTING-PROPOSAL-2026-11-03.md). STATUS counts unchanged: 514 `approved-unsent`,
+269 `open`; Depends/WHEN check clean.
+
 **Fix round 3 (3 Nov 2026, Opus 5.5 lead + range sub-agents, against `integration` 27e63227).** Every `approved-unsent`
 ticket was re-checked against the bar and the reviewer's defects (session dcbb336e). STATUS counts are unchanged:
 514 `approved-unsent` (492 TFV2 + 22 CFG) and 269 `open` (232 TFV2 + 37 CFG); 25 stubs; 808 entries. No ids were
