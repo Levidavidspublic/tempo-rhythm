@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "df17f533d6b19ee6f5022e58577781dc4484c6ef"
     }
   },
   "components": [
@@ -224,7 +224,7 @@
       "id": "deepinfra",
       "type": "external",
       "label": "DeepInfra",
-      "sublabel": "DeepSeek V4.1 Flash",
+      "sublabel": "chat + Chatterbox voice",
       "pos": [
         560,
         470
@@ -239,6 +239,58 @@
           "line": 27,
           "end_line": 37,
           "label": "callLLM to DeepInfra"
+        },
+        {
+          "path": "convex/voice.ts",
+          "line": 58,
+          "end_line": 58,
+          "label": "Chatterbox speech URL"
+        }
+      ]
+    },
+    {
+      "id": "deepgram",
+      "type": "external",
+      "label": "Deepgram",
+      "sublabel": "voice speech-to-text",
+      "pos": [
+        330,
+        470
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "off until keys set",
+      "sources": [
+        {
+          "path": "convex/voice.ts",
+          "line": 57,
+          "end_line": 57,
+          "label": "Deepgram token grant URL"
+        }
+      ]
+    },
+    {
+      "id": "mistral",
+      "type": "external",
+      "label": "Mistral",
+      "sublabel": "web search",
+      "pos": [
+        1080,
+        470
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "needs MISTRAL_API_KEY",
+      "sources": [
+        {
+          "path": "convex/lib/webSearch.ts",
+          "line": 68,
+          "end_line": 68,
+          "label": "Mistral conversations URL"
         }
       ]
     },
@@ -403,6 +455,18 @@
       "label": "chat completions"
     },
     {
+      "id": "convex-deepgram",
+      "from": "convex",
+      "to": "deepgram",
+      "label": "token grant"
+    },
+    {
+      "id": "convex-mistral",
+      "from": "convex",
+      "to": "mistral",
+      "label": "search"
+    },
+    {
       "id": "revenuecat-convex",
       "from": "revenuecat",
       "to": "convex",
@@ -435,6 +499,7 @@
       "items": [
         "convex/lib/ai_router.ts calls https://api.deepinfra.com/v1/openai/chat/completions with native fetch (key: Convex env DEEPINFRA_API_KEY).",
         "Model is TEMPO_AI_MODEL, default deepseek-ai/DeepSeek-V4.1-Flash. Tiers fast, balanced and deep all map to it for now.",
+        "Voice call (convex/voice.ts): Deepgram token grant for speech-to-text, Chatterbox speech via DeepInfra; off unless DEEPGRAM_API_KEY and DEEPINFRA_API_KEY are set. Web search (convex/lib/webSearch.ts) uses Mistral when MISTRAL_API_KEY is set, else none.",
         "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it."
       ]
     },
@@ -442,7 +507,7 @@
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
+        "People, Vercel, Polar, DeepInfra, Deepgram, Mistral, MCP clients, and RevenueCat sit outside the Convex security group.",
         "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
