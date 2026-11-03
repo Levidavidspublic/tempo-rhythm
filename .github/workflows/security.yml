@@ -95,8 +95,9 @@ jobs:
           # merge_group: scan only the queued commits (base..head). Without these the action gets
           # empty BASE/HEAD on merge_group runs and scans the whole history. Other events keep their
           # current behaviour; the weekly schedule run does the full-history scan.
-          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || '' }}
-          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || '' }}
+          # Reusable release scans supply the base explicitly and run on the candidate SHA.
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || inputs.base_sha || '' }}
+          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || (inputs.base_sha && github.sha) || '' }}
           extra_args: --results=verified,unknown
 
   secret-scan-self-test:
