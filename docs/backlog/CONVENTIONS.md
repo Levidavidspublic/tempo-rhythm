@@ -1,4 +1,4 @@
-# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026 · fix round 3 (§1 file totals, §11 imports, §13 log, §15 target size, §21 Jev id, §23.8), 3 Nov 2026 · fix round 4 (§1 shared-file totals, §11 CopyKey, §15 helpers, §18, §23.4, §23.9), 3 Nov 2026
+# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026 · fix round 3 (§1 file totals, §11 imports, §13 log, §15 target size, §21 Jev id, §23.8), 3 Nov 2026 · fix round 4 (§1 shared-file totals, §11 CopyKey, §15 helpers, §18, §23.4, §23.9, §13 ids), 3 Nov 2026
 
 One source of truth for every ticket in [`BACKLOG-v2.md`](./BACKLOG-v2.md). Decided once here so no
 ticket re-decides it. Verified against this repo at branch `docs/source-2026-11-01`
@@ -343,6 +343,18 @@ noun for a one-word button and an infinitive for a phrase):
   `usePrefs().setLang(lang)` when `useLocalSearchParams().lang` is `"en"` or `"he"`. Mobile screens force
   states with `useE2EMobile()` (§15) and fixtures from `apps/mobile/lib/e2e/fixtures/<screen>.ts`, the
   same way as §14.
+- **Element ids are unique per rendered instance (fix round 4, 3 Nov 2026).** The harness stacks every state of one
+  component on one page, so a literal `id` inside a component repeats once per section and `htmlFor`,
+  `aria-labelledby`, `aria-describedby`, `aria-controls` and in-page `href="#…"` resolve to the first section only. A
+  component that sets element ids starts with `const uid = useId();` (`useId` from `react`, React 19.2 on
+  `integration`) and writes every id as `` `${uid}-<name>` `` — ``id={`${uid}-<name>`}``, ``htmlFor={`${uid}-<name>`}``,
+  ``aria-describedby={`${uid}-<a> ${uid}-<b>`}``, ``href={`#${uid}-<name>`}`` — never a literal; an id passed to a primitive
+  (`TextInput id`, `SettingsSection id`, `HabitSheet id`) is built the same way, and the primitive's derived ids
+  (`${id}-help`, `${id}-title`) follow. A spec never selects `#<name>`: it reaches the element scoped to its state section,
+  by role and accessible name where it has one, otherwise as
+  `page.getByTestId("<id>-<state>").locator('[id$="-<name>"]')`, and asserts an id-valued attribute as "ends in `-<name>`".
+  The only literal ids left are references to one element outside the component (for example `aria-controls="coach-panel"`,
+  the shell's single coach panel) and an id the caller passes in once (TFV2-0292 `Container id`).
 
 ## 14. Screen data rule (web)
 
