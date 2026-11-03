@@ -14,6 +14,14 @@
 //    skipped: what they bring in is already on the base branch.
 // g. The `test:overlap` label only skips the dispatcher's "no two open tickets share a folder"
 //    check (Phase 04). It changes nothing here.
+// h. Convex architecture guard (batch loop, factory/LOOP.md): a component ticket that changes the data
+//    folders (tempo: convex/**) fails unless the PR carries the `convex-arch` label AND that label was
+//    added by a GUARDED_AUTHORS account (a lane can't approve itself). With the label, data-folder files
+//    pass rule d; hot files still fail.
+// i. Batch PRs (head `batch/<loop-id>` in this repo, base integration; factory-batch opens them): may link
+//    many tickets. Every linked ticket needs front-matter; files are judged against the UNION of the
+//    linked tickets' scopes with the component rules (c/d/f). Data folders: only with an approved
+//    `convex-arch` label (ticket 0 normally lands on integration before the batch, so a batch has none).
 // Promotion PRs (integration -> master/main) pass.
 // Per repo (scripts/factory/scope-guard.config.json): dataFolders, and extraHotFiles (regex strings
 // added to the shared hot-file list, e.g. the backend's own config file).
@@ -56,7 +64,50 @@ export function inFolders(path, folders) {
   return folders.some((f) => { const n = norm(f); return n.endsWith("/") ? path.startsWith(n) : path === n || path.startsWith(n + "/"); });
 }
 
-export function judge({ pr, labels, ticket, fm, files, commitFiles, config }) {
+export const CONVEX_ARCH_LABEL = "convex-arch";
+export const ARCH_APPROVERS = ["Division6066"]; // same account list as config-guard GUARDED_AUTHORS
+
+// Batch PR = factory-batch's combined PR: head batch/<loop-id> in this repo, base integration.
+export function isBatchPR(pr) {
+  return /^batch\/[A-Za-z0-9._-]+$/.test(pr?.head?.ref || "") && pr?.base?.ref === "integration" &&
+    !!pr.head.repo && pr.head.repo.full_name === pr.base.repo.full_name;
+}
+
+// Which commits touched each file? (merge commits are skipped)
+function touchMap(commitFiles) {
+  const touch = new Map();
+  for (const c of commitFiles) for (const f of c.files) {
+    if (!touch.has(f)) touch.set(f, { normal: false, fix: false });
+    touch.get(f)[c.mergeFix ? "fix" : "normal"] = true;
+  }
+  return touch;
+}
+
+// Rule i. tickets = [{ number, fm }] for every linked ticket.
+export function judgeBatch({ pr, labels, tickets, files, commitFiles, config, archApproved = false }) {
+  const problems = [], notes = [];
+  if (!tickets.length) return { problems: ["Batch PR links no tickets (it must list Closes #N for every ticket in the loop)."], notes };
+  for (const t of tickets) if (!t.fm) problems.push(`Ticket #${t.number} has no front-matter (--- block with scope: and type:).`);
+  if (problems.length) return { problems, notes };
+  const scope = [...new Set(tickets.flatMap((t) => (Array.isArray(t.fm.scope) ? t.fm.scope : t.fm.scope ? [t.fm.scope] : [])))];
+  const data = config.dataFolders || [];
+  const hot = [...HOT, ...(config.extraHotFiles || []).map((x) => new RegExp(x))];
+  const arch = labels.includes(CONVEX_ARCH_LABEL) && archApproved;
+  notes.push(`Batch PR ${pr.head.ref}: ${tickets.length} ticket(s) #${tickets.map((t) => t.number).join(", #")}; union scope: ${scope.join(", ") || "none"}. convex-arch: ${arch ? "approved" : "no"}.`);
+  const touch = touchMap(commitFiles);
+  const paths = [...new Set(files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)))];
+  for (const p of paths) {
+    const t = touch.get(p) || { normal: true, fix: false };
+    const isData = inFolders(p, data), isHot = hot.some((r) => r.test(p)), inScope = inFolders(p, scope);
+    if (isData) { if (!arch) problems.push(`${p}: a batch PR may not change the data folders without an approved "${CONVEX_ARCH_LABEL}" label (rule i).`); continue; }
+    if (t.fix && !t.normal) continue; // Factory-Merge-Fix commits may touch hot files and component folders (rule f)
+    if (isHot) problems.push(`${p}: shared hot file in a batch PR (only a Factory-Merge-Fix commit may change it; rule i/f).`);
+    else if (!inScope) problems.push(`${p}: outside the union of the batch tickets' scopes (rule i).`);
+  }
+  return { problems, notes };
+}
+
+export function judge({ pr, labels, ticket, fm, files, commitFiles, config, archApproved = false }) {
   const problems = [], notes = [];
   if (isPromotion(pr)) return { problems, notes: ["Promotion PR (integration -> live branch): passes."] };
   const isConfig = labels.includes("config");
@@ -75,12 +126,9 @@ export function judge({ pr, labels, ticket, fm, files, commitFiles, config }) {
   notes.push(`Ticket #${ticket} (${fm.ticket ?? "?"}), type ${type}, scope: ${scope.join(", ")}. Data folders: ${data.join(", ") || "none configured"}.`);
   if (labels.includes("test:overlap")) notes.push("test:overlap: only the dispatcher's folder-overlap check is skipped; rules c-f still apply.");
 
-  // Which commits touched each file? (merge commits are skipped)
-  const touch = new Map();
-  for (const c of commitFiles) for (const f of c.files) {
-    if (!touch.has(f)) touch.set(f, { normal: false, fix: false });
-    touch.get(f)[c.mergeFix ? "fix" : "normal"] = true;
-  }
+  const arch = labels.includes(CONVEX_ARCH_LABEL) && archApproved;
+  if (labels.includes(CONVEX_ARCH_LABEL)) notes.push(`"${CONVEX_ARCH_LABEL}" label: ${arch ? "approved (added by " + ARCH_APPROVERS.join("/") + ")" : "NOT approved (must be added by " + ARCH_APPROVERS.join(" or ") + ")"}.`);
+  const touch = touchMap(commitFiles);
   const paths = [...new Set(files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)))];
   for (const p of paths) {
     const t = touch.get(p) || { normal: true, fix: false }; // unknown origin -> strict rules (fail closed)
@@ -88,12 +136,51 @@ export function judge({ pr, labels, ticket, fm, files, commitFiles, config }) {
     if (t.fix && isData) problems.push(`${p}: a Factory-Merge-Fix commit may not change the data folders (rule f).`);
     if (!t.normal) continue;
     if (type === "component") {
-      if (isData) problems.push(`${p}: component tickets may not change the data folders (rule d).`);
+      if (isData && !arch) problems.push(`${p}: component tickets may not change the data folders (convex/) unless the PR has an approved "${CONVEX_ARCH_LABEL}" label (rules d/h).`);
+      else if (isData) continue;
       else if (isHot) problems.push(`${p}: component tickets may not change shared hot files (rule d).`);
       else if (!inScope) problems.push(`${p}: outside the ticket scope (rule c).`);
     } else if (!inScope && !isHot) problems.push(`${p}: outside the ticket scope (rule c).`);
   }
   return { problems, notes };
+}
+
+// The last `convex-arch` labelled event must come from an ARCH_APPROVERS account (fail closed).
+async function archLabelApproved(owner, repo, number) {
+  try {
+    const tl = await ghAll(`/repos/${owner}/${repo}/issues/${number}/timeline`);
+    const evts = tl.filter((e) => e.event === "labeled" && e.label && e.label.name === CONVEX_ARCH_LABEL);
+    const who = evts.length ? evts[evts.length - 1].actor?.login : null;
+    return !!who && ARCH_APPROVERS.includes(who);
+  } catch { return false; }
+}
+
+async function readPrFiles(owner, repo, number, pr, extra) {
+  const files = await ghAll(`/repos/${owner}/${repo}/pulls/${number}/files`);
+  if (files.length < pr.changed_files) extra.push(`Could only read ${files.length} of ${pr.changed_files} changed files. Failing closed.`);
+  const commits = await ghAll(`/repos/${owner}/${repo}/pulls/${number}/commits`, (j) => j, 250);
+  const commitFiles = [];
+  for (const c of commits) {
+    if ((c.parents || []).length > 1) continue;
+    const full = await gh(`/repos/${owner}/${repo}/commits/${c.sha}`);
+    commitFiles.push({ sha: c.sha, mergeFix: MERGE_FIX.test(c.commit.message), files: (full.files || []).flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)) });
+  }
+  return { files, commitFiles };
+}
+
+async function mainBatch({ owner, repo, number, pr, labels, tickets, config, archApproved }) {
+  const extra = [], list = [];
+  for (const t of tickets) {
+    const issue = await gh(`/repos/${owner}/${repo}/issues/${t}`, { allow404: true });
+    if (!issue) extra.push(`Ticket #${t} not found in this repo.`);
+    else if (issue.pull_request) extra.push(`#${t} is a pull request, not a ticket.`);
+    else list.push({ number: t, fm: frontMatter(issue.body) });
+  }
+  const { files, commitFiles } = await readPrFiles(owner, repo, number, pr, extra);
+  const { problems, notes } = judgeBatch({ pr, labels, tickets: list, files, commitFiles, config, archApproved });
+  problems.unshift(...extra);
+  await summary(["## scope-guard (batch PR)", ...notes.map((n) => `- ${n}`), ...problems.map((p) => `- FAIL: ${p}`), problems.length ? "" : "- PASS"]);
+  if (problems.length) process.exit(1);
 }
 
 async function main() {
@@ -103,6 +190,8 @@ async function main() {
   const pr = await gh(`/repos/${owner}/${repo}/pulls/${number}`);
   const labels = pr.labels.map((l) => l.name);
   const tickets = linkedTickets(pr.body);
+  const archApproved = labels.includes(CONVEX_ARCH_LABEL) ? await archLabelApproved(owner, repo, number) : false;
+  if (isBatchPR(pr)) return mainBatch({ owner, repo, number, pr, labels, tickets, config, archApproved });
   const extra = [];
   if (tickets.length > 1) extra.push(`One ticket per PR: this PR links #${tickets.join(", #")}.`);
   const ticket = tickets[0] ?? null;
@@ -113,16 +202,8 @@ async function main() {
     else if (issue.pull_request) extra.push(`#${ticket} is a pull request, not a ticket.`);
     else fm = frontMatter(issue.body);
   }
-  const files = await ghAll(`/repos/${owner}/${repo}/pulls/${number}/files`);
-  if (files.length < pr.changed_files) extra.push(`Could only read ${files.length} of ${pr.changed_files} changed files. Failing closed.`);
-  const commits = await ghAll(`/repos/${owner}/${repo}/pulls/${number}/commits`, (j) => j, 250);
-  const commitFiles = [];
-  for (const c of commits) {
-    if ((c.parents || []).length > 1) continue;
-    const full = await gh(`/repos/${owner}/${repo}/commits/${c.sha}`);
-    commitFiles.push({ sha: c.sha, mergeFix: MERGE_FIX.test(c.commit.message), files: (full.files || []).flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)) });
-  }
-  const { problems, notes } = judge({ pr, labels, ticket, fm, files, commitFiles, config });
+  const { files, commitFiles } = await readPrFiles(owner, repo, number, pr, extra);
+  const { problems, notes } = judge({ pr, labels, ticket, fm, files, commitFiles, config, archApproved });
   problems.unshift(...extra);
   await summary(["## scope-guard", ...notes.map((n) => `- ${n}`), ...problems.map((p) => `- FAIL: ${p}`), problems.length ? "" : "- PASS"]);
   if (problems.length) process.exit(1);

@@ -1,0 +1,28 @@
+.kb59-preference .kb59-feedback {
+  display: flex;
+  align-items: baseline;
+  gap: var(--tp-space-2);
+  margin: 0;
+  padding: 0 var(--tp-space-5) var(--tp-space-3);
+  overflow-wrap: anywhere;
+}
+
+.kb59-preference .tp-switch {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+
+.kb59-gallery-controls {
+  display: grid;
+  gap: var(--tp-space-2);
+  margin-block-end: var(--tp-space-5);
+}
+
+.kb59-gallery-controls select {
+  min-block-size: 44px;
+  max-inline-size: 100%;
+}
+
+.kb59-gallery .kb59-stored {
+  padding-block: var(--tp-space-3);
+}

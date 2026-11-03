@@ -1,3 +1,7 @@
+import { fillTemplate } from "./habits-view";
+import { type Lang, translate } from "./i18n";
+import { intlLocale } from "./you/screenState";
+
 export type TrackingSessionLog = {
   id: string;
   completedAt: number;
@@ -161,9 +165,37 @@ export function buildTrackingDashboard(logs: TrackingSessionLog[]): TrackingDash
   };
 }
 
-export function formatSessionMinutes(minutes: number): string {
+/** "1 minute" / "25 minutes"; Hebrew "דקה אחת" / "25 דקות". */
+export function formatSessionMinutes(minutes: number, lang: Lang = "en"): string {
   if (minutes === 1) {
-    return "1 minute";
+    return translate(lang, "track.minute.one");
   }
-  return `${minutes} minutes`;
+  return fillTemplate(translate(lang, "track.minutes"), { n: minutes });
+}
+
+/** "1 block" / "3 blocks"; Hebrew "בלוק אחד" / "3 בלוקים". */
+export function formatBlockCount(blocks: number, lang: Lang = "en"): string {
+  if (blocks === 1) {
+    return translate(lang, "track.block.one");
+  }
+  return fillTemplate(translate(lang, "track.blocks"), { n: blocks });
+}
+
+const LOCAL_DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Display label for a local day key (`YYYY-MM-DD`, still the data key): "Fri 16 Oct" in English,
+ * "יום ו׳, 16 באוק׳" in Hebrew. An unreadable key is shown as written.
+ */
+export function formatTrackingDay(dayKey: string, lang: Lang = "en"): string {
+  const ms = LOCAL_DAY_KEY.test(dayKey) ? Date.parse(`${dayKey}T00:00:00.000Z`) : Number.NaN;
+  if (Number.isNaN(ms)) {
+    return dayKey;
+  }
+  return new Intl.DateTimeFormat(intlLocale(lang), {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(ms));
 }

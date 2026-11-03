@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit template as a form · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — template-editor.html */
+  .ed-sections { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+  .ed-section { display: grid; gap: var(--tp-space-3); grid-template-columns: minmax(0, 1fr) minmax(0, 12rem) auto; align-items: end; }
+  .ed-section__tools { display: flex; gap: var(--tp-space-1); }
+  .ed-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  @media (max-width: 767px) {
+    .ed-section { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<!--
+@screen   Template · editor (legacy)
+@route    apps/web/app/(tempo)/templates/editor/[id]/page.tsx
+@layout   TempoShell
+@note     Designed from the inventory title only ("Template · editor (legacy)"); no source screen was available. Read as the plain form
+          alternative to the builder: same template, edited as fields instead of blocks. Reached from Templates > More > "Edit as a form".
+@data     template = templates.get({ id })                                   // Convex query: name, description, page type, tags, sections, offerOnNewPages
+@actions  save changes -> templates.update({ id, patch: { name, description, pageType, tags, sections, offerOnNewPages } })   // Undo 5 min
+@actions  add / remove / move a section -> local form state only, saved with "Save changes"
+@actions  open in the builder -> router.push("/templates/builder?id=[id]")
+@states   default | empty | loading | error | offline  (?state=)   + invalid (Save with no name shows the error summary)
+@flow     1. Show the template as a plain form: name, what it is for, page type, tags, then its sections in order.
+          2. Each section has a title and a kind (heading, tasks, question, time block, energy check-in) plus Move up / Move down / Remove buttons.
+          3. "Add a section" appends an empty one and moves focus to its title.
+          4. The switch decides whether Tempo offers this template on new empty pages (word "On" / "Off" always shown).
+          5. "Save changes" is the one primary action. A missing name shows a summary at the top that links to the field; nothing is lost.
+          6. Saved: a toast with Undo for 5 minutes. "Open in the builder" shows the same template as blocks with a live preview.
+          7. Empty: no sections yet, with "Add a section". Error: "Your data is safe." + Retry. Offline: keep editing, save when back.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to the form</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'templates' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <a class="tp-btn tp-btn--secondary tp-rail__search" href="command.html" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </a>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Templates','Gentle Monday'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="templates.html" data-i18n="nav.templates">Templates</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="crumb">Gentle Monday</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle, actions: ['Open in the builder'] } | events: onBuilder -> router.push('/templates/builder?id=') -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="h1">Edit template</h1>
+          <p class="tp-pagehead__sub" data-i18n="sub">The plain form view. Prefer blocks and a live preview? Use the builder.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--secondary" href="template-builder.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="builder">Open in the builder</span></a>
+        </div>
+      </header>
+
+      <!-- @component FormErrorSummary | shadcn: alert | props: { errors: [{field:'ed-name', text}] } | events: — -->
+      <div class="tp-error-summary" role="alert" tabindex="-1" id="ed-errors" data-component="FormErrorSummary" hidden>
+        <p class="tp-error-summary__title" data-i18n="err.title">One thing to fix before saving</p>
+        <ul><li><a href="#ed-name" data-i18n="err.name">Give the template a name</a></li></ul>
+      </div>
+
+      <!-- @component Form | shadcn: form | props: { template } | events: onSubmit -> templates.update({ id, patch }) -->
+      <form class="tp-form" id="ed-form" data-component="Form" novalidate data-state-hide>
+        <!-- @component Field | shadcn: form item | props: { id: 'ed-name', label: 'Name', error } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ed-name" data-i18n="f.name">Name</label>
+          <input class="tp-input" id="ed-name" type="text" dir="auto" value="Gentle Monday" data-i18n-attr="value:f.name.v" aria-describedby="ed-name-error">
+          <p class="tp-error-text" id="ed-name-error" hidden data-i18n="err.name">Give the template a name</p>
+        </div>
+        <!-- @component Textarea | shadcn: textarea | props: { rows: 2 } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ed-desc"><span data-i18n="f.desc">What it is for</span> <span class="tp-label__opt" data-i18n="f.opt">optional</span></label>
+          <textarea class="tp-textarea" id="ed-desc" rows="2" dir="auto" data-i18n="f.desc.v">A softer start to the week. At most three tasks.</textarea>
+        </div>
+        <!-- @component Select | shadcn: select | props: { options: ['daily','weekly','project','note'], value: 'daily' } | events: onChange -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ed-type" data-i18n="f.type">Page type</label>
+          <div class="tp-select" data-component="Select">
+            <select class="tp-select__input" id="ed-type" aria-describedby="ed-type-help">
+              <option value="daily" selected data-i18n="pt.daily">Daily page</option>
+              <option value="weekly" data-i18n="pt.weekly">Weekly page</option>
+              <option value="project" data-i18n="pt.project">Project page</option>
+              <option value="note" data-i18n="pt.note">Note</option>
+            </select>
+            <span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span>
+          </div>
+          <p class="tp-help" id="ed-type-help" data-i18n="f.type.h">Daily pages also show their tasks on Today.</p>
+        </div>
+        <!-- @component TextInput | shadcn: input | props: { value: 'monday, gentle' } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ed-tags"><span data-i18n="f.tags">Tags</span> <span class="tp-label__opt" data-i18n="f.opt">optional</span></label>
+          <input class="tp-input" id="ed-tags" type="text" dir="auto" value="monday, gentle" data-i18n-attr="value:f.tags.v" aria-describedby="ed-tags-help">
+          <p class="tp-help" id="ed-tags-help" data-i18n="f.tags.h">Separate with commas. Pages made from it get these tags.</p>
+        </div>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Sections', count: 3 } | events: — -->
+        <section class="tp-section" data-component="Section" aria-labelledby="sec-h">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="sec-h" data-i18n="sec.h">Sections, in order</h2>
+            <span class="tp-section__count tp-num" id="sec-count">3</span>
+          </div>
+          <!-- @component TemplateSectionRow ×3 | shadcn: input + select + button | props: { section: {title, kind} } | events: onMoveUp, onMoveDown, onRemove (local until Save) -->
+          <ol class="ed-sections" id="ed-sections" data-component="TemplateSectionRow">
+            <li class="tp-card ed-section">
+              <div class="tp-field"><label class="tp-label" for="s1t" data-i18n="s.title">Section title</label><input class="tp-input" id="s1t" type="text" dir="auto" value="How am I arriving?" data-i18n-attr="value:s1.v"></div>
+              <div class="tp-field"><label class="tp-label" for="s1k" data-i18n="s.kind">Kind</label><div class="tp-select"><select class="tp-select__input" id="s1k"><option data-i18n="k.heading">Heading</option><option data-i18n="k.tasks">Tasks</option><option data-i18n="k.question">Question</option><option data-i18n="k.time">Time block</option><option selected data-i18n="k.energy">Energy check-in</option></select><span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span></div></div>
+              <div class="ed-section__tools">
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="up" aria-label="Move up" data-i18n-attr="aria-label:s.up"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="down" aria-label="Move down" data-i18n-attr="aria-label:s.down"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--icon" type="button" data-remove aria-label="Remove section" data-i18n-attr="aria-label:s.remove"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+              </div>
+            </li>
+            <li class="tp-card ed-section">
+              <div class="tp-field"><label class="tp-label" for="s2t" data-i18n="s.title">Section title</label><input class="tp-input" id="s2t" type="text" dir="auto" value="Three things, no more" data-i18n-attr="value:s2.v"></div>
+              <div class="tp-field"><label class="tp-label" for="s2k" data-i18n="s.kind">Kind</label><div class="tp-select"><select class="tp-select__input" id="s2k"><option data-i18n="k.heading">Heading</option><option selected data-i18n="k.tasks">Tasks</option><option data-i18n="k.question">Question</option><option data-i18n="k.time">Time block</option><option data-i18n="k.energy">Energy check-in</option></select><span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span></div></div>
+              <div class="ed-section__tools">
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="up" aria-label="Move up" data-i18n-attr="aria-label:s.up"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="down" aria-label="Move down" data-i18n-attr="aria-label:s.down"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--icon" type="button" data-remove aria-label="Remove section" data-i18n-attr="aria-label:s.remove"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+              </div>
+            </li>
+            <li class="tp-card ed-section">
+              <div class="tp-field"><label class="tp-label" for="s3t" data-i18n="s.title">Section title</label><input class="tp-input" id="s3t" type="text" dir="auto" value="A 10-minute walk" data-i18n-attr="value:s3.v"></div>
+              <div class="tp-field"><label class="tp-label" for="s3k" data-i18n="s.kind">Kind</label><div class="tp-select"><select class="tp-select__input" id="s3k"><option data-i18n="k.heading">Heading</option><option data-i18n="k.tasks">Tasks</option><option data-i18n="k.question">Question</option><option selected data-i18n="k.time">Time block</option><option data-i18n="k.energy">Energy check-in</option></select><span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span></div></div>
+              <div class="ed-section__tools">
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="up" aria-label="Move up" data-i18n-attr="aria-label:s.up"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+                <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-move="down" aria-label="Move down" data-i18n-attr="aria-label:s.down"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--icon" type="button" data-remove aria-label="Remove section" data-i18n-attr="aria-label:s.remove"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+              </div>
+            </li>
+          </ol>
+          <div class="ed-row">
+            <button class="tp-btn tp-btn--secondary" type="button" id="ed-add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="s.add">Add a section</span></button>
+          </div>
+        </section>
+
+        <!-- @component SettingRow | shadcn: — + switch | props: { label, help, control: Switch } | events: onToggle -> TP.onSwitch -->
+        <div class="tp-setting-row" data-component="SettingRow">
+          <div class="tp-setting-row__text">
+            <span class="tp-setting-row__label" id="offer-label" data-i18n="offer">Offer on new empty pages</span>
+            <span class="tp-help" id="offer-help" data-i18n="offer.h">Tempo suggests it once on a blank daily page. "Not now" always works.</span>
+          </div>
+          <div class="tp-setting-row__control">
+            <!-- @component Switch | shadcn: switch | props: { checked: true } | events: onToggle -> saved with the form -->
+            <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="offer-label" aria-describedby="offer-help" data-component="Switch"><span class="tp-switch__track"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+          </div>
+        </div>
+
+        <div class="tp-form__actions">
+          <button class="tp-btn tp-btn--primary" type="submit"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="save">Save changes</span></button>
+          <a class="tp-btn tp-btn--ghost" href="templates.html" data-i18n="cancel">Cancel</a>
+        </div>
+      </form>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onAdd -> local section -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-list"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">No sections yet.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">A template is just a few sections in order. Start with one, like a heading or a short task list.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="template-editor.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="s.add">Add a section</span></a></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading the template</span>
+        <div class="tp-skel-list">
+          <div class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></div>
+          <div class="tp-skeleton tp-skeleton--w100"></div>
+          <div class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></div>
+          <div class="tp-skeleton tp-skeleton--block"></div>
+          <div class="tp-skeleton tp-skeleton--w80"></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load this template." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't load this template.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> templates.update (previous version) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "toast.saved": "Template saved", "toast.removed": "Section removed", "new.section": "New section", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "עריכת תבנית כטופס · Tempo",
+    "skip": "דלגו לטופס", "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.notes": "פתקים", "nav.templates": "תבניות",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן", "crumb": "שני רך",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "h1": "עריכת תבנית", "sub": "תצוגת הטופס הפשוטה. מעדיפה בלוקים ותצוגה מקדימה חיה? אפשר לעבור לבנייה.", "builder": "לפתוח בבנייה",
+    "err.title": "דבר אחד לתקן לפני השמירה", "err.name": "צריך לתת לתבנית שם",
+    "f.name": "שם", "f.name.v": "שני רך", "f.desc": "למה היא נועדה", "f.opt": "לא חובה", "f.desc.v": "התחלה רכה יותר לשבוע. לכל היותר שלוש משימות.",
+    "f.type": "סוג דף", "pt.daily": "דף יומי", "pt.weekly": "דף שבועי", "pt.project": "דף פרויקט", "pt.note": "פתק",
+    "f.type.h": "המשימות בדפים יומיים מופיעות גם בהיום.",
+    "f.tags": "תגיות", "f.tags.v": "שני, רך", "f.tags.h": "מפרידים בפסיקים. דפים שנוצרים ממנה יקבלו את התגיות האלה.",
+    "sec.h": "קטעים, לפי הסדר", "s.title": "כותרת הקטע", "s.kind": "סוג",
+    "s1.v": "איך אני מגיעה היום?", "s2.v": "שלושה דברים, לא יותר", "s3.v": "הליכה של 10 דקות",
+    "k.heading": "כותרת", "k.tasks": "משימות", "k.question": "שאלה", "k.time": "בלוק זמן", "k.energy": "בדיקת אנרגיה",
+    "s.up": "הזזה למעלה", "s.down": "הזזה למטה", "s.remove": "הסרת הקטע", "s.add": "הוספת קטע",
+    "offer": "להציע בדפים ריקים חדשים", "offer.h": "Tempo מציע אותה פעם אחת בדף יומי ריק. \"לא עכשיו\" תמיד עובד.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "save": "שמירת השינויים", "cancel": "ביטול",
+    "empty.title": "עדיין אין קטעים.", "empty.body": "תבנית היא רק כמה קטעים לפי הסדר. אפשר להתחיל באחד, כמו כותרת או רשימת משימות קצרה.",
+    "loading": "טוען את התבנית", "error.title": "לא הצלחנו לטעון את התבנית הזו.",
+    "toast.saved": "התבנית נשמרה", "toast.removed": "הקטע הוסר", "new.section": "קטע חדש",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד", "toast.title": "בוצע",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.pages": "דפים", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+/* Screen behaviour: move / remove / add sections; validate the name; save with Undo. */
+TP.onReady2 = function () {
+  var list = document.getElementById("ed-sections"), form = document.getElementById("ed-form");
+  var count = document.getElementById("sec-count"), n = 3;
+  function sync() { count.textContent = list.children.length; }
+
+  list.addEventListener("click", function (e) {
+    var mv = e.target.closest("[data-move]"), rm = e.target.closest("[data-remove]");
+    if (!mv && !rm) return;
+    var li = e.target.closest("li");
+    if (mv) {
+      var up = mv.getAttribute("data-move") === "up", sib = up ? li.previousElementSibling : li.nextElementSibling;
+      if (sib) { up ? sib.before(li) : sib.after(li); mv.focus(); }
+      return;
+    }
+    var next = li.nextElementSibling || li.previousElementSibling, ph = document.createComment("removed");
+    li.replaceWith(ph); sync();
+    if (next) next.querySelector("input").focus();
+    TP.toast({ title: TP.t("toast.removed"), onUndo: function () { ph.replaceWith(li); sync(); li.querySelector("input").focus(); } });
+  });
+
+  document.getElementById("ed-add").addEventListener("click", function () {
+    var copy = list.lastElementChild.cloneNode(true); n++;
+    copy.querySelectorAll("[id]").forEach(function (el) { el.id = el.id.replace(/^s\d+/, "s" + n); });
+    copy.querySelectorAll("label[for]").forEach(function (el) { el.setAttribute("for", el.getAttribute("for").replace(/^s\d+/, "s" + n)); });
+    var input = copy.querySelector("input"); input.removeAttribute("data-i18n-attr"); input.value = ""; input.placeholder = TP.t("new.section");
+    copy.querySelector("select").selectedIndex = 0;
+    list.appendChild(copy); sync(); input.focus();
+  });
+
+  /** Save — REAL: convex templates.update({ id, patch: { name, description, pageType, tags, sections, offerOnNewPages } }). STATE: toast + Undo 5 min. */
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = document.getElementById("ed-name"), err = document.getElementById("ed-name-error"), sum = document.getElementById("ed-errors");
+    var bad = !name.value.trim();
+    err.hidden = !bad; sum.hidden = !bad;
+    if (bad) { name.setAttribute("aria-invalid", "true"); sum.focus(); return; }
+    name.removeAttribute("aria-invalid");
+    TP.toast({ title: TP.t("toast.saved"), onUndo: function () {
+      // REAL: convex templates.update({ id, patch: previousVersion })
+    } });
+  });
+};
+</script>
+</body>
+</html>

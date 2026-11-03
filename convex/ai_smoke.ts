@@ -1,43 +1,27 @@
-// Dev-only smoke test. Safe to delete once an accept-reject coach action exists.
+// Dev-only smoke test of the single model seam (convex/lib/ai_router.ts).
+//   npx convex run ai_smoke:pingModel
 import { internalAction } from "./_generated/server";
-import { type AiTier, callLLM } from "./lib/ai_router";
+import { callLLM, resolveAiModel } from "./lib/ai_router";
 
-export const pingMistral = internalAction({
+export const pingModel = internalAction({
   args: {},
   handler: async () => {
-    const tiers: AiTier[] = ["fast", "balanced", "deep"];
-    const results = [];
-
-    for (const tier of tiers) {
-      try {
-        const result = await callLLM({
-          tier,
-          messages: [{ role: "user", content: "Reply with exactly: pong" }],
-          maxTokens: 10,
-          temperature: 0,
-        });
-        results.push({
-          requestedTier: result.requestedTier,
-          tier: result.tier,
-          model: result.model,
-          content: result.content,
-          totalTokens: result.usage.totalTokens,
-          ok: true,
-        });
-      } catch (err) {
-        const e = err as Error;
-        results.push({
-          requestedTier: tier,
-          tier,
-          model: "",
-          content: "",
-          totalTokens: 0,
-          ok: false,
-          error: `${e.name}: ${e.message}`,
-        });
-      }
+    try {
+      const result = await callLLM({
+        tier: "fast",
+        messages: [{ role: "user", content: "Reply with exactly: pong" }],
+        maxTokens: 10,
+        temperature: 0,
+      });
+      return {
+        model: result.model,
+        content: result.content,
+        totalTokens: result.usage.totalTokens,
+        ok: true,
+      };
+    } catch (err) {
+      const e = err as Error;
+      return { model: resolveAiModel(), content: "", totalTokens: 0, ok: false, error: `${e.name}: ${e.message}` };
     }
-
-    return results;
   },
 });

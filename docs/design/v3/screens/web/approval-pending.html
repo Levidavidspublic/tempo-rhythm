@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You're on the list · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — approval-pending.html */
+  .ap-next { display: grid; gap: var(--tp-space-3); }
+  .ap-foot { display: grid; gap: var(--tp-space-3); justify-items: center; }
+</style>
+</head>
+<body>
+<!--
+@screen   Approval pending
+@route    apps/web/app/(auth)/sign-up/pending/page.tsx
+@layout   Auth
+@data     email = searchParams.email      // echoed back; never says whether the email was already known
+@actions  wrong email -> link to /sign-up
+@actions  read about Tempo -> link to /about
+@states   default | empty | loading | error | offline  (?state=)   // nothing is fetched; offline adds a banner
+@flow     1. Say kindly: "You're on the list. We'll email you when you're in."
+          2. Show the email so a typo is easy to spot, with "Wrong email? Ask again".
+          3. Say what happens next in three short steps: we read every request, you get one email, the link signs you in.
+          4. No dates promised. No pressure. A link to read more while waiting.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main id="main" class="tp-auth" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card | props: { children: StatusPanel } | events: — -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <a class="tp-auth-card__brand" href="landing.html" data-i18n="brand">Tempo</a>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">Your request is already saved.</span></span>
+    </div>
+
+    <!-- @component StatusPanel | shadcn: card | props: { tone: 'done', icon: 'check', title, body, meta: email, actions: [ask again] } | events: — -->
+    <section class="tp-status-panel" data-tone="done" data-component="StatusPanel" aria-labelledby="ap-title">
+      <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--xl" aria-hidden="true"><use href="#i-check"/></svg></span>
+      <h1 class="tp-status-panel__title" id="ap-title" tabindex="-1" data-i18n="title">You're on the list.</h1>
+      <p class="tp-status-panel__body" data-i18n="body">We'll email you when you're in. Thank you for your patience.</p>
+      <p class="tp-status-panel__meta tp-ltr" dir="ltr" data-email>maya@example.com</p>
+      <div class="tp-status-panel__actions">
+        <a class="tp-btn tp-btn--ghost tp-btn--sm" href="sign-up.html" id="ap-again" data-i18n="again">Wrong email? Ask again</a>
+      </div>
+    </section>
+
+    <section class="ap-next" aria-labelledby="ap-next-title">
+      <h2 class="tp-eyebrow" id="ap-next-title" data-i18n="next.title">What happens next</h2>
+      <!-- @component HowItWorks | shadcn: — | props: { steps: {title, body}[] } | events: — -->
+      <ol class="tp-steps" data-component="HowItWorks">
+        <li class="tp-step"><span class="tp-step__num" aria-hidden="true">1</span><h3 class="tp-step__title" data-i18n="n1.t">We read every request</h3><p class="tp-step__body" data-i18n="n1.b">A person looks at each one. We let people in a few at a time.</p></li>
+        <li class="tp-step"><span class="tp-step__num" aria-hidden="true">2</span><h3 class="tp-step__title" data-i18n="n2.t">You get one email</h3><p class="tp-step__body" data-i18n="n2.b">It comes from noreply@tempoflow.dev. Nothing else, no newsletters.</p></li>
+        <li class="tp-step"><span class="tp-step__num" aria-hidden="true">3</span><h3 class="tp-step__title" data-i18n="n3.t">The link signs you in</h3><p class="tp-step__body" data-i18n="n3.b">No password. Then a short setup, at your own pace.</p></li>
+      </ol>
+    </section>
+
+    <div class="tp-auth-card__foot ap-foot">
+      <p><span data-i18n="foot.wait">While you wait:</span> <a class="tp-btn tp-btn--link" href="about.html" data-i18n="foot.about">Read about Tempo</a></p>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "You're on the list · Tempo" },
+  he: {
+    "doc.title": "את/ה ברשימה · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "lang.label": "שפה",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "הבקשה שלך כבר נשמרה.",
+    "title": "את/ה ברשימה.", "body": "נשלח לך מייל כשתיכנסו. תודה על הסבלנות.",
+    "again": "מייל שגוי? לבקש שוב",
+    "next.title": "מה קורה עכשיו",
+    "n1.t": "אנחנו קוראים כל בקשה", "n1.b": "אדם מסתכל על כל אחת. אנחנו מכניסים אנשים בהדרגה.",
+    "n2.t": "מקבלים מייל אחד", "n2.b": "הוא מגיע מ-noreply@tempoflow.dev. שום דבר אחר, בלי ניוזלטרים.",
+    "n3.t": "הקישור מכניס אותך", "n3.b": "בלי סיסמה. אחר כך הגדרה קצרה, בקצב שלך.",
+    "foot.wait": "בינתיים:", "foot.about": "לקרוא על Tempo"
+  }
+};
+(function () {
+  var doc = document, root = doc.documentElement, params = new URLSearchParams(location.search);
+  var lang = root.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  doc.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () { try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {} });
+  });
+  // REAL: convex — none; the email comes from the sign-up redirect (searchParams.email), access.request already ran
+  var email = params.get("email");
+  if (email) doc.querySelector("[data-email]").textContent = email;
+  if (params.get("lang")) doc.getElementById("ap-again").href = "sign-up.html?lang=" + params.get("lang");
+  TP.onReady = function () { var h = doc.getElementById("ap-title"); if (h) h.focus(); };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What's new · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — changelog.html */
+  .cl-main { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .cl-list { display: grid; gap: 0; list-style: none; margin: 0; padding: 0; max-width: var(--tp-measure); }
+  .cl-entry { display: grid; gap: var(--tp-space-4); padding-block: var(--tp-space-10); border-top: 1px solid var(--tp-line); }
+  .cl-entry__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--tp-space-2) var(--tp-space-4); }
+  .cl-changes { display: grid; gap: var(--tp-space-3); list-style: none; margin: 0; padding: 0; }
+  .cl-change { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--tp-space-2); }
+  .cl-foot { padding-block: var(--tp-space-10); border-top: 1px solid var(--tp-line); display: grid; gap: var(--tp-space-4); justify-items: start; }
+  .cl-offline { margin-block-start: var(--tp-space-4); }
+</style>
+</head>
+<body>
+<!--
+@screen   Changelog
+@route    apps/web/app/(marketing)/changelog/page.tsx
+@layout   Marketing
+@data     entries = static Markdown files in content/changelog/*.md, read at build time   // no Convex query
+@actions  ask to join -> link to /sign-up                       // the one primary action
+@actions  switch language -> link ?lang=he | ?lang=en
+@states   default | empty | loading | error | offline  (?state=)   // built at deploy time, so empty / loading / error show the default page; offline adds a banner
+@flow     1. Same header and footer as the landing page.
+          2. Newest entry first. Each entry has a version, a date, and a short list of changes.
+          3. Each change is marked with an icon and a word: New, Better, or Fixed. Never colour alone.
+          4. Plain language only. No ticket numbers, no code words.
+          5. End with one action: Ask to join.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component SiteHeader | shadcn: navigation-menu | props: { links: {href,label}[] } | events: — -->
+<header class="tp-site-header" data-component="SiteHeader">
+  <div class="tp-container tp-site-header__inner">
+    <a class="tp-site-header__brand" href="landing.html" data-i18n="brand">Tempo</a>
+    <nav class="tp-site-nav" aria-label="Main" data-i18n-attr="aria-label:nav.label">
+      <a class="tp-site-link tp-site-link--wide" href="landing.html#what" data-i18n="nav.what">What it is</a>
+      <a class="tp-site-link tp-site-link--wide" href="landing.html#pricing" data-i18n="nav.pricing">Pricing</a>
+      <a class="tp-site-link tp-site-link--wide" href="about.html" data-i18n="nav.about">About</a>
+      <a class="tp-site-link" href="sign-in.html" data-i18n="nav.signin">Sign in</a>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">EN</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עב</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="tp-container cl-main" tabindex="-1">
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline cl-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+    <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+    <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">You're reading a saved copy.</span></span>
+  </div>
+
+  <!-- @component Hero | shadcn: — | props: { eyebrow, title, lede } | events: — -->
+  <section class="tp-hero" data-component="Hero" aria-labelledby="cl-title">
+    <span class="tp-eyebrow" data-i18n="hero.eyebrow">Changelog</span>
+    <h1 class="tp-hero__title" id="cl-title" data-i18n="hero.title">What's new in Tempo</h1>
+    <p class="tp-hero__lede" data-i18n="hero.lede">Small, steady changes. Newest first.</p>
+  </section>
+
+  <!-- @component ChangelogEntry ×4 | shadcn: — (article + badge) | props: { version, date, changes: {kind:'new'|'better'|'fixed', text}[] } | events: — -->
+  <ol class="cl-list" role="list">
+    <li>
+      <article class="cl-entry" aria-labelledby="v4">
+        <div class="cl-entry__head">
+          <h2 class="tp-h2" id="v4"><span data-i18n="ver">Version</span> <span class="tp-num">0.4</span></h2>
+          <time class="tp-muted tp-num" datetime="2026-10-09" data-i18n="d4">9 October 2026</time>
+        </div>
+        <ul class="cl-changes" role="list">
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c4a">Live voice with the coach. Talk out loud, cut in any time, and read every reply as text.</span></li>
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c4b">Hold to talk, like a walkie-talkie, if you'd rather not keep the mic open.</span></li>
+          <li class="cl-change"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="k.fixed">Fixed</span></span><span data-i18n="c4c">Hebrew times and dates no longer flip around in the middle of a sentence.</span></li>
+        </ul>
+      </article>
+    </li>
+    <li>
+      <article class="cl-entry" aria-labelledby="v3">
+        <div class="cl-entry__head">
+          <h2 class="tp-h2" id="v3"><span data-i18n="ver">Version</span> <span class="tp-num">0.3</span></h2>
+          <time class="tp-muted tp-num" datetime="2026-09-28" data-i18n="d3">28 September 2026</time>
+        </div>
+        <ul class="cl-changes" role="list">
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c3a">"What Tempo remembers": see every memory, forget one, or export them all as Markdown.</span></li>
+          <li class="cl-change"><span class="tp-badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="k.better">Better</span></span><span data-i18n="c3b">The coach now asks before it builds a new template, and shows exactly what it will add.</span></li>
+        </ul>
+      </article>
+    </li>
+    <li>
+      <article class="cl-entry" aria-labelledby="v2">
+        <div class="cl-entry__head">
+          <h2 class="tp-h2" id="v2"><span data-i18n="ver">Version</span> <span class="tp-num">0.2</span></h2>
+          <time class="tp-muted tp-num" datetime="2026-09-14" data-i18n="d2">14 September 2026</time>
+        </div>
+        <ul class="cl-changes" role="list">
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c2a">Full Hebrew, right to left, everywhere in the app.</span></li>
+          <li class="cl-change"><span class="tp-badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="k.better">Better</span></span><span data-i18n="c2b">Undo now lasts 5 minutes for every change the coach makes.</span></li>
+          <li class="cl-change"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="k.fixed">Fixed</span></span><span data-i18n="c2c">The reading font setting now sticks after you sign in again.</span></li>
+        </ul>
+      </article>
+    </li>
+    <li>
+      <article class="cl-entry" aria-labelledby="v1">
+        <div class="cl-entry__head">
+          <h2 class="tp-h2" id="v1"><span data-i18n="ver">Version</span> <span class="tp-num">0.1</span></h2>
+          <time class="tp-muted tp-num" datetime="2026-09-01" data-i18n="d1">1 September 2026</time>
+        </div>
+        <ul class="cl-changes" role="list">
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c1a">First preview: Markdown pages, a daily template, and a coach you can type to.</span></li>
+          <li class="cl-change"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="k.new">New</span></span><span data-i18n="c1b">Sign in with an email link. No password.</span></li>
+        </ul>
+      </article>
+    </li>
+  </ol>
+
+  <div class="cl-foot">
+    <p class="tp-muted" data-i18n="foot.lede">Want to try it?</p>
+    <a class="tp-btn tp-btn--primary" href="sign-up.html" data-i18n="cta.join">Ask to join</a>
+  </div>
+</main>
+
+<!-- @component SiteFooter | shadcn: — | props: { links, lang } | events: — -->
+<footer class="tp-site-footer" data-component="SiteFooter">
+  <div class="tp-container tp-site-footer__inner">
+    <nav class="tp-site-footer__links" aria-label="Footer" data-i18n-attr="aria-label:foot.label">
+      <a class="tp-site-link" href="#" data-i18n="foot.terms">Terms</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.privacy">Privacy</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.contact">Contact</a>
+      <a class="tp-site-link" href="changelog.html" aria-current="page" data-i18n="foot.changelog">What's new</a>
+    </nav>
+    <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+    <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+      <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+      <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+    </div>
+    <p class="tp-site-footer__small" data-i18n="foot.small">Tempo Flow. A coach, not a therapist.</p>
+  </div>
+</footer>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "What's new · Tempo" },
+  he: {
+    "doc.title": "מה חדש · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "nav.label": "ראשי", "nav.what": "מה זה", "nav.pricing": "מחירים", "nav.about": "אודות", "nav.signin": "כניסה", "lang.label": "שפה",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "את/ה קוראים עותק שמור.",
+    "hero.eyebrow": "יומן שינויים", "hero.title": "מה חדש ב-Tempo", "hero.lede": "שינויים קטנים ויציבים. החדש ביותר ראשון.",
+    "ver": "גרסה", "k.new": "חדש", "k.better": "שיפור", "k.fixed": "תוקן",
+    "d4": "9 באוקטובר 2026", "d3": "28 בספטמבר 2026", "d2": "14 בספטמבר 2026", "d1": "1 בספטמבר 2026",
+    "c4a": "שיחה קולית עם המאמן. מדברים בקול, קוטעים מתי שרוצים, וקוראים כל תשובה כטקסט.",
+    "c4b": "לחיצה ארוכה כדי לדבר, כמו ווקי-טוקי, אם מעדיפים לא להשאיר את המיקרופון פתוח.",
+    "c4c": "שעות ותאריכים בעברית כבר לא מתהפכים באמצע משפט.",
+    "c3a": "״מה Tempo זוכר״: רואים כל זיכרון, מוחקים אחד, או מייצאים הכול כ-Markdown.",
+    "c3b": "המאמן שואל עכשיו לפני שהוא בונה תבנית חדשה, ומראה בדיוק מה יתווסף.",
+    "c2a": "עברית מלאה, מימין לשמאל, בכל האפליקציה.",
+    "c2b": "אפשר לבטל עכשיו במשך 5 דקות כל שינוי שהמאמן עושה.",
+    "c2c": "הגדרת גופן הקריאה נשמרת עכשיו גם אחרי כניסה מחדש.",
+    "c1a": "גרסת תצוגה ראשונה: דפי Markdown, תבנית יומית, ומאמן שאפשר לכתוב לו.",
+    "c1b": "כניסה עם קישור במייל. בלי סיסמה.",
+    "foot.lede": "רוצים לנסות?", "cta.join": "בקשה להצטרף",
+    "foot.label": "כותרת תחתונה", "foot.terms": "תנאים", "foot.privacy": "פרטיות", "foot.contact": "יצירת קשר", "foot.changelog": "מה חדש", "foot.small": "Tempo Flow. מאמן, לא מטפל."
+  }
+};
+(function () {
+  var lang = document.documentElement.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  document.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () {
+      // REAL: convex profiles.updatePrefs({ language }) only when signed in; public pages use the locale cookie
+      try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>

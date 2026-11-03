@@ -19,7 +19,19 @@ describe("default entry", () => {
       "/contact",
       "/success",
       "/api/health",
+      "/api/mcp",
     ]);
+  });
+
+  test("does not redirect /api/mcp to /sign-in when signed out", () => {
+    expect(
+      decideEntryRedirect({
+        ...signedOut,
+        pathname: "/api/mcp",
+        search: "",
+        isPublicRoute: true,
+      })
+    ).toBeNull();
   });
 
   test("shows the marketing page to a signed-out visitor on /", () => {

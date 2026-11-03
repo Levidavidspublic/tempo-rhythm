@@ -16,14 +16,18 @@ on:
   pull_request:
     branches: [integration, master, main]
     types: [opened, synchronize, reopened, ready_for_review]
+  # Queue commits are not Vercel previews. The job still runs, and tests the queued PR's preview SHA.
+  merge_group:
+    branches: [integration, master, main]
 
 permissions:
   contents: read
   deployments: read
   statuses: read
+  pull-requests: read
 
 concurrency:
-  group: e2e-preview-${{ github.event.pull_request.number }}
+  group: e2e-preview-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
   cancel-in-progress: true
 
 jobs:
@@ -43,12 +47,42 @@ jobs:
         if: vars.FACTORY_HAS_PREVIEW == 'true'
         with:
           node-version: 22
+      - name: SHA whose Vercel preview to test
+        id: sha
+        if: vars.FACTORY_HAS_PREVIEW == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          QUEUE_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != "merge_group" ]; then
+            echo "sha=$PR_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Queue refs include pr-<number> (gh-readonly-queue/<base>/pr-<number>-<sha>, or <base>/pr-<number>).
+          n=$(printf '%s\n' "$QUEUE_REF" | grep -oE 'pr-[0-9]+' | head -1 | cut -d- -f2 || true)
+          if [ -z "${n:-}" ]; then
+            n=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${QUEUE_SHA}/pulls" --jq '.[0].number // empty' || true)
+          fi
+          if [ -z "${n:-}" ] || [ "$n" = "null" ]; then
+            echo "::error::merge_group did not identify a pull request (ref: ${QUEUE_REF}). Failing closed."
+            exit 1
+          fi
+          sha=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${n}" --jq .head.sha)
+          if [ -z "$sha" ] || [ "$sha" = "null" ]; then
+            echo "::error::could not read head SHA for PR #${n}. Failing closed."
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Wait for the Vercel preview of this PR's head commit
         id: preview
         if: vars.FACTORY_HAS_PREVIEW == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ steps.sha.outputs.sha }}
           PREVIEW_ENVIRONMENT: ${{ vars.FACTORY_PREVIEW_ENVIRONMENT }}
           PREVIEW_STATUS_CONTEXT: ${{ vars.FACTORY_PREVIEW_STATUS_CONTEXT }}
         run: node scripts/factory/wait-preview.mjs

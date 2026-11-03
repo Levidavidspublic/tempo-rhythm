@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insights · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — insights.html */
+  .ins-charts { display: grid; gap: var(--tp-space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 4.5)), 1fr)); }
+  .ins-card { display: grid; gap: var(--tp-space-2); align-content: start; }
+  .ins-obs__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-1); }
+  .ins-obs .tp-memory-row__action { align-self: center; }
+</style>
+</head>
+<body>
+<!--
+@screen   Insights
+@route    apps/web/app/(tempo)/insights/page.tsx
+@layout   TempoShell
+@data     patterns = insights.getPatterns({ range })              // Convex query: plain-language patterns from tasks, energy logs, habits
+@data     weekdays = insights.tasksByWeekday({ range })           // Convex query: finished tasks per weekday
+@data     focus = insights.focusMinutesByWeek({ range })          // Convex query: minutes started from Next up, per week
+@data     observations = reflect.listObservations({})             // Convex query: F-55 Reflect observations built from memories
+@actions  change range -> router.replace("?range=2w|4w|3m")
+@actions  delete observation -> reflect.deleteObservation({ id })   // optimistic, Undo 5 min -> reflect.restoreObservation({ id })
+@actions  ask about observation -> open coach with the observation attached (coach.html?about=observation)
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Load patterns for the chosen range; four weeks is the default.
+          2. Show up to three gentle patterns in plain words. Each one says what it is based on.
+          3. Show the charts. Every bar and point carries its number, and every chart has a one-sentence summary under it.
+          4. Never show streaks, scores, grades or comparisons with other people. A quiet week is described, never judged.
+          5. Show the coach's Reflect observations. Each one says how many memories it came from and when it was made.
+          6. Delete hides an observation at once and shows Undo for 5 minutes; after that the coach stops using it.
+          7. With less than a week of use, show the empty state instead of patterns. Nothing is asked of the user.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> command palette (Ctrl K) -->
+    <a class="tp-btn tp-btn--secondary tp-rail__search" href="command.html" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </a>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">You</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="insights.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chart"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.insights">Insights</span></a></li>
+        <li><a class="tp-tree-item" href="activity.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.activity">Recent activity</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+        <li><a class="tp-tree-item" href="search.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.search">Search</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.you">You</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.insights">Insights</strong>
+    </div>
+    <a class="tp-btn tp-btn--ghost tp-btn--icon" href="command.html" aria-label="Search or jump to (Ctrl K)" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></a>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Insights', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="ins.title">Insights</h1>
+          <p class="tp-pagehead__sub" id="ins-sub" data-i18n="ins.sub.4w">Patterns from your last four weeks, in plain words. Nothing here is a score.</p>
+        </div>
+      </header>
+
+      <!-- @component Toolbar | shadcn: — | props: { children } | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" data-state-hide>
+        <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['2w','4w','3m'], value: '4w' } | events: onChange -> router.replace(?range=) -->
+        <div class="tp-segmented" role="radiogroup" aria-label="Time range" data-i18n-attr="aria-label:ins.range" id="range-seg" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-range="2w" aria-checked="false" tabindex="-1"><span data-i18n="ins.r2w">2 weeks</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-range="4w" aria-checked="true" tabindex="0"><span data-i18n="ins.r4w">4 weeks</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-range="3m" aria-checked="false" tabindex="-1"><span data-i18n="ins.r3m">3 months</span></button>
+        </div>
+      </div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- ===== Gentle patterns ===== -->
+      <!-- @component Section | shadcn: — | props: { title: 'Gentle patterns', count: 3 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="pat-h" data-state-hide>
+        <div class="tp-section__head"><h2 class="tp-section__title" id="pat-h" data-i18n="ins.pat.h">Gentle patterns</h2><span class="tp-section__count"><span class="tp-num">3</span> <span data-i18n="ins.pat.n">noticed</span></span></div>
+        <!-- @component CardGrid | shadcn: — | props: { size: 'md' } | events: — -->
+        <!-- @component Card ×3 | shadcn: card | props: { pattern: {title, body, basis} } | events: — -->
+        <div class="tp-cards" data-component="CardGrid">
+          <article class="tp-card ins-card" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sun"/></svg><h3 class="tp-card__title" data-i18n="ins.p1.t">Mornings are your focus time</h3></div>
+            <p data-i18n="ins.p1.b">21 of the 38 tasks you finished were started before 11:00.</p>
+            <p class="tp-small tp-muted" data-i18n="ins.p1.m">Based on 38 finished tasks</p>
+          </article>
+          <article class="tp-card ins-card" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><h3 class="tp-card__title" data-i18n="ins.p2.t">Short tasks get done</h3></div>
+            <p data-i18n="ins.p2.b">Tasks of 25 minutes or less were finished more often than longer ones. Splitting big things up works for you.</p>
+            <p class="tp-small tp-muted" data-i18n="ins.p2.m">Based on task sizes</p>
+          </article>
+          <article class="tp-card ins-card" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><h3 class="tp-card__title" data-i18n="ins.p3.t">Steady is your usual pace</h3></div>
+            <p data-i18n="ins.p3.b">You chose Steady on 14 of 20 check-ins. Quiet days often came after late nights.</p>
+            <p class="tp-small tp-muted" data-i18n="ins.p3.m">Based on 20 energy check-ins</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ===== Charts ===== -->
+      <section class="tp-section" aria-labelledby="ch-h" data-state-hide>
+        <div class="tp-section__head"><h2 class="tp-section__title" id="ch-h" data-i18n="ins.ch.h">Your weeks at a glance</h2></div>
+        <div class="ins-charts">
+          <!-- @component BarChart | shadcn: chart | props: { title, bars: {label,value,pct,highlight?}[] } | events: — -->
+          <figure class="tp-chart tp-surface" data-component="BarChart" aria-labelledby="bar-t">
+            <div class="tp-chart__title" id="bar-t" data-i18n="ins.bar.t">Tasks finished, by weekday</div>
+            <ol class="tp-chart__bars" role="list">
+              <li class="tp-chart__bar" data-highlight="true"><span class="tp-chart__value">9</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:100"></span></span><span class="tp-chart__label" data-i18n="d.mon">Mon</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">4</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:44"></span></span><span class="tp-chart__label" data-i18n="d.tue">Tue</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">7</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:78"></span></span><span class="tp-chart__label" data-i18n="d.wed">Wed</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">8</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:89"></span></span><span class="tp-chart__label" data-i18n="d.thu">Thu</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">5</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:56"></span></span><span class="tp-chart__label" data-i18n="d.fri">Fri</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">3</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:33"></span></span><span class="tp-chart__label" data-i18n="d.sat">Sat</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value">2</span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:22"></span></span><span class="tp-chart__label" data-i18n="d.sun">Sun</span></li>
+            </ol>
+            <!-- @component ChartSummary | shadcn: — | props: { text } | events: — -->
+            <figcaption class="tp-chart__summary" data-component="ChartSummary" data-i18n="ins.bar.s">Mondays and Thursdays were your fullest days. Weekends stayed light, and that's fine.</figcaption>
+          </figure>
+
+          <!-- @component LineChart | shadcn: chart | props: { points: {x,y,label}[] } | events: — -->
+          <figure class="tp-chart tp-surface" data-component="LineChart">
+            <div class="tp-chart__title" data-i18n="ins.line.t">Focus minutes, by week</div>
+            <svg class="tp-chart__svg" viewBox="0 0 400 210" role="img" aria-labelledby="line-s">
+              <line class="tp-chart__grid" x1="30" y1="20" x2="390" y2="20"/>
+              <line class="tp-chart__grid" x1="30" y1="100" x2="390" y2="100"/>
+              <line class="tp-chart__axis" x1="30" y1="180" x2="390" y2="180"/>
+              <polyline class="tp-chart__line" points="60,84 160,52 260,100 360,129"/>
+              <circle class="tp-chart__point" cx="60" cy="84" r="5"/>
+              <circle class="tp-chart__point" cx="160" cy="52" r="5"/>
+              <circle class="tp-chart__point" cx="260" cy="100" r="5"/>
+              <circle class="tp-chart__point" cx="360" cy="129" r="5"/>
+              <text x="60" y="70" text-anchor="middle">180</text>
+              <text x="160" y="38" text-anchor="middle">240</text>
+              <text x="260" y="86" text-anchor="middle">150</text>
+              <text x="360" y="115" text-anchor="middle">95</text>
+              <text x="60" y="202" text-anchor="middle" data-i18n="ins.w39">Wk 39</text>
+              <text x="160" y="202" text-anchor="middle" data-i18n="ins.w40">Wk 40</text>
+              <text x="260" y="202" text-anchor="middle" data-i18n="ins.w41">Wk 41</text>
+              <text x="360" y="202" text-anchor="middle" data-i18n="ins.w42">Wk 42 so far</text>
+            </svg>
+            <!-- @component ChartSummary | shadcn: — | props: { text } | events: — -->
+            <figcaption class="tp-chart__summary" id="line-s" data-component="ChartSummary" data-i18n="ins.line.s">Focus time peaked at 240 minutes in week 40 and dipped in week 41, the week of the move. Week 42 has only just started.</figcaption>
+          </figure>
+        </div>
+
+        <!-- @component Notice | shadcn: alert | props: { tone: 'info', title, body } | events: — -->
+        <div class="tp-notice" data-tone="info" data-component="Notice">
+          <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-heart"/></svg></span>
+          <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="ins.nostreak.t">No streaks here</span><span data-i18n="ins.nostreak.b">A missed day is just a day. Coming back is always welcome, and nothing resets.</span></span>
+        </div>
+      </section>
+
+      <!-- ===== Reflect observations (F-55) ===== -->
+      <section class="tp-section" aria-labelledby="obs-h" data-state-hide>
+        <div class="tp-section__head"><h2 class="tp-section__title" id="obs-h" data-i18n="ins.obs.h">What the coach noticed</h2><span class="tp-section__count"><span class="tp-num" id="obs-count">3</span> <span data-i18n="ins.obs.n">observations</span></span></div>
+        <p class="tp-muted tp-small" data-i18n="ins.obs.sub">Every Sunday the coach turns your memories into a few observations. If one doesn't sound right, delete it and the coach stops using it.</p>
+        <!-- NOTE: candidate shared component "ObservationItem" (composed from MemoryItem classes; delete instead of forget) -->
+        <!-- @component MemoryItem ×3 | shadcn: — + button | props: { observation: {id, text, memoryCount, when} } | events: onDelete -> reflect.deleteObservation (Undo 5 min), onAsk -> open coach -->
+        <ul class="tp-memory-list ins-obs" role="list" id="obs-list" data-component="MemoryItem">
+          <li class="tp-memory-row" data-id="o1">
+            <span class="tp-memory-row__fact" dir="auto" data-i18n="ins.o1">Gym slips after late nights.</span>
+            <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg><span data-i18n="ins.o1.s">From 6 memories · Sun 11 Oct</span></span>
+            <span class="tp-memory-row__action ins-obs__actions">
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="coach.html?about=observation" data-i18n="ins.ask">Ask about this</a>
+              <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-obs-delete><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="ins.del">Delete</span></button>
+            </span>
+          </li>
+          <li class="tp-memory-row" data-id="o2">
+            <span class="tp-memory-row__fact" dir="auto" data-i18n="ins.o2">Calls feel easier when they're the first thing after lunch.</span>
+            <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg><span data-i18n="ins.o2.s">From 4 memories · Sun 11 Oct</span></span>
+            <span class="tp-memory-row__action ins-obs__actions">
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="coach.html?about=observation" data-i18n="ins.ask">Ask about this</a>
+              <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-obs-delete><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="ins.del">Delete</span></button>
+            </span>
+          </li>
+          <li class="tp-memory-row" data-id="o3">
+            <span class="tp-memory-row__fact" dir="auto" data-i18n="ins.o3">You like to plan the week on Sunday evening, not Monday morning.</span>
+            <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg><span data-i18n="ins.o3.s">From 5 memories · Sun 4 Oct</span></span>
+            <span class="tp-memory-row__action ins-obs__actions">
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="coach.html?about=observation" data-i18n="ins.ask">Ask about this</a>
+              <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-obs-delete><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="ins.del">Delete</span></button>
+            </span>
+          </li>
+        </ul>
+        <p class="tp-muted tp-small" id="obs-none" hidden data-i18n="ins.obs.none">No observations right now. New ones may appear on Sunday.</p>
+      </section>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-chart"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="ins.empty.t">Patterns need about a week.</h2>
+        <p class="tp-state__body" data-i18n="ins.empty.b">Use Tempo the way you like. Gentle patterns will show up here on their own. There's nothing you need to do.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="today.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="ins.empty.a">Go to Today</span></a></div>
+      </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="ins.loading">Loading your insights</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="ins.error">Couldn't load your insights.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Coach (opens the coach screen) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open coach (Ctrl J) -->
+  <a class="tp-coach-fab tp-glass" href="coach.html" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </a>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: {href,label,icon}[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+<script>
+window.TP_STRINGS = {
+  en: {"toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "toast.title": "Done", "state.retried": "Loaded.", "ins.sub.2w": "Patterns from your last two weeks, in plain words. Nothing here is a score.", "ins.sub.4w": "Patterns from your last four weeks, in plain words. Nothing here is a score.", "ins.sub.3m": "Patterns from your last three months, in plain words. Nothing here is a score.", "ins.deleted": "Observation deleted. The coach won't use it."},
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.you": "את",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.insights": "תובנות",
+    "nav.activity": "פעילות אחרונה",
+    "nav.templates": "תבניות",
+    "nav.search": "חיפוש",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש או מעבר אל (Ctrl K)",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "state.retried": "נטען.",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "toast.sub": "אפשר לבטל במשך",
+    "toast.title": "בוצע",
+    "more.showing": "מוצגים",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "doc.title": "תובנות · Tempo",
+    "ins.title": "תובנות",
+    "ins.sub.2w": "דפוסים משבועיים האחרונים, במילים פשוטות. שום דבר כאן אינו ציון.",
+    "ins.sub.4w": "דפוסים מארבעת השבועות האחרונים שלך, במילים פשוטות. שום דבר כאן אינו ציון.",
+    "ins.sub.3m": "דפוסים משלושת החודשים האחרונים, במילים פשוטות. שום דבר כאן אינו ציון.",
+    "ins.range": "טווח זמן",
+    "ins.r2w": "שבועיים",
+    "ins.r4w": "4 שבועות",
+    "ins.r3m": "3 חודשים",
+    "ins.pat.h": "דפוסים עדינים",
+    "ins.pat.n": "שזוהו",
+    "ins.p1.t": "הבקרים הם זמן הריכוז שלך",
+    "ins.p1.b": "21 מתוך 38 המשימות שסיימת התחילו לפני 11:00.",
+    "ins.p1.m": "לפי 38 משימות שהסתיימו",
+    "ins.p2.t": "משימות קצרות נגמרות",
+    "ins.p2.b": "משימות של 25 דקות או פחות הסתיימו לעיתים קרובות יותר מארוכות. פירוק דברים גדולים עובד בשבילך.",
+    "ins.p2.m": "לפי גודל המשימות",
+    "ins.p3.t": "יציב הוא הקצב הרגיל שלך",
+    "ins.p3.b": "בחרת ״יציב״ ב־14 מתוך 20 בדיקות. ימים שקטים הגיעו לרוב אחרי לילות מאוחרים.",
+    "ins.p3.m": "לפי 20 בדיקות אנרגיה",
+    "ins.ch.h": "השבועות שלך במבט אחד",
+    "ins.bar.t": "משימות שהסתיימו, לפי יום בשבוע",
+    "d.mon": "ב׳",
+    "d.tue": "ג׳",
+    "d.wed": "ד׳",
+    "d.thu": "ה׳",
+    "d.fri": "ו׳",
+    "d.sat": "ש׳",
+    "d.sun": "א׳",
+    "ins.bar.s": "ימי שני וחמישי היו המלאים ביותר. סופי השבוע נשארו קלים, וזה בסדר.",
+    "ins.line.t": "דקות ריכוז, לפי שבוע",
+    "ins.w39": "שבוע 39",
+    "ins.w40": "שבוע 40",
+    "ins.w41": "שבוע 41",
+    "ins.w42": "שבוע 42 עד כה",
+    "ins.line.s": "זמן הריכוז הגיע לשיא של 240 דקות בשבוע 40 וירד בשבוע 41, שבוע המעבר. שבוע 42 רק התחיל.",
+    "ins.nostreak.t": "בלי רצפים",
+    "ins.nostreak.b": "יום שהתפספס הוא פשוט יום. תמיד אפשר לחזור, ושום דבר לא מתאפס.",
+    "ins.obs.h": "מה המאמן שם לב",
+    "ins.obs.n": "תצפיות",
+    "ins.obs.sub": "בכל יום ראשון המאמן הופך את הזיכרונות שלך לכמה תצפיות. אם משהו לא נשמע נכון, מחקי אותו והמאמן יפסיק להשתמש בו.",
+    "ins.o1": "האימונים בחדר הכושר נדחים אחרי לילות מאוחרים.",
+    "ins.o1.s": "מ־6 זיכרונות · א׳ 11 באוק׳",
+    "ins.o2": "קל לך יותר להתקשר כשזה הדבר הראשון אחרי הצהריים.",
+    "ins.o2.s": "מ־4 זיכרונות · א׳ 11 באוק׳",
+    "ins.o3": "את אוהבת לתכנן את השבוע ביום ראשון בערב, לא ביום שני בבוקר.",
+    "ins.o3.s": "מ־5 זיכרונות · א׳ 4 באוק׳",
+    "ins.ask": "לשאול על זה",
+    "ins.del": "מחיקה",
+    "ins.obs.none": "אין תצפיות כרגע. ייתכן שיופיעו חדשות ביום ראשון.",
+    "ins.deleted": "התצפית נמחקה. המאמן לא ישתמש בה.",
+    "ins.empty.t": "לדפוסים צריך בערך שבוע.",
+    "ins.empty.b": "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות.",
+    "ins.empty.a": "מעבר להיום",
+    "ins.loading": "טוענים את התובנות שלך",
+    "ins.error": "לא הצלחנו לטעון את התובנות.",
+    "nav.you": "את"
+  }
+};
+/* Screen behaviour: range switch + delete an observation with Undo. */
+TP.onReady2 = function () {
+  var seg = document.getElementById("range-seg"), sub = document.getElementById("ins-sub");
+  seg.addEventListener("click", function () {
+    setTimeout(function () {
+      var on = seg.querySelector('[aria-checked="true"]'); if (!on) return;
+      var r = on.getAttribute("data-range");
+      sub.setAttribute("data-i18n", "ins.sub." + r); sub.textContent = TP.t("ins.sub." + r);
+      // REAL: convex insights.getPatterns({ range: r }) via router.replace("?range=" + r)
+    }, 0);
+  });
+  var list = document.getElementById("obs-list"), count = document.getElementById("obs-count"), none = document.getElementById("obs-none");
+  function sync() {
+    var n = list.querySelectorAll(".tp-memory-row:not([hidden])").length;
+    count.textContent = n; none.hidden = n > 0;
+  }
+  list.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-obs-delete]"); if (!btn) return;
+    var row = btn.closest(".tp-memory-row");
+    // REAL: convex reflect.deleteObservation({ id: row.dataset.id })  (optimistic; soft delete)
+    row.hidden = true; sync();
+    var next = list.querySelector(".tp-memory-row:not([hidden]) [data-obs-delete]"); if (next) next.focus();
+    TP.toast({ title: TP.t("ins.deleted"), onUndo: function () {
+      // REAL: convex reflect.restoreObservation({ id: row.dataset.id })
+      row.hidden = false; sync(); var b = row.querySelector("[data-obs-delete]"); if (b) b.focus();
+    } });
+  });
+};
+</script>
+</body>
+</html>

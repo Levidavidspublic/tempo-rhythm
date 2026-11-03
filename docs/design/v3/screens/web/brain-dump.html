@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain dump · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — brain-dump.html */
+  .bd-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .tp-import-row__bar .tp-chip { white-space: nowrap; }
+</style>
+</head>
+<body>
+<!--
+@screen   Brain Dump
+@route    apps/web/app/(tempo)/brain-dump/page.tsx
+@layout   TempoShell
+@data     draft = brainDumps.getDraft({})                                   // Convex query (local draft, never a task)
+@actions  plan -> coach.planFromDump({ text })                              // action; returns a proposal, writes nothing
+@actions  accept / edit / reject a line -> local state only                 // nothing saved yet
+@actions  add N -> tasks.createFromProposal({ dumpId, items })              // one mutation, Undo 5 min -> tasks.removeMany({ ids })
+@states   default | empty | loading | error | offline  (?state=)   + ?view=review (proposal open)
+@flow     1. Maya types or says everything on her mind; the text stays in the box no matter what.
+          2. "Turn this into a plan" asks the coach for a proposal. Nothing is written to her lists.
+          3. Each proposed line shows its minutes and the reason; she can Accept, Edit (type in place) or Reject.
+          4. The count on "Add N to Today" follows the accepted and edited lines; with zero it is disabled.
+          5. Tapping Add creates the tasks in one go, shows "Added to Today" with Undo for 5 minutes.
+          6. If planning fails, the text is kept and "Try again" repeats the call. Offline: text is kept, planning waits.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <strong data-i18n="nav.dump">Brain dump</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Brain dump', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="bd.title">Brain dump</h1>
+          <p class="tp-pagehead__sub" data-i18n="bd.sub">Everything. Any order. Fragments are fine.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="bd.offline">You're offline. Your text is kept here. Making a plan needs a connection.</span></span></div>
+
+      <!-- Capture: always visible so the text is never lost -->
+      <!-- @component Surface | shadcn: card | props: — | events: — -->
+      <section class="tp-surface" data-component="Surface" aria-labelledby="bd-cap">
+        <!-- @component Field | shadcn: form (FormItem / FormLabel / FormDescription) | props: { id: 'dump', label, help } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="dump" id="bd-cap" data-i18n="bd.label">What's on your mind?</label>
+          <!-- @component Textarea | shadcn: textarea | props: { rows: 7, value } | events: onChange -> local draft (not saved to lists) -->
+          <textarea class="tp-textarea" id="dump" rows="7" dir="auto" aria-describedby="dump-help" data-component="Textarea" placeholder="Type it all out, or tap the mic and say it." data-i18n-attr="placeholder:bd.ph">call bank about the card thing!! slides for thursday. dana lease email. boxes?? dentist moved to 4. mum's birthday sat, gift</textarea>
+          <p class="tp-help" id="dump-help" data-i18n="bd.help">Nothing goes onto your lists until you choose.</p>
+        </div>
+        <div class="bd-actions">
+          <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> coach.planFromDump({ text }) -->
+          <button class="tp-btn tp-btn--primary" type="button" id="plan-btn" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="bd.plan">Turn this into a plan</span></button>
+          <button class="tp-btn tp-btn--secondary" type="button" id="replan-btn" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="bd.replan">Plan again</span></button>
+          <a class="tp-btn tp-btn--ghost" href="voice-call.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg><span data-i18n="bd.say">Say it instead</span></a>
+          <button class="tp-btn tp-btn--ghost" type="button" id="clear-btn"><span data-i18n="bd.clear">Clear</span></button>
+        </div>
+      </section>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+    <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+      <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-inbox"/></svg></span>
+      <h2 class="tp-state__title" data-i18n="bd.empty.t">Start with whatever is loudest.</h2>
+      <p class="tp-state__body" data-i18n="bd.empty.b">Type a few words above. Tempo turns them into a short plan you can check, line by line.</p>
+      
+    </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+    <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+      <span class="tp-sr-only" data-i18n="bd.loading">Turning this into a plan</span>
+      <div class="tp-skel-list">
+        <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+      </div>
+    </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> coach.planFromDump({ text }) -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="bd.err.t">Couldn't make a plan just now.</h2>
+        <p class="tp-state__body" data-i18n="bd.err.b">Your text is kept above. Try again when you're ready.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="bd.try">Try again</span></button></div>
+      </div>
+
+      <!-- Review: the proposal. Nothing is written until "Add N to Today". -->
+      <section class="tp-section" id="review" aria-labelledby="bd-rev" data-component="Section" data-state-hide hidden>
+        <div class="tp-section__head">
+          <h2 class="tp-section__title" id="bd-rev" data-i18n="bd.rev">Here's a plan</h2>
+          <span class="tp-section__count"><span class="tp-num">6</span> <span data-i18n="bd.ideas">ideas</span></span>
+        </div>
+        <p class="tp-muted" data-i18n="bd.rev.help">Accept, edit or reject each line. Nothing is added until you tap Add.</p>
+        <!-- NOTE: candidate shared component — ProposalRow (ImportReview row with Accept / Edit / Reject wording + task chips) -->
+        <!-- @component ImportReview | shadcn: toggle-group per row | props: { items: {id,text,minutes,why,choice:'keep'|'edit'|'drop'}[] } | events: onChoose (local), onSave -> tasks.createFromProposal({ dumpId, items }) -->
+        <ul class="tp-import-list" role="list" data-component="ImportReview">
+    <li class="tp-import-row" data-choice="keep" data-id="r1">
+      <p class="tp-import-row__text" dir="auto" id="r1-text" data-i18n="bd.r1">Call the bank about the card</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r1-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">10</span>&nbsp;<span data-i18n="unit.min">min</span></span><span class="tp-chip"><span data-i18n="bd.r1.why">You wrote “card thing”</span></span>
+        <span class="tp-import-row__note" data-i18n="import.keep">Will be added</span>
+      </div>
+    </li>
+    <li class="tp-import-row" data-choice="keep" data-id="r2">
+      <p class="tp-import-row__text" dir="auto" id="r2-text" data-i18n="bd.r2">Draft 3 slides for Thursday</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r2-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">25</span>&nbsp;<span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="bd.r2.why">Best in the morning</span></span>
+        <span class="tp-import-row__note" data-i18n="import.keep">Will be added</span>
+      </div>
+    </li>
+    <li class="tp-import-row" data-choice="keep" data-id="r3">
+      <p class="tp-import-row__text" dir="auto" id="r3-text" data-i18n="bd.r3">Email Dana about the lease</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r3-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">10</span>&nbsp;<span data-i18n="unit.min">min</span></span>
+        <span class="tp-import-row__note" data-i18n="import.keep">Will be added</span>
+      </div>
+    </li>
+    <li class="tp-import-row" data-choice="drop" data-id="r4">
+      <p class="tp-import-row__text" dir="auto" id="r4-text" data-i18n="bd.r4">Buy moving boxes</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r4-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">20</span>&nbsp;<span data-i18n="unit.min">min</span></span><span class="tp-chip"><span data-i18n="bd.r4.why">Errand</span></span>
+        <span class="tp-import-row__note" data-i18n="import.drop">Left out</span>
+      </div>
+    </li>
+    <li class="tp-import-row" data-choice="keep" data-id="r5">
+      <p class="tp-import-row__text" dir="auto" id="r5-text" data-i18n="bd.r5">Dentist check-up, moved to 16:00</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r5-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip tp-chip--fixed"><span data-i18n="bd.r5.kind">Event · Fixed</span></span><span class="tp-chip"><span class="tp-num tp-mono">16:00–16:45</span></span>
+        <span class="tp-import-row__note" data-i18n="import.keep">Will be added</span>
+      </div>
+    </li>
+    <li class="tp-import-row" data-choice="keep" data-id="r6">
+      <p class="tp-import-row__text" dir="auto" id="r6-text" data-i18n="bd.r6">Pick a gift for Mum's birthday</p>
+      <div class="tp-import-row__bar">
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="r6-text" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="bd.accept">Accept</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="bd.edit">Edit</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="bd.reject">Reject</span></button>
+        </div>
+        <span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">15</span>&nbsp;<span data-i18n="unit.min">min</span></span><span class="tp-chip"><span data-i18n="bd.r6.why">Birthday is Saturday</span></span>
+        <span class="tp-import-row__note" data-i18n="import.keep">Will be added</span>
+      </div>
+    </li>
+        </ul>
+        <div class="bd-actions">
+          <!-- @component Button | shadcn: button | props: { variant: 'primary', count } | events: onClick -> tasks.createFromProposal({ dumpId, items }) // Undo 5 min -->
+          <button class="tp-btn tp-btn--primary" type="button" id="add-btn" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span><span data-i18n="bd.add.a">Add</span> <span class="tp-num" data-import-count>5</span> <span data-i18n="bd.add.b">to Today</span></span></button>
+          <button class="tp-btn tp-btn--ghost" type="button" id="startover-btn"><span data-i18n="bd.over">Start over</span></button>
+        </div>
+        <p class="tp-muted tp-small" id="none-note" hidden data-i18n="bd.none">Nothing accepted yet. Accept a line to add it.</p>
+        <div class="tp-notice" data-tone="done" role="status" id="added-note" hidden>
+          <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="bd.addedNote">Added to Today. You can undo for 5 minutes.</span></span>
+          <a class="tp-btn tp-btn--secondary tp-btn--sm tp-notice__action" href="today.html"><span data-i18n="bd.open">Open Today</span></a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads Today and your pages. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="coach.hello">I can see this page. Ask me to plan, shrink or sort anything. Nothing changes until you say yes.</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "import.keep": "Will be added",
+    "import.edit": "Editing: type your change",
+    "import.drop": "Left out",
+    "bd.added": "Added to Today",
+    "bd.addedNote": "Added to Today. You can undo for 5 minutes.",
+    "bd.undone": "Undone. Nothing was added.",
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "proposal.accepted": "Done. You can undo this for 5 minutes.",
+    "proposal.rejected": "Left as it was. Nothing changed.",
+    "proposal.edit": "Edit",
+    "proposal.doneEditing": "Done editing",
+    "state.retried": "Loaded.",
+    "switch.on": "On",
+    "switch.off": "Off",
+    "more.showing": "Showing",
+    "more.of": "of",
+    "more.all": "That's everything.",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "nag.now": "Good. It's on now.",
+    "nag.snooze": "Snoozed for 30 minutes.",
+    "nag.nottoday": "Okay. Not today. It'll ask again tomorrow.",
+    "template.used": "Template added to this page.",
+    "template.dismissed": "Okay. This page stays as it is.",
+    "broken.restored": "Restored the last version of this part.",
+    "card.showAnswer": "Show answer",
+    "card.showQuestion": "Show question",
+    "quiz.pick": "Pick one answer first.",
+    "quiz.right": "Right.",
+    "quiz.wrong": "Not quite. The answer is: ",
+    "checklist.of": "of",
+    "checklist.done": "done",
+    "dial.quiet": "Quiet",
+    "dial.steady": "Steady",
+    "dial.push": "Push",
+    "dial.of": "of 10",
+    "breath.in": "Breathe in",
+    "breath.hold": "Hold",
+    "breath.out": "Breathe out",
+    "read.aloud": "Read aloud",
+    "read.stop": "Stop reading"
+  },
+  he: {
+    "import.keep": "יתווסף",
+    "import.edit": "עריכה: הקלידי את השינוי",
+    "import.drop": "לא ייכנס",
+    "bd.added": "נוסף להיום",
+    "bd.addedNote": "נוסף להיום. אפשר לבטל במשך 5 דקות.",
+    "bd.undone": "בוטל. שום דבר לא נוסף.",
+    "bd.r1.why": "כתבת ״עניין הכרטיס״",
+    "bd.r2.why": "הכי טוב בבוקר",
+    "bd.r4.why": "סידור",
+    "bd.r5.kind": "אירוע · קבוע",
+    "bd.r6.why": "יום ההולדת בשבת",
+    "bd.r1": "להתקשר לבנק לגבי הכרטיס",
+    "bd.r2": "לנסח 3 שקפים ליום חמישי",
+    "bd.r3": "לכתוב לדנה על החוזה",
+    "bd.r4": "לקנות קרטונים למעבר",
+    "bd.r5": "בדיקה אצל רופא השיניים, הוזזה ל־16:00",
+    "bd.r6": "לבחור מתנה ליום ההולדת של אמא",
+    "bd.accept": "אישור",
+    "bd.edit": "עריכה",
+    "bd.reject": "דחייה",
+    "bd.text": "להתקשר לבנק על עניין הכרטיס!! שקפים ליום חמישי. מייל לדנה על החוזה. קרטונים?? רופא שיניים זז לארבע. יום הולדת לאמא בשבת, מתנה",
+    "bd.title": "פריקת מחשבות",
+    "bd.sub": "הכול. בכל סדר. גם חצאי משפטים זה בסדר.",
+    "bd.offline": "אין חיבור כרגע. הטקסט שלך נשמר כאן. כדי ליצור תוכנית צריך חיבור.",
+    "bd.label": "מה יש לך בראש?",
+    "bd.ph": "להקליד הכול, או ללחוץ על המיקרופון ולהגיד.",
+    "bd.help": "שום דבר לא נכנס לרשימות שלך עד שתבחרי.",
+    "bd.plan": "להפוך את זה לתוכנית",
+    "bd.replan": "לתכנן שוב",
+    "bd.say": "להגיד בקול",
+    "bd.clear": "ניקוי",
+    "bd.empty.t": "להתחיל ממה שהכי רועש.",
+    "bd.empty.b": "להקליד כמה מילים למעלה. Tempo יהפוך אותן לתוכנית קצרה שאפשר לבדוק שורה אחרי שורה.",
+    "bd.loading": "הופכים את זה לתוכנית",
+    "bd.err.t": "לא הצלחנו ליצור תוכנית כרגע.",
+    "bd.err.b": "הטקסט שלך נשמר למעלה. אפשר לנסות שוב מתי שתרצי.",
+    "bd.try": "לנסות שוב",
+    "bd.rev": "הנה תוכנית",
+    "bd.ideas": "רעיונות",
+    "bd.rev.help": "לאשר, לערוך או לדחות כל שורה. שום דבר לא נוסף עד שתלחצי על הוספה.",
+    "bd.add.a": "להוסיף",
+    "bd.add.b": "להיום",
+    "bd.over": "להתחיל מחדש",
+    "bd.none": "עדיין לא אושר כלום. אפשר לאשר שורה כדי להוסיף אותה.",
+    "bd.open": "לפתוח את היום",
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.pages": "דפים",
+    "rail.library": "ספרייה",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "top.search": "חיפוש",
+    "top.back": "חזרה",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "unit.min": "דק׳",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "proposal.accepted": "בוצע. אפשר לבטל במשך 5 דקות.",
+    "proposal.rejected": "נשאר כמו שהיה. שום דבר לא השתנה.",
+    "proposal.edit": "עריכה",
+    "proposal.doneEditing": "סיום עריכה",
+    "state.retried": "נטען.",
+    "switch.on": "פועל",
+    "switch.off": "כבוי",
+    "more.showing": "מוצגות",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "habit.logged": "תועד היום",
+    "habit.log": "לתעד היום",
+    "habit.dayDone": "תועד",
+    "habit.dayOpen": "לא תועד",
+    "nag.now": "יופי. זה קורה עכשיו.",
+    "nag.snooze": "נדחה ב־30 דקות.",
+    "nag.nottoday": "בסדר. לא היום. זה ישאל שוב מחר.",
+    "template.used": "התבנית נוספה לדף.",
+    "template.dismissed": "בסדר. הדף נשאר כמו שהוא.",
+    "broken.restored": "הגרסה הקודמת של החלק הזה שוחזרה.",
+    "card.showAnswer": "הצגת התשובה",
+    "card.showQuestion": "הצגת השאלה",
+    "quiz.pick": "קודם בחרי תשובה אחת.",
+    "quiz.right": "נכון.",
+    "quiz.wrong": "לא בדיוק. התשובה היא: ",
+    "checklist.of": "מתוך",
+    "checklist.done": "בוצעו",
+    "dial.quiet": "שקט",
+    "dial.steady": "יציב",
+    "dial.push": "דחיפה",
+    "dial.of": "מתוך 10",
+    "breath.in": "שאיפה",
+    "breath.hold": "להחזיק",
+    "breath.out": "נשיפה",
+    "read.aloud": "הקראה",
+    "read.stop": "עצירת ההקראה",
+    "doc.title": "פריקת מחשבות · Tempo",
+    "block.add": "הוספת בלוק מתחת",
+    "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "task.more": "עריכת המשימה",
+    "coach.hello": "אני רואה את הדף הזה. אפשר לבקש ממני לתכנן, להקטין או לסדר. שום דבר לא משתנה עד שתאשרי."
+  }
+};
+/* Brain dump: capture -> proposal -> add. Behaviour of rows comes from tempo.js (ImportReview). */
+TP.onReady2 = function (params) {
+  var review = document.getElementById("review"), plan = document.getElementById("plan-btn"), replan = document.getElementById("replan-btn");
+  var add = document.getElementById("add-btn"), dump = document.getElementById("dump");
+  var none = document.getElementById("none-note"), added = document.getElementById("added-note");
+  function openReview() {
+    // REAL: convex coach.planFromDump({ text: dump.value }) -> { items } (action, writes nothing)
+    review.hidden = false; plan.hidden = true; replan.hidden = false;
+    var h = document.getElementById("bd-rev"); h.setAttribute("tabindex", "-1"); h.focus();
+  }
+  function syncCount() {
+    var n = document.querySelectorAll('.tp-import-row:not([data-choice="drop"])').length;
+    add.disabled = n === 0; none.hidden = n !== 0;
+  }
+  plan.addEventListener("click", openReview);
+  replan.addEventListener("click", openReview);
+  document.getElementById("clear-btn").addEventListener("click", function () { dump.value = ""; dump.focus(); });
+  document.getElementById("startover-btn").addEventListener("click", function () { review.hidden = true; plan.hidden = false; replan.hidden = true; added.hidden = true; dump.focus(); });
+  review.addEventListener("click", function () { setTimeout(syncCount, 0); });
+  add.addEventListener("click", function () {
+    // REAL: convex tasks.createFromProposal({ dumpId, items }) -> ids; Undo -> tasks.removeMany({ ids })
+    added.hidden = false; add.disabled = true;
+    TP.toast({ title: TP.t("bd.added"), onUndo: function () { added.hidden = true; syncCount(); } });
+  });
+  if (params.get("view") === "review") openReview();
+  if (params.get("state") === "empty") dump.value = "";
+  syncCount();
+};
+</script>
+</body>
+</html>

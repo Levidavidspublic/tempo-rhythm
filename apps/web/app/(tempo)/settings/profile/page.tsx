@@ -1,23 +1,26 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: settings
- * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: User profile settings.
- * @queries: users.me
- * @mutations: users.updateProfile
+ * @screen: settings-profile (docs/design/v3/screens/web/settings-profile.html)
+ * @data: users.getProfile; saves users.updateMyProfile, preferences.update({ locale })
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { ProfileForm } from "@/components/account/ProfileForm";
+import { SettingsScreen } from "@/components/settings/SettingsScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Profile"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="User profile settings."
-    />
+    <div data-testid="settings-profile" className="tp-page tp-page--narrow" data-component="PageLayout">
+      <SettingsScreen
+        title="set.profile.title"
+        sub="set.profile.sub"
+        offline="set.profile.offline"
+        loading="set.profile.loading"
+        errorTitle="set.profile.errorTitle"
+        errorBody="set.profile.errorBody"
+        bodyClassName="sp-body"
+        stateClassName="sp-state"
+      >
+        <ProfileForm />
+      </SettingsScreen>
+    </div>
   );
 }

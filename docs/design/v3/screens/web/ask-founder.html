@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask the founder · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — ask-founder.html */
+  .af-body { display: grid; gap: var(--tp-space-6); min-width: 0; }
+  .af-form { padding: var(--tp-space-5); }
+  .af-radios { display: grid; gap: var(--tp-space-1); border: 0; margin: 0; padding: 0; min-width: 0; }
+  .af-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Ask the founder
+@route    apps/web/app/(tempo)/ask-founder/page.tsx
+@layout   TempoShell
+@data     me = profiles.getMine({})                    // Convex query: {callMe, email} — shown so Maya knows what is sent with her message
+@actions  send -> askFounder.submit({ subject, body, priority: "low" | "medium" | "high" })   // not optimistic; webhook notifies Amit privately
+@states   default | empty (n/a) | loading | error | offline  (?state=)   + field errors, sent
+@flow     1. One line on who reads this: Amit, the person who builds Tempo.
+          2. Three fields with lasting labels: subject, message, how urgent (low / medium / high, each with a plain hint).
+          3. A privacy note says exactly what is sent: the message, her name and email. Nothing from her pages, tasks or chats.
+          4. Send checks the fields. Missing ones get a summary at the top (focused) and an error under the field (aria-describedby).
+          5. After sending: a calm "Sent" panel, a copy of the subject, and a link to write another.
+          6. Offline: the form stays; Send waits and says so.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'ask-founder' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="set-label" data-i18n="rail.set">Settings</div>
+      <ul class="tp-tree" role="list" aria-labelledby="set-label">
+        <li><a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.profile">Profile</span></a></li>
+        <li><a class="tp-tree-item" href="settings-prefs.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.prefs">Preferences</span></a></li>
+        <li><a class="tp-tree-item" href="settings-integrations.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.integ">Connections</span></a></li>
+        <li><a class="tp-tree-item" href="settings-privacy.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-shield"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.privacy">Privacy</span></a></li>
+        <li><a class="tp-tree-item" href="billing.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.billing">Plan and billing</span></a></li>
+        <li><a class="tp-tree-item" href="notifications.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notif">Notifications</span></a></li>
+        <li><a class="tp-tree-item" href="ask-founder.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.founder">Ask the founder</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Ask the founder'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="nav.founder">Ask the founder</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="af.title">Ask the founder</h1>
+          <p class="tp-pagehead__sub" data-i18n="af.sub">Amit builds Tempo and reads every message himself. Questions, ideas, something that feels off: all welcome.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">You can write now. Your message is sent when you reconnect.</span></span>
+      </div>
+
+      <div class="af-body">
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Your message' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="msg-title" id="af-form-wrap" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="msg-title" data-i18n="msg.title">Your message</h2>
+          </div>
+
+          <!-- @component Form | shadcn: form | props: { fields: [subject, body, priority] } | events: onSubmit -> askFounder.submit({ subject, body, priority }) -->
+          <form class="tp-form af-form" id="af-form" novalidate data-component="Form">
+
+            <!-- @component FormErrorSummary | shadcn: alert | props: { errors: {fieldId, text}[] } | events: — -->
+            <div class="tp-error-summary" role="alert" tabindex="-1" id="err-summary" data-component="FormErrorSummary" hidden>
+              <h3 class="tp-error-summary__title"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span id="err-title"></span></h3>
+              <ul id="err-list"></ul>
+            </div>
+
+            <!-- @component Field | shadcn: form item | props: { id: 'subject', label: 'Subject' } | events: — -->
+            <div class="tp-field od-field" data-component="Field">
+              <label class="tp-label" for="subject" data-i18n="f.subj">Subject</label>
+              <input class="tp-input" id="subject" name="subject" type="text" dir="auto" maxlength="120" aria-describedby="subject-help subject-error">
+              <p class="tp-help" id="subject-help" data-i18n="f.subj.help">A few words is plenty, like "Voice call cut out".</p>
+              <p class="tp-error-text" id="subject-error" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="f.subj.err">Add a few words so Amit knows what it's about.</span></p>
+            </div>
+
+            <!-- @component Textarea | shadcn: textarea | props: { rows: 6 } | events: — -->
+            <div class="tp-field od-field" data-component="Textarea">
+              <label class="tp-label" for="body" data-i18n="f.body">Message</label>
+              <textarea class="tp-textarea" id="body" name="body" rows="6" dir="auto" aria-describedby="body-help body-error"></textarea>
+              <p class="tp-help" id="body-help" data-i18n="f.body.help">Write it however it comes out. Hebrew or English both work.</p>
+              <p class="tp-error-text" id="body-error" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="f.body.err">Write your message here. One line is fine.</span></p>
+            </div>
+
+            <!-- @component Radio ×3 | shadcn: radio-group | props: { name: 'priority', value: 'medium' } | events: onChange -->
+            <fieldset class="tp-field af-radios" data-component="Radio">
+              <legend class="tp-label" data-i18n="f.pri">How soon does this matter?</legend>
+              <label class="tp-choice"><input class="tp-radio" type="radio" name="priority" value="low"><span class="tp-choice__text"><span data-i18n="p.low">Low</span><span class="tp-choice__hint" data-i18n="p.low.h">An idea or a thought. Whenever there's time.</span></span></label>
+              <label class="tp-choice"><input class="tp-radio" type="radio" name="priority" value="medium" checked><span class="tp-choice__text"><span data-i18n="p.med">Medium</span><span class="tp-choice__hint" data-i18n="p.med.h">Something is in the way, but I can work around it.</span></span></label>
+              <label class="tp-choice"><input class="tp-radio" type="radio" name="priority" value="high"><span class="tp-choice__text"><span data-i18n="p.high">High</span><span class="tp-choice__hint" data-i18n="p.high.h">I can't use Tempo, or something about money or my data is wrong.</span></span></label>
+            </fieldset>
+
+            <!-- @component Notice | shadcn: alert | props: { tone: 'info', title: 'What gets sent' } | events: — -->
+            <div class="tp-notice" data-tone="info" data-component="Notice">
+              <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg></span>
+              <span class="tp-notice__text">
+                <span class="tp-notice__title" data-i18n="pn.title">What gets sent</span>
+                <span><span data-i18n="pn.body1">Your message, plus your name and email so Amit can reply:</span> <span class="tp-ltr">maya.ronen@example.com</span>. <span data-i18n="pn.body2">Nothing from your pages, tasks or chats is attached.</span></span>
+              </span>
+            </div>
+
+            <div class="tp-form__actions">
+              <button class="tp-btn tp-btn--primary" type="submit"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg><span data-i18n="send">Send to Amit</span></button>
+            </div>
+          </form>
+        </section>
+
+        <!-- @component StatusPanel | shadcn: card | props: { tone: 'done', title: 'Sent', body } | events: onAnother -> reset form -->
+        <div class="tp-status-panel tp-surface af-state" data-tone="done" id="af-sent" data-component="StatusPanel" hidden>
+          <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <h2 class="tp-status-panel__title" id="sent-title" tabindex="-1" data-i18n="sent.title">Sent. Thank you, Maya.</h2>
+          <p class="tp-status-panel__body" data-i18n="sent.body">Amit will read it himself. If he replies, you'll see it in Notifications and in your email.</p>
+          <p class="tp-status-panel__meta" dir="auto" id="sent-subject"></p>
+          <div class="tp-status-panel__actions">
+            <button class="tp-btn tp-btn--secondary" type="button" data-af="another"><span data-i18n="sent.again">Write another</span></button>
+            <a class="tp-btn tp-btn--ghost" href="today.html"><span data-i18n="sent.today">Back to Today</span></a>
+          </div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+        <div class="tp-state tp-state--loading af-state" role="status" data-component="StateLoading" data-state-show="loading empty">
+          <span class="tp-sr-only" data-i18n="loading">Loading</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--block"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't send your message." } | events: onRetry -> askFounder.submit again -->
+        <div class="tp-state tp-state--error af-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't send your message.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Your words are still here. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "err.one": "One thing needs a look before sending", "err.two": "Two things need a look before sending",
+    "f.subj.err": "Add a few words so Amit knows what it's about.", "f.body.err": "Write your message here. One line is fine.",
+    "offline.wait": "You're offline. Your message will send when you're back.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "לשאול את המייסד · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.set": "הגדרות",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן",
+    "nav.profile": "פרופיל", "nav.prefs": "העדפות", "nav.integ": "חיבורים", "nav.privacy": "פרטיות",
+    "nav.billing": "מסלול ותשלום", "nav.notif": "התראות", "nav.founder": "לשאול את המייסד", "nav.dyslexia": "גופן קריאה",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "af.title": "לשאול את המייסד",
+    "af.sub": "עמית בונה את Tempo וקורא כל הודעה בעצמו. שאלות, רעיונות, משהו שמרגיש לא בסדר: הכול מתקבל בברכה.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "אפשר לכתוב עכשיו. ההודעה תישלח כשהחיבור יחזור.",
+    "msg.title": "ההודעה שלך",
+    "err.one": "דבר אחד צריך מבט לפני השליחה", "err.two": "שני דברים צריכים מבט לפני השליחה",
+    "f.subj": "נושא", "f.subj.help": "כמה מילים מספיקות, כמו ״השיחה הקולית נקטעה״.", "f.subj.err": "הוסיפי כמה מילים כדי שעמית יבין על מה מדובר.",
+    "f.body": "הודעה", "f.body.help": "כתבי איך שזה יוצא. אפשר בעברית או באנגלית.", "f.body.err": "כתבי כאן את ההודעה. גם שורה אחת מספיקה.",
+    "f.pri": "כמה מהר זה חשוב?",
+    "p.low": "נמוך", "p.low.h": "רעיון או מחשבה. מתי שיש זמן.",
+    "p.med": "בינוני", "p.med.h": "משהו מפריע, אבל אני מסתדרת.",
+    "p.high": "גבוה", "p.high.h": "אני לא יכולה להשתמש ב־Tempo, או שמשהו בתשלום או במידע שלי לא תקין.",
+    "pn.title": "מה נשלח", "pn.body1": "ההודעה שלך, יחד עם השם והאימייל שלך כדי שעמית יוכל לענות:",
+    "pn.body2": "שום דבר מהדפים, מהמשימות או מהשיחות שלך לא מצורף.",
+    "send": "לשלוח לעמית",
+    "sent.title": "נשלח. תודה, מאיה.", "sent.body": "עמית יקרא את זה בעצמו. אם הוא יענה, תראי את זה בהתראות ובמייל.",
+    "sent.again": "לכתוב עוד הודעה", "sent.today": "חזרה להיום",
+    "offline.wait": "אין חיבור כרגע. ההודעה תישלח כשתחזרי.",
+    "loading": "טוען",
+    "error.title": "לא הצלחנו לשלוח את ההודעה.", "error.body": "המילים שלך עדיין כאן. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  var form = document.getElementById("af-form");
+  var wrap = document.getElementById("af-form-wrap"), sent = document.getElementById("af-sent");
+
+  function setError(id, on) {
+    var input = document.getElementById(id), err = document.getElementById(id + "-error");
+    if (on) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
+    err.hidden = !on;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var subj = document.getElementById("subject"), body = document.getElementById("body");
+    var errors = [];
+    if (!subj.value.trim()) errors.push(["subject", "f.subj.err"]);
+    if (!body.value.trim()) errors.push(["body", "f.body.err"]);
+    setError("subject", !subj.value.trim()); setError("body", !body.value.trim());
+
+    var summary = document.getElementById("err-summary"), list = document.getElementById("err-list");
+    list.innerHTML = "";
+    if (errors.length) {
+      document.getElementById("err-title").textContent = TP.t(errors.length === 1 ? "err.one" : "err.two");
+      errors.forEach(function (x) {
+        var li = document.createElement("li"), a = document.createElement("a");
+        a.href = "#" + x[0]; a.textContent = TP.t(x[1]);
+        a.addEventListener("click", function (ev) { ev.preventDefault(); document.getElementById(x[0]).focus(); });
+        li.appendChild(a); list.appendChild(li);
+      });
+      summary.hidden = false; summary.focus();
+      return;
+    }
+    summary.hidden = true;
+
+    if (document.documentElement.getAttribute("data-state") === "offline") {
+      TP.toast({ title: TP.t("offline.wait") });
+      return;
+    }
+
+    // REAL: convex askFounder.submit({ subject, body, priority }) — inserts into askFounderQueue; HTTP action notifies Amit
+    document.getElementById("sent-subject").textContent = subj.value.trim();
+    wrap.hidden = true; sent.hidden = false;
+    document.getElementById("sent-title").focus();
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest('[data-af="another"]'); if (!b) return;
+    form.reset(); setError("subject", false); setError("body", false);
+    sent.hidden = true; wrap.hidden = false;
+    document.getElementById("subject").focus();
+  });
+})();
+</script>
+</body>
+</html>

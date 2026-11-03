@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasks · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — tasks.html */
+  .tk-quick__row { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .tk-quick__row .tp-input { flex: 1 1 calc(var(--tp-space-20) * 3); min-width: 0; }
+  .tk-filter { display: grid; gap: var(--tp-space-1); min-width: 0; }
+  .tk-groups { display: grid; gap: var(--tp-space-8); }
+  .tk-groups [data-filtered="true"] { display: none; }
+  .tk-checklist { display: grid; gap: var(--tp-space-2); }
+  .tk-checklist .tp-checklist { padding-inline-start: var(--tp-space-10); }
+</style>
+</head>
+<body>
+<!--
+@screen   Tasks
+@route    apps/web/app/(tempo)/tasks/page.tsx
+@layout   TempoShell
+@data     tasks = tasks.list({ status: "open", sort, energy, priority, paginationOpts })   // Convex paginated query
+@data     checklists = tasks.listChecklists({ taskIds })                                 // Convex query: subtasks per task
+@actions  quick add -> tasks.quickAdd({ text })                     // parses day and time from the words; optimistic, Undo 5 min -> tasks.remove({ id })
+@actions  tick task -> tasks.complete({ id })                        // optimistic, Undo 5 min
+@actions  tick checklist item -> tasks.toggleSubtask({ taskId, subtaskId, done })   // optimistic
+@actions  filter by energy / priority, search, sort -> router.replace("?energy=&priority=&q=&sort=")   // client args to tasks.list
+@actions  open a task -> open TaskSheet (task-sheet.html, ?task=<id>)
+@actions  load more -> usePaginatedQuery(api.tasks.list).loadMore(20)
+@states   default | empty | loading | error | offline  (?state=)   + filtered-to-nothing (inline, kind copy)
+@flow     1. Show open tasks grouped as Today, This week, Checklists and Later. Done tasks stay visible, struck through, until tomorrow.
+          2. Quick add takes one line in plain words ("call the bank tomorrow 10:00"); the new task appears at the top of Today and an Undo toast shows for 5 minutes.
+          3. Energy filter (All, Quiet, Steady, Push) and Priority select narrow the list; the line under the toolbar says how many tasks are showing.
+          4. If the filters hide everything, say so kindly and offer "Clear filters". Never call anything late.
+          5. Ticking a checklist item updates "2 of 5 done" at once.
+          6. The edit button on a row opens the task sheet for that task.
+          7. Later loads 20 at a time with a visible "Showing 2 of 5" line.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <strong data-i18n="nav.tasks" dir="auto">Tasks</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Tasks', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="tk.title">Tasks</h1>
+          <p class="tp-pagehead__sub" data-i18n="tk.sub">Everything you've written down, in one calm list. Pick what fits your energy right now.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--secondary" href="brain-dump.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg><span data-i18n="tk.dump">Brain dump</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component Form | shadcn: form | props: { field: 'quick add' } | events: onSubmit -> tasks.quickAdd({ text }) -->
+      <form class="tp-form tp-surface" id="quick-add" data-component="Form" novalidate data-state-hide>
+        <!-- @component Field | shadcn: form item | props: { id: 'qa-input', label: 'Quick add', help } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="qa-input" data-i18n="tk.qa.label">Quick add</label>
+          <div class="tk-quick__row">
+            <!-- @component TextInput | shadcn: input | props: { type: 'text', placeholder } | events: — -->
+            <input class="tp-input" id="qa-input" type="text" dir="auto" autocomplete="off" aria-describedby="qa-help qa-error" placeholder="Call the bank tomorrow at 10:00" data-i18n-attr="placeholder:tk.qa.ph" data-component="TextInput">
+            <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> submit -->
+            <button class="tp-btn tp-btn--primary" type="submit" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tk.qa.add">Add task</span></button>
+          </div>
+          <p class="tp-help" id="qa-help" data-i18n="tk.qa.help">Type it the way you'd say it. You can add details later.</p>
+          <p class="tp-error-text" id="qa-error" hidden data-i18n="tk.qa.err">Write a few words first, then press Add task.</p>
+        </div>
+      </form>
+
+      <!-- @component Toolbar | shadcn: — | props: — | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" data-state-hide>
+        <!-- @component SearchInput | shadcn: input (+ command) | props: { label: 'Search tasks' } | events: onInput -> ?q= -->
+        <div class="tp-search tp-toolbar__grow" data-component="SearchInput">
+          <label class="tp-label" for="tk-search" data-i18n="tk.search">Search tasks</label>
+          <div class="tp-search__box"><span class="tp-search__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><input class="tp-input" id="tk-search" type="search" dir="auto" autocomplete="off"></div>
+        </div>
+        <div class="tk-filter">
+          <span class="tp-label" id="energy-label" data-i18n="tk.energy">Energy</span>
+          <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['all','quiet','steady','push'], value: 'all' } | events: onChange -> ?energy= -->
+          <div class="tp-segmented" role="radiogroup" aria-labelledby="energy-label" id="energy-seg" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" data-energy="all" aria-checked="true" tabindex="0"><span data-i18n="tk.all">All</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-energy="quiet" aria-checked="false" tabindex="-1"><span data-i18n="energy.quiet">Quiet</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-energy="steady" aria-checked="false" tabindex="-1"><span data-i18n="energy.steady">Steady</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-energy="push" aria-checked="false" tabindex="-1"><span data-i18n="energy.push">Push</span></button>
+          </div>
+        </div>
+        <!-- @component Field | shadcn: form item | props: { id: 'tk-prio', label: 'Priority' } | events: — -->
+        <div class="tp-field tk-filter" data-component="Field">
+          <label class="tp-label" for="tk-prio" data-i18n="tk.prio">Priority</label>
+          <!-- @component Select | shadcn: select | props: { options: ['any','high','normal','low'], value: 'any' } | events: onChange -> ?priority= -->
+          <div class="tp-select" data-component="Select">
+            <select class="tp-select__input" id="tk-prio">
+              <option value="any" data-i18n="tk.prio.any">Any priority</option>
+              <option value="high" data-i18n="prio.high">High priority</option>
+              <option value="normal" data-i18n="prio.normal">Normal priority</option>
+              <option value="low" data-i18n="prio.low">Low priority</option>
+            </select>
+            <span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span>
+          </div>
+        </div>
+        <!-- @component SortMenu | shadcn: dropdown-menu (radio) | props: { options: ['due','energy','minutes'], value: 'due' } | events: onChoose -> TP.onSort -> tasks.list({ sort }) -->
+        <div class="tp-menu tp-toolbar__end" data-component="SortMenu">
+          <button class="tp-btn tp-btn--secondary" type="button" data-action="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="sort-list"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sort"/></svg><span data-i18n="tk.sort">Sort:</span> <span data-menu-value data-i18n="tk.sort.due">Day</span></button>
+          <div class="tp-menu__list tp-glass" id="sort-list" role="menu" aria-label="Sort tasks" data-i18n-attr="aria-label:tk.sort.label" hidden>
+            <div class="tp-menu__label" data-i18n="tk.sort.label">Sort tasks</div>
+            <button class="tp-menu__item" type="button" role="menuitemradio" aria-checked="true" data-value="due"><span class="tp-menu__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span><span data-label data-i18n="tk.sort.due">Day</span></button>
+            <button class="tp-menu__item" type="button" role="menuitemradio" aria-checked="false" data-value="energy"><span class="tp-menu__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span><span data-label data-i18n="tk.sort.energy">Energy, quiet first</span></button>
+            <button class="tp-menu__item" type="button" role="menuitemradio" aria-checked="false" data-value="minutes"><span class="tp-menu__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span><span data-label data-i18n="tk.sort.min">Shortest first</span></button>
+          </div>
+        </div>
+      </div>
+      <p class="tp-muted tp-small" role="status" id="filter-status" data-state-hide><span data-i18n="tk.showing">Showing</span> <span class="tp-num" id="shown-n">12</span> <span data-i18n="tk.tasks">tasks</span></p>
+
+      <div class="tk-groups" data-state-hide>
+        <!-- @component Empty | shadcn: — | props: { text } | events: onClear -> reset filters -->
+        <div class="tp-empty" id="tk-nomatch" data-component="Empty" hidden>
+          <svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-filter"/></svg>
+          <p data-i18n="tk.nomatch">Nothing matches these filters right now. That's fine.</p>
+          <button class="tp-btn tp-btn--secondary" type="button" id="tk-clear"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="tk.clear">Clear filters</span></button>
+        </div>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Today', count } | events: — -->
+        <section class="tp-section" data-component="Section" aria-labelledby="g-today">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-today" data-i18n="nav.today">Today</h2><span class="tp-section__count"><span class="tp-num" id="open-today">3</span> <span data-i18n="tk.open">open</span></span></div>
+          <!-- @component TaskRow ×4 | shadcn: checkbox | props: { task: {id,title,minutes,energy,priority,done} } | events: onToggle -> tasks.complete, onOpen -> TaskSheet -->
+          <ul class="tp-block-task tk-list" role="list" id="list-today" data-component="TaskBlock">
+          <li class="tp-task-row" data-component="TaskRow" data-id="t1" data-energy="steady" data-priority="high" data-due="2026-10-12T09" data-min="25" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t1-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t1-title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.steady">Steady</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.high">High priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t1" aria-label="Open task" aria-describedby="t1-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t2" data-energy="quiet" data-priority="normal" data-due="2026-10-12T11" data-min="10" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t2-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t2-title" dir="auto" data-i18n="task.dana">Email Dana about the lease</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.normal">Normal priority</span></span><a class="tp-wikilink" href="page-editor.html" data-i18n="nav.checklist">Moving checklist</a></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t2" aria-label="Open task" aria-describedby="t2-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t3" data-energy="quiet" data-priority="high" data-due="2026-10-12T18" data-min="15" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t3-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t3-title" dir="auto" data-i18n="task.rx">Pick up prescription</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">18:00</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.high">High priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t3" aria-label="Open task" aria-describedby="t3-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t4" data-done="true" data-energy="quiet" data-priority="low" data-due="2026-10-12T08" data-min="5" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="true" data-action="check" aria-labelledby="t4-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t4-title" dir="auto" data-i18n="task.plants">Water the plants</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="task.donenote">Done at</span> <span class="tp-num tp-mono">08:05</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t4" aria-label="Open task" aria-describedby="t4-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          </ul>
+        </section>
+
+        <section class="tp-section" data-component="Section" aria-labelledby="g-week">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-week" data-i18n="tk.week">This week</h2><span class="tp-section__count"><span class="tp-num">3</span> <span data-i18n="tk.open">open</span></span></div>
+          <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task: {id,title,day,minutes,energy,priority} } | events: onToggle -> tasks.complete, onOpen -> TaskSheet -->
+          <ul class="tp-block-task tk-list" role="list" data-component="TaskBlock">
+          <li class="tp-task-row" data-component="TaskRow" data-id="t5" data-energy="steady" data-priority="normal" data-due="2026-10-14T10" data-min="15" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t5-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t5-title" dir="auto" data-i18n="task.bank">Call the bank about the deposit</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="day.wed">Wed</span> <span class="tp-num">14</span></span><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.steady">Steady</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.normal">Normal priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t5" aria-label="Open task" aria-describedby="t5-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t6" data-energy="push" data-priority="high" data-due="2026-10-14T17" data-min="45" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t6-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t6-title" dir="auto" data-i18n="task.rehearse">Rehearse the talk out loud</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="day.wed">Wed</span> <span class="tp-num">14</span></span><span><span class="tp-num">45</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.push">Push</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.high">High priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t6" aria-label="Open task" aria-describedby="t6-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t7" data-energy="quiet" data-priority="low" data-due="2026-10-16T09" data-min="5" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t7-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t7-title" dir="auto" data-i18n="task.van">Ask Yoni to borrow his van</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="day.fri">Fri</span> <span class="tp-num">16</span></span><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.low">Low priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t7" aria-label="Open task" aria-describedby="t7-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          </ul>
+        </section>
+
+        <section class="tp-section" data-component="Section" aria-labelledby="g-check">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-check" data-i18n="tk.checklists">Checklists</h2></div>
+          <div class="tp-card tk-checklist" data-energy="push" data-priority="normal" data-due="2026-10-17T10" data-min="90" data-check-card>
+            <!-- @component TaskRow | shadcn: checkbox + collapsible | props: { task: {id,title,day,minutes,subtasks} } | events: onToggle -> tasks.complete, onOpen -> TaskSheet -->
+            <ul class="tp-block-task" role="list">
+            <li class="tp-task-row" data-component="TaskRow" data-id="t8" data-energy="push" data-priority="normal" data-due="2026-10-17T10" data-min="90">
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t8-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t8-title" dir="auto" data-i18n="task.kitchen">Pack the kitchen</span>
+              <span class="tp-task-row__meta"><span><span data-i18n="day.sat">Sat</span> <span class="tp-num">17</span></span><span><span class="tp-num">90</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.push">Push</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.normal">Normal priority</span></span><span class="tp-checklist__count"><span class="tp-num">2</span> of <span class="tp-num">5</span> done</span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t8" aria-label="Open task" aria-describedby="t8-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+            </ul>
+            <!-- @component Checklist | shadcn: checkbox | props: { items: {text,done}[] } | events: onChange -> tasks.toggleSubtask -->
+            <ul class="tp-checklist" data-component="Checklist" aria-label="Steps for Pack the kitchen" data-i18n-attr="aria-label:tk.ck.label">
+              <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-choice__text tp-checklist__text" dir="auto" data-i18n="ck.boxes">Buy boxes</span></label></li>
+              <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-choice__text tp-checklist__text" dir="auto" data-i18n="ck.glasses">Wrap the glasses</span></label></li>
+              <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-choice__text tp-checklist__text" dir="auto" data-i18n="ck.pans">Pack the pans</span></label></li>
+              <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-choice__text tp-checklist__text" dir="auto" data-i18n="ck.label">Label each box</span></label></li>
+              <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-choice__text tp-checklist__text" dir="auto" data-i18n="ck.fridge">Clear the fridge</span></label></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="tp-section" data-component="Section" aria-labelledby="g-later">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-later" data-i18n="tk.later">Later</h2><span class="tp-section__count" data-i18n="tk.later.sub">No day yet, and that's okay</span></div>
+          <!-- @component TaskRow ×5 | shadcn: checkbox | props: { task: {id,title,minutes,energy,priority} } | events: onToggle -> tasks.complete, onOpen -> TaskSheet -->
+          <ul class="tp-block-task tk-list" role="list" data-component="TaskBlock">
+          <li class="tp-task-row" data-component="TaskRow" data-id="t9" data-energy="quiet" data-priority="low" data-due="9999-1" data-min="30" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t9-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t9-title" dir="auto" data-i18n="task.photos">Sort old photos</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">30</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.low">Low priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t9" aria-label="Open task" aria-describedby="t9-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t10" data-energy="quiet" data-priority="low" data-due="9999-2" data-min="5" data-row>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t10-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t10-title" dir="auto" data-i18n="task.haircut">Book a haircut</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.low">Low priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t10" aria-label="Open task" aria-describedby="t10-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t11" data-energy="steady" data-priority="normal" data-due="9999-3" data-min="20" data-row data-more hidden>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t11-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t11-title" dir="auto" data-i18n="task.library">Return the library books</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.steady">Steady</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.normal">Normal priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t11" aria-label="Open task" aria-describedby="t11-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t12" data-energy="steady" data-priority="low" data-due="9999-4" data-min="15" data-row data-more hidden>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t12-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t12-title" dir="auto" data-i18n="task.bike">Fix the bike light</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.steady">Steady</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.low">Low priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t12" aria-label="Open task" aria-describedby="t12-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t13" data-energy="push" data-priority="normal" data-due="9999-5" data-min="40" data-row data-more hidden>
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t13-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body">
+              <span class="tp-task-row__title" id="t13-title" dir="auto" data-i18n="task.dinner">Plan Mum's birthday dinner</span>
+              <span class="tp-task-row__meta"><span><span class="tp-num">40</span> <span data-i18n="unit.min">min</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.push">Push</span></span><span class="tp-chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="prio.normal">Normal priority</span></span></span>
+            </div>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html?task=t13" aria-label="Open task" aria-describedby="t13-title" data-i18n-attr="aria-label:task.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></a>
+          </li>
+          </ul>
+          <!-- @component LoadMore | shadcn: button | props: { shown: 2, total: 5 } | events: onLoadMore -> usePaginatedQuery().loadMore(20) -->
+          <div class="tp-load-more" data-component="LoadMore">
+            <span class="tp-load-more__status"><span data-i18n="more.showing">Showing</span> <span class="tp-num">2</span> <span data-i18n="more.of">of</span> <span class="tp-num">5</span></span>
+            <button class="tp-btn tp-btn--secondary" type="button" data-action="load-more" data-step="20" data-total="5"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg><span data-i18n="tk.more">Show more</span></button>
+          </div>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-checklist"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="tk.empty.t">No tasks yet. A clear list is a fine place to start.</h2>
+        <p class="tp-state__body" data-i18n="tk.empty.b">Add one with Quick add, or empty your head into a brain dump and pick from there.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="brain-dump.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg><span data-i18n="tk.dump">Brain dump</span></a></div>
+      </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 6 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="tk.loading">Loading your tasks</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="tk.error">Couldn't load your tasks.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads this page. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="coach.hello">Want me to pick one task that fits your energy right now? I'll suggest, and nothing changes until you say yes.</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "state.retried": "Loaded.",
+    "more.showing": "Showing",
+    "more.of": "of",
+    "more.all": "That's everything.",
+    "read.aloud": "Read aloud",
+    "read.stop": "Stop reading",
+    "checklist.of": "of",
+    "checklist.done": "done",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "switch.on": "On",
+    "switch.off": "Off",
+    "tk.added": "Added to Today",
+    "tk.justnow": "Just added"
+  },
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.library": "ספרייה",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את הדף הזה. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "state.retried": "נטען.",
+    "more.showing": "מוצגות",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "read.aloud": "הקראה",
+    "read.stop": "עצירת ההקראה",
+    "checklist.of": "מתוך",
+    "checklist.done": "בוצעו",
+    "habit.logged": "נרשם היום",
+    "habit.log": "לרשום להיום",
+    "habit.dayDone": "נרשם",
+    "habit.dayOpen": "לא נרשם",
+    "switch.on": "פועל",
+    "switch.off": "כבוי",
+    "dow.mon": "ב׳",
+    "dow.tue": "ג׳",
+    "dow.wed": "ד׳",
+    "dow.thu": "ה׳",
+    "dow.fri": "ו׳",
+    "dow.sat": "ש׳",
+    "dow.sun": "א׳",
+    "kind.fixed": "קבוע",
+    "kind.flex": "גמיש",
+    "unit.min": "דק׳",
+    "energy.quiet": "שקט",
+    "energy.steady": "יציב",
+    "energy.push": "דחיפה",
+    "doc.title": "משימות · Tempo",
+    "tk.title": "משימות",
+    "tk.sub": "כל מה שכתבת, ברשימה רגועה אחת. אפשר לבחור לפי האנרגיה שיש לך עכשיו.",
+    "tk.dump": "פריקת מחשבות",
+    "tk.qa.label": "הוספה מהירה",
+    "tk.qa.ph": "להתקשר לבנק מחר ב־10:00",
+    "tk.qa.add": "הוספת משימה",
+    "tk.qa.help": "אפשר לכתוב כמו שאומרים. את הפרטים מוסיפים אחר כך.",
+    "tk.qa.err": "כדאי לכתוב כמה מילים קודם, ואז ללחוץ על הוספת משימה.",
+    "tk.search": "חיפוש משימות",
+    "tk.energy": "אנרגיה",
+    "tk.all": "הכול",
+    "tk.prio": "עדיפות",
+    "tk.prio.any": "כל עדיפות",
+    "prio.high": "עדיפות גבוהה",
+    "prio.normal": "עדיפות רגילה",
+    "prio.low": "עדיפות נמוכה",
+    "tk.sort": "מיון:",
+    "tk.sort.due": "יום",
+    "tk.sort.label": "מיון משימות",
+    "tk.sort.energy": "אנרגיה, מהשקטה",
+    "tk.sort.min": "הקצרות קודם",
+    "tk.showing": "מוצגות",
+    "tk.tasks": "משימות",
+    "tk.nomatch": "שום דבר לא מתאים לסינון הזה כרגע. זה בסדר.",
+    "tk.clear": "ניקוי הסינון",
+    "tk.open": "פתוחות",
+    "tk.week": "השבוע",
+    "tk.checklists": "רשימות תיוג",
+    "tk.later": "בהמשך",
+    "tk.later.sub": "עוד בלי יום, וזה בסדר",
+    "tk.more": "להציג עוד",
+    "tk.ck.label": "שלבים לאריזת המטבח",
+    "task.open": "פתיחת המשימה",
+    "task.slides": "לנסח 3 שקפים ליום חמישי",
+    "task.dana": "לכתוב לדנה על החוזה",
+    "task.rx": "לאסוף מרשם מבית המרקחת",
+    "task.before": "עד",
+    "task.plants": "להשקות את העציצים",
+    "task.donenote": "בוצע ב־",
+    "task.bank": "להתקשר לבנק על הפיקדון",
+    "task.rehearse": "לחזור על ההרצאה בקול",
+    "task.van": "לבקש מיוני את הטנדר",
+    "task.kitchen": "לארוז את המטבח",
+    "task.photos": "למיין תמונות ישנות",
+    "task.haircut": "לקבוע תספורת",
+    "task.library": "להחזיר את הספרים לספרייה",
+    "task.bike": "לתקן את הפנס של האופניים",
+    "task.dinner": "לתכנן ארוחת יום הולדת לאמא",
+    "day.wed": "ד׳",
+    "day.fri": "ו׳",
+    "day.sat": "ש׳",
+    "ck.boxes": "לקנות קרטונים",
+    "ck.glasses": "לעטוף את הכוסות",
+    "ck.pans": "לארוז את הסירים",
+    "ck.label": "לסמן כל קרטון",
+    "ck.fridge": "לפנות את המקרר",
+    "tk.empty.t": "עוד אין משימות. רשימה ריקה היא מקום טוב להתחיל בו.",
+    "tk.empty.b": "אפשר להוסיף אחת בהוספה המהירה, או לפרוק הכול בפריקת מחשבות ולבחור משם.",
+    "tk.loading": "טוען את המשימות שלך",
+    "tk.error": "לא הצלחנו לטעון את המשימות.",
+    "tk.added": "נוסף להיום",
+    "tk.justnow": "נוסף עכשיו",
+    "coach.hello": "רוצה שאבחר משימה אחת שמתאימה לאנרגיה שלך עכשיו? אציע, ושום דבר לא ישתנה עד שתאשרי."
+  }
+};
+/* Tasks: filters, search, sort, quick add. */
+TP.onReady2 = function () {
+  var groups = document.querySelector(".tk-groups");
+  var energy = "all", prio = "any", q = "";
+  function rows() { return [].slice.call(groups.querySelectorAll(".tk-list > .tp-task-row, [data-check-card]")); }
+  // REAL: convex tasks.list({ energy, priority, q }) — here the rows already on the page are filtered.
+  function apply() {
+    var shown = 0;
+    rows().forEach(function (r) {
+      var title = (r.querySelector(".tp-task-row__title") || {}).textContent || "";
+      var ok = (energy === "all" || r.getAttribute("data-energy") === energy) &&
+               (prio === "any" || r.getAttribute("data-priority") === prio) &&
+               (!q || title.toLowerCase().indexOf(q) !== -1);
+      r.setAttribute("data-filtered", String(!ok));
+      if (ok && !r.hidden) shown++;
+    });
+    document.getElementById("shown-n").textContent = shown;
+    document.getElementById("tk-nomatch").hidden = shown > 0;
+  }
+  document.getElementById("energy-seg").addEventListener("click", function (e) {
+    var o = e.target.closest("[data-energy]"); if (!o) return; energy = o.getAttribute("data-energy"); apply();
+  });
+  document.getElementById("energy-seg").addEventListener("keydown", function () {
+    setTimeout(function () { var o = document.querySelector('#energy-seg [aria-checked="true"]'); if (o) { energy = o.getAttribute("data-energy"); apply(); } }, 0);
+  });
+  document.getElementById("tk-prio").addEventListener("change", function (e) { prio = e.target.value; apply(); });
+  document.getElementById("tk-search").addEventListener("input", function (e) { q = e.target.value.trim().toLowerCase(); apply(); });
+  document.getElementById("tk-clear").addEventListener("click", function () {
+    energy = "all"; prio = "any"; q = "";
+    document.getElementById("tk-prio").value = "any"; document.getElementById("tk-search").value = "";
+    document.querySelectorAll("#energy-seg [role=radio]").forEach(function (o) { var on = o.getAttribute("data-energy") === "all"; o.setAttribute("aria-checked", String(on)); o.tabIndex = on ? 0 : -1; });
+    apply(); document.getElementById("tk-search").focus();
+  });
+  // REAL: convex tasks.list({ sort }) — here rows are re-ordered inside each list.
+  var rank = { quiet: 0, steady: 1, push: 2 };
+  TP.onSort = function (v) {
+    groups.querySelectorAll(".tk-list").forEach(function (list) {
+      var items = [].slice.call(list.children);
+      items.sort(function (a, b) {
+        if (v === "energy") return rank[a.getAttribute("data-energy")] - rank[b.getAttribute("data-energy")];
+        if (v === "minutes") return (+a.getAttribute("data-min")) - (+b.getAttribute("data-min"));
+        return a.getAttribute("data-due") < b.getAttribute("data-due") ? -1 : 1;
+      });
+      items.forEach(function (li) { list.appendChild(li); });
+    });
+  };
+  // REAL: convex tasks.quickAdd({ text }) — optimistic row, Undo -> tasks.remove({ id }).
+  var form = document.getElementById("quick-add"), input = document.getElementById("qa-input"), err = document.getElementById("qa-error");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text) { err.hidden = false; input.setAttribute("aria-invalid", "true"); input.focus(); return; }
+    err.hidden = true; input.removeAttribute("aria-invalid");
+    var list = document.getElementById("list-today"), id = "n" + Date.now();
+    var li = list.querySelector(".tp-task-row").cloneNode(true);
+    li.setAttribute("data-id", id); li.removeAttribute("data-done"); li.setAttribute("data-energy", "steady"); li.setAttribute("data-priority", "normal"); li.setAttribute("data-filtered", "false");
+    var t = li.querySelector(".tp-task-row__title"); t.id = id + "-title"; t.textContent = text; t.removeAttribute("data-i18n");
+    li.querySelector(".tp-check").setAttribute("aria-labelledby", id + "-title"); li.querySelector(".tp-check").setAttribute("aria-checked", "false");
+    var a = li.querySelector("a.tp-btn"); a.setAttribute("aria-describedby", id + "-title"); a.setAttribute("href", "task-sheet.html");
+    li.querySelector(".tp-task-row__meta").textContent = TP.t("tk.justnow");
+    list.insertBefore(li, list.firstChild);
+    input.value = ""; apply();
+    TP.toast({ title: TP.t("tk.added"), onUndo: function () { li.remove(); apply(); } });
+  });
+  document.addEventListener("click", function (e) { if (e.target.closest('[data-action="load-more"]')) setTimeout(apply, 0); });
+  apply();
+};
+</script>
+</body>
+</html>

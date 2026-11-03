@@ -2,8 +2,11 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type ToastState, UNDO_WINDOW_MS, UndoToast } from "@/components/goals/shared";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
@@ -11,6 +14,16 @@ import {
   parseChecklistText,
   toggleChecklistItem,
 } from "@/convex/lib/taskChecklists";
+import type { MessageKey } from "@/lib/i18n";
+import {
+  clearTaskDraft,
+  type KeptTaskDraft,
+  loadTaskDraft,
+  saveTaskDraft,
+  type TaskDraft,
+  type TaskDraftRepeat,
+  tabSessionStore,
+} from "@/lib/task-draft-session";
 import {
   filterTasksForView,
   groupTasksByEnergy,
@@ -42,35 +55,48 @@ type LocalTaskRecord = TaskViewRecord & {
   createdAt: number;
 };
 
-type RepeatDraft = "none" | "daily" | "weekly";
+type RepeatDraft = TaskDraftRepeat;
 
-type Draft = {
-  title: string;
-  projectName: string;
-  priority: TaskPriority;
-  energy: TaskEnergy;
-  dueToday: boolean;
-  repeat: RepeatDraft;
-  checklistText: string;
-};
+/** The add form's fields; lib/task-draft-session.ts keeps them for this tab. */
+type Draft = TaskDraft;
 
 const localStorageKey = "tempo:task-views-core:v1";
 
-const viewLinks = [
-  { href: "/today", label: "Today" },
-  { href: "/tasks", label: "Inbox" },
-  { href: "/projects/home-reset", label: "Project" },
-  { href: "/tasks/priority", label: "Priority" },
-  { href: "/tasks/energy", label: "Energy" },
-  { href: "/tasks/checklists", label: "Checklists" },
-] as const;
+type Translate = (key: MessageKey) => string;
 
+const viewLinks: readonly { href: string; label: MessageKey }[] = [
+  { href: "/today", label: "nav.today" },
+  { href: "/tasks", label: "tasks.inbox" },
+  { href: "/projects/home-reset", label: "tasks.project" },
+  { href: "/tasks/priority", label: "tasks.priority" },
+  { href: "/tasks/energy", label: "tasks.energy" },
+  { href: "/tasks/checklists", label: "tasks.checklists" },
+];
+
+const viewTitles: Record<Exclude<TaskView, "project">, MessageKey> = {
+  today: "nav.today",
+  inbox: "tasks.inbox",
+  priority: "tasks.priority",
+  energy: "tasks.energy",
+  checklists: "tasks.checklists",
+};
+
+const viewHrefs: Record<Exclude<TaskView, "project">, string> = {
+  today: "/today",
+  inbox: "/tasks",
+  priority: "/tasks/priority",
+  energy: "/tasks/energy",
+  checklists: "/tasks/checklists",
+};
+
+// The project starts empty: a prefilled name made a project the person never chose.
 const defaultDraft: Draft = {
   title: "",
-  projectName: "Home reset",
+  projectName: "",
   priority: "medium",
   energy: "medium",
   dueToday: false,
+  dueDate: "",
   repeat: "none",
   checklistText: "",
 };
@@ -78,17 +104,35 @@ const defaultDraft: Draft = {
 const allowLocalTaskViews =
   process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1";
 
-const priorityLabels: Record<TaskPriority, string> = {
-  high: "High priority",
-  medium: "Medium priority",
-  low: "Low priority",
+// Key order is the group order on screen.
+const priorityLabels: Record<TaskPriority, MessageKey> = {
+  high: "tasks.group.priority.high",
+  medium: "tasks.group.priority.medium",
+  low: "tasks.group.priority.low",
 };
 
-const energyLabels: Record<TaskEnergy, string> = {
-  low: "Low energy",
-  medium: "Medium energy",
-  high: "High energy",
+const energyLabels: Record<TaskEnergy, MessageKey> = {
+  low: "tasks.group.energy.low",
+  medium: "tasks.group.energy.medium",
+  high: "tasks.group.energy.high",
 };
+
+const priorityChips: Record<TaskPriority, MessageKey> = {
+  high: "tasks.chip.priority.high",
+  medium: "tasks.chip.priority.medium",
+  low: "tasks.chip.priority.low",
+};
+
+const energyChips: Record<TaskEnergy, MessageKey> = {
+  low: "tasks.chip.energy.low",
+  medium: "tasks.chip.energy.medium",
+  high: "tasks.chip.energy.high",
+};
+
+/** Fills a `{title}`-style slot; the function replacer keeps a "$" in a task title literal. */
+function fillSlot(template: string, slot: string, value: string): string {
+  return template.replace(`{${slot}}`, () => value);
+}
 
 function isTaskStatus(value: unknown): value is TaskStatus {
   return value === "todo" || value === "in_progress" || value === "done" || value === "cancelled";
@@ -156,13 +200,49 @@ function saveLocalTasks(tasks: LocalTaskRecord[]) {
   window.localStorage.setItem(localStorageKey, JSON.stringify(tasks));
 }
 
-function getViewTitle(view: TaskView, projectSlug?: string): string {
-  if (view === "today") return "Today";
-  if (view === "inbox") return "Inbox";
-  if (view === "priority") return "Priority";
-  if (view === "energy") return "Energy";
-  if (view === "checklists") return "Checklists";
-  return titleFromProjectSlug(projectSlug ?? "project");
+function localEndOfDay(value: string): number | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day + 1).getTime() - 1;
+}
+
+/**
+ * The project a new task gets from the typed name. A blank name means no project at all, never
+ * `""`: projects are only the tasks that share a projectId, so a stray value lists a stray project.
+ */
+export function projectForCreate(name: string): { projectId?: string; projectName?: string } {
+  const projectName = name.trim();
+  if (!projectName) return {};
+  return { projectId: slugifyProjectName(projectName) || undefined, projectName };
+}
+
+/**
+ * The toast a delete shows: Undo until `undoUntilMs` (the server's, or the same 5 minutes in the
+ * local store), then it goes. There is one at a time; a newer delete replaces it.
+ */
+export function deletedTaskToast(
+  title: string,
+  undoUntilMs: number,
+  onUndo: () => Promise<void>
+): ToastState {
+  return { id: Date.now(), title, undoUntilMs, onUndo };
+}
+
+/** Undo in the local store: the task goes back where it was, and never twice. */
+export function restoreLocalTask<T extends { id: string }>(
+  tasks: T[],
+  task: T,
+  index: number
+): T[] {
+  if (tasks.some((item) => item.id === task.id)) return tasks;
+  const at = Math.min(Math.max(index, 0), tasks.length);
+  return [...tasks.slice(0, at), task, ...tasks.slice(at)];
+}
+
+function getViewTitle(view: TaskView, t: Translate, projectSlug?: string): string {
+  // A project's title is its own name (user data), so it is not translated.
+  if (view === "project") return titleFromProjectSlug(projectSlug ?? "project");
+  return t(viewTitles[view]);
 }
 
 function toViewRecord(task: ConvexTaskRecord): TaskViewRecord {
@@ -182,6 +262,7 @@ function toViewRecord(task: ConvexTaskRecord): TaskViewRecord {
 }
 
 export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
+  const { t } = useLocale();
   const bounds = useLocalDayBounds();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const convexTasks = useQuery(api.tasks.list, isAuthenticated ? {} : "skip");
@@ -189,15 +270,18 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
+  const removeTask = useMutation(api.tasks.remove);
+  const restoreTask = useMutation(api.tasks.restore);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [localTasks, setLocalTasks] = useState<LocalTaskRecord[]>([]);
   const [draft, setDraft] = useState<Draft>(() => ({
     ...defaultDraft,
     dueToday: view === "today",
-    projectName: view === "project" ? getViewTitle(view, projectSlug) : defaultDraft.projectName,
+    projectName: view === "project" ? getViewTitle(view, t, projectSlug) : defaultDraft.projectName,
   }));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const closeToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
     if (allowLocalTaskViews) {
@@ -211,7 +295,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     view === "project"
       ? slugifyProjectName(projectSlug ?? "home-reset") || "home-reset"
       : undefined;
-  const projectName = view === "project" ? getViewTitle(view, projectSlug) : undefined;
+  const projectName = view === "project" ? getViewTitle(view, t, projectSlug) : undefined;
   const usesConvex = isAuthenticated && convexTasks !== undefined;
   const usesLocalStore = !usesConvex && allowLocalTaskViews;
   const taskStoreReady = usesConvex || usesLocalStore;
@@ -243,12 +327,14 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     return filterTasksForView(allTasks, { view });
   }, [allTasks, bounds.endMs, bounds.startMs, projectId, view]);
 
-  const heading = getViewTitle(view, projectSlug);
+  const heading = getViewTitle(view, t, projectSlug);
   const summary = isTaskStoreLoading
-    ? "Loading your task view."
+    ? t("tasks.loading")
     : visibleTasks.length === 0
-      ? "Nothing here yet. A small next step is enough."
-      : `${visibleTasks.length} ${visibleTasks.length === 1 ? "task" : "tasks"} in this view.`;
+      ? t("tasks.none")
+      : visibleTasks.length === 1
+        ? t("tasks.count.one")
+        : fillSlot(t("tasks.count.many"), "n", String(visibleTasks.length));
 
   const persistLocal = (updater: (tasks: LocalTaskRecord[]) => LocalTaskRecord[]) => {
     setLocalTasks((current) => {
@@ -258,17 +344,48 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     });
   };
 
-  const handleCreate = async () => {
-    const title = draft.title.trim();
-    if (!title || !taskStoreReady) return;
+  // One create at a time: a double click (or Enter twice) must not make two tasks.
+  const creatingRef = useRef(false);
+  // The title as typed, read at submit time. A create clears it before the guard lifts, so a
+  // second press that lands before React re-renders sees an empty title, not the old one.
+  const titleRef = useRef(draft.title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [showTitleHint, setShowTitleHint] = useState(false);
 
-    const normalizedProjectName =
-      view === "project" ? (projectName ?? draft.projectName) : draft.projectName.trim();
+  // Leaving and coming back (Back, Forward, a reload) brings back what was typed in this view's
+  // add form, in this tab only.
+  const draftScope = projectSlug ? `${view}:${projectSlug}` : view;
+  const restoreDraft = useCallback((kept: KeptTaskDraft) => {
+    titleRef.current = kept.title;
+    setDraft((current) => ({ ...current, ...kept }));
+  }, []);
+  const forgetDraft = useKeptTaskDraft(draftScope, draft, restoreDraft);
+
+  // The create area is a form: Enter in any of its fields submits, the same as Add task.
+  const handleCreate = async () => {
+    if (creatingRef.current || !taskStoreReady) return;
+    const title = titleRef.current.trim();
+    if (!title) {
+      setShowTitleHint(true);
+      titleInputRef.current?.focus();
+      return;
+    }
+    creatingRef.current = true;
+    try {
+      await createFromDraft(title);
+    } finally {
+      creatingRef.current = false;
+    }
+  };
+
+  const createFromDraft = async (title: string) => {
     // Project view must reuse the filter's projectId — do not re-slugify the
     // display title alone, or URL slug and stored id can diverge.
-    const normalizedProjectId =
-      view === "project" && projectId ? projectId : slugifyProjectName(normalizedProjectName);
-    const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
+    const project =
+      view === "project" && projectId
+        ? { projectId, projectName: projectName ?? draft.projectName }
+        : projectForCreate(draft.projectName);
+    const dueAt = draft.dueToday ? bounds.endMs - 1 : localEndOfDay(draft.dueDate);
     const checklist = parseChecklistText(draft.checklistText);
 
     if (usesConvex) {
@@ -277,14 +394,16 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         priority: draft.priority,
         energy: draft.energy,
         dueAt,
-        projectId: normalizedProjectId,
-        projectName: normalizedProjectName,
+        projectId: project.projectId,
+        projectName: project.projectName,
         checklist,
       });
       if (draft.repeat === "daily" || draft.repeat === "weekly") {
         const cfgId = await createRepeatCfg({
           repeatCycle: draft.repeat === "daily" ? "DAILY" : "WEEKLY",
           repeatEvery: 1,
+          // The repeat engine compares weekdays in UTC, so keep the stored
+          // value in that same time basis until repeat configs carry a zone.
           weekdays: draft.repeat === "weekly" ? [new Date().getUTCDay()] : [],
           skipOverdue: true,
         });
@@ -299,8 +418,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           status: "todo",
           priority: draft.priority,
           energy: draft.energy,
-          projectId: normalizedProjectId,
-          projectName: normalizedProjectName,
+          projectId: project.projectId,
+          projectName: project.projectName,
           dueAt,
           checklist,
           createdAt: now,
@@ -312,6 +431,9 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
       return;
     }
 
+    // The task exists now: Back then Forward must not offer its title again.
+    forgetDraft();
+    titleRef.current = "";
     setDraft((current) => ({ ...current, title: "", checklistText: "" }));
   };
 
@@ -340,19 +462,25 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
   const startEditing = (task: TaskViewRecord) => {
     setEditingId(task.id);
-    setEditingTitle(task.title);
   };
 
-  const saveEdit = async (task: TaskViewRecord) => {
-    const title = editingTitle.trim();
-    if (!title || !taskStoreReady) return;
+  const saveEdit = async (task: TaskViewRecord, update: TaskEditorUpdate) => {
+    if (!update.title || !taskStoreReady) return;
 
     if (usesConvex) {
-      await updateTask({ taskId: task.id as Id<"tasks">, title });
+      await updateTask({ taskId: task.id as Id<"tasks">, ...update });
     } else if (usesLocalStore) {
       persistLocal((tasks) =>
         tasks.map((item) =>
-          item.id === task.id ? { ...item, title, updatedAt: Date.now() } : item
+          item.id === task.id
+            ? {
+                ...item,
+                ...update,
+                dueAt: update.dueAt ?? undefined,
+                checklist: update.checklist ?? undefined,
+                updatedAt: Date.now(),
+              }
+            : item
         )
       );
     } else {
@@ -360,7 +488,35 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     }
 
     setEditingId(null);
-    setEditingTitle("");
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const handleDelete = async (task: TaskViewRecord) => {
+    if (!taskStoreReady) return;
+    if (usesConvex) {
+      const taskId = task.id as Id<"tasks">;
+      const { undoUntilMs } = await removeTask({ taskId });
+      setToast(
+        deletedTaskToast(t("tasks.deleted"), undoUntilMs, async () => {
+          // A false here means the server no longer lets it back; the toast says Undo failed.
+          const { success } = await restoreTask({ taskId });
+          if (!success) throw new Error("Task not restored");
+        })
+      );
+    } else if (usesLocalStore) {
+      const index = localTasks.findIndex((item) => item.id === task.id);
+      const removed = localTasks[index];
+      persistLocal((tasks) => tasks.filter((item) => item.id !== task.id));
+      if (removed) {
+        setToast(
+          deletedTaskToast(t("tasks.deleted"), Date.now() + UNDO_WINDOW_MS, async () =>
+            persistLocal((tasks) => restoreLocalTask(tasks, removed, index))
+          )
+        );
+      }
+    }
+    setEditingId((current) => (current === task.id ? null : current));
   };
 
   const handleChecklistToggle = async (task: TaskViewRecord, itemId: string) => {
@@ -385,70 +541,104 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     );
   };
 
-  return (
-    <div className="container mx-auto max-w-6xl px-6 py-12">
-      <div className="space-y-8">
-        <header className="space-y-4">
-          <div>
-            <p className="font-eyebrow text-muted-foreground">Core task views</p>
-            <h1 className="font-heading text-4xl font-semibold text-foreground">{heading}</h1>
-            <p className="mt-2 max-w-2xl text-muted-foreground">{summary}</p>
-          </div>
-          <nav aria-label="Task views" className="flex flex-wrap gap-2">
-            {viewLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-pill border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-sunken"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {view === "project" && projectSlug ? (
-              <Link
-                href={`/projects/${projectSlug}/kanban`}
-                className="rounded-pill border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-sunken"
-              >
-                Board
-              </Link>
-            ) : null}
-          </nav>
-        </header>
+  // Any project is "Project": the switcher's one Project link stands for every project slug.
+  const isCurrent = (href: string) =>
+    view === "project" ? href.startsWith("/projects/") : href === viewHrefs[view];
 
-        <section
-          className="rounded-3xl border border-border bg-card p-5 shadow-card"
-          aria-label="Create task"
-        >
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_150px_150px_150px_auto] lg:items-end">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Task title</span>
-              <input
-                aria-label="Task title"
-                value={draft.title}
-                disabled={!taskStoreReady}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, title: event.target.value }))
-                }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-                placeholder="One small next step"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Project</span>
-              <input
-                aria-label="Project"
-                value={view === "project" ? (projectName ?? draft.projectName) : draft.projectName}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, projectName: event.target.value }))
-                }
-                disabled={view === "project" || !taskStoreReady}
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Priority</span>
+  const titleHintShown = showTitleHint && !draft.title.trim();
+
+  return (
+    <div className="tp-page tp-page--wide tk-screen" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <p className="tp-eyebrow">{t("nav.tasks")}</p>
+          <h1 className="tp-pagehead__title" dir="auto">
+            {heading}
+          </h1>
+          <p className="tp-pagehead__sub">{summary}</p>
+        </div>
+      </header>
+
+      <nav aria-label={t("tasks.views")} className="tk-views">
+        <ul className="tp-segmented">
+          {viewLinks.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="tp-seg__opt"
+                aria-current={isCurrent(link.href) ? "page" : undefined}
+              >
+                {t(link.label)}
+              </Link>
+            </li>
+          ))}
+          {view === "project" && projectSlug ? (
+            <li>
+              <Link href={`/projects/${projectSlug}/kanban`} className="tp-seg__opt">
+                {t("tasks.board")}
+              </Link>
+            </li>
+          ) : null}
+        </ul>
+      </nav>
+
+      <form
+        className="tp-surface tk-create"
+        aria-label={t("tasks.create")}
+        data-component="Form"
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleCreate();
+        }}
+      >
+        <div className="tk-create__grid">
+          <label className="tp-field tk-create__title">
+            <span className="tp-label">{t("editor.taskTitle")}</span>
+            <input
+              ref={titleInputRef}
+              aria-label={t("editor.taskTitle")}
+              aria-invalid={titleHintShown || undefined}
+              aria-describedby={titleHintShown ? "tk-title-hint" : undefined}
+              className="tp-input"
+              dir="auto"
+              autoComplete="off"
+              value={draft.title}
+              disabled={!taskStoreReady}
+              onChange={(event) => {
+                const title = event.target.value;
+                titleRef.current = title;
+                setShowTitleHint(false);
+                setDraft((current) => ({ ...current, title }));
+              }}
+              placeholder={t("tasks.titlePh")}
+            />
+            {titleHintShown ? (
+              <output id="tk-title-hint" className="text-sm text-muted-foreground">
+                {t("tasks.titleNeeded")}
+              </output>
+            ) : null}
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">{t("tasks.project")}</span>
+            <input
+              aria-label={t("tasks.project")}
+              className="tp-input"
+              dir="auto"
+              value={view === "project" ? (projectName ?? draft.projectName) : draft.projectName}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, projectName: event.target.value }))
+              }
+              disabled={view === "project" || !taskStoreReady}
+              placeholder={t("tasks.projectPh")}
+            />
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">{t("tasks.priority")}</span>
+            <span className="tp-select" data-component="Select">
               <select
-                aria-label="Priority"
+                aria-label={t("tasks.priority")}
+                className="tp-select__input"
                 value={draft.priority}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -457,17 +647,22 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     priority: event.target.value as TaskPriority,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+                <option value="high">{t("tasks.level.high")}</option>
+                <option value="medium">{t("tasks.level.medium")}</option>
+                <option value="low">{t("tasks.level.low")}</option>
               </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Energy</span>
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">{t("tasks.energy")}</span>
+            <span className="tp-select" data-component="Select">
               <select
-                aria-label="Energy"
+                aria-label={t("tasks.energy")}
+                className="tp-select__input"
                 value={draft.energy}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -476,17 +671,23 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     energy: event.target.value as TaskEnergy,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">{t("tasks.level.low")}</option>
+                <option value="medium">{t("tasks.level.medium")}</option>
+                <option value="high">{t("tasks.level.high")}</option>
               </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Repeat</span>
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          {/* Its aria-label stays a literal: tests/unit/task_repeat.test.ts reads it from this source. */}
+          <label className="tp-field">
+            <span className="tp-label">{t("tasks.repeat")}</span>
+            <span className="tp-select" data-component="Select">
               <select
                 aria-label="Repeat"
+                className="tp-select__input"
                 value={draft.repeat}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -495,92 +696,119 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     repeat: event.target.value as RepeatDraft,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <option value="none">Does not repeat</option>
-                <option value="daily">Every day</option>
-                <option value="weekly">Every week</option>
+                <option value="none">{t("tasks.repeat.none")}</option>
+                <option value="daily">{t("tasks.repeat.daily")}</option>
+                <option value="weekly">{t("tasks.repeat.weekly")}</option>
               </select>
-            </label>
-            <Button
-              type="button"
-              disabled={!taskStoreReady || !draft.title.trim()}
-              onClick={() => void handleCreate()}
-              className="min-h-11"
-            >
-              Add task
-            </Button>
-          </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          <button
+            type="submit"
+            className="tp-btn tp-btn--primary tk-create__add"
+            disabled={!taskStoreReady}
+          >
+            <TpIcon name="plus" size="sm" />
+            <span>{t("tasks.add")}</span>
+          </button>
+        </div>
+        <div className="tk-create__more">
+          <label className="tp-choice">
             <input
               type="checkbox"
+              className="tp-checkbox"
               checked={draft.dueToday}
               disabled={!taskStoreReady}
               onChange={(event) =>
-                setDraft((current) => ({ ...current, dueToday: event.target.checked }))
+                setDraft((current) => ({
+                  ...current,
+                  dueToday: event.target.checked,
+                  dueDate: event.target.checked ? "" : current.dueDate,
+                }))
               }
-              className="h-4 w-4 rounded border-border text-primary"
             />
-            Show on Today
+            <span className="tp-choice__text">{t("tasks.showOnToday")}</span>
           </label>
-          <label className="mt-4 block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Checklist (one step per line)
-            </span>
-            <textarea
-              aria-label="Checklist steps"
-              value={draft.checklistText}
+          <label className="tp-field">
+            <span className="tp-label">{t("tasks.dueDate")}</span>
+            <input
+              type="date"
+              aria-label={t("tasks.dueDate")}
+              className="tp-input tp-num"
+              value={draft.dueDate}
               disabled={!taskStoreReady}
               onChange={(event) =>
-                setDraft((current) => ({ ...current, checklistText: event.target.value }))
+                setDraft((current) => ({
+                  ...current,
+                  dueDate: event.target.value,
+                  dueToday: false,
+                }))
               }
-              rows={3}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              placeholder="Unpack the bag&#10;Put the kettle on"
             />
           </label>
-        </section>
+        </div>
+        {/* Its aria-label stays a literal: tests/unit/task_checklists.test.ts reads it from this source. */}
+        <label className="tp-field">
+          <span className="tp-label">{t("tasks.checklist")}</span>
+          <textarea
+            aria-label="Checklist steps"
+            className="tp-textarea"
+            dir="auto"
+            value={draft.checklistText}
+            disabled={!taskStoreReady}
+            onChange={(event) =>
+              setDraft((current) => ({ ...current, checklistText: event.target.value }))
+            }
+            rows={3}
+            placeholder={t("tasks.checklistPh")}
+          />
+        </label>
+      </form>
 
-        {view === "priority" ? (
-          <GroupedTaskList
-            groups={groupTasksByPriority(visibleTasks)}
-            labels={priorityLabels}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        ) : view === "energy" ? (
-          <GroupedTaskList
-            groups={groupTasksByEnergy(visibleTasks)}
-            labels={energyLabels}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        ) : (
-          <TaskList
-            tasks={visibleTasks}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        )}
-      </div>
+      {view === "priority" ? (
+        <GroupedTaskList
+          groups={groupTasksByPriority(visibleTasks)}
+          labels={priorityLabels}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      ) : view === "energy" ? (
+        <GroupedTaskList
+          groups={groupTasksByEnergy(visibleTasks)}
+          labels={energyLabels}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      ) : (
+        <TaskList
+          tasks={visibleTasks}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      )}
+
+      {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </div>
   );
 }
@@ -588,11 +816,11 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 type TaskListProps = {
   tasks: TaskViewRecord[];
   editingId: string | null;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onCancelEdit: () => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -600,35 +828,37 @@ type TaskListProps = {
 function TaskList({
   tasks,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onCancelEdit,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskListProps) {
+  const { t } = useLocale();
   if (tasks.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-        <p className="text-lg font-medium text-foreground">This view is clear.</p>
-        <p className="mt-2 text-sm text-muted-foreground">Add one tiny task when you are ready.</p>
+      <div className="tp-empty tp-surface" data-component="Empty">
+        <TpIcon name="leaf" size="lg" />
+        <p className="tp-strong">{t("tasks.empty.title")}</p>
+        <p>{t("tasks.empty.body")}</p>
       </div>
     );
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="tp-block-task tp-surface tk-list" data-component="TaskBlock">
       {tasks.map((task) => (
         <TaskRow
           key={task.id}
           task={task}
           editing={editingId === task.id}
-          editingTitle={editingTitle}
           actionsDisabled={actionsDisabled}
-          onEditingTitleChange={onEditingTitleChange}
           onEdit={onEdit}
           onSave={onSave}
+          onCancelEdit={onCancelEdit}
+          onDelete={onDelete}
           onToggle={onToggle}
           onChecklistToggle={onChecklistToggle}
         />
@@ -639,39 +869,42 @@ function TaskList({
 
 type GroupedTaskListProps<TGroup extends string> = Omit<TaskListProps, "tasks"> & {
   groups: Record<TGroup, TaskViewRecord[]>;
-  labels: Record<TGroup, string>;
+  labels: Record<TGroup, MessageKey>;
 };
 
 function GroupedTaskList<TGroup extends string>({
   groups,
   labels,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onCancelEdit,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: GroupedTaskListProps<TGroup>) {
+  const { t } = useLocale();
   return (
-    <div className="space-y-6">
+    <div className="tk-groups">
       {(Object.keys(labels) as TGroup[]).map((group) => (
-        <section key={group} className="space-y-3" aria-labelledby={`${group}-group-heading`}>
-          <h2
-            id={`${group}-group-heading`}
-            className="font-heading text-2xl font-semibold text-foreground"
-          >
-            {labels[group]}
+        <section
+          key={group}
+          className="tp-section"
+          data-component="Section"
+          aria-labelledby={`${group}-group-heading`}
+        >
+          <h2 id={`${group}-group-heading`} className="tp-section__title">
+            {t(labels[group])}
           </h2>
           <TaskList
             tasks={groups[group]}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={actionsDisabled}
-            onEditingTitleChange={onEditingTitleChange}
             onEdit={onEdit}
             onSave={onSave}
+            onCancelEdit={onCancelEdit}
+            onDelete={onDelete}
             onToggle={onToggle}
             onChecklistToggle={onChecklistToggle}
           />
@@ -684,11 +917,11 @@ function GroupedTaskList<TGroup extends string>({
 type TaskRowProps = {
   task: TaskViewRecord;
   editing: boolean;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onCancelEdit: () => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -696,117 +929,199 @@ type TaskRowProps = {
 function TaskRow({
   task,
   editing,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onCancelEdit,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskRowProps) {
+  const { t } = useLocale();
   const isDone = task.status === "done";
   const checklistProgress = getChecklistProgress(task.checklist);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  // Set when this editor closes by Save or Cancel: focus goes back to Edit, not to the page.
+  const refocusEditRef = useRef(false);
+
+  useEffect(() => {
+    if (editing || !refocusEditRef.current) return;
+    refocusEditRef.current = false;
+    editButtonRef.current?.focus();
+  }, [editing]);
+
+  const named = (key: MessageKey) => fillSlot(t(key), "title", task.title);
+  // "{n} steps": the count stays a left-to-right number inside the sentence (DESIGN.md §10).
+  const [stepsBefore, stepsAfter = ""] = t("tasks.steps").split("{n}");
 
   return (
-    <li
-      className={cn(
-        "rounded-2xl border border-border bg-card p-4 shadow-card",
-        isDone ? "opacity-80" : "opacity-100"
-      )}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <button
-          type="button"
-          disabled={actionsDisabled}
-          onClick={() => onToggle(task)}
-          className={cn(
-            "flex min-h-11 min-w-11 items-center justify-center rounded-full border text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-            isDone
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background"
-          )}
-          aria-label={isDone ? `Mark ${task.title} not done` : `Mark ${task.title} complete`}
-        >
-          {isDone ? "✓" : ""}
-        </button>
-        <div className="min-w-0 flex-1 space-y-2">
-          {editing ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                aria-label="Edit task title"
-                value={editingTitle}
-                disabled={actionsDisabled}
-                onChange={(event) => onEditingTitleChange(event.target.value)}
-                className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              />
-              <Button
-                type="button"
-                disabled={actionsDisabled || !editingTitle.trim()}
-                onClick={() => onSave(task)}
-                className="min-h-11"
-              >
-                Save task
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <p className={cn("text-lg font-medium text-foreground", isDone && "line-through")}>
-                {task.title}
-              </p>
-              {isDone ? (
-                <span className="rounded-pill bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Done
-                </span>
-              ) : null}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">
-              {task.projectName ?? "Inbox"}
-            </span>
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">
-              {task.priority} priority
-            </span>
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.energy} energy</span>
-            {checklistProgress.total > 0 ? (
-              <span className="rounded-pill bg-surface-sunken px-3 py-1">
-                {checklistProgress.completed}/{checklistProgress.total} steps
-              </span>
-            ) : null}
-          </div>
-          {task.checklist && task.checklist.length > 0 ? (
-            <ul className="space-y-2 pt-1" aria-label={`${task.title} checklist`}>
-              {task.checklist.map((item) => (
-                <li key={item.id}>
-                  <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      disabled={actionsDisabled}
-                      onChange={() => onChecklistToggle(task, item.id)}
-                      className="h-4 w-4 rounded border-border text-primary"
-                    />
-                    <span className={cn(item.completed && "text-muted-foreground line-through")}>
-                      {item.text}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        {!editing ? (
-          <Button
-            type="button"
-            variant="outline"
+    <li className="tp-task-row tk-row" data-component="TaskRow" data-done={isDone}>
+      <button
+        type="button"
+        className="tp-check"
+        aria-pressed={isDone}
+        disabled={actionsDisabled}
+        onClick={() => onToggle(task)}
+        aria-label={isDone ? named("tasks.markOpen") : named("tasks.markDone")}
+      >
+        <span className="tp-check__box">
+          <TpIcon name="check" />
+        </span>
+      </button>
+      <div className="tp-task-row__body">
+        {editing ? (
+          <TaskRowEditor
+            key={task.id}
+            task={task}
             disabled={actionsDisabled}
-            aria-label={`Edit ${task.title}`}
+            onSave={(update) => {
+              refocusEditRef.current = true;
+              onSave(task, update);
+            }}
+            onCancel={() => {
+              refocusEditRef.current = true;
+              onCancelEdit();
+            }}
+          />
+        ) : (
+          <span className="tp-task-row__title" dir="auto">
+            {task.title}
+          </span>
+        )}
+        <span className="tp-task-row__meta">
+          <span className="tp-chip">
+            <TpIcon name="folder" size="sm" />
+            <span dir="auto">{task.projectName ?? t("tasks.inbox")}</span>
+          </span>
+          <span className="tp-chip">
+            <TpIcon name="flag" size="sm" />
+            <span>{t(priorityChips[task.priority])}</span>
+          </span>
+          <span className="tp-chip">
+            <TpIcon name="energy" size="sm" />
+            <span>{t(energyChips[task.energy])}</span>
+          </span>
+          {checklistProgress.total > 0 ? (
+            <span className="tp-checklist__count">
+              {stepsBefore}
+              <span className="tp-num">
+                {checklistProgress.completed}/{checklistProgress.total}
+              </span>
+              {stepsAfter}
+            </span>
+          ) : null}
+          {isDone ? <span className="tp-chip tp-chip--done">{t("search.status.done")}</span> : null}
+        </span>
+        {!editing && task.checklist && task.checklist.length > 0 ? (
+          <ul className="tp-checklist" aria-label={named("tasks.checklistOf")}>
+            {task.checklist.map((item) => (
+              <li key={item.id} className="tp-checklist__item">
+                <label className="tp-choice">
+                  <input
+                    type="checkbox"
+                    className="tp-checkbox"
+                    checked={item.completed}
+                    disabled={actionsDisabled}
+                    onChange={() => onChecklistToggle(task, item.id)}
+                  />
+                  <span className="tp-choice__text tp-checklist__text" dir="auto">
+                    {item.text}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <div className="tk-row__actions">
+        {!editing ? (
+          <button
+            ref={editButtonRef}
+            type="button"
+            className="tp-btn tp-btn--ghost tp-btn--sm"
+            disabled={actionsDisabled}
+            aria-label={named("tasks.editName")}
             onClick={() => onEdit(task)}
           >
-            Edit
-          </Button>
+            <TpIcon name="edit" size="sm" />
+            <span>{t("tasks.edit")}</span>
+          </button>
         ) : null}
+        <button
+          type="button"
+          className={cn(
+            "tp-btn tp-btn--sm",
+            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost",
+          )}
+          disabled={actionsDisabled}
+          aria-label={named(confirmingDelete ? "tasks.confirmDeleteName" : "tasks.deleteName")}
+          onClick={() => {
+            if (confirmingDelete) {
+              onDelete(task);
+            } else {
+              setConfirmingDelete(true);
+            }
+          }}
+        >
+          {t(confirmingDelete ? "tasks.confirmDelete" : "tasks.delete")}
+        </button>
       </div>
     </li>
   );
+}
+
+/** Typing is kept after this pause; leaving the screen or the page during it still keeps it. */
+const KEEP_TYPING_MS = 400;
+
+type DraftToKeep = { scope: string; draft: Draft };
+type PendingDraft = { current: DraftToKeep | null };
+
+/**
+ * Keeps this tab's add-form draft for this view (lib/task-draft-session.ts). The kept copy is read
+ * in a layout effect: after hydration, so the server's HTML still matches, and before the first
+ * paint, so the title doesn't flash empty. Returns `forget`, for when the task is added.
+ */
+function useKeptTaskDraft(scope: string, draft: Draft, restore: (kept: KeptTaskDraft) => void) {
+  const [ready, setReady] = useState(false);
+  const shown = useRef<Draft | null>(null);
+  const pending = useRef<DraftToKeep | null>(null);
+
+  useLayoutEffect(() => {
+    const kept = loadTaskDraft(tabSessionStore(), scope, Date.now());
+    if (kept) restore(kept);
+    setReady(true);
+  }, [restore, scope]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const prev = shown.current;
+    shown.current = draft;
+    // The first run only notes the form as it opened, kept or new: nothing was typed yet, and
+    // keeping it again would restart the 2-hour expiry.
+    if (prev !== null && prev !== draft) pending.current = { scope, draft };
+    if (!pending.current) return;
+    const timer = window.setTimeout(() => keepPending(pending), KEEP_TYPING_MS);
+    return () => window.clearTimeout(timer);
+  }, [ready, scope, draft]);
+
+  useEffect(() => {
+    const flush = () => keepPending(pending);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
+  return useCallback(() => {
+    pending.current = null;
+    clearTaskDraft(tabSessionStore(), scope);
+  }, [scope]);
+}
+
+function keepPending(pending: PendingDraft) {
+  const next = pending.current;
+  pending.current = null;
+  if (next) saveTaskDraft(tabSessionStore(), next.scope, next.draft, Date.now());
 }

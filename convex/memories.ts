@@ -1,6 +1,8 @@
 import { v } from 'convex/values';
 import { mutation, query, action } from './_generated/server';
 import { api } from './_generated/api';
+import { requireApprovedForAi } from './lib/aiGate';
+import { callLLM } from './lib/ai_router';
 
 // Memory sector type
 export type MemorySector = 'semantic' | 'episodic' | 'procedural' | 'emotional' | 'general';
@@ -229,14 +231,8 @@ export const extractMemories = action({
       throw new Error('Not authenticated');
     }
 
-    // Get AI API key from environment (set in Convex dashboard)
-    const aiApiKey = process.env.AI_API_KEY;
-    const aiProvider = process.env.AI_PROVIDER || 'gemini';
-    const aiModel = process.env.AI_MODEL || 'gemini-2.5-flash';
-
-    if (!aiApiKey) {
-      throw new Error('AI not configured. Please set AI_API_KEY in Convex dashboard.');
-    }
+    // Sign-up approval gate: no model call for pending/revoked accounts.
+    await requireApprovedForAi(ctx);
 
     const extractionPrompt = `Analyze this conversation and extract important facts, preferences, and information worth remembering about the user.
 
@@ -251,53 +247,19 @@ Return ONLY valid JSON array, no markdown or explanation.
 Conversation:
 ${args.content}`;
 
-    let apiUrl: string;
-    let headers: Record<string, string>;
-    let body: any;
-
-    if (aiProvider === 'gemini') {
-      // Use Gemini API
-      apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + aiModel + ':generateContent';
-      headers = {
-        'Content-Type': 'application/json',
-      };
-      body = {
-        contents: [{
-          parts: [{ text: extractionPrompt }],
-        }],
-      };
-      // Add API key to URL for Gemini
-      apiUrl += `?key=${aiApiKey}`;
-    } else {
-      // Use OpenAI-compatible API
-      apiUrl = 'https://api.openai.com/v1/chat/completions';
-      headers = {
-        'Authorization': `Bearer ${aiApiKey}`,
-        'Content-Type': 'application/json',
-      };
-      body = {
-        model: aiModel,
-        messages: [{ role: 'user', content: extractionPrompt }],
-      };
-    }
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error('AI extraction failed');
-    }
-
+    // Same single model seam as every other Tempo AI call (convex/lib/ai_router.ts:
+    // DeepInfra, TEMPO_AI_MODEL / DEEPINFRA_API_KEY).
     let extractedText: string;
-    if (aiProvider === 'gemini') {
-      const data = await response.json();
-      extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-    } else {
-      const data = await response.json();
-      extractedText = data.choices?.[0]?.message?.content || '[]';
+    try {
+      const result = await callLLM({
+        tier: 'fast',
+        messages: [{ role: 'user', content: extractionPrompt }],
+        maxTokens: 1024,
+        temperature: 0.2,
+      });
+      extractedText = result.content || '[]';
+    } catch {
+      throw new Error('AI extraction failed');
     }
 
     // Parse extracted memories

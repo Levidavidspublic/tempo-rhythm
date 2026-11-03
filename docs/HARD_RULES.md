@@ -260,7 +260,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
   - Screenshots or screen recording for any UI change
   - Test plan (checkable boxes)
   - Acceptance criteria copied from `TASKS.md`
-- **Reviewers** are required. For Cursor Cloud agent PRs, reviewer is the human (Amit) or a second agent flagged as `reviewer`.
+- **Reviewers** are required. For Cursor Cloud agent PRs, reviewer is the human (Amit) or a second agent flagged as `reviewer`. **Factory loops (Amit, 2026-10-06):** the reviewer is Cursor Bugbot on the loop's batch PR (`batch/<loop-id>` → `integration`, see `factory/LOOP.md`); component PRs pass CI and merge into the batch branch without their own review.
 - **Conventional Commits** for commit and PR titles.
 
 ---

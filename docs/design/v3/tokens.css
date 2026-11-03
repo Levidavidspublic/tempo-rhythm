@@ -1,0 +1,185 @@
+/* ============================================================
+   Tempo v3 — design tokens (single source of truth)
+   Every colour, type, space, radius, elevation and motion value
+   lives here. tempo.css and screens only reference var(--tp-*).
+   Maps 1:1 to Tailwind v4 @theme (see DESIGN.md §9).
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Frank+Ruhl+Libre:wght@400;500;600&family=Assistant:wght@400;500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Regular.woff") format("woff");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("fonts/OpenDyslexic-Bold.woff") format("woff");
+  font-weight: 500 700; font-style: normal; font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* ---- Colour · light ------------------------------------- */
+  --tp-ground:        #F3EEE4;  /* parchment page ground */
+  --tp-paper:         #FBF9F4;  /* the "paper" page, cards */
+  --tp-sunken:        #EAE3D6;  /* rails, wells, inputs */
+  --tp-hover:         #EDE6DA;  /* row hover / selected wash */
+  --tp-ink:           #1B1916;  /* primary text */
+  --tp-ink-muted:     #57514A;  /* secondary text */
+  --tp-ink-subtle:    #6B645C;  /* tertiary text, ≥13px only */
+  --tp-line:          #D9D0C1;  /* hairlines, dividers */
+  --tp-line-strong:   #B9AE9C;  /* card edges (decorative) */
+  --tp-line-control:  #877C6B;  /* checkbox, input, button outlines (≥3:1) */
+  --tp-accent:        #A3461F;  /* one primary action + focus */
+  --tp-on-accent:     #FFFFFF;
+  --tp-accent-wash:   #F3E2D6;  /* selected chip ground, never a large fill */
+
+  --tp-done:          #3B6948;  --tp-done-wash:    #E3EBDF;
+  --tp-info:          #36628C;  --tp-info-wash:    #E0E7EE;
+  --tp-caution:       #7E5A0C;  --tp-caution-wash: #F1E6CC;
+  --tp-danger:        #9E3B27;  --tp-danger-wash:  #F3DFD7;
+
+  /* glass — floating chrome only */
+  --tp-glass:         rgba(251, 249, 244, 0.82);
+  --tp-glass-solid:   #FBF9F4;
+  --tp-glass-edge:    rgba(255, 255, 255, 0.70);
+  --tp-glass-line:    rgba(27, 25, 22, 0.10);
+  --tp-scrim:         rgba(27, 25, 22, 0.28);
+
+  /* ---- Elevation ------------------------------------------ */
+  --tp-shadow-whisper: 0 1px 1px rgba(27, 25, 22, 0.04);
+  --tp-shadow-card:    0 1px 2px rgba(27, 25, 22, 0.05), 0 0 0 1px rgba(27, 25, 22, 0.05);
+  --tp-shadow-float:   0 12px 32px -12px rgba(27, 25, 22, 0.22), 0 2px 6px -2px rgba(27, 25, 22, 0.08);
+  --tp-shadow-modal:   0 28px 64px -24px rgba(27, 25, 22, 0.36);
+
+  /* ---- Type families -------------------------------------- */
+  --tp-font-serif: "Newsreader", "Frank Ruhl Libre", "Iowan Old Style", Georgia, serif;
+  --tp-font-sans:  "Source Sans 3", "Assistant", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tp-font-mono:  "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* ---- Type scale (px, base 17) --------------------------- */
+  --tp-text-xs:   13px;   /* minimum anywhere */
+  --tp-text-sm:   15px;
+  --tp-text-md:   17px;   /* base */
+  --tp-text-lg:   20px;
+  --tp-text-xl:   24px;
+  --tp-text-2xl:  30px;
+  --tp-text-3xl:  38px;
+  --tp-text-4xl:  48px;
+  --tp-leading-body:    1.6;
+  --tp-leading-snug:    1.35;
+  --tp-leading-heading: 1.18;
+  --tp-tracking-body:   0;
+  --tp-tracking-label:  0.01em;
+  --tp-word-spacing:    normal;
+  --tp-measure:         68ch;
+
+  /* ---- Spacing (4 px scale) ------------------------------- */
+  --tp-space-1:  4px;
+  --tp-space-2:  8px;
+  --tp-space-3:  12px;
+  --tp-space-4:  16px;
+  --tp-space-5:  20px;
+  --tp-space-6:  24px;
+  --tp-space-8:  32px;
+  --tp-space-10: 40px;
+  --tp-space-12: 48px;
+  --tp-space-16: 64px;
+  --tp-space-20: 80px;
+
+  /* ---- Radius --------------------------------------------- */
+  --tp-radius-sm:   6px;
+  --tp-radius-md:   10px;
+  --tp-radius-lg:   14px;
+  --tp-radius-xl:   20px;
+  --tp-radius-pill: 999px;
+
+  /* ---- Glass recipe --------------------------------------- */
+  --tp-glass-blur: 18px;
+  --tp-glass-saturate: 150%;
+
+  /* ---- Motion (≤250ms, one animation per interaction) ----- */
+  --tp-dur-fast: 120ms;
+  --tp-dur-base: 180ms;
+  --tp-dur-slow: 240ms;
+  --tp-dur-exit: 160ms;  /* ~65% of slow */
+  --tp-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --tp-ease-in:  cubic-bezier(0.4, 0, 1, 1);
+
+  /* ---- Layout --------------------------------------------- */
+  --tp-rail-w:     264px;
+  --tp-coach-w:    400px;
+  --tp-topbar-h:   56px;
+  --tp-tabbar-h:   64px;
+  --tp-paper-max:  760px;
+  --tp-touch:      44px;
+  --tp-focus-w:    2px;
+  --tp-focus-gap:  2px;
+}
+
+/* ---- Colour · dark (chosen independently, not inverted) ---- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --tp-ground:        #161412;
+  --tp-paper:         #201D1A;
+  --tp-sunken:        #110F0D;
+  --tp-hover:         #2A2622;
+  --tp-ink:           #F2ECE2;
+  --tp-ink-muted:     #B5AC9F;
+  --tp-ink-subtle:    #9E9588;
+  --tp-line:          #38332D;
+  --tp-line-strong:   #5C554C;
+  --tp-line-control:  #7F7669;
+  --tp-accent:        #EE9468;
+  --tp-on-accent:     #1B1916;
+  --tp-accent-wash:   #3A2A20;
+
+  --tp-done:          #8FC09C;  --tp-done-wash:    #1F2D23;
+  --tp-info:          #94B8DA;  --tp-info-wash:    #1C2632;
+  --tp-caution:       #DDB45E;  --tp-caution-wash: #30281A;
+  --tp-danger:        #EE9A86;  --tp-danger-wash:  #35211C;
+
+  --tp-glass:         rgba(36, 33, 29, 0.86);
+  --tp-glass-solid:   #24211D;
+  --tp-glass-edge:    rgba(255, 255, 255, 0.07);
+  --tp-glass-line:    rgba(242, 236, 226, 0.10);
+  --tp-scrim:         rgba(0, 0, 0, 0.48);
+
+  --tp-shadow-whisper: 0 1px 1px rgba(0, 0, 0, 0.30);
+  --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(242, 236, 226, 0.05);
+  --tp-shadow-float:   0 16px 36px -12px rgba(0, 0, 0, 0.60), 0 0 0 1px rgba(242, 236, 226, 0.06);
+  --tp-shadow-modal:   0 28px 64px -20px rgba(0, 0, 0, 0.70);
+}
+
+/* ---- Hebrew: open serif + sans that pair with Latin -------- */
+:lang(he) {
+  --tp-font-serif: "Frank Ruhl Libre", "Newsreader", Georgia, serif;
+  --tp-font-sans:  "Assistant", "Source Sans 3", system-ui, sans-serif;
+}
+
+/* ---- Dyslexia mode ----------------------------------------- */
+[data-dyslexia="on"] {
+  --tp-font-sans: "OpenDyslexic", "Atkinson Hyperlegible", "Source Sans 3", "Assistant", system-ui, sans-serif;
+  --tp-leading-body: 1.8;
+  --tp-leading-snug: 1.5;
+  --tp-tracking-body: 0.035em;
+  --tp-tracking-label: 0.04em;
+  --tp-word-spacing: 0.12em;
+  --tp-measure: 60ch;
+}
+[data-dyslexia="on"][data-dyslexia-font="fallback"] {
+  --tp-font-sans: "Atkinson Hyperlegible", "Source Sans 3", "Assistant", system-ui, sans-serif;
+}
+[data-dyslexia="on"][data-dyslexia-headings="on"] {
+  --tp-font-serif: var(--tp-font-sans);
+}
+/* Hebrew has no OpenDyslexic glyphs: keep Assistant, add spacing only */
+[data-dyslexia="on"]:lang(he) {
+  --tp-font-sans: "Assistant", "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+/* ---- Text size S / M / L (user setting) -------------------- */
+[data-text-size="s"] { --tp-text-md: 15px; --tp-text-lg: 18px; --tp-text-sm: 14px; }
+[data-text-size="l"] { --tp-text-md: 20px; --tp-text-lg: 23px; --tp-text-sm: 17px; --tp-text-xs: 15px; }

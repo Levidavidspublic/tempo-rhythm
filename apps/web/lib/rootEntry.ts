@@ -20,6 +20,8 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/contact",
   "/success",
   "/api/health",
+  // The per-user MCP token authenticates this route, not the session cookie.
+  "/api/mcp",
 ] as const;
 
 export function decideEntryRedirect(input: {

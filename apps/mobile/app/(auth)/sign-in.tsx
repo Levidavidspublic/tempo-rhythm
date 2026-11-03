@@ -76,8 +76,8 @@ export default function SignInScreen() {
         await AsyncStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
 
-      // מעבר לאזור המאומת (Authenticated)
-      router.replace('/(authenticated)');
+      // מעבר למסך היום של Tempo
+      router.replace('/(tempo)/(tabs)/today');
     } catch (err: unknown) {
       const error = err as { message?: string };
       const errorMessage = error.message || '';

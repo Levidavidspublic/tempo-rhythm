@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — notifications.html */
+  .nt-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .nt-title { white-space: normal; }
+  .nt-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Notifications
+@route    apps/web/app/(tempo)/notifications/page.tsx
+@layout   TempoShell
+@data     notices = notifications.list({ limit: 30 })   // Convex query: {id, kind: "founderReply" | "weeklyPage" | "export" | "memory" | "voiceMinutes" | "billing", title, at, href, read}
+@actions  open one -> notifications.markRead({ id }) then navigate to href
+@actions  mark all read -> notifications.markAllRead({})   // optimistic
+@actions  choose what you hear about -> link to settings-prefs#notify
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Newest first, grouped into Today and Earlier. Each row: icon, one kind sentence, time, and "New" in words when unread.
+          2. Opening a row marks it read and goes where it points (the reply, the page, the memory).
+          3. "Mark all as read" is one quiet button. Nothing is deleted.
+          4. A link at the bottom goes to Preferences to choose which notices she gets. Billing notices are always on.
+          5. Empty: "Nothing new. Quiet is good." with the same link.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'notifications' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="set-label" data-i18n="rail.set">Settings</div>
+      <ul class="tp-tree" role="list" aria-labelledby="set-label">
+        <li><a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.profile">Profile</span></a></li>
+        <li><a class="tp-tree-item" href="settings-prefs.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.prefs">Preferences</span></a></li>
+        <li><a class="tp-tree-item" href="settings-integrations.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.integ">Connections</span></a></li>
+        <li><a class="tp-tree-item" href="settings-privacy.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-shield"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.privacy">Privacy</span></a></li>
+        <li><a class="tp-tree-item" href="billing.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.billing">Plan and billing</span></a></li>
+        <li><a class="tp-tree-item" href="notifications.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notif">Notifications</span><span class="tp-tree-item__count tp-num" id="rail-count">2</span></a></li>
+        <li><a class="tp-tree-item" href="ask-founder.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.founder">Ask the founder</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Notifications'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="nav.notif">Notifications</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — + button | props: { title, subtitle, actions: [Mark all as read] } | events: onMarkAll -> notifications.markAllRead({}) -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="nt.title">Notifications</h1>
+          <p class="tp-pagehead__sub" data-i18n="nt.sub">Only things worth knowing. Nothing here needs you right away.</p>
+        </div>
+        <div class="tp-pagehead__actions" data-state-hide>
+          <button class="tp-btn tp-btn--secondary" type="button" data-nt="read-all"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="nt.readall">Mark all as read</span></button>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">New notices show up once you reconnect.</span></span>
+      </div>
+
+      <p class="tp-sr-only" role="status" id="nt-live"></p>
+
+      <div class="nt-body">
+
+        <!-- @component Section | shadcn: — | props: { title: 'Today', count: 3 } | events: — -->
+        <section class="tp-section" aria-labelledby="today-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="today-title" data-i18n="g.today">Today</h2>
+          </div>
+          <!-- @component ListRow ×3 | shadcn: — | props: { icon, title, meta: time, href, unread } | events: onOpen -> notifications.markRead({ id }) + navigate -->
+          <ul class="tp-list" role="list" data-component="ListRow">
+            <li><a class="tp-list-row" href="ask-founder.html" data-unread="true">
+              <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-mail"/></svg></span>
+              <span class="tp-list-row__body">
+                <span class="tp-list-row__title nt-title" data-i18n="n1">Amit replied to "Voice call cut out".</span>
+                <span class="tp-list-row__meta"><span class="tp-num tp-mono">10:20</span></span>
+              </span>
+              <span class="tp-list-row__end"><span class="tp-badge" data-tone="info" data-new><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="new">New</span></span></span>
+            </a></li>
+            <li><a class="tp-list-row" href="memory.html" data-unread="true">
+              <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-memory"/></svg></span>
+              <span class="tp-list-row__body">
+                <span class="tp-list-row__title nt-title" data-i18n="n2">The coach will remember: "Phone calls feel easier before noon." You can change or forget it.</span>
+                <span class="tp-list-row__meta"><span class="tp-num tp-mono">09:05</span></span>
+              </span>
+              <span class="tp-list-row__end"><span class="tp-badge" data-tone="info" data-new><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="new">New</span></span></span>
+            </a></li>
+            <li><a class="tp-list-row" href="weekly-page.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span>
+              <span class="tp-list-row__body">
+                <span class="tp-list-row__title nt-title"><span data-i18n="n3">Your page for this week is ready:</span> <span class="tp-num">11–17 Oct</span>.</span>
+                <span class="tp-list-row__meta"><span class="tp-num tp-mono">07:00</span></span>
+              </span>
+            </a></li>
+          </ul>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Earlier', count: 2 } | events: — -->
+        <section class="tp-section" aria-labelledby="earlier-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="earlier-title" data-i18n="g.earlier">Earlier</h2>
+          </div>
+          <!-- @component ListRow ×2 | shadcn: — | props: { icon, title, meta: day, href } | events: onOpen -> notifications.markRead({ id }) + navigate -->
+          <ul class="tp-list" role="list" data-component="ListRow">
+            <li><a class="tp-list-row" href="settings-privacy.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-download"/></svg></span>
+              <span class="tp-list-row__body">
+                <span class="tp-list-row__title nt-title" data-i18n="n4">Your copy of everything is ready. We emailed you the download link.</span>
+                <span class="tp-list-row__meta"><span data-i18n="d.fri">Fri 9 Oct</span></span>
+              </span>
+            </a></li>
+            <li><a class="tp-list-row" href="voice-call.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-clock"/></svg></span>
+              <span class="tp-list-row__body">
+                <span class="tp-list-row__title nt-title" data-i18n="n5">You had a long talk with the coach. 15 minutes of live voice were left for that day. Push-to-talk always works.</span>
+                <span class="tp-list-row__meta"><span data-i18n="d.thu">Thu 8 Oct</span></span>
+              </span>
+            </a></li>
+          </ul>
+        </section>
+
+        <!-- @component SettingRow | shadcn: — + link | props: { label: 'Choose what you hear about' } | events: link -> settings-prefs#notify -->
+        <div class="tp-setting-row tp-surface od-row" data-component="SettingRow" data-state-hide>
+          <div class="tp-setting-row__text">
+            <span class="tp-setting-row__label" data-i18n="set.label">Choose what you hear about</span>
+            <span class="tp-help" data-i18n="set.help">Turn notices on or off in Preferences. Billing notices always stay on.</span>
+          </div>
+          <div class="tp-setting-row__control">
+            <a class="tp-btn tp-btn--ghost" href="settings-prefs.html#notify"><span data-i18n="set.btn">Open Preferences</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </div>
+
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -->
+        <div class="tp-state tp-state--empty nt-state" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-bell"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">Nothing new. Quiet is good.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">When Amit replies, your week is ready, or the coach saves something, it shows up here.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="settings-prefs.html#notify"><span data-i18n="set.label">Choose what you hear about</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state tp-state--loading nt-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your notifications</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__box tp-skeleton"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__box tp-skeleton"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__box tp-skeleton"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__box tp-skeleton"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__box tp-skeleton"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your notifications." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error nt-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your notifications.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was missed. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "allread": "All caught up. Everything is marked as read.", "toast.undo": "Undo", "toast.dismiss": "Dismiss", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "התראות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.set": "הגדרות",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן",
+    "nav.profile": "פרופיל", "nav.prefs": "העדפות", "nav.integ": "חיבורים", "nav.privacy": "פרטיות",
+    "nav.billing": "מסלול ותשלום", "nav.notif": "התראות", "nav.founder": "לשאול את המייסד", "nav.dyslexia": "גופן קריאה",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "nt.title": "התראות", "nt.sub": "רק דברים שכדאי לדעת. שום דבר כאן לא דורש ממך משהו מיד.",
+    "nt.readall": "לסמן הכול כנקרא", "allread": "הכול מעודכן. כל ההתראות סומנו כנקראו.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "התראות חדשות יופיעו כשהחיבור יחזור.",
+    "g.today": "היום", "g.earlier": "קודם",
+    "n1": "עמית ענה על ״השיחה הקולית נקטעה״.",
+    "n2": "המאמן יזכור: ״קל יותר לעשות שיחות טלפון לפני הצהריים.״ אפשר לשנות את זה או לשכוח.",
+    "n3": "הדף שלך לשבוע הזה מוכן:",
+    "n4": "העותק של כל המידע שלך מוכן. שלחנו לך במייל את הקישור להורדה.",
+    "n5": "הייתה לך שיחה ארוכה עם המאמן. באותו יום נשארו 15 דקות של שיחה קולית חיה. הודעות קוליות בלחיצה תמיד עובדות.",
+    "new": "חדש", "d.fri": "יום ו׳ 9.10", "d.thu": "יום ה׳ 8.10",
+    "set.label": "לבחור על מה לקבל התראות", "set.help": "אפשר להפעיל או לכבות התראות בהעדפות. הודעות על תשלום תמיד נשארות פועלות.",
+    "set.btn": "לפתוח את ההעדפות",
+    "empty.title": "אין שום דבר חדש. שקט זה טוב.",
+    "empty.body": "כשעמית עונה, כשהשבוע שלך מוכן, או כשהמאמן שומר משהו, זה יופיע כאן.",
+    "loading": "טוען את ההתראות שלך",
+    "error.title": "לא הצלחנו לטעון את ההתראות.", "error.body": "שום דבר לא פוספס. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  function markRead(row) {
+    row.removeAttribute("data-unread");
+    var b = row.querySelector("[data-new]"); if (b) b.remove();
+    var left = document.querySelectorAll('.tp-list-row[data-unread="true"]').length;
+    var c = document.getElementById("rail-count"); if (c) { c.textContent = String(left); c.hidden = left === 0; }
+  }
+
+  document.addEventListener("click", function (e) {
+    var row = e.target.closest('.tp-list-row[data-unread="true"]');
+    if (row) {
+      // REAL: convex notifications.markRead({ id }) — then router.push(href)
+      markRead(row);
+      return;
+    }
+    var all = e.target.closest('[data-nt="read-all"]');
+    if (all) {
+      // REAL: convex notifications.markAllRead({}) — optimistic; nothing is deleted
+      document.querySelectorAll('.tp-list-row[data-unread="true"]').forEach(markRead);
+      document.getElementById("nt-live").textContent = TP.t("allread");
+    }
+  });
+})();
+</script>
+</body>
+</html>

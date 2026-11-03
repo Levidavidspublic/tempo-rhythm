@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — task-sheet.html */
+  .ts-bg { padding-block: var(--tp-space-8); display: grid; gap: var(--tp-space-4); }
+  .ts-form { max-width: none; gap: var(--tp-space-4); }
+  .ts-row { display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 1.6)), 1fr)); }
+  .ts-fieldset { border: 0; margin: 0; padding: 0; }
+  .ts-inline { display: flex; flex-wrap: wrap; gap: var(--tp-space-1) var(--tp-space-5); }
+  .ts-nag { padding-inline: 0; }
+  .ts-delete { margin-inline-start: auto; }
+</style>
+</head>
+<body>
+<!--
+@screen   Task sheet (edit task)
+@route    apps/web/components/tasks/TaskSheet.tsx  (opened from Today, Tasks, Plan; ?task=<id> on any (tempo) route)
+@layout   TempoShell  (sheet over the current screen: bottom sheet under 900px, centred dialog at 900px and up)
+@data     task = tasks.get({ id })                                   // Convex query
+@data     nag = nags.getForTarget({ targetId: id })                  // Convex query
+@actions  save -> tasks.update({ id, patch: { title, date, time, minutes, kind, energy, notes } })   // optimistic
+@actions  nag on/off -> nags.upsert({ targetId: id, phrases, on })  // can't switch on with zero phrases
+@actions  delete -> tasks.remove({ id })                             // soft delete, Undo 5 min -> tasks.restore({ id })
+@states   default | empty (new task, blank fields) | loading | error | offline  (?state=)
+@flow     1. Tapping a task's edit button opens this sheet; focus moves into it and Tab stays inside.
+          2. Maya edits title, day, time, length, Fixed or Flexible, and the energy it needs.
+          3. "Nag me about this" reveals a phrase field in her own words; with no phrase it can't switch on.
+          4. Save closes the sheet and updates the row in place. Cancel or Esc closes without saving.
+          5. Delete closes the sheet, removes the row, and shows Undo for 5 minutes.
+          6. Focus returns to the button that opened the sheet.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#task-sheet" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.today">Today</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="ts.crumb">Edit task</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <article class="tp-paper" data-component="Page" aria-labelledby="ts-bg-title">
+      <div class="tp-page__body ts-bg">
+        <h1 class="tp-page-title" id="ts-bg-title" data-i18n="ts.bg.title">Today</h1>
+        <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+        <ul class="tp-block-task" role="list" data-component="TaskBlock" id="ts-list">
+          <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task: {id,title,minutes,done} } | events: onToggle -> tasks.complete({ id }), onEdit -> open-sheet -->
+          <li class="tp-task-row" data-component="TaskRow" data-id="t1" id="row-t1">
+            <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t1-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+            <div class="tp-task-row__body"><span class="tp-task-row__title" id="t1-title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><span class="tp-num tp-mono">09:00</span></span></div>
+            <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" data-action="open-sheet" aria-controls="task-sheet" aria-expanded="false" aria-label="Edit this task" data-i18n-attr="aria-label:task.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></button>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t2">
+      <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t2-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+      <div class="tp-task-row__body">
+        <span class="tp-task-row__title" id="t2-title" dir="auto" data-i18n="task.dana">Email Dana about the lease</span>
+        <span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span>
+      </div>
+      <span></span>
+    </li>
+          <li class="tp-task-row" data-component="TaskRow" data-id="t3">
+      <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t3-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+      <div class="tp-task-row__body">
+        <span class="tp-task-row__title" id="t3-title" dir="auto" data-i18n="task.rx">Pick up prescription</span>
+        <span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">18:00</span></span></span>
+      </div>
+      <span></span>
+    </li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads Today and your pages. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="coach.hello">I can see this page. Ask me to plan, shrink or sort anything. Nothing changes until you say yes.</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+  <!-- @component MobileSheet | shadcn: sheet (bottom) at <900px · dialog at ≥900px (tempo.css centres it from 768) | props: { id: 'task-sheet', task: {id,title,date,time,minutes,energy,kind,nag:{on,phrases[]},notes} } | events: onSave -> tasks.update({ id, patch }), onDelete -> tasks.remove({ id }) (Undo -> tasks.restore({ id })), onClose -> close-sheet -->
+  <div class="tp-sheet-scrim" data-for="task-sheet" data-action="close-sheet" hidden></div>
+  <section class="tp-sheet tp-glass" id="task-sheet" role="dialog" aria-labelledby="ts-title" data-component="MobileSheet" hidden>
+    <span class="tp-sheet__grabber" aria-hidden="true"></span>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="ts-title" data-i18n="ts.title">Edit task</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:ts.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="ts.offline">You're offline. Your edits save when you're back.</span></span></div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+  <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+    <span class="tp-sr-only" data-i18n="ts.loading">Loading this task</span>
+    <div class="tp-skel-list">
+      <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+      <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+      <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+      <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+    </div>
+  </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+  <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+    <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+    <h2 class="tp-state__title" data-i18n="ts.error">Couldn't load this task.</h2>
+    <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+    <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+  </div>
+      <!-- @component Form | shadcn: form | props: — | events: onSubmit -> tasks.update({ id, patch }) -->
+      <form class="tp-form ts-form" id="ts-form" data-component="Form" data-state-hide onsubmit="return false">
+        <!-- @component Field | shadcn: form item | props: { id: 'ts-name', label } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ts-name" data-i18n="ts.name">Task</label>
+          <!-- @component TextInput | shadcn: input | props: { type: 'text', value } | events: — -->
+          <input class="tp-input" id="ts-name" type="text" dir="auto" value="Draft 3 slides for Thursday" data-component="TextInput" data-i18n-attr="value:task.slides">
+        </div>
+        <div class="ts-row">
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="ts-date" data-i18n="ts.date">Day</label>
+            <input class="tp-input" id="ts-date" type="date" dir="ltr" value="2026-10-12">
+          </div>
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="ts-time" data-i18n="ts.time">Time</label>
+            <input class="tp-input" id="ts-time" type="time" dir="ltr" value="09:00">
+          </div>
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="ts-len" data-i18n="ts.len">How long</label>
+            <!-- @component Select | shadcn: select | props: { options: [10,15,25,45,60], value: 25 } | events: onChange -->
+            <div class="tp-select" data-component="Select">
+              <select class="tp-select__input" id="ts-len">
+                <option value="10" data-i18n="ts.o10">10 min</option><option value="15" data-i18n="ts.o15">15 min</option><option value="25" selected data-i18n="ts.o25">25 min</option><option value="45" data-i18n="ts.o45">45 min</option><option value="60" data-i18n="ts.o60">1 hour</option>
+              </select>
+              <span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <fieldset class="tp-field ts-fieldset" data-component="Field">
+          <legend class="tp-label" data-i18n="ts.kind">This time is</legend>
+          <!-- @component Radio ×2 | shadcn: radio-group | props: { name: 'kind', value: 'fixed'|'flex' } | events: onChange -->
+          <div class="ts-inline">
+            <label class="tp-choice"><input class="tp-radio" type="radio" name="kind" value="fixed"><span class="tp-choice__text"><span data-i18n="kind.fixed">Fixed</span><span class="tp-choice__hint" data-i18n="ts.fixed.h">stays put</span></span></label>
+            <label class="tp-choice"><input class="tp-radio" type="radio" name="kind" value="flex" checked><span class="tp-choice__text"><span data-i18n="kind.flex">Flexible</span><span class="tp-choice__hint" data-i18n="ts.flex.h">can move if the day changes</span></span></label>
+          </div>
+        </fieldset>
+        <div class="tp-field">
+          <span class="tp-label" id="ts-energy" data-i18n="ts.energy">Energy it needs</span>
+          <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['quiet','steady','push'], value: 'steady' } | events: onChange -->
+          <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="ts-energy" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-i18n="en.quiet">Quiet</button>
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0" data-i18n="en.steady">Steady</button>
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-i18n="en.push">Push</button>
+          </div>
+        </div>
+        <!-- @component SettingRow | shadcn: — + switch | props: { label: 'Nag me about this', help } | events: onToggle -> nags.setEnabled({ taskId, on }) (needs ≥1 phrase) -->
+        <div class="tp-setting-row tp-setting-row--stack ts-nag" data-component="SettingRow">
+          <div class="tp-setting-row__text">
+            <span class="tp-setting-row__label" id="ts-nag-label" data-i18n="ts.nag">Nag me about this</span>
+            <span class="tp-help" id="ts-nag-help" data-i18n="ts.nag.h">A reminder in your own words. Tempo never writes them for you.</span>
+          </div>
+          <div class="tp-setting-row__control">
+            <!-- @component Switch | shadcn: switch | props: { checked: false } | events: onCheckedChange -> TP.onSwitch -->
+            <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ts-nag-label" aria-describedby="ts-nag-help" id="nag-switch" data-component="Switch"><span class="tp-switch__track"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+          </div>
+        </div>
+        <div class="tp-field" id="nag-fields" hidden>
+          <label class="tp-label" for="ts-phrase" data-i18n="ts.phrase">What should it say?</label>
+          <input class="tp-input" id="ts-phrase" type="text" dir="auto" aria-describedby="ts-phrase-help" value="Slides!! Dana's waiting, you've got this" data-i18n-attr="value:ts.phrase.v">
+          <p class="tp-help" id="ts-phrase-help" data-i18n="ts.phrase.help">Acronyms and in-jokes are fine. It's only for you.</p>
+          <p class="tp-error-text" id="ts-phrase-err" hidden data-i18n="ts.phrase.err">Add a phrase first. A nag needs your own words before it can switch on.</p>
+        </div>
+        <div class="tp-field">
+          <label class="tp-label" for="ts-notes" data-i18n="ts.notes">Notes</label>
+          <!-- @component Textarea | shadcn: textarea | props: { rows: 3 } | events: — -->
+          <textarea class="tp-textarea" id="ts-notes" rows="3" dir="auto" data-component="Textarea" data-i18n="ts.notes.v">Outline, one slide, check the numbers with Dana.</textarea>
+        </div>
+      </form>
+    </div>
+    <div class="tp-sheet__foot">
+      <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> tasks.update({ id, patch }) -->
+      <button class="tp-btn tp-btn--primary" type="button" id="ts-save" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="ts.save">Save</span></button>
+      <button class="tp-btn tp-btn--ghost" type="button" data-action="close-sheet"><span data-i18n="ts.cancel">Cancel</span></button>
+      <button class="tp-btn tp-btn--danger-ghost ts-delete" type="button" id="ts-delete"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="ts.delete">Delete</span></button>
+    </div>
+  </section>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "ts.deleted": "Task deleted",
+    "ts.saved": "Saved",
+    "ts.new": "New task",
+    "ts.needPhrase": "Add a phrase first. A nag needs your own words before it can switch on.",
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "proposal.accepted": "Done. You can undo this for 5 minutes.",
+    "proposal.rejected": "Left as it was. Nothing changed.",
+    "proposal.edit": "Edit",
+    "proposal.doneEditing": "Done editing",
+    "state.retried": "Loaded.",
+    "switch.on": "On",
+    "switch.off": "Off",
+    "more.showing": "Showing",
+    "more.of": "of",
+    "more.all": "That's everything.",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "nag.now": "Good. It's on now.",
+    "nag.snooze": "Snoozed for 30 minutes.",
+    "nag.nottoday": "Okay. Not today. It'll ask again tomorrow.",
+    "template.used": "Template added to this page.",
+    "template.dismissed": "Okay. This page stays as it is.",
+    "broken.restored": "Restored the last version of this part.",
+    "card.showAnswer": "Show answer",
+    "card.showQuestion": "Show question",
+    "quiz.pick": "Pick one answer first.",
+    "quiz.right": "Right.",
+    "quiz.wrong": "Not quite. The answer is: ",
+    "checklist.of": "of",
+    "checklist.done": "done",
+    "dial.quiet": "Quiet",
+    "dial.steady": "Steady",
+    "dial.push": "Push",
+    "dial.of": "of 10",
+    "breath.in": "Breathe in",
+    "breath.hold": "Hold",
+    "breath.out": "Breathe out",
+    "read.aloud": "Read aloud",
+    "read.stop": "Stop reading"
+  },
+  he: {
+    "ts.deleted": "המשימה נמחקה",
+    "ts.saved": "נשמר",
+    "ts.new": "משימה חדשה",
+    "ts.needPhrase": "קודם להוסיף משפט. תזכורת צריכה את המילים שלך לפני שאפשר להפעיל אותה.",
+    "ts.bg.title": "היום",
+    "task.slides": "לנסח 3 שקפים ליום חמישי",
+    "task.more": "עריכת המשימה",
+    "task.dana": "לכתוב לדנה על החוזה",
+    "task.before": "עד",
+    "task.rx": "לאסוף מרשם מבית המרקחת",
+    "ts.title": "עריכת משימה",
+    "ts.close": "סגירה",
+    "ts.offline": "אין חיבור כרגע. העריכות יישמרו כשתחזרי לרשת.",
+    "ts.loading": "טוען את המשימה",
+    "ts.error": "לא הצלחנו לטעון את המשימה.",
+    "ts.name": "משימה",
+    "ts.date": "יום",
+    "ts.time": "שעה",
+    "ts.len": "כמה זמן",
+    "ts.o10": "10 דק׳",
+    "ts.o15": "15 דק׳",
+    "ts.o25": "25 דק׳",
+    "ts.o45": "45 דק׳",
+    "ts.o60": "שעה",
+    "ts.kind": "השעה הזו",
+    "kind.fixed": "קבוע",
+    "ts.fixed.h": "נשאר במקום",
+    "kind.flex": "גמיש",
+    "ts.flex.h": "יכול לזוז אם היום משתנה",
+    "ts.energy": "כמה אנרגיה זה דורש",
+    "en.quiet": "שקט",
+    "en.steady": "יציב",
+    "en.push": "דחיפה",
+    "ts.nag": "להציק לי על זה",
+    "ts.nag.h": "תזכורת במילים שלך. Tempo אף פעם לא כותב אותן במקומך.",
+    "ts.phrase": "מה התזכורת תגיד?",
+    "ts.phrase.help": "ראשי תיבות ובדיחות פרטיות זה בסדר. זה רק בשבילך.",
+    "ts.phrase.err": "קודם להוסיף משפט. תזכורת צריכה את המילים שלך לפני שאפשר להפעיל אותה.",
+    "ts.notes": "הערות",
+    "ts.notes.v": "מבנה, שקף אחד, לבדוק את המספרים עם דנה.",
+    "ts.save": "שמירה",
+    "ts.cancel": "ביטול",
+    "ts.delete": "מחיקה",
+    "ts.phrase.v": "שקפים!! דנה מחכה, את יכולה",
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.pages": "דפים",
+    "rail.library": "ספרייה",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "top.search": "חיפוש",
+    "top.back": "חזרה",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "unit.min": "דק׳",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "proposal.accepted": "בוצע. אפשר לבטל במשך 5 דקות.",
+    "proposal.rejected": "נשאר כמו שהיה. שום דבר לא השתנה.",
+    "proposal.edit": "עריכה",
+    "proposal.doneEditing": "סיום עריכה",
+    "state.retried": "נטען.",
+    "switch.on": "פועל",
+    "switch.off": "כבוי",
+    "more.showing": "מוצגות",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "habit.logged": "תועד היום",
+    "habit.log": "לתעד היום",
+    "habit.dayDone": "תועד",
+    "habit.dayOpen": "לא תועד",
+    "nag.now": "יופי. זה קורה עכשיו.",
+    "nag.snooze": "נדחה ב־30 דקות.",
+    "nag.nottoday": "בסדר. לא היום. זה ישאל שוב מחר.",
+    "template.used": "התבנית נוספה לדף.",
+    "template.dismissed": "בסדר. הדף נשאר כמו שהוא.",
+    "broken.restored": "הגרסה הקודמת של החלק הזה שוחזרה.",
+    "card.showAnswer": "הצגת התשובה",
+    "card.showQuestion": "הצגת השאלה",
+    "quiz.pick": "קודם בחרי תשובה אחת.",
+    "quiz.right": "נכון.",
+    "quiz.wrong": "לא בדיוק. התשובה היא: ",
+    "checklist.of": "מתוך",
+    "checklist.done": "בוצעו",
+    "dial.quiet": "שקט",
+    "dial.steady": "יציב",
+    "dial.push": "דחיפה",
+    "dial.of": "מתוך 10",
+    "breath.in": "שאיפה",
+    "breath.hold": "להחזיק",
+    "breath.out": "נשיפה",
+    "read.aloud": "הקראה",
+    "read.stop": "עצירת ההקראה",
+    "doc.title": "משימה · Tempo",
+    "block.add": "הוספת בלוק מתחת",
+    "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "ts.crumb": "עריכת משימה",
+    "coach.hello": "אני רואה את הדף הזה. אפשר לבקש ממני לתכנן, להקטין או לסדר. שום דבר לא משתנה עד שתאשרי."
+  }
+};
+/* Task sheet: opens on load; nag switch needs a phrase; delete has Undo. */
+TP.onSwitch = function (sw, on) {
+  if (sw.id !== "nag-switch") return;
+  var f = document.getElementById("nag-fields"), p = document.getElementById("ts-phrase"), err = document.getElementById("ts-phrase-err");
+  f.hidden = false;
+  if (on && !p.value.trim()) {
+    sw.setAttribute("aria-checked", "false"); sw.querySelector(".tp-switch__state").textContent = TP.t("switch.off");
+    err.hidden = false; p.setAttribute("aria-invalid", "true"); p.setAttribute("aria-describedby", "ts-phrase-help ts-phrase-err"); p.focus(); return;
+  }
+  err.hidden = true; p.removeAttribute("aria-invalid");
+  // REAL: convex nags.upsert({ targetId: "t1", phrases: [p.value], on })
+};
+TP.onReady2 = function (params) {
+  var opener = document.querySelector('[aria-controls="task-sheet"]');
+  if (params.get("state") === "empty") {
+    document.getElementById("ts-title").textContent = TP.t("ts.new");
+    ["ts-name", "ts-notes"].forEach(function (id) { var el = document.getElementById(id); el.value = ""; el.removeAttribute("data-i18n-attr"); el.removeAttribute("data-i18n"); });
+    document.getElementById("ts-delete").hidden = true;
+  }
+  TP.openSheet("task-sheet", opener);
+  document.getElementById("ts-save").addEventListener("click", function () {
+    // REAL: convex tasks.update({ id: "t1", patch }) — optimistic
+    var t = document.getElementById("t1-title"); t.textContent = document.getElementById("ts-name").value || t.textContent;
+    TP.closeSheet(); TP.toast({ title: TP.t("ts.saved") });
+  });
+  document.getElementById("ts-delete").addEventListener("click", function () {
+    // REAL: convex tasks.remove({ id: "t1" }) (soft delete); Undo -> tasks.restore({ id: "t1" })
+    var row = document.getElementById("row-t1"); TP.closeSheet(); row.hidden = true;
+    var next = document.querySelector("#ts-list .tp-task-row:not([hidden]) .tp-check"); if (next) next.focus();
+    TP.toast({ title: TP.t("ts.deleted"), onUndo: function () { row.hidden = false; row.querySelector(".tp-check").focus(); } });
+  });
+};
+</script>
+</body>
+</html>

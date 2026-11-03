@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — search.html */
+  .sr-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
+  .sr-filters .tp-field { min-width: 0; }
+  .sr-results { display: grid; gap: var(--tp-space-6); }
+  .sr-recent { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .sr-status { min-height: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Search
+@route    apps/web/app/(tempo)/search/page.tsx
+@layout   TempoShell
+@data     results = search.query({ text, kinds: ["page","task","chat"], mode: "meaning+words" | "words", since })   // Convex action: hybrid (vector + full-text) over pages, tasks and coach chats
+@data     recent = search.recentQueries({ limit: 5 })                       // Convex query
+@actions  type a search -> search.query (debounced 250 ms); saves to recent -> search.rememberQuery({ text })
+@actions  open a result -> router.push(page | task sheet | coach thread at the matching message)
+@actions  clear recent -> search.clearRecent({})                             // Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)   + no-results (type "zebra", or ?results=none)
+@flow     1. The box is focused on open. Results update as she types; a count is announced ("7 results").
+          2. "Meaning and words" finds related ideas too ("moving" also finds "van" and "boxes"). "Exact words" only finds the typed words.
+          3. Results are grouped: Pages, Tasks, Chats. Each row says where it lives and, as a word, why it matched ("Same words" / "Related").
+          4. The type filter narrows to one group; "When" narrows by date. Both are plain controls, no syntax.
+          5. Empty (nothing typed yet): recent searches and a hint. No results: kind copy, check spelling, try "Meaning and words", or ask the coach.
+          6. Offline: pages and tasks on this device are still searched; chats need a connection, and the screen says so.
+          7. Error: "Couldn't search right now. Your data is safe." + Retry.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to search</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'search' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <a class="tp-btn tp-btn--secondary tp-rail__search" href="command.html" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </a>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="search.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.search">Search</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Search'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="nav.search">Search</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'default' } | events: — -->
+    <div class="tp-page" data-component="PageLayout">
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Pages and tasks on this device are still searched. Chats come back when you're online.</span></span></div>
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Search', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="h1">Search</h1>
+          <p class="tp-pagehead__sub" data-i18n="sub">Pages, tasks and coach chats, in one place.</p>
+        </div>
+      </header>
+
+      <!-- @component Toolbar | shadcn: — | props: children | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" role="search">
+        <!-- @component SearchInput | shadcn: input (+ command) | props: { label: 'Search everything', placeholder } | events: onInput -> search.query -->
+        <div class="tp-search tp-toolbar__grow" data-component="SearchInput">
+          <label class="tp-label tp-sr-only" for="sr-q" data-i18n="q.label">Search everything</label>
+          <div class="tp-search__box"><span class="tp-search__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><input class="tp-input" id="sr-q" type="search" dir="auto" autocomplete="off" value="moving" placeholder="Search pages, tasks and chats" data-i18n-attr="placeholder:q.ph" aria-describedby="sr-count"></div>
+        </div>
+      </div>
+
+      <div class="sr-filters">
+        <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['all','page','task','chat'], value: 'all' } | events: onChange -> search.query({ kinds }) -->
+        <div class="tp-field">
+          <span class="tp-label" id="kind-label" data-i18n="f.kind">Show</span>
+          <div class="tp-segmented" role="radiogroup" aria-labelledby="kind-label" id="sr-kind" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" data-kind="all" aria-checked="true" tabindex="0"><span data-i18n="k.all">All</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-kind="page" aria-checked="false" tabindex="-1"><span data-i18n="k.pages">Pages</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-kind="task" aria-checked="false" tabindex="-1"><span data-i18n="k.tasks">Tasks</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-kind="chat" aria-checked="false" tabindex="-1"><span data-i18n="k.chats">Chats</span></button>
+          </div>
+        </div>
+        <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['meaning','words'], value: 'meaning' } | events: onChange -> search.query({ mode }) -->
+        <div class="tp-field">
+          <span class="tp-label" id="mode-label" data-i18n="f.mode">Find</span>
+          <div class="tp-segmented" role="radiogroup" aria-labelledby="mode-label" id="sr-mode" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" data-mode="meaning" aria-checked="true" tabindex="0"><span data-i18n="m.meaning">Meaning and words</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-mode="words" aria-checked="false" tabindex="-1"><span data-i18n="m.words">Exact words</span></button>
+          </div>
+        </div>
+        <!-- @component Select | shadcn: select | props: { options: ['any','week','month'], value: 'any' } | events: onChange -> search.query({ since }) -->
+        <div class="tp-field">
+          <label class="tp-label" for="sr-when" data-i18n="f.when">When</label>
+          <div class="tp-select" data-component="Select">
+            <select class="tp-select__input" id="sr-when">
+              <option value="any" selected data-i18n="w.any">Any time</option>
+              <option value="week" data-i18n="w.week">Past week</option>
+              <option value="month" data-i18n="w.month">Past month</option>
+            </select>
+            <span class="tp-select__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-down"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="tp-muted tp-small sr-status" id="sr-count" role="status" data-state-hide><span class="tp-num" id="sr-n">7</span> <span data-i18n="results">results</span></p>
+
+      <!-- ===== Grouped results ===== -->
+      <div class="sr-results" id="sr-results" data-state-hide>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Pages', count } | events: — -->
+        <section class="tp-section" data-component="Section" data-group="page" aria-labelledby="g-pages">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-pages" data-i18n="k.pages">Pages</h2><span class="tp-section__count tp-num" data-count>3</span></div>
+          <!-- @component ListRow ×3 | shadcn: — | props: { icon, title, meta: {where, matched: 'words'|'meaning', when} , href } | events: link -> router.push('/notes/[id]') -->
+          <ul class="tp-list tp-surface" role="list" data-component="ListRow">
+            <li data-kind="page" data-match="words" data-age="1" data-text="moving flat weekend reset boxes van"><a class="tp-list-row" href="project-detail.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.p1">Moving flat</span><span class="tp-list-row__meta"><span data-i18n="r.p1.m">Project · 6 pages inside</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="b.words">Same words</span></span></span></a></li>
+            <li data-kind="page" data-match="words" data-age="2" data-text="moving checklist boxes yoni van"><a class="tp-list-row" href="page-editor.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.p2">Moving checklist</span><span class="tp-list-row__meta"><span dir="auto" data-i18n="r.p2.m">"…books first, small boxes, ask Yoni about the van…"</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="b.words">Same words</span></span></span></a></li>
+            <li data-kind="page" data-match="meaning" data-age="20" data-text="new flat keys landlord address"><a class="tp-list-row" href="page-editor.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.p3">New address, who to tell</span><span class="tp-list-row__meta"><span data-i18n="r.p3.m">Note · 22 Sep</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="b.meaning">Related</span></span></span></a></li>
+          </ul>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Tasks', count } | events: — -->
+        <section class="tp-section" data-component="Section" data-group="task" aria-labelledby="g-tasks">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-tasks" data-i18n="k.tasks">Tasks</h2><span class="tp-section__count tp-num" data-count>2</span></div>
+          <!-- @component ListRow ×2 | shadcn: — | props: { icon, title, meta: {list, due}, href } | events: link -> task sheet -->
+          <ul class="tp-list tp-surface" role="list" data-component="ListRow">
+            <li data-kind="task" data-match="meaning" data-age="0" data-text="book the van yoni moving"><a class="tp-list-row" href="task-sheet.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-task"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.t1">Book the van with Yoni</span><span class="tp-list-row__meta"><span data-i18n="r.t1.m">Today · Moving flat</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="b.meaning">Related</span></span></span></a></li>
+            <li data-kind="task" data-match="words" data-age="3" data-text="moving buy boxes tape"><a class="tp-list-row" href="task-sheet.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-task"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.t2">Buy moving boxes and tape</span><span class="tp-list-row__meta"><span data-i18n="r.t2.m">Saturday · Weekend reset</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="b.words">Same words</span></span></span></a></li>
+          </ul>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Chats', count } | events: — -->
+        <section class="tp-section" data-component="Section" data-group="chat" aria-labelledby="g-chats">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="g-chats" data-i18n="k.chats">Chats</h2><span class="tp-section__count tp-num" data-count>2</span></div>
+          <!-- @component ChatHistoryList ×2 | shadcn: sidebar menu / scroll-area | props: { threads: {title, time, last}[] } | events: link -> coach thread at the matching message -->
+          <ul class="tp-list tp-surface" role="list" data-component="ChatHistoryList">
+            <li data-kind="chat" data-match="words" data-age="4" data-text="moving week plan coach"><a class="tp-list-row" href="coach-thread.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.c1">Planning the moving week</span><span class="tp-list-row__meta"><span dir="auto" data-i18n="r.c1.m">Coach: "Let's put the heavy boxes on Saturday morning."</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="b.words">Same words</span></span></span></a></li>
+            <li data-kind="chat" data-match="meaning" data-age="12" data-text="overwhelmed packing too much at once"><a class="tp-list-row" href="coach-thread.html"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.c2">When packing felt like too much</span><span class="tp-list-row__meta"><span data-i18n="r.c2.m">30 Sep · 14 messages</span></span></span><span class="tp-list-row__end"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="b.meaning">Related</span></span></span></a></li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- no results for the typed words -->
+      <!-- @component StateEmpty | shadcn: — | props: { title: 'Nothing found', body, actions } | events: onMeaning -> mode 'meaning', onAskCoach -> open coach -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" id="sr-none" hidden data-state-hide>
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span>
+        <h2 class="tp-state__title"><span data-i18n="none.title">Nothing found for</span> <q dir="auto" id="sr-none-q">zebra</q></h2>
+        <p class="tp-state__body" data-i18n="none.body">That happens. Try fewer words, check the spelling, or search by meaning so related ideas show up too.</p>
+        <div class="tp-state__actions">
+          <button class="tp-btn tp-btn--secondary" type="button" id="sr-try-meaning"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="none.meaning">Search by meaning</span></button>
+          <a class="tp-btn tp-btn--ghost" href="coach.html" data-i18n="none.coach">Ask the coach instead</a>
+        </div>
+      </div>
+
+      <!-- empty: nothing typed yet -->
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, recent: string[] } | events: onRecent -> search.query({ text }), onClear -> search.clearRecent -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">What are you looking for?</h2>
+        <p class="tp-state__body" data-i18n="empty.body">Type a word or a half-remembered idea. Tempo looks through your pages, tasks and coach chats.</p>
+        <div class="tp-state__actions sr-recent" aria-label="Recent searches" role="group" data-i18n-attr="aria-label:recent">
+          <a class="tp-btn tp-btn--secondary tp-btn--sm" href="search.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="rc1">moving</span></a>
+          <a class="tp-btn tp-btn--secondary tp-btn--sm" href="search.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="rc2">Thursday talk</span></a>
+          <a class="tp-btn tp-btn--secondary tp-btn--sm" href="search.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="rc3">dentist</span></a>
+        </div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Searching</span>
+        <div class="tp-skel-list">
+          <div class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't search right now." } | events: onRetry -> search.query -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't search right now.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "result.one": "result", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "חיפוש · Tempo",
+    "skip": "דלגו לחיפוש", "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.search": "חיפוש", "nav.notes": "פתקים", "nav.templates": "תבניות",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "st.offline": "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת.",
+    "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "h1": "חיפוש", "sub": "דפים, משימות ושיחות עם המאמן, במקום אחד.",
+    "q.label": "חיפוש בכל מקום", "q.ph": "חיפוש בדפים, משימות ושיחות",
+    "f.kind": "להציג", "k.all": "הכל", "k.pages": "דפים", "k.tasks": "משימות", "k.chats": "שיחות",
+    "f.mode": "למצוא", "m.meaning": "משמעות ומילים", "m.words": "מילים מדויקות",
+    "f.when": "מתי", "w.any": "בכל זמן", "w.week": "בשבוע האחרון", "w.month": "בחודש האחרון",
+    "results": "תוצאות", "result.one": "תוצאה",
+    "b.words": "אותן מילים", "b.meaning": "קשור",
+    "r.p1": "מעבר דירה", "r.p1.m": "פרויקט · 6 דפים בפנים",
+    "r.p2": "רשימת המעבר", "r.p2.m": "\"…קודם הספרים, קרטונים קטנים, לשאול את יוני על הטנדר…\"",
+    "r.p3": "כתובת חדשה, למי לספר", "r.p3.m": "פתק · 22 בספט׳",
+    "r.t1": "להזמין טנדר עם יוני", "r.t1.m": "היום · מעבר דירה",
+    "r.t2": "לקנות קרטונים וסלוטייפ", "r.t2.m": "שבת · איפוס סוף שבוע",
+    "r.c1": "תכנון שבוע המעבר", "r.c1.m": "מאמן: \"בואי נשים את הקרטונים הכבדים בשבת בבוקר.\"",
+    "r.c2": "כשהאריזה הרגישה יותר מדי", "r.c2.m": "30 בספט׳ · 14 הודעות",
+    "none.title": "לא נמצא כלום עבור", "none.body": "זה קורה. אפשר לנסות פחות מילים, לבדוק את האיות, או לחפש לפי משמעות כדי שגם רעיונות קשורים יופיעו.",
+    "none.meaning": "לחפש לפי משמעות", "none.coach": "לשאול את המאמן במקום",
+    "empty.title": "מה את מחפשת?", "empty.body": "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן.",
+    "recent": "חיפושים אחרונים", "rc1": "מעבר", "rc2": "ההרצאה של יום חמישי", "rc3": "רופאת שיניים",
+    "loading": "מחפש", "error.title": "לא הצלחנו לחפש כרגע.",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.pages": "דפים", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+/* Screen behaviour: filter the demo results by words, kind, mode and date; announce the count; show no-results kindly. */
+TP.onReady2 = function (params) {
+  var q = document.getElementById("sr-q"), kindSeg = document.getElementById("sr-kind"), modeSeg = document.getElementById("sr-mode");
+  var when = document.getElementById("sr-when"), none = document.getElementById("sr-none"), noneQ = document.getElementById("sr-none-q");
+  var results = document.getElementById("sr-results"), count = document.getElementById("sr-count"), nEl = document.getElementById("sr-n");
+  var timer = null;
+
+  /** Search — REAL: convex search.query({ text, kinds, mode, since }) (hybrid: vector + full-text). STATE: grouped rows, counts, live count. */
+  function run() {
+    var text = q.value.trim().toLowerCase(), words = text.split(/\s+/).filter(Boolean);
+    var kind = kindSeg.querySelector('[aria-checked="true"]').getAttribute("data-kind");
+    var mode = modeSeg.querySelector('[aria-checked="true"]').getAttribute("data-mode");
+    var maxAge = when.value === "week" ? 7 : when.value === "month" ? 31 : 9999, total = 0;
+    if (params.get("results") === "none") words = ["zebra"];
+    document.querySelectorAll("#sr-results [data-group]").forEach(function (sec) {
+      var shown = 0;
+      sec.querySelectorAll("li[data-kind]").forEach(function (li) {
+        var hay = li.getAttribute("data-text") + " " + li.textContent.toLowerCase();
+        var hit = words.length > 0 && words.every(function (w) { return hay.indexOf(w) > -1; });
+        if (!hit && mode === "meaning" && words.length && words.indexOf("zebra") < 0) hit = li.getAttribute("data-match") === "meaning";
+        if (mode === "words" && li.getAttribute("data-match") === "meaning") hit = false;
+        var ok = hit && (kind === "all" || kind === li.getAttribute("data-kind")) && Number(li.getAttribute("data-age")) <= maxAge;
+        li.hidden = !ok; if (ok) shown++;
+      });
+      sec.hidden = shown === 0; sec.querySelector("[data-count]").textContent = shown; total += shown;
+    });
+    nEl.textContent = total;
+    count.lastElementChild.textContent = TP.t(total === 1 ? "result.one" : "results");
+    count.hidden = !words.length;
+    results.hidden = total === 0;
+    none.hidden = !(words.length && total === 0);
+    noneQ.textContent = params.get("results") === "none" ? "zebra" : q.value.trim();
+  }
+  q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 250); });
+  [kindSeg, modeSeg].forEach(function (s) {
+    s.addEventListener("click", function () { setTimeout(run, 0); });
+    s.addEventListener("keydown", function () { setTimeout(run, 0); });
+  });
+  when.addEventListener("change", run);
+  document.getElementById("sr-try-meaning").addEventListener("click", function () {
+    var opt = modeSeg.querySelector('[data-mode="meaning"]'); opt.click(); opt.focus();
+  });
+  if (!document.documentElement.getAttribute("data-state") || document.documentElement.getAttribute("data-state") === "default") q.focus();
+  run();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Template builder · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — template-builder.html */
+  .bld-top { inset-inline: 0; }
+  .bld-top__end { display: flex; align-items: center; gap: var(--tp-space-1); }
+  .bld-main { max-width: calc(var(--tp-space-20) * 15); margin-inline: auto; display: grid; gap: var(--tp-space-5); padding-block-end: var(--tp-space-16); }
+  .bld-split { align-items: start; }
+  .bld-flow { display: grid; gap: var(--tp-space-3); }
+  .bld-flow > .tp-block { padding-block: var(--tp-space-1); }
+  .bld-fields { display: grid; gap: var(--tp-space-4); margin-block-end: var(--tp-space-5); }
+  .bld-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .bld-preview { display: grid; gap: var(--tp-space-4); position: sticky; top: calc(var(--tp-touch) + var(--tp-space-6)); }
+  .bld-preview__flow { display: grid; gap: var(--tp-space-4); }
+  .bld-slash-line { min-height: 32px; padding-block: var(--tp-space-1); }
+  @media (max-width: 1023px) { .bld-preview { position: static; } }
+</style>
+</head>
+<body>
+<!--
+@screen   Template · builder (bare)
+@route    apps/web/app/(bare)/templates/builder/page.tsx
+@layout   Bare
+@data     template = templates.get({ id })                                   // Convex query; no id = a new, empty template
+@data     blockTypes = templates.listBlockTypes({})                          // Convex query: Tempo blocks + question + text blocks for the slash menu
+@actions  rename / describe -> templates.update({ id, patch: { name, description } })   // optimistic, autosave ("Saved")
+@actions  insert block from slash menu -> templates.insertBlock({ id, afterId, type })     // optimistic, Undo 5 min
+@actions  move / copy / delete block -> templates.moveBlock / templates.duplicateBlock / templates.removeBlock  // Undo 5 min
+@actions  save template -> templates.publish({ id })                         // makes it usable from Templates and new pages
+@states   default | empty | loading | error | offline  (?state=)   empty = a brand-new template with no blocks
+@flow     1. Open with no chrome: a back link to Templates, the template name, "Saved", and one "Save template" button.
+          2. Left: the template itself, drawn as quiet blocks like a page. Right (below on phones): a live preview of the page it will make.
+          3. Type "/" on an empty line to open the slash menu; arrows move, Enter adds, Esc closes. The preview updates at once.
+          4. "Question" blocks are asked one at a time when someone uses the template (template run); the answer lands where the block sits.
+          5. Every block has + (add below) and grip (move, copy, delete) buttons; nothing is drag-only.
+          6. "Save template" makes it show in Templates and on new empty pages. Leaving early is safe: drafts autosave.
+          7. Empty: a hint to name it and type "/". Error: "Your data is safe." + Retry. Offline: keep editing, sync later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to the builder</a>
+
+<!-- @component MobileTopBar | shadcn: — (layout) | props: { title: 'Template builder', back: '/templates' } | events: onBack -> router.push('/templates'), onSave -> templates.publish -->
+<header class="tp-mtopbar tp-glass bld-top" data-component="MobileTopBar">
+  <a class="tp-btn tp-btn--ghost" href="templates.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="back">Templates</span></a>
+  <span class="tp-mtopbar__title" data-i18n="top.title">Template builder</span>
+  <div class="bld-top__end">
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <button class="tp-btn tp-btn--primary tp-btn--sm" type="button" id="bld-save" data-state-hide><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="save">Save template</span></button>
+  </div>
+</header>
+
+<main class="tp-app__main bld-main" id="main" tabindex="-1">
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+  <!-- @component Split | shadcn: resizable (optional) | props: { variant: 'even' } | events: — -->
+  <div class="tp-split tp-split--even bld-split" data-component="Split">
+
+    <!-- ===== The template being built ===== -->
+    <!-- @component PageEditor | shadcn: — | props: { template: {id, name, description, blocks[]} } | events: onEdit -> templates.update, onInsert -> templates.insertBlock -->
+    <article class="tp-paper" data-component="PageEditor" aria-labelledby="tpl-name-label">
+      <div class="tp-page__body">
+        <div class="bld-fields">
+          <!-- @component Field | shadcn: form item | props: { id: 'tpl-name', label: 'Template name' } | events: onChange -> templates.update({ id, patch: { name } }) -->
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" id="tpl-name-label" for="tpl-name" data-i18n="f.name">Template name</label>
+            <input class="tp-input" id="tpl-name" type="text" dir="auto" value="Thursday talk prep" data-i18n-attr="value:f.name.v">
+          </div>
+          <!-- @component Field | shadcn: form item | props: { id: 'tpl-desc', label: 'What it is for', help } | events: onChange -> templates.update({ id, patch: { description } }) -->
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="tpl-desc"><span data-i18n="f.desc">What it is for</span> <span class="tp-label__opt" data-i18n="f.opt">optional</span></label>
+            <input class="tp-input" id="tpl-desc" type="text" dir="auto" aria-describedby="tpl-desc-help" value="A calm page for the day before a talk" data-i18n-attr="value:f.desc.v">
+            <p class="tp-help" id="tpl-desc-help" data-i18n="f.desc.h">Shown under the name in Templates.</p>
+          </div>
+        </div>
+
+        <!-- @component BlockList | shadcn: — | props: { blocks: TemplateBlock[] } | events: onReorder -> templates.moveBlock({ id, blockId, toIndex }) -->
+        <div class="tp-page-content bld-flow" id="bld-flow" data-component="BlockList" data-state-hide>
+
+          <!-- @component HeadingBlock | shadcn: — | props: { level: 2, text } | events: onEdit -> templates.updateBlock -->
+          <div class="tp-block" data-component="HeadingBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd -> templates.insertBlock({ id, afterId }), onOptions -> menu (move, copy, delete) -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" contenteditable="true" dir="auto" data-i18n="b.h1">The one thing</h2>
+          </div>
+
+          <!-- @component QuestionBlock | shadcn: card | props: { prompt, answerAs: 'text' } | events: onEdit -> templates.updateBlock -->
+          <div class="tp-block" data-component="QuestionBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component Card | shadcn: card | props: — | events: — -->
+            <div class="tp-card" data-component="Card">
+              <div class="tp-card__head">
+                <!-- @component Badge | shadcn: badge | props: { label: 'Question', icon: 'question', tone: 'info' } | events: — -->
+                <span class="tp-badge" data-tone="info" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-question"/></svg><span data-i18n="badge.q">Question</span></span>
+              </div>
+              <p dir="auto" contenteditable="true" data-i18n="b.q1">What is the one part of the talk you want to land?</p>
+              <p class="tp-help" data-i18n="b.q.help">Asked when the template is used. The answer goes here.</p>
+            </div>
+          </div>
+
+          <!-- @component HeadingBlock | shadcn: — | props: { level: 2, text } | events: onEdit -> templates.updateBlock -->
+          <div class="tp-block" data-component="HeadingBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" contenteditable="true" dir="auto" data-i18n="b.h2">Before the talk</h2>
+          </div>
+
+          <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {title,minutes}[] } | events: onEdit -> templates.updateBlock -->
+          <div class="tp-block" data-component="TaskBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <ul class="tp-block-task" role="list">
+              <!-- @component TaskRow ×2 | shadcn: checkbox | props: { task: {title,minutes} } | events: — (template tasks are copied, not ticked here) -->
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-labelledby="bt1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="bt1" dir="auto" contenteditable="true" data-i18n="b.t1">Finish the last three slides</span><span class="tp-task-row__meta"><span><span class="tp-num">45</span> <span data-i18n="unit.min">min</span></span></span></div>
+                <span></span>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-labelledby="bt2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="bt2" dir="auto" contenteditable="true" data-i18n="b.t2">Send the deck to Dana</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span></span></div>
+                <span></span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- @component TimeBlock | shadcn: custom | props: { kind: 'flex', title, minutes: 20 } | events: onEdit -> templates.updateBlock -->
+          <div class="tp-block" data-component="TimeBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <div class="tp-block-time">
+              <div class="tp-time-row" data-kind="flex">
+                <span class="tp-time-row__time"><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span>
+                <div class="tp-time-row__body"><span class="tp-time-row__title" dir="auto" data-i18n="b.time">Practice run, out loud</span></div>
+                <!-- @component Chip | shadcn: badge | props: { tone: 'flex', label: 'Flexible' } | events: — -->
+                <span class="tp-chip tp-chip--flex" data-component="Chip" data-i18n="chip.flex">Flexible</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active line with slash menu open -->
+          <!-- @component SlashCommand | shadcn: command in popover | props: { query: '' } | events: onChoose -> templates.insertBlock({ id, afterId, type }) -->
+          <div class="tp-block tp-slash-anchor" data-component="SlashCommand">
+            <div class="bld-slash-line tp-slash-line" role="combobox" tabindex="0" aria-expanded="true" aria-controls="slash" aria-haspopup="listbox" aria-label="New block, type to filter" data-i18n-attr="aria-label:slash.label">
+              <span class="tp-slash-trigger">/</span><span class="tp-caret" aria-hidden="true"></span>
+            </div>
+
+            <!-- @component SlashMenu | shadcn: command in popover | props: { items: {type,name,hint,shortcut?}[] } | events: arrows, Enter -> templates.insertBlock, Esc -> close -->
+            <div class="tp-slash-menu tp-glass" id="slash" data-component="SlashMenu">
+              <div class="tp-slash-menu__search"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="slash.hint">Type to filter · ↑ ↓ to move · Enter to add</span></div>
+              <div role="listbox" aria-label="Insert a block" data-i18n-attr="aria-label:slash.list" aria-activedescendant="opt-question">
+                <div role="group" aria-labelledby="g-tpl">
+                  <div class="tp-slash-menu__group" id="g-tpl" data-i18n="slash.g.tpl">For templates</div>
+                  <div class="tp-slash-item" role="option" id="opt-question" aria-selected="true" data-type="question"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-question"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.q">Question</span><span class="tp-slash-item__hint" data-i18n="slash.q.h">Asked when the template is used</span></span><kbd class="tp-kbd">?</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-date" aria-selected="false" data-type="date"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.date">The page's date</span><span class="tp-slash-item__hint" data-i18n="slash.date.h">Filled in when the page is made</span></span><span></span></div>
+                </div>
+                <div role="group" aria-labelledby="g-tempo">
+                  <div class="tp-slash-menu__group" id="g-tempo" data-i18n="slash.g.tempo">Tempo blocks</div>
+                  <div class="tp-slash-item" role="option" id="opt-task" aria-selected="false" data-type="task"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-task"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.task">Task</span><span class="tp-slash-item__hint" data-i18n="slash.task.h">Shows on Today when it has a day</span></span><kbd class="tp-kbd">[]</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-time" aria-selected="false" data-type="time"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.time">Time block</span><span class="tp-slash-item__hint" data-i18n="slash.time.h">A fixed or flexible slot</span></span><span></span></div>
+                  <div class="tp-slash-item" role="option" id="opt-energy" aria-selected="false" data-type="energy"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-energy"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.energy">Energy check-in</span><span class="tp-slash-item__hint" data-i18n="slash.energy.h">Quiet, steady or push</span></span><span></span></div>
+                  <div class="tp-slash-item" role="option" id="opt-habit" aria-selected="false" data-type="habit"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.habit">Habit</span><span class="tp-slash-item__hint" data-i18n="slash.habit.h">A gentle log, no streaks</span></span><span></span></div>
+                </div>
+                <div role="group" aria-labelledby="g-basic">
+                  <div class="tp-slash-menu__group" id="g-basic" data-i18n="slash.g.basic">Text</div>
+                  <div class="tp-slash-item" role="option" id="opt-heading" aria-selected="false" data-type="heading"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-heading"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.heading">Heading</span><span class="tp-slash-item__hint" data-i18n="slash.heading.h">A section title</span></span><kbd class="tp-kbd">#</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-list" aria-selected="false" data-type="list"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.bullet">Bullet list</span><span class="tp-slash-item__hint" data-i18n="slash.bullet.h">Plain points</span></span><kbd class="tp-kbd">-</kbd></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- empty: a brand-new template -->
+        <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onType -> templates.insertBlock -->
+        <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-template"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">A blank template.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">Give it a name, then type / on a new line to add tasks, questions and time blocks.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="template-sketch.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="empty.sketch">Sketch an outline instead</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading this template</span>
+          <div class="tp-skel-list">
+            <div class="tp-skeleton tp-skeleton--w60"></div>
+            <div class="tp-skeleton tp-skeleton--block"></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't open this template." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't open this template.</h2>
+          <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ===== Live preview ===== -->
+    <!-- @component TemplatePreview | shadcn: card | props: { blocks: TemplateBlock[], sampleDate: '2026-10-15' } | events: — (read-only, mirrors the builder) -->
+    <section class="tp-surface bld-preview" data-component="TemplatePreview" aria-labelledby="pv-h" data-state-hide>
+      <div class="bld-row">
+        <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg>
+        <h2 class="tp-eyebrow" id="pv-h" data-i18n="pv.head">Preview of the page it makes</h2>
+      </div>
+      <p class="tp-muted tp-small" data-i18n="pv.sub">Updates as you edit. Example date: Thursday 15 October.</p>
+      <div class="bld-preview__flow" id="pv-flow" aria-live="polite">
+        <h3 class="tp-page-title" dir="auto" data-i18n="pv.title">Thursday talk prep</h3>
+        <h4 class="tp-h3" data-i18n="b.h1">The one thing</h4>
+        <p class="tp-muted" dir="auto" data-i18n="pv.answer">Your answer to "What is the one part of the talk you want to land?" goes here.</p>
+        <h4 class="tp-h3" data-i18n="b.h2">Before the talk</h4>
+        <ul class="tp-block-task" role="list">
+          <li class="tp-task-row"><span class="tp-check" aria-hidden="true"><span class="tp-check__box"></span></span><div class="tp-task-row__body"><span class="tp-task-row__title" dir="auto" data-i18n="b.t1">Finish the last three slides</span><span class="tp-task-row__meta"><span><span class="tp-num">45</span> <span data-i18n="unit.min">min</span></span></span></div><span></span></li>
+          <li class="tp-task-row"><span class="tp-check" aria-hidden="true"><span class="tp-check__box"></span></span><div class="tp-task-row__body"><span class="tp-task-row__title" dir="auto" data-i18n="b.t2">Send the deck to Dana</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span></span></div><span></span></li>
+        </ul>
+        <div class="tp-block-time">
+          <div class="tp-time-row" data-kind="flex">
+            <span class="tp-time-row__time"><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span>
+            <div class="tp-time-row__body"><span class="tp-time-row__title" dir="auto" data-i18n="b.time">Practice run, out loud</span></div>
+            <span class="tp-chip tp-chip--flex" data-i18n="chip.flex">Flexible</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> templates.removeBlock -->
+<div class="tp-toast-region" aria-live="polite"></div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "toast.added": "Block added", "toast.saved": "Template saved. It now shows in Templates.", "state.retried": "Loaded.",
+        "pv.new.question": "Your answer will go here.", "pv.new.date": "Thursday 15 October", "pv.new.task": "New task",
+        "pv.new.time": "New time block", "pv.new.energy": "Energy: quiet, steady or push", "pv.new.habit": "New habit",
+        "pv.new.heading": "New section", "pv.new.list": "A plain point" },
+  he: {
+    "doc.title": "בניית תבנית · Tempo",
+    "skip": "דלגו לבנייה", "back": "תבניות", "top.title": "בניית תבנית", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "save": "שמירת התבנית",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "f.name": "שם התבנית", "f.name.v": "הכנה להרצאה ביום חמישי", "f.desc": "למה היא נועדה", "f.opt": "לא חובה",
+    "f.desc.v": "דף רגוע ליום שלפני הרצאה", "f.desc.h": "מופיע מתחת לשם בעמוד התבניות.",
+    "block.add": "הוספת בלוק מתחת", "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "b.h1": "הדבר האחד", "badge.q": "שאלה", "b.q1": "איזה חלק בהרצאה הכי חשוב לך שיעבור?", "b.q.help": "נשאלת כשמשתמשים בתבנית. התשובה נכנסת לכאן.",
+    "b.h2": "לפני ההרצאה", "b.t1": "לסיים את שלוש השקופיות האחרונות", "b.t2": "לשלוח את המצגת לדנה", "unit.min": "דק׳",
+    "b.time": "חזרה אחת, בקול", "chip.flex": "גמיש",
+    "slash.label": "בלוק חדש, הקלידי לסינון", "slash.hint": "הקלידי לסינון · ↑ ↓ למעבר · Enter להוספה", "slash.list": "הוספת בלוק",
+    "slash.g.tpl": "לתבניות", "slash.q": "שאלה", "slash.q.h": "נשאלת כשמשתמשים בתבנית", "slash.date": "התאריך של הדף", "slash.date.h": "מתמלא כשהדף נוצר",
+    "slash.g.tempo": "בלוקים של Tempo", "slash.task": "משימה", "slash.task.h": "מופיעה בהיום כשיש לה תאריך",
+    "slash.time": "בלוק זמן", "slash.time.h": "חלון קבוע או גמיש", "slash.energy": "בדיקת אנרגיה", "slash.energy.h": "שקט, יציב או דחיפה",
+    "slash.habit": "הרגל", "slash.habit.h": "תיעוד עדין, בלי רצפים",
+    "slash.g.basic": "טקסט", "slash.heading": "כותרת", "slash.heading.h": "כותרת לקטע", "slash.bullet": "רשימת נקודות", "slash.bullet.h": "נקודות פשוטות",
+    "empty.title": "תבנית ריקה.", "empty.body": "תני לה שם, ואז הקלידי / בשורה חדשה כדי להוסיף משימות, שאלות ובלוקי זמן.", "empty.sketch": "לשרטט קודם מתווה",
+    "loading": "טוען את התבנית", "error.title": "לא הצלחנו לפתוח את התבנית הזו.",
+    "pv.head": "תצוגה מקדימה של הדף שייווצר", "pv.sub": "מתעדכנת תוך כדי עריכה. תאריך לדוגמה: חמישי, 15 באוקטובר.",
+    "pv.title": "הכנה להרצאה ביום חמישי", "pv.answer": "התשובה שלך לשאלה \"איזה חלק בהרצאה הכי חשוב לך שיעבור?\" תופיע כאן.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד", "toast.title": "בוצע",
+    "toast.added": "הבלוק נוסף", "toast.saved": "התבנית נשמרה. היא מופיעה עכשיו בתבניות.",
+    "pv.new.question": "התשובה שלך תופיע כאן.", "pv.new.date": "חמישי, 15 באוקטובר", "pv.new.task": "משימה חדשה",
+    "pv.new.time": "בלוק זמן חדש", "pv.new.energy": "אנרגיה: שקט, יציב או דחיפה", "pv.new.habit": "הרגל חדש",
+    "pv.new.heading": "קטע חדש", "pv.new.list": "נקודה פשוטה"
+  }
+};
+
+/* Screen behaviour: live preview follows the name field and every block added from the slash menu. */
+TP.onReady2 = function () {
+  var name = document.getElementById("tpl-name"), pvTitle = document.querySelector("#pv-flow .tp-page-title");
+  var pv = document.getElementById("pv-flow");
+
+  /** Rename — REAL: convex templates.update({ id, patch: { name } }) (debounced autosave). STATE: preview title. */
+  function syncName() { pvTitle.textContent = name.value.trim() || name.getAttribute("placeholder") || ""; }
+  name.addEventListener("input", syncName);
+
+  /** Add a block — REAL: convex templates.insertBlock({ id, afterId, type }). STATE: preview gains a line; Undo 5 min. */
+  function addBlock(opt) {
+    var type = opt.getAttribute("data-type"), el;
+    if (type === "heading") { el = document.createElement("h4"); el.className = "tp-h3"; }
+    else if (type === "time") { el = document.createElement("div"); el.className = "tp-time-row"; el.setAttribute("data-kind", "flex"); }
+    else { el = document.createElement("p"); el.className = type === "question" ? "tp-muted" : ""; }
+    if (type === "time") el.innerHTML = '<div class="tp-time-row__body"><span class="tp-time-row__title"></span></div>';
+    (el.querySelector(".tp-time-row__title") || el).textContent = TP.t("pv.new." + type);
+    el.setAttribute("dir", "auto"); pv.appendChild(el);
+    TP.toast({ title: TP.t("toast.added"), onUndo: function () {
+      // REAL: convex templates.removeBlock({ id, blockId })
+      el.remove();
+    } });
+  }
+  /* Capture runs before tempo.js closes the menu, so we still know which option was chosen. */
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var menu = document.querySelector("#slash:not([hidden])"); if (!menu) return;
+    var sel = menu.querySelector('[role="option"][aria-selected="true"]'); if (sel) addBlock(sel);
+  }, true);
+  document.addEventListener("click", function (e) {
+    var opt = e.target.closest('#slash [role="option"]'); if (opt) addBlock(opt);
+  }, true);
+
+  /** Save — REAL: convex templates.publish({ id }). STATE: toast; the template now appears in Templates. */
+  document.getElementById("bld-save").addEventListener("click", function () {
+    TP.toast({ title: TP.t("toast.saved") });
+  });
+};
+</script>
+</body>
+</html>
