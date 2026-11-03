@@ -38,6 +38,10 @@ ticket is in `Depends` (so the total is fixed), and STEP 1 checks the starting t
 other tickets also edit or that already exists (`convex/lib/accountDeletion.test.ts`, an existing `convex/<module>.test.ts`),
 the expected output is that file's exact total, `<N> pass`, `0 fail`, worked out as above; `→ 0 fail` alone is never a DONE.
 `convex/lib/accountDeletion.test.ts` is `66 pass`, `0 fail` (§18).
+A regression check of a file that another ticket outside this ticket's `Depends` chain also adds tests to (neither ticket
+depends on the other, so either can merge first) cannot have a fixed total; it is written as a floor:
+`→ at least <N> pass and `0 fail``, N = today's total on `integration` plus the tests the `Depends` chain adds, with the
+other tickets named (fix round 4).
 
 **`bun test <path>` runs one file. `bun run test <path>` is WRONG and does not run the file:**
 `scripts/test-suites.ts` treats any extra argument as a *browser-suite name filter*, finds no
