@@ -1,0 +1,63 @@
+name: jev-judge
+
+# Config ticket (2026-11-01). Two advisory per-PR gates for factory ticket PRs.
+#
+# process-check (deterministic): the agent's REPORT comment must list the ticket's DONE command and
+# cover every STEP. Fails otherwise.
+#
+# jev-judge (model): calls TypeSafe Jev (~typesafe/jev-latest) over OpenRouter's System One API with
+# the repository secret OPENROUTER_API_KEY (Amit adds the value; never written anywhere). Scores the
+# PR on five questions (a-d must be >= 0.85, e must be < 0.5) and posts the scores as one comment.
+# If the secret is missing the job fails with the exact message that names where Amit adds it.
+#
+# Both jobs skip (exit 0) when the PR links no ticket ("Closes #N"), so config PRs pass. These gates
+# are advisory and not yet required ruleset checks.
+
+on:
+  pull_request:
+    branches: [integration, master, main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: jev-judge-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  process-check:
+    name: process-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+      - name: Unit-test the judge script
+        run: bun test ./.github/scripts/jev-judge.test.ts
+      - name: Run process-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bun .github/scripts/jev-judge.ts process-check
+
+  jev-judge:
+    name: jev-judge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+      - name: Run Jev judge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: bun .github/scripts/jev-judge.ts judge
