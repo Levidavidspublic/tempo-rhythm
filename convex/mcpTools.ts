@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
 import { acceptPlanForUser, planBrainDump } from "./brain_dump";
 import {
   createEventForUser,
@@ -9,7 +9,7 @@ import {
   maxCalendarRangeMs,
   updateEventForUser,
 } from "./calendar_events";
-import { getDayPlanForUser } from "./dayPlans";
+import { getDayPlanForUser, upsertDayPlanForUser } from "./dayPlans";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { dayBoundsMs, isValidTimeZone, localDateOf } from "./lib/mcp/dates";
 import { createNoteForUser, listNotesForUser, updateNoteForUser } from "./notes";
@@ -56,6 +56,34 @@ function limitOf(args: Args): number {
   return typeof args.limit === "number" ? args.limit : DEFAULT_LIMIT;
 }
 
+async function todayPlanView(ctx: QueryCtx, userId: Id<"users">, date: string, timezone: string) {
+  const plan = await getDayPlanForUser(ctx, userId, date);
+  const { startMs, endMs } = dayBoundsMs(date, timezone);
+  const due = await listTasksForUser(ctx, userId, {
+    dueFrom: startMs,
+    dueTo: endMs,
+  });
+  const topTasks: Doc<"tasks">[] = [];
+  for (const taskId of plan?.topTaskIds ?? []) {
+    const t = await ctx.db.get(taskId);
+    if (t && t.userId === userId && t.deletedAt === undefined) topTasks.push(t);
+  }
+  return {
+    date,
+    timezone,
+    plan: plan
+      ? {
+          status: plan.status,
+          intention: plan.intention ?? null,
+          energy: plan.energy ?? null,
+          reflection: plan.reflection ?? null,
+        }
+      : null,
+    topTasks: topTasks.map(taskView),
+    tasksDue: due.map(taskView),
+  };
+}
+
 export const runReadTool = internalQuery({
   args: { userId: v.id("users"), name: v.string(), args: v.any() },
   handler: async (ctx, { userId, name, args }): Promise<unknown> => {
@@ -95,31 +123,7 @@ export const runReadTool = internalQuery({
         const timezone = (a.timezone as string | undefined) ?? "UTC";
         if (!isValidTimeZone(timezone)) throw new Error(`Unknown timezone: ${timezone}`);
         const date = (a.date as string | undefined) ?? localDateOf(timezone, Date.now());
-        const plan = await getDayPlanForUser(ctx, userId, date);
-        const { startMs, endMs } = dayBoundsMs(date, timezone);
-        const due = await listTasksForUser(ctx, userId, {
-          dueFrom: startMs,
-          dueTo: endMs,
-        });
-        const topTasks: Doc<"tasks">[] = [];
-        for (const taskId of plan?.topTaskIds ?? []) {
-          const t = await ctx.db.get(taskId);
-          if (t && t.userId === userId && t.deletedAt === undefined) topTasks.push(t);
-        }
-        return {
-          date,
-          timezone,
-          plan: plan
-            ? {
-                status: plan.status,
-                intention: plan.intention ?? null,
-                energy: plan.energy ?? null,
-                reflection: plan.reflection ?? null,
-              }
-            : null,
-          topTasks: topTasks.map(taskView),
-          tasksDue: due.map(taskView),
-        };
+        return todayPlanView(ctx, userId, date, timezone);
       }
       default:
         throw new Error(`Unknown read tool: ${name}`);
@@ -195,6 +199,39 @@ export const runWriteTool = internalMutation({
         });
         const event = await ctx.db.get(eventId);
         return { event: event ? eventView(event) : { id: eventId } };
+      }
+      case "today_plan_set": {
+        const timezone = (a.timezone as string | undefined) ?? "UTC";
+        if (!isValidTimeZone(timezone)) throw new Error(`Unknown timezone: ${timezone}`);
+        const date = (a.date as string | undefined) ?? localDateOf(timezone, Date.now());
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("date must be YYYY-MM-DD");
+        const intention = a.intention as string | undefined;
+        if (intention !== undefined && intention.length > 280) {
+          throw new Error("Intention must be 280 characters or fewer.");
+        }
+        const energy = a.energy as "low" | "medium" | "high" | undefined;
+        if (energy !== undefined && !["low", "medium", "high"].includes(energy)) {
+          throw new Error("Energy must be low, medium or high.");
+        }
+        let topTaskIds: Id<"tasks">[] | undefined;
+        if (a.topTaskIds !== undefined) {
+          const raw = a.topTaskIds as string[];
+          if (raw.length > 3) throw new Error("A day plan can have at most 3 top tasks");
+          topTaskIds = [];
+          for (const raw1 of raw) {
+            const taskId = ctx.db.normalizeId("tasks", raw1);
+            if (!taskId) throw new Error("Task not found");
+            topTaskIds.push(taskId);
+          }
+        }
+        await upsertDayPlanForUser(ctx, userId, {
+          localDate: date,
+          timezone,
+          intention,
+          topTaskIds,
+          energy,
+        });
+        return todayPlanView(ctx, userId, date, timezone);
       }
       default:
         throw new Error(`Unknown write tool: ${name}`);

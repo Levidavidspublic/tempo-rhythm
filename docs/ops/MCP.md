@@ -12,9 +12,9 @@ Tempo exposes a remote MCP server (Streamable HTTP, protocol `2025-06-18`) so an
 - Status codes pass through: 401 (with `WWW-Authenticate`), 403 `ACCOUNT_PENDING_APPROVAL`, 413, 429 (with `Retry-After`). 502 means the backend is not configured or not reachable.
 - The server is stateless: GET and DELETE return 405 from Convex.
 
-## Tools (11)
+## Tools (12)
 
-`tasks_list`, `task_create`, `task_update`, `notes_list`, `note_create`, `note_update`, `calendar_list`, `calendar_create`, `calendar_update`, `today_plan_get`, `brain_dump`.
+`tasks_list`, `task_create`, `task_update`, `notes_list`, `note_create`, `note_update`, `calendar_list`, `calendar_create`, `calendar_update`, `today_plan_get`, `today_plan_set`, `brain_dump`.
 
 ## Connect Executor
 
