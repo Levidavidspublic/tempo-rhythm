@@ -10,6 +10,10 @@ Three smaller gaps sit behind that:
 
 I changed nothing in `.github` or `scripts/factory`. Everything below is read from `integration` at `27e6322`.
 
+## Repo variables today (read in GitHub settings, 3 Nov 2026 12:20)
+`FACTORY_CODEX_AT_LIMIT=true`, `FACTORY_CURSOR_AT_LIMIT=false`, `FACTORY_CURSOR_MODE=api`, `FACTORY_AGENT_PREFERENCE=claude,codex,cursor`, `FACTORY_ACTIVE_BATCHES=FT1`, `FACTORY_MAX_IN_FLIGHT=15`, `FACTORY_CODEX_MODE` not set (default `pr`), `FACTORY_MODEL_CODEX=GPT-5.6 Terra`.
+So **today** a ticket marked `browser_test: true` goes to **Cursor** (Codex is switched off by `FACTORY_CODEX_AT_LIMIT`), and the Codex push limit below bites only once Codex is switched back on. What blocks browser tickets today is gap 5 (nothing marks them, so they route as plain build tickets → Claude) and gap 3 (a written `lane:` is ignored). The 2/2/2 loop also needs `FACTORY_CODEX_AT_LIMIT=false` for its two Codex tickets.
+
 ## The cause, step by step
 1. **The lane picker puts Codex first.** In `scripts/factory/lane-limits.mjs` line 59, `candidates("browser")` = the preference order with Claude moved last. With the default `claude,codex,cursor` that is **codex → cursor → claude**. `next-tickets.mjs` uses it for every ticket whose front-matter has `browser_test: true` (line 63, `ticketKind`).
 2. **The Codex lane can't land the code.** `factory-lane-codex` (mode `pr`) does two things: it creates `t/<issue>-<slug>` with an empty commit, and it posts `@codex implement …` on a draft PR. `factory/LOOP.md` lines 52–55 ("Known limit") record that Codex tasks started by `@codex` on a PR run without GitHub write access: on #670 Codex fixed the code but could not push. Until Codex's environment allows pushing, a browser ticket routed to Codex stays an empty draft PR. The loop then waits for green CI that never comes.
