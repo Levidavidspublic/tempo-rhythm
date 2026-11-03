@@ -828,8 +828,11 @@ Colours are compared the same way (`"color"`, `"--tp-ink"`), so the check is ind
 `bun run lint` runs `biome lint .` in `apps/web` (Biome 2.3.8, `recommended` rules, `apps/web/biome.json` →
 `packages/config/biome.json`). Its rule `lint/a11y/useSemanticElements` fails an element that carries an ARIA role a
 native element already has. Checked on `integration` with that Biome: it fails `role="radio"`, `"checkbox"`, `"group"`,
-`"status"`, `"list"`, `"listitem"`, `"region"` and `"progressbar"` on a `div`, `p`, `span`, `button` or `section`; it
-does not fail `"radiogroup"`, `"listbox"`, `"option"`, `"switch"`, `"tab"`, `"tablist"`, `"alert"`, `"dialog"` or `"img"`.
+`"status"`, `"list"`, `"listitem"` and `"region"` on a `div`, `p`, `span`, `button` or `section`; it does not fail
+`"radiogroup"`, `"progressbar"`, `"listbox"`, `"option"`, `"switch"`, `"tab"`, `"tablist"`, `"alert"`, `"dialog"` or
+`"img"` on a `div` (re-checked 3 Nov 2026: a suppression above `<div role="progressbar">` is reported as
+`suppressions/unused`, so none is written). `role="listbox"` on a `<ul>` and `role="option"` on an `<li>` fail
+`lint/a11y/noNoninteractiveElementToInteractiveRole` instead: use a `div` for both.
 
 - `<ul>` and `<ol>` never carry `role="list"` (it fails `useSemanticElements` and `noRedundantRoles`); a spec finds
   the list with `getByRole("list")` or its class.
