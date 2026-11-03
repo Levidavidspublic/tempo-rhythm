@@ -2,7 +2,7 @@
 
 Standalone Archify diagrams (v3.0.1). Open the `.html` in a browser (standalone, no install).
 
-Mapped from integration @ 5f9cf22443ed7a15881f1214b3b31ac203c82a21
+Mapped from integration @ df17f533d6b19ee6f5022e58577781dc4484c6ef
 
 | File | What it shows |
 |---|---|
