@@ -340,7 +340,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/testFakeCtx.test.ts` → `7 pass`, `0 fail`; `bun run test:unit` → `0 fail`.
 - **EVIDENCE:** both summaries pasted into the PR.
 - **DO NOT:** change the signature or behaviour of `makeFakeCtx`, `run`, `withIndex`, `order`, `collect`, `take`, `first`, `get`, `insert`, `patch`, `query` or `normalizeId`; edit any other test; touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0000a / evidence: <DONE output> / changed: convex/lib/testFakeCtx.ts, convex/lib/testFakeCtx.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0000a / evidence: <DONE output> / changed: convex/lib/testFakeCtx.ts, convex/lib/testFakeCtx.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Test-only module (never imported by app code). New and changed exports:
   ```ts
   export function makeFakeCtx(userId: string, extraUsers?: string[]): any; // unchanged signature; db gains delete/replace, builder gains unique, ctx gains scheduler
@@ -373,7 +373,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/helpers.spec.ts --reporter=line` → `8 passed`, no failures.
 - **EVIDENCE:** the Playwright summary pasted into the PR.
 - **DO NOT:** edit `playwright.config.ts` or any existing spec; add a dependency; call Convex; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0000b / evidence: <DONE output> / changed: tests/e2e/helpers/harness.ts, tests/e2e/helpers.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0000b / evidence: <DONE output> / changed: tests/e2e/helpers/harness.ts, tests/e2e/helpers.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Test-only module. Exact API:
   ```ts
   import type { Page } from "@playwright/test";
@@ -446,7 +446,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test apps/web/lib/e2e/e2eState.test.ts` → `7 pass`, `0 fail`.
 - **EVIDENCE:** the `bun test` summary pasted into the PR.
 - **DO NOT:** read `?state=` anywhere in production code paths without `isE2EBypass`; edit `proxy.ts`, `e2eWiringRoutes.ts` or any screen; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0000c / evidence: <DONE output> / changed: apps/web/lib/e2e/e2eState.ts, apps/web/lib/e2e/useE2EState.ts, apps/web/lib/e2e/e2eState.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0000c / evidence: <DONE output> / changed: apps/web/lib/e2e/e2eState.ts, apps/web/lib/e2e/useE2EState.ts, apps/web/lib/e2e/e2eState.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/lib/e2e/e2eState.ts
@@ -488,7 +488,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test tests/unit/mobile_e2e_state.test.ts` → `7 pass`, `0 fail`.
 - **EVIDENCE:** the `bun test` summary pasted into the PR.
 - **DO NOT:** edit `apps/mobile/app/(tempo)/_layout.tsx` (CFG-032 does); import Expo or React Native into `e2eState.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0000d / evidence: <DONE output> / changed: apps/mobile/lib/e2e/e2eState.ts, apps/mobile/lib/e2e/useE2EMobile.ts, tests/unit/mobile_e2e_state.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0000d / evidence: <DONE output> / changed: apps/mobile/lib/e2e/e2eState.ts, apps/mobile/lib/e2e/useE2EMobile.ts, tests/unit/mobile_e2e_state.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/mobile/lib/e2e/e2eState.ts
@@ -569,7 +569,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg002_entities.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg002_entities.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-002 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg002_entities.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-002 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg002_entities.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -612,7 +612,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg003_edges.test.ts` → `7 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg003_edges.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-003 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg003_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-003 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg003_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -660,7 +660,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg004_observations.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg004_observations.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-004 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg004_observations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-004 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg004_observations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -700,7 +700,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg005_calendarEvents.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg005_calendarEvents.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-005 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg005_calendarEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-005 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg005_calendarEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
 
 ```ts
@@ -946,7 +946,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg012_jobs.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg012_jobs.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-012 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg012_jobs.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-012 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg012_jobs.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1054,7 +1054,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg015_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg015_userPreferences.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-015 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg015_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-015 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg015_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
 
 ```ts
@@ -1083,7 +1083,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg016_users.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg016_users.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-016 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg016_users.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-016 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg016_users.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
 
 ```ts
@@ -1159,7 +1159,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg018_studyCards.test.ts` → `7 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg018_studyCards.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-018 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg018_studyCards.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-018 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg018_studyCards.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1209,7 +1209,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg019_byokKeys.test.ts` → `5 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg019_byokKeys.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-019 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg019_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-019 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg019_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1254,7 +1254,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg020_userPreferences.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg020_userPreferences.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field on an existing table required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-020 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg020_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-020 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg020_userPreferences.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds new optional field(s) on an existing table to `convex/schema.ts`.
 
 ```ts
@@ -1700,7 +1700,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/smoke.spec.ts --reporter=line` → `2 passed`; `CI=1 bunx playwright test --list | grep -c "mobile/"` → `0`.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/smoke.spec.ts --reporter=line` (DONE); both outputs and the CI run link of the PR.
 - **DO NOT:** change any existing test, timeout, retry, browser or the web `webServer`; add a dependency; run Expo against a real Convex deployment; touch `convex/**` or `.env*`.
-- **REPORT:** `status / ticket: CFG-031 / evidence: <DONE output> / changed: playwright.mobile.config.ts, playwright.config.ts, .github/workflows/ci.yml, tests/e2e/mobile/smoke.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: CFG-031 / evidence: <DONE output> / changed: playwright.mobile.config.ts, playwright.config.ts, .github/workflows/ci.yml, tests/e2e/mobile/smoke.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // playwright.mobile.config.ts
@@ -1741,7 +1741,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tempo-gate.spec.ts --reporter=line` → `1 passed`; `bun test tests/unit/mobile_e2e_state.test.ts` → `7 pass`, `0 fail` (the whole file, as TFV2-0000d leaves it).
 - **EVIDENCE:** the output of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/tempo-gate.spec.ts --reporter=line` (DONE); both outputs pasted into the PR.
 - **DO NOT:** change the sign-in or onboarding routes; read the flag without `__DEV__`; touch `convex/auth*`, `apps/web/proxy.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: CFG-032 / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/_layout.tsx, tests/e2e/mobile/tempo-gate.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: CFG-032 / evidence: <DONE output> / changed: apps/mobile/app/(tempo)/_layout.tsx, tests/e2e/mobile/tempo-gate.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Behaviour table (from `tempoGate`, TFV2-0000d): e2e flag on in a dev build → render; otherwise signed out and not loading → `/(auth)/sign-in`; profile without `onboardedAt` → `/(auth)/onboarding`; else render. No new copy.
 - **TESTS:**
   - Given the mobile config (flag on, dev server, signed out) / When `await page.goto("/habits")` runs / Then `await expect(page.getByText("Habits", { exact: true }).first()).toBeVisible()` passes (the habits screen's `MobileTopBar` title, `translate("en", "habits", "top.title")` = `"Habits"`; the sign-in screen has no such text), and only after that `await expect(page).toHaveURL(/\/habits$/)` and `await expect(page).not.toHaveURL(/\/sign-in/)` pass (asserted after the screen rendered, so a late client redirect cannot slip past).
@@ -1763,7 +1763,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg033_memories.test.ts` → `2 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg033_memories.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-033 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg033_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-033 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg033_memories.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds one index to an existing table in `convex/schema.ts`; no field is added.
 
 ```ts
@@ -1793,7 +1793,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg034_edges.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg034_edges.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-034 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg034_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-034 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg034_edges.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds new optional fields and one index to an existing table in `convex/schema.ts`.
 
 ```ts
@@ -1828,7 +1828,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg035_coachTurns.test.ts` → `6 pass` and `0 fail`; `bun test convex/lib/accountDeletion.test.ts` → `66 pass`, `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg035_coachTurns.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; touch `coachWebSearches` or any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-035 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg035_coachTurns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-035 / evidence: <DONE output> / changed: convex/schema.ts, convex/lib/accountDeletion.ts, convex/lib/accountDeletion.test.ts, convex/schema_cfg035_coachTurns.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds a new table to `convex/schema.ts`.
 
 ```ts
@@ -1872,7 +1872,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/config_cfg036_crons.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/config_cfg036_crons.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** register any cron; edit `convex/crons.ts`; change the agent component; use a caret range; deploy.
-- **REPORT:** `status / ticket: CFG-036 / evidence: <DONE output> / changed: package.json, bun.lock, convex/convex.config.ts, convex/_generated/api.d.ts, convex/_generated/api.js, convex/config_cfg036_crons.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-036 / evidence: <DONE output> / changed: package.json, bun.lock, convex/convex.config.ts, convex/_generated/api.d.ts, convex/_generated/api.js, convex/config_cfg036_crons.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // convex/convex.config.ts after this ticket (the whole file)
@@ -2065,7 +2065,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/auth-onboarding-gate.spec.ts --reporter=line` → `2 passed`; `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test --config playwright.mobile.config.ts tests/e2e/mobile/auth-onboarding-gate.spec.ts --reporter=line` (DONE); both outputs pasted into the PR.
 - **DO NOT:** change the sign-in, sign-up, paywall or onboarding screens, the signed-in redirect, `IS_DEV_MODE` / preview handling or `apps/mobile/app/(tempo)/_layout.tsx`; read the flag without `__DEV__`; touch `convex/auth*`, `apps/web/proxy.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: CFG-042 / evidence: <DONE output> / changed: apps/mobile/app/(auth)/_layout.tsx, tests/e2e/mobile/auth-onboarding-gate.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: CFG-042 / evidence: <DONE output> / changed: apps/mobile/app/(auth)/_layout.tsx, tests/e2e/mobile/auth-onboarding-gate.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** **Relies on** (existing code, checked in STEP 1 with these greps; a mismatch is `blocked: PATH_DRIFT — <what differs>`): signed out, `useTempoSession()` (`apps/mobile/components/v3/session.ts`) returns `ready: false`, so `OnboardingScreen` (`apps/mobile/app/(auth)/onboarding.tsx` line 86, `if (session.isLoading || !session.ready) {`) renders `<StateLoading label={t("load.label")} rows={3} />`; `StateLoading` (`apps/mobile/components/v3/states.tsx` line 13) renders `<View accessible accessibilityRole="progressbar" accessibilityLabel={label} …>`, which React Native Web outputs as `role="progressbar" aria-label="<label>"`; the onboarding `load.label` is `["Getting things ready", "מכינים הכול"]` (`apps/mobile/lib/v3/strings.ts` line 283); the sign-in screen's heading is the literal Hebrew text `התחבר לחשבון` (`apps/mobile/app/(auth)/sign-in.tsx` line 131). STEP 1 greps: `grep -n 'if (session.isLoading || !session.ready) {' 'apps/mobile/app/(auth)/onboarding.tsx'` → line 86; `grep -n 'accessibilityRole="progressbar" accessibilityLabel={label}' apps/mobile/components/v3/states.tsx` → line 13; `grep -n '"load.label": \["Getting things ready", "מכינים הכול"\]' apps/mobile/lib/v3/strings.ts` → line 283; `grep -n 'התחבר לחשבון' 'apps/mobile/app/(auth)/sign-in.tsx'` → line 131; `grep -n 'export function trackConsoleErrors' tests/e2e/helpers/harness.ts` → 1 line (TFV2-0000b). Behaviour table: signed out on `/onboarding` → today: redirect to `/(auth)/sign-in`; after this ticket: still that redirect, except when `__DEV__ && process.env.EXPO_PUBLIC_TEMPO_E2E === "1"`, where the route renders (`<Slot />`). Signed in → unchanged (onboarding, paywall and preview stay reachable; other `(auth)` routes redirect to onboarding or Today). `isLoading` → unchanged (`null`). No new copy. Readers: TFV2-0334.
   Spec code (write exactly this):
   ```ts
@@ -2117,7 +2117,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun install --frozen-lockfile` → exit 0; `bun test packages/mcp-cli/src/manifest.test.ts` → `2 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `bun install --frozen-lockfile` (DONE); the four outputs and the `bun.lock` diff pasted into the PR.
 - **DO NOT:** add any dependency besides the `typescript` devDependency; add a `bin` entry or a `src/index.ts` (TFV2-0359); change any other package, the root `package.json`, `turbo.json`, `tsconfig.base.json` or `packages/config/biome.json`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: CFG-043 / evidence: <DONE output> / changed: packages/mcp-cli/package.json, packages/mcp-cli/tsconfig.json, packages/mcp-cli/biome.json, bun.lock, packages/mcp-cli/src/manifest.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-043 / evidence: <DONE output> / changed: packages/mcp-cli/package.json, packages/mcp-cli/tsconfig.json, packages/mcp-cli/biome.json, bun.lock, packages/mcp-cli/src/manifest.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```json
   // packages/mcp-cli/package.json
@@ -2168,7 +2168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg044_byokKeys.test.ts` → `2 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg044_byokKeys.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** make either field required; store any part of the key beyond the hint (`byokKeyHint`: first 3 characters, "…", last 4); change or remove any existing field or index; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-044 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg044_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-044 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg044_byokKeys.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Two lines added to the existing `byokKeys` table (CFG-019) in `convex/schema.ts`:
 
 ```ts
@@ -2249,7 +2249,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/schema_cfg047_calendarEvents.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test convex/schema_cfg047_calendarEvents.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** change or remove any existing field or index; make an added field required; touch any other table; edit `convex/_generated/*` by hand; run `convex dev`, `convex deploy` or any `convex:*` script.
-- **REPORT:** `status / ticket: CFG-047 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg047_calendarEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-047 / evidence: <DONE output> / changed: convex/schema.ts, convex/schema_cfg047_calendarEvents.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Adds optional fields and one index on an existing table in `convex/schema.ts`.
 
 ```ts
@@ -2532,7 +2532,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test tests/unit/mobile_config_cfg052_notifications.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test tests/unit/mobile_config_cfg052_notifications.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** add Firebase, `google-services.json` or `android.googleServicesFile`; add APNs keys or any secret value; use a caret or tilde range; change any other dependency or plugin; run `eas build`.
-- **REPORT:** `status / ticket: CFG-052 / evidence: <DONE output> / changed: apps/mobile/package.json, bun.lock, apps/mobile/app.json, tests/unit/mobile_config_cfg052_notifications.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-052 / evidence: <DONE output> / changed: apps/mobile/package.json, bun.lock, apps/mobile/app.json, tests/unit/mobile_config_cfg052_notifications.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** `apps/mobile/package.json` `dependencies` gains `"expo-notifications": "0.32.16"`. `apps/mobile/app.json` `expo.plugins` gains `["expo-notifications", { "defaultChannel": "default" }]` (the channel id `TFV2-0425` creates as `ANDROID_CHANNEL_ID`). Readers: TFV2-0425, TFV2-0433c. Credentials the native push path needs (names only, set in EAS by Amit, never in the repo): the APNs key for iOS; FCM v1 credentials for Android (see TFV2-0427c OPEN).
 - **TESTS:**
   - Given `apps/mobile/package.json` / When parsed / Then `dependencies["expo-notifications"]` equals `"0.32.16"`.
@@ -2555,7 +2555,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test tests/unit/mobile_config_cfg053_camera.test.ts` → `3 pass` and `0 fail`; then `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the output of `bun test tests/unit/mobile_config_cfg053_camera.test.ts` (DONE); the `bun test` summary lines and the typecheck exit code, pasted into the PR.
 - **DO NOT:** request the microphone or audio recording; enable the barcode scanner; use a range; change other dependencies or plugins.
-- **REPORT:** `status / ticket: CFG-053 / evidence: <DONE output> / changed: apps/mobile/package.json, bun.lock, apps/mobile/app.json, tests/unit/mobile_config_cfg053_camera.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: CFG-053 / evidence: <DONE output> / changed: apps/mobile/package.json, bun.lock, apps/mobile/app.json, tests/unit/mobile_config_cfg053_camera.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** `dependencies` gains `"expo-camera": "17.0.10"`. `expo.plugins` gains `["expo-camera", { "cameraPermission": "Tempo uses the camera only when you take a photo for a note or scan a page.", "microphonePermission": false, "recordAudioAndroid": false }]`. The iOS system prompt shows this English string (the app's Hebrew copy is shown before the prompt by `CameraCapture`, TFV2-0430a). Readers: TFV2-0430b.
 - **TESTS:**
   - Given `apps/mobile/package.json` / Then `dependencies["expo-camera"]` equals `"17.0.10"`.
@@ -4783,7 +4783,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/broken-block.spec.ts --reporter=line` → `28 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/broken-block.spec.ts --reporter=line` (DONE); the Playwright summary line and the two exit codes pasted into the PR.
 - **DO NOT:** render JSON, the block id, a stack or an error code anywhere in the DOM; call `useQuery`/`useMutation`/`fetch` or import `convex/*`; invent a revert mutation; add a stylesheet or edit `apps/web/app/tempo.css`; add colours or raw px; edit `apps/web/lib/e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0046 / evidence: <DONE output> / changed: apps/web/components/blocks/BrokenBlock.tsx, apps/web/app/e2e/components/broken-block/page.tsx, tests/e2e/screens/broken-block.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0046 / evidence: <DONE output> / changed: apps/web/components/blocks/BrokenBlock.tsx, apps/web/app/e2e/components/broken-block/page.tsx, tests/e2e/screens/broken-block.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/blocks/BrokenBlock.tsx
@@ -4834,7 +4834,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/template-block.spec.ts --reporter=line` → `32 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/template-block.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** call `templates.applyToNote` or any Convex function from the component (the screen does); invent a dismiss mutation; put accent on "Not now" (one primary only); translate `template.name` or `adds` (they are user/template data, shown with `dir="auto"`); add a stylesheet or edit `tempo.css`; edit `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0047 / evidence: <DONE output> / changed: apps/web/components/blocks/TemplateBlock.tsx, apps/web/app/e2e/components/template-block/page.tsx, tests/e2e/screens/template-block.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0047 / evidence: <DONE output> / changed: apps/web/components/blocks/TemplateBlock.tsx, apps/web/app/e2e/components/template-block/page.tsx, tests/e2e/screens/template-block.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/blocks/TemplateBlock.tsx
@@ -4890,7 +4890,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` → `28 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/event-block.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** read the time zone or events from Convex inside the component (props only); use 12-hour times; colour-code kind without the word; translate titles, notes or places (user data, `dir="auto"`); add a stylesheet or edit `tempo.css`; create anything under `packages/ui` (TFV2-0083 is superseded); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0048 / evidence: <DONE output> / changed: apps/web/components/blocks/EventBlock.tsx, apps/web/app/e2e/components/event-block/page.tsx, tests/e2e/screens/event-block.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0048 / evidence: <DONE output> / changed: apps/web/components/blocks/EventBlock.tsx, apps/web/app/e2e/components/event-block/page.tsx, tests/e2e/screens/event-block.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/blocks/EventBlock.tsx
@@ -4946,7 +4946,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` → `32 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/habit-block.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** show a streak count, a number of days, a percentage or any shaming word (`convex/lib/shameWords.ts`); read `currentStreak`/`longestStreak`; call Convex from the component; translate the habit name or `when` (user data, `dir="auto"`); add a stylesheet or edit `tempo.css`; create anything under `packages/ui` (TFV2-0084 is superseded); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0049 / evidence: <DONE output> / changed: apps/web/components/blocks/HabitBlock.tsx, apps/web/app/e2e/components/habit-block/page.tsx, tests/e2e/screens/habit-block.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0049 / evidence: <DONE output> / changed: apps/web/components/blocks/HabitBlock.tsx, apps/web/app/e2e/components/habit-block/page.tsx, tests/e2e/screens/habit-block.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/blocks/HabitBlock.tsx
@@ -5006,7 +5006,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` → `32 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/nag-block.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** render an icon, emoji or any stock motivational line; change or translate the phrase, `about` or `at` (user data); use accent (no primary here); invent a `nags.respond` mutation or call Convex; add a stylesheet or edit `tempo.css`; create anything under `packages/ui` (TFV2-0085 is superseded); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0050 / evidence: <DONE output> / changed: apps/web/components/blocks/NagBlock.tsx, apps/web/app/e2e/components/nag-block/page.tsx, tests/e2e/screens/nag-block.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0050 / evidence: <DONE output> / changed: apps/web/components/blocks/NagBlock.tsx, apps/web/app/e2e/components/nag-block/page.tsx, tests/e2e/screens/nag-block.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/blocks/NagBlock.tsx
@@ -5065,7 +5065,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/next-up-card.spec.ts --reporter=line` → `28 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0; `git diff --stat apps/web/components/today/NextUpCard.tsx` → empty.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/next-up-card.spec.ts --reporter=line` (DONE); the Playwright summary, both exit codes and the empty diff output pasted into the PR.
 - **DO NOT:** edit `NextUpCard.tsx`, `apps/web/lib/next-up.ts` or `apps/web/lib/i18n.ts`; wrap the harness in `ShellSlots` or any provider beyond the TFV2-0023b frame; call Convex; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0051 / evidence: <DONE output> / changed: apps/web/app/e2e/components/next-up-card/page.tsx, tests/e2e/screens/next-up-card.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0051 / evidence: <DONE output> / changed: apps/web/app/e2e/components/next-up-card/page.tsx, tests/e2e/screens/next-up-card.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Existing component (code truth, not to change):
   ```tsx
   // apps/web/components/today/NextUpCard.tsx ("use client")
@@ -5106,7 +5106,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/auth-card.spec.ts --reporter=line` → `24 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/auth-card.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** render the app shell (`TempoShell`, rail, topbar, tab bar) or the `tp-auth` container inside the component (the screen owns `<main className="tp-auth">`); translate "Tempo"; edit `SignInForm.tsx`/`SignUpForm.tsx`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0052 / evidence: <DONE output> / changed: apps/web/components/auth/AuthCard.tsx, apps/web/app/e2e/components/auth-card/page.tsx, tests/e2e/screens/auth-card.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0052 / evidence: <DONE output> / changed: apps/web/components/auth/AuthCard.tsx, apps/web/app/e2e/components/auth-card/page.tsx, tests/e2e/screens/auth-card.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/AuthCard.tsx ("use client")
@@ -5148,7 +5148,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/email-field.spec.ts --reporter=line` → `36 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/email-field.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** add a dependency (no Zod import here; the pattern is a local `RegExp`); validate on every keystroke inside the component (the form decides when `invalid` is true); flip the input to RTL in Hebrew; import a shared email schema from `convex/`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0053 / evidence: <DONE output> / changed: apps/web/components/auth/EmailField.tsx, apps/web/app/e2e/components/email-field/page.tsx, tests/e2e/screens/email-field.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0053 / evidence: <DONE output> / changed: apps/web/components/auth/EmailField.tsx, apps/web/app/e2e/components/email-field/page.tsx, tests/e2e/screens/email-field.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/EmailField.tsx
@@ -5204,7 +5204,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/guest-button.spec.ts --reporter=line` → `20 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/guest-button.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** read any environment flag inside the component (the screen decides whether to render it); use `tp-btn--primary` or accent; invent a guest auth mutation; add a stylesheet or edit `tempo.css`; touch `convex/**`, `convex/auth*`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0054 / evidence: <DONE output> / changed: apps/web/components/auth/GuestButton.tsx, apps/web/app/e2e/components/guest-button/page.tsx, tests/e2e/screens/guest-button.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0054 / evidence: <DONE output> / changed: apps/web/components/auth/GuestButton.tsx, apps/web/app/e2e/components/guest-button/page.tsx, tests/e2e/screens/guest-button.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/GuestButton.tsx
@@ -5249,7 +5249,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/divider-text.spec.ts --reporter=line` → `16 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/divider-text.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** draw the lines with extra elements or `<hr>` (tempo.css draws them); add `role="separator"` (the word is the content); add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0055 / evidence: <DONE output> / changed: apps/web/components/auth/DividerText.tsx, apps/web/app/e2e/components/divider-text/page.tsx, tests/e2e/screens/divider-text.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0055 / evidence: <DONE output> / changed: apps/web/components/auth/DividerText.tsx, apps/web/app/e2e/components/divider-text/page.tsx, tests/e2e/screens/divider-text.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/DividerText.tsx
@@ -5284,7 +5284,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/status-panel.spec.ts --reporter=line` → `24 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/status-panel.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** add an illustration, image or second icon; hard-code any title/body copy (the screen passes it); add tones beyond `neutral` and `done` (tempo.css styles only these); add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0056 / evidence: <DONE output> / changed: apps/web/components/auth/StatusPanel.tsx, apps/web/app/e2e/components/status-panel/page.tsx, tests/e2e/screens/status-panel.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0056 / evidence: <DONE output> / changed: apps/web/components/auth/StatusPanel.tsx, apps/web/app/e2e/components/status-panel/page.tsx, tests/e2e/screens/status-panel.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/StatusPanel.tsx ("use client")
@@ -5330,7 +5330,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sign-in.spec.ts --reporter=line` → `48 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/sign-in.spec.ts --reporter=line` (DONE); the Playwright summary line and both exit codes pasted into the PR.
 - **DO NOT:** add a password or passkey field; render GuestButton or DividerText; invent `auth.sendMagicLink` or `auth.continueAsGuest`; edit `SignInForm.tsx`, `SignUpForm.tsx`, `rootEntry.ts`, `proxy.ts` or `convex/**` (incl. `convex/auth*`); rename the input id `sign-in-email` or the EN button text `Send magic link`; say whether an email has an account; add a stylesheet or edit `tempo.css`; touch `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0057 / evidence: <DONE output> / changed: apps/web/app/sign-in/page.tsx, apps/web/lib/e2e/fixtures/sign-in.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/sign-in.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0057 / evidence: <DONE output> / changed: apps/web/app/sign-in/page.tsx, apps/web/lib/e2e/fixtures/sign-in.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/sign-in.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/sign-in/page.tsx
@@ -5430,7 +5430,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test apps/web/lib/rootEntry.test.ts` → `9 pass`, `0 fail`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the output of `bun test apps/web/lib/rootEntry.test.ts` (DONE); the `bun test` summary and the typecheck exit code pasted into the PR.
 - **DO NOT:** add any other route (`/approval-pending` belongs to OPEN TFV2-0060a); change `decideEntryRedirect`; edit `proxy.ts` or `e2eWiringRoutes.ts`; delete or loosen an existing assertion other than adding the one list entry; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0059a / evidence: <DONE output> / changed: apps/web/lib/rootEntry.ts, apps/web/lib/rootEntry.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0059a / evidence: <DONE output> / changed: apps/web/lib/rootEntry.ts, apps/web/lib/rootEntry.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/lib/rootEntry.ts (after)
@@ -5463,7 +5463,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/link-sent.spec.ts --reporter=line` → `44 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/link-sent.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** say whether the email has an account or is approved; add the "A link only arrives once your request is approved" line; show an illustration (StatusPanel has one icon); invent `auth.sendMagicLink`; use the `(auth)` route group; edit `rootEntry.ts`, `proxy.ts`, `convex/**`, `convex/auth*`, `.github/**`, `.env*`; add a stylesheet or edit `tempo.css`.
-- **REPORT:** `status / ticket: TFV2-0059b / evidence: <DONE output> / changed: apps/web/app/link-sent/page.tsx, apps/web/lib/e2e/fixtures/link-sent.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/link-sent.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0059b / evidence: <DONE output> / changed: apps/web/app/link-sent/page.tsx, apps/web/lib/e2e/fixtures/link-sent.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/link-sent.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/link-sent/page.tsx
@@ -5591,7 +5591,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test apps/web/components/onboarding/OnboardingFlow.test.tsx` → `18 pass`, `0 fail`; `bun test tests/unit/releaseOnboardingGate.test.tsx` → `14 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `bun test apps/web/components/onboarding/OnboardingFlow.test.tsx` (DONE); both `bun test` summaries and both exit codes pasted into the PR.
 - **DO NOT:** make any prop required (both existing render files pass none); change the live (no-fixture) behaviour, step order, save order or the `?step=` rule; edit `NameStep.tsx`, `apps/web/lib/i18n*.ts`, `apps/web/lib/settings/onboarding.ts`, `tests/unit/releaseOnboardingGate.test.tsx` or any existing test case; call a mutation or `router.replace` when a fixture is given (except `router.push("/today")` after a successful finish, as live); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0061a / evidence: <DONE output> / changed: apps/web/components/onboarding/OnboardingFlow.tsx, apps/web/components/onboarding/OnboardingFlow.test.tsx / unknowns / notes for ticket sync` (list the remaining non-neutral Hebrew keys under notes: `skip` "דלגו לדף", `set.onb.loading` "טוען את ההגדרה שלך", `set.profile.errorBody` "נסי שוב", `set.onb.nameHelp` "אליך").
+- **REPORT:** `status / ticket: TFV2-0061a / evidence: <DONE output> / changed: apps/web/components/onboarding/OnboardingFlow.tsx, apps/web/components/onboarding/OnboardingFlow.test.tsx / unknowns / notes for ticket sync` (list the remaining non-neutral Hebrew keys under notes: `skip` "דלגו לדף", `set.onb.loading` "טוען את ההגדרה שלך", `set.profile.errorBody` "נסי שוב", `set.onb.nameHelp` "אליך"). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/onboarding/OnboardingFlow.tsx (line 1 stays "use client"; it already imports `useLocale` (line 6) and `type Lang` (line 13))
@@ -5639,7 +5639,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/onboarding.spec.ts --reporter=line` → `48 passed`, no failures; `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/onboarding.spec.ts --reporter=line` (DONE); both Playwright summaries and both exit codes pasted into the PR.
 - **DO NOT:** call Convex from `page.tsx`; edit `OnboardingFlow.tsx`, `NameStep.tsx`, `BareScreen`, `apps/web/lib/i18n*.ts`; add a second `/onboarding` line; remove `data-testid="onboarding-route"`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0061b / evidence: <DONE output> / changed: apps/web/app/(bare)/onboarding/page.tsx, apps/web/lib/e2e/fixtures/onboarding.ts, tests/e2e/screens/onboarding.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0061b / evidence: <DONE output> / changed: apps/web/app/(bare)/onboarding/page.tsx, apps/web/lib/e2e/fixtures/onboarding.ts, tests/e2e/screens/onboarding.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/(bare)/onboarding/page.tsx
@@ -5696,7 +5696,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-editor-view.spec.ts --reporter=line` → `32 passed`, no failures; `bun test apps/web/components/notes/NotesScreen.test.tsx` → `14 pass`, `0 fail`; `bun test apps/web/lib/editor/today-live-preview.test.ts` → `13 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/page-editor-view.spec.ts --reporter=line` (DONE); the Playwright summary, both `bun test` summaries and both exit codes pasted into the PR.
 - **DO NOT:** change autosave, delete/undo, pin, the page menu, the editor, the wiki picker or any other markup; edit `Backlinks.tsx`; rename `PageEditorView`, `NotePage` or their files (two tests read these files by path); edit `NotesScreen.test.tsx`, `today-live-preview.test.ts`, `DailyPage.tsx` or `apps/web/lib/i18n*.ts`; import `convex/*` in the harness; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0062a / evidence: <DONE output> / changed: apps/web/components/notes/PageEditorView.tsx, apps/web/components/notes/NotesScreen.tsx, apps/web/app/e2e/components/page-editor-view/page.tsx, tests/e2e/screens/page-editor-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0062a / evidence: <DONE output> / changed: apps/web/components/notes/PageEditorView.tsx, apps/web/components/notes/NotesScreen.tsx, apps/web/app/e2e/components/page-editor-view/page.tsx, tests/e2e/screens/page-editor-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/notes/PageEditorView.tsx ("use client")
@@ -5746,7 +5746,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-id.spec.ts --reporter=line` → `44 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/notes-id.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** call `useQuery`/`useMutation` in `page.tsx`; switch the save path to `notes.save`/`notes.patchBlock`; edit `NotesScreen.tsx`, `PageEditorView.tsx`, `NoteNotFound.tsx`, `notes-save.spec.ts`, `convex/**`; show JSON, ids or error codes; add a stylesheet or edit `tempo.css`; touch `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0062b / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/[id]/page.tsx, apps/web/lib/e2e/fixtures/notes-id.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/notes-id.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0062b / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/[id]/page.tsx, apps/web/lib/e2e/fixtures/notes-id.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/notes-id.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/[id]/page.tsx
@@ -5806,7 +5806,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-list.spec.ts --reporter=line` → `40 passed`, no failures; `bun test apps/web/components/notes-pages/filterNotes.test.ts` → `2 pass`, `0 fail`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/notes-list.spec.ts --reporter=line` (DONE); the Playwright summary, the `bun test` summary and both exit codes pasted into the PR.
 - **DO NOT:** change the order or wording of existing rows, buttons, labels or ids (`nt-new-title`, `nt-new-type`, `nt-search`; the storage-state specs `notes.spec.ts`/`notes-save.spec.ts` use them); edit `PeriodFilter.tsx`, `filterNotes.ts`, `components/notes/*`, `apps/web/lib/i18n*.ts`; add folders or sort (no folder data exists); import `convex/*` in `NotesList.tsx` or the harness; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0063a / evidence: <DONE output> / changed: apps/web/components/notes-pages/NotesList.tsx, apps/web/app/(tempo)/notes/page.tsx, apps/web/app/e2e/components/notes-list/page.tsx, tests/e2e/screens/notes-list.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0063a / evidence: <DONE output> / changed: apps/web/components/notes-pages/NotesList.tsx, apps/web/app/(tempo)/notes/page.tsx, apps/web/app/e2e/components/notes-list/page.tsx, tests/e2e/screens/notes-list.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/notes-pages/NotesList.tsx (line 1 stays "use client";)
@@ -5868,7 +5868,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes.spec.ts --reporter=line` → `52 passed`, `1 skipped` (the storage-state test), no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/notes.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** edit `NotesList.tsx`, `PeriodFilter.tsx`, the existing test in `notes.spec.ts`, `sign-out.spec.ts`, `convex/**`; add folders or sort; call Convex in forced mode; add a stylesheet or edit `tempo.css`; touch `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0063b / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/page.tsx, apps/web/lib/e2e/fixtures/notes.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/notes.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0063b / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/page.tsx, apps/web/lib/e2e/fixtures/notes.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/notes.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/page.tsx
@@ -5928,7 +5928,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-new.spec.ts --reporter=line` → `52 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/notes-new.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** invent `templates.apply`, `templates.dismissOffer` or `templates.createFromPage`; create a note before the person chooses; translate template names, descriptions or section names (they are template data, shown with `dir="auto"`); edit `TemplateBlock.tsx`, `convex/**`, `NotesList.tsx`; add a stylesheet or edit `tempo.css`; touch `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0064 / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/new/page.tsx, apps/web/lib/e2e/fixtures/notes-new.ts, tests/e2e/screens/notes-new.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0064 / evidence: <DONE output> / changed: apps/web/app/(tempo)/notes/new/page.tsx, apps/web/lib/e2e/fixtures/notes-new.ts, tests/e2e/screens/notes-new.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/new/page.tsx
@@ -6019,7 +6019,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/tasks.test.ts` → `6 pass`, `0 fail` (the file is new: these are its only tests).
 - **EVIDENCE:** the summary of `bun test convex/tasks.test.ts` (DONE) pasted into the PR, plus the list of the 6 test names.
 - **DO NOT:** change `tasks.remove` or any other code in `convex/tasks.ts`; hard-delete a row; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0065a / evidence: <DONE output> / changed: convex/tasks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0065a / evidence: <DONE output> / changed: convex/tasks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Existing public mutation in `convex/tasks.ts` (types shown are what Convex infers; the code does not repeat them):
   ```ts
   export const remove = mutation({
@@ -6053,7 +6053,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/tasks.test.ts` → `13 pass`, `0 fail` (6 from TFV2-0065a + 7 new).
 - **EVIDENCE:** the summary of `bun test convex/tasks.test.ts` (DONE) pasted into the PR, plus the 7 test names.
 - **DO NOT:** change `tasks.restore`, `GRACE_MS` or `UNDO_WINDOW_MS`; edit the `TFV2-0065a` block; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0065b / evidence: <DONE output> / changed: convex/tasks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0065b / evidence: <DONE output> / changed: convex/tasks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const restore = mutation({
@@ -6088,7 +6088,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/dayPlans.test.ts` → `13 pass`, `0 fail` (8 existing + 5 new; the existing `dayPlans.listCarryOver` test still passes).
 - **EVIDENCE:** the summary of `bun test convex/dayPlans.test.ts` (DONE) pasted into the PR with the diff of `convex/dayPlans.ts`.
 - **DO NOT:** change `getForDate`, `upsert`, `commit`, `moveTaskToDay`, `findLivePlan` or `assertOwnedTasks`; change the filter (`deletedAt === undefined` and status `todo`/`in_progress`) or the ascending order; edit existing tests in the file; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0065c / evidence: <DONE output> / changed: convex/dayPlans.ts, convex/dayPlans.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0065c / evidence: <DONE output> / changed: convex/dayPlans.ts, convex/dayPlans.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_CARRY_OVER = 50;
@@ -6124,7 +6124,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/dayPlans.test.ts` → `19 pass`, `0 fail` (13 after TFV2-0065c + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/dayPlans.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `moveTaskToDay` (no status change, no new checks); edit other blocks in the test file; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0065d / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0065d / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const moveTaskToDay = mutation({
@@ -6158,7 +6158,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/calendar_events.test.ts` → `10 pass`, `0 fail` (the file is new); then `bun test convex/softDelete.test.ts` → `9 pass`, `0 fail`.
 - **EVIDENCE:** the summaries of `bun test convex/calendar_events.test.ts` (DONE) and `bun test convex/softDelete.test.ts`, and the diff of `convex/calendar_events.ts`, pasted into the PR.
 - **DO NOT:** change `create`, `remove`, `restore`, `listInRange` or the MCP callers in `convex/mcpTools.ts`; add a duration minimum or maximum; hard-delete; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0066a / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0066a / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const EVENT_END_BEFORE_START = "Pick an end time after the start time.";
@@ -6232,7 +6232,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/calendar_events.test.ts` → `15 pass`, `0 fail` (10 from TFV2-0066a + 5 new); then `bun test convex/mcp.test.ts` → `0 fail` and the same `<B> pass` as the STEP 1 baseline run (CONVENTIONS §1 regression rule; B is 12 today and grows only by tests other tickets add: TFV2-0354b, TFV2-0355, TFV2-0356, TFV2-0357 and TFV2-0360a–d add tests to this file and sit outside this ticket's `Depends` chain, so B is read in STEP 1, never guessed) (regression check only, MCP writes call `createEventForUser`; this ticket adds no test there).
 - **EVIDENCE:** the summaries of `bun test convex/calendar_events.test.ts` (DONE) and `bun test convex/mcp.test.ts`, and the diff, pasted into the PR.
 - **DO NOT:** change `update`, `remove`, `restore`, `listInRange` or `convex/mcpTools.ts`; edit the `TFV2-0066a` block; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0066b / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0066b / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const create = mutation({
@@ -6290,7 +6290,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/calendar_events.test.ts` → `21 pass`, `0 fail` (15 after TFV2-0066b + 6 new); then `bun test convex/mcp.test.ts` → `0 fail` and the same `<B> pass` as the STEP 1 baseline run (CONVENTIONS §1 regression rule; B is 12 today and grows only by tests other tickets add: TFV2-0354b, TFV2-0355, TFV2-0356, TFV2-0357 and TFV2-0360a–d add tests to this file and sit outside this ticket's `Depends` chain, so B is read in STEP 1, never guessed) (regression check only; this ticket adds no test there).
 - **EVIDENCE:** the summaries of `bun test convex/calendar_events.test.ts` (DONE) and `bun test convex/mcp.test.ts`, and the diff, pasted into the PR.
 - **DO NOT:** change the range checks, their order, `maxCalendarRangeMs`, or any other function; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0066c / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0066c / evidence: <DONE output> / changed: convex/calendar_events.ts, convex/calendar_events.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_EVENTS_IN_RANGE = 500;
@@ -6325,7 +6325,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/calendar_events.test.ts` → `27 pass`, `0 fail` (21 after TFV2-0066c + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/calendar_events.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `remove` or any code in `convex/calendar_events.ts`; hard-delete; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0066d / evidence: <DONE output> / changed: convex/calendar_events.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0066d / evidence: <DONE output> / changed: convex/calendar_events.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remove = mutation({
@@ -6359,7 +6359,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/calendar_events.test.ts` → `34 pass`, `0 fail` (27 after TFV2-0066d + 7 new).
 - **EVIDENCE:** the summary of `bun test convex/calendar_events.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `restore` or any code in `convex/calendar_events.ts`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0066e / evidence: <DONE output> / changed: convex/calendar_events.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0066e / evidence: <DONE output> / changed: convex/calendar_events.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const restore = mutation({
@@ -6394,7 +6394,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/habitCheckIns.test.ts` → `114 pass`, `0 fail` (103 existing + 11 new; every existing case still passes).
 - **EVIDENCE:** the summary of `bun test convex/habitCheckIns.test.ts` (DONE) pasted into the PR with the diff of `convex/habitCheckIns.ts`.
 - **DO NOT:** change `undo`, `listForDate`, `listForHabit`, `resolveAsOfLocalDate`, `refreshHabitCache`'s maths or `computeHabitCheckInStreaks`; add a future-date or past-range rejection; expose a streak in any new field; edit existing test cases; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0067a / evidence: <DONE output> / changed: convex/habitCheckIns.ts, convex/habitCheckIns.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0067a / evidence: <DONE output> / changed: convex/habitCheckIns.ts, convex/habitCheckIns.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_HABIT_CHECKINS_READ = 3660;
@@ -6455,7 +6455,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/habitCheckIns.test.ts` → `124 pass`, `0 fail` (114 after TFV2-0067a + 10 new).
 - **EVIDENCE:** the summary of `bun test convex/habitCheckIns.test.ts` (DONE) pasted into the PR with the one-line diff.
 - **DO NOT:** hard-delete a check-in; change `check`, `resolveAsOfLocalDate` or the cache maths; edit existing test cases or the `TFV2-0067a` block; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0067b / evidence: <DONE output> / changed: convex/habitCheckIns.ts, convex/habitCheckIns.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0067b / evidence: <DONE output> / changed: convex/habitCheckIns.ts, convex/habitCheckIns.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const undo = mutation({
@@ -6493,7 +6493,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/habits.test.ts` → `11 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/habits.test.ts` (DONE) pasted into the PR with the diff of `convex/habits.ts`.
 - **DO NOT:** return a streak or any count in `listDays`; read `userPreferences` (the caller passes `weekStartsOn`); default `localDate`; change any existing function in `convex/habits.ts` or `convex/habitCheckIns.ts`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0068a / evidence: <DONE output> / changed: convex/habits.ts, convex/habits.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0068a / evidence: <DONE output> / changed: convex/habits.ts, convex/habits.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   /** Weeks on the habit detail grid (APP-FLOW §5 item 4). */
@@ -6584,7 +6584,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/habits.test.ts` → `20 pass`, `0 fail` (11 from TFV2-0068a + 9 new).
 - **EVIDENCE:** the summary of `bun test convex/habits.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** add a streak, best run or percentage field; change `listDays` or its helpers; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0068b / evidence: <DONE output> / changed: convex/habits.ts, convex/habits.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0068b / evidence: <DONE output> / changed: convex/habits.ts, convex/habits.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const summary = query({
@@ -6640,7 +6640,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/goals.test.ts` → `6 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/goals.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** change `create`, `update` or `remove`; change the sort; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0069a / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0069a / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   const goalStatusValidator = v.union(v.literal("active"), v.literal("completed"), v.literal("archived"));
@@ -6690,7 +6690,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/goals.test.ts` → `11 pass`, `0 fail` (6 + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/goals.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** throw for a missing, foreign or deleted goal; change other functions; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0069d / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0069d / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const get = query({
@@ -6730,7 +6730,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/goals.test.ts` → `16 pass`, `0 fail` (11 + 5 new); then `bun test convex/activity.test.ts` → `0 fail` and the same `<B> pass` as the STEP 1 baseline run (CONVENTIONS §1 regression rule; B is 2 today and grows only by tests other tickets add: TFV2-0081a and TFV2-0081b add tests to this file and sit outside this ticket's `Depends` chain, so B is read in STEP 1, never guessed) (regression check only: it seeds goals; this ticket adds no test there).
 - **EVIDENCE:** the summaries of `bun test convex/goals.test.ts` (DONE) and `bun test convex/activity.test.ts`, and the diff, pasted into the PR.
 - **DO NOT:** auto-create projects or tasks; call a model; change `update`'s title handling (TFV2-0069f does); edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0069e / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0069e / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   /** Longest goal title, in UTF-16 code units after trim (`String.prototype.length`). */
@@ -6775,7 +6775,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/goals.test.ts` → `24 pass`, `0 fail` (16 + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/goals.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** trim or otherwise change how `description` is stored (a string is stored as given, `null` clears it); change the clamp; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0069f / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0069f / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const update = mutation({
@@ -6818,7 +6818,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/goals.test.ts` → `29 pass`, `0 fail` (24 + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/goals.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** switch to a soft delete or add a restore (not in this ticket); delete linked tasks; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0069g / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0069g / evidence: <DONE output> / changed: convex/goals.ts, convex/goals.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remove = mutation({
@@ -7028,7 +7028,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/dayPlans.test.ts` → `25 pass`, `0 fail` (19 + 6 new); then `bun test convex/mcp.test.ts` → `12 pass`, `0 fail` (MCP reads call `getDayPlanForUser`; the file's 12 tests on `integration`, and no ticket in this ticket's `Depends` chain adds to it).
 - **EVIDENCE:** the summaries of `bun test convex/dayPlans.test.ts` (DONE) and `bun test convex/mcp.test.ts`, and the diff, pasted into the PR.
 - **DO NOT:** change `assertLocalDate`, `upsert`, `commit`, `listCarryOver` or `moveTaskToDay`; edit earlier blocks in the test file; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0070a / evidence: <DONE output> / changed: convex/dayPlans.ts, convex/dayPlans.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0070a / evidence: <DONE output> / changed: convex/dayPlans.ts, convex/dayPlans.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   async function findLivePlan(ctx: QueryCtx | MutationCtx, userId: Id<"users">, localDate: string): Promise<Doc<"dayPlans"> | null> {
@@ -7070,7 +7070,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/dayPlans.test.ts` → `33 pass`, `0 fail` (25 + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/dayPlans.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `upsert` or its helpers; accept energy words other than `low|medium|high`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0070b / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0070b / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const upsert = mutation({
@@ -7112,7 +7112,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/dayPlans.test.ts` → `39 pass`, `0 fail` (33 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/dayPlans.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `commit`; add an uncommit path; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0070c / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0070c / evidence: <DONE output> / changed: convex/dayPlans.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const commit = mutation({
@@ -7146,7 +7146,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/timeBlocks.test.ts` → `5 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/timeBlocks.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** change the sort, `create`, `update`, `setStatus` or `remove`; add overlap checking; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0071a / evidence: <DONE output> / changed: convex/timeBlocks.ts, convex/timeBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0071a / evidence: <DONE output> / changed: convex/timeBlocks.ts, convex/timeBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_TIME_BLOCKS_PER_DAY = 200;
@@ -7180,7 +7180,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/timeBlocks.test.ts` → `16 pass`, `0 fail` (5 + 11 new).
 - **EVIDENCE:** the summary of `bun test convex/timeBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `create` or its helpers; add overlap checking; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0071b / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0071b / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const create = mutation({
@@ -7229,7 +7229,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/timeBlocks.test.ts` → `25 pass`, `0 fail` (16 + 9 new).
 - **EVIDENCE:** the summary of `bun test convex/timeBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `update` (it does not change `status`, `localDate`, `taskId` or `habitId`); edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0071c / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0071c / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const update = mutation({
@@ -7274,7 +7274,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/timeBlocks.test.ts` → `31 pass`, `0 fail` (25 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/timeBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `setStatus`; add any status word beyond `planned|done|skipped`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0071d / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0071d / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const setStatus = mutation({
@@ -7308,7 +7308,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/timeBlocks.test.ts` → `37 pass`, `0 fail` (31 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/timeBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `remove`; hard-delete; add a restore (none exists for time blocks today); edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0071e / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0071e / evidence: <DONE output> / changed: convex/timeBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remove = mutation({
@@ -7342,7 +7342,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/focusBlocks.test.ts` → `15 pass`, `0 fail` (7 existing + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/focusBlocks.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** persist pause or resume as rows; round `durationMs`; change the limits' values or `create`'s logic; edit the existing `focusBlocks` or `analytics.insightsSummary` blocks; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0072a / evidence: <DONE output> / changed: convex/focusBlocks.ts, convex/focusBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0072a / evidence: <DONE output> / changed: convex/focusBlocks.ts, convex/focusBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_DURATION_MS = 8 * 60 * 60 * 1000; // 28800000
@@ -7380,7 +7380,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/focusBlocks.test.ts` → `21 pass`, `0 fail` (15 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/focusBlocks.test.ts` (DONE) pasted into the PR with the diff.
 - **DO NOT:** change the range checks, their order, `MAX_RANGE_MS`'s value or the newest-first order; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0072b / evidence: <DONE output> / changed: convex/focusBlocks.ts, convex/focusBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0072b / evidence: <DONE output> / changed: convex/focusBlocks.ts, convex/focusBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const MAX_RANGE_MS = 93 * 24 * 60 * 60 * 1000; // 8035200000
@@ -7416,7 +7416,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/focusBlocks.test.ts` → `27 pass`, `0 fail` (21 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/focusBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `remove`; hard-delete; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0072c / evidence: <DONE output> / changed: convex/focusBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0072c / evidence: <DONE output> / changed: convex/focusBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remove = mutation({
@@ -7450,7 +7450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/focusBlocks.test.ts` → `34 pass`, `0 fail` (27 + 7 new).
 - **EVIDENCE:** the summary of `bun test convex/focusBlocks.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `restore`; edit `convex/schema.ts`, `convex/lib/testFakeCtx.ts`, `convex/_generated/*`, any other test file or any other exported function's behaviour; add a dependency; run `convex dev`, `convex deploy` or any `convex:*` script; touch `.github/**` or `.env*`.
-- **REPORT:** `status / ticket: TFV2-0072d / evidence: <DONE output> / changed: convex/focusBlocks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0072d / evidence: <DONE output> / changed: convex/focusBlocks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const restore = mutation({
@@ -7485,7 +7485,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/brainDumpInput.test.ts` → `6 pass`, `0 fail`.
 - **EVIDENCE:** the output of `bun test convex/lib/brainDumpInput.test.ts` (DONE); the `bun test` summary lines pasted into the PR, plus `git diff --stat` showing only the test file changed.
 - **DO NOT:** edit `convex/lib/brainDumpInput.ts`; change or delete an existing test; persist or log the input anywhere; touch `convex/brain_dump.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0073a / evidence: <DONE output> / changed: convex/lib/brainDumpInput.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0073a / evidence: <DONE output> / changed: convex/lib/brainDumpInput.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure function, no Convex context, no auth (callers authenticate). Exact code under test:
   ```ts
   export const BRAIN_DUMP_MAX_RAW_CHARS = 12_000;
@@ -7530,7 +7530,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/brainDumpParse.test.ts` → `11 pass`, `0 fail` (the file is new); then `bun test convex/brain_dump.test.ts` → `0 fail` and the same `<B> pass` as the STEP 1 baseline run (CONVENTIONS §1 regression rule; B is 11 today and grows only by tests other tickets add: TFV2-0074a adds tests to this file and sits outside this ticket's `Depends` chain, so B is read in STEP 1, never guessed) (regression check only: its 11 parse tests, plus any TFV2-0074a/b cases already merged, still pass; this ticket adds no test there).
 - **EVIDENCE:** the summaries of `bun test convex/lib/brainDumpParse.test.ts` (DONE) and `bun test convex/brain_dump.test.ts`, and the diff of `convex/lib/brainDumpParse.ts`, pasted into the PR.
 - **DO NOT:** change any thrown message, the control-character regex, the order of checks, or the `"..."` suffix; export `sanitizeText` or `isUrgency`; edit `convex/brain_dump.ts` or `convex/brain_dump.test.ts`; call a model; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0073b / evidence: <DONE output> / changed: convex/lib/brainDumpParse.ts, convex/lib/brainDumpParse.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0073b / evidence: <DONE output> / changed: convex/lib/brainDumpParse.ts, convex/lib/brainDumpParse.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure function, no Convex context, no auth.
   ```ts
   export type BrainDumpUrgency = "now" | "soon" | "later";
@@ -7574,7 +7574,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/brain_dump.test.ts` → `18 pass`, `0 fail` (11 existing parse tests + 7 new).
 - **EVIDENCE:** the summary of `bun test convex/brain_dump.test.ts` (DONE) pasted into the PR with the 2-line diff of `convex/brain_dump.ts`.
 - **DO NOT:** change `acceptPlanForUser`'s logic or messages, `PRIORITY_BY_URGENCY`, `prioritize` or `planBrainDump`; store the raw dump or the plan summary; set `dueAt` or any field not listed in SPEC; touch the existing parse tests, `convex/tasks.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0074a / evidence: <DONE output> / changed: convex/brain_dump.ts, convex/brain_dump.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0074a / evidence: <DONE output> / changed: convex/brain_dump.ts, convex/brain_dump.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const ACCEPT_MAX_ITEMS = 6;
@@ -7638,7 +7638,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/brain_dump.test.ts` → `29 pass`, `0 fail` (18 after TFV2-0074a + 11 new).
 - **EVIDENCE:** the summary of `bun test convex/brain_dump.test.ts` (DONE) pasted into the PR with the diff of `convex/brain_dump.ts` (the `returns` block only).
 - **DO NOT:** call the real DeepInfra API or read a real key (the test key is the literal `"test-key-not-real"` and `fetch` is stubbed in every case); change `SYSTEM_PROMPT`, `planBrainDump`, any message, the model, or `convex/lib/ai_router.ts`; write any row or log the raw text; edit `acceptPlan` tests; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0074b / evidence: <DONE output> / changed: convex/brain_dump.ts, convex/brain_dump.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0074b / evidence: <DONE output> / changed: convex/brain_dump.ts, convex/brain_dump.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const prioritize = action({
@@ -7703,7 +7703,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notes_period.test.ts` → `18 pass`, `0 fail` (12 existing + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/notes_period.test.ts` (DONE) pasted into the PR with the diff of `convex/notes.ts` (the `returns` block only).
 - **DO NOT:** change the clamp, the index, the ordering, `PERIOD_LIST_MAX`, `pageMetaTags` or any other function in `convex/notes.ts`; create `convex/journal.ts` or a journal table; return note bodies; change existing tests or the file's `makeCtx`; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0075a / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0075a / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const PERIOD_LIST_MAX = 10;
@@ -7745,7 +7745,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notes_period.test.ts` → `22 pass`, `0 fail` (18 after TFV2-0075a + 4 new).
 - **EVIDENCE:** the summary of `bun test convex/notes_period.test.ts` (DONE) pasted into the PR with the one-line diff of `convex/notes.ts`.
 - **DO NOT:** return the body or any field besides `_id` and `title`; throw for a bad date (it returns `null`); change `isPeriodDate` or `findPeriodPage`; edit other describe blocks; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0075b / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0075b / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const getPeriodPage = query({
@@ -7784,7 +7784,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notes_period.test.ts` → `28 pass`, `0 fail` (22 after TFV2-0075b + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/notes_period.test.ts` (DONE) pasted into the PR with the one-line diff of `convex/notes.ts`.
 - **DO NOT:** change the check order, the three messages, the limits or the idempotency rule; overwrite an existing page's body (this function never updates); edit other describe blocks; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0075c / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0075c / evidence: <DONE output> / changed: convex/notes.ts, convex/notes_period.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const PERIOD_TITLE_MAX = 200;
@@ -8266,7 +8266,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/nagPhrase.test.ts` → `12 pass`, `0 fail` (7 existing + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/lib/nagPhrase.test.ts` (DONE) pasted into the PR with `git diff --stat` (test file only).
 - **DO NOT:** edit `convex/lib/nagPhrase.ts`; change existing tests; touch `convex/nags.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077a / evidence: <DONE output> / changed: convex/lib/nagPhrase.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077a / evidence: <DONE output> / changed: convex/lib/nagPhrase.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure function, no Convex context, no auth.
   ```ts
   export const NAG_PHRASE_MAX = 140;
@@ -8305,7 +8305,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/nagPhrase.test.ts` → `17 pass`, `0 fail` (12 after TFV2-0077a + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/lib/nagPhrase.test.ts` (DONE) pasted into the PR with the diff of `convex/lib/nagPhrase.ts`.
 - **DO NOT:** make `parseProposals` throw; change `validatePhrase`; change the dedupe rule; touch `convex/nags.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077b / evidence: <DONE output> / changed: convex/lib/nagPhrase.ts, convex/lib/nagPhrase.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077b / evidence: <DONE output> / changed: convex/lib/nagPhrase.ts, convex/lib/nagPhrase.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NAG_PROPOSALS_MAX = 3;
@@ -8339,7 +8339,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `3 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR with the diff of `convex/nags.ts`.
 - **DO NOT:** change `nagValidator`, `toNag` or any other function; return `userId` or `deletedAt`; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077c / evidence: <DONE output> / changed: convex/nags.ts, convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077c / evidence: <DONE output> / changed: convex/nags.ts, convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NAG_LIST_MAX = 100;
@@ -8381,7 +8381,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `7 pass`, `0 fail` (3 + 4 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR with the diff of `convex/nags.ts`.
 - **DO NOT:** change the message text, enable a new nag, add phrases on create; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077d / evidence: <DONE output> / changed: convex/nags.ts, convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077d / evidence: <DONE output> / changed: convex/nags.ts, convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NAG_LABEL_MAX = 60;
@@ -8414,7 +8414,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `15 pass`, `0 fail` (7 + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts`; auto-accept a derived phrase; enable the nag here; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077e / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077e / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const addPhrase = mutation({
@@ -8450,7 +8450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `21 pass`, `0 fail` (15 + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts`; enable a nag when accepting (only `setEnabled` turns it on); delete rejected phrases; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077f / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077f / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const decidePhrase = mutation({
@@ -8484,7 +8484,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `26 pass`, `0 fail` (21 + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts`; schedule any delivery; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077g / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077g / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const setEnabled = mutation({
@@ -8517,7 +8517,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `30 pass`, `0 fail` (26 + 4 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts`; hard-delete; add a restore function (not in this ticket); touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077h / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077h / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remove = mutation({
@@ -8549,7 +8549,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `34 pass`, `0 fail` (30 + 4 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts`; make it public; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077i / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077i / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const getForProposal = internalQuery({
@@ -8581,7 +8581,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/nags.test.ts` → `44 pass`, `0 fail` (34 + 10 new).
 - **EVIDENCE:** the summary of `bun test convex/nags.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/nags.ts` or `PROPOSE_SYSTEM_PROMPT`; call the real API or read a real key (`fetch` stubbed in every case; the key is the literal `"test-key-not-real"`); write any phrase; touch `convex/lib/ai_router.ts`, `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0077j / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0077j / evidence: <DONE output> / changed: convex/nags.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const proposePhrases = action({
@@ -8628,7 +8628,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notifications.test.ts` → `5 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/notifications.test.ts` (DONE) pasted into the PR with the diff of `convex/notifications.ts`.
 - **DO NOT:** add push, email or any delivery (Q-11); change `notificationValidator`, `markRead` or `markAllRead`; return `userId`, `updatedAt` or `deletedAt`; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0078a / evidence: <DONE output> / changed: convex/notifications.ts, convex/notifications.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0078a / evidence: <DONE output> / changed: convex/notifications.ts, convex/notifications.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NOTIFICATION_LIST_MAX = 100;
@@ -8665,7 +8665,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notifications.test.ts` → `10 pass`, `0 fail` (5 + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/notifications.test.ts` (DONE) pasted into the PR.
 - **DO NOT:** change `convex/notifications.ts` (keep `"Access denied"`); overwrite an existing `readAt`; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0078b / evidence: <DONE output> / changed: convex/notifications.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0078b / evidence: <DONE output> / changed: convex/notifications.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const markRead = mutation({
@@ -8698,7 +8698,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/notifications.test.ts` → `15 pass`, `0 fail` (10 + 5 new).
 - **EVIDENCE:** the summary of `bun test convex/notifications.test.ts` (DONE) pasted into the PR with the diff of `convex/notifications.ts`.
 - **DO NOT:** change `list` or `markRead`; touch read rows or other users' rows; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0078c / evidence: <DONE output> / changed: convex/notifications.ts, convex/notifications.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0078c / evidence: <DONE output> / changed: convex/notifications.ts, convex/notifications.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NOTIFICATION_MARK_ALL_MAX = 500;
@@ -8740,7 +8740,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/analytics.test.ts` → `9 pass`, `0 fail` (5 existing + 4 new).
 - **EVIDENCE:** the summary of `bun test convex/analytics.test.ts` (DONE) pasted into the PR with the diff of `convex/analytics.ts`.
 - **DO NOT:** change `computeOverview`, its types, the `returns` validator or `insightsSummary`; call `Date.now()` in a query; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0079a / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0079a / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const ANALYTICS_READ_MAX = 500;
@@ -8777,7 +8777,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/analytics.test.ts` → `17 pass`, `0 fail` (9 + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/analytics.test.ts` (DONE) pasted into the PR with the diff of `convex/analytics.ts`.
 - **DO NOT:** call `Date.now()`; hard-code a week start or time zone; return synthesized values (zeros are real counts); add a pattern sentence or any streak; change `overview`, `insightsSummary` or `computeOverview`; touch `convex/schema.ts`, `convex/preferences.ts`, `convex/lib/mcp/dates.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0079b / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0079b / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Block 1 (module parts, reused by TFV2-0079c):
   ```ts
@@ -8869,7 +8869,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/analytics.test.ts` → `25 pass`, `0 fail` (17 + 8 new).
 - **EVIDENCE:** the summary of `bun test convex/analytics.test.ts` (DONE) pasted into the PR with the diff of `convex/analytics.ts`.
 - **DO NOT:** call `Date.now()`; split a block's minutes across weeks (a block counts in the week it started); round per block (round each week's total once); change `tasksByWeekday` or the shared helpers; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0079c / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0079c / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const focusMinutesByWeek = query({
@@ -8924,7 +8924,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/analytics.test.ts` → `32 pass`, `0 fail` (25 + 7 new); then `bun test convex/insights.test.ts` → `10 pass`, `0 fail` (its 10 tests on `integration`; no ticket adds to it).
 - **EVIDENCE:** the summaries of `bun test convex/analytics.test.ts` (DONE) and `bun test convex/insights.test.ts`, and the diff of `convex/analytics.ts`, pasted into the PR.
 - **DO NOT:** edit `convex/lib/insights_summary.ts` or `convex/insights.test.ts`; move the window checks after `requireUser`; change any message or the `returns` validator; add shaming or prescriptive wording; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0080 / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0080 / evidence: <DONE output> / changed: convex/analytics.ts, convex/analytics.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const maxDayWindowMs = 48 * 60 * 60 * 1000;
@@ -8980,7 +8980,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/activity.test.ts` → `8 pass`, `0 fail` (2 existing + 6 new).
 - **EVIDENCE:** the summary of `bun test convex/activity.test.ts` (DONE) pasted into the PR with the diff of `convex/activity.ts`.
 - **DO NOT:** add an `undo` mutation or an `actor` field (TFV2-0081b); change any `action` string, `href` or fallback title; change the `activityItem` validator; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0081a / evidence: <DONE output> / changed: convex/activity.ts, convex/activity.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0081a / evidence: <DONE output> / changed: convex/activity.ts, convex/activity.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const ACTIVITY_FEED_MAX = 50;
@@ -9060,7 +9060,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/streaks.test.ts` → `5 pass`, `0 fail` (the file is new).
 - **EVIDENCE:** the summary of `bun test convex/streaks.test.ts` (DONE) pasted into the PR with the diff of `convex/streaks.ts`.
 - **DO NOT:** add `streaks.getForHabit` or any per-habit streak query; remove `currentStreak`/`longestStreak` from habits; edit `convex/lib/habitStreak.ts`, `convex/lib/habitCheckInStreak.ts`, `convex/habitCheckIns.ts` or any screen; touch `convex/schema.ts`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0082 / evidence: <DONE output> / changed: convex/streaks.ts, convex/streaks.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0082 / evidence: <DONE output> / changed: convex/streaks.ts, convex/streaks.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import { v } from "convex/values";
@@ -9123,7 +9123,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-layout.spec.ts --reporter=line` → `20 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/page-layout.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** set colours, type or padding (screens and children do); create the file under `packages/ui`; edit `packages/ui/src/index.ts`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0086 / evidence: <DONE output> / changed: apps/web/components/layout/PageLayout.tsx, apps/web/app/e2e/components/page-layout/page.tsx, tests/e2e/screens/page-layout.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0086 / evidence: <DONE output> / changed: apps/web/components/layout/PageLayout.tsx, apps/web/app/e2e/components/page-layout/page.tsx, tests/e2e/screens/page-layout.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/PageLayout.tsx
@@ -9158,7 +9158,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/surface.spec.ts --reporter=line` → `16 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/surface.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** add glass, blur or translucency; set type sizes; add a border the tempo.css rule does not have; create the file under `packages/ui`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0087 / evidence: <DONE output> / changed: apps/web/components/layout/Surface.tsx, apps/web/app/e2e/components/surface/page.tsx, tests/e2e/screens/surface.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0087 / evidence: <DONE output> / changed: apps/web/components/layout/Surface.tsx, apps/web/app/e2e/components/surface/page.tsx, tests/e2e/screens/surface.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Surface.tsx
@@ -9193,7 +9193,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-header.spec.ts --reporter=line` → `20 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/page-header.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** render a second heading level-1 or a heading for the subtitle; hide the subtitle on mobile; put `dir="auto"` on the title (it would break start alignment in Hebrew; callers wrap user text in `<bdi>`); create the file under `packages/ui`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0088 / evidence: <DONE output> / changed: apps/web/components/layout/PageHeader.tsx, apps/web/app/e2e/components/page-header/page.tsx, tests/e2e/screens/page-header.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0088 / evidence: <DONE output> / changed: apps/web/components/layout/PageHeader.tsx, apps/web/app/e2e/components/page-header/page.tsx, tests/e2e/screens/page-header.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/PageHeader.tsx
@@ -9231,7 +9231,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/toolbar.spec.ts --reporter=line` → `20 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/toolbar.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** hard-code a control type (all controls come in through props); use `role="toolbar"` (it implies arrow-key roving focus this component does not implement); create the file under `packages/ui`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0089 / evidence: <DONE output> / changed: apps/web/components/layout/Toolbar.tsx, apps/web/app/e2e/components/toolbar/page.tsx, tests/e2e/screens/toolbar.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0089 / evidence: <DONE output> / changed: apps/web/components/layout/Toolbar.tsx, apps/web/app/e2e/components/toolbar/page.tsx, tests/e2e/screens/toolbar.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Toolbar.tsx
@@ -9274,7 +9274,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/section.spec.ts --reporter=line` → `20 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the output of `CI=1 bunx playwright test tests/e2e/screens/section.spec.ts --reporter=line` (DONE); the Playwright summary and both exit codes pasted into the PR.
 - **DO NOT:** choose the heading level yourself (use `as`, default `h2`); format or translate the count noun (the screen passes `label` in EN/HE with the right plural); create the file under `packages/ui`; add a stylesheet or edit `tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0090 / evidence: <DONE output> / changed: apps/web/components/layout/Section.tsx, apps/web/app/e2e/components/section/page.tsx, tests/e2e/screens/section.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0090 / evidence: <DONE output> / changed: apps/web/components/layout/Section.tsx, apps/web/app/e2e/components/section/page.tsx, tests/e2e/screens/section.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Section.tsx
@@ -9323,7 +9323,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/card-grid.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/card-grid.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add a stylesheet or inline styles; set a fixed column count; add other classes; edit `apps/web/app/tempo.css`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0091 / evidence: <DONE output> / changed: apps/web/components/layout/CardGrid.tsx, apps/web/app/e2e/components/card-grid/page.tsx, tests/e2e/screens/card-grid.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0091 / evidence: <DONE output> / changed: apps/web/components/layout/CardGrid.tsx, apps/web/app/e2e/components/card-grid/page.tsx, tests/e2e/screens/card-grid.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9353,7 +9353,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notice.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/notice.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** convey tone by colour only (the sr-only tone word and the icon are required); add a stylesheet; render HTML from strings; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0092 / evidence: <DONE output> / changed: apps/web/components/layout/Notice.tsx, apps/web/app/e2e/components/notice/page.tsx, tests/e2e/screens/notice.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0092 / evidence: <DONE output> / changed: apps/web/components/layout/Notice.tsx, apps/web/app/e2e/components/notice/page.tsx, tests/e2e/screens/notice.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Notice.tsx
@@ -9404,7 +9404,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/badge.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/badge.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** render a badge without its label; add a `danger` tone (tempo.css has none); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0093 / evidence: <DONE output> / changed: apps/web/components/layout/Badge.tsx, apps/web/app/e2e/components/badge/page.tsx, tests/e2e/screens/badge.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0093 / evidence: <DONE output> / changed: apps/web/components/layout/Badge.tsx, apps/web/app/e2e/components/badge/page.tsx, tests/e2e/screens/badge.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9435,7 +9435,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/page-head.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/page-head.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** set a font size (tempo.css owns it); render more than one heading; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0094 / evidence: <DONE output> / changed: apps/web/components/layout/PageHead.tsx, apps/web/app/e2e/components/page-head/page.tsx, tests/e2e/screens/page-head.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0094 / evidence: <DONE output> / changed: apps/web/components/layout/PageHead.tsx, apps/web/app/e2e/components/page-head/page.tsx, tests/e2e/screens/page-head.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9467,7 +9467,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/week-strip.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/week-strip.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** reorder `days` or compute week start (the screen passes them ordered); navigate (only call `onSelect`); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0095 / evidence: <DONE output> / changed: apps/web/components/layout/WeekStrip.tsx, apps/web/app/e2e/components/week-strip/page.tsx, tests/e2e/screens/week-strip.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0095 / evidence: <DONE output> / changed: apps/web/components/layout/WeekStrip.tsx, apps/web/app/e2e/components/week-strip/page.tsx, tests/e2e/screens/week-strip.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/WeekStrip.tsx
@@ -9517,7 +9517,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/project-status.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/project-status.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** accept a free-text label (the word is built in so it is always present and translated); add statuses; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0096 / evidence: <DONE output> / changed: apps/web/components/layout/ProjectStatus.tsx, apps/web/app/e2e/components/project-status/page.tsx, tests/e2e/screens/project-status.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0096 / evidence: <DONE output> / changed: apps/web/components/layout/ProjectStatus.tsx, apps/web/app/e2e/components/project-status/page.tsx, tests/e2e/screens/project-status.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/ProjectStatus.tsx
@@ -9562,7 +9562,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/list-row.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/list-row.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** nest an interactive element inside a link or button row (an `end` with a checkbox or button is only allowed on a static row); go below the tempo.css row height; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0097 / evidence: <DONE output> / changed: apps/web/components/lists/ListRow.tsx, apps/web/app/e2e/components/list-row/page.tsx, tests/e2e/screens/list-row.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0097 / evidence: <DONE output> / changed: apps/web/components/lists/ListRow.tsx, apps/web/app/e2e/components/list-row/page.tsx, tests/e2e/screens/list-row.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9596,7 +9596,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/segmented.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/segmented.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** allow multiple selection; use `role="tab"`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0098 / evidence: <DONE output> / changed: apps/web/components/lists/Segmented.tsx, apps/web/app/e2e/components/segmented/page.tsx, tests/e2e/screens/segmented.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0098 / evidence: <DONE output> / changed: apps/web/components/lists/Segmented.tsx, apps/web/app/e2e/components/segmented/page.tsx, tests/e2e/screens/segmented.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9629,7 +9629,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/search-input.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/search-input.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** drop the `<label>` (hide it with `.tp-sr-only` instead); debounce or fetch (the screen does); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0099 / evidence: <DONE output> / changed: apps/web/components/lists/SearchInput.tsx, apps/web/app/e2e/components/search-input/page.tsx, tests/e2e/screens/search-input.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0099 / evidence: <DONE output> / changed: apps/web/components/lists/SearchInput.tsx, apps/web/app/e2e/components/search-input/page.tsx, tests/e2e/screens/search-input.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/lists/SearchInput.tsx
@@ -9673,7 +9673,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sort-menu.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/sort-menu.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** use a native `<select>`; trap focus (Tab closes the menu); render the list while closed; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0100 / evidence: <DONE output> / changed: apps/web/components/lists/SortMenu.tsx, apps/web/app/e2e/components/sort-menu/page.tsx, tests/e2e/screens/sort-menu.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0100 / evidence: <DONE output> / changed: apps/web/components/lists/SortMenu.tsx, apps/web/app/e2e/components/sort-menu/page.tsx, tests/e2e/screens/sort-menu.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/lists/SortMenu.tsx
@@ -9709,7 +9709,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/load-more.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/load-more.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** load on scroll (explicit button only); render the button when `shown >= total`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0101 / evidence: <DONE output> / changed: apps/web/components/lists/LoadMore.tsx, apps/web/app/e2e/components/load-more/page.tsx, tests/e2e/screens/load-more.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0101 / evidence: <DONE output> / changed: apps/web/components/lists/LoadMore.tsx, apps/web/app/e2e/components/load-more/page.tsx, tests/e2e/screens/load-more.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/lists/LoadMore.tsx
@@ -9753,7 +9753,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/dot.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/dot.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** make the dot focusable or give it a label; add a stylesheet; touch `apps/web/components/calendar/CalendarViews.tsx`, `EventRow.tsx`, `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0103 / evidence: <DONE output> / changed: apps/web/components/calendar/Dot.tsx, apps/web/app/e2e/components/dot/page.tsx, tests/e2e/screens/dot.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0103 / evidence: <DONE output> / changed: apps/web/components/calendar/Dot.tsx, apps/web/app/e2e/components/dot/page.tsx, tests/e2e/screens/dot.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -9783,7 +9783,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/month-grid.spec.ts --reporter=line` → `24 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/month-grid.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** compute which dates belong to the month or fetch anything (the screen passes complete weeks); hard-code a week start; add a stylesheet; touch the wired `apps/web/components/calendar/CalendarViews.tsx`, `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0102 / evidence: <DONE output> / changed: apps/web/components/calendar/MonthGrid.tsx, apps/web/app/e2e/components/month-grid/page.tsx, tests/e2e/screens/month-grid.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0102 / evidence: <DONE output> / changed: apps/web/components/calendar/MonthGrid.tsx, apps/web/app/e2e/components/month-grid/page.tsx, tests/e2e/screens/month-grid.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/calendar/MonthGrid.tsx
@@ -9833,7 +9833,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/week-columns.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/week-columns.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** let the page scroll sideways (only `.tp-week` scrolls); format times (the caller passes `time` already formatted); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0104 / evidence: <DONE output> / changed: apps/web/components/calendar/WeekColumns.tsx, apps/web/app/e2e/components/week-columns/page.tsx, tests/e2e/screens/week-columns.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0104 / evidence: <DONE output> / changed: apps/web/components/calendar/WeekColumns.tsx, apps/web/app/e2e/components/week-columns/page.tsx, tests/e2e/screens/week-columns.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/calendar/WeekColumns.tsx
@@ -9878,7 +9878,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/day-timeline-view.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/day-timeline-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** edit or import the wired `apps/web/components/day-timeline/DayTimeline.tsx`; fetch data; animate the now line; use whole-hour rows; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0105 / evidence: <DONE output> / changed: apps/web/components/calendar/DayTimelineView.tsx, apps/web/app/e2e/components/day-timeline-view/page.tsx, tests/e2e/screens/day-timeline-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0105 / evidence: <DONE output> / changed: apps/web/components/calendar/DayTimelineView.tsx, apps/web/app/e2e/components/day-timeline-view/page.tsx, tests/e2e/screens/day-timeline-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```tsx
   // apps/web/components/calendar/DayTimelineView.tsx
@@ -9927,7 +9927,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/kanban.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/kanban.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** implement drag; move cards (KanbanCard's buttons call the screen); fetch data; edit `apps/web/components/tasks/TaskKanbanBoard.tsx`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0106 / evidence: <DONE output> / changed: apps/web/components/kanban/Kanban.tsx, apps/web/app/e2e/components/kanban/page.tsx, tests/e2e/screens/kanban.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0106 / evidence: <DONE output> / changed: apps/web/components/kanban/Kanban.tsx, apps/web/app/e2e/components/kanban/page.tsx, tests/e2e/screens/kanban.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -9971,7 +9971,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/kanban-card.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/kanban-card.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** rely on drag; hide a disabled edge button; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0107 / evidence: <DONE output> / changed: apps/web/components/kanban/KanbanCard.tsx, apps/web/app/e2e/components/kanban-card/page.tsx, tests/e2e/screens/kanban-card.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0107 / evidence: <DONE output> / changed: apps/web/components/kanban/KanbanCard.tsx, apps/web/app/e2e/components/kanban-card/page.tsx, tests/e2e/screens/kanban-card.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10013,7 +10013,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/chart-summary.spec.ts --reporter=line` → `8 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/chart-summary.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** write summary text in the component (the screen supplies it); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0110 / evidence: <DONE output> / changed: apps/web/components/charts/ChartSummary.tsx, apps/web/app/e2e/components/chart-summary/page.tsx, tests/e2e/screens/chart-summary.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0110 / evidence: <DONE output> / changed: apps/web/components/charts/ChartSummary.tsx, apps/web/app/e2e/components/chart-summary/page.tsx, tests/e2e/screens/chart-summary.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10041,7 +10041,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/bar-chart.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/bar-chart.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add a chart library or dependency; omit a bar's value or label; render without a summary; add a stylesheet; touch `package.json`, `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0108 / evidence: <DONE output> / changed: apps/web/components/charts/BarChart.tsx, apps/web/app/e2e/components/bar-chart/page.tsx, tests/e2e/screens/bar-chart.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0108 / evidence: <DONE output> / changed: apps/web/components/charts/BarChart.tsx, apps/web/app/e2e/components/bar-chart/page.tsx, tests/e2e/screens/bar-chart.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10073,7 +10073,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/line-chart.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/line-chart.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add a chart library or dependency; mirror the SVG in RTL (time runs left to right in both languages, like the numbers); omit `role="img"`; add a stylesheet; touch `package.json`, `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0109 / evidence: <DONE output> / changed: apps/web/components/charts/LineChart.tsx, apps/web/app/e2e/components/line-chart/page.tsx, tests/e2e/screens/line-chart.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0109 / evidence: <DONE output> / changed: apps/web/components/charts/LineChart.tsx, apps/web/app/e2e/components/line-chart/page.tsx, tests/e2e/screens/line-chart.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10106,7 +10106,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/form.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/form.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** set `noValidate`; navigate on submit (always `preventDefault`); render fields itself (callers pass TFV2-0113/0114/0115 fields as children); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0111 / evidence: <DONE output> / changed: apps/web/components/forms/Form.tsx, apps/web/app/e2e/components/form/page.tsx, tests/e2e/screens/form.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0111 / evidence: <DONE output> / changed: apps/web/components/forms/Form.tsx, apps/web/app/e2e/components/form/page.tsx, tests/e2e/screens/form.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10140,7 +10140,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/text-input.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/text-input.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** use a placeholder as the label; edit `packages/ui/src/primitives/Field.tsx`; validate inside the component (the screen sets `error`); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0113 / evidence: <DONE output> / changed: apps/web/components/forms/TextInput.tsx, apps/web/app/e2e/components/text-input/page.tsx, tests/e2e/screens/text-input.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0113 / evidence: <DONE output> / changed: apps/web/components/forms/TextInput.tsx, apps/web/app/e2e/components/text-input/page.tsx, tests/e2e/screens/text-input.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10182,7 +10182,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/textarea.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/textarea.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** force a direction other than `auto`; auto-grow with JavaScript; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0114 / evidence: <DONE output> / changed: apps/web/components/forms/Textarea.tsx, apps/web/app/e2e/components/textarea/page.tsx, tests/e2e/screens/textarea.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0114 / evidence: <DONE output> / changed: apps/web/components/forms/Textarea.tsx, apps/web/app/e2e/components/textarea/page.tsx, tests/e2e/screens/textarea.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10222,7 +10222,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/select.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/select.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** build a custom dropdown; drop the label; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0115 / evidence: <DONE output> / changed: apps/web/components/forms/Select.tsx, apps/web/app/e2e/components/select/page.tsx, tests/e2e/screens/select.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0115 / evidence: <DONE output> / changed: apps/web/components/forms/Select.tsx, apps/web/app/e2e/components/select/page.tsx, tests/e2e/screens/select.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10263,7 +10263,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/switch.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/switch.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** use `<input type="checkbox">`; omit the visible word; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0116 / evidence: <DONE output> / changed: apps/web/components/forms/Switch.tsx, apps/web/app/e2e/components/switch/page.tsx, tests/e2e/screens/switch.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0116 / evidence: <DONE output> / changed: apps/web/components/forms/Switch.tsx, apps/web/app/e2e/components/switch/page.tsx, tests/e2e/screens/switch.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10303,7 +10303,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/checkbox.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/checkbox.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** render a checkbox without its label; build a custom checkbox; resize the input (locked tempo.css); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0117 / evidence: <DONE output> / changed: apps/web/components/forms/Checkbox.tsx, apps/web/app/e2e/components/checkbox/page.tsx, tests/e2e/screens/checkbox.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0117 / evidence: <DONE output> / changed: apps/web/components/forms/Checkbox.tsx, apps/web/app/e2e/components/checkbox/page.tsx, tests/e2e/screens/checkbox.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10333,7 +10333,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/radio.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/radio.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** use `<fieldset>` (its default border is not in the design); omit `name`; resize the input; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0118 / evidence: <DONE output> / changed: apps/web/components/forms/Radio.tsx, apps/web/app/e2e/components/radio/page.tsx, tests/e2e/screens/radio.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0118 / evidence: <DONE output> / changed: apps/web/components/forms/Radio.tsx, apps/web/app/e2e/components/radio/page.tsx, tests/e2e/screens/radio.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10366,7 +10366,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/dial.spec.ts --reporter=line` → `20 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/dial.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** show only the number; edit `apps/web/components/coach-controls/dial.ts`; save anything (the screen calls `coach.setDial`); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0119 / evidence: <DONE output> / changed: apps/web/components/forms/Dial.tsx, apps/web/app/e2e/components/dial/page.tsx, tests/e2e/screens/dial.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0119 / evidence: <DONE output> / changed: apps/web/components/forms/Dial.tsx, apps/web/app/e2e/components/dial/page.tsx, tests/e2e/screens/dial.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10408,7 +10408,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/state-empty.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/state-empty.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** write copy in the component (each screen supplies its own kind copy, never shaming words from `convex/lib/shameWords.ts`); edit `apps/web/components/habits/ScreenStates.tsx`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0120 / evidence: <DONE output> / changed: apps/web/components/states/StateEmpty.tsx, apps/web/app/e2e/components/state-empty/page.tsx, tests/e2e/screens/state-empty.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0120 / evidence: <DONE output> / changed: apps/web/components/states/StateEmpty.tsx, apps/web/app/e2e/components/state-empty/page.tsx, tests/e2e/screens/state-empty.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10439,7 +10439,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/state-loading.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/state-loading.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add a spinner or visible "Loading" text; change the shimmer (locked Stage 1 CSS); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0121 / evidence: <DONE output> / changed: apps/web/components/states/StateLoading.tsx, apps/web/app/e2e/components/state-loading/page.tsx, tests/e2e/screens/state-loading.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0121 / evidence: <DONE output> / changed: apps/web/components/states/StateLoading.tsx, apps/web/app/e2e/components/state-loading/page.tsx, tests/e2e/screens/state-loading.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import type React from "react";
@@ -10469,7 +10469,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/state-error.spec.ts --reporter=line` → `16 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/state-error.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** render an error object, JSON, a code or a stack; build the "Couldn't load …" sentence by concatenation (the caller passes the whole localised sentence, because Hebrew grammar differs per noun); add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0122 / evidence: <DONE output> / changed: apps/web/components/states/StateError.tsx, apps/web/app/e2e/components/state-error/page.tsx, tests/e2e/screens/state-error.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0122 / evidence: <DONE output> / changed: apps/web/components/states/StateError.tsx, apps/web/app/e2e/components/state-error/page.tsx, tests/e2e/screens/state-error.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10509,7 +10509,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/state-offline.spec.ts --reporter=line` → `12 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/state-offline.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** detect connectivity (the screen reads `useOnline()` and decides when to render this); unmount or cover content; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0123 / evidence: <DONE output> / changed: apps/web/components/states/StateOffline.tsx, apps/web/app/e2e/components/state-offline/page.tsx, tests/e2e/screens/state-offline.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0123 / evidence: <DONE output> / changed: apps/web/components/states/StateOffline.tsx, apps/web/app/e2e/components/state-offline/page.tsx, tests/e2e/screens/state-offline.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -10549,7 +10549,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/today-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/today-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `useQuery`/`useMutation`/`useAction`/`fetch` or import `convex/react` or `@/convex/_generated/*`; edit `NextUpCard.tsx`, `next-up.ts`, `TodayScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/app/tempo.css`; add a stylesheet; render a second `.tp-btn--primary` (NextUpCard owns the one primary); render backlinks (TFV2-0009 is OPEN); read the clock or compute today (DO NOT compute today from the browser clock zone: the route passes `data.date` from `preferences.timeZone`); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0124a / evidence: <DONE output> / changed: apps/web/components/today/TodayView.tsx, apps/web/app/e2e/components/today-view/page.tsx, tests/e2e/screens/today-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0124a / evidence: <DONE output> / changed: apps/web/components/today/TodayView.tsx, apps/web/app/e2e/components/today-view/page.tsx, tests/e2e/screens/today-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/today/TodayView.tsx
@@ -10763,7 +10763,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/daily-note.spec.ts --reporter=line` → `8 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/daily-note.spec.ts --reporter=line` pasted into the PR, plus the summary of `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` (`2 passed`), the empty output of `git diff --stat "apps/web/app/(bare)/daily-note/page.tsx"`, and the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** edit `apps/web/app/(bare)/daily-note/page.tsx`, `apps/web/lib/ask-founder.test.ts`, `apps/web/proxy.ts` or `tests/e2e/wiring/harness.spec.ts`; add any other line to `e2eWiringRoutes.ts`; build a daily-note screen; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0125 / evidence: <DONE output> / changed: apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/daily-note.spec.ts / unknowns / notes for ticket sync` (add: `web/daily-note.html focus mode is not built; /daily-note redirects to /today by design (B07). After TFV2-0124b the v3 Today no longer draws the daily note body (DailyPage); that body is on Journal (TFV2-0130), so the ask-founder.test.ts case name "where today's daily page is drawn" is stale wording, not a failing check.`).
+- **REPORT:** `status / ticket: TFV2-0125 / evidence: <DONE output> / changed: apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/daily-note.spec.ts / unknowns / notes for ticket sync` (add: `web/daily-note.html focus mode is not built; /daily-note redirects to /today by design (B07). After TFV2-0124b the v3 Today no longer draws the daily note body (DailyPage); that body is on Journal (TFV2-0130), so the ask-founder.test.ts case name "where today's daily page is drawn" is stale wording, not a failing check.`). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Existing code (truth, unchanged):
   ```ts
   // apps/web/app/(bare)/daily-note/page.tsx (server component)
@@ -10793,7 +10793,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/brain-dump-review.spec.ts --reporter=line` → `36 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/brain-dump-review.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or import `convex/react`; edit `BrainDumpScreen.tsx`, `brainDumpState.ts`, `globals.css`, `tempo.css` or `i18n.ts`; add a stylesheet; use `.tp-btn--primary` on the per-line Accept buttons (the screen keeps one primary: Add accepted); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0126c / evidence: <DONE output> / changed: apps/web/components/brain-dump/BrainDumpReview.tsx, apps/web/app/e2e/components/brain-dump-review/page.tsx, tests/e2e/screens/brain-dump-review.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0126c / evidence: <DONE output> / changed: apps/web/components/brain-dump/BrainDumpReview.tsx, apps/web/app/e2e/components/brain-dump-review/page.tsx, tests/e2e/screens/brain-dump-review.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/brain-dump/BrainDumpReview.tsx
@@ -10879,7 +10879,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/brain-dump-view.spec.ts --reporter=line` → `40 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/brain-dump-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or import `convex/react` / `@/convex/_generated/*`; read or write `sessionStorage`/`localStorage` (the route owns the kept session); edit `BrainDumpScreen.tsx`, `BrainDumpReview.tsx`, `i18n.ts`, `globals.css`, `tempo.css`; add a stylesheet; show raw JSON or backend error text; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0126a / evidence: <DONE output> / changed: apps/web/components/brain-dump/BrainDumpView.tsx, apps/web/app/e2e/components/brain-dump-view/page.tsx, tests/e2e/screens/brain-dump-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0126a / evidence: <DONE output> / changed: apps/web/components/brain-dump/BrainDumpView.tsx, apps/web/app/e2e/components/brain-dump-view/page.tsx, tests/e2e/screens/brain-dump-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/brain-dump/BrainDumpView.tsx
@@ -10995,7 +10995,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/brain-dump.spec.ts --reporter=line` → `40 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/brain-dump.spec.ts --reporter=line` pasted into the PR, plus the summary of `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` (`4 passed`) and the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** store the raw dump anywhere but this tab's `sessionStorage` through `saveBrainDumpSession` (RAM-only rule); write any task before Add accepted; call the model without the crisis check first; edit or delete `BrainDumpScreen.tsx`, `brainDumpState.ts`, its tests, or the `lib/brain-dump-*.ts` helpers; edit `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0126b / evidence: <DONE output> / changed: apps/web/app/(tempo)/brain-dump/page.tsx, apps/web/lib/e2e/fixtures/brain-dump.ts, tests/e2e/screens/brain-dump.spec.ts / unknowns / notes for ticket sync` — notes for ticket sync must say: `BrainDumpScreen.tsx is no longer imported by /brain-dump; not deleted. Pending "Save as a page" Undo no longer survives leaving the screen (the old SAVED_PAGES_KEY sessionStorage list is not ported); the kept dump/plan/choices still are. An Add accepted / Save failure shows the sort error copy.`
+- **REPORT:** `status / ticket: TFV2-0126b / evidence: <DONE output> / changed: apps/web/app/(tempo)/brain-dump/page.tsx, apps/web/lib/e2e/fixtures/brain-dump.ts, tests/e2e/screens/brain-dump.spec.ts / unknowns / notes for ticket sync` — notes for ticket sync must say: `BrainDumpScreen.tsx is no longer imported by /brain-dump; not deleted. Pending "Save as a page" Undo no longer survives leaving the screen (the old SAVED_PAGES_KEY sessionStorage list is not ported); the kept dump/plan/choices still are. An Add accepted / Save failure shows the sort error copy.`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions (none added here):
   | Function | Kind | Args | Returns / errors | Provided by |
@@ -11076,7 +11076,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plan-view.spec.ts --reporter=line` → `44 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/plan-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or import `convex/react`; hard-code a week start (use `data.weekStartsOn`); read the clock or compute today (DO NOT compute today from the browser clock zone: the route passes `anchor`, `nowMinute` and each day's `today` flag from `preferences.timeZone`); reorder or move items (nothing reflows without a proposal); edit `PlanScreen.tsx`, `DayTimeline.tsx`, the calendar components or `tempo.css`; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0127a / evidence: <DONE output> / changed: apps/web/components/plan/PlanView.tsx, apps/web/app/e2e/components/plan-view/page.tsx, tests/e2e/screens/plan-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0127a / evidence: <DONE output> / changed: apps/web/components/plan/PlanView.tsx, apps/web/app/e2e/components/plan-view/page.tsx, tests/e2e/screens/plan-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/plan/PlanView.tsx
@@ -11191,7 +11191,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/plan.spec.ts --reporter=line` → `40 passed`, 0 failed.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/plan.spec.ts --reporter=line` pasted into the PR, plus the summary of `CI=1 bunx playwright test tests/e2e/wiring/plan.spec.ts tests/e2e/wiring/harness.spec.ts --reporter=line` (`3 passed`) and the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** edit or delete `PlanScreen.tsx`, `DayTimeline.tsx`, `TimeBlockDialog.tsx` or their tests; hard-code a week start; compute today from the browser clock zone (no `useLocalDayBounds`, `localIsoDate(new Date())`, `localMinuteOfDay` or local-zone `new Date(y, m - 1, d)` for the day key, ranges or the now line); move or reflow items; call a model; edit `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0127b / evidence: <DONE output> / changed: apps/web/app/(tempo)/plan/page.tsx, apps/web/lib/e2e/fixtures/plan.ts, tests/e2e/screens/plan.spec.ts / unknowns / notes for ticket sync` — notes for ticket sync must say: `PlanScreen.tsx is still rendered for the signed-out dev bypass only; DayTimeline's "Add a block at {time}" slots are replaced signed in by the "Add a time block" button (report-only feature-sweep DayTimeline / TimeBlockDialog rows will record broken). Plan keys today, ranges and the now line by preferences.timeZone (default "UTC"): a person who never set a zone sees the UTC day near midnight; TimeBlockDialog still turns localDate + minute into startsAtMs/endsAtMs in the browser zone.`
+- **REPORT:** `status / ticket: TFV2-0127b / evidence: <DONE output> / changed: apps/web/app/(tempo)/plan/page.tsx, apps/web/lib/e2e/fixtures/plan.ts, tests/e2e/screens/plan.spec.ts / unknowns / notes for ticket sync` — notes for ticket sync must say: `PlanScreen.tsx is still rendered for the signed-out dev bypass only; DayTimeline's "Add a block at {time}" slots are replaced signed in by the "Add a time block" button (report-only feature-sweep DayTimeline / TimeBlockDialog rows will record broken). Plan keys today, ranges and the now line by preferences.timeZone (default "UTC"): a person who never set a zone sees the UTC day near midnight; TimeBlockDialog still turns localDate + minute into startsAtMs/endsAtMs in the browser zone.`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions:
   | Function | Kind | Args | Returns | Provided by |
@@ -11272,7 +11272,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/task-groups.spec.ts --reporter=line` → `36 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/task-groups.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `useQuery`/`useMutation`/`fetch` or import `convex/*` or `@/convex/_generated/*`; compute groups, dates or sort order (the route does); render a task's id; add a stylesheet or edit `apps/web/app/tempo.css`; edit `TaskViewsScreen.tsx` or its tests; edit `apps/web/lib/e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0128c / evidence: <DONE output> / changed: apps/web/components/tasks/TaskGroups.tsx, apps/web/app/e2e/components/task-groups/page.tsx, tests/e2e/screens/task-groups.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0128c / evidence: <DONE output> / changed: apps/web/components/tasks/TaskGroups.tsx, apps/web/app/e2e/components/task-groups/page.tsx, tests/e2e/screens/task-groups.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/tasks/TaskGroups.tsx
@@ -11368,7 +11368,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tasks-view.spec.ts --reporter=line` → `56 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/tasks-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `useQuery`/`useMutation`/`fetch` or import `convex/*`; filter, sort or group tasks in the View (the route does; the View only shows `data.groups`); parse dates out of the Quick add text; add a stylesheet or edit `tempo.css`; edit `TaskViewsScreen.tsx`, `TaskRowEditor.tsx` or their tests; edit `e2eWiringRoutes.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0128a / evidence: <DONE output> / changed: apps/web/components/tasks/TasksView.tsx, apps/web/app/e2e/components/tasks-view/page.tsx, tests/e2e/screens/tasks-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0128a / evidence: <DONE output> / changed: apps/web/components/tasks/TasksView.tsx, apps/web/app/e2e/components/tasks-view/page.tsx, tests/e2e/screens/tasks-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/tasks/TasksView.tsx
@@ -11563,7 +11563,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/task-sheet-view.spec.ts --reporter=line` → `48 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/task-sheet-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or `fetch`; decide whether the sheet is open (the parent mounts it); write nag phrases for the person or offer stock phrases; allow Save with an empty title or a switched-on nag without a phrase; add a stylesheet or edit `tempo.css`; edit `TaskRowEditor.tsx`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0129a / evidence: <DONE output> / changed: apps/web/components/tasks/TaskSheetView.tsx, apps/web/app/e2e/components/task-sheet-view/page.tsx, tests/e2e/screens/task-sheet-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0129a / evidence: <DONE output> / changed: apps/web/components/tasks/TaskSheetView.tsx, apps/web/app/e2e/components/task-sheet-view/page.tsx, tests/e2e/screens/task-sheet-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/tasks/TaskSheetView.tsx
@@ -11740,7 +11740,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/journal-view.spec.ts --reporter=line` → `36 passed`, no failures; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/journal-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or `fetch`; add an entry form, search, month filter or read-aloud (no backend exists; notes for ticket sync); pick the prompt (the route passes it); count or show gaps or streaks between days; add a stylesheet or edit `tempo.css`; edit `JournalScreen.tsx` or `apps/web/lib/journal.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0130a / evidence: <DONE output> / changed: apps/web/components/journal/JournalView.tsx, apps/web/app/e2e/components/journal-view/page.tsx, tests/e2e/screens/journal-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0130a / evidence: <DONE output> / changed: apps/web/components/journal/JournalView.tsx, apps/web/app/e2e/components/journal-view/page.tsx, tests/e2e/screens/journal-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/journal/JournalView.tsx
@@ -11836,7 +11836,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/journal.spec.ts --reporter=line` → `32 passed`, no failures; `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`; `bun run typecheck` → exit 0; `bun run lint` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/journal.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `notes.ensurePeriodPage` or any mutation (writing happens in today's page); use the browser's local date instead of `preferences.timeZone`; add any other line to `e2eWiringRoutes.ts`; edit `JournalScreen.tsx`, `apps/web/lib/journal.ts` or `proxy.ts`; call Convex when `?state=` is forced; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0130b / evidence: <DONE output> / changed: apps/web/app/(tempo)/journal/page.tsx, apps/web/lib/e2e/fixtures/journal.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/journal.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0130b / evidence: <DONE output> / changed: apps/web/app/(tempo)/journal/page.tsx, apps/web/lib/e2e/fixtures/journal.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/journal.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions used:
   | Function | Kind | Args | Returns | Ticket |
@@ -12111,7 +12111,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habits-view.spec.ts --reporter=line` → `44 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/habits-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `useQuery`, `useMutation`, `useAction` or `fetch`, or import `convex/react` / `@/convex/_generated/*`; show a streak, "in a row" or any count other than the plain "Logged on N of the last 7 days"; colour a not-logged day red or call it missed/failed; add a stylesheet or edit `tempo.css`, `apps/web/app/v3/habits.css`, `HabitSheet.tsx`, `UndoToast.tsx`, `HabitsScreen.tsx`, `apps/web/lib/i18n.ts` or `apps/web/lib/i18n-groups/*`; render `HabitEnergySuggestions` (it calls Convex; the route passes it through the `suggestions` slot); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0132a / evidence: <DONE output> / changed: apps/web/components/habits/HabitsView.tsx, apps/web/app/e2e/components/habits-view/page.tsx, tests/e2e/screens/habits-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0132a / evidence: <DONE output> / changed: apps/web/components/habits/HabitsView.tsx, apps/web/app/e2e/components/habits-view/page.tsx, tests/e2e/screens/habits-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // apps/web/components/habits/HabitsView.tsx
@@ -12223,7 +12223,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habits.spec.ts --reporter=line` → `44 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` → `4 passed`.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/habits.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** edit `apps/web/lib/e2eWiringRoutes.ts`, `HabitsView.tsx`, `HabitsScreen.tsx` or its tests (`HabitsScreen.tsx` stays, unimported; REPORT notes for ticket sync say so); import `HabitsScreen`; contact Convex when `?state=` is forced; display `currentStreak`/`longestStreak` returned by `check`/`undo`; compute "today" from the browser clock zone instead of `preferences.timeZone`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0132b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/habits/page.tsx, apps/web/lib/e2e/fixtures/habits.ts, tests/e2e/screens/habits.spec.ts / unknowns / notes for ticket sync: HabitsScreen.tsx is no longer imported by any route; delete it in a cleanup ticket`.
+- **REPORT:** `status / ticket: TFV2-0132b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/habits/page.tsx, apps/web/lib/e2e/fixtures/habits.ts, tests/e2e/screens/habits.spec.ts / unknowns / notes for ticket sync: HabitsScreen.tsx is no longer imported by any route; delete it in a cleanup ticket`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions used — `habitCheckIns.check` is verified by TFV2-0067a and `habitCheckIns.undo` by TFV2-0067b (range 2; same signatures as the code); every other function is existing on integration, no ticket:
   ```ts
@@ -12318,7 +12318,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habit-detail-view.spec.ts --reporter=line` → `48 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/habit-detail-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or `fetch`; compute the grid, the week start or the summary inside the View (the route passes them); hard-code Monday; show a streak, best run or percentage; render a button for a future day; edit `HabitDetail.tsx`, `sixWeekGrid.ts`, `HabitSheet.tsx`, `tempo.css`, `habits.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0133a / evidence: <DONE output> / changed: apps/web/components/habit-detail/HabitDetailView.tsx, apps/web/app/e2e/components/habit-detail-view/page.tsx, tests/e2e/screens/habit-detail-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0133a / evidence: <DONE output> / changed: apps/web/components/habit-detail/HabitDetailView.tsx, apps/web/app/e2e/components/habit-detail-view/page.tsx, tests/e2e/screens/habit-detail-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -12444,7 +12444,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/habit-detail.spec.ts --reporter=line` → `44 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` → `4 passed`.
 - **EVIDENCE:** the summaries of `CI=1 bunx playwright test tests/e2e/screens/habit-detail.spec.ts --reporter=line` and `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** import `HabitDetail` or `buildSixWeekGrid` (Monday-only); hard-code a week start; use the browser's zone for "today"; let a future day call `check`; contact Convex when `?state=` is forced; edit `e2eWiringRoutes.ts`, `HabitDetail.tsx`, `sixWeekGrid.ts` or their tests; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0133b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/habits/[id]/page.tsx, apps/web/lib/e2e/fixtures/habit-detail.ts, tests/e2e/screens/habit-detail.spec.ts / unknowns / notes for ticket sync: HabitDetail.tsx and sixWeekGrid.ts are no longer imported by a route; the design's per-habit reminder is dropped (data: no nag — nags have no habit link, `nags.getForHabit` does not exist; TFV2-0077c–h are not wired here)`.
+- **REPORT:** `status / ticket: TFV2-0133b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/habits/[id]/page.tsx, apps/web/lib/e2e/fixtures/habit-detail.ts, tests/e2e/screens/habit-detail.spec.ts / unknowns / notes for ticket sync: HabitDetail.tsx and sixWeekGrid.ts are no longer imported by a route; the design's per-habit reminder is dropped (data: no nag — nags have no habit link, `nags.getForHabit` does not exist; TFV2-0077c–h are not wired here)`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions — `habitCheckIns.check` is TFV2-0067a's and `habitCheckIns.undo` TFV2-0067b's (range 2, signatures unchanged from the code); `preferences.get`, `habits.get`, `habits.update`, `habitCheckIns.listForHabit` are existing on integration, no ticket (the grid is built from `listForHabit`, so the new TFV2-0068a/0068b queries are not needed):
   ```ts
@@ -12504,7 +12504,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routines-view.spec.ts --reporter=line` → `36 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/routines-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex, `fetch` or `useRouter` (navigation after New routine is the route's job); parse page bodies in the View (the route passes parsed cards); show "Last done", a streak, a score or a missed count; give more than one card the primary Start; edit `RoutinesScreen.tsx`, `lib/routines.ts`, `tempo.css`, `habits.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0134a / evidence: <DONE output> / changed: apps/web/components/routines/RoutinesView.tsx, apps/web/app/e2e/components/routines-view/page.tsx, tests/e2e/screens/routines-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0134a / evidence: <DONE output> / changed: apps/web/components/routines/RoutinesView.tsx, apps/web/app/e2e/components/routines-view/page.tsx, tests/e2e/screens/routines-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -12590,7 +12590,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routines.spec.ts --reporter=line` → `40 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`.
 - **EVIDENCE:** the summaries of `CI=1 bunx playwright test tests/e2e/screens/routines.spec.ts --reporter=line` and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` pasted into the PR, `git diff apps/web/lib/e2eWiringRoutes.ts` (one added line), plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add `"/routines/(.*)"` (TFV2-0135b adds it); import `RoutinesScreen`; parse routines anywhere but through `lib/routines.ts`; use the browser's zone for "fits right now"; contact Convex when `?state=` is forced; call `routines.*` (no such module exists); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0134b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/routines/page.tsx, apps/web/lib/e2e/fixtures/routines.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/routines.spec.ts / unknowns / notes for ticket sync: RoutinesScreen.tsx is no longer imported by a route; if Q-07 picks the routines table (CFG-029/030, TFV2-0076) this page must be rewired`.
+- **REPORT:** `status / ticket: TFV2-0134b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/routines/page.tsx, apps/web/lib/e2e/fixtures/routines.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/routines.spec.ts / unknowns / notes for ticket sync: RoutinesScreen.tsx is no longer imported by a route; if Q-07 picks the routines table (CFG-029/030, TFV2-0076) this page must be rewired`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions (existing on integration, no ticket):
   ```ts
@@ -12637,7 +12637,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routine-detail-view.spec.ts --reporter=line` → `48 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/routine-detail-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex, `fetch`, `sessionStorage` or `localStorage` (the route keeps the run); advance the run without a tap; count skips as failure or show a score; edit `RoutineGuide.tsx`, `lib/routines.ts`, `tempo.css`, `habits.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0135a / evidence: <DONE output> / changed: apps/web/components/routines/RoutineDetailView.tsx, apps/web/app/e2e/components/routine-detail-view/page.tsx, tests/e2e/screens/routine-detail-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0135a / evidence: <DONE output> / changed: apps/web/components/routines/RoutineDetailView.tsx, apps/web/app/e2e/components/routine-detail-view/page.tsx, tests/e2e/screens/routine-detail-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -12741,7 +12741,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/routine-detail.spec.ts --reporter=line` → `48 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`.
 - **EVIDENCE:** the summaries of `CI=1 bunx playwright test tests/e2e/screens/routine-detail.spec.ts --reporter=line` and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` pasted into the PR, `git diff apps/web/lib/e2eWiringRoutes.ts` (one added line), plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** render the `RoutineGuide` component (import only its three exported storage helpers); write the run to Convex; read or write `sessionStorage` when `?state=` is forced; contact Convex when forced; edit `RoutineGuide.tsx`, `RoutineGuide.test.tsx` or `lib/routines.ts`; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0135b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/routines/[id]/page.tsx, apps/web/lib/e2e/fixtures/routine-detail.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/routine-detail.spec.ts / unknowns / notes for ticket sync: the RoutineGuide component is no longer rendered by a route; move readSavedRun/saveRun/sessionRunStorage into apps/web/lib/routines.ts in a cleanup ticket`.
+- **REPORT:** `status / ticket: TFV2-0135b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/routines/[id]/page.tsx, apps/web/lib/e2e/fixtures/routine-detail.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/routine-detail.spec.ts / unknowns / notes for ticket sync: the RoutineGuide component is no longer rendered by a route; move readSavedRun/saveRun/sessionRunStorage into apps/web/lib/routines.ts in a cleanup ticket`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex function (existing on integration, no ticket):
   ```ts
@@ -12788,7 +12788,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` pasted into the PR, `git diff tests/e2e/wiring/harness.spec.ts` (exactly one changed line), plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** weaken, loosen or remove the `toHaveURL(/\/sign-in\?/)` assertion; change the `/plan` test; add `test.skip`/`test.fixme`; edit `e2eWiringRoutes.ts`, `proxy.ts`, `playwright.config.ts` or any other spec; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0136c / evidence: <DONE output> / changed: tests/e2e/wiring/harness.spec.ts / unknowns / notes for ticket sync: /admin must stay out of E2E_WIRING_ROUTES; a ticket that registers it must move this example again`.
+- **REPORT:** `status / ticket: TFV2-0136c / evidence: <DONE output> / changed: tests/e2e/wiring/harness.spec.ts / unknowns / notes for ticket sync: /admin must stay out of E2E_WIRING_ROUTES; a ticket that registers it must move this example again`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Test-only change, no visible UI and no copy. After the edit lines 14–17 read exactly:
   ```ts
     test("a route outside the wiring list still redirects", async ({ page }) => {
@@ -12817,7 +12817,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals-view.spec.ts --reporter=line` → `52 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/goals-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex, `fetch`, `useRouter` or `window.history` (the route owns `?status=`); show projects, task counts, percentages or scores; call anything late or failed; render a second primary button; edit `GoalsScreen.tsx`, `goals/shared.tsx`, `lib/goals-projects.ts`, `tempo.css`, `goals.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0136a / evidence: <DONE output> / changed: apps/web/components/goals/GoalsView.tsx, apps/web/app/e2e/components/goals-view/page.tsx, tests/e2e/screens/goals-view.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0136a / evidence: <DONE output> / changed: apps/web/components/goals/GoalsView.tsx, apps/web/app/e2e/components/goals-view/page.tsx, tests/e2e/screens/goals-view.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -12920,7 +12920,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goals.spec.ts --reporter=line` → `48 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`.
 - **EVIDENCE:** the summaries of `CI=1 bunx playwright test tests/e2e/screens/goals.spec.ts --reporter=line` and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` pasted into the PR, `git diff apps/web/lib/e2eWiringRoutes.ts` (one added line), plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** add `"/goals/(.*)"` (TFV2-0137b adds it); call `projects.*` (no such module) or invent a goal→project link; import `GoalsScreen` or `goals/shared.tsx`; contact Convex when `?state=` is forced; edit `tests/e2e/wiring/harness.spec.ts` (TFV2-0136c did); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0136b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/goals/page.tsx, apps/web/lib/e2e/fixtures/goals.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/goals.spec.ts / unknowns / notes for ticket sync: GoalsScreen.tsx (and GoalsScreen.test.tsx) stay, no longer imported by a route; linked projects/task counts wait on CFG-006/CFG-007 (OPEN)`.
+- **REPORT:** `status / ticket: TFV2-0136b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/goals/page.tsx, apps/web/lib/e2e/fixtures/goals.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/goals.spec.ts / unknowns / notes for ticket sync: GoalsScreen.tsx (and GoalsScreen.test.tsx) stay, no longer imported by a route; linked projects/task counts wait on CFG-006/CFG-007 (OPEN)`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions (range-2 tickets verify them; signatures as in `convex/goals.ts` today):
   ```ts
@@ -12969,7 +12969,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goal-detail-view.spec.ts --reporter=line` → `44 passed`, no failures.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/goal-detail-view.spec.ts --reporter=line` pasted into the PR, plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call Convex or `fetch`; show linked projects, tasks, a next step, a percentage or a score; add a "Start" primary that does nothing; save an empty title; edit `GoalDetailScreen.tsx`, `goals/shared.tsx`, `lib/goals-projects.ts`, `tempo.css`, `goals.css` or i18n files; add a stylesheet; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0137a / evidence: <DONE output> / changed: apps/web/components/goals/GoalDetailView.tsx, apps/web/app/e2e/components/goal-detail-view/page.tsx, tests/e2e/screens/goal-detail-view.spec.ts / unknowns / notes for ticket sync: "This goal isn't here any more." is a new string (EN/HE below)`.
+- **REPORT:** `status / ticket: TFV2-0137a / evidence: <DONE output> / changed: apps/web/components/goals/GoalDetailView.tsx, apps/web/app/e2e/components/goal-detail-view/page.tsx, tests/e2e/screens/goal-detail-view.spec.ts / unknowns / notes for ticket sync: "This goal isn't here any more." is a new string (EN/HE below)`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   "use client";
@@ -13050,7 +13050,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/goal-detail.spec.ts --reporter=line` → `40 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` → `2 passed`.
 - **EVIDENCE:** the summaries of `CI=1 bunx playwright test tests/e2e/screens/goal-detail.spec.ts --reporter=line` and `CI=1 bunx playwright test tests/e2e/wiring/harness.spec.ts --reporter=line` pasted into the PR, `git diff apps/web/lib/e2eWiringRoutes.ts` (one added line), plus the exit codes of `bun run typecheck` and `bun run lint`.
 - **DO NOT:** call `goals.get`, `goals.nextStep`, `projects.*` or `tasks.listByGoal` (OPEN or nonexistent); import `GoalDetailScreen` or `goals/shared.tsx`; contact Convex when `?state=` is forced; add a `/goals/progress` line (covered by `"/goals/(.*)"`); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0137b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/goals/[id]/page.tsx, apps/web/lib/e2e/fixtures/goal-detail.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/goal-detail.spec.ts / unknowns / notes for ticket sync: GoalDetailScreen.tsx is no longer imported by a route; TFV2-0138 (range 4) must not add "/goals/progress" because "/goals/(.*)" already matches it`.
+- **REPORT:** `status / ticket: TFV2-0137b / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/goals/[id]/page.tsx, apps/web/lib/e2e/fixtures/goal-detail.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/goal-detail.spec.ts / unknowns / notes for ticket sync: GoalDetailScreen.tsx is no longer imported by a route; TFV2-0138 (range 4) must not add "/goals/progress" because "/goals/(.*)" already matches it`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   Convex functions (range-2 tickets verify them; signatures as in `convex/goals.ts` today):
   ```ts
@@ -13458,7 +13458,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test apps/web/lib/zonedDay.test.ts` → `7 pass`, `0 fail` (a new file: all 7 tests are this ticket's); `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `bun test apps/web/lib/zonedDay.test.ts` pasted into the PR, plus the `bun run typecheck` exit code.
 - **DO NOT:** edit `apps/web/lib/localDay.ts`, `todayBounds.ts`, `period-pages.ts` or `useLocalDayBounds.ts`; add a date library dependency; read `Date.now()` inside the module; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0142a / evidence: <DONE output> / changed: apps/web/lib/zonedDay.ts, apps/web/lib/zonedDay.test.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0142a / evidence: <DONE output> / changed: apps/web/lib/zonedDay.ts, apps/web/lib/zonedDay.test.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure module, exact code:
   ```ts
   export type WeekStartsOn = 0 | 1 | 6;
@@ -13547,7 +13547,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/insights.spec.ts --reporter=line` → `28 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/fix/insights-loads.spec.ts --reporter=line` → `1 passed`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/insights.spec.ts --reporter=line` pasted into the PR, plus the summary of `CI=1 bunx playwright test tests/e2e/fix/insights-loads.spec.ts --reporter=line`, the `bun run typecheck` exit code and the one-line `git diff` of `e2eWiringRoutes.ts`.
 - **DO NOT:** show `bestStreak`, `habitsWithActiveStreak` or `tasksOverdue` from `insightsSummary` (PRD F-10; "overdue" is a shaming word, CONVENTIONS §12); call `analytics.tasksByWeekday` or `analytics.focusMinutesByWeek` (TFV2-0079b/0079c add them; this ticket uses the queries that exist today and does not wait on those tickets); edit `InsightsScreen.tsx`, `insightsState.ts`, `tests/e2e/fix/insights-loads.spec.ts` or i18n files; read the browser time zone; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0142b / evidence: <DONE output> / changed: page.tsx, fixtures/insights.ts, e2eWiringRoutes.ts, insights.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0142b / evidence: <DONE output> / changed: page.tsx, fixtures/insights.ts, e2eWiringRoutes.ts, insights.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="insights-screen">`; header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`; sections `.tp-section` / `.tp-section__head` / `.tp-section__title`.
   - **Imports:** `useConvexAuth`, `useQuery` from `convex/react`; `api`; `Link`; `Suspense`, `useState` from `react`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `zonedIsoDate`, `zonedMidnightMs`, `addIsoDays`, `isoWeekday`, `weekStartDate`, `type WeekStartsOn` from `@/lib/zonedDay`; `Notice` from `@/components/layout/Notice`; `List`, `ListRow` from `@/components/lists/ListRow`; `BarChart`, `LineChart`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/insights`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`. The page also states `import type React from "react";` and annotates its function components' return type as `React.JSX.Element` (CONVENTIONS §22).
@@ -13639,7 +13639,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` → `32 passed`, `2 skipped` (the two existing storage-state cases skip locally), 0 failed; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/activity.spec.ts --reporter=line` pasted into the PR, plus the `bun run typecheck` exit code and `git diff --stat` showing the spec file with additions only.
 - **DO NOT:** edit or remove the existing `activity screen` describe block; edit `ActivityScreen.tsx`, `lib/i18n-groups/kb-66.ts`, `lib/i18n-groups/you.ts` or `convex/activity.ts`; add an Undo button or a "by the coach" filter (no coach rows exist until TFV2-0081b); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0143a / evidence: <DONE output> / changed: page.tsx, fixtures/activity.ts, e2eWiringRoutes.ts, activity.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0143a / evidence: <DONE output> / changed: page.tsx, fixtures/activity.ts, e2eWiringRoutes.ts, activity.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="activity-screen">`; header `<h1 className="tp-pagehead__title">{copy.title}</h1>` and sub `copy.sub`. The feed sits in `<section className="tp-section" data-component="Section" aria-label={copy.feedRegion}>` (a named region, kept for the existing spec).
   - **Imports:** `useConvexAuth`, `useQuery`; `api`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `zonedIsoDate` from `@/lib/zonedDay`; `List`, `ListRow`; `Segmented`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/activity`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`. The page also states `import type React from "react";` and annotates its function components' return type as `React.JSX.Element` (CONVENTIONS §22).
@@ -13787,7 +13787,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/search.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/search.spec.ts --reporter=line` pasted into the PR; also the summary of `CI=1 bunx playwright test tests/e2e/wiring/habits-braindump-search.spec.ts --reporter=line` and the `bun run typecheck` exit code.
 - **DO NOT:** edit `SearchScreen.tsx`, `ResultGroup.tsx`, `ProfileReady.tsx`, i18n files or `e2eWiringRoutes.ts`; filter results on the client instead of calling `search.all`; call `search.recentQueries` (does not exist); show raw JSON; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0144 / evidence: <DONE output> / changed: apps/web/app/(tempo)/search/page.tsx, apps/web/lib/e2e/fixtures/search.ts, tests/e2e/screens/search.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0144 / evidence: <DONE output> / changed: apps/web/app/(tempo)/search/page.tsx, apps/web/lib/e2e/fixtures/search.ts, tests/e2e/screens/search.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="search-route">` (testid kept from today's page); header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`; below it, in every state, `<SearchInput id="search-q" label={copy.inputLabel} value={query} onChange={onQuery} placeholder={copy.placeholder} labelHidden />`.
   - **Imports:** `useConvexAuth`, `useQuery`; `api`; `Link`; `useRouter`, `useSearchParams` from `next/navigation`; `Suspense`, `useState` from `react`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `SearchInput` from `@/components/lists/SearchInput`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/search`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
@@ -13875,7 +13875,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → `20 passed`, `3 skipped` (the existing storage-state cases), 0 failed; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` pasted into the PR; also the `bun run typecheck` exit code and the `git diff` of `page.tsx` (one attribute) and `e2eWiringRoutes.ts` (one line).
 - **DO NOT:** edit `CommandPalette.tsx`, `lib/command-palette.ts`, `lib/i18n*`, `TempoShell` or the existing `command screen` block; add Convex calls to the page; assert the Hebrew strings `cmd.label`, `cmd.offline`, `cmd.recent.empty`, `cmd.j.tasks` (they are gendered today; see notes for ticket sync); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0145 / evidence: <DONE output> / changed: page.tsx, e2eWiringRoutes.ts, command.spec.ts / unknowns / notes for ticket sync: extras.ts cmd.label, cmd.offline, cmd.recent.empty, cmd.j.tasks use gendered Hebrew (CONVENTIONS §12); fix belongs to the i18n ticket TFV2-0020`.
+- **REPORT:** `status / ticket: TFV2-0145 / evidence: <DONE output> / changed: page.tsx, e2eWiringRoutes.ts, command.spec.ts / unknowns / notes for ticket sync: extras.ts cmd.label, cmd.offline, cmd.recent.empty, cmd.j.tasks use gendered Hebrew (CONVENTIONS §12); fix belongs to the i18n ticket TFV2-0020`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** No new UI. The page as it is today:
   - Root `<div className="tp-page" data-component="PageLayout" data-testid="command-screen">`; `<h1 className="tp-pagehead__title">` = EN "Command" / HE "פקודות" (`cmd.page.title`); sub = EN "Find a screen or an action, then press Enter. Arrow keys move through the list." / HE "מוצאים מסך או פעולה ולוחצים Enter. החצים עוברים ברשימה." (`cmd.page.sub`).
   - Combobox (role `combobox`) named EN "Filter screens" / HE "סינון מסכים" (`cmd.filter`); listbox named EN "Results" / HE "תוצאות" (`cmd.list`); groups "Jump to" / "מעבר אל" and "Actions" / "פעולות"; the last action "Search everything" / "חיפוש בכל מקום" (`cmd.all`) always matches; the first row of a new query is `aria-selected="true"`; ArrowDown/ArrowUp move and wrap; Enter opens the active row; a row's `alt` is the screen's English title, so typing "search" matches the Search screen in both languages.
@@ -13906,7 +13906,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notifications.spec.ts --reporter=line` → `36 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` → `4 passed`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/notifications.spec.ts --reporter=line` pasted into the PR; also the summary of `CI=1 bunx playwright test tests/e2e/wiring/settings-account.spec.ts --reporter=line` and the `bun run typecheck` exit code.
 - **DO NOT:** add push or email delivery (Q-11); edit `NotificationsScreen.tsx`, `lib/i18n-groups/kb-70.ts`, `lib/you/*`, i18n files or `e2eWiringRoutes.ts`; delete notifications; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0146 / evidence: <DONE output> / changed: page.tsx, fixtures/notifications.ts, notifications.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0146 / evidence: <DONE output> / changed: page.tsx, fixtures/notifications.ts, notifications.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; root `<div className="tp-page" data-component="PageLayout" data-testid="notifications-page">` (testid kept for the wiring spec) — rendered in every state, including loading and signed-out. Header `.tp-pagehead`: `<h1>` `copy.title`, sub `copy.sub`, actions: `<button type="button" className="tp-btn tp-btn--secondary" data-component="Button" disabled={unread === 0 || busy}>{copy.markAll}</button>` (shown only in ready views).
   - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `Notice`, `Badge`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/notifications`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
@@ -13987,7 +13987,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` → `44 passed`, 0 failed; `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line` → `2 passed`; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` pasted into the PR; also the summary of `CI=1 bunx playwright test tests/e2e/wiring/settings-nags-memory.spec.ts --reporter=line` and the `bun run typecheck` exit code.
 - **DO NOT:** edit or delete `apps/web/app/(tempo)/settings/nags/NagsScreen.tsx`, `components/nags/nagRules.ts`, `lib/i18n-groups/kb-67.ts` or `e2eWiringRoutes.ts`; let the switch turn on with no accepted phrase; add stock phrases or emoji; call `nags.proposePhrases` (TFV2-0147b); mention a delivery channel; create a `/nags` route; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0147a / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0147a / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; root `<div className="tp-page tp-page--narrow" data-component="PageLayout" data-testid="settings-nags">` in every state; header `.tp-pagehead` with `<h1>` `copy.title` and sub `copy.sub`.
   - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `Notice`; `List`, `ListRow`; `Form` from `@/components/forms/Form`; `TextInput` from `@/components/forms/TextInput`; `Switch` from `@/components/forms/Switch`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/settings-nags`. Module paths: `useConvexAuth`/`useQuery`/`useMutation`/`useAction` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useRouter`/`useParams`/`useSearchParams` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Notice`/`Badge`/`WeekStrip`/`ProjectStatus` from `@/components/layout/<Name>`; `List`/`ListRow` from `@/components/lists/ListRow`; `Segmented`/`SearchInput` from `@/components/lists/<Name>`; `Kanban`/`KanbanCard` from `@/components/kanban/<Name>`; `BarChart`/`LineChart` from `@/components/charts/<Name>`; `Form`/`TextInput`/`Switch` from `@/components/forms/<Name>`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
@@ -14096,7 +14096,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` → `56 passed`, 0 failed; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/settings-nags.spec.ts --reporter=line` pasted into the PR; also the `bun run typecheck` exit code.
 - **DO NOT:** auto-accept a proposal; add a proposal as `source: "user"`; call the model from the client; show the button on a nag without an accepted `user` phrase; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0147b / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`.
+- **REPORT:** `status / ticket: TFV2-0147b / evidence: <DONE output> / changed: page.tsx, fixtures/settings-nags.ts, settings-nags.spec.ts / unknowns / notes for ticket sync`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Button:** in each nag section, under the phrase list, when `phrases.some(p => p.source === "user" && p.status === "accepted")`: `<button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" data-component="Button" disabled={suggesting === id} aria-label={copy.suggestAria.replace("{label}", label)}>{suggesting === id ? copy.suggesting : copy.suggest}</button>`.
   - **Live action:** `const propose = useAction(api.nags.proposePhrases)`; on click `const { proposals } = await propose({ nagId })`; for each proposal in order `await addPhrase({ nagId, text, source: "derived" })` and append `{ id: phraseId, text, source: "derived", status: "proposed" }` locally; notice `suggested` with `{n}` = proposals added, or `noSuggestions` when the list is empty. Errors (substring match): `"Sign in to use phrase suggestions."` → `signInSuggest`; `"Suggestions are not configured here yet."` → `notConfigured`; `"Too many requests right now."` → `tooMany`; `"The suggester had a hiccup."` → `hiccup`; `"Nag not found"` → `nagGone` (from TFV2-0147a); anything else → `failed`. Forced mode makes no Convex call and shows the `noSuggestions` notice.
@@ -14148,7 +14148,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/weekly-page.spec.ts --reporter=line` → `40 passed`, 0 failed; `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/weekly-page.spec.ts --reporter=line` pasted into the PR; also the `bun run typecheck` exit code and the one-line `git diff` of `e2eWiringRoutes.ts`.
 - **DO NOT:** edit `WeekOpener.tsx`, `usePeriodPage.ts`, `week/page.tsx`, `lib/period-pages.ts`, `lib/zonedDay.ts` or any `notes` page; render or edit the week page's body here (it lives at `/notes/[id]`); hard-code Monday or the browser time zone; call `pages.getWeekly`, `tasks.listForWeek` or `notes.backlinks` (the first two do not exist; backlinks need a note id this screen does not own); touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0148 / evidence: <DONE output> / changed: apps/web/app/(tempo)/week/[week]/page.tsx, apps/web/lib/e2e/fixtures/weekly-page.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/weekly-page.spec.ts / unknowns / notes for ticket sync: links that expect /week/<key> to land on the note now land on this overview, one click from it`.
+- **REPORT:** `status / ticket: TFV2-0148 / evidence: <DONE output> / changed: apps/web/app/(tempo)/week/[week]/page.tsx, apps/web/lib/e2e/fixtures/weekly-page.ts, apps/web/lib/e2eWiringRoutes.ts, tests/e2e/screens/weekly-page.spec.ts / unknowns / notes for ticket sync: links that expect /week/<key> to land on the note now land on this overview, one click from it`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   - **Route and layout:** `"use client"`; `const { week } = useParams<{ week: string }>()` (`next/navigation`); `monday = mondayOfWeekKey(week)`. Root `<div className="tp-page" data-component="PageLayout" data-testid="weekly-page-screen">`; header `.tp-pagehead`: `<h1>` = `copy.title` with `{n}` = `Number(week.slice(6))`; sub = `copy.range` with `{start}`/`{end}` = `Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC" })` of the first and last day; actions: `<Link href={"/week/" + weekKey(addDays(monday, -7))} className="tp-btn tp-btn--ghost tp-btn--sm">{copy.prev}</Link>`, `<Link href={"/week/" + weekKey(addDays(monday, 7))} className="tp-btn tp-btn--ghost tp-btn--sm">{copy.next}</Link>`, `<Link href="/today" className="tp-btn tp-btn--secondary tp-btn--sm">{copy.openToday}</Link>`.
   - **Imports:** `useConvexAuth`, `useMutation`, `useQuery`; `api`; `type Id`; `Link`; `useParams`, `useRouter`; `Suspense`, `useState`; `useLocale`; `type Lang`; `useOnline`; `useE2EState`; `ScreenBoundary`; `mondayOfWeekKey`, `weekKey`, `addDays`, `periodPageDraft` from `@/lib/period-pages`; `zonedIsoDate`, `zonedMidnightMs`, `addIsoDays`, `weekStartDate` from `@/lib/zonedDay`; `WeekStrip` from `@/components/layout/WeekStrip`; `Badge`; `Notice`; `List`, `ListRow`; the four State components; `FIXTURES` from `@/lib/e2e/fixtures/weekly-page`. Module paths: `useConvexAuth`/`useQuery`/`useMutation` from `convex/react`; `api` from `@/convex/_generated/api`; `type Id` from `@/convex/_generated/dataModel`; `Link` from `next/link`; `useParams`/`useRouter` from `next/navigation`; `Suspense`/`useState` from `react`; `useLocale` from `@/components/providers/LocaleProvider`; `type Lang` from `@/lib/i18n`; `useOnline` from `@/lib/useOnline`; `useE2EState` from `@/lib/e2e/useE2EState`; `ScreenBoundary` from `@/components/goals/shared`; `Badge` from `@/components/layout/Badge`; `Notice` from `@/components/layout/Notice`; `List`/`ListRow` from `@/components/lists/ListRow`; `StateEmpty`/`StateLoading`/`StateError`/`StateOffline` from `@/components/states/<Name>`.
@@ -14287,7 +14287,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/coachPrompt.test.ts` → `45 pass`, `0 fail` (40 on `integration` + this ticket's 5); then `bun test convex/lib/coachHistory.test.ts` → `8 pass`, `0 fail` (unchanged).
 - **EVIDENCE:** the summary of `bun test convex/lib/coachPrompt.test.ts` pasted into the PR, and the summary of `bun test convex/lib/coachHistory.test.ts`.
 - **DO NOT:** change the order or text of any other message `buildCoachMessages` builds; change existing `COACH_LIMITS` values; read the database here (this is a pure helper; TFV2-0155b passes the memories in); edit `convex/coach.ts`; edit or delete any existing test.
-- **REPORT:** `status / ticket: TFV2-0155a / evidence: <DONE output> / changed: convex/lib/coachPrompt.ts, convex/lib/coachPrompt.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0155a / evidence: <DONE output> / changed: convex/lib/coachPrompt.ts, convex/lib/coachPrompt.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure helper (no Convex function kind).
   ```ts
   export function buildCoachMessages(args: {
@@ -14333,7 +14333,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach_chat.test.ts` → `79 pass`, `0 fail` (68 on `integration` + TFV2-0015's 7 + this ticket's 4).
 - **EVIDENCE:** the summary of `bun test convex/coach_chat.test.ts` pasted into the PR.
 - **DO NOT:** change `runCoachReply`, `buildCoachMessages`, the claim/lease logic, `saveReply` or any other field of the turn context; read memories anywhere but `claimTurn`; write to `memories` (no access bump here — that is TFV2-0229); edit or delete existing tests; touch `convex/schema.ts`.
-- **REPORT:** `status / ticket: TFV2-0155b / evidence: <DONE output> / changed: convex/coach.ts, convex/coach_chat.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0155b / evidence: <DONE output> / changed: convex/coach.ts, convex/coach_chat.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** `claimTurn` stays an `internalMutation` with unchanged args; its non-null, non-`"busy"` return gains `memory: string[]`.
   ```ts
   const memories = await ctx.db
@@ -14627,7 +14627,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/conversations.test.ts` → `13 pass`, `0 fail` (4 on `integration` + this ticket's 9).
 - **EVIDENCE:** the summary of `bun test convex/conversations.test.ts` pasted into the PR.
 - **DO NOT:** change `list`, `get`, `create`, `updateTechnique`, `updateTitle`, `remove` or `requireOwnedLiveConversation`; return message bodies beyond the one clipped line; return `agentThreadId` or any other host Agent field; edit existing tests; touch `convex/schema.ts`.
-- **REPORT:** `status / ticket: TFV2-0163 / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0163 / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   import { truncate } from "./lib/coachPrompt";
@@ -14685,7 +14685,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/conversations.test.ts` → `22 pass`, `0 fail` (4 on `integration` + TFV2-0163's 9 + this ticket's 9).
 - **EVIDENCE:** the summary of `bun test convex/conversations.test.ts` pasted into the PR.
 - **DO NOT:** change `messages.searchMine` or `listThreads`; store the query; search another user's rows; run a vector search; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0164a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0164a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const SEARCH_THREADS_MAX = 20;
@@ -14765,7 +14765,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/conversations.test.ts` → `29 pass`, `0 fail` (22 after TFV2-0164a + this ticket's 7).
 - **EVIDENCE:** the summary of `bun test convex/conversations.test.ts` pasted into the PR.
 - **DO NOT:** return `toolCalls`, `councilResponse`, `modelUsed`, claim tokens or Agent fields; return `system` messages; change `messages.list`, `storedProposal` or `requireOwnedLiveConversation`; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0165a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0165a / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const THREAD_MESSAGES_MAX = 200;
@@ -14817,7 +14817,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/conversations.test.ts` → `33 pass`, `0 fail` (29 after TFV2-0165a + this ticket's 4); then `bun run typecheck` → exit 0.
 - **EVIDENCE:** the summary of `bun test convex/conversations.test.ts` pasted into the PR, and the exit code of `bun run typecheck`.
 - **DO NOT:** change `create`'s args, default title, auth or insert; add a `createThread` function; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0165b / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0165b / evidence: <DONE output> / changed: convex/conversations.ts, convex/conversations.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const create = mutation({
@@ -14849,7 +14849,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `7 pass`, `0 fail` (2 on `integration` + this ticket's 5).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`; change `DEFAULT_DIAL` or `MIN_LOAD`; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0166a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0166a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const getSettings = query({
@@ -14882,7 +14882,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `12 pass`, `0 fail` (7 after TFV2-0166a + this ticket's 5).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`; change how the dial reaches the prompt (TFV2-0226); edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0166b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0166b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const setDial = mutation({
@@ -14915,7 +14915,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `16 pass`, `0 fail` (12 after TFV2-0166b + this ticket's 4).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts` or `convex/lib/coachLoad.ts`; call a model; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0167a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0167a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const pressPanic = mutation({
@@ -14947,7 +14947,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `20 pass`, `0 fail` (16 after TFV2-0167a + this ticket's 4).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0167b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0167b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const clearPanic = mutation({
@@ -14979,7 +14979,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/coachLoad.test.ts` → `13 pass`, `0 fail` (9 on `integration` + this ticket's 4).
 - **EVIDENCE:** the summary of `bun test convex/lib/coachLoad.test.ts` pasted into the PR.
 - **DO NOT:** change `TEN_SECOND_ACTIONS`, `pickTenSecondAction` or any other export; change `convex/coach.ts` or the stored action string; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0167c / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0167c / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure helper.
   ```ts
   /** Same order as TEN_SECOND_ACTIONS; gender-neutral infinitives (CONVENTIONS §12). */
@@ -15016,7 +15016,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `27 pass`, `0 fail` (20 after TFV2-0167b + this ticket's 7); then `bun test convex/coach_chat.test.ts` → `79 pass`, `0 fail` (unchanged).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR, and the summary of `bun test convex/coach_chat.test.ts`.
 - **DO NOT:** change the panic branch, `LOW_ACTIVITY_DAYS`, `MIN_LOAD`, `effectiveLoad`, the return shape, or any other function; word a bad day as failure anywhere; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0168 / evidence: <DONE output> / changed: convex/coach.ts, convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0168 / evidence: <DONE output> / changed: convex/coach.ts, convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   // inside computeBadDay, replacing the collect():
@@ -15059,7 +15059,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/coachLoad.test.ts` → `18 pass`, `0 fail` (13 after TFV2-0167c + this ticket's 5).
 - **EVIDENCE:** the summary of `bun test convex/lib/coachLoad.test.ts` pasted into the PR.
 - **DO NOT:** change the English wording, `DEFAULT_TASK_MINUTES`, the `ok` rule or the return shape of `checkRealism`; touch `convex/coach.ts` or the schema; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0169 / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0169 / evidence: <DONE output> / changed: convex/lib/coachLoad.ts, convex/lib/coachLoad.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:** Pure helper.
   ```ts
   export const REALISM_NOTES = {
@@ -15093,7 +15093,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `33 pass`, `0 fail` (27 after TFV2-0168 + this ticket's 6).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`; call a model; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0170a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0170a / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const createProposal = mutation({
@@ -15127,7 +15127,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `38 pass`, `0 fail` (33 after TFV2-0170a + this ticket's 5).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts`; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0170b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0170b / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const currentProposal = query({
@@ -15166,7 +15166,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/coach.test.ts` → `45 pass`, `0 fail` (38 after TFV2-0170b + this ticket's 7).
 - **EVIDENCE:** the summary of `bun test convex/coach.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/coach.ts` or `convex/lib/coachLoad.ts`; edit existing tests.
-- **REPORT:** `status / ticket: TFV2-0170c / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0170c / evidence: <DONE output> / changed: convex/coach.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const decideProposal = mutation({
@@ -15201,7 +15201,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `6 pass`, `0 fail` (new file; this ticket's 6).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memory.ts`, `convex/memories.ts`, `convex/memoryUndo.test.ts` or `convex/memoryImport.test.ts`; touch the schema.
-- **REPORT:** `status / ticket: TFV2-0171 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0171 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const remember = mutation({
@@ -15235,7 +15235,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `12 pass`, `0 fail` (TFV2-0171's 6 + this ticket's 6).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memory.ts`; edit other describe blocks.
-- **REPORT:** `status / ticket: TFV2-0172 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0172 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const list = query({
@@ -15269,7 +15269,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `18 pass`, `0 fail` (TFV2-0171's 6 + TFV2-0172's 6 + this ticket's 6).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memory.ts`; add a search index (schema is config lane); edit other describe blocks.
-- **REPORT:** `status / ticket: TFV2-0173 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0173 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const recall = query({
@@ -15458,7 +15458,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `29 pass`, `0 fail` (18 from TFV2-0171–0173 + 11 here).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** write to any table; follow edges more than one hop; return another user's rows; drop the `origin` mark; touch the schema.
-- **REPORT:** `status / ticket: TFV2-0175 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0175 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const LINK_ENTITY_SCAN = 500;   // entity rows read
@@ -15508,7 +15508,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `37 pass`, `0 fail` (29 from the `Depends` chain + 8 here).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** scan all memories and filter in code; change other functions; touch the schema.
-- **REPORT:** `status / ticket: TFV2-0176 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0176 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const recallByTime = query({
@@ -15591,7 +15591,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `45 pass`, `0 fail` (37 from the `Depends` chain + 8 here).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** change the default of 10, the sort, or `count`'s meaning (rows considered); change other functions.
-- **REPORT:** `status / ticket: TFV2-0178 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0178 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const CONTEXT_MAX_CHARS = 4000;
@@ -15759,7 +15759,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `51 pass`, `0 fail` (45 from the `Depends` chain + 6 here).
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memory.ts`; translate the document (the export file format is English Markdown in the code today; the screen's own labels are EN/HE in TFV2-0220).
-- **REPORT:** `status / ticket: TFV2-0182 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0182 / evidence: <DONE output> / changed: convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const exportAll = query({
@@ -16071,7 +16071,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `14 pass`, `0 fail` (8 from TFV2-0186a + 6 here).
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** return another user's or a deleted entity; return `userId` or `deletedAt`; change `upsertEntity` or its `describe` block.
-- **REPORT:** `status / ticket: TFV2-0186b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0186b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const entityValidator = v.object({
@@ -16148,7 +16148,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `25 pass`, `0 fail` (14 from the `Depends` chain + 11 here).
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** call a model or write `origin: "inferred"`; create entities; touch edges of other pages or `inferred` edges; hard-delete; edit `convex/notes.ts` (wiring is a later ticket); write a second link parser.
-- **REPORT:** `status / ticket: TFV2-0187a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0187a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const EXTRACT_LINK_MAX = 100;   // distinct link targets used per page
@@ -16206,7 +16206,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `30 pass`, `0 fail` (25 from the `Depends` chain + 5 here).
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** export it as a public `query`; return another user's rows; call a model; change other functions.
-- **REPORT:** `status / ticket: TFV2-0187b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0187b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const INFER_BODY_MAX = 8000; // UTF-16 units of page body sent to the model
@@ -16342,7 +16342,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `36 pass`, `0 fail` (30 from the `Depends` chain + 6 here).
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** change `origin`, `confidence` or `relation`; clear `confirmedAt` (a confirmed edge never turns back into a guess); touch another user's edge.
-- **REPORT:** `status / ticket: TFV2-0188a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0188a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const confirmEdge = mutation({
@@ -16381,7 +16381,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `43 pass`, `0 fail` (36 from the `Depends` chain + 7 here).
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** follow edges more than one hop; return another user's rows or a deleted edge or entity; write anything.
-- **REPORT:** `status / ticket: TFV2-0188b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0188b / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const EDGE_LIST_SCAN = 100; // edges read per direction
@@ -16444,7 +16444,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `49 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** traverse more than one hop; return another user's or a deleted row; write anything.
-- **REPORT:** `status / ticket: TFV2-0189 / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0189 / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const NEIGHBOR_EDGE_SCAN = 100; // edges read per direction
@@ -16490,7 +16490,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `55 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** make it public; return memories of an unapproved, revoked or inactive person; return `metadata`, `embedding` or other fields; call a model.
-- **REPORT:** `status / ticket: TFV2-0190a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0190a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const REFLECT_SCAN = 500;         // memory rows read
@@ -16652,7 +16652,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lifeGraph.test.ts` → `60 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/lifeGraph.test.ts` pasted into the PR.
 - **DO NOT:** return another user's or a deleted observation; return `userId`, `updatedAt` or `deletedAt`; write anything.
-- **REPORT:** `status / ticket: TFV2-0191a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0191a / evidence: <DONE output> / changed: convex/lifeGraph.ts, convex/lifeGraph.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const OBSERVATION_LIST_MAX = 100;
@@ -16724,7 +16724,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test apps/web/lib/you/memory.test.ts` → `18 pass`, `0 fail` (12 on `integration` today + this ticket's 6).
 - **EVIDENCE:** the summary of `bun test apps/web/lib/you/memory.test.ts` pasted into the PR.
 - **DO NOT:** edit `apps/web/lib/you/memory.ts`, `convex/lib/memoryImport.ts` or any Convex file; add a server preview function; edit the existing `describe` blocks.
-- **REPORT:** `status / ticket: TFV2-0192 / evidence: <DONE output> / changed: apps/web/lib/you/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0192 / evidence: <DONE output> / changed: apps/web/lib/you/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export type ImportItem = { id: string; text: string; choice: "keep" | "edit" | "drop"; duplicate: boolean };
@@ -16757,7 +16757,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memoryImport.test.ts` → `20 pass`, `0 fail` (13 on `integration` today + this ticket's 7).
 - **EVIDENCE:** the summary of `bun test convex/memoryImport.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/memoryImport.ts`, `convex/lib/memoryImport.ts` or `convex/memoryUndo.test.ts`; change the existing `describe` blocks or the local helpers; add a new commit function.
-- **REPORT:** `status / ticket: TFV2-0193 / evidence: <DONE output> / changed: convex/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0193 / evidence: <DONE output> / changed: convex/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const saveReviewed = mutation({
@@ -16795,7 +16795,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `56 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** change `updatedAt`, `lastAccessed` or `accessCount`; raise any salience; edit `convex/memories.ts`; make it public; add the cron here (TFV2-0195b).
-- **REPORT:** `status / ticket: TFV2-0195a / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0195a / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const DAY_MS = 86_400_000;
@@ -16835,7 +16835,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `59 pass`, `0 fail`; `bun run typecheck` → exit code 0.
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` and the `bun run typecheck` exit code pasted into the PR, plus `git diff convex/crons.ts` showing the one added line.
 - **DO NOT:** decay inside this mutation; edit existing cron lines or the file comment; schedule for deleted or inactive accounts; make it public.
-- **REPORT:** `status / ticket: TFV2-0195b / evidence: <DONE output> / changed: convex/memory.ts, convex/crons.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0195b / evidence: <DONE output> / changed: convex/memory.ts, convex/crons.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const DECAY_USERS_MAX = 500;
@@ -19177,7 +19177,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/memory.test.ts` → `66 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/memory.test.ts` pasted into the PR.
 - **DO NOT:** change `updatedAt` or `content`; exceed salience 1.0; touch another user's or a deleted row; change `recall` or any other function; edit `convex/memories.ts`.
-- **REPORT:** `status / ticket: TFV2-0229 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0229 / evidence: <DONE output> / changed: convex/memory.ts, convex/memory.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export const TOUCH_BUMP = 0.02;
@@ -19291,7 +19291,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `bun test convex/lib/memoryImport.test.ts` → `6 pass`, `0 fail`.
 - **EVIDENCE:** the summary of `bun test convex/lib/memoryImport.test.ts` pasted into the PR.
 - **DO NOT:** edit `convex/lib/memoryImport.ts`, `convex/memory.ts` or `convex/memoryImport.test.ts`; change any source label.
-- **REPORT:** `status / ticket: TFV2-0231 / evidence: <DONE output> / changed: convex/lib/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format).
+- **REPORT:** `status / ticket: TFV2-0231 / evidence: <DONE output> / changed: convex/lib/memoryImport.test.ts / unknowns / notes for ticket sync` (AGENTS.md format). List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   export function utf8ByteLength(text: string): number;          // new TextEncoder().encode(text).length
@@ -23477,7 +23477,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **DONE:** `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` → `32 passed`; and `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → `6 passed`.
 - **EVIDENCE:** the summary of `CI=1 bunx playwright test tests/e2e/screens/templates.spec.ts --reporter=line` and the summary of `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line`, plus typecheck and lint exit codes, pasted into the PR.
 - **DO NOT:** edit `TemplatesView.tsx`, `TemplatesLibrary.tsx` (stays, unimported) or its tests, `e2eWiringRoutes.ts`; contact Convex when forced; touch `convex/**`, `.github/**`, `.env*`.
-- **REPORT:** `status / ticket: TFV2-0286c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/page.tsx, apps/web/lib/e2e/fixtures/templates.ts, tests/e2e/screens/templates.spec.ts / unknowns / notes for ticket sync: TemplatesLibrary.tsx is no longer imported`.
+- **REPORT:** `status / ticket: TFV2-0286c / evidence: <DONE outputs> / changed: apps/web/app/(tempo)/templates/page.tsx, apps/web/lib/e2e/fixtures/templates.ts, tests/e2e/screens/templates.spec.ts / unknowns / notes for ticket sync: TemplatesLibrary.tsx is no longer imported`. List every STEP and every DONE item with its evidence (gate 10 fails a REPORT that misses one).
 - **SPEC:**
   ```ts
   api.templates.list      // query    { scope?: "all" | "starter" | "mine" } → { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[]; body: string; updatedAt?: number }[]
