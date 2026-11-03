@@ -1,4 +1,4 @@
-# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026 · fix round 3 (§1 file totals, §11 imports, §13 log, §15 target size, §21 Jev id, §23.8), 3 Nov 2026
+# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026 · fix round 3 (§1 file totals, §11 imports, §13 log, §15 target size, §21 Jev id, §23.8), 3 Nov 2026 · fix round 4 (§1 shared-file totals, §11 CopyKey, §15 helpers, §18, §23.4, §23.9), 3 Nov 2026
 
 One source of truth for every ticket in [`BACKLOG-v2.md`](./BACKLOG-v2.md). Decided once here so no
 ticket re-decides it. Verified against this repo at branch `docs/source-2026-11-01`
@@ -33,6 +33,11 @@ chain adds to the same file, plus this ticket's own. Never a name filter (`-t "�
 symbolic count (`P + 3`, "the 4 new cases passing"). When an earlier ticket also adds tests to the same file, that
 ticket is in `Depends` (so the total is fixed), and STEP 1 checks the starting total with
 `grep -cE '^\s*(test|it)\(' <path>` (expected: the number the ticket states).
+
+**A shared test file states its whole-file total too (fix round 4, 3 Nov 2026).** When DONE runs a test file that
+other tickets also edit or that already exists (`convex/lib/accountDeletion.test.ts`, an existing `convex/<module>.test.ts`),
+the expected output is that file's exact total, `<N> pass`, `0 fail`, worked out as above; `→ 0 fail` alone is never a DONE.
+`convex/lib/accountDeletion.test.ts` is `66 pass`, `0 fail` (§18).
 
 **`bun test <path>` runs one file. `bun run test <path>` is WRONG and does not run the file:**
 `scripts/test-suites.ts` treats any extra argument as a *browser-suite name filter*, finds no
@@ -362,7 +367,7 @@ export const VIEWPORTS = {
   desktop: { width: 1280, height: 800 },
 } as const;
 export type HarnessLang = "en" | "he";
-/** Opens /e2e/components/<id>?lang=<lang>&theme=<theme> and waits for [data-testid="<id>-default"] or the first state section. */
+/** Opens /e2e/components/<id>?lang=<lang>&theme=<theme> and waits until the first `section[data-testid^="<id>-"]` is visible (a state section, never the `<output data-testid="<id>-log">`). */
 export function openHarness(page: Page, id: string, opts?: { lang?: HarnessLang; theme?: "light" | "dark" }): Promise<void>;
 /** Opens <route>?state=<state>&lang=<lang>, then page.waitForLoadState("networkidle"). */
 export function openScreen(page: Page, route: string, opts: { state: string; lang?: HarnessLang }): Promise<void>;
@@ -377,7 +382,7 @@ export function trackConsoleErrors(page: Page): string[];
 export function expectTargetSize(page: Page, selector: string): Promise<void>;
 /** Asserts computed transition-duration and animation-duration of every element under the selector are ≤ 0.25 s, and ≤ 0.001 s after page.emulateMedia({ reducedMotion: "reduce" }) (tempo.css sets 0.01ms under reduced motion). */
 export function expectMotionBudget(page: Page, selector: string): Promise<void>;
-/** Navigates twice (warm-up, then measured) and returns LCP (ms) and CLS from PerformanceObserver. */
+/** Navigates twice (warm-up, then measured). lcpMs = startTime of the last largest-contentful-paint entry; throws Error("no LCP entry") when there is none. cls = sum of `value` over layout-shift entries with hadRecentInput === false. */
 export function measureVitals(page: Page, url: string): Promise<{ lcpMs: number; cls: number }>;
 ```
 
@@ -546,7 +551,10 @@ else; the SPEC quotes the exact line(s); the file counts toward the 3-file limit
   `OWNED_FIXTURES` entry `<table>: fixture("owned-table-soft-delete", (userId) => ({ …required fields… })),`
   in `convex/lib/accountDeletion.test.ts`. Its file set is `convex/schema.ts` ·
   `convex/lib/accountDeletion.ts` · `convex/lib/accountDeletion.test.ts` · test
-  `convex/schema_<cfgid>_<table>.test.ts`, and DONE also runs `bun test convex/lib/accountDeletion.test.ts`.
+  `convex/schema_<cfgid>_<table>.test.ts`, and DONE also runs `bun test convex/lib/accountDeletion.test.ts` →
+  `66 pass`, `0 fail` (66 = the whole file on `integration`, 3 Nov 2026; adding a `USER_OWNED_TABLES` line and an
+  `OWNED_FIXTURES` entry adds no test, because the coverage tests loop over `OWNED_FIXTURES`; no ticket in this
+  backlog adds a `test(` to that file).
   A table with `userId` but no `deletedAt` (append-only) needs a lifecycle decision: the ticket is OPEN.
 - A CFG ticket that adds an index to `memories`, or a field or index to `conversations`, `notes`,
   `chatRequests`, `pageOperations`, `pageOperationPayloads` or `pageProposals`, also updates the exact
