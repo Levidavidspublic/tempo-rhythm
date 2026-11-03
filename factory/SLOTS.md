@@ -18,7 +18,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-3b | Agent lane B | Claude Code in GitHub Actions (subscription token as org secret `CLAUDE_CODE_OAUTH_TOKEN`) | workflow file `.github/workflows/factory-lane-claude.yml` exists. Whether the secret is set: UNKNOWN |
 | B-3c | Agent lane C | Codex cloud via @codex (subscription only, never an OpenAI API key) | workflow file `.github/workflows/factory-lane-codex.yml` exists. Whether a task actually starts: UNKNOWN |
 | B-4 | Checks | GitHub Actions CI + Playwright | confirmed: `.github/workflows/ci.yml` and `.github/workflows/e2e-preview.yml` |
-| B-5 | Review gate | Cursor Bugbot (interim, set 2026-10-05); CodeRabbit optional later | **Batch loop (2026-10-06, `factory/LOOP.md`): Bugbot reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after Bugbot clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). |
+| B-5 | Review gate | CodeRabbit (set by Amit 2026-11-02) | **Batch loop (2026-10-06, `factory/LOOP.md`): CodeRabbit reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after CodeRabbit clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). Bugbot security deep scan comparison = pending. |
 | B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
@@ -58,7 +58,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 |---|---|
 | install | `bun install` |
 | dev | `bun run dev` |
-| test | `bun test convex apps/web/lib apps/web/components tests/unit packages` (= `bun run test`) |
+| test | `bun run test` (= `scripts/test-suites.ts`: the ten `tests/unit/kb-*.test.tsx` browser suites one at a time, then `bun test convex apps/web/lib apps/web/components <rest of tests/unit> packages`) |
 | lint | `bun run lint` |
 | typecheck | `bun run typecheck` |
 | build | `bun run build` |
@@ -66,7 +66,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 
 `e2e` is not a `package.json` script. Confirmed in `.github/workflows/ci.yml` (job `E2E (Playwright)`): `bunx playwright test`. `playwright.config.ts` sets `testDir` to `tests/e2e`. When a preview URL exists, `.github/workflows/e2e-preview.yml` runs `bunx playwright test tests/e2e/preview-smoke.spec.ts --reporter=list,html`.
 
-Root scripts that exist and are not in the table: `bun run dev` is `turbo run dev`. Also present: `dev:web`, `dev:mobile`, `check`, `check:notices`, `scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens`, `convex:dev`, `convex:codegen`. `convex:deploy` exists as a script. Do not use it against the live deployment.
+Root scripts that exist and are not in the table: `bun run dev` is `turbo run dev`. Also present: `dev:web`, `dev:mobile`, `test:unit` (everything except the browser suites), `test:browser` (the browser suites, serially), `check`, `check:notices`, `scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens`, `convex:dev`, `convex:codegen`. `convex:deploy` exists as a script. Do not use it against the live deployment.
 
 ## This repo's merge queue
 Public repo. Auto-merge slot = GitHub merge queue on `integration`.
