@@ -34,7 +34,7 @@ Plus:
 7. Config guard: no config or secret changes outside a config ticket.
 8. Never weaken, skip, lower or delete a check or test to make something pass. Doing so = automatic reject.
 
-### Judgement checks: the Jev judge (typesafe/jev-1.13 via OpenRouter, Amit's only OpenRouter exception)
+### Judgement checks: the Jev judge (~typesafe/jev-latest via OpenRouter, Amit's only OpenRouter exception)
 Jev gets the ticket, Amit's style guide and Google's style guide, and the PR diff plus REPORT. It returns a probability for each:
 - instruction-following: read all the instructions, did every STEP, skipped none, did nothing extra;
 - formatting;

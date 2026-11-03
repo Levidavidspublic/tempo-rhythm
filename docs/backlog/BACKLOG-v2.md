@@ -330,7 +330,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given two matching rows / When `.unique()` runs / Then it rejects with `"unique() found more than one row"`.
   - Given `makeFakeCtx("users:1")` / When `ctx.scheduler.runAfter(0, "fnRef", { a: 1 })` runs twice / Then `ctx.scheduler.calls` has length 2, `calls[0]` equals `{ delayMs: 0, fn: "fnRef", args: { a: 1 } }`, and the second call resolves `"scheduled:2"`.
 - **NUMBERS:** 7 of 7 test cases pass; existing unit suite stays at `0 fail` (exact). No latency number applies to a test fake.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0000b — Playwright helpers `tests/e2e/helpers/harness.ts`
@@ -374,7 +374,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `trackConsoleErrors(page)` then `page.evaluate(() => console.error("boom"))` / Then the returned array equals `["boom"]`; and after `page.evaluate(() => console.error("WebSocket connection to 'wss://example.convex.cloud/api/1.32.0/sync' failed"))` the array still equals `["boom"]` (CONSOLE_NOISE dropped).
   - Given `await page.route("http://helpers.test/", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<html><body><h1>Hi</h1></body></html>" }))` (no `setContent`; the page is served by the route) / When `measureVitals(page, "http://helpers.test/")` runs / Then `lcpMs` is a finite number ≥ 0 and `cls` is a finite number ≥ 0.
 - **NUMBERS:** 7 of 7 cases pass. The helper thresholds are the catalogue numbers: target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum); motion ≤ 250 ms (DESIGN.md motion rule; CONVENTIONS §5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0000c — Web state forcing `apps/web/lib/e2e/e2eState.ts` + `useE2EState`
@@ -415,7 +415,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `isE2EBypass({ NODE_ENV: "development", NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1" })` / Then `true`.
   - Given `isE2EBypass({ NODE_ENV: "production", NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS: "1" })` and `isE2EBypass({ NODE_ENV: "development" })` / Then both `false`.
 - **NUMBERS:** 6 of 6 cases pass (exact). No latency or UI number applies.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0000d — Mobile state forcing + signed-out gate logic `apps/mobile/lib/e2e/`
@@ -461,7 +461,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `{ isLoading: false, isAuthenticated: true, hasProfile: true, onboardedAt: undefined, e2e: false }` / Then `"onboarding"`.
   - Given `{ isLoading: true, isAuthenticated: false, hasProfile: false, onboardedAt: undefined, e2e: false }` / Then `"render"` (matches today's layout: no redirect while loading).
 - **NUMBERS:** 6 of 6 cases pass (exact). No UI number applies (no visible UI).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### CFG-001 — Schema: `memories.embedding` + vector index — config lane: Amit — OPEN
@@ -538,7 +538,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.entities[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_kind", fields: ["userId", "kind"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-003 — Schema: `edges` table (life graph) — config lane: Amit
@@ -586,7 +586,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_fromEntityId", fields: ["userId", "fromEntityId"] }`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_toEntityId", fields: ["userId", "toEntityId"] }`.
 - **NUMBERS:** schema test cases = 7 of 7 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-004 — Schema: `observations` table (reflect) — config lane: Amit
@@ -626,7 +626,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.observations[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.observations[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-005 — Schema: `calendarEvents.endsAtMs` — config lane: Amit
@@ -655,7 +655,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.calendarEvents.validator.fields)` is read / Then it contains every one of `["endsAtMs"]`.
   - Given the schema / When each of `["endsAtMs"]` is read from `schema.tables.calendarEvents.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-006 — Schema: `tasks.goalId` (task → goal link) — config lane: Amit — OPEN
@@ -921,7 +921,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When `schema.tables.jobs[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_enabled", fields: ["enabled"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-013 — Schema: `subscriptionStates.renewsAt` + `trialEndsAt` — config lane: Amit — OPEN
@@ -1009,7 +1009,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["analyticsOptIn"]`.
   - Given the schema / When each of `["analyticsOptIn"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-016 — Schema: `users.callMe` + `users.address` — config lane: Amit
@@ -1039,7 +1039,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.users.validator.fields)` is read / Then it contains every one of `["callMe", "address"]`.
   - Given the schema / When each of `["callMe", "address"]` is read from `schema.tables.users.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-017 — Schema: `askFounderQueue` table — config lane: Amit — OPEN
@@ -1135,7 +1135,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_dueAtMs", fields: ["userId", "dueAtMs"] }`.
   - Given the schema / When `schema.tables.studyCards[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_sourceNoteId", fields: ["sourceNoteId"] }`.
 - **NUMBERS:** schema test cases = 7 of 7 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-019 — Schema: `byokKeys` table — config lane: Amit
@@ -1180,7 +1180,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.byokKeys[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId", fields: ["userId"] }`.
   - Given the schema / When `schema.tables.byokKeys[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
 - **NUMBERS:** schema test cases = 5 of 5 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-020 — Schema: `userPreferences` voice fields — config lane: Amit
@@ -1210,7 +1210,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.userPreferences.validator.fields)` is read / Then it contains every one of `["voicePushToTalk", "voiceLanguage"]`.
   - Given the schema / When each of `["voicePushToTalk", "voiceLanguage"]` is read from `schema.tables.userPreferences.validator.fields` / Then its `isOptional` is `"optional"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-021 — Schema: `marketplaceListings` table — config lane: Amit — OPEN
@@ -1667,7 +1667,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the mobile config / When `page.goto("/")` runs / Then the response status is below 400 and `page.locator("body")` is visible.
   - Given the mobile config / When `page.goto("/e2e-missing-route")` runs / Then `page.getByText("המסך הזה לא קיים.")` (the existing text in `apps/mobile/app/+not-found.tsx`) is visible.
 - **NUMBERS:** 2 of 2 smoke cases pass; Expo web ready within the 180,000 ms `webServer.timeout` (config value; no industry number applies).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-032 — Mobile `(tempo)` gate: E2E signed-out render — config lane: Amit
@@ -1688,7 +1688,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   - Given the mobile config (flag on, dev server, signed out) / When `page.goto("/habits")` runs / Then the URL stays `/habits` (does not become `/sign-in`) and `page.locator("body")` is visible.
 - **NUMBERS:** 1 of 1 case passes; production behaviour unchanged (asserted by the `tempoGate` unit cases in TFV2-0000d).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 
@@ -1718,7 +1718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `schema.tables.memories[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt_createdAt", fields: ["userId", "deletedAt", "createdAt"] }`.
   - Given the schema / When the same list is read / Then it still contains `{ indexDescriptor: "by_userId_deletedAt_salience_updatedAt", fields: ["userId", "deletedAt", "salience", "updatedAt"] }` and `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }` (nothing existing removed).
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 
@@ -1754,7 +1754,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["confirmedAt", "sourceNoteId"]` is read from `schema.tables.edges.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When `schema.tables.edges[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_sourceNoteId", fields: ["userId", "sourceNoteId"] }` and still contains `by_userId_deletedAt`, `by_userId_fromEntityId` and `by_userId_toEntityId` with their CFG-003 fields.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-035 — Schema: `coachTurns` table (daily coach-turn quota) — config lane: Amit
@@ -1797,7 +1797,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When the same list is read / Then it contains `{ indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] }`.
   - Given the schema / When the same list is read / Then it contains `{ indexDescriptor: "by_userId_utcDateKey", fields: ["userId", "utcDateKey"] }`.
 - **NUMBERS:** schema test cases = 6 of 6 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 
@@ -1832,7 +1832,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `convex/convex.config.ts` read as text / Then it contains `import crons from "@convex-dev/crons/convex.config";` and `app.use(crons);`.
   - Given `import { Crons } from "@convex-dev/crons"` / Then `typeof Crons` is `"function"`.
 - **NUMBERS:** 3 of 3 cases pass (exact); exactly one new dependency (exact pin). Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-037 — Schema: `userPreferences.disabledStarterTemplateIds` (built-in module off switch) — config lane: Amit — OPEN
@@ -1999,7 +1999,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the mobile config (flag on, dev server, signed out) / When `page.goto("/onboarding")` runs / Then `page.url()` ends with `/onboarding` (it does not become `/sign-in`) and `page.locator("body")` is visible.
   - Given the same / When `page.goto("/sign-in")` runs / Then `page.url()` ends with `/sign-in` (other signed-out `(auth)` routes are unchanged) and `page.locator("body")` is visible.
 - **NUMBERS:** 2 of 2 cases pass; production behaviour unchanged (the flag is read only under `__DEV__`, and `EXPO_PUBLIC_TEMPO_E2E` is set only by `playwright.mobile.config.ts`, CFG-031). No industry number applies to a gate condition.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-043 — Workspace package scaffold `packages/mcp-cli` (`package.json`, `tsconfig.json`, `biome.json`, `bun.lock`) — config lane: Amit
@@ -2049,7 +2049,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `import pkg from "../package.json"` / When it is read / Then `pkg.name` is `"@tempo/mcp-cli"`, `pkg.private` is `true`, `pkg.dependencies` is `undefined`, `pkg.scripts.typecheck` is `"tsc --noEmit"`, `pkg.scripts.lint` is `"biome lint ."` and `pkg.devDependencies` equals `{ typescript: "^5.9.3" }`.
   - Given `readFileSync(join(import.meta.dir, "../../../bun.lock"), "utf8")` / When it is read / Then it contains `"packages/mcp-cli": {` and `"name": "@tempo/mcp-cli"`.
 - **NUMBERS:** 2 of 2 cases pass (exact); runtime dependencies added: 0. No industry number applies to a package scaffold.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 
@@ -2079,7 +2079,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When `Object.keys(schema.tables.byokKeys.validator.fields).sort()` is read / Then it equals `["createdAt", "deletedAt", "endpointUrl", "keyCipher", "keyHint", "keyVersion", "label", "lastCheckOk", "lastCheckedAt", "model", "provider", "updatedAt", "userId"]`.
   - Given the schema / When each of `["keyHint", "model"]` is read from `schema.tables.byokKeys.validator.fields` / Then its `isOptional` is `"optional"` and its `kind` is `"string"`.
 - **NUMBERS:** schema test cases = 2 of 2 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails. · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails. · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-045 — Config: add a mobile microphone-streaming package to `apps/mobile` — config lane: Amit — OPEN
@@ -2164,7 +2164,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the schema / When each of `["externalId", "externalSource"]` is read from `schema.tables.calendarEvents.validator.fields` / Then its `isOptional` is `"optional"`.
   - Given the schema / When `schema.tables.calendarEvents[" indexes"]()` is read / Then it contains `{ indexDescriptor: "by_userId_externalId", fields: ["userId", "externalId"] }`.
 - **NUMBERS:** schema test cases = 3 of 3 pass (exact; no industry number applies to a schema shape). Query latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-048 — Config: new `apps/desktop` workspace (Tauri 2 shell, plugins, capabilities, boot page) — config lane: Amit — OPEN
@@ -2437,7 +2437,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `apps/mobile/app.json` / When parsed / Then `expo.plugins` contains `["expo-notifications", { "defaultChannel": "default" }]` and still contains `"expo-router"`.
   - Given `bun.lock` as text / Then it contains `"expo-notifications": ["expo-notifications@0.32.16"`.
 - **NUMBERS:** 3 of 3 cases pass (exact); exactly one new dependency (exact pin matching Expo SDK 54's bundled version). Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-053 — Config: add `expo-camera` 17.0.10 + its `app.json` plugin — config lane: Amit
@@ -2460,7 +2460,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `apps/mobile/app.json` / Then `expo.plugins` contains exactly the SPEC `expo-camera` entry (deep equal).
   - Given `bun.lock` as text / Then it contains `"expo-camera": ["expo-camera@17.0.10"`.
 - **NUMBERS:** 3 of 3 cases pass (exact); one new dependency (exact pin). Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails · 11 config lane: built by Amit or a convex-arch run only.
 - **OPEN:** none.
 
 ### CFG-054 — Schema: `nags.pushAtMinute` + `nags.nextPushAt` + index `by_nextPushAt` — config lane: Amit — OPEN
@@ -2729,7 +2729,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `maxBytes: Number.NaN` and, separately, `maxBytes: Number.POSITIVE_INFINITY` / Then each call throws `"maxBytes must be a non-negative integer"`.
   9. Given `rows = [3, 1, 2]` and `{ maxRows: 10, maxBytes: 100 }` / Then `rows` returned equals `[3, 1, 2]` (input order) and the input array still equals `[3, 1, 2]`.
 - **NUMBERS:** 9 of 9 cases pass (exact). Byte counts are exact UTF-8 lengths (TESTS 5; CONVENTIONS §7 H). The helper holds no default budget: each caller names its own exported constant (CONVENTIONS §16). Latency: n/a (pure, in-memory, O(n)).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0002 — Mock runtime model `convex/lib/mockModel.ts`
@@ -2774,7 +2774,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `globalThis.fetch` replaced by a `mock()` that throws, restored in `afterEach` / When the mock model is called / Then the fetch mock was called 0 times.
   10. Given `const q = ["a"]; const m = mockModel(q); q.push("b");` / When `m` is called twice / Then the contents are `"a"` then `"Done."`; and the file contains `const asSeam: typeof callLLM = mockModel([]);` (with `import type { callLLM } from "./ai_router"`), which `bun run typecheck` compiles.
 - **NUMBERS:** 10 of 10 cases pass (exact); 0 network calls (TESTS 9). Latency: n/a (in-memory). No industry number applies.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0003 — Anti-shaming word check `convex/lib/shameWords.ts`
@@ -2820,7 +2820,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `"You must, it is overdue"` / Then `matches` equals `["overdue", "must"]` (canonical order, not text order).
   12. Given each term `t` of `SHAME_TERMS_EN` and `SHAME_TERMS_HE` in a loop / When `containsShame(t)` runs / Then `matches` contains `t` (recall 100%); and `containsShame("")` is `{ found: false, matches: [] }`.
 - **NUMBERS:** recall on the canonical list = 100% (TESTS 12; source: PRD §13 + CONVENTIONS §12). Precision: not a gate (over-flagging allowed by design). 12 of 12 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0004 — Entitlements: verify the premium-for-all grant `convex/lib/entitlements.ts`
@@ -2852,7 +2852,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `existing = { entitlementTier: "max", userType: "paid", betaAccess: "founder" }` / When `buildReturningUserPatch` runs / Then `"betaAccess" in patch` is `false`.
   4. Given `newUserFields({ email: "a@b.co", fullName: "  Maya  " }, 7)` / Then `fullName === "Maya"`, `emailVerified === false`, `createdAt === 7` and `updatedAt === 7`.
 - **NUMBERS:** 17 of 17 cases pass (exact). The grant invariant (PRD F-01a) holds on 100% of cases. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0005 — Lighthouse budget in CI — superseded by CFG-059
@@ -2907,7 +2907,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the schema / When the `data` field names of `byType("page-meta")`, `byType("task")` and `byType("template")` are read (`Object.keys(member.fields.data.fields).sort()`) / Then they equal `Object.keys(pageMetaDataSchema.shape).sort()`, `Object.keys(taskDataSchema.shape).sort()` and `Object.keys(templateDataSchema.shape).sort()`; and the four member `type` literals sorted equal `["broken", "page-meta", "task", "template"]`.
   3. Given `body = "# Title\n" + task(1) + "text\n" + meta(2) + task(3)` / When parsed / Then the non-markdown segments' `position` values are `[1, 2, 3]` (1-based, contiguous, markdown not counted), and `serializeTempoBlocks(segments) === body`.
 - **NUMBERS:** 19 of 19 cases pass (exact). Limits asserted are the code's `BLOCK_CODEC_LIMITS` (`maxBodyChars` 1,048,576 UTF-16 units, `maxBlockChars` 65,536, `maxBlocks` 256, `maxJsonDepth` 16). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0007a — `notes.save`: whole-body save with a ledger receipt (`convex/notes.ts`)
@@ -3003,7 +3003,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   12. Given a first successful save with `reqId()`, then a second call with the same `requestId` and `body: "Other"` / Then the second rejects with `"Request id already used"` and the body is still `"Hello world"`.
   13. Given `body: "\uD800"` (a lone surrogate) / Then it rejects with `"Page write rejected: malformed_text"`.
 - **NUMBERS:** body budget ≤ 131,072 UTF-8 bytes and ≤ 1,048,576 UTF-16 units (`PAGE_LEDGER_LIMITS`, code truth; TESTS 9); Undo window = 300,000 ms (`PAGE_LEDGER_TIMING.undoWindowMs`, PRD F-131; TESTS 1); revision advances by exactly 1 per applied save (TESTS 1–2). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate, CONVENTIONS §20).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0007b — `notes.patchBlock`: change one task block by id (`convex/notes.ts`)
@@ -3078,7 +3078,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given a successful patch with `reqId()`, then the same `requestId` with `patch: { status: "now" }` / Then the second rejects with `"Request id already used"`.
   12. Given body `task(1) + "a".repeat(131_072 - new TextEncoder().encode(task(1)).length)` (exactly at the budget) and `patch: { title: "x".repeat(400) }` / Then it rejects with `"Page body is too long"` and the body is unchanged.
 - **NUMBERS:** untouched bytes outside the block = 100% identical (TESTS 1–2); body budget ≤ 131,072 UTF-8 bytes (`PAGE_LEDGER_LIMITS.maxBodyUtf8Bytes`; TESTS 12). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0008 — `noteBlocks` derived index rebuilt on every page write (`convex/notes.ts`)
@@ -3117,7 +3117,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a save of 258 task blocks `Array.from({ length: 258 }, (_, i) => task(i + 1)).join("")` / Then exactly 257 rows: positions 1–256 are `type "task"`, position 257 is `type "broken"` with `errorCode "too_many_blocks"`, and no row has position 258.
   8. Given a `noteBlocks` row seeded with `{ userId: "users:2", noteId: "notes:999", type: "broken", position: 1, errorCode: "malformed_json", createdAt: 1, updatedAt: 1 }`, then user 1 saves `task(1)` on its own note / Then user 2's row still exists unchanged.
 - **NUMBERS:** rows per page ≤ 257 (`NOTE_BLOCK_INDEX_MAX_ROWS` = `BLOCK_CODEC_LIMITS.maxBlocks` 256 + 1; TESTS 7, the bounded-read check of CONVENTIONS §20); index ↔ body consistency exact after every applied write (TESTS 1–6). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0009a — `notes.backlinks`: verify the "Linked here" query (`convex/notes.ts`)
@@ -3153,7 +3153,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the target seeded with `deletedAt: 4` and a live page linking it / Then the result is `[]`.
   6. Given `note("2", "A", "- [[target|the goal]] today")` / Then one row with `context "the goal today"`.
 - **NUMBERS:** result cap = 50 rows (code; TESTS 4); scan bounds `LINK_SCAN_LIMIT` 500 pages and `LINK_SCAN_BYTES` 12 MiB (code; already tested by the existing "link scans stay under Convex's read limit" cases). 16 of 16 pass. Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0009b — `notes.searchTitles`: verify the `[[` picker query (`convex/notes.ts`)
@@ -3187,7 +3187,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `note("1", "Plan", "x", { deletedAt: 2 })`, `note("2", "  ", "x")`, `note("3", "Plan B", "x", { userId: "users:b" })` and `note("4", "Plan C", "x")` / When `search` runs with `{ query: "plan" }` / Then the ids equal `["notes:4"]`.
   4. Given `note("1", "Target", "x")` and a newer `note("2", "Targets list", "x")` / When `search` runs with `{ query: "  TARGET " }` / Then the first id is `"notes:1"` (case- and space-insensitive exact match wins over a newer prefix match).
 - **NUMBERS:** limit clamped to 1…20, default 8 (code; TESTS 2). 20 of 20 pass. Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0010 — `notes.undo`: 5-minute Undo of one page change (`convex/notes.ts`)
@@ -3251,7 +3251,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given a `noop` save receipt N (body unchanged) / When N is undone / Then it rejects with `"Page write rejected: undo_not_undoable"`.
   11. Given a save that appends `task(1)` (T) / When T is undone / Then the page has 0 `noteBlocks` rows.
 - **NUMBERS:** Undo window 300,000 ms, half-open (`PAGE_LEDGER_TIMING.undoWindowMs`, PRD F-131; TESTS 4); intervening revisions read ≤ 257 (`PAGE_LEDGER_LIMITS.maxInterveningRevisions` 256 + 1; bounded read). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0011a — Page privacy guards: own tests for `requireActiveOwner`, `requireLivePage`, `readLivePageBlocks` (`convex/lib/pagePrivacy.ts`)
@@ -3289,7 +3289,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given the same three live rows / When `readLivePageBlocks(ctx, "users:1", A, 2)` runs / Then `blocks.length === 2` and `truncated === true`.
   9. Given `limit: 0` / Then `readLivePageBlocks` rejects with a `RangeError` whose message is `"limit must be a positive integer"`.
 - **NUMBERS:** 9 of 9 pass (exact). Bounded read: `take(limit + 1)` with default limit 256 (`BLOCK_CODEC_LIMITS.maxBlocks`; TESTS 8). Latency: n/a (guards; no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0011b — Per-user storage quotas (4 MiB per file · 50 MiB · 100 files) — OPEN
@@ -3345,7 +3345,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given no `approvalStatus` and no `_creationTime` (a pre-gate row; the fake stores none for seeded users) / Then it resolves the user.
   7. Given no `approvalStatus` and `_creationTime: APPROVAL_GATE_EPOCH_MS + 1` / Then it rejects with `PENDING_APPROVAL_MESSAGE` (post-gate rows fail closed).
 - **NUMBERS:** the F-01a invariant holds on 100% of cases; 16 of 16 pass. Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0013 — Remove the passkeys settings route (magic link is the only sign-in) — OPEN
@@ -3395,7 +3395,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `fetch` returning `jsonResponse({ choices: [] })` (no `usage`) / Then the result has `content ""` and `usage` `{ promptTokens: 0, completionTokens: 0, totalTokens: 0 }`.
   7. Given `fetch` returning `errorResponse(429, "slow down", { "Retry-After": "2" })` on both calls / Then it rejects with `AiRateLimitedError` whose `retryAfterMs === 2000`.
 - **NUMBERS:** retries = exactly 1 (code; TESTS 2–3); request timeout 30,000 ms and retry delay 500 ms (code constants, not re-tested); 17 of 17 pass. Provider latency: UNKNOWN offline (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0015 — `coach.sendMessage`: input and access tests (`convex/coach.ts`)
@@ -3434,7 +3434,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a conversation of `B` / When `A` sends to it / Then it rejects with `"Conversation not found or access denied"`.
   7. Given content `"  hi  "` / Then the stored user message `content` is `"hi"` and the conversation's `updatedAt` is greater than 1.
 - **NUMBERS:** `MAX_MESSAGE_CHARS` = 4,000 characters (code; TESTS 4–5). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0016 — Coach Agent wrapper `convex/lib/agentComponent.ts` — OPEN
@@ -3492,7 +3492,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `text: "Help me plan my Tuesday"` / Then `{ isCrisis: false }`.
   5. Given `text: "   "` / Then `{ isCrisis: false }`.
 - **NUMBERS:** recall on the committed English phrase list = 100% (covered by `crisisWords.test.ts`; this ticket checks the query wiring). 5 of 5 pass. Latency: n/a (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0017b — `crisis.resourcesCard`: tests for the fixed resource card (`convex/crisis.ts`)
@@ -3518,7 +3518,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `makeFakeCtx("users:1")` / Then the result `toEqual`s `CRISIS_CARD` imported from `./lib/crisisWords`.
   3. Given the result / Then `resources.map((r) => r.label)` equals `["Emergency services", "A crisis line near you", "Someone you trust"]` and `body` contains `"Country-specific helpline numbers are not set up in Tempo yet"`.
 - **NUMBERS:** card is 100% fixed text (TESTS 2); 8 of 8 pass. Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0018 — AI gate `requireApprovedForAi`: tests (`convex/lib/aiGate.ts`)
@@ -3552,7 +3552,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `makeSignedOutCtx()` / Then `await rejection(run(assertApprovedForAi, ctx, {}))` is `"Not authenticated"`.
   6. Given `makeFakeCtx("users:1")` with user 1 patched `approvalStatus: "pending"` / Then `await rejection(run(assertApprovedForAi, ctx, {}))` is `PENDING_APPROVAL_MESSAGE`.
 - **NUMBERS:** ordering invariant: authentication, then approval, then (in callers) the model — 100% of cases; 6 of 6 pass. Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0019 — Memory adapter foundation — superseded by TFV2-0171
@@ -3598,7 +3598,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `"Try again"` and `""` / Then each returns `[]`.
   8. Given each form `f` of `GENDERED_HE_FORMS` in a loop / When `findGenderedHebrew(\`(${f})\`)` runs / Then the result contains `f` (recall 100%).
 - **NUMBERS:** recall on the listed forms = 100% (TESTS 8); 8 of 8 pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0020b — Hebrew voice sweep of existing web copy — OPEN
@@ -3653,7 +3653,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · he · mobile) Given the page / When the opener (`aria-label` "פתיחת הדפים") is clicked / Then the shell has `data-rail="open"`, the opener `aria-expanded="true"`, the rail has no `inert`, and `document.activeElement` is inside the rail; When Escape is pressed / Then `data-rail="closed"` and the opener is focused.
   4. (once · en · mobile) When `expectMotionBudget(page, ".tp-rail")` runs / Then it passes (240 ms ≤ 250 ms; ≤ 0.001 s under reduced motion).
 - **NUMBERS:** rail 264 px ±1 (`--tp-rail-w`); top bar ≥ 56 px (`--tp-topbar-h`); tab bar ≥ 64 px (`--tp-tabbar-h`) — tokens, CONVENTIONS §5; no horizontal overflow at 390 px; motion ≤ 250 ms and collapsed under reduced motion (DESIGN.md motion rule; `expectMotionBudget`). LCP/CLS: measured by the screen tickets, not here.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0022 — Sidebar / PageTree: route-level spec (`apps/web/components/tempo/Sidebar.tsx`)
@@ -3691,7 +3691,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · en · desktop) When the "Reading font" button is clicked / Then its `aria-pressed` changes from `"false"` to `"true"`; clicked again / Then `"false"`.
   4. (once · en · desktop) When the "עברית" button is clicked / Then `<html>` has `lang="he"` and `dir="rtl"` and the button now reads "English".
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`); text contrast ≥ 4.5:1 via tokens only (WCAG 2.2 SC 1.4.3; `bun run scan:design-tokens`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023 — Topbar: route-level spec (`apps/web/components/tempo/Topbar.tsx`)
@@ -3718,7 +3718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · en · desktop) When the search button is clicked / Then a `role="dialog"` is visible; When Escape is pressed / Then it is gone.
   4. (once · en · desktop) When `page.evaluate(() => { document.documentElement.dataset.glass = "off"; })` runs / Then the bar's computed `background-color` equals `await tokenValue(page.locator('header[data-component="Topbar"]'), "background-color", "--tp-glass-solid")`.
 - **NUMBERS:** height ≥ 56 px (`--tp-topbar-h`); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `.tp-btn` min-height 44 px); contrast via tokens (WCAG 2.2 SC 1.4.3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023a — Component harness route: register `/e2e/components` + index page
@@ -3761,7 +3761,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (once · en · desktop) Given `const errors = trackConsoleErrors(page)`, the local webServer (bypass on) and `page.setViewportSize(VIEWPORTS.desktop)` / When `page.goto("/e2e/components")` runs / Then the response status is 200, `[data-testid="component-harness-index"] h1` has text "Component harness", and `expect(errors).toEqual([])`.
   2. (once · en · desktop) Given `page.setViewportSize(VIEWPORTS.desktop)` and `/e2e/components/not-built-yet` / When it is opened / Then the URL does not contain `/sign-in` (the proxy released it; the page itself is a 404 until a component ticket creates it). This bullet does not collect console errors: the 404 response logs a "Failed to load resource" console error by design.
 - **NUMBERS:** 2 of 2 pass; production builds return 404 for the route (guarded by `isE2EBypass`, unit-tested in TFV2-0000c). No UI number applies (developer route).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023b — Component harness frame: `layout.tsx` + `HarnessFrame`
@@ -3822,7 +3822,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. (once · en · desktop) Given `/e2e/components?theme=dark` at 1280×800 / Then the frame has `data-theme="dark"`.
   5. (once · en · desktop) Given `/e2e/components?lang=fr&theme=neon` at 1280×800 / Then the frame has `lang="en"`, `dir="ltr"`, `data-theme="light"` (invalid values fall back).
 - **NUMBERS:** 5 of 5 pass. No UI number applies (developer frame).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0024 — Avatar `apps/web/components/primitives/Avatar.tsx`
@@ -3873,7 +3873,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (loop) Given `trackConsoleErrors(page)` then `openHarness(page, "avatar", { lang })` / Then the `no-name` avatar has no text, one `svg.tp-icon`, `aria-label` "Your profile" (en) or "הפרופיל שלך" (he), and `page.getByText("User", { exact: true })` has count 0.
   3. (once · en · desktop) Given EN at 1280×800 / When Tab is pressed 5 times / Then `document.activeElement` is never inside `[data-component="Avatar"]`; and `expectMotionBudget(page, '[data-testid^="avatar-"]')` passes.
 - **NUMBERS:** text contrast `--tp-ground` on `--tp-ink` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`); size 32×32 ±0.5 CSS px (tempo.css `.tp-avatar`; case 1); motion none (`expectMotionBudget`, case 3). Target size n/a (not interactive). LCP/CLS n/a (component).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0025 — TabBar: route-level spec (`apps/web/components/tempo/TabBar.tsx`)
@@ -3901,7 +3901,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. (once · en · mobile) Given EN at 390×844 / When "More" is clicked / Then it has `aria-expanded="true"` and `[data-component="TempoShell"]` has `data-rail="open"`; When Escape is pressed / Then `data-rail="closed"`.
   5. (once · en · mobile) Given EN at 390×844 / Then `expectTargetSize(page, 'nav[data-component="TabBar"]')` passes.
 - **NUMBERS:** tab bar ≥ 64 px (`--tp-tabbar-h`); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8); contrast via tokens (WCAG 2.2 SC 1.4.3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0026 — CommandTrigger: extract the rail's search button (`apps/web/components/tempo/CommandTrigger.tsx`)
@@ -3954,7 +3954,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (once · en · desktop) Given EN at 1280×800 / Then `expectTargetSize(page, '[data-testid="command-trigger-default"]')` and `expectMotionBudget(page, '[data-testid="command-trigger-default"]')` pass.
   3. (once · en · desktop) Given `openScreen(page, "/plan", { state: "default", lang: "en" })` at 1280×800 / When `nav[data-component="Sidebar"] button[data-component="CommandTrigger"]` is clicked / Then a `role="dialog"` is visible (the command palette).
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `.tp-btn` min-height 44 px); contrast via tokens (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms (`expectMotionBudget`); the browser suite stays at `0 fail`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0027 — LivePreviewEditor: harness spec for the markdown editor (`apps/web/components/editor/LivePreviewEditor.tsx`)
@@ -3991,7 +3991,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "live-preview-editor", { lang })` / Then `expectDir` passes and every SPEC "Behaviour asserted" item holds in its section (`default`, `broken`, `empty`, `hebrew`), with the language's strings.
   2. (once · en · desktop) Given EN at 1280×800 / When the `empty` section's `.cm-content` is clicked and `Hello` is typed / Then the log text is `onChange:"Hello"`.
 - **NUMBERS:** body text ≥ 13 px (`--tp-text-xs` floor; editor uses `--tp-text-md`); contrast via tokens (WCAG 2.2 SC 1.4.3); JSON shown to the user = 0 occurrences (PRD F-03; case 1).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0028 — PageTitle and Heading `apps/web/components/primitives/PageTitle.tsx`
@@ -4026,7 +4026,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `const errors = trackConsoleErrors(page)` and `openHarness(page, "page-title", { lang })` / Then `expectDir` passes; `page.getByRole("heading", { level: 1, name: "Moving day" })` and `{ level: 1, name: "יום מעבר" }` are visible with `dir="auto"`; the level-2 heading "This afternoon" has class `tp-h2` and the level-3 "Errands" has `tp-h3`; each heading's computed `font-family` equals `tokenValue(<its section>, "font-family", "--tp-font-serif")`; the `page-title-default` h1's computed `font-size` equals `tokenValue(page.getByTestId("page-title-default"), "font-size", "--tp-text-2xl")` at 390 px and `tokenValue(page.getByTestId("page-title-default"), "font-size", "--tp-text-3xl")` at 1280 px (a harness section is the viewport width, so tempo.css line 514's under-768 px rule applies at 390 only); the `long` section's `scrollWidth` ≤ its `clientWidth`; `expect(errors).toEqual([])`.
   2. (once · en · desktop) Given EN at 1280×800 / Then `expectMotionBudget(page, '[data-testid^="page-title-"]')` passes.
 - **NUMBERS:** type sizes are tokens (`--tp-text-3xl`, `--tp-text-2xl`, `--tp-text-xl`, `--tp-text-lg`; CONVENTIONS §5) asserted by computed value, not pixels; contrast via tokens (WCAG 2.2 SC 1.4.3); no horizontal overflow at 390 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0029 — Tag `apps/web/components/primitives/Tag.tsx`
@@ -4059,7 +4059,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "tag", { lang })` / Then `expectDir` passes; `tag-default` shows text "home" whose `::before` content is `"\"#\""` (`getComputedStyle(el, "::before").content`); `tag-link` is an `a[href="/search?tag=work"]`; `tag-hebrew` has `dir="auto"`; the default pill's height ≥ 28 px; console errors empty.
   2. (once · en · desktop) Given EN at 1280×800 / When Tab focuses the link / Then its computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid="tag-link"]')` passes.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; pill min-height 28 px); focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7, `--tp-focus-w`); contrast via tokens (WCAG 2.2 SC 1.4.3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0030 — Wikilink `apps/web/components/primitives/Wikilink.tsx`
@@ -4096,7 +4096,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "wikilink", { lang })` / Then `expectDir` passes; `wikilink-resolved` is `a[href="/notes/n1"]` with text "Moving checklist" whose computed `::before` content is the CSS string `"[["` and `::after` is `"]]"` (as returned by `getComputedStyle(el, "::before").content`, quotes included); `wikilink-unresolved` is a button with the `create` label for `lang` and `data-unresolved="true"`; clicking it sets the log to `onCreate:"Packing list"`; `wikilink-hebrew` has `dir="auto"`.
   2. (once · en · desktop) Given EN at 1280×800 / When Tab reaches the unresolved button and Enter is pressed / Then the log is `onCreate:"Packing list"`; and `expectTargetSize(page, '[data-testid="wikilink-unresolved"]')` passes.
 - **NUMBERS:** contrast via tokens (WCAG 2.2 SC 1.4.3; `--tp-ink` text on paper); target ≥ 24×24 CSS px for the button (WCAG 2.2 SC 2.5.8 — inline links in a sentence are exempt, the standalone button is not).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0031 — Chip `apps/web/components/primitives/Chip.tsx`
@@ -4129,7 +4129,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "chip", { lang })` / Then `expectDir` passes; each section's chip has the class for its kind (`tp-chip--fixed`, `tp-chip--flex`, `tp-chip--done`, plain `tp-chip`), the word for `lang` from SPEC, and one `svg.tp-icon` except `neutral` (none); each chip's height ≥ 28 px.
   2. (once · en · desktop) Given EN at 1280×800 and `page.emulateMedia({ forcedColors: "active" })` / Then every chip's text is still visible and non-empty (meaning never relies on colour).
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs`); contrast via tone/wash token pairs (WCAG 2.2 SC 1.4.3; `bun run scan:design-tokens`); meaning carried by word + icon (WCAG 2.2 SC 1.4.1).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0032 — Button `apps/web/components/primitives/Button.tsx`
@@ -4168,7 +4168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (once · en · desktop) Given EN at 1280×800 / When the `disabled` button is clicked with `{ force: true }` / Then the log is unchanged and the button `isDisabled()`; its computed `opacity` is `0.55`.
   3. (once · en · desktop) Given EN at 1280×800 / When Tab focuses the `primary` button / Then computed `outline-width` ≥ 2 px; and `expectTargetSize(page, '[data-testid^="button-"]')` and `expectMotionBudget(page, '[data-testid^="button-"]')` pass.
 - **NUMBERS:** height ≥ 44 px md / 36 px sm (`--tp-touch`, tempo.css); target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8); focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7); primary text `--tp-on-accent` on `--tp-accent` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens); motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0033 — Kbd `apps/web/components/primitives/Kbd.tsx`
@@ -4198,7 +4198,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
   1. (loop) Given `openHarness(page, "kbd", { lang })` / Then `expectDir` passes; the four sections show exactly "Ctrl K", "⌘ K", "[[", "Shift Enter"; each `kbd` has `dir="ltr"`, computed `direction` `ltr` and `unicode-bidi` `isolate` (also in HE), and computed `font-family` equal to `tokenValue(<its section>, "font-family", "--tp-font-mono")` (`tokenValue` declared at the top of the spec as in CONVENTIONS §23.2).
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs`); contrast `--tp-ink-muted` on `--tp-paper` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0034 — Card `apps/web/components/primitives/Card.tsx`
@@ -4232,7 +4232,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** (§22 spec skeleton: every test starts `const errors = trackConsoleErrors(page)` and ends `expect(errors).toEqual([])`)
   1. (loop) Given `openHarness(page, "card", { lang })` / Then `expectDir` passes; `card-default` contains a `section.tp-card` with `role="region"` named by its title, a `.tp-card__head` with one `svg.tp-icon` and the title for `lang`; `card-untitled` has no `.tp-card__head`; `card-div`'s card is a `div`; each card's computed `background-color` equals `tokenValue(<its section>, "background-color", "--tp-paper")`, `border-radius` equals `tokenValue(<its section>, "border-radius", "--tp-radius-lg")` (`tokenValue` declared at the top of the spec as in CONVENTIONS §23.2), and `backdrop-filter` is `none`.
 - **NUMBERS:** contrast via tokens (WCAG 2.2 SC 1.4.3); radius `--tp-radius-lg` (token, asserted by computed value).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0035 — BlockHandle `apps/web/components/editor/BlockHandle.tsx`
@@ -4274,7 +4274,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (once · en · 1280×800) Given `openHarness(page, "block-handle", { lang: "en" })` / When the default section's "Add a block below" button gets `.focus()` / Then that handle reaches computed opacity `1` (`toHaveCSS`); Enter logs `onAdd:`; clicking the hover section's "Block options" button logs `onOptions:`.
   3. (once · en · 1280×800) Given `openHarness(page, "block-handle", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="block-handle-hover"]')` and `expectMotionBudget(page, '[data-testid^="block-handle-"]')` pass.
 - **NUMBERS:** target 28×28 CSS px ≥ 24×24 (WCAG 2.2 SC 2.5.8); contrast `--tp-ink-muted` icons via tokens (WCAG 2.2 SC 1.4.11 non-text ≥ 3:1); motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0036 — SlashMenu: harness spec (`apps/web/components/editor/SlashMenu.tsx`)
@@ -4303,7 +4303,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (once · en · 1280×800) Given `openHarness(page, "slash-menu", { lang: "en" })` / When the default section's "Link to a page" option is clicked / Then the log is `onChoose:{"id":"link","group":"Tempo blocks","name":"Link to a page","icon":"link"}`; When its "Bullet list" option is hovered / Then the log is `onHover:3`.
   3. (once · en · 1280×800) Given `openHarness(page, "slash-menu", { lang: "en" })` / Then `expectMotionBudget(page, '[data-testid^="slash-menu-"]')` passes and each option's height ≥ 48 px.
 - **NUMBERS:** option height ≥ 48 px (tempo.css `.tp-slash-item`) ≥ 24×24 target (WCAG 2.2 SC 2.5.8); contrast on glass via tokens (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0037 — Composer `apps/web/components/coach/Composer.tsx`
@@ -4343,7 +4343,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · en · 1280×800) Given `openHarness(page, "composer", { lang: "en" })` / When `Hello` is typed in `composer-disabled` and Enter is pressed / Then the log text is empty and the send button is disabled.
   4. (once · en · 1280×800) Given `openHarness(page, "composer", { lang: "en" })` / Then the default section's send button's computed `background-color` equals `await tokenValue(page.getByTestId("composer-default"), "background-color", "--tp-ink")`; `expectTargetSize(page, '[data-testid="composer-default"]')` and `expectMotionBudget(page, '[data-testid^="composer-"]')` pass.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; send 36 px); contrast `--tp-paper` on `--tp-ink` ≥ 4.5:1 (WCAG 2.2 SC 1.4.3); motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0038 — UndoToast: harness spec (`apps/web/components/you/UndoToast.tsx`)
@@ -4371,7 +4371,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · en · 1280×800) Given the clock installed and `openHarness(page, "undo-toast", { lang: "en" })` / When the `failing` section's Undo is clicked / Then the log is `onUndo:`, a `role="alert"` with "That didn't undo. Try again in a moment." is visible and the toast stays; When `page.clock.fastForward(300_000)` runs / Then no `.tp-toast` remains in any section (auto-close at `untilMs`) and the log is `onClose:`.
   4. (once · en · 1280×800) Given the clock installed and `openHarness(page, "undo-toast", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="undo-toast-default"]')` and `expectMotionBudget(page, '[data-testid^="undo-toast-"]')` pass.
 - **NUMBERS:** Undo window 300,000 ms (PRD F-131; bullet 3); motion ≤ 250 ms (bullet 4); target ≥ 24×24 (WCAG 2.2 SC 2.5.8); contrast on glass via tokens (WCAG 2.2 SC 1.4.3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0039 — Skeleton `apps/web/components/primitives/Skeleton.tsx`
@@ -4403,7 +4403,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "skeleton", { lang })` / Then `expectDir` passes; each bar has `aria-hidden="true"` and no text; the `w40`/`w60`/`w80`/`w100` bars' widths are 40/60/80/100% (±1 px) of their section's content width; every bar is ≥ 16 px tall; the `block` bar's computed `height` equals `await tokenValue(page.getByTestId("skeleton-block"), "height", "--tp-space-20")`; with default media the bars' computed `animation-name` is `tp-shimmer`.
   2. (once · en · 1280×800) Given `openHarness(page, "skeleton", { lang: "en" })` and `page.emulateMedia({ reducedMotion: "reduce" })` / Then every bar's computed `animation-name` is `none`.
 - **NUMBERS:** shown only for content slower than 100 ms (DESIGN.md §9; enforced by callers); shimmer removed under reduced motion (bullet 2); no contrast target (decorative, `aria-hidden`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0040 — Empty `apps/web/components/primitives/Empty.tsx`
@@ -4440,7 +4440,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "empty", { lang })` / Then `expectDir` passes; `empty-full` shows one `svg.tp-icon`, the title in `strong`, the body and the action button with the words for `lang`; `empty-title-only` has no icon, no body and no button; the container's computed `text-align` is `center`.
   2. (once · en · 1280×800) Given `openHarness(page, "empty", { lang: "en" })` / When the action is clicked / Then the log is `action:`; and `expectTargetSize(page, '[data-testid="empty-full"]')` passes.
 - **NUMBERS:** contrast `--tp-ink-muted` on paper ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, tokens); target ≥ 24×24 for the action (WCAG 2.2 SC 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0041 — Glass surface `apps/web/components/primitives/Glass.tsx` + helper-class checks
@@ -4471,7 +4471,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "glass", { lang })` / Then `expectDir` passes; the Glass element's computed `backdrop-filter` contains `blur(` and its computed `background-color` equals `await tokenValue(page.getByTestId("glass-glass"), "background-color", "--tp-glass")`; the `.tp-num` span has computed `direction` `ltr` and `unicode-bidi` `isolate` and text `12:30`; the `.tp-sr-only` span's box is 1×1 px; the flip icon's computed `transform` is `matrix(-1, 0, 0, 1, 0, 0)` in HE and `none` in EN.
   2. (once · en · 1280×800) Given `openHarness(page, "glass", { lang: "en" })` / When `page.evaluate(() => { document.documentElement.dataset.glass = "off"; })` runs / Then the Glass element's computed `background-color` equals `await tokenValue(page.getByTestId("glass-glass"), "background-color", "--tp-glass-solid")` and its `backdrop-filter` is `none`.
 - **NUMBERS:** text on glass ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; DESIGN.md §6 worst case muted-on-glass 5.13:1); solid fallback present (bullet 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0042 — TaskBlock `apps/web/components/blocks/TaskBlock.tsx`
@@ -4514,7 +4514,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. (once · en · 1280×800) Given `openHarness(page, "task-block", { lang: "en" })` / When the "Call the bank" checkbox is clicked / Then the log is `onToggle:["t1",true]`; When the "Pack the books" checkbox is focused and Space is pressed / Then the log is `onToggle:["t2",false]`.
   3. (once · en · 1280×800) Given `openHarness(page, "task-block", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="task-block-default"]')` and `expectMotionBudget(page, '[data-testid^="task-block-"]')` pass.
 - **NUMBERS:** check target 44×44 CSS px ≥ 24×24 (WCAG 2.2 SC 2.5.8); state not by colour alone (check mark + strike-through, WCAG 2.2 SC 1.4.1); contrast via tokens (SC 1.4.3); motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0043 — EnergyBlock `apps/web/components/blocks/EnergyBlock.tsx`
@@ -4556,7 +4556,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. (once · he · 1280×800) Given `openHarness(page, "energy-block", { lang: "he" })` / When the `steady` radio is focused and ArrowRight is pressed / Then the log is `onChange:"quiet"` (reversed in RTL).
   4. (once · en · 1280×800) Given `openHarness(page, "energy-block", { lang: "en" })` / When "Push" in `energy-block-none` is clicked / Then the log is `onChange:"push"`; and `expectTargetSize(page, '[data-testid^="energy-block-"]')` passes.
 - **NUMBERS:** option target ≥ 44 px tall (`--tp-touch`) ≥ 24×24 (WCAG 2.2 SC 2.5.8); selection shown by word, dot and border, not colour alone (SC 1.4.1); contrast via tokens (SC 1.4.3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0044 — Backlinks ("Linked here") `apps/web/components/blocks/Backlinks.tsx`
@@ -4600,7 +4600,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. (loop) Given `openHarness(page, "backlinks", { lang })` / Then `expectDir` passes; each section is a region named "Linked here" / "מקושר לכאן"; `backlinks-default` shows count `3` in `.tp-num` and three `a.tp-backlink` with `href` `/notes/n1`, `/notes/n2`, `/notes/n3`, the second titled "Untitled" / "ללא כותרת", each `__page`/`__ctx` with `dir="auto"`; `backlinks-empty` shows the `empty` text and no count; `backlinks-loading` has a `role="status"` containing the `loading` text and one `.tp-skeleton`.
   2. (once · en · 1280×800) Given `openHarness(page, "backlinks", { lang: "en" })` / Then `expectTargetSize(page, '[data-testid="backlinks-default"]')` passes and each row's height ≥ 44 px.
 - **NUMBERS:** text ≥ 13 px (`--tp-text-xs` floor; rows use `--tp-text-sm`); contrast via tokens (WCAG 2.2 SC 1.4.3); target ≥ 24×24 (WCAG 2.2 SC 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0045 — PageMetaBlock `apps/web/components/blocks/PageMetaBlock.tsx`
@@ -4630,7 +4630,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:** Every test follows the §22 spec skeleton: `const errors = trackConsoleErrors(page);` first, `page.setViewportSize(vp)`, `openHarness(page, "<id>", { lang })` with the id below, and `expect(errors).toEqual([])` last. Bullet 1 runs at both viewports × both languages (4 × 1 = 4).
   1. (loop) Given `openHarness(page, "page-meta-block", { lang })` / Then `expectDir` passes; each `[data-component="PageMetaBlock"]` is attached, has `aria-hidden="true"`, computed `display` `none`, an empty `textContent`, `data-page-type` `daily` / `plain`, and is not visible; and the section's visible text (`innerText`) contains neither `{` nor `2026-11-02`.
 - **NUMBERS:** none (no visible or interactive surface; `display: none` + `aria-hidden` asserted in bullet 1).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0046 — BrokenBlock
@@ -4675,7 +4675,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=broken-block-default]")` and `expectMotionBudget(page, "[data-testid=broken-block-default]")` run, and the undo button is focused with `Tab` / Then all pass and the button's computed `outline-width` is ≥ `2px`.
   - Given `broken-block-default` / When the bounding boxes of the text span and the button are read / Then for `en` the button's `x` is greater than the text's `x`, and for `he` it is smaller (inline end flips in RTL).
 - **NUMBERS:** Playwright `28 passed` of 28 (7 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) — colours only from §5 tokens, `bun run scan:design-tokens` passes. Target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8) — `expectTargetSize`. Focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7). Motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule) — `expectMotionBudget`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0047 — TemplateBlock
@@ -4724,7 +4724,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `template-block-used` and `template-block-dismissed` / When they render / Then each has `0` buttons, `used` shows the `used` copy and its list is visible, `dismissed` shows the `dismissed` copy and its `ul` is not visible.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=template-block-default]")`, `expectMotionBudget(page, "[data-testid=template-block-default]")` run and Tab reaches the primary button / Then all pass and its `outline-width` is ≥ `2px`.
 - **NUMBERS:** Playwright `32 passed` of 32. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `scan:design-tokens`). Target ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms, ≤ 1 ms under reduced motion (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0048 — EventBlock
@@ -4775,7 +4775,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `event-block-empty` / When it renders / Then the section contains `0` `ul` elements.
   - Given the harness / When `expectDir(page, lang)` and `expectMotionBudget(page, "[data-testid=event-block-default]")` run, and the `ul` `aria-label` is read / Then both pass and the label equals the `label` copy.
 - **NUMBERS:** Playwright `28 passed` of 28. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; `--tp-info` and `--tp-caution` on their washes are the token pairs, `scan:design-tokens` passes). Non-text contrast of the edge ≥ 3:1 (SC 1.4.11; tokens only). Motion ≤ 250 ms (`expectMotionBudget`). No target-size number: nothing is interactive.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0049 — HabitBlock
@@ -4829,7 +4829,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `habit-block-no-when` / When it renders / Then it contains `0` `.tp-habit__when` elements.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=habit-block-default]")`, `expectMotionBudget(page, "[data-testid=habit-block-default]")` run, Tab reaches the log button, and the `ul` `aria-label` is read / Then all pass, `outline-width` ≥ `2px`, and the label equals the `days` copy.
 - **NUMBERS:** Playwright `32 passed` of 32. Contrast ≥ 4.5:1 for labels (WCAG 2.2 SC 1.4.3) and ≥ 3:1 for the dot ring (SC 1.4.11) — tokens only, `scan:design-tokens`. Target ≥ 24×24 CSS px (SC 2.5.8; `expectTargetSize`). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (`expectMotionBudget`). Streak numbers shown: exactly 0 (PRD F-10).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0050 — NagBlock
@@ -4882,7 +4882,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `nag-block-done`, `nag-block-snoozed`, `nag-block-nottoday` / When they render / Then each has `0` buttons and `data-status` equal to its state, and its `[role=status]` text (whitespace-normalised) is the `noteNow` copy, `Snoozed for 30 minutes.` / `נדחה ב־30 דקות.`, and the `noteNotToday` copy respectively.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=nag-block-default]")`, `expectMotionBudget(page, "[data-testid=nag-block-default]")` run and Tab reaches the `now` button / Then all pass and `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `32 passed` of 32. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `scan:design-tokens`). Target ≥ 24×24 CSS px (SC 2.5.8). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (`expectMotionBudget`). Icons and emoji rendered: exactly 0 (PRD F-60).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0051 — NextUpCard (verify existing + harness spec)
@@ -4923,7 +4923,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `next-up-card-default` / When the "Make it smaller" element is read / Then it is an `a` with `href="/coach"` and the `next.smaller` copy.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=next-up-card-default]")`, `expectMotionBudget(page, "[data-testid=next-up-card-default]")` run and Tab reaches the primary / Then all pass and `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `28 passed` of 28. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; existing tokens). Target ≥ 24×24 CSS px (SC 2.5.8). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (`expectMotionBudget`). Component diff: 0 lines.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0052 — AuthCard
@@ -4943,6 +4943,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/AuthCard.tsx ("use client")
+  import type React from "react";
   import type { ReactNode } from "react";
   export type AuthCardProps = {
     title?: string;     // h1; omitted on status screens whose StatusPanel carries the h1
@@ -4964,7 +4965,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the whole harness page / When elements are counted / Then there are `0` `.tp-rail`, `0` `.tp-topbar` and `0` `.tp-tabbar`.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=auth-card-default] .tp-auth-card")` and `expectMotionBudget(page, "[data-testid=auth-card-default]")` run and the card's computed `border-radius` is read / Then all pass and the radius is `20px`.
 - **NUMBERS:** Playwright `24 passed` of 24. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `scan:design-tokens`). Target ≥ 24×24 CSS px for the brand link (SC 2.5.8). Card radius 20 px = `--tp-radius-xl` (DESIGN.md §4 sheet radius). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0053 — EmailField
@@ -5015,7 +5016,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `email-field-validation` / When its text is read / Then it equals `[false,false,false,true,true]`.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=email-field-default]")`, `expectMotionBudget(page, "[data-testid=email-field-default]")` run and Tab reaches `#ef-default` / Then all pass and its computed `outline-width` is ≥ `2px`.
 - **NUMBERS:** Playwright `36 passed` of 36. Contrast ≥ 4.5:1 for text (WCAG 2.2 SC 1.4.3) and ≥ 3:1 for the input border `--tp-line-control` (SC 1.4.11) — tokens only, `scan:design-tokens`. Target ≥ 24×24 CSS px (SC 2.5.8; input is 44 px tall). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0054 — GuestButton
@@ -5054,7 +5055,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `guest-button-default` / When bounding boxes are read / Then the button's width equals its section's content width (±1 px) at both viewports.
   - Given the harness / When `expectDir`, `expectTargetSize(page, "[data-testid=guest-button-default]")`, `expectMotionBudget(page, "[data-testid=guest-button-default]")` run and Tab reaches the button / Then all pass and `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `20 passed` of 20. Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) and border ≥ 3:1 (SC 1.4.11) — tokens only, `scan:design-tokens`. Target ≥ 24×24 CSS px (SC 2.5.8). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0055 — DividerText
@@ -5085,7 +5086,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the `p` / When the two pseudo-element computed `width`s are read / Then they differ by at most 1 px (the word is centred).
   - Given the harness / When `expectDir(page, lang)` and `expectMotionBudget(page, "[data-testid=divider-text-default]")` run, and `page.getByText(<or copy>, { exact: true })` is counted inside the section / Then both pass and the count is `1`.
 - **NUMBERS:** Playwright `16 passed` of 16. Label contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; `--tp-ink-muted` on the auth card paper is a token pair, `scan:design-tokens`). Hairline is decorative (no SC 1.4.11 requirement). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0056 — StatusPanel
@@ -5105,6 +5106,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/auth/StatusPanel.tsx ("use client")
+  import type React from "react";
   import type { ReactNode } from "react";
   export type StatusPanelProps = {
     tone?: "neutral" | "done";      // default "neutral"
@@ -5130,7 +5132,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `status-panel-default` / When computed `text-align` of the root is read / Then it is `center`.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=status-panel-default] .tp-status-panel__actions")` and `expectMotionBudget(page, "[data-testid=status-panel-default]")` run / Then all pass.
 - **NUMBERS:** Playwright `24 passed` of 24. Contrast ≥ 4.5:1 for body (WCAG 2.2 SC 1.4.3) and ≥ 3:1 for the 24+ px title (SC 1.4.3 large text) — tokens only, `scan:design-tokens`. Target ≥ 24×24 CSS px for actions (SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`). Illustrations: exactly 0.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0057 — Sign-in screen
@@ -5150,6 +5152,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/sign-in/page.tsx ("use client")
+  import type React from "react";
   export type SignInView = {
     email: string;                                   // initial field value
     errors: "none" | "empty" | "invalid";            // not "none" → summary + EmailField invalid
@@ -5199,7 +5202,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=default` / When the language link of the other language is clicked (`עברית` in the en run, `English` in the he run) / Then `expectDir(page, <other>)` passes and that link has `aria-current="true"`; and the "Ask to join" link `href` starts with `/sign-up`.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, "main")` and `expectMotionBudget(page, "main")` run, Tab reaches the submit button, and `measureVitals(page, "/sign-in?state=default&lang=" + lang)` runs / Then all pass, the button's computed `outline-width` is ≥ `2px`, `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `48 passed` of 48 (12 cases × 2 viewports × 2 languages). Contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`). Target ≥ 24×24 CSS px (SC 2.5.8; `expectTargetSize`). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms, ≤ 1 ms under reduced motion (`expectMotionBudget`). LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; `measureVitals`). INP: UNKNOWN in the local dev server (CONVENTIONS §20; not a gate). Backend p95: n/a (no backend function in this ticket). Magic-link lifetime shown: 30 minutes (`convex/auth.ts` `maxAge: 60 * 30`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0058 — Sign-up screen — OPEN
@@ -5257,7 +5260,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `decideEntryRedirect({ pathname: "/link-sent", search: "?email=maya%40example.com&next=%2Ftoday", isAuthenticated: false, isPublicRoute: PUBLIC_ROUTE_PATTERNS.includes("/link-sent"), isCalendarE2EBypass: false })` / When it runs / Then it returns `null` (test name: "lets a signed-out visitor open /link-sent").
   - The other 7 existing tests stay green unchanged (the "keeps the listed auth and legal routes public" loop now also covers `/link-sent`).
 - **NUMBERS:** `9 pass` of 9 (8 existing + 1 new), `0 fail`. Backend p95: n/a (no backend function). No UI number applies.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0059b — Link-sent screen
@@ -5277,6 +5280,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/link-sent/page.tsx ("use client")
+  import type React from "react";
   export type LinkSentView = {
     email: string | null;                            // null → "empty" (no or malformed ?email=)
     waitSeconds: number;                             // countdown start; 0 → Resend enabled at once
@@ -5323,7 +5327,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=default` / When the `different` link is read / Then its `href` starts with `/sign-in`; and When the other language's link in `[data-component=LanguageSwitch]` is clicked / Then `expectDir(page, <other>)` passes.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, "main")`, `expectMotionBudget(page, "main")` and `measureVitals(page, "/link-sent?state=default&lang=" + lang)` run / Then all pass, `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `44 passed` of 44 (11 × 2 × 2). Resend wait 30 s (design `WAIT = 30`; `RESEND_WAIT_SECONDS`). Link lifetime 30 min (`convex/auth.ts` `maxAge`). Contrast ≥ 4.5:1 (SC 1.4.3; tokens only). Target ≥ 24×24 CSS px (SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`). LCP ≤ 2,500 ms, CLS ≤ 0.1 (`measureVitals`). INP UNKNOWN (§20). Backend p95: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0060a — Make `/approval-pending` a public route — OPEN
@@ -5424,7 +5428,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `renderFixture({ ...F, step: 5, save: "hang" })` / When `Start using Tempo` is clicked / Then the primary button text is `Saving…` and it is disabled, and the `users:completeOnboarding` mock and `push` were each called `0` times.
   - Given `renderFixture({ ...F, step: 5, save: "ok" })` / When `Start using Tempo` is clicked / Then `push` was called once with `"/today"` and the `users:completeOnboarding` mock `0` times.
 - **NUMBERS:** `18 pass` of 18 (11 existing + 7 new), `0 fail`; `releaseOnboardingGate.test.tsx` `0 fail`. Backend p95: n/a (no backend function). UI numbers are checked in TFV2-0061b.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0061b — Onboarding screen
@@ -5444,6 +5448,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/(bare)/onboarding/page.tsx ("use client")
+  import type React from "react";
   export type OnboardingView = OnboardingFixture;   // re-export of the TFV2-0061a type, for the fixtures file
   export default function Page(): React.JSX.Element;       // <Suspense fallback={null}><OnboardingRoute /></Suspense>
   // apps/web/lib/e2e/fixtures/onboarding.ts
@@ -5471,7 +5476,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=slow-save` / When `#ob-dump` is filled with `Buy milk` and the `set.onb.next` button is clicked / Then the primary button text is the `set.saving` copy, it is disabled, and the form has `aria-busy="true"`.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, ".ob-nav")`, `expectMotionBudget(page, "main")` run, Tab reaches the first radio, and `measureVitals(page, "/onboarding?state=default&lang=" + lang)` runs / Then all pass, the focused radio's `outline-width` ≥ `2px`, `lcpMs` ≤ 2500, `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `48 passed` of 48 (12 × 2 × 2). Steps: exactly 5 (`ONBOARDING_STEPS`). Dial 0–10, default 4 in fixtures (`coach.getSettings` `DEFAULT_DIAL` is the live value). Contrast ≥ 4.5:1 (SC 1.4.3). Target ≥ 24×24 CSS px (SC 2.5.8) for the nav buttons (`expectTargetSize(page, ".ob-nav")`); the locked `.tp-radio` inputs are 22×22 px inside full-width `.tp-choice` labels, which `expectTargetSize` cannot credit, so radio target size is UNKNOWN by automated check (SC 2.5.8 spacing exception, judged by eye). Focus ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms. LCP ≤ 2,500 ms, CLS ≤ 0.1. INP UNKNOWN. Backend p95: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0062a — PageEditorView takes backlinks as a prop; NotePage loads them and shows the v3 loading state
@@ -5491,6 +5496,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/notes/PageEditorView.tsx ("use client")
+  import type React from "react";
   import { Backlinks, type BacklinkRow } from "@/components/blocks/Backlinks"; // TFV2-0044; BacklinkRow = { id: string; title: string; context: string }, the shape notes.backlinks returns
   export type PageEditorViewProps = {
     /* every existing prop, unchanged: noteId, title, initialBody, body, remoteBody?, pinned, saveState, confirmingDelete,
@@ -5499,6 +5505,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   };
   export function PageEditorView(props: PageEditorViewProps): React.JSX.Element;
   // apps/web/components/notes/NotesScreen.tsx
+  import type React from "react";
   export function NoteLoading(): React.JSX.Element;
   ```
   `NoteLoading` markup (tempo.css `@component StateLoading`, the five rows of `page-editor.html`): `<div className="tp-page" data-component="PageLayout"><div className="tp-state--loading" role="status" data-component="StateLoading"><span className="tp-sr-only">{t("notes.loadingNote")}</span><div className="tp-skel-list" aria-hidden="true"><div className="tp-skeleton tp-skeleton--w100" /><div className="tp-skeleton tp-skeleton--w80" /><div className="tp-skel-row"><span className="tp-skeleton tp-skel-row__box" /><span className="tp-skel-row__lines"><span className="tp-skeleton tp-skeleton--w60" /><span className="tp-skeleton tp-skeleton--sm tp-skeleton--w40" /></span></div><div className="tp-skel-row"><span className="tp-skeleton tp-skel-row__box" /><span className="tp-skel-row__lines"><span className="tp-skeleton tp-skeleton--w80" /><span className="tp-skeleton tp-skeleton--sm tp-skeleton--w40" /></span></div><div className="tp-skeleton tp-skeleton--w60" /></div></div></div>`.
@@ -5517,7 +5524,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `page-editor-view-saving` and `page-editor-view-untitled` / When they render / Then the saving section's `output` text is the `page.saving` copy, and the untitled textarea has value `""` and `placeholder` = the `page.untitled` copy.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=page-editor-view-default] .tp-page-head")`, `expectMotionBudget(page, "[data-testid=page-editor-view-default]")` run and the default section's `innerText` is read / Then all pass and the text contains no `{"` (no JSON shown).
 - **NUMBERS:** Playwright `32 passed` of 32 (8 × 2 × 2). `NotesScreen.test.tsx` and `today-live-preview.test.ts`: `0 fail` (exact). Paper max width 760 px (`--tp-paper-max`). Contrast ≥ 4.5:1 (SC 1.4.3; tokens only). Target ≥ 24×24 CSS px (SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`). Backend p95: n/a (reads an existing query).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0062b — Page-editor screen (`/notes/[id]`)
@@ -5537,6 +5544,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/[id]/page.tsx ("use client")
+  import type React from "react";
   import type { BacklinkRow } from "@/components/blocks/Backlinks";
   export type NoteScreenView =
     | { kind: "ready"; online: boolean; title: string; body: string; pinned: boolean; saveState: "idle" | "saving" | "saved"; backlinks: BacklinkRow[] }
@@ -5571,7 +5579,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=default` / When the page's `innerText` is read / Then it contains no `{"` and no `note-1`.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, ".tp-page-head")`, `expectMotionBudget(page, "main")` and `measureVitals(page, "/notes/note-1?state=default&lang=" + lang)` run / Then all pass, `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `44 passed` of 44 (11 × 2 × 2). Save debounce 500 ms (existing `NotePage`; unchanged). Paper max 760 px (`--tp-paper-max`). Contrast ≥ 4.5:1 (SC 1.4.3). Target ≥ 24×24 CSS px (SC 2.5.8). Motion ≤ 250 ms. LCP ≤ 2,500 ms, CLS ≤ 0.1. INP UNKNOWN (§20). Backend p95: n/a (no new function).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0063a — NotesList becomes props-only; the notes route wires its data
@@ -5591,6 +5599,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/notes-pages/NotesList.tsx ("use client")
+  import type React from "react";
   import type { PeriodFilterValue, PeriodType } from "./filterNotes";
   export type NotesListNote = { id: string; title: string; body: string; pinned: boolean; periodType: PeriodType };
   export type NotesListProps = {
@@ -5628,7 +5637,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `notes-list-cannot-create` / When it renders, and in `notes-list-default` the period radio with the `notes.type.daily` copy is clicked / Then "New note" is disabled, and the page URL contains `type=daily`.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=notes-list-default] .tp-toolbar")`, `expectMotionBudget(page, "[data-testid=notes-list-default]")` run and Tab reaches `#nt-new-title` / Then all pass and its `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `40 passed` of 40 (10 × 2 × 2). Undo window 5 minutes (`convex/lib/softDelete.ts` `undoUntil`; harness uses 300,000 ms). Preview ≤ 140 characters (`plainPreview`). Contrast ≥ 4.5:1 (SC 1.4.3). Target ≥ 24×24 CSS px (SC 2.5.8). Focus ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms. Backend p95: n/a (existing functions).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0063b — Notes list screen (`/notes`)
@@ -5648,6 +5657,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/page.tsx ("use client")
+  import type React from "react";
   import type { NotesListNote } from "@/components/notes-pages/NotesList";
   export type NotesScreenView =
     | { kind: "ready"; online: boolean; notes: NotesListNote[]; create: "ok" | "fail" | "hang" }
@@ -5682,7 +5692,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=save-error` / When `Groceries` is typed and "New note" is clicked / Then `.tp-notice[data-tone=danger]` shows the `notes.error` copy and the URL path is still `/notes`.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, ".tp-toolbar")`, `expectMotionBudget(page, "main")` and `measureVitals(page, "/notes?state=default&lang=" + lang)` run / Then all pass, `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `52 passed` of 52 new (13 × 2 × 2) plus `1 skipped` (existing storage-state test). Undo window 5 min. Contrast ≥ 4.5:1 (SC 1.4.3). Target ≥ 24×24 CSS px (SC 2.5.8). Motion ≤ 250 ms. LCP ≤ 2,500 ms, CLS ≤ 0.1. INP UNKNOWN. Backend p95: n/a (no new function; `notes.list` has no read bound today, see Cross-range notes).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0064 — New-page screen (`/notes/new`)
@@ -5702,6 +5712,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/app/(tempo)/notes/new/page.tsx ("use client")
+  import type React from "react";
   export type NewPageTemplate = { templateId: string; source: "starter" | "user"; name: string; description?: string; periodType: "daily" | "weekly" | "monthly" | "none"; sections: string[] };
   export type NewPageView = {
     kind: "ready" | "loading" | "error";
@@ -5758,7 +5769,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `state=creating` and `state=create-error` / When `[data-action=plain]` is clicked in each / Then in `creating` the `creating` copy is visible and both toolbar buttons are disabled; in `create-error` `.tp-notice[data-tone=danger]` shows the `createErrTitle` copy and the URL path is still `/notes/new`.
   - Given `state=default` / When `expectDir(page, lang)`, `expectTargetSize(page, "main .tp-page")`, `expectMotionBudget(page, "main")` and `measureVitals(page, "/notes/new?state=default&lang=" + lang)` run / Then all pass, `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** Playwright `52 passed` of 52 (13 × 2 × 2). Offer adds: 1–6 lines (TemplateBlock contract). Contrast ≥ 4.5:1 (SC 1.4.3). Target ≥ 24×24 CSS px (SC 2.5.8). Focus ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms. LCP ≤ 2,500 ms, CLS ≤ 0.1. INP UNKNOWN (§20). Backend p95: n/a (existing functions; `templates.list` reads the person's templates with `.collect()`, unbounded today, see Cross-range notes).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 2 — MVP · Planning surface
@@ -5794,7 +5805,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's live task / When `remove` / Then it returns `{ success: true, undoUntilMs }`, `ctx.db.get(taskId)` is not `null`, its `deletedAt` is a number equal to its `updatedAt`, and `undoUntilMs === deletedAt + UNDO_WINDOW_MS`.
   - Given A's two live tasks and `remove` on the first / When `run(tasks.list, ctx, {})` / Then it returns exactly one row, the second task.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20. Reads: one `ctx.db.get` (no list read).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0065b — `tasks.restore` (Undo inside the 30-day grace) — verify + tests
@@ -5829,7 +5840,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's task with `deletedAt: Date.now() - GRACE_MS - 1000` / When `restore` / Then it returns `{ success: false }` and `deletedAt` is unchanged.
   - Given A's live task (no `deletedAt`, `updatedAt: 1`) / When `restore` / Then it returns `{ success: false }` and `updatedAt` is still `1`.
 - **NUMBERS:** test cases 7 of 7 pass (exact); grace window `GRACE_MS` = 30 days (code constant, checked by cases 5–6); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0065c — `dayPlans.listCarryOver` (bounded scan) — change + tests
@@ -5865,7 +5876,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `MAX_CARRY_OVER + 1` (51) open tasks with `dueAt` 1…51 / When `listCarryOver({ beforeMs: 1000 })` / Then it returns 50 rows and the task with `dueAt: 51` is not among them.
   - Given `MAX_CARRY_OVER_SCAN` (500) done tasks with `dueAt` 1…500 and one `todo` task with `dueAt: 501` / When `listCarryOver({ beforeMs: 1000 })` / Then it returns `[]` (the scan stopped at 500 rows).
 - **NUMBERS:** test cases 5 of 5 pass (exact); bounded read ≤ `MAX_CARRY_OVER_SCAN` = 500 rows read and ≤ `MAX_CARRY_OVER` = 50 returned (code constants; cases 4–5 seed constant + 1); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0065d — `dayPlans.moveTaskToDay` (move to Today) — verify + tests
@@ -5899,7 +5910,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given USER's live `todo` task with `dueAt: 1`, `updatedAt: 1` / When `moveTaskToDay({ dueAt: 999 })` / Then it returns the task id, the row has `dueAt: 999`, `updatedAt > 1`, `status: "todo"`, `title: "t"`.
   - Given USER's task with `status: "done"` / When `moveTaskToDay({ dueAt: 999 })` / Then the row keeps `status: "done"` and has `dueAt: 999`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20. Reads: one `ctx.db.get`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066a — `calendar_events.update` with optional `endsAtMs` — change + tests
@@ -5973,7 +5984,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's event with `endsAtMs: 2000` / When `update({ endsAtMs: null })` / Then the row's `endsAtMs` is `undefined`.
   - Given A's event with `startsAtMs: 1000`, `endsAtMs: 2000` / When `update({ title: "B" })` / Then the row has `title: "B"`, `startsAtMs: 1000`, `endsAtMs: 2000`.
 - **NUMBERS:** test cases 10 of 10 pass (exact); end-after-start rule from CFG-005 (cases 6–7); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20. Reads: one `ctx.db.get`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066b — `calendar_events.create` with optional `endsAtMs` — change + tests
@@ -6031,7 +6042,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `makeFakeCtx(A)` / When `create({ title: "  Lunch ", startsAtMs: 1000 })` / Then the returned id's row has `userId: A`, `title: "Lunch"`, `startsAtMs: 1000`, `endsAtMs` `undefined`, and `createdAt === updatedAt`.
   - Given `makeFakeCtx(A)` / When `create({ title: "Lunch", startsAtMs: 1000, endsAtMs: 4600000 })` / Then the row has `endsAtMs: 4600000`.
 - **NUMBERS:** test cases 5 of 5 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20. Writes: one insert.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066c — `calendar_events.listInRange` (bounded) — change + tests
@@ -6066,7 +6077,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's events at `startsAtMs` 50 (with `endsAtMs: 80`), 10, 100, a deleted one at 20, and B's at 30 / When A calls `listInRange({ startMs: 10, endMs: 100 })` / Then it returns the ids of the 10 and 50 events in that order, and the 50 event has `endsAtMs: 80`.
   - Given `MAX_EVENTS_IN_RANGE + 1` (501) A events at `startsAtMs` 1…501 / When `listInRange({ startMs: 0, endMs: 1000 })` / Then it returns 500 rows and none has `startsAtMs: 501`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); bounded read ≤ `MAX_EVENTS_IN_RANGE` = 500 (code constant; case 6 seeds 501); range ≤ 32 days (`maxCalendarRangeMs`); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066d — `calendar_events.remove` (soft delete) — verify + tests
@@ -6100,7 +6111,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's live event / When `remove` / Then it returns `{ success: true, undoUntilMs }`, the row still exists, `deletedAt === updatedAt`, and `undoUntilMs === deletedAt + UNDO_WINDOW_MS`.
   - Given A's live event at `startsAtMs: 1000` removed / When `listInRange({ startMs: 0, endMs: 2000 })` / Then it returns `[]`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066e — `calendar_events.restore` — verify + tests
@@ -6135,7 +6146,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's event with `deletedAt: Date.now() - GRACE_MS - 1000` / When `restore` / Then it returns `{ success: false }` and `deletedAt` is unchanged.
   - Given A's live event with `updatedAt: 1` / When `restore` / Then it returns `{ success: false }` and `updatedAt` is still `1`.
 - **NUMBERS:** test cases 7 of 7 pass (exact); grace `GRACE_MS` = 30 days (cases 5–6); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0067a — `habitCheckIns.check` (local day, bounded streak read) — change + tests
@@ -6196,7 +6207,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given USER's habit / When `check` runs with `note: "   "` / Then the inserted row has no `note` key (`"note" in row` is `false`).
   - Given USER's habit and `MAX_HABIT_CHECKINS_READ + 1` (3661) live check-ins on consecutive days ending `"2026-10-06"`, inserted newest first / When `check(ctx, habitId, "2026-10-07", "2026-10-07")` / Then it returns `currentStreak: MAX_HABIT_CHECKINS_READ` (3660), not 3662.
 - **NUMBERS:** test cases 11 of 11 pass (exact); bounded read ≤ `MAX_HABIT_CHECKINS_READ` = 3660 rows (code constant; the cap case seeds 3661); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0067b — `habitCheckIns.undo` (soft-delete one local day) — change + tests
@@ -6234,7 +6245,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given USER's habit with `currentStreak: 4`, `longestStreak: 9`, `updatedAt: 1` and no check-in on `"2026-10-07"` / When `undo(ctx, habitId, "2026-10-07", "2026-10-07")` / Then it returns `{ removed: false, currentStreak: 4, longestStreak: 9 }` and the habit's `updatedAt` is still `1`.
   - Given USER's habit and `MAX_HABIT_CHECKINS_READ + 2` (3662) live check-ins on consecutive days ending `"2026-10-07"`, newest first / When `undo(ctx, habitId, "2026-10-07", "2026-10-07")` / Then it returns `currentStreak: MAX_HABIT_CHECKINS_READ` (3660), not 3661.
 - **NUMBERS:** test cases 10 of 10 pass (exact); bounded read ≤ `MAX_HABIT_CHECKINS_READ` = 3660 (the cap case seeds constant + 2 so the deleted row leaves constant + 1 live); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0068a — `habits.listDays` (6-week grid by local day) — new query + tests
@@ -6325,7 +6336,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's habit / When `listDays({ localDate: "2026-10-12", weekStartsOn: 1 })` (a Monday) / Then `days` has 36 entries from `"2026-09-07"` to `"2026-10-12"`.
   - Given `MAX_HABIT_GRID_ROWS` (42) live check-ins all on `"2026-09-07"` inserted first, then one on `"2026-10-14"` / When `listDays({ localDate: "2026-10-14", weekStartsOn: 1 })` / Then only `"2026-09-07"` is checked and `"2026-10-14"` has `checked: false` (the read stopped at 42 rows).
 - **NUMBERS:** test cases 11 of 11 pass (exact); grid length 36–42 days (`HABIT_GRID_WEEKS` = 6); bounded read ≤ `MAX_HABIT_GRID_ROWS` = 42 (the cap case seeds 43); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0068b — `habits.summary` (plain counts, no streak) — new query + tests
@@ -6381,7 +6392,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's single check-in on `"2026-10-11"` (a Sunday) / When `summary` runs with `weekStartsOn: 0` and then with `weekStartsOn: 1` (both `localDate: "2026-10-14"`) / Then `daysThisWeek` is `1` and then `0`.
   - Given `MAX_HABIT_GRID_ROWS` (42) live check-ins on `"2026-09-07"` inserted first, then one on `"2026-10-14"` / When `summary({ localDate: "2026-10-14", weekStartsOn: 1 })` / Then `loggedDays` is `1` and `lastLoggedLocalDate` is `"2026-09-07"`.
 - **NUMBERS:** test cases 9 of 9 pass (exact); bounded read ≤ `MAX_HABIT_GRID_ROWS` = 42 (the cap case seeds 43); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069a — `goals.list` (live goals, bounded) — change + tests
@@ -6431,7 +6442,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given one live A goal, one A goal with `deletedAt: 5`, and one B goal / When A calls `list({})` / Then it returns only the live A goal.
   - Given `MAX_GOALS + 1` (501) live A goals / When `list({})` / Then it returns 500 rows.
 - **NUMBERS:** test cases 6 of 6 pass (exact); bounded read ≤ `MAX_GOALS` = 500 (case 6 seeds 501); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069d — `goals.get` (owned goal or `null`) — new query + tests
@@ -6471,7 +6482,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given B's goal / When A calls `get` / Then it returns `null`.
   - Given A's goal with `deletedAt: 5` / When `get` / Then it returns `null`.
 - **NUMBERS:** test cases 5 of 5 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20. Reads: one `ctx.db.get`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069e — `goals.create` (title 1–200 characters) — change + tests
@@ -6516,7 +6527,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `makeFakeCtx(A)` / When `create({ title: "a".repeat(200) })` / Then the row's title has length 200.
   - Given `makeFakeCtx(A)` / When `create({ title: "  Run a 5k ", description: " by June ", targetDate: 1800000000000 })` / Then the returned id's row has `userId: A`, `title: "Run a 5k"`, `description: "by June"`, `targetDate: 1800000000000`, `progressPercent: 0`, `status: "active"`, and `createdAt === updatedAt`.
 - **NUMBERS:** test cases 5 of 5 pass (exact); title length 1–200 (`GOAL_TITLE_MAX`; cases 3–4 check 201 and 200); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069f — `goals.update` (owner, title rule, clamp) — change + tests
@@ -6559,7 +6570,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's goal / When `update({ progressPercent: 140 })` and then `update({ progressPercent: -5 })` / Then `progressPercent` is stored as `100` and then `0`.
   - Given A's goal with `description: "d"`, `targetDate: 5`, `updatedAt: 1` / When `update({ title: "  New ", description: null, targetDate: null, status: "completed" })` / Then it returns the goal id and the row has `title: "New"`, `description` `undefined`, `targetDate` `undefined`, `status: "completed"`, `updatedAt > 1`.
 - **NUMBERS:** test cases 8 of 8 pass (exact); progress clamp 0–100 (case 7); title 1–200 (cases 5–6); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069g — `goals.remove` — change + tests
@@ -6592,7 +6603,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's goal with `deletedAt: 5` / When `remove` / Then it rejects with `"Goal not found"` and the row still exists.
   - Given A's live goal / When `remove` / Then it returns `{ success: true }` and `ctx.db.get(goalId)` is `null`.
 - **NUMBERS:** test cases 5 of 5 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0069b — `goals.progressByGoal` (open/done counts per goal) — OPEN
@@ -6811,7 +6822,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given a `users:b` plan for `"2026-10-05"` / When USER calls `getForDate({ localDate: "2026-10-05" })` / Then it returns `null`.
   - Given USER's plan for `"2026-10-05"` with `deletedAt: 5` / When `getForDate({ localDate: "2026-10-05" })` / Then it returns `null`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); at most one row read (`.first()`); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0070b — `dayPlans.upsert` (one plan per local day) — verify + tests
@@ -6853,7 +6864,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given that plan / When `upsert({ localDate: "2026-10-05", energy: "high" })` / Then it returns the same id, the row has `energy: "high"` and still `intention: "Ship it"`, and exactly one `dayPlans` row exists.
   - Given USER's plan for `"2026-10-05"` with `status: "committed"`, `committedAt: 7` / When `upsert({ localDate: "2026-10-05", intention: "later" })` / Then the row still has `status: "committed"`, `committedAt: 7`, and `intention: "later"`.
 - **NUMBERS:** test cases 8 of 8 pass (exact); top tasks ≤ 3 (`MAX_TOP_TASKS`, case 3 seeds 4); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0070c — `dayPlans.commit` — verify + tests
@@ -6887,7 +6898,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given USER's plan with `status: "committed"`, `committedAt: 7`, `updatedAt: 7` / When `commit` / Then it returns `{ dayPlanId, committedAt: 7 }` and the row's `updatedAt` is still `7`.
   - Given a `users:b` draft plan for `"2026-10-05"` / When USER calls `commit({ localDate: "2026-10-05" })` / Then the `users:b` row is still `"draft"` and the returned `dayPlanId` is a new row with `userId: USER`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071a — `timeBlocks.listForDate` (bounded) — change + tests
@@ -6921,7 +6932,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's block on DAY, A's block on DAY with `deletedAt: 5`, A's block on `"2026-10-15"`, and B's block on DAY / When A calls `listForDate({ localDate: DAY })` / Then it returns only the first block.
   - Given `MAX_TIME_BLOCKS_PER_DAY + 1` (201) A blocks on DAY / When `listForDate({ localDate: DAY })` / Then it returns 200 rows.
 - **NUMBERS:** test cases 5 of 5 pass (exact); bounded read ≤ `MAX_TIME_BLOCKS_PER_DAY` = 200 (case 5 seeds 201); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071b — `timeBlocks.create` — verify + tests
@@ -6970,7 +6981,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given no plan for DAY / When `create(BASE)` / Then the row has no `dayPlanId` key.
   - Given `makeFakeCtx(A)` / When `create({ ...BASE, startMinute: 0, durationMinutes: 5 })` and `create({ ...BASE, startMinute: 1439, durationMinutes: 720 })` / Then both return ids and two rows exist.
 - **NUMBERS:** test cases 11 of 11 pass (exact); `startMinute` 0–1439 and `durationMinutes` 5–720 (code limits; cases 4, 5, 11 check both edges); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071c — `timeBlocks.update` — verify + tests
@@ -7015,7 +7026,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's block / When `update({ title: "  " })` / Then it rejects with `"Title is required"`.
   - Given A's block with `status: "done"`, `updatedAt: 1` / When `update({ title: "  Walk ", kind: "break", startMinute: 600 })` / Then it returns the block id and the row has `title: "Walk"`, `kind: "break"`, `startMinute: 600`, `durationMinutes: 25`, `status: "done"`, `updatedAt > 1`.
 - **NUMBERS:** test cases 9 of 9 pass (exact); timing limits as in TFV2-0071b; Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071d — `timeBlocks.setStatus` (done / skipped, neutral) — verify + tests
@@ -7049,7 +7060,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's planned block with `updatedAt: 1` / When `setStatus({ status: "done" })` / Then it returns the id and the row has `status: "done"`, `updatedAt > 1`.
   - Given A's block / When `setStatus({ status: "skipped" })` and then `setStatus({ status: "planned" })` / Then the row's status is `"skipped"` after the first call and `"planned"` after the second.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071e — `timeBlocks.remove` (soft delete) — verify + tests
@@ -7083,7 +7094,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's live block / When `remove` / Then it returns `{ success: true }`, the row still exists, and `deletedAt === updatedAt`.
   - Given A's live block on DAY removed / When `listForDate({ localDate: DAY })` / Then it returns `[]`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0072a — `focusBlocks.create` (completed session) — change + tests
@@ -7121,7 +7132,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `makeFakeCtx(A)` / When `create` runs with `label: "x".repeat(200)` and again with `label: "   "` / Then the first row's label has length `focusBlocks.LABEL_MAX` (120) and the second row has no `label` key.
   - Given `makeFakeCtx(A)` / When `create({ startedAtMs: 1, durationMs: 1 })` and `create({ startedAtMs: 2, durationMs: focusBlocks.MAX_DURATION_MS })` / Then both return ids.
 - **NUMBERS:** test cases 8 of 8 pass (exact); `durationMs` 1 ms–8 h (`MAX_DURATION_MS`; cases 2, 3, 8 check both edges); label ≤ `LABEL_MAX` = 120; Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0072b — `focusBlocks.listInRange` (bounded) — change + tests
@@ -7157,7 +7168,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's rows at `startedAtMs` 100, 300, 1000, a deleted A row at 200, and B's row at 250 / When A calls `listInRange({ startMs: 100, endMs: 1000 })` / Then the ids come back as 300, 100.
   - Given `MAX_FOCUS_BLOCKS_IN_RANGE + 1` (501) A rows at `startedAtMs` 1…501 / When `listInRange({ startMs: 0, endMs: 1000 })` / Then it returns 500 rows, the first has `startedAtMs: 501`, and none has `startedAtMs: 1`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); bounded read ≤ `MAX_FOCUS_BLOCKS_IN_RANGE` = 500 (case 6 seeds 501); range ≤ 93 days (`MAX_RANGE_MS`); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0072c — `focusBlocks.remove` (soft delete) — verify + tests
@@ -7191,7 +7202,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's live row / When `remove` / Then it returns `{ success: true, undoUntilMs }`, the row still exists, `deletedAt === updatedAt`, and `undoUntilMs === deletedAt + UNDO_WINDOW_MS`.
   - Given A's live row at `startedAtMs: 100` removed / When `listInRange({ startMs: 0, endMs: 1000 })` / Then it returns `[]`.
 - **NUMBERS:** test cases 6 of 6 pass (exact); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0072d — `focusBlocks.restore` — verify + tests
@@ -7226,7 +7237,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given A's row with `deletedAt: Date.now() - GRACE_MS - 1000` / When `restore` / Then it returns `{ success: false }` and `deletedAt` is unchanged.
   - Given A's live row with `updatedAt: 1` / When `restore` / Then it returns `{ success: false }` and `updatedAt` is still `1`.
 - **NUMBERS:** test cases 7 of 7 pass (exact); grace `GRACE_MS` = 30 days (cases 5–6); Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0073a — `validateBrainDumpInput` (verify, pure helper `convex/lib/brainDumpInput.ts`)
@@ -7262,7 +7273,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given `"x".repeat(BRAIN_DUMP_MAX_RAW_CHARS + 1)` / Then it equals exactly `{ ok: false, message: "That is a lot at once (12001 characters). Try the first chunk under 12000 characters, then run again on the rest." }`.
   - (new) Given `"  " + "x".repeat(BRAIN_DUMP_MAX_RAW_CHARS) + "  "` / Then `ok` is `true` and `raw.length` is `12000` (the cap is applied after trimming).
 - **NUMBERS:** test count 6 of 6 (3 existing + 3 new, exact) · input cap `BRAIN_DUMP_MAX_RAW_CHARS` = 12,000 characters (code constant; a test checks 12,000 passes and 12,001 fails) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0073b — `parsePlanFromModelContent` (pure helper `convex/lib/brainDumpParse.ts`, named limits)
@@ -7315,7 +7326,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given priorities `[null, [], "text", { title: "Bad", reason: "R.", urgency: "asap" }, { title: "Good", reason: "R.", urgency: "later" }]` / Then `priorities` equals `[{ title: "Good", reason: "R.", urgency: "later" }]`.
   - Given a summary `"  Calm plan.  "` and one valid item / Then `summary` is `"Calm plan."`.
 - **NUMBERS:** test count 11 of 11 (exact) · limits: `BRAIN_DUMP_MAX_PRIORITIES` = 6, `BRAIN_DUMP_TITLE_MAX` = 200, `BRAIN_DUMP_REASON_MAX` = 300 (code constants; each tested at constant + 1) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0074a — `brain_dump.acceptPlan` (mutation: accepted items become tasks)
@@ -7366,7 +7377,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `ACCEPT_MAX_ITEMS + 1` items / When `acceptPlan` runs / Then it rejects with `"Pick 1 to 6 items to add."` and no task exists; and given exactly `ACCEPT_MAX_ITEMS` items / Then `created` is `6`.
   - Given `makeFakeCtx("users:1", ["users:2"])` and a seeded task `{ userId: "users:2", title: "Theirs", status: "todo", priority: "low", createdAt: 1, updatedAt: 1 }` / When `users:1` accepts one item / Then the seeded row is unchanged and the one new row has `userId: "users:1"`.
 - **NUMBERS:** test count 7 of 7 in this ticket's `describe` block (one per TESTS bullet); whole file 18 of 18 (11 existing parse tests + 7 new, exact) · write bound `ACCEPT_MAX_ITEMS` = 6 items per call (code constant; a test sends 7) · title cap `ACCEPT_TITLE_MAX` = 200 characters · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0074b — `brain_dump.prioritize` (action: approval-gated plan preview, `returns` validator)
@@ -7438,7 +7449,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `stubFetch([() => ({ ok: true, json: async () => { throw null; } }) as unknown as Response])` / Then it rejects with `"Something went wrong while planning. Try again?"`.
   - Given a 200 reply with content `JSON.stringify({ summary: "Bank first.", priorities: [{ title: "Call bank", reason: "Closes at 4.", urgency: "now" }] })` / When `prioritize` runs with `"  call bank; slides; email Dana  "` / Then it resolves to `{ summary: "Bank first.", priorities: [{ title: "Call bank", reason: "Closes at 4.", urgency: "now" }] }`, exactly 1 fetch call went to `DEEPINFRA_CHAT_COMPLETIONS_URL`, and its body has `messages[1].content === "Brain dump to prioritize:\n\ncall bank; slides; email Dana"`, `response_format` equal to `{ type: "json_object" }`, `max_tokens === 1024` and `temperature === 0.25`.
 - **NUMBERS:** test count 11 of 11 in this ticket's `describe` block (one per TESTS bullet); whole file 29 of 29 (18 after TFV2-0074a + 11 new, exact) · input ≤ 12,000 characters and ≤ 6 priorities out (code constants) · model calls ≤ 2 per request (1 + one retry; asserted by fetch-call counts) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20; the model call itself is bounded by the 30 s timeout in `callLLM`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0075a — `notes.listPeriodPages` (Journal list = daily pages; verify + `returns` validator)
@@ -7482,7 +7493,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given the block's `rows` / When `pageType: "weekly"` / Then ids are `["notes:w"]`.
   - (new) Given one daily page whose body is `meta(["t1", …, "t13"])` (13 tags) / Then its `tags` equal `["t1", …, "t12"]`.
 - **NUMBERS:** test count 8 of 8 in this ticket's `describe` block (one per TESTS bullet); whole file 18 of 18 (12 existing + 6 new, exact) · bounded read: ≤ `PERIOD_LIST_MAX` = 10 rows (code constant; test seeds 11) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0075b — `notes.getPeriodPage` (daily note lookup; verify + `returns` validator)
@@ -7521,7 +7532,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given `daily({ _id: "notes:w1", pageType: "weekly", periodType: "weekly", title: "Week 42", date: "2026-10-12" })` / When `getPage(…, { pageType: "weekly", date: "2026-10-12" })` / Then it resolves `{ _id: "notes:w1", title: "Week 42" }`.
   - (new) Given only a daily page for `2026-10-12` / When `pageType: "weekly"` is asked for `2026-10-12` / Then it resolves `null` (type must match).
 - **NUMBERS:** test count 7 of 7 in this ticket's `describe` block (one per TESTS bullet); whole file 22 of 22 (exact) · reads ≤ 1 document (`.first()`) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0075c — `notes.ensurePeriodPage` (open-or-create the day's page; verify + `returns` validator)
@@ -7571,7 +7582,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given `title: "t".repeat(notes.PERIOD_TITLE_MAX + 1)` and a matching meta body / Then the inserted row's `title` has length `200`; and given `title: "   "` / Then the inserted title equals the date `"2026-10-13"` (use date `2026-10-13` with `meta("daily", "2026-10-13")` for this second call).
   - (new) Given rows `[daily({ userId: "users:b" })]` (another user's live page for `2026-10-12`) / When `users:a` calls `ensurePage` for `2026-10-12` / Then the returned id is not `"notes:d1"` and `rows` has length 2 (the other user's page is not reused).
 - **NUMBERS:** test count 11 of 11 in this ticket's `describe` block (one per TESTS bullet); whole file 28 of 28 (exact) · body ≤ `PERIOD_BODY_MAX` = 100,000 and title ≤ `PERIOD_TITLE_MAX` = 200 (code constants; each tested at constant + 1) · reads ≤ 1 document per call · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0076a — `routines.create` (new module `convex/routines.ts`) — OPEN
@@ -8046,7 +8057,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given `"  לשתות מים  "` / Then it equals `{ ok: true, text: "לשתות מים" }`.
   - (new) Given `"  " + "a".repeat(NAG_PHRASE_MAX) + "  "` / Then `ok` is `true` and `text.length` is `140` (length is measured after trim).
 - **NUMBERS:** test count 9 of 9 in this ticket's `describe` block (one per TESTS bullet); whole file 12 of 12 (exact) · phrase cap `NAG_PHRASE_MAX` = 140 characters (code constant; 140 passes, 141 fails) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077b — `parseProposals` (pure helper `convex/lib/nagPhrase.ts`, named limit)
@@ -8080,7 +8091,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given `NAG_PROPOSALS_MAX + 1` distinct valid strings `"p1"` … `"p4"` / Then `["p1", "p2", "p3"]`.
   - (new) Given `JSON.stringify(["  Go  "])` / Then `["Go"]`.
 - **NUMBERS:** test count 8 of 8 in this ticket's `describe` block (one per TESTS bullet); whole file 17 of 17 (exact) · output ≤ `NAG_PROPOSALS_MAX` = 3 (code constant; test feeds 4) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077c — `nags.list` (bounded read)
@@ -8122,7 +8133,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `makeFakeCtx("users:1", ["users:2"])` and nags `users:1` "Water" (`createdAt: 10`), `users:1` "Walk" (`createdAt: 30`), `users:1` "Old" (`createdAt: 40, deletedAt: 41`), `users:2` "Theirs" (`createdAt: 50`) / When `list` runs / Then labels are `["Walk", "Water"]` and `Object.keys(result[0]).sort()` equals `["_id", "createdAt", "enabled", "label", "phrases", "updatedAt"]`.
   - Given `NAG_LIST_MAX + 1` live nags for `users:1` / Then the result has length `100`.
 - **NUMBERS:** test count 3 of 3 (exact) · bounded read ≤ `NAG_LIST_MAX` = 100 (test seeds 101) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077d — `nags.create`
@@ -8155,7 +8166,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `label: "n".repeat(NAG_LABEL_MAX)` / Then it returns an id and the stored label has length `60`.
   - Given `label: "  Water  "` / Then the stored row has `userId: "users:1"`, `label: "Water"`, `enabled: false`, `phrases: []`, `createdAt === updatedAt`, and no `deletedAt`.
 - **NUMBERS:** test count 4 of 4 in this ticket's `describe` block (one per TESTS bullet); whole file 7 of 7 (3 + 4, exact) · label ≤ `NAG_LABEL_MAX` = 60 characters (test sends 61 and 60) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077e — `nags.addPhrase`
@@ -8191,7 +8202,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `text: "  Water first ", source: "user"` / Then it returns `{ phraseId }` (a non-empty string) and the nag's `phrases` equals `[{ id: phraseId, text: "Water first", source: "user", status: "accepted" }]`, `enabled` is still `false`.
   - Given a nag that already has one user phrase / When `text: "Drink a glass", source: "derived"` / Then `phrases` has length 2 and `phrases[1]` equals `{ id: <returned id>, text: "Drink a glass", source: "derived", status: "proposed" }`.
 - **NUMBERS:** test count 8 of 8 in this ticket's `describe` block (one per TESTS bullet); whole file 15 of 15 (7 + 8, exact) · phrase ≤ 140 characters (`NAG_PHRASE_MAX`) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077f — `nags.decidePhrase`
@@ -8225,7 +8236,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given an enabled nag whose only accepted phrase is `p1` / When `decision: "reject"` on `p1` / Then `p1.status` is `"rejected"` and `enabled` is `false`.
   - Given an enabled nag with accepted `p1` and `p2` / When `p1` is rejected / Then `enabled` stays `true`.
 - **NUMBERS:** test count 6 of 6 in this ticket's `describe` block (one per TESTS bullet); whole file 21 of 21 (15 + 6, exact) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077g — `nags.setEnabled`
@@ -8258,7 +8269,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given a `users:1` nag with one accepted phrase / When `setEnabled(true)` / Then it returns `{ success: true }` and `enabled` is `true`.
   - Given an enabled `users:1` nag with no phrases / When `setEnabled(false)` / Then it returns `{ success: true }` and `enabled` is `false`.
 - **NUMBERS:** test count 5 of 5 in this ticket's `describe` block (one per TESTS bullet); whole file 26 of 26 (21 + 5, exact) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077h — `nags.remove` (soft delete)
@@ -8290,7 +8301,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given a nag of `users:2` / When `users:1` calls `remove` / Then it rejects with `"Nag not found"` and the row has no `deletedAt`.
   - Given a `users:1` nag with `deletedAt: 5` / When `remove` runs / Then it rejects with `"Nag not found"` and `deletedAt` is still `5`.
 - **NUMBERS:** test count 4 of 4 in this ticket's `describe` block (one per TESTS bullet); whole file 30 of 30 (26 + 4, exact) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077i — `nags.getForProposal` (internalQuery)
@@ -8322,7 +8333,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given a nag of `users:2` / When `users:1` calls it / Then it returns `null`.
   - Given a `users:1` nag with `deletedAt: 5` / When it runs / Then it returns `null`.
 - **NUMBERS:** test count 4 of 4 in this ticket's `describe` block (one per TESTS bullet); whole file 34 of 34 (30 + 4, exact) · reads 1 document · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0077j — `nags.proposePhrases` (action: suggestions in the person's own words)
@@ -8369,7 +8380,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `stubFetch([() => ({ ok: true, json: async () => { throw null; } }) as unknown as Response])` / Then it rejects with `"Something went wrong while suggesting phrases. Try again?"`.
   - Given a 200 reply with content `JSON.stringify({ proposals: ["water FIRST", "Drink a glass", "Stand up", "Fill the bottle", "One more"] })` / Then it resolves `{ proposals: ["Drink a glass", "Stand up", "Fill the bottle"] }`, and the single fetch body has `messages[1].content === "Label: Hydrate\nThe person's own phrases:\n- Water first"`, `max_tokens === 256`, `temperature === 0.5` and `response_format` equal to `{ type: "json_object" }`.
 - **NUMBERS:** test count 10 of 10 in this ticket's `describe` block (one per TESTS bullet); whole file 44 of 44 (34 + 10, exact) · proposals ≤ `NAG_PROPOSALS_MAX` = 3 · model calls ≤ 2 per request (asserted by fetch counts) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20; model call bounded by the 30 s timeout in `callLLM`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0078a — `notifications.list` (bounded read)
@@ -8406,7 +8417,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the same two rows / When `list` runs with `{ unreadOnly: true }` / Then only the unread row returns.
   - Given `NOTIFICATION_LIST_MAX + 1` live rows for `users:1` / Then the result has length `100`.
 - **NUMBERS:** test count 5 of 5 (exact) · bounded read ≤ `NOTIFICATION_LIST_MAX` = 100 (test seeds 101) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0078b — `notifications.markRead`
@@ -8439,7 +8450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given an unread `users:1` row / When `markRead` runs / Then it returns `null` and the row has a numeric `readAt` equal to its `updatedAt`.
   - Given a `users:1` row with `readAt: 7, updatedAt: 7` / When `markRead` runs / Then `readAt` is still `7` and `updatedAt` is still `7`.
 - **NUMBERS:** test count 5 of 5 in this ticket's `describe` block (one per TESTS bullet); whole file 10 of 10 (5 + 5, exact) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0078c — `notifications.markAllRead` (bounded write)
@@ -8481,7 +8492,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given no unread rows / When `markAllRead` runs / Then it returns `{ updated: 0 }`.
   - Given `NOTIFICATION_MARK_ALL_MAX + 1` unread live rows for `users:1` / When `markAllRead` runs / Then it returns `{ updated: 500 }`.
 - **NUMBERS:** test count 5 of 5 in this ticket's `describe` block (one per TESTS bullet); whole file 15 of 15 (10 + 5, exact) · bounded read/write ≤ `NOTIFICATION_MARK_ALL_MAX` = 500 per call (test seeds 501) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0079a — `analytics.overview` (live rows only, bounded reads)
@@ -8518,7 +8529,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given one live `users:1` `todo` task with `dueAt: 1_000` / When `overview` runs with `{ todayStartMs: 1_000, todayEndMs: 2_000 }` / Then `tasksDueToday` is `1`.
   - Given `ANALYTICS_READ_MAX + 1` live `todo` tasks for `users:1` / Then `tasksTotal` is `500`.
 - **NUMBERS:** test count 4 of 4 in this ticket's `describe` block (one per TESTS bullet); whole file 9 of 9 (exact) · bounded read ≤ `ANALYTICS_READ_MAX` = 500 rows per table (test seeds 501) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0079b — `analytics.tasksByWeekday` (new query: finished tasks per weekday)
@@ -8610,7 +8621,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `PREFS` and one done task at `Date.UTC(2026, 9, 13, 9)` / When `range: "4w"` and `range: "3m"` / Then each result has `{ weekday: 2, doneCount: 1 }` and length `7`.
   - Given `PREFS` and `ANALYTICS_READ_MAX + 1` done tasks at `Date.UTC(2026, 9, 13, 9)` / Then the sum of all `doneCount` values is `500`.
 - **NUMBERS:** test count 8 of 8 in this ticket's `describe` block (one per TESTS bullet); whole file 17 of 17 (9 + 8, exact) · bounded read ≤ `ANALYTICS_READ_MAX` = 500 (test seeds 501) · output length exactly 7 · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0079c — `analytics.focusMinutesByWeek` (new query: focus minutes per week)
@@ -8665,7 +8676,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `PREFS` and blocks: one in the window with `deletedAt: 5`, one of `users:2` in the window, one at `Date.UTC(2026, 9, 4, 20, 59)`, one at `Date.UTC(2026, 9, 14, 21)` / When default args run / Then minutes are `[0, 0]`.
   - Given `PREFS` and `ANALYTICS_READ_MAX + 1` blocks at `Date.UTC(2026, 9, 13, 8)` of `durationMs: 60_000` each / Then the second week's `minutes` is `500`.
 - **NUMBERS:** test count 8 of 8 in this ticket's `describe` block (one per TESTS bullet); whole file 25 of 25 (17 + 8, exact) · bounded read ≤ `ANALYTICS_READ_MAX` = 500 (test seeds 501) · output length 2 / 4 / 13 by range · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0080 — `analytics.insightsSummary` (live rows only, bounded reads, window errors tested)
@@ -8714,7 +8725,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `makeFakeCtx("users:1", ["users:2"])` and `users:1` rows: task `todo`/`high`/`energy: "low"`/`dueAt: todayStartMs`; task `todo`/`medium`/no energy/`dueAt: todayStartMs - 1`; task `done`/`low`/`completedAt: 7 * DAY_MS`; task `todo` with `deletedAt: 5`; habit `currentStreak: 2, longestStreak: 5`; habit `currentStreak: 9, longestStreak: 9, deletedAt: 5`; goal `active` `progressPercent: 40`; goal `active` `progressPercent: 100, deletedAt: 5`; and one `users:2` `todo` task / When valid windows run / Then the result equals `{ tasksOpen: 2, tasksDueToday: 1, tasksOverdue: 1, tasksCompletedThisWeek: 1, openByEnergy: { low: 1, medium: 1, high: 0 }, openByPriority: { low: 0, medium: 1, high: 1 }, habitsTotal: 1, habitsWithActiveStreak: 1, bestStreak: 5, goalsActive: 1, goalsAverageProgressPercent: 40 }`.
   - Given `ANALYTICS_READ_MAX + 1` live `todo` tasks for `users:1` / Then `tasksOpen` is `500`.
 - **NUMBERS:** test count 7 of 7 in this ticket's `describe` block (one per TESTS bullet); whole file 32 of 32 (25 + 7, exact); `convex/insights.test.ts` stays 10 of 10 · window limits `maxDayWindowMs` = 172,800,000 ms (48 h) and `maxWeekLookbackMs` = 777,600,000 ms (9 days), each tested at limit + 1 · bounded read ≤ `ANALYTICS_READ_MAX` = 500 per table · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0081a — `activity.list` (live rows, bounded source reads, named feed cap)
@@ -8766,7 +8777,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - (new) Given a note with `title: ""` and `createdAt: 1, updatedAt: 2`, a check-in whose habit has `deletedAt: 5`, a focus block with no label, and a goal with `status: "active"` / Then their titles/actions are `"Untitled note"` / `"Updated note"`, `"Habit check-in"`, `"Focus session"`, and action `"Updated goal"`.
   - (new) Given `ACTIVITY_SOURCE_READ_MAX + 1` live `users:1` tasks titled `"Task 0"` … `"Task 200"` with `updatedAt` equal to their number / Then the result has length `ACTIVITY_FEED_MAX` (50) and `result[0].title` is `"Task 199"` — the fake keeps insertion order for an index with only `eq` conditions, so `take(200)` keeps tasks 0 … 199; without the source cap the first item would be `"Task 200"`.
 - **NUMBERS:** test count 6 of 6 (2 existing + 4 new, exact) · bounded reads ≤ `ACTIVITY_SOURCE_READ_MAX` = 200 per table (test seeds 201) · feed ≤ `ACTIVITY_FEED_MAX` = 50 items · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0081b — `activity.undo` (5-minute Undo of a coach change from the feed) — OPEN
@@ -8853,7 +8864,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given one live `users:1` habit 2/4, one `users:1` habit 20/20 with `deletedAt: 5`, and one `users:2` habit 30/30 / Then it returns `{ streakCount: 2, longestAmongHabits: 4, habitCount: 1 }`.
   - Given `STREAK_HABITS_READ_MAX + 1` live `users:1` habits with `currentStreak` and `longestStreak` equal to their insert number 0 … 200 / Then `habitCount` is `200` and `streakCount` is `199` (the fake keeps insertion order for an `eq`-only index, so `take(200)` keeps habits 0 … 199).
 - **NUMBERS:** test count 5 of 5 (exact) · bounded read ≤ `STREAK_HABITS_READ_MAX` = 200 (test seeds 201) · Backend p95 latency: UNKNOWN (no baseline; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0083 — Component: EventBlock — superseded by TFV2-0048
@@ -8882,6 +8893,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/PageLayout.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type PageLayoutProps = { width?: "default" | "wide" | "narrow"; children: ReactNode }; // default "default"
   export function PageLayout({ width = "default", children }: PageLayoutProps): React.JSX.Element;
@@ -8896,7 +8908,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `page-layout-narrow` / When its bounding box and its section's box are read / Then at desktop the left gap and the right gap differ by ≤ 1 px (centred), and at mobile its width equals the section's content width (±1 px).
   - Given the harness / When `expectDir(page, lang)` and `expectMotionBudget(page, "[data-testid=page-layout-default]")` run / Then both pass and each state shows the text `Page content`.
 - **NUMBERS:** Playwright `20 passed` of 20. Max widths 920 / 1280 / 760 px exactly (tempo.css tokens). Motion ≤ 250 ms (`expectMotionBudget`). No contrast or target number: it renders no text or control of its own.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0087 — Component: Surface
@@ -8916,6 +8928,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Surface.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type SurfaceProps = { children: ReactNode; labelledBy?: string }; // labelledBy = id of a heading inside children
   export function Surface({ children, labelledBy }: SurfaceProps): React.JSX.Element;
@@ -8930,7 +8943,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `surface-labelled` / When it renders / Then the element is a `section` whose `aria-labelledby` is `surface-h`, and `page.getByRole("region", { name: "Panel title" })` resolves to it.
   - Given the harness / When `expectDir(page, lang)` and `expectMotionBudget(page, "[data-testid=surface-default]")` run / Then both pass.
 - **NUMBERS:** Playwright `16 passed` of 16. Radius 20 px, padding 32 px, gap 24 px (tempo.css tokens). Text placed on it keeps ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) because the background is `--tp-paper`, the base pair of the token set. Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0088 — Component: PageHeader
@@ -8950,6 +8963,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/PageHeader.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type PageHeaderProps = { title: string; subtitle?: string; actions?: ReactNode };
   export function PageHeader({ title, subtitle, actions }: PageHeaderProps): React.JSX.Element;
@@ -8967,7 +8981,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `page-header-default` / When the `h1` computed `font-size` and `font-family` are compared with a probe element styled `font-size: var(--tp-text-3xl); font-family: var(--tp-font-serif)` / Then both are equal.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=page-header-default] .tp-pagehead__actions")` and `expectMotionBudget(page, "[data-testid=page-header-default]")` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` of 20. Exactly 1 `h1` per header. Title is large text: contrast ≥ 3:1, subtitle ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) — tokens only, `scan:design-tokens`. Target ≥ 24×24 CSS px for passed actions (SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0089 — Component: Toolbar
@@ -8987,6 +9001,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Toolbar.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type ToolbarProps = {
     label: string;          // accessible name of the group (EN/HE from the screen)
@@ -9008,7 +9023,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `toolbar-grow-only` / When it renders / Then it has `0` `.tp-toolbar__end` and its grow slot's width equals the toolbar's width (±1 px).
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=toolbar-default]")` and `expectMotionBudget(page, "[data-testid=toolbar-default]")` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` of 20. Grow basis 240 px (tempo.css). Target ≥ 24×24 CSS px for passed controls (WCAG 2.2 SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0090 — Component: Section
@@ -9028,6 +9043,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/layout/Section.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type SectionProps = {
     id: string;                                  // heading id = `${id}-title`
@@ -9056,7 +9072,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `lang=he` / When the `.tp-num` computed `direction` is read and the `h2` font-size is compared with a probe styled `font-size: var(--tp-text-xl)` / Then the direction is `ltr` and the sizes are equal; for `lang=en` the sizes are equal too.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=section-with-action]")` and `expectMotionBudget(page, "[data-testid=section-default]")` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` of 20. Count number isolated LTR via `.tp-num` (CONVENTIONS §12). Title is large text, contrast ≥ 3:1; count ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) — tokens only. Target ≥ 24×24 CSS px for a passed action (SC 2.5.8). Motion ≤ 250 ms (`expectMotionBudget`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0091 — Component: CardGrid
@@ -9086,7 +9102,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the `default` section / When the computed `grid-template-columns` of its CardGrid is split on spaces / Then at the mobile viewport the count is 1, and at the desktop viewport the count is ≥ 3.
   3. Given the `sm` section at the desktop viewport / When both grids' column counts are compared / Then the `sm` grid has more columns than the `default` grid; at the mobile viewport the `sm` grid has no `role` attribute and has class `tp-cards--sm`.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 (https://www.w3.org/TR/WCAG22/#contrast-minimum) · colours come only from tempo.css tokens; `bun run scan:design-tokens` passes. Motion ≤ 250 ms · DESIGN.md motion rule · `expectMotionBudget(page, '[data-testid^="card-grid-"]')` runs in the second TESTS bullet.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0092 — Component: Notice
@@ -9122,7 +9138,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `with-action` section / When its "Reload" button is clicked / Then `notice-log` text is `action:`, and the body text "Reload when it suits you." is visible.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="notice-with-action"]')` and `expectMotionBudget(page, '[data-testid^="notice-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only; `bun run scan:design-tokens` passes. Use of colour: tone is never colour-only · WCAG 2.2 SC 1.4.1 (https://www.w3.org/TR/WCAG22/#use-of-color) · TESTS bullets 1–2. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (bullet 5). Motion ≤ 250 ms · DESIGN.md · `expectMotionBudget` (bullet 5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0093 — Component: Badge
@@ -9153,7 +9169,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the `with-icon` section / Then `[data-testid="badge-icon"]` is the first child of the badge and the label follows it.
   3. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="badge-"]')` run / Then both pass, and the computed `font-size` of every badge is ≥ 13 px.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only; `bun run scan:design-tokens` passes. Text size ≥ 13 px (`--tp-text-xs`) · CONVENTIONS §5 · bullet 3. Motion ≤ 250 ms · DESIGN.md · `expectMotionBudget` (bullet 3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0094 — Component: PageHead
@@ -9185,7 +9201,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the desktop viewport / When comparing computed `font-size` of the `note` and `daily` titles / Then the `note` title is smaller than the `daily` title.
   4. Given the `weekly` and `project` sections / Then `[data-testid="page-head-strip"]` is inside the weekly header after its row, the project's Edit button is inside `.tp-page-head__actions`, and `expectTargetSize(page, '[data-testid="page-head-project"]')`, `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="page-head-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 (≥ 3:1 for the ≥ 24 px title) · WCAG 2.2 SC 1.4.3 · tempo.css tokens only; `bun run scan:design-tokens` passes. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (bullet 4). Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0095 — Component: WeekStrip
@@ -9219,7 +9235,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given focus on the first button / When ArrowRight is pressed in `en` (ArrowLeft in `he`) / Then the second button is focused and `week-strip-log` is `onSelect:"2026-11-03"`; When End is pressed / Then the seventh button is focused and the log is `onSelect:"2026-11-08"`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="week-strip-default"]')` and `expectMotionBudget(page, '[data-testid="week-strip-default"]')` run / Then all pass, and Tab to the selected button gives a computed `outline-width` ≥ 2px.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only; `scan:design-tokens` passes. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (bullet 5). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · bullet 5. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0096 — Component: ProjectStatus
@@ -9249,7 +9265,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given lang `en` / Then the four words are "Idea", "Active", "Paused", "Done"; given lang `he` / Then "רעיון", "פעיל", "מושהה", "הושלם".
   3. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="project-status-"]')` run / Then both pass and each badge's computed `font-size` is ≥ 13 px.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Use of colour: status is icon + word · WCAG 2.2 SC 1.4.1 · bullets 1–2. Text ≥ 13 px · CONVENTIONS §5 · bullet 3. Motion ≤ 250 ms · DESIGN.md · bullet 3.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0097 — Component: List + ListRow
@@ -9283,7 +9299,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `current` section / Then its `a.tp-list-row` has `aria-current="page"`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="list-row-"]')` and `expectMotionBudget(page, '[data-testid^="list-row-"]')` run / Then all pass, except that `expectTargetSize` is called on `[data-testid="list-row-link"], [data-testid="list-row-button"], [data-testid="list-row-current"]` only (the static row's bare checkbox is fixture content, not part of the component).
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (bullet 5). Row height ≥ 56 px · components.md §2.4 · bullet 1. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · bullet 3. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0098 — Component: Segmented
@@ -9315,7 +9331,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given focus on "Month" / When ArrowDown is pressed / Then "Day" is focused (wrap) and the log is `onChange:"day"`.
   5. Given the `block` section / Then its root has class `tp-segmented--block` and its three options have equal widths (±1 px); and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="segmented-"]')`, `expectMotionBudget(page, '[data-testid^="segmented-"]')` pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px (options are 36 px tall) · WCAG 2.2 SC 2.5.8 · bullet 5. Use of colour: selection = dot + weight + border, not colour alone · WCAG 2.2 SC 1.4.1 · bullet 1. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0099 — Component: SearchInput
@@ -9345,7 +9361,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given typing "milk" into the default field / Then `search-input-log` ends `onChange:"milk"`; When Escape is pressed / Then the log is `onChange:""` and the field is empty.
   4. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="search-input-"]')` and `expectMotionBudget(page, '[data-testid^="search-input-"]')` run / Then all pass, and the focused input's computed `outline-width` is ≥ 2px.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Non-text contrast ≥ 3:1 for the input border (`--tp-line-control`) · WCAG 2.2 SC 1.4.11 · token check. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 4. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0100 — Component: SortMenu
@@ -9377,7 +9393,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the open menu / When Escape is pressed / Then the menu is gone, the trigger is focused and the log is unchanged; Given it is reopened / When the page body outside the menu is clicked / Then the menu is gone.
   5. Given any viewport and language / When `expectDir(page, lang)` runs, the menu is opened, and `expectTargetSize(page, '[data-testid="sort-menu-default"]')` and `expectMotionBudget(page, '[data-testid="sort-menu-default"]')` run / Then all pass, and in `he` the list's right edge is ≤ the trigger's right edge + 1 px and its left edge is ≥ 0.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only (glass falls back to `--tp-glass-solid`). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 5. Motion ≤ 250 ms (`tp-pop` 180 ms) · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0101 — Component: LoadMore
@@ -9408,7 +9424,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `complete` section / Then the status reads "Showing 48 of 48" / "מוצגים 48 מתוך 48" and there is no button; given the `none` section / Then it contains no `[data-component="LoadMore"]`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="load-more-default"]')` and `expectMotionBudget(page, '[data-testid^="load-more-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 5. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0103 — Component: Dot
@@ -9438,7 +9454,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the computed styles / Then `fixed` and `done` have a non-transparent `background-color` and `box-shadow` `none`, while `flex` and `habit` have `background-color` `rgba(0, 0, 0, 0)` and a non-`none` `box-shadow` (ring vs filled).
   3. Given `page.accessibility.snapshot({ root: section })` / Then no node with role `img` or a name comes from a dot, and pressing Tab from the top of the page never focuses a dot; `expectMotionBudget(page, '[data-testid="dot-default"]')` passes.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Non-text contrast: n/a — the dot is decorative and never the only signal (WCAG 2.2 SC 1.4.1; the paired count/word carries meaning, asserted in TFV2-0102). Motion ≤ 250 ms · DESIGN.md · bullet 3.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0102 — Component: MonthGrid
@@ -9476,7 +9492,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given clicks on "Previous month" and "Next month" (`he`: "החודש הקודם", "החודש הבא") / Then the log reads `onPrev:` then `onNext:`.
   6. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="month-grid-monday"]')` and `expectMotionBudget(page, '[data-testid^="month-grid-"]')` run / Then all pass, and in `he` the 2026-10-26 button's left edge is greater than the 2026-10-27 button's left edge (RTL flow).
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 6. Use of colour: dot meaning is in the count text / accessible name · WCAG 2.2 SC 1.4.1 · bullets 2–3. Motion ≤ 250 ms · DESIGN.md · bullet 6.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0104 — Component: WeekColumns
@@ -9509,7 +9525,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the mobile viewport / Then the `default` `.tp-week` has `scrollWidth > clientWidth` while `document.documentElement.scrollWidth <= window.innerWidth`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="week-columns-default"]')` and `expectMotionBudget(page, '[data-testid^="week-columns-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 5. Use of colour: kind word printed on every item · WCAG 2.2 SC 1.4.1 · bullet 2. No page-level horizontal scroll at 390 px · WCAG 2.2 SC 1.4.10 Reflow (https://www.w3.org/TR/WCAG22/#reflow) · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0105 — Component: DayTimelineView
@@ -9546,7 +9562,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a click on "Deep work" / Then `day-timeline-view-log` is `onOpenItem:"b"`; given the `side-by-side` section / Then the items list has `--cols: 2` and the bounding box of "Call B" starts at a greater x than "Call A" in `en` and a smaller x in `he`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="day-timeline-view-default"]')` and `expectMotionBudget(page, '[data-testid^="day-timeline-view-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 5. Use of colour: kind is a word chip plus solid/dashed edge · WCAG 2.2 SC 1.4.1 · bullet 2. Motion ≤ 250 ms (now line static) · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0106 — Component: Kanban
@@ -9578,7 +9594,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the mobile viewport / Then the `default` board has `scrollWidth > clientWidth`, computed `scroll-snap-type` contains `x`, and `document.documentElement.scrollWidth <= window.innerWidth`; given the desktop viewport / Then computed `scroll-snap-type` is `none`.
   4. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="kanban-"]')` run / Then both pass, and Tab focuses the board region (computed `outline-width` ≥ 2px).
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. No page-level horizontal scroll at 390 px · WCAG 2.2 SC 1.4.10 · bullet 3. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0107 — Component: KanbanCard
@@ -9610,7 +9626,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `moved` section / Then its card has `data-moved="true"` and a computed `animation-name` of `tp-enter`; `expectMotionBudget(page, '[data-testid="kanban-card-moved"]')` passes.
   5. Given any viewport and language / When `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid^="kanban-card-"]')` run / Then both pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 CSS px (buttons 36 px tall) · WCAG 2.2 SC 2.5.8 · bullet 5. Dragging movements have a single-pointer alternative · WCAG 2.2 SC 2.5.7 (https://www.w3.org/TR/WCAG22/#dragging-movements) · bullet 3. Motion ≤ 250 ms (240 ms) · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0110 — Component: ChartSummary
@@ -9638,7 +9654,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given the `default` section / Then `figure > figcaption#summary-1.tp-chart__summary` exists with the fixture text and `data-component="ChartSummary"`, and its computed `font-size` is ≥ 13 px.
   2. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid="chart-summary-default"]')` run / Then both pass.
 - **NUMBERS:** Playwright `8 passed` (4 × 2 = 8). Text contrast ≥ 4.5:1 (`--tp-ink-muted` on `--tp-paper`) · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Text ≥ 13 px · CONVENTIONS §5 · bullet 1. Motion ≤ 250 ms · DESIGN.md · bullet 2.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0108 — Component: BarChart
@@ -9670,7 +9686,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `empty` section / Then there is no `.tp-chart__bars` and the figcaption reads "Nothing to show yet."; in both sections `figure > figcaption.tp-chart__summary` exists and the figure's `aria-labelledby` points at the title.
   4. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="bar-chart-"]')` run / Then both pass, and in `he` the Mon bar's x is greater than the Tue bar's x.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Non-text contrast of bars ≥ 3:1 (`--tp-ink-muted` / `--tp-ink` on paper) · WCAG 2.2 SC 1.4.11 · token check. Every bar labelled + summary present · components.md §2.7 · bullets 1, 3. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0109 — Component: LineChart
@@ -9703,7 +9719,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `empty` section / Then the SVG holds no circle and no polyline, and the figcaption reads "Nothing to show yet."; in every section the SVG's `aria-labelledby` lists the title id and the figcaption id.
   4. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="line-chart-"]')` run / Then both pass, and in `he` the W1 circle's x is still smaller than the W4 circle's x.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Non-text contrast of the line ≥ 3:1 · WCAG 2.2 SC 1.4.11 · token check. Every point labelled + summary present · components.md §2.7 · bullets 1, 3. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0111 — Component: Form
@@ -9734,7 +9750,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given "Plant tomatoes" typed into the field / When Enter is pressed / Then `form-log` is `onSubmit:` and the page URL is unchanged.
   4. Given the `busy` section with the field filled / When "Save" is clicked / Then `form-log` is not written by it and the form has `aria-busy="true"`; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="form-"]')`, `expectMotionBudget(page, '[data-testid^="form-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Form width ≤ `--tp-measure` · components.md §2.8 · bullet 1. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0112 — Component: Field — superseded by TFV2-0113
@@ -9769,7 +9785,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `email` section in both languages / Then the input has `dir="ltr"` and `autocomplete="email"`.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="text-input-"]')` and `expectMotionBudget(page, '[data-testid^="text-input-"]')` run / Then all pass, and the focused `default` input's computed `outline-width` is ≥ 2px.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Non-text contrast of the input border ≥ 3:1 (`--tp-line-control`) · WCAG 2.2 SC 1.4.11 · token check. Labels or instructions present · WCAG 2.2 SC 3.3.2 (https://www.w3.org/TR/WCAG22/#labels-or-instructions) · bullets 1–3. Error identified in text · WCAG 2.2 SC 3.3.1 · bullet 2. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · bullet 5. Focus visible ≥ 2 px · SC 2.4.7 · bullet 5. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0114 — Component: Textarea (labelled field)
@@ -9799,7 +9815,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `disabled` section / Then the textarea is disabled and shows "Yesterday was calm.".
   4. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="textarea-"]')` and `expectMotionBudget(page, '[data-testid^="textarea-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only. Non-text contrast ≥ 3:1 (`--tp-line-control`) · SC 1.4.11 · token check. Labels present · SC 3.3.2 · bullets 1–2. Target size ≥ 24 × 24 · SC 2.5.8 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0115 — Component: Select (labelled field)
@@ -9830,7 +9846,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `disabled` section / Then the select is disabled; and in `he` the `.tp-select__icon` of `default` is left of the select's centre (inline-end in RTL), in `en` right of it.
   4. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="select-"]')` and `expectMotionBudget(page, '[data-testid^="select-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Non-text contrast ≥ 3:1 · SC 1.4.11 · token check. Labels present · SC 3.3.2 · bullet 1. Target size ≥ 24 × 24 · SC 2.5.8 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0116 — Component: Switch
@@ -9861,7 +9877,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `disabled` section / Then the switch is disabled and clicking it does not change the log.
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="switch-"]')` and `expectMotionBudget(page, '[data-testid^="switch-"]')` run / Then all pass, and in `he` the `on` thumb's x is left of its track's centre.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Non-text contrast of the track ≥ 3:1 (`--tp-line-control`, `--tp-ink`) · SC 1.4.11 · token check. Use of colour: state also shown as a word · SC 1.4.1 · bullets 1–2. Target size ≥ 24 × 24 · SC 2.5.8 · bullet 5. Motion ≤ 250 ms (120 ms) · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0117 — Component: Checkbox
@@ -9891,7 +9907,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `disabled` section / Then the checkbox is disabled and clicking its label leaves the log unchanged.
   4. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="checkbox-"]')` run / Then both pass, and every `label.tp-choice` bounding box is ≥ 24 px wide and ≥ 44 px tall (the label row is the target; NUMBERS gives the rule).
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Non-text contrast of the box ≥ 3:1 (`--tp-line-control`) · SC 1.4.11 · token check. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · met by the whole clickable `label.tp-choice` row (≥ 44 px tall), which performs the same action as the 22 × 22 px native box (the SC's "equivalent" exception; the box size is locked in tempo.css), checked in bullet 4 instead of `expectTargetSize`. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0118 — Component: Radio + RadioGroup
@@ -9924,7 +9940,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a fresh page with focus on the checked "Medium" radio / When ArrowDown is pressed / Then "High" is focused and checked and `radio-log` is `onChange:"high"`; given the `disabled` section / Then "Large" is disabled.
   4. Given any viewport and language / When `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="radio-"]')` run / Then both pass, and every `label.tp-choice` bounding box is ≥ 24 px wide and ≥ 44 px tall.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Non-text contrast ≥ 3:1 · SC 1.4.11 · token check. Target size ≥ 24 × 24 CSS px · SC 2.5.8 · met by the clickable label row (equivalent-target exception; the 22 px box is locked tempo.css), bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0119 — Component: Dial (0–10)
@@ -9957,7 +9973,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `disabled` section / Then the slider is disabled and shows "5" with "Steady" / "יציב".
   5. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="dial-"]')` and `expectMotionBudget(page, '[data-testid^="dial-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `20 passed` (4 × 5 = 20). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Use of colour: value is a number and a word · SC 1.4.1 · bullet 1. Target size ≥ 24 × 24 (slider `--tp-touch` tall) · SC 2.5.8 · bullet 5. Motion ≤ 250 ms · DESIGN.md · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0120 — Component: StateEmpty
@@ -9987,7 +10003,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the `title-only` section / Then it has no `.tp-state__body` and no `.tp-state__actions`.
   3. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="state-empty-with-action"]')` and `expectMotionBudget(page, '[data-testid^="state-empty-"]')` run / Then all pass.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Target size ≥ 24 × 24 · SC 2.5.8 · bullet 3. Motion ≤ 250 ms · DESIGN.md · bullet 3.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0121 — Component: StateLoading
@@ -10016,7 +10032,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the `many` section / Then it holds 8 `.tp-skel-row`.
   3. Given `page.emulateMedia({ reducedMotion: "reduce" })` / Then every `.tp-skeleton` under `[data-testid^="state-loading-"]` has computed `animation-duration` ≤ 0.01 ms and `animation-iteration-count` "1"; `expectDir(page, lang)` passes.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast: n/a for visible text (none); skeleton uses `--tp-sunken`/`--tp-hover` tokens only · `scan:design-tokens` passes. Motion: the shimmer loop is the documented Stage 1 exception to the 250 ms transition rule (DESIGN.md loading pattern, tempo.css line 465), so `expectMotionBudget` is not run on this component; reduced-motion removal is the check · WCAG 2.2 SC 2.3.3 Animation from Interactions (https://www.w3.org/TR/WCAG22/#animation-from-interactions) · bullet 3. Status message announced · WCAG 2.2 SC 4.1.3 (https://www.w3.org/TR/WCAG22/#status-messages) · bullet 1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0122 — Component: StateError
@@ -10046,7 +10062,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `retrying` section / Then its button is disabled, has `aria-busy="true"` and reads "Trying again…" / "מנסים שוב…".
   4. Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="state-error-"]')` and `expectMotionBudget(page, '[data-testid^="state-error-"]')` run / Then all pass, and no text under `[data-testid^="state-error-"]` contains `{`, `Error:` or `ConvexError`.
 - **NUMBERS:** Playwright `16 passed` (4 × 4 = 16). Text contrast ≥ 4.5:1 · SC 1.4.3 · tempo.css tokens only. Error identified in text · WCAG 2.2 SC 3.3.1 · bullet 1. Target size ≥ 24 × 24 · SC 2.5.8 · bullet 4. Motion ≤ 250 ms · DESIGN.md · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0123 — Component: StateOffline
@@ -10075,7 +10091,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the `custom` section / Then the banner reads the custom text in both languages.
   3. Given either section / Then `[data-testid="state-offline-content"]` is visible below the banner and clicking "Keep working" writes `content:` to `state-offline-log`; and `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="state-offline-"]')` pass.
 - **NUMBERS:** Playwright `12 passed` (4 × 3 = 12). Text contrast ≥ 4.5:1 (`--tp-ink` on `--tp-caution-wash`) · SC 1.4.3 · tempo.css tokens only. Status message announced · WCAG 2.2 SC 4.1.3 · bullet 1. Motion ≤ 250 ms · DESIGN.md · bullet 3.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0124a — View: TodayView
@@ -10208,7 +10224,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `today-view-undo` / When it renders / Then `[data-testid=today-undo-toast]` shows `Done` / `בוצע` and `You can undo for 5 minutes.` / `אפשר לבטל במשך 5 דקות.`; When `Undo` / `ביטול` is clicked / Then the log reads `onUndo:"task-4"`; When the button named `Dismiss` / `סגירה` is clicked / Then the log reads `onDismissUndo:`.
   10. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=today-view-default]")`, `expectTargetSize(page, "[data-testid=today-view-undo]")`, `expectMotionBudget(page, "[data-testid=today-view-default]")` and `expectMotionBudget(page, "[data-testid=today-view-undo]")` run, and Tab moves focus onto the first `.tp-check` / Then all pass and the focused tick's computed `outline-width` is ≥ `2px`.
 - **NUMBERS:** Playwright `40 passed` of 40 (10 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tempo.css tokens only, `bun run scan:design-tokens` passes. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (case 10). Focus outline ≥ 2 px · WCAG 2.2 SC 2.4.7 · case 10. Motion ≤ 250 ms, 0 ms with reduced motion · DESIGN.md / CONVENTIONS §5 · `expectMotionBudget` on `default` and `undo` only: the `loading` section is not measured because `.tp-skeleton` runs tempo.css's locked 1.4 s `tp-shimmer` loop (tempo.css ~line 465), a shared file no build ticket edits.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0124b — Route: /today — OPEN
@@ -10312,7 +10328,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given signed out under the dev bypass / When `page.goto("/daily-note?lang=<lang>")` / Then `new URL(page.url())` has `pathname === "/today"` and `search === "?lang=<lang>"`, the URL does not contain `/sign-in`, and `expectDir(page, lang)` passes.
   2. Given / When `page.goto("/daily-note?lang=<lang>&tag=a&tag=b")` / Then `new URL(page.url()).searchParams.getAll("tag")` equals `["a", "b"]` and `searchParams.get("lang")` equals `lang`.
 - **NUMBERS:** Playwright `8 passed` of 8 (2 cases × 2 viewports × 2 languages). The HTTP status of the redirect is not asserted (in dev, Next may stream the layout before the redirect, so 307 vs a client-side redirect is not a stable pass/fail signal); the final URL is. No contrast, target, motion or vitals number applies: the route renders no markup (the landing page's numbers belong to TFV2-0124b).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0126c — Component: BrainDumpReview
@@ -10392,7 +10408,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `brain-dump-review-offline` / Then `Add accepted (2)` and `Save as a page` are disabled while the row `Reject` buttons are enabled.
   9. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=brain-dump-review-accepted]")`, `expectMotionBudget(page, "[data-testid=brain-dump-review-accepted]")` run and Tab reaches the first `Accept` / Then all pass and its `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `36 passed` of 36 (9 cases × 4). Contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only (`scan:design-tokens`). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · case 9. Focus outline ≥ 2 px · WCAG 2.2 SC 2.4.7 · case 9. Motion ≤ 250 ms · DESIGN.md · case 9.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0126a — View: BrainDumpView
@@ -10495,7 +10511,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `brain-dump-view-offline` / Then the first child of its `[data-testid=brain-dump-view]` is `role=status` with `You're offline. Your text is kept here. Making a plan needs a connection.` / HE copy, the textbox is enabled, and `Sort it` and `Add accepted` are disabled.
   10. Given the harness / When `expectDir(page, lang)`, `expectTargetSize` and `expectMotionBudget` run on `[data-testid=brain-dump-view-review]` and `[data-testid=brain-dump-view-added]`, and Tab reaches `Sort it` in `default` / Then all pass and its `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `40 passed` of 40 (10 cases × 4). Contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · case 10. Focus outline ≥ 2 px · WCAG 2.2 SC 2.4.7 · case 10. Motion ≤ 250 ms · DESIGN.md · case 10 on `review` and `added` only; `loading` is not measured because `.tp-skeleton`'s 1.4 s `tp-shimmer` loop is locked in tempo.css.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0126b — Route: /brain-dump
@@ -10568,7 +10584,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given no `?state=` (signed out, dev bypass) / When `/brain-dump?lang=<lang>` opens / Then the URL has no `/sign-in`, `[data-testid=brain-dump-route]` is attached, `[data-testid=brain-dump-view]` has `data-state="empty"`, the textbox labelled `What's on your mind?` / `מה על הלב?` is visible and "Beta preview" has count 0.
   4. Given `measureVitals(page, "/brain-dump?state=default")` / Then `lcpMs <= 2500` and `cls <= 0.1`.
 - **NUMBERS:** Playwright `40 passed` of 40 (case 1: 7 states × 4 = 28; cases 2–4: 3 × 4 = 12). LCP ≤ 2,500 ms and CLS ≤ 0.1 · web.dev Core Web Vitals (https://web.dev/articles/vitals) · `measureVitals` (case 4). INP ≤ 200 ms · web.dev · UNKNOWN in the local dev server. Contrast, target size, focus and motion · WCAG 2.2 SC 1.4.3 / 2.5.8 / 2.4.7, DESIGN.md · proven on the View by TFV2-0126a and TFV2-0126c. Backend p95 · UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0127a — View: PlanView
@@ -10668,7 +10684,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `plan-view-default` / When `button.tp-timeline__title` with text `Focus: slides` is clicked / Then the log reads `onOpenItem:"p1"`; When `Add a time block` is clicked / Then the log reads `onAddBlock:`.
   11. Given the harness / When `expectDir(page, lang)`, `expectTargetSize` and `expectMotionBudget` run on `[data-testid=plan-view-default]`, `[data-testid=plan-view-week]` and `[data-testid=plan-view-month]`, and Tab reaches the `Today` button / Then all pass and its `outline-width` ≥ `2px`.
 - **NUMBERS:** Playwright `44 passed` of 44 (11 cases × 4). Contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · case 11. Focus outline ≥ 2 px · WCAG 2.2 SC 2.4.7 · case 11. Motion ≤ 250 ms · DESIGN.md · case 11 (`loading` not measured: locked 1.4 s `.tp-skeleton` shimmer in tempo.css).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0127b — Route: /plan
@@ -10748,7 +10764,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given no `?state=` (signed out, dev bypass) / When `/plan?lang=<lang>` opens / Then the URL has no `/sign-in`, `[data-testid=plan-day]` is visible with the region and heading `Day timeline` / `ציר הזמן של היום` and the text `Sign in to see this day's blocks and events.` / `צריך להתחבר כדי לראות את בלוקי הזמן והאירועים של היום הזה.`, and `[data-testid=plan-view]` has count 0.
   4. Given `measureVitals(page, "/plan?state=default")` / Then `lcpMs <= 2500` and `cls <= 0.1`.
 - **NUMBERS:** Playwright `40 passed` of 40 (case 1: 7 × 4 = 28; cases 2–4: 3 × 4 = 12). LCP ≤ 2,500 ms and CLS ≤ 0.1 · web.dev Core Web Vitals (https://web.dev/articles/vitals) · `measureVitals` (case 4). INP ≤ 200 ms · web.dev · UNKNOWN in the local dev server. Bounded reads: events ≤ 500 per range (`MAX_EVENTS_IN_RANGE`, TFV2-0066c), range ≤ 32 days (`maxCalendarRangeMs`). Contrast / target / focus / motion · WCAG 2.2 SC 1.4.3 / 2.5.8 / 2.4.7, DESIGN.md · proven on the View by TFV2-0127a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0128c — Component: TaskGroups (grouped task rows for the Tasks list)
@@ -10837,7 +10853,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `task-groups-later-only` and `task-groups-loading-more` / When they render / Then `later-only` has exactly 1 section (`later`) and no `[data-component="LoadMore"]`; `loading-more` has a `[data-component="LoadMore"]` whose button has `aria-busy="true"` (TFV2-0101 `loading`).
   9. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=task-groups-default] .tp-check, [data-testid=task-groups-default] .tp-btn, [data-testid=task-groups-default] label.tp-choice")` and `expectMotionBudget(page, "[data-testid=task-groups-default]")` run, and Tab reaches the first check button / Then all pass and its computed `outline-width` is ≥ `2px`; for `he` the first row's check `x` is greater than its edit button's `x`, for `en` smaller.
 - **NUMBERS:** Playwright `36 passed` of 36 (9 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum) — tempo.css token classes only, `bun run scan:design-tokens` passes. Target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8) — `expectTargetSize` on buttons and `label.tp-choice` rows (native checkboxes are a locked 22 px). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; CONVENTIONS §5) — `expectMotionBudget`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0128a — View: TasksView
@@ -10955,7 +10971,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   13. Given `tasks-view-toast` / When it renders and the toast button named `Undo`/`ביטול` is clicked / Then `[data-component="UndoToast"]` shows `Added to Today`/`נוסף להיום` and the log reads `onUndo:`.
   14. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=tasks-view-default]")` and `expectMotionBudget(page, "[data-testid=tasks-view-default]")` run and Tab reaches the Quick add input / Then all pass, the input's `outline-width` is ≥ `2px`, and in `he` the Brain dump link's `x` is smaller than the `h1`'s `x` (in `en` greater).
 - **NUMBERS:** Playwright `56 passed` of 56 (14 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token classes only, `scan:design-tokens`). Target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize` on the default section, where the only checkboxes are inside TaskGroups' `label.tp-choice` rows, which pass). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms and 0 ms under reduced motion (`expectMotionBudget` on `default`; not run on `loading`, whose locked 1.4 s shimmer is checked only under reduced motion).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0128b — Route: /tasks — OPEN
@@ -11125,7 +11141,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `task-sheet-view-saving` / When it renders / Then Save is disabled with `aria-busy="true"` and Delete is disabled.
   12. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=task-sheet-view-default] .tp-btn, [data-testid=task-sheet-view-default] .tp-input, [data-testid=task-sheet-view-default] label.tp-choice, [data-testid=task-sheet-view-default] [role=radio]")` and `expectMotionBudget(page, "[data-testid=task-sheet-view-default]")` run, then `Delete` is focused and `Tab` is pressed / Then all pass, focus lands on the `Close` button (trap wraps), its `outline-width` is ≥ `2px`, and in `he` the Close button's `x` is smaller than the heading's `x` (in `en` greater).
 - **NUMBERS:** Playwright `48 passed` of 48 (12 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token classes only, `scan:design-tokens`). Target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; radios measured on their `label.tp-choice` row, native radios are a locked 22 px). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms (sheet entrance 240 ms), 0 ms under reduced motion (`expectMotionBudget`; not run on `loading`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0129b — Route wiring: task sheet on /tasks?task=<id> — OPEN
@@ -11259,7 +11275,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `journal-view-error` and `journal-view-offline` / When `Try again`/`לנסות שוב` is clicked in `error` / Then `error` shows `Couldn't load your journal.`/`לא הצלחנו לטעון את היומן.` and the log reads `onRetry:`; `offline` shows `[data-component="StateOffline"]` above the prompt surface and the list rows stay links.
   9. Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, "[data-testid=journal-view-default]")` and `expectMotionBudget(page, "[data-testid=journal-view-default]")` run and Tab reaches the Write link / Then all pass, its `outline-width` is ≥ `2px`, and in `he` the first row's chevron `x` is smaller than its title's `x` (in `en` greater).
 - **NUMBERS:** Playwright `36 passed` of 36 (9 cases × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `scan:design-tokens`). Target size ≥ 24×24 CSS px (SC 2.5.8; `expectTargetSize`). Focus outline ≥ 2 px (SC 2.4.7). Motion ≤ 250 ms, 0 under reduced motion (`expectMotionBudget`; not run on `loading`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0130b — Route: /journal
@@ -11305,7 +11321,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `/journal` unforced, signed out under the dev bypass (placeholder Convex URL) / When it loads / Then the URL does not match `/sign-in`, and `[data-component="StateLoading"]` with sr-only `Loading your pages…`/`טוענים את הדפים…` is visible.
   8. Given `/journal?state=default` / When `measureVitals(page, "/journal?state=default&lang=" + lang)` and `expectDir(page, lang)` run / Then `lcpMs ≤ 2500`, `cls ≤ 0.1`, direction matches.
 - **NUMBERS:** Playwright `32 passed` of 32 (8 cases × 2 viewports × 2 languages); `harness.spec.ts` stays `2 passed`. LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals) via `measureVitals`; INP UNKNOWN locally (CONVENTIONS §20). Visual numbers proven by TFV2-0130a. Bounded reads: each chunk ≤ `PERIOD_LIST_MAX` = 10 (code constant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0131c — Component: AddEventSheet (calendar "Add event" sheet) — OPEN
@@ -11631,7 +11647,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given the `toast` section / Then "Habit added" (HE "ההרגל נוסף") is visible; When "Undo" (HE "ביטול") is clicked / Then the log reads `onUndoCreate:"h2"`; When the button named "Dismiss" (HE "סגירה") is clicked / Then the log reads `onCloseToast:"h2"`.
   11. Given the page / Then `expectDir(page, lang)` passes, `expectTargetSize(page, '[data-testid="habits-view-default"]')` passes and `expectMotionBudget(page, '[data-testid="habits-view-default"]')` passes.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens` passes. Non-text contrast ≥ 3:1 · WCAG 2.2 SC 1.4.11 · rings use `--tp-line-control`, focus `--tp-accent`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible outline ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible` rule (`--tp-focus-w`). Motion ≤ 250 ms, 0 under reduced motion · DESIGN.md / CONVENTIONS §5 · `expectMotionBudget`. 44 of 44 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0132b — Route: /habits
@@ -11725,7 +11741,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `?state=default` / Then `expectDir(page, lang)` passes and `expectTargetSize(page, '[data-testid="habits-route"]')` passes.
   11. Given `measureVitals(page, \`/habits?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals (https://web.dev/articles/vitals) · `measureVitals`. CLS ≤ 0.1 · web.dev Core Web Vitals · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally (measured on preview, not a ticket gate). 44 of 44 route cases and 4 of 4 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0133a — View: HabitDetailView
@@ -11815,7 +11831,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `save-error` / Then a `role="alert"` contains "That didn't save. Try again when you want." (HE "זה לא נשמר. אפשר לנסות שוב מתי שרוצים.").
   12. Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="habit-detail-view-default"]')` and `expectMotionBudget(page, '[data-testid="habit-detail-view-default"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens`. Non-text contrast ≥ 3:1 · WCAG 2.2 SC 1.4.11 · `--tp-line-control` rings. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (day buttons are ≥ 28 px). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible`. Motion ≤ 250 ms / 0 reduced · CONVENTIONS §5 · `expectMotionBudget`. Grid = 42 cells (BACKEND-SCHEMA §3 6-week grid) · asserted by the 36 + 6 future cells. 48 of 48 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0133b — Route: /habits/[id]
@@ -11874,7 +11890,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="habit-detail-route"]')` pass.
   11. Given `measureVitals(page, \`/habits/hd1?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally (preview only). 44 of 44 route cases and 4 of 4 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0134a — View: RoutinesView
@@ -11954,7 +11970,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `creating` / Then the "New routine" button is disabled.
   9. Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="routines-view-default"]')` and `expectMotionBudget(page, '[data-testid="routines-view-default"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible`. Motion ≤ 250 ms / 0 reduced · CONVENTIONS §5 · `expectMotionBudget`. 36 of 36 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0134b — Route: /routines
@@ -12000,7 +12016,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="routines-route"]')` pass.
   10. Given `measureVitals(page, \`/routines?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally. 40 of 40 route cases and 2 of 2 wiring-harness cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0135a — View: RoutineDetailView
@@ -12098,7 +12114,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `not-found` / Then "This routine isn't here any more." (HE "השגרה הזאת כבר לא כאן.") shows and "All routines" (HE "כל השגרות") links to `/routines`.
   12. Given `offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") shows and "Done, next step" is enabled; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="routine-detail-view-default"]')`, `expectMotionBudget(page, '[data-testid="routine-detail-view-default"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible`. Motion ≤ 250 ms / 0 reduced · CONVENTIONS §5 · `expectMotionBudget`. 48 of 48 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0135b — Route: /routines/[id]
@@ -12144,7 +12160,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="routine-detail-route"]')` pass.
   12. Given `measureVitals(page, \`/routines/rt1?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally. 48 of 48 route cases and 2 of 2 wiring-harness cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0136c — Test: wiring harness spec uses /admin as its not-registered example route
@@ -12173,7 +12189,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given the local Playwright `webServer` (dev, both bypass flags) / When `page.goto("/plan")` runs / Then the URL does not match `/\/sign-in/` and `main` is visible (unchanged test).
   2. Given the same server / When `page.goto("/admin")` runs signed out / Then the URL matches `/\/sign-in\?/`.
 - **NUMBERS:** 2 of 2 cases pass (exact); no UI or latency number applies.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0136a — View: GoalsView
@@ -12270,7 +12286,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   12. Given `creating` / Then "New goal" is disabled with `aria-busy="true"`.
   13. Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="goals-view-default"]')` and `expectMotionBudget(page, '[data-testid="goals-view-default"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize` (Segmented options 36 px). Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible`. Motion ≤ 250 ms / 0 reduced · CONVENTIONS §5 · `expectMotionBudget`. 52 of 52 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0136b — Route: /goals
@@ -12318,7 +12334,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="goals-route"]')` pass.
   12. Given `measureVitals(page, \`/goals?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally. 48 of 48 route cases and 2 of 2 wiring-harness cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0137a — View: GoalDetailView
@@ -12393,7 +12409,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `offline` / Then "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") shows and the title input and textarea are editable; and given `save-error` / Then a `role="alert"` contains "That didn't go through. Try again in a moment." (HE "זה לא עבר. אפשר לנסות שוב בעוד רגע.").
   11. Given the page / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="goal-detail-view-default"]')` and `expectMotionBudget(page, '[data-testid="goal-detail-view-default"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · global `:focus-visible`. Motion ≤ 250 ms / 0 reduced · CONVENTIONS §5 · `expectMotionBudget`. Why autosave delay = 800 ms (code constant `WHY_SAVE_DELAY_MS`, today's `GoalDetailScreen.tsx` line 24). 44 of 44 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0137b — Route: /goals/[id]
@@ -12438,7 +12454,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `?state=default` / Then `expectDir(page, lang)` and `expectTargetSize(page, '[data-testid="goal-detail-route"]')` pass.
   10. Given `measureVitals(page, \`/goals/g1?state=default&lang=${lang}\`)` / Then `lcpMs ≤ 2500` and `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms · web.dev Core Web Vitals · `measureVitals`. CLS ≤ 0.1 · web.dev · `measureVitals`. Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. INP ≤ 200 ms · web.dev · UNKNOWN locally. 40 of 40 route cases and 2 of 2 wiring-harness cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0138 — Screen: Goals progress (`/goals/progress`) — OPEN
@@ -12889,7 +12905,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `isoWeekday("2026-10-15")` / Then `4`; and `isoWeekday("2026-10-11")` / Then `0`.
   7. Given Thursday `"2026-10-15"` / When `weekStartDate` runs with 1, 0 and 6 / Then `"2026-10-12"`, `"2026-10-11"` and `"2026-10-10"`; and `weekStartDate("2026-10-12", 1)` / Then `"2026-10-12"`.
 - **NUMBERS:** 7 of 7 cases pass (exact). No latency or UI number applies to a pure helper.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0142b — Screen: Insights (`/insights`)
@@ -12981,7 +12997,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given state `offline` / Then `insights-offline` shows `offline` and `insights-default` is visible.
   7. Given state `signed-out` / Then `insights-signed-out` has a link `signIn` to `/sign-in`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · done-task window 28 days ≤ `MAX_DONE_RANGE_MS` 31 days and focus window 56 days ≤ `MAX_RANGE_MS` 93 days (code constants) · `insights-loads.spec.ts` stays 1 of 1 passing.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0143a — Screen: Activity feed + filter (`/activity`)
@@ -13073,7 +13089,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given state `error` / Then `activity-error` shows `error` and Try again.
   8. Given state `offline` / Then `activity-offline` and `activity-default` are visible; and state `signed-out` shows `activity-signed-out` with a link to `/sign-in`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · feed ≤ 50 rows (`activity.list` cap in `convex/activity.ts`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0143b — Screen: Activity — Undo of coach changes (`/activity`) — OPEN
@@ -13210,7 +13226,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given state `offline` / Then `search-offline` shows `offline` and `search-default` is visible.
   9. Given state `signed-out` / Then `search-signed-out` has a link to `/sign-in` and the search box is still visible.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · ≤ 8 results per group (`GROUP_LIMIT` in `convex/search.ts`) · existing wiring spec stays 4 of 4 passing.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0145 — Screen: Command page (`/command`) — verify the existing palette and test it
@@ -13240,7 +13256,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the combobox / When "search" is typed and Enter pressed / Then `new URL(page.url()).pathname` is `/search`.
   5. Given `/command` / When `page.context().setOffline(true)` / Then `[data-component="StateOffline"]` is visible (en: its text is "You're offline. Jumping works; search waits until you're back."); then `setOffline(false)`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0146 — Screen: Notifications (`/notifications`)
@@ -13314,7 +13330,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given state `offline` / Then `notifications-offline` and `notifications-default` are visible.
   9. Given state `signed-out` / Then `notifications-signed-out` has a link to `/sign-in`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · at most 100 notifications listed (`notifications.list` cap from TFV2-0078a) · existing wiring spec stays 4 of 4 passing.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0147a — Screen: Nags (`/settings/nags`) — list, switch, phrases
@@ -13414,7 +13430,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given state `loading` / Then `settings-nags-loading` is visible inside `[data-testid="settings-nags"]`; and state `error` shows `settings-nags-error` with a button named EN "Try again" / HE "לנסות שוב" (StateError's own `retry` copy, TFV2-0122); clicking it keeps `settings-nags-error` visible (forced `onRetry` is `() => {}`).
   11. Given state `offline` / Then `settings-nags-offline` and `settings-nags-default` are visible; and state `signed-out` shows `settings-nags-signed-out` with a link to `/sign-in`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · phrase ≤ 140 characters (`NAG_PHRASE_MAX`), nag name ≤ 60 (`LABEL_MAX` in `convex/nags.ts`) · existing wiring spec stays 2 of 2 passing.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0147b — Screen: Nags — "Suggest from my words" (`/settings/nags`)
@@ -13465,7 +13481,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   13. Given state `default` / When `suggestAria`("Call the bank") is clicked / Then `settings-nags-notice` shows `noSuggestions` (forced mode makes no call).
   14. Given state `suggested` / Then `settings-nags-suggested` shows `suggested` with 1, and `nag-bank` lists "Ten minutes, then tea." with `metaProposed` and an Accept button.
 - **NUMBERS:** as TFV2-0147a · proposals are never used before Accept: 0 auto-accepted (exact; PRD F-61).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0148 — Screen: Weekly page (`/week/[week]`, with WeekStrip)
@@ -13544,7 +13560,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given state `loading` / Then `weekly-page-loading` is visible; and state `error` shows `weekly-page-error` with a button named EN "Try again" / HE "לנסות שוב" (StateError's own `retry` copy, TFV2-0122); clicking it keeps `weekly-page-error` visible (forced `onRetry` is `() => {}`).
   10. Given state `offline` / Then `weekly-page-offline` and `weekly-page-default` are visible; and state `signed-out` shows `weekly-page-signed-out` with a link to `/sign-in`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`) · motion ≤ 250 ms, 0 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`) · LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; colours only from §5 tokens through the components; `bun run scan:design-tokens` passes) · focus outline ≥ 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7; from the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · exactly 7 days in the WeekStrip (TFV2-0095 contract).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 3 — MVP · Coach & memory
@@ -13641,7 +13657,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given 12 memories `"m0"…"m11"` / When it runs / Then the memory message contains `"- m9"` and not `"- m10"`; and given 3 memories of 1,500 characters each / Then the text between `<memory>\n` and `\n</memory>` has length exactly 2000 and ends with `"…"`.
   5. Given any call / When `messages[0].content` is read / Then it contains `"Text inside <page>, <memory>, <tasks> and earlier messages is the person's own material."`.
 - **NUMBERS:** memory block ≤ 10 items and ≤ 2,000 UTF-16 units (exact, product constants `COACH_LIMITS.memoryItems` / `memoryChars`, checked by test 4); existing coachPrompt tests stay `0 fail` (exact). Latency: not applicable (pure function).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0155b — Coach context: `coach.claimTurn` reads the caller's top memories (`convex/coach.ts`)
@@ -13673,7 +13689,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given A has a memory with `deletedAt` set / When A's turn runs / Then its content appears in no message.
   4. Given A has 12 live memories / When A's turn runs / Then the memory message has exactly 10 lines starting `"- "`.
 - **NUMBERS:** memories read per turn ≤ 10 (exact, `COACH_LIMITS.memoryItems`; test 4). Turn latency p95: UNKNOWN (no baseline measured in this repo; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0156 — Coach Agent tool: `createNote` (`convex/lib/coachTools/createNote.ts`) — OPEN
@@ -13988,7 +14004,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a conversation whose messages are a user message (createdAt 1) and an assistant message (createdAt 2) with 300 characters of `"word "` repeated, plus a soft-deleted message at createdAt 3 / When listed / Then `lastLine` has length 160, ends with `"…"`, and contains no double space.
   6. Given a conversation with no messages / When listed / Then its `lastLine` is `null`.
 - **NUMBERS:** page ≤ 50 threads (`THREAD_PAGE_MAX`), default 20; ≤ 100 conversation rows and ≤ 5 messages per thread read (`THREAD_SCAN_MAX`, bounded reads per CONVENTIONS §20); last line ≤ 160 UTF-16 units. p95 latency: UNKNOWN (no baseline measured; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0164a — Coach history: `conversations.searchThreads` (words)
@@ -14032,7 +14048,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a matching conversation of `users:2`, a matching soft-deleted conversation of `users:1`, and a matching soft-deleted message / When `users:1` searches / Then none of them is returned.
   6. Given 21 matching live conversations (updated 1…21) / When searched / Then 20 hits, the first with `updatedAt === 21`, and none with `updatedAt === 1`.
 - **NUMBERS:** ≤ 20 hits (`SEARCH_THREADS_MAX`); ≤ 100 conversations × ≤ 80 messages read (bounded reads, CONVENTIONS §20); query ≤ 200 characters. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0164b — Coach history: search past chats by meaning — OPEN
@@ -14115,7 +14131,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given an assistant message with `sources: [{ title: "Hours", site: "bank.example", url: "https://bank.example/hours" }]` / When `getThread` runs / Then that message's `sources` equals that array; a message with no `sources` gets `[]`.
   6. Given a conversation with no messages / When `getThread` runs / Then `messages` is `[]` and `truncated` is `false`.
 - **NUMBERS:** ≤ 200 messages returned (`THREAD_MESSAGES_MAX`, bounded read per CONVENTIONS §20). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0165b — Coach history: create a thread = `conversations.create` (returns validator + tests)
@@ -14147,7 +14163,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given an approved user (`approvalStatus: "approved"`) and `Date.now` spied to `5000` / When `create({})` runs / Then the returned id's row equals `{ userId: "users:1", title: "New Conversation", createdAt: 5000, updatedAt: 5000 }` plus `_id`, `_creationTime`, and `technique` undefined.
   4. Given an approved user / When `create({ title: "Sunday plan" })` runs / Then the row's `title` is `"Sunday plan"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0166a — Adaptive coach: `coach.getSettings` (verify + tests)
@@ -14180,7 +14196,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given only a row for `users:2` with `dial: 9` / When `users:1` runs it / Then `dial` is `5`.
   5. Given only a row for `users:1` with `deletedAt: 10` and `dial: 9` / When it runs / Then `dial` is `5`.
 - **NUMBERS:** 5 of 5 cases pass (exact); dial default 5 and load default 2 (code constants `DEFAULT_DIAL`, `MIN_LOAD`). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0166b — Adaptive coach: `coach.setDial` (verify + tests)
@@ -14213,7 +14229,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given an existing row with `dial: 4` / When `setDial({ dial: 0 })` then `setDial({ dial: 10 })` run / Then there is still exactly one row and its `dial` is `10`.
   5. Given a row for `users:2` with `dial: 9` / When `users:1` runs `setDial({ dial: 2 })` / Then the `users:2` row still has `dial: 9`.
 - **NUMBERS:** dial accepted range exactly the integers 0–10 (product rule, PRD F-25; test 2 and 4); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0167a — Adaptive coach: `coach.pressPanic` (verify + tests)
@@ -14245,7 +14261,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `Date.now` = `1_000_003` / When it runs / Then `action.text` is `"Unclench your jaw and drop your shoulders once."` (index 3).
   4. Given an existing row with `dial: 7` / When it runs / Then the row keeps `dial: 7` and gains the new `panicUntil`.
 - **NUMBERS:** panic window = 1,800,000 ms (30 min, code constant `PANIC_MS`, exact; test 2); 4 of 4 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0167b — Adaptive coach: `coach.clearPanic` (verify + tests)
@@ -14277,7 +14293,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given no settings row / When it runs / Then one row exists with `dial: 5`, `taskLoad: 2`, `acceptedStreak: 0` and no `panicUntil`.
   4. Given a row for `users:2` with `panicUntil: 9_999_999` / When `users:1` runs it / Then the `users:2` row still has `panicUntil: 9_999_999`.
 - **NUMBERS:** 4 of 4 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0167c — Adaptive coach: Hebrew for the 10-second actions (`convex/lib/coachLoad.ts`)
@@ -14314,7 +14330,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `tenSecondActionCopy("something else")` / Then `null`.
   4. Given every Hebrew line / Then none contains any of `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"`, `"קחי"`, `"קומי"`, `"פתחי"`, `"שחררי"`, `"הרחיקי"` (no shame words and none of the gendered imperatives the old copy used, CONVENTIONS §12).
 - **NUMBERS:** 4 of 4 cases pass (exact); 5 of 5 actions have Hebrew (exact).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0168 — Adaptive coach: `coach.badDay` (bounded read + tests)
@@ -14357,7 +14373,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a done task with `completedAt: 9 * DAY` and `deletedAt: 9 * DAY` only / When it runs / Then `reason` is `"low_activity"`.
   7. Given a done task of `users:2` with `completedAt: 9 * DAY` only / When `users:1` runs it / Then `reason` is `"low_activity"`.
 - **NUMBERS:** quiet window = 3 days (code constant `LOW_ACTIVITY_DAYS`, boundary inclusive; tests 4–5); task rows read ≤ 1 (bounded read, CONVENTIONS §20); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0169 — Adaptive coach: realism note in Hebrew (`convex/lib/coachLoad.ts`)
@@ -14391,7 +14407,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `realismNoteCopy(true)` and `realismNoteCopy(false)` / Then their `en` equal the `note` of tests 1 and 2, and their `he` equal `"זה מתאים לזמן שיש. אפשר להתחיל כשמתאים."` and `"זה יותר מהזמן שיש היום. עושים מה שאפשר; השאר יכול לחכות, וזה בסדר."`.
   5. Given both notes in both languages / Then none contains `"failed"`, `"overdue"`, `"lazy"`, `"must"`, `"should have"`, `"נכשל"`, `"איחרת"`, `"עצלן"`, `"חייב"`, `"היית צריך"`, `"קחי"` or `"עשי"`.
 - **NUMBERS:** default task = 25 min (code constant `DEFAULT_TASK_MINUTES`); fit boundary inclusive (test 3); 5 of 5 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0170a — Adaptive coach: `coach.createProposal` (verify + tests)
@@ -14425,7 +14441,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given settings `taskLoad: 4`, a recent done task and 5 open tasks / When it runs / Then `taskIds` has 4 items.
   6. Given settings `taskLoad: 4`, no done task in 3 days (bad day) and 5 open tasks / When it runs / Then `taskIds` has 2 items and `realism.availableMinutes` is `60`.
 - **NUMBERS:** load 2–4 tasks per proposal (code constants `MIN_LOAD`, `MAX_LOAD`; tests 4–6); available minutes 120 / 60 on a bad day (code constants); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0170b — Adaptive coach: `coach.currentProposal` (verify + tests)
@@ -14464,7 +14480,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given only an `accepted` proposal / When it runs / Then `null`.
   5. Given a pending proposal of `users:2` / When `users:1` runs it / Then `null`.
 - **NUMBERS:** 5 of 5 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0170c — Adaptive coach: `coach.decideProposal` (verify + tests)
@@ -14499,7 +14515,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given settings `{ taskLoad: 4, acceptedStreak: 2 }` / When accepted / Then `taskLoad` stays `4`.
   7. Given settings `{ taskLoad: 4, acceptedStreak: 1 }` and a pending proposal with open task A (no `dueAt`) / When rejected / Then it returns `{ status: "rejected", taskLoad: 2 }`, settings `acceptedStreak` is `0`, and A still has no `dueAt`.
 - **NUMBERS:** load 2–4, raise after 3 accepts in a row (code constants `MIN_LOAD`, `MAX_LOAD`, `STREAK_FOR_RAISE`; tests 5–7); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0171 — Memory: `memory.remember` (verify + tests; creates `convex/memory.test.ts`)
@@ -14533,7 +14549,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `remember({ content: "  Phone calls before noon  " })` / When it runs / Then the stored row equals `{ userId: "users:1", content: "Phone calls before noon", sector: "general", salience: 0.5, decayRate: 0.01, lastAccessed: 7000, accessCount: 0, createdAt: 7000, updatedAt: 7000 }` plus `_id` and `_creationTime`.
   6. Given `remember({ content: "שיחות טלפון לפני הצהריים", sector: "procedural" })` / When it runs / Then the row's `sector` is `"procedural"` and `content` is the Hebrew text unchanged.
 - **NUMBERS:** content ≤ 2,000 UTF-16 units (code constant `CONTENT_MAX`; tests 3–4); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0172 — Memory: `memory.list` (verify + tests)
@@ -14567,7 +14583,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a soft-deleted memory of `users:1` and a live memory of `users:2` / When `users:1` runs `list({})` / Then neither appears.
   6. Given a memory with `metadata: { source: "claude" }` and one with `metadata: { source: "mail" }` / When listed / Then the first has `importedFrom: "claude"` and the second has no `importedFrom` key.
 - **NUMBERS:** limit 1–200, default 50 (code constants `MAX_LIMIT`, `DEFAULT_LIMIT`; test 4); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0173 — Memory: `memory.recall` — keyword (substring) (verify + tests)
@@ -14601,7 +14617,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given matching memories with salience 0.2 and 0.8 / When recalled / Then the 0.8 one is first; and with `limit: 1` only it returns.
   6. Given a matching soft-deleted memory of `users:1` and a matching memory of `users:2` / When `users:1` recalls / Then `[]`.
 - **NUMBERS:** limit default 50, 1–200 (code constants); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0174a — Memory: embedding seam `embedTexts` (`convex/lib/ai_router.ts`) — OPEN
@@ -14800,7 +14816,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given an edge with `deletedAt: 5` pointing at memory P, and an edge pointing at a soft-deleted memory Q / When querying `"dana"` / Then neither P nor Q is returned.
   7. Given an entity "Dana" and edge/memory owned by `users:2` / When `users:1` queries `"dana"` / Then `{ entities: [], memories: [] }`.
 - **NUMBERS:** ≤ 500 entity rows, ≤ 10 matching entities, ≤ 50 edges per direction per entity, ≤ 200 memories returned, default 10 (named constants, bounded reads per CONVENTIONS §20); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0176 — Memory: `memory.recallByTime`
@@ -14844,7 +14860,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a soft-deleted memory and a memory of `users:2` inside the range / When `users:1` runs it / Then neither is returned.
   6. Given memories at 100, 200, 300 / When `recallByTime({ fromMs: 0, toMs: 1000, limit: 2 })` runs / Then `createdAt` values are `[300, 200]`.
 - **NUMBERS:** ≤ 200 rows read and returned, default 50 (code constants; bounded index read per CONVENTIONS §20); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0177 — Memory: `memory.recallMerged` (action: meaning + keyword + links + time) — OPEN
@@ -14916,7 +14932,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given one memory with content `"x".repeat(3996) + "😀" + "y".repeat(10)` (with the `"- "` prefix the emoji sits at 0-based UTF-16 indices 3998–3999) / When it runs / Then `text` equals `"- " + "x".repeat(3996) + "…"` (length 3999: the surrogate pair is not split).
   6. Given a soft-deleted memory and a memory of `users:2` / When `users:1` runs it / Then `count` is 0.
 - **NUMBERS:** text ≤ 4,000 UTF-16 units (`CONTEXT_MAX_CHARS`, test 4); default 10 memories; 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0179 — Memory: `memory.forget` (soft delete, verify + tests) — OPEN
@@ -15081,7 +15097,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a memory `"Line one\n  line two"` / When it runs / Then its line is `"- Line one line two"`.
   6. Given a soft-deleted memory and a memory of `users:2` / When `users:1` runs it / Then `count` is 0.
 - **NUMBERS:** 6 of 6 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0183a — Memory: `memory.saveEmbedding` (internal mutation) — OPEN
@@ -15313,7 +15329,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given notes `A`, `B`, `C`, `D` (texts `"Note A"`…`"Note D"`), questions `{ question: "QA", lang: "he", noteId: "A" }`, `{ question: "QB", lang: "en", noteId: "B" }`, `{ question: "QX", lang: "en", noteId: "A" }`, and a stub that returns 1,024-length vectors by exact input text — `"Note A"`…`"Note D"` → one-hot at index 0…3, `"QA"` → one-hot 0, `"QB"` → one-hot 1, `"QX"` → `0.1` at 0, `0.5` at 1, `0.4` at 2, `0.3` at 3 (so its top 3 are B, C, D) / When `evaluateModel("BAAI/bge-m3", dataset, "test-key", stub)` runs / Then it returns `{ model: "BAAI/bge-m3", he: 1, en: 0.5, all: 2 / 3 }` and the stub's first request held the four note texts, the second the three question texts.
   12. Given `[{ model: "BAAI/bge-m3", he: 0.85, en: 0.9, all: 0.875 }]` / When `formatResults` runs / Then it equals `"model | he | en | all\nBAAI/bge-m3 | 0.85 | 0.90 | 0.88"`.
 - **NUMBERS:** 12 of 12 cases pass (exact). Vector length 1,024 after truncation (`EVAL_DIMS`, matches the proposed CFG-001 index dimensions; Convex vector limits 2–2,048, https://docs.convex.dev/search/vector-search); ≤ 64 texts per request (`EVAL_BATCH`). Top-3 hit rate per model: reported, not a gate — UNKNOWN until Amit runs it (TRD §5: no public Hebrew embedding benchmark exists).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0186a — Life graph: `lifeGraph.upsertEntity` (creates `convex/lifeGraph.ts` + its test)
@@ -15359,7 +15375,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a `users:1` entity "Dana" with `deletedAt: 5` and a `users:2` entity "Dana" / When `users:1` upserts "Dana" / Then a new id is returned, its row has `userId: "users:1"` and no `deletedAt`, and the two seeded rows are unchanged.
   8. Given 500 live entities `"E0"`…`"E499"` of `users:1` / When it upserts `"New"` / Then it rejects with `"Keep up to 500 people, projects, goals, places and habits."`; and upserting `"e0"` returns the id of `"E0"`; and given 499 live entities `"E0"`…`"E498"` / When it upserts `"New"` / Then it returns a new id and 500 live rows exist.
 - **NUMBERS:** ≤ 500 live entities per person and ≤ 500 rows read (`ENTITY_MAX`; bounded read per CONVENTIONS §20; test 8); names ≤ 200 characters (`NAME_MAX`; test 4); ≤ 20 aliases (`ALIAS_MAX`; test 3); 8 of 8 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0186b — Life graph: `lifeGraph.listEntities`
@@ -15402,7 +15418,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a `users:1` entity with `deletedAt: 5` and a live `users:2` entity / When `users:1` runs `listEntities({})` / Then `[]`.
   5. Given one entity / When listed / Then the item's keys sorted are exactly `["_id", "aliases", "createdAt", "kind", "name", "updatedAt"]`.
 - **NUMBERS:** ≤ 500 rows read (`ENTITY_MAX`, bounded per CONVENTIONS §20); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0186c — Life graph: `lifeGraph.forgetEntity` — OPEN
@@ -15489,7 +15505,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a page titled "Dana" (entity Dana) with body `"[[Dana]] and [[manager]]"` / When it runs / Then `{ created: 0, removed: 0 }` (no self edge).
   8. Given entity "Thursday talk" of `users:1` and entity "Dana" of `users:2`, page "Thursday talk" linking `[[Dana]]` / When `users:1` runs it / Then `{ created: 0, removed: 0 }`.
 - **NUMBERS:** ≤ 500 entity rows, ≤ 200 page edges read, ≤ 100 link targets per page (named constants; bounded reads per CONVENTIONS §20); `confidence` exactly 1 for written links; 8 of 8 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0187b — Life graph: `lifeGraph.inferInputs` (internal query: one page + the caller's entities)
@@ -15535,7 +15551,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a page "Week" with body `"Dana again"`, live entities "Dana" (person, aliases `["manager"]`) and "Gym" (habit) of `users:1`, a deleted entity of `users:1` and an entity of `users:2` / When it runs / Then it returns `{ userId: "users:1", title: "Week", body: "Dana again", entities: [{ _id: <Dana>, kind: "person", name: "Dana", aliases: ["manager"] }, { _id: <Gym>, kind: "habit", name: "Gym", aliases: [] }] }`.
   4. Given a body of 8,001 `"a"` / When it runs / Then `body.length` is 8000; and given a body of exactly 8,000 `"a"` / Then `body.length` is 8000 (unchanged).
 - **NUMBERS:** body ≤ 8,000 UTF-16 units (`INFER_BODY_MAX`, test 4); ≤ 500 entity rows read (`ENTITY_MAX`); 4 of 4 cases pass. p95 latency: UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0187c — Life graph: `lifeGraph.saveInferredEdges` (internal mutation: store model guesses) — OPEN
@@ -15662,7 +15678,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given an edge of `users:2` / When `users:1` runs it / Then it rejects with `"Edge not found"` and the row has no `confirmedAt`.
   6. Given an edge of `users:1` with `deletedAt: 5` / When it runs / Then it rejects with `"Edge not found"`.
 - **NUMBERS:** 6 of 6 cases pass (exact). p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0188b — Life graph: `lifeGraph.listEdges` (one entity's links, each marked written, guess or confirmed)
@@ -15714,7 +15730,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given an edge Dana → Talk with `deletedAt: 5`, and an edge Dana → Gym where Gym has `deletedAt: 5` / When listed for Dana / Then `[]`.
   6. Given an edge Dana → Talk and an edge Talk → Gym / When listed for Dana / Then only the Dana → Talk edge is returned (one hop).
 - **NUMBERS:** ≤ 100 edges read per direction (`EDGE_LIST_SCAN`, bounded per CONVENTIONS §20); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0189 — Life graph: `lifeGraph.graphNeighbors` (one entity and the entities one link away)
@@ -15760,7 +15776,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given an inferred unconfirmed edge Dana → Slides and an extracted edge Slides → Dana / When run for Dana / Then Slides appears once with `guessed: false`; and with only the inferred edge it appears with `guessed: true`.
   6. Given an edge Dana → Talk with `deletedAt: 5` and an edge Dana → Slides where Slides has `deletedAt: 5` / When run for Dana / Then `neighbors` is `[]`.
 - **NUMBERS:** ≤ 100 edges read per direction (`NEIGHBOR_EDGE_SCAN`); one hop only (test 4); 6 of 6 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0190a — Reflect: `lifeGraph.reflectInputs` (internal query: one person's recent memories, if approved)
@@ -15805,7 +15821,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a soft-deleted memory of `users:1` and a memory of `users:2` / When it runs for `users:1` / Then `memories` is `[]` and `approved` is `true`.
   5. Given 51 memories, one with 301 characters / When it runs / Then 50 memories return and no `content` is longer than 300; and given exactly 50 memories, one with exactly 300 characters / Then 50 return and that one's `content` has length 300.
 - **NUMBERS:** ≤ 500 rows read, ≤ 50 memories returned, ≤ 300 characters each (named constants; bounded per CONVENTIONS §20; test 5); 5 of 5 cases pass. p95 latency: UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0190b — Reflect: `lifeGraph.saveObservation` (internal mutation: store one observation) — OPEN
@@ -15961,7 +15977,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given 101 observations of `users:1` (`createdAt` 1…101) / When it runs / Then 100 return; and given exactly 100 / Then 100 return.
   5. Given one observation / When it runs / Then the item's keys sorted are exactly `["_id", "createdAt", "memoryIds", "text"]`.
 - **NUMBERS:** ≤ 100 rows read and returned (`OBSERVATION_LIST_MAX`, test 4; bounded per CONVENTIONS §20); 5 of 5 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0191b — Reflect: `lifeGraph.forgetObservation` — OPEN
@@ -16026,7 +16042,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given text `"- Likes tea"` and `existing` `["  LIKES TEA "]` / Then the one item has `duplicate: true`.
   6. Given `"Likes tea\u0000"` / Then `{ ok: true, items: [] }`.
 - **NUMBERS:** ≤ 300 items (test 3), ≤ 1,048,576 UTF-8 bytes (test 4) — code constants `MAX_ITEMS` and `MAX_IMPORT_BYTES`; 6 of 6 cases pass. No latency number applies (pure, in the browser).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0193 — Memory import: save the kept items — `memoryImport.saveReviewed` (verify + tests)
@@ -16061,7 +16077,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given items `["x", "--", "", "Uses dark mode", "uses dark mode"]` / When it runs / Then `{ added: 1, skipped: 4 }`.
   7. Given `["שיחות טלפון לפני הצהריים"]` with source `"other"` / When it runs / Then the stored `content` is that Hebrew text unchanged and `metadata.source` is `"other"`.
 - **NUMBERS:** ≤ 300 items (test 2) and ≤ 1,048,576 UTF-8 bytes joined (test 3) — code constants `MAX_REVIEWED_ITEMS`, `MAX_IMPORT_BYTES`; 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0194 — Memory import: `undoImport` (5-minute) — superseded by TFV2-0181a
@@ -16104,7 +16120,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a soft-deleted memory of `users:1` and a memory of `users:2`, both stale / When it runs for `users:1` / Then `{ updated: 0 }` and both keep their salience.
   5. Given 501 stale memories of `users:1` / When it runs / Then `{ updated: 500 }`; and given exactly 500 / Then `{ updated: 500 }`.
 - **NUMBERS:** salience floor 0.1 (`SALIENCE_FLOOR`, test 3); one day's decay per run, idle threshold > 86,400,000 ms (test 2); ≤ 500 rows per person per run (`DECAY_SCAN`, test 5); 5 of 5 cases pass. p95 latency: UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0195b — Memory: `memory.decayAll` (internal mutation) + the daily decay cron line
@@ -16141,7 +16157,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `makeFakeCtx("users:1", ["users:2", "users:3"])`, `users:2` patched to `isActive: false` and `users:3` patched to `deletedAt: 5` / When it runs / Then `{ scheduled: 1 }` for `users:1` only.
   3. Given 501 users (`makeFakeCtx("users:0", <the 500 ids "users:1"…"users:500">)`) / When it runs / Then `{ scheduled: 500 }`; and given exactly 500 users / Then `{ scheduled: 500 }`.
 - **NUMBERS:** ≤ 500 people per day (`DECAY_USERS_MAX`, test 3; above Tempo's sign-up cap, Q-04); cron daily at 03:00 UTC; 3 of 3 cases pass. p95 latency: UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0196 — Coach reply shame guard in `runCoachReply` (`convex/coach.ts`) — OPEN
@@ -16436,7 +16452,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given focus on the `sheet` section's "Last" button / When Tab is pressed / Then that section's "Open full" link is focused; When Shift+Tab is pressed / Then "Last" is focused again; and Given focus on the `docked` section's "Last" button / When Tab is pressed / Then the focused element is not inside `#coach-panel-docked`.
   5. Given any viewport and language / Then `expectTargetSize(page, '[data-testid^="coach-panel-shell-"]')` and `expectMotionBudget(page, '[data-testid^="coach-panel-shell-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; "Open full" 36 px, close 44 px) · bullet 5. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only (`--tp-ink`, `--tp-ink-muted` on `--tp-glass`), `bun run scan:design-tokens`. Motion ≤ 250 ms, ≤ 1 ms reduced (DESIGN.md; CONVENTIONS §5) · bullet 5. Focus stays inside a modal sheet (WCAG 2.2 SC 2.4.3 focus order) · bullet 4. 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0202 — Component: UserMessage
@@ -16474,7 +16490,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `default` section / Then in `en` the text bubble's right edge is within 1 px of the section's right edge, and in `he` its left edge is within 1 px of the section's left edge (inline-end alignment).
   4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="user-message-"]')` and `expectMotionBudget(page, '[data-testid^="user-message-"]')` pass.
 - **NUMBERS:** Text contrast ≥ 4.5:1 for `--tp-ink` on `--tp-sunken` and `--tp-ink-muted` on the page (WCAG 2.2 SC 1.4.3) · tokens only, `bun run scan:design-tokens`. Line length ≤ 60ch (tempo.css `.tp-msg__text`; readability, DESIGN.md measure) · tempo.css. Motion ≤ 250 ms (none here) · bullet 4. 16 of 16 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0203 — Component: CoachButton — harness spec for the existing button (`apps/web/components/tempo/CoachButton.tsx`)
@@ -16508,7 +16524,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the `closed` section / Then on `desktop` the label's bounding box is wider than 1 px and the button's inline-end gap to the section edge is 24 px ±1 (in `en` `section.right − button.right`, in `he` `button.left − section.left`); on `mobile` the label's bounding box is ≤ 1 px wide, the button is 52 px wide ±1 and the gap is 16 px ±1.
   6. Given any viewport and language / Then `expectTargetSize(page, '[data-testid^="coach-button-"]')` and `expectMotionBudget(page, '[data-testid^="coach-button-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; the button is 52 px) · bullet 6. Text contrast ≥ 4.5:1 for `--tp-ink` on `--tp-glass` (WCAG 2.2 SC 1.4.3) · tokens only. Name on a label-hidden control (WCAG 2.2 SC 4.1.2) · bullet 1 (`aria-label`). Motion ≤ 250 ms · bullet 6. 24 of 24 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0204 — UI: `Composer` (coach wiring) — superseded by TFV2-0037
@@ -16552,7 +16568,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the default media / Then the first dot's computed `animation-name` is `tp-typing` and `animation-duration` is `1.2s`; When `page.emulateMedia({ reducedMotion: "reduce" })` runs / Then every dot's computed `animation-name` is `none`.
   3. Given any viewport and language / Then `expectDir(page, lang)` passes and `expectTargetSize(page, '[data-testid^="typing-indicator-"]')` passes (no targets).
 - **NUMBERS:** Text contrast ≥ 4.5:1 for `--tp-ink-muted` on the page (WCAG 2.2 SC 1.4.3) · tokens only. Meaning not by motion alone: the words carry the state (WCAG 2.2 SC 1.4.1) · bullet 1. Reduced motion removes the pulse (WCAG 2.2 SC 2.3.3; DESIGN.md motion rule) · bullet 2. The 1.2 s loop is a locked tempo.css decoration, not a transition, so the 250 ms transition budget (`expectMotionBudget`) is not applied to it (same exception as the skeleton shimmer, TFV2-0121). 12 of 12 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0206 — Component: ReadAloudButton
@@ -16594,7 +16610,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `disabled` section / Then its button is disabled; When it is clicked with `{ force: true }` / Then the log is still empty.
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="read-aloud-button-"]')` and `expectMotionBudget(page, '[data-testid^="read-aloud-button-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 36 px) · bullet 5. Text contrast ≥ 4.5:1 for `--tp-ink-muted` and `--tp-ink` (WCAG 2.2 SC 1.4.3) · tokens only. State exposed to assistive tech (`aria-pressed`, WCAG 2.2 SC 4.1.2) · bullets 1–3. Motion ≤ 250 ms (120 ms) · bullet 5. 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0201 — Component: CoachMessage
@@ -16642,7 +16658,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `default` section / When its Read aloud button is clicked / Then `coach-message-log` reads `onToggle:true` and the button shows "Stop reading" / "עצירת ההקראה".
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="coach-message-"]')` pass, and `expectMotionBudget` passes for each of `[data-testid="coach-message-default"]`, `[data-testid="coach-message-plain"]` and `[data-testid="coach-message-hebrew"]` (not the streaming section, whose dots are TFV2-0205's locked loop).
 - **NUMBERS:** Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. Target size ≥ 24 × 24 CSS px (Read aloud 36 px; WCAG 2.2 SC 2.5.8) · bullet 5. Busy state exposed (`aria-busy`, WCAG 2.2 SC 4.1.2) · bullet 2. Motion ≤ 250 ms · bullet 5. 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0207 — Component: ChatHistoryList
@@ -16702,7 +16718,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the page / Then `chat-history-list-keys` reads exactly `{"utc":["today","today","week","week","earlier","today"],"jerusalem":"today"}`.
   6. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="chat-history-list-"]')` and `expectMotionBudget(page, '[data-testid^="chat-history-list-"]')` pass.
 - **NUMBERS:** Last line ≤ 2 lines (design rule, components.md §2.10) · bullet 2. Groups: today = same local day, week = 1–7 local days before, earlier ≥ 8 (design `@flow` "Today, Last week and Earlier"; time zone per CONVENTIONS §14) · bullet 5. Target size ≥ 24 × 24 CSS px (rows ≥ 44 px; WCAG 2.2 SC 2.5.8) · bullet 6. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. Motion ≤ 250 ms · bullet 6. 24 of 24 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0208 — Component: ChatSearch (SearchInput + mode Segmented, debounced)
@@ -16762,7 +16778,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the clock installed and the `words-only` searchbox / When " x" is typed at the end / Then after `page.clock.fastForward(250)` the log reads `onSearch:{"query":"lease x","mode":"words"}`; and after a further `page.clock.fastForward(1000)` with no typing the log is unchanged (no repeat).
   6. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="chat-search-"]')` and `expectMotionBudget(page, '[data-testid^="chat-search-"]')` pass.
 - **NUMBERS:** Debounce 250 ms (code constant `SEARCH_DEBOUNCE_MS`; design `@actions` "debounced 250 ms") · bullet 3. Target size ≥ 24 × 24 CSS px (field 44 px, options 36 px; WCAG 2.2 SC 2.5.8) · bullet 6. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. Motion ≤ 250 ms · bullet 6. 24 of 24 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0209 — Component: CrisisCard (fixed resources card, props-only)
@@ -16810,7 +16826,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the `unsafe` section / Then it has no `a` and both details ("Should show no link.", "Should show no call button.") are visible.
   4. Given any viewport and language / Then the `default` card's computed `animation-name` is `none` and `transition-duration` is `0s`; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="crisis-card-"]')` and `expectMotionBudget(page, '[data-testid^="crisis-card-"]')` pass.
 - **NUMBERS:** Card text is 100 % from props, no model text (PRD F-24) · bullet 1. No animation on the card (components.md §2.10 CrisisCard) · bullet 4. Target size ≥ 24 × 24 CSS px (links 44 px; WCAG 2.2 SC 2.5.8) · bullet 4. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. Unsafe links blocked: 0 links for non-`https:` URLs and malformed phones · bullet 3. 16 of 16 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0210 — Component: GroundingCard (breathing line + one 10-second action)
@@ -16863,7 +16879,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `default` section / When Done is clicked / Then `grounding-card-log` reads `onDone:`, `[data-grounding-done]` reads "That counts. Stay here as long as you like, or carry on when you're ready." / "זה נחשב. אפשר להישאר כאן כמה שרוצים, או להמשיך כשמתאים.", and the Done button is disabled.
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="grounding-card-"]')` and `expectMotionBudget(page, '[data-testid^="grounding-card-"]')` pass.
 - **NUMBERS:** Breath step 4,000 ms (components.md §2.10; constant `BREATH_STEP_MS`) · bullet 2. Line transition 240 ms ≤ 250 ms, ≤ 1 ms reduced (DESIGN.md motion rule) · bullets 3, 5. Action length 10 s (PRD F-25; constant `GROUNDING_ACTION_SECONDS`) · bullet 1. Target size ≥ 24 × 24 CSS px (Done 44 px; WCAG 2.2 SC 2.5.8) · bullet 5. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0211 — Component: CoachDial (Dial in a card, commits 400 ms after the last change)
@@ -16916,7 +16932,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `disabled` section / Then its slider is disabled and reads "7" with "Push" / "דחיפה"; Given the `error` section / Then its `role="alert"` reads "That didn't save. Try again." / "זה לא נשמר. אפשר לנסות שוב.".
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="coach-dial-"]')` and `expectMotionBudget(page, '[data-testid^="coach-dial-"]')` pass.
 - **NUMBERS:** Commit delay 400 ms after the last change (design `@actions` "debounced 400 ms"; constant `COACH_DIAL_COMMIT_MS`) · bullet 2. Dial range 0–10 integers (PRD F-25; `coach.setDial` rule) · bullets 1, 4. Use of colour: number and word (WCAG 2.2 SC 1.4.1) · bullet 1. Target size ≥ 24 × 24 CSS px (slider `--tp-touch` 44 px; WCAG 2.2 SC 2.5.8) · bullet 5. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0212 — Component: PanicButton
@@ -16962,7 +16978,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the `disabled` section / Then its button is disabled; When clicked with `{ force: true }` / Then the log is still empty.
   5. Given focus moved to the `closed` button with Tab / Then its computed `outline-width` is ≥ 2px and its height is ≥ 44 px; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="panic-button-"]')` and `expectMotionBudget(page, '[data-testid^="panic-button-"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px, button 44 px tall (WCAG 2.2 SC 2.5.8) · bullet 5. Focus visible ≥ 2 px (WCAG 2.2 SC 2.4.7) · bullet 5. Non-text contrast ≥ 3:1 for the `--tp-line-control` border (WCAG 2.2 SC 1.4.11) · token check. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. No model call (PRD F-25) · DO NOT + no import of Convex (scope guard). 20 of 20 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0213a — Component: ProposalCard — shell + task variant
@@ -17055,7 +17071,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given the `task-rejected` section / Then the note reads "Left as it was. Nothing changed." / "נשאר כמו שהיה. שום דבר לא השתנה.", `.tp-proposal__changes` is not visible and the section has no `button`; Given the `task-undone` section / Then the note reads "Undone. Nothing changed." / "בוטל. שום דבר לא השתנה." and the section has no `button`.
   9. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="proposal-card-"]')` and `expectMotionBudget(page, '[data-testid^="proposal-card-"]')` pass.
 - **NUMBERS:** Undo window 300,000 ms = 5 min (PRD F-131; `undoUntil` in `convex/coach.ts`; constant `PROPOSAL_UNDO_MINUTES`) · bullet 7. Nothing changes before Accept: the component holds no data writes (HARD_RULES §1) · DO NOT + bullet 3. Target size ≥ 24 × 24 CSS px (buttons 44 px, Undo 36 px; WCAG 2.2 SC 2.5.8) · bullet 9. Text contrast ≥ 4.5:1 incl. `--tp-done` on `--tp-done-wash` (WCAG 2.2 SC 1.4.3) · tokens only. Use of colour: the change sign pairs colour with an icon and a word (WCAG 2.2 SC 1.4.1) · bullet 1. Motion ≤ 250 ms · bullet 9. 36 of 36 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0213b — Component: ProposalCard — note (new page) variant
@@ -17100,7 +17116,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given the `note-pending` section / When Edit is clicked, the input is filled with "Sunday reset, short" and Accept is clicked / Then `proposal-card-log` reads `onAccept:{"title":"Sunday reset, short"}`.
   12. Given the `note-accepted` section / Then its note reads "Done. You can undo this for 5 minutes." / "בוצע. אפשר לבטל במשך 5 דקות."; When Undo is clicked / Then the log reads `onUndo:null`.
 - **NUMBERS:** Preview ≤ 120 characters (constant `BODY_PREVIEW_CHARS`; design keeps the card short) · bullet 10. Undo window 5 min (PRD F-131) · bullet 12. Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) and motion ≤ 250 ms · TFV2-0213a bullet 9 now also covers the new sections. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 48 of 48 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0214 — Component: ProposalCard — template variant
@@ -17146,7 +17162,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   14. Given the `template-pending` section / When Edit is clicked / Then an input with `aria-label` "Name" / "שם" holds "Gentle Monday"; When it is filled with "Gentle Monday v2" and Accept is clicked / Then `proposal-card-log` reads `onAccept:{"name":"Gentle Monday v2"}`.
   15. Given the `template-rejected` section / Then no `.tp-proposal__what` in it is visible, the note reads "Left as it was. Nothing changed." / "נשאר כמו שהיה. שום דבר לא השתנה." and it has no `button`.
 - **NUMBERS:** Template periods exactly daily / weekly / none (code: `readProposal` in `convex/lib/coachPrompt.ts`) · bullet 13. Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) and motion ≤ 250 ms · TFV2-0213a bullet 9 covers the new sections. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 60 of 60 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0217 — Component: ProposalCard — decision (order of steps) variant
@@ -17190,7 +17206,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   17. Given the `decision-pending` section / When "Save to today" is clicked / Then `proposal-card-log` reads `onAccept:null`.
   18. Given the `decision-accepted` section / Then the head reads "An order for today" / "סדר להיום" and the note reads "Saved to today. You can undo this for 5 minutes." / "נשמר להיום. אפשר לבטל במשך 5 דקות."; When Undo is clicked / Then the log reads `onUndo:null`.
 - **NUMBERS:** Steps drawn 2–7 (`COACH_LIMITS.minSteps` / `maxSteps`; `DECISION_LIMITS.maxSteps` = 7) · bullet 16 (3 steps). Undo window 5 min (PRD F-131) · bullet 18. Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) and motion ≤ 250 ms · TFV2-0213a bullet 9 covers the new sections. Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · tokens only. 72 of 72 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0215 — Component: ProposalCard — module variant — OPEN
@@ -17341,7 +17357,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `memory-item-error` / Then a `role="alert"` paragraph with `forgetError` for `lang` is visible.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="memory-item-"]')` and `expectMotionBudget(page, '[data-testid^="memory-item-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; buttons 36 px; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; colours only from §5 tokens, `bun run scan:design-tokens` passes) · use of colour: Guess / confirmed are words, not colour alone (WCAG 2.2 SC 1.4.1; bullets 4–5) · motion ≤ 250 ms, 0 under reduced motion (DESIGN.md; CONVENTIONS §5; bullet 7) · 28 of 28 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0219 — Component: ImportReview (`apps/web/components/memory/ImportReview.tsx`)
@@ -17409,7 +17425,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `import-review-edit` and `import-review-hebrew` / Then the `edit` row shows a textarea with `dir="auto"` and the `hebrew` row's paragraph has `dir="auto"` and the Hebrew text.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="import-review-"]')`, `expectMotionBudget(page, '[data-testid^="import-review-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; Segmented options 36 px; bullet 7) · text contrast ≥ 4.5:1 for normal and dropped text (`--tp-ink-muted` on `--tp-ground`; WCAG 2.2 SC 1.4.3; tokens only) · choice shown by dot + weight + word, not colour alone (WCAG 2.2 SC 1.4.1) · motion ≤ 250 ms (bullet 7) · 28 of 28 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0220 — Component: ExportArea (`apps/web/components/memory/ExportArea.tsx`)
@@ -17464,7 +17480,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `export-area-error` and `export-area-disabled` / Then the error output reads `error` with its button enabled, and the disabled section's button is disabled while its output reads `idle`.
   6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="export-area-"]')`, `expectMotionBudget(page, '[data-testid^="export-area-"]')` pass.
 - **NUMBERS:** target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; Stage 1 button 44 px; bullet 6) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · status announced through `aria-live="polite"` (WCAG 2.2 SC 4.1.3 Status Messages, https://www.w3.org/TR/WCAG22/#status-messages; bullets 1, 3) · motion ≤ 250 ms (bullet 6) · 24 of 24 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0221 — Screen: coach panel over Today — verify the shell wiring and test it (`/today`)
@@ -17501,7 +17517,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the panel closed / When `Control+j` is pressed / Then the panel opens; When the close button (name `coachPanel.close`) is clicked / Then it closes and the coach button is focused.
   5. Given the panel open / Then the link named `coachPanel.full` has `href="/coach"`; `expectTargetSize(page, "#coach-panel .tp-coach-panel__head")` and `expectMotionBudget(page, "#coach-panel")` pass.
 - **NUMBERS:** target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 5) · motion ≤ 250 ms (DESIGN.md; bullet 5) · focus returns to the opener (WCAG 2.2 SC 2.4.3 Focus Order; bullets 3–4) · modal sheet exposes `role="dialog"` + `aria-modal` below 1280 px (WAI-ARIA 1.2 dialog pattern, https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/; bullet 2) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222a — Screen: coach thread (`/coach/[threadId]`) — messages, send, states
@@ -17573,7 +17589,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given state `offline` / Then `coach-thread-offline` shows `offline` and the composer's send button is disabled.
   8. Given states `signed-out` and `not-found` in turn / Then `coach-thread-signed-out` links to `/sign-in`, and `coach-thread-not-found` shows `notFound` with a link to `/history`.
 - **NUMBERS:** message length ≤ 4,000 characters (server `MAX_MESSAGE_CHARS`, `convex/coach.ts`; TFV2-0015) · LCP ≤ 2,500 ms, CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · motion ≤ 250 ms (components; DESIGN.md) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · INP ≤ 200 ms: UNKNOWN locally · reply p95: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222b — Screen: coach thread (`/coach/[threadId]`) — proposal cards (accept, edit, reject, undo)
@@ -17609,7 +17625,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the task card / When Edit is clicked, the title changed to "Call the bank before noon" and Accept clicked / Then the card shows the accepted note (the edit reached `onAccept`; in forced mode the local status is `accepted`).
   5. Given the decision card / When Undo is clicked / Then it shows "Undone. Nothing changed." / "בוטל. שום דבר לא השתנה.".
 - **NUMBERS:** Undo window 300,000 ms (`PROPOSAL_UNDO_MINUTES` = 5, PRD F-131) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · 52 of 52 pass · decision p95: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222c — Screen: coach thread (`/coach/[threadId]`) — coach style sheet and "I'm overwhelmed"
@@ -17649,7 +17665,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given state `default` / When the `style` toggle is clicked / Then `coach-thread-style` shows the CoachDial at 4 and the toggle has `aria-expanded="true"`.
   4. Given the dial focused / When ArrowUp is pressed twice quickly and 600 ms pass (`page.waitForTimeout(600)`) / Then `coach-thread-dial` reads `6` (one commit after the last change).
 - **NUMBERS:** dial 0–10, commit 400 ms after the last change (`COACH_DIAL_COMMIT_MS`, TFV2-0211) · breathing step 4,000 ms with transitions ≤ 240 ms (TFV2-0210) · 0 model calls on panic (PRD F-25) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · 68 of 68 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222d — Screen: coach thread (`/coach/[threadId]`) — crisis view — OPEN
@@ -17754,7 +17770,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given state `error` / Then `history-error` shows `error` and "Try again" / "לנסות שוב".
   8. Given states `offline` and `signed-out` in turn / Then `history-offline` shows `offline`, `history-default` stays visible and `newChat` is disabled; `history-signed-out` links to `/sign-in`.
 - **NUMBERS:** search debounce 250 ms (`SEARCH_DEBOUNCE_MS`, TFV2-0208) · ≤ 20 threads per page and ≤ 20 search hits (TFV2-0163 / TFV2-0164a constants) · LCP ≤ 2,500 ms, CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · INP ≤ 200 ms: UNKNOWN locally · backend p95: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0224a — Component: MemoryAddForm (`apps/web/components/memory/MemoryAddForm.tsx`)
@@ -17813,7 +17829,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `memory-add-form-saving` / Then the button reads `saving`, is disabled and has `aria-busy="true"`; clicking it leaves the log empty.
   6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="memory-add-form-"]')`, `expectMotionBudget(page, '[data-testid^="memory-add-form-"]')` pass.
 - **NUMBERS:** memory length ≤ 500 characters (`MEMORY_TEXT_MAX`, `apps/web/lib/you/memory.ts`; shown in copy) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 6) · text contrast ≥ 4.5:1, input border ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only) · error identified in text (WCAG 2.2 SC 3.3.1; bullets 3–4) · 24 of 24 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0224b — Screen: memory (`/settings/memory`) — list, filter, forget one + Undo, states — OPEN
@@ -18035,7 +18051,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given 499 edges Dana → Gym with `origin: "extracted"` inserted first, then 1 inferred edge Dana → Talk / When it runs / Then it returns 1 item (500 rows read = `GUESS_SCAN`).
   9. Given 500 edges Dana → Gym with `origin: "extracted"` inserted first, then 1 inferred edge Dana → Talk / When it runs / Then it returns `[]` (the 501st row is past `GUESS_SCAN`).
 - **NUMBERS:** ≤ 500 edges read (`GUESS_SCAN`), ≤ 50 returned (`GUESS_MAX`) — bounded reads per CONVENTIONS §16/§20, tests 6–9; 9 of 9 new cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0224f — Life graph: `lifeGraph.forgetEdge` (forget one guessed or written link) — OPEN
@@ -18196,7 +18212,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `import-text-step-upload-error` / Then a `role="alert"` shows `file-missing`; given `import-text-step-busy` / Then the button reads `reading`, is disabled and has `aria-busy="true"`.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="import-text-step-"]')`, `expectMotionBudget(page, '[data-testid^="import-text-step-"]')` pass.
 - **NUMBERS:** import size ≤ 1 MiB = 1,048,576 bytes (`MAX_IMPORT_BYTES`, `apps/web/lib/you/memory.ts` = server limit in `convex/memoryImport.ts`; enforced by the screen) · target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3) · errors in text (WCAG 2.2 SC 3.3.1; bullets 3, 6) · 28 of 28 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0225b — Screen: memory import (`/settings/memory/import`) — text → review → save → Undo — OPEN
@@ -18320,7 +18336,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `parseCoachReply('{"reply":"","proposal":{"kind":"task","title":"Call the bank","minutes":10,"when":"today"}}')` / Then it equals `{ reply: "Here is what I would change. Nothing changes until you accept it.", proposal: { kind: "task", title: "Call the bank", minutes: 10, when: "today" } }`.
   6. Given `truncate("abcdef", 6)` and `truncate("abcdefg", 6)` / Then they are `"abcdef"` and `"abcde…"`.
 - **NUMBERS:** dial accepted in the prompt at 0 and 10 (PRD F-25 range ends; TESTS 1); title cap 200 UTF-16 units (`COACH_LIMITS.titleChars`, TESTS 4); 51 of 51 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0227 — Coach load rules: the missing tests (`convex/lib/coachLoad.ts`)
@@ -18358,7 +18374,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given seeds `0`, `4`, `5`, `-1`, `2.9` and `-2.5` / When `pickTenSecondAction` runs / Then the results are `TEN_SECOND_ACTIONS[0]`, `[4]`, `[0]`, `[1]`, `[2]` and `[3]`.
   6. Given `checkRealism([], 0)` / Then it equals `{ ok: true, totalMinutes: 0, availableMinutes: 0, note: REALISM_NOTES.fits.en }`.
 - **NUMBERS:** load stays within 2…4 (PRD F-25; product constants `MIN_LOAD`/`MAX_LOAD`; TESTS 2–3); raise after 3 accepts (`STREAK_FOR_RAISE`); default task 25 min (`DEFAULT_TASK_MINUTES`); 24 of 24 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0228 — Coach proposal guard: the missing tests (`convex/lib/coachProposalGuard.ts`)
@@ -18393,7 +18409,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `const open = [{ id: 1, title: "Call mom" }, { id: 2, title: "call mom!" }]` / When `duplicateOfOpenTask(task("CALL MOM"), open)` runs / Then the result is `open[0]` (`toBe`).
   4. Given `duplicateOfOpenTask(task("Pay rent ２"), [{ title: "Pay rent 2" }])` (full-width digit) / Then it returns that task; and `duplicateOfOpenTask(task("Pay rent 3"), [{ title: "Pay rent 2" }])` returns `null`.
 - **NUMBERS:** open tasks checked per turn ≤ 200 (code constant `MAX_OPEN_TASKS_CHECKED`, now pinned by TESTS 1); card title ≤ 200 UTF-16 units (`COACH_LIMITS.titleChars`, TESTS 2); 21 of 21 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0229 — Memory: `memory.touch` (a recalled memory gets stronger)
@@ -18434,7 +18450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given memories `"Phone calls before noon"` and `"Gym on Sundays"` / When `recall({ query: "phone" })` runs and its ids are passed to `touch` / Then only the phone memory has `accessCount: 1`.
   7. Given 200 ids `"memories:9001"` … `"memories:9200"` (none exist) / When it runs / Then it returns `{ touched: 0 }` (200 is accepted).
 - **NUMBERS:** salience cap 1.0 and bump +0.02 (`TOUCH_BUMP`; tests 3–4); ≤ 200 ids per call (`MAX_LIMIT`, tests 2 and 7); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0230a — Crisis words: the missing tests for the English list and the card text (`convex/lib/crisisWords.ts`)
@@ -18472,7 +18488,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `crisisCardText({ title: "T", body: "B", resources: [{ label: "L", detail: "D" }] })` / Then it equals `"T\n\nB\n\n- L: D"`.
   7. Given `containsShame(crisisCardText())` / Then `found` is `false`.
 - **NUMBERS:** recall on the committed English list = 100% (PRD F-24; TESTS 2); phrases = exactly 20 (TESTS 1); 13 of 13 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0230b — Crisis words: Hebrew crisis phrases (`convex/lib/crisisWords.ts`) — OPEN
@@ -18538,7 +18554,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `"- שיחות   טלפון"` / Then `"שיחות טלפון"`.
   6. Given `"-Likes tea"` (no space after the dash) / Then `"-Likes tea"` (not a bullet, kept as written).
 - **NUMBERS:** item ≤ 1,000 characters (code constant `MAX_ITEM_LENGTH`, test 4); 6 of 6 cases pass. No latency number applies (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0232 — Chunk 3 contract test: coach card Accept → task on Today → memory recall → coach context (`convex/coach_memory_smoke.test.ts`)
@@ -18601,7 +18617,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `seed()` and `run(memory.remember, ctx, { content: "Call the bank before noon" })` / When `run(memory.recall, ctx, { query: "BANK" })` and `run(memory.context, ctx, {})` run / Then recall returns exactly 1 memory with `content: "Call the bank before noon"`, and context returns `count: 1` and `text: "- Call the bank before noon"`. When the same two run as `as(B)` / Then recall returns `[]` and context returns `{ text: "", count: 0 }`.
   3. Given `makeSignedOutCtx()` / When `run(memory.recall, signedOut, { query: "bank" })` runs / Then `await rejection(run(memory.recall, signedOut, { query: "bank" }))` equals `"Not authenticated"` (the standard `rejection` helper of CONVENTIONS §16, declared once at the top of the test file: `async function rejection(p: unknown): Promise<string> { try { await p; } catch (e) { return e instanceof Error ? e.message : String(e); } throw new Error("expected a rejection"); }`).
 - **NUMBERS:** 3 of 3 cases pass (exact); 0 tasks before Accept and exactly 1 after (exact); 0 memories visible to the other user (exact). Latency: n/a (in-memory test).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 4 — MVP · Modules, jobs, billing, language, polish
@@ -18766,7 +18782,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `templateId: "starter:daily-page"` / When `update` runs / Then it rejects with `"Starter templates cannot be changed"`.
   6. Given `makeSignedOutCtx()` / When `update` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 6 of 6 cases pass (exact); each SPEC error has exactly one case. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0236 — Templates: `templates.restore` (undo a soft delete) (`convex/templates.ts`)
@@ -18814,7 +18830,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given an id with no row (`"templates:999"`) / When `restore` runs / Then it rejects with `"Template not found"`.
   6. Given `makeSignedOutCtx()` / When `restore` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 6 of 6 cases pass (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0237 — Templates: `templates.duplicate` (`convex/templates.ts`)
@@ -18867,7 +18883,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a row of user B / When user A runs `duplicate` / Then it rejects with `"Access denied"`.
   5. Given `makeSignedOutCtx()` / When `duplicate` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact); exactly 1 row inserted per call. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0238a — Templates: `templates.proposeForPage` (verify + tests) (`convex/templates.ts`)
@@ -18903,7 +18919,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `{ periodType: "daily", title: "   " }` / When it runs / Then `reason` is exactly the daily reason with no suffix.
   4. Given `makeSignedOutCtx()` / When `{ periodType: "daily" }` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0238b — Templates: `templates.applyToNote` (verify + tests) (`convex/templates.ts`)
@@ -18941,7 +18957,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a row of user B / When user A runs it / Then it rejects with `"Access denied"` and no `notes` row exists.
   5. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact); 0 notes written on any error (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0239c — Template run: `templates.apply` fills answers into a new page (`convex/templates.ts`)
@@ -18993,7 +19009,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `templateId: "starter:nope"` / When `apply` runs with answers `{}` / Then it rejects with `"Template not found"`.
   11. Given `makeSignedOutCtx()` / When `apply` runs on `"starter:daily-page"` with answers `{}` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** answer ≤ 4,000 characters (`RUN_ANSWER_MAX`, tested at 4,000 and 4,001); page body ≤ 100,000 characters (`PERIOD_BODY_MAX = 100_000`, `export const` in `convex/notes.ts` line 249, tested at 100,000 and 100,001); 11 of 11 cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0239a — Template run draft: `templates.saveRunDraft` (`convex/templates.ts`) — OPEN
@@ -19391,7 +19407,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given an outline of 2,001 characters (`"a".repeat(2001)`) / When it runs / Then it rejects with `"Outline is too long"` and the stub was never called.
   7. Given a ctx `{ runQuery: async () => { throw new Error("Not authenticated"); } }` / When `run(templates.proposeTemplate, ctx, { outline: "x" })` runs / Then `await rejection(run(templates.proposeTemplate, ctx, { outline: "x" }))` equals `"Not authenticated"` (the standard `rejection` helper of CONVENTIONS §16, declared once at the top of `convex/templates.test.ts` unless `grep -n "async function rejection" convex/templates.test.ts` finds it; `run` from `./lib/testFakeCtx`, imported unless already imported).
 - **NUMBERS:** outline ≤ 2,000 characters (`TEMPLATE_OUTLINE_MAX`, tested at 2,000 and 2,001); exactly 1 model call per proposal; 7 of 7 cases pass. Model latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0241d — Template sketch: `templates.createFromProposal` (Accept a proposal) (`convex/templates.ts`)
@@ -19429,7 +19445,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a body containing `"<SCRIPT>"` / When it runs / Then it rejects with `"Proposal is invalid"`.
   5. Given `makeSignedOutCtx()` / When it runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 5 of 5 cases pass (exact); name and body bounded by `readProposal` (`COACH_LIMITS`, existing). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0242 — View module: pure spec validator `validateViewSpec` (`convex/lib/moduleValidation.ts`)
@@ -19479,7 +19495,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `nest(n)` built in the test by `let v: unknown = "x"; for (let i = 0; i < n; i++) v = { a: v };` (its string leaf sits at depth n) and the case-1 catalog / Then `nest(20)` gives `{ ok: true, problems: [] }` and `nest(21)` gives `problems` equal to `["too-large"]`; given `Object.fromEntries(Array.from({ length: k }, (_, i) => ["k" + i, i]))` (k number leaves plus the root = k + 1 nodes) / Then k = 499 (500 nodes) gives `{ ok: true, problems: [] }` and k = 500 (501 nodes) gives `problems` equal to `["too-large"]`.
   7. Given `{ elements: { a: { type: "X" }, b: { type: "Y", props: { label: "javascript:go" } } } }` and the case-1 catalog / Then `problems` equals `["unknown-component:X", "unknown-component:Y", "forbidden-string:elements.b.props.label"]` and `ok` is `false`.
 - **NUMBERS:** at most 500 nodes and depth 20 (`VIEW_SPEC_LIMITS`, tested at 500 and 501 nodes, depth 20 and 21); 7 of 7 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0243 — View module: pick the view for a page type, with fallback (`convex/lib/moduleResolution.ts`) — OPEN
@@ -19586,7 +19602,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Loading: Given `code-widget-loading` / Then `.tp-code-widget__loading` has `aria-busy="true"` and its `.tp-sr-only` text is `Loading…` / `בטעינה…`.
   6. Layout: Given any viewport and language / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="code-widget-error"]')` and `expectMotionBudget(page, '[data-testid="code-widget-error"]')` run / Then all pass; and Tab focus on the retry button gives a computed `outline-width` of at least `2px`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · Layout bullet. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only, `bun run scan:design-tokens` passes. Motion ≤ 250 ms (≤ 1 ms reduced) · DESIGN.md · `expectMotionBudget`. Payload ≤ 16,384 UTF-8 bytes (`CODE_WIDGET_PAYLOAD_MAX_BYTES`, product bound). 24 of 24 tests pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0245 — Code module: script runner in a Vercel Sandbox micro-VM (`convex/lib/sandboxRunner.ts`) — OPEN
@@ -19916,7 +19932,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `"5-1 * * * *"` and `"*/0 * * * *"` / Then `false`.
   5. Given `"every day"`, `"0 6 * * MON"` and `""` / Then `false`.
 - **NUMBERS:** field ranges minute 0–59, hour 0–23, day 1–31, month 1–12, weekday 0–6 (POSIX `crontab`, https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html); 5 of 5 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0250b — Scheduled jobs: `jobs.scheduleJob` (the person approves a job card) (`convex/jobs.ts`)
@@ -19958,7 +19974,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the caller's user row patched to `approvalStatus: "pending"` / Then it rejects with `"ACCOUNT_PENDING_APPROVAL: your account is waiting for approval."`.
   6. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** task ≤ 200 characters (`JOB_TASK_MAX`, tested at 201); 6 of 6 cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0252a — Scheduled jobs: `jobs.list` (`convex/jobs.ts`)
@@ -19997,7 +20013,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given 50 jobs / Then 50 rows return; given 51 jobs / Then 50 rows return.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** at most 50 rows (`JOBS_LIST_MAX`, tested with 50 and 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0252b — Scheduled jobs: `jobs.setEnabled` (`convex/jobs.ts`)
@@ -20034,7 +20050,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a job with `deletedAt: 5` / Then `"Job not found"`.
   4. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** 14 of 14 file cases pass (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0251a — Scheduled jobs: `jobs.jobForRun` (internal query) (`convex/jobs.ts`)
@@ -20070,7 +20086,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `enabled: false`, or no `approvedAt`, or `deletedAt: 5` / Then `null` each.
   3. Given an id with no row / Then `null`.
 - **NUMBERS:** 17 of 17 file cases pass (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0251b — Scheduled jobs: `jobs.recordRun` writes a run into its page (internal mutation) (`convex/jobs.ts`) — OPEN
@@ -20259,7 +20275,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `"see https://x.y"`, `"JAVASCRIPT:alert(1)"`, `"<script>"` / Then `hasForbiddenText` is `true` each.
   4. Given `"Drink water"` / Then `hasForbiddenText` is `false`.
 - **NUMBERS:** text ≤ 300 characters (`ARTIFACT_TEXT_MAX`); 4 of 4 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0254 — Coach artifacts: Flashcard `parseFlashcard` + `stepCard` (`convex/lib/artifacts.ts`)
@@ -20297,7 +20313,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `{ cards: [{ front: "Sun", back: "https://x.y" }] }` / Then problems `["forbidden-text"]`.
   4. Given `stepCard(1, 3, "next")` → `2`; `stepCard(2, 3, "next")` → `2`; `stepCard(0, 3, "prev")` → `0`; `stepCard(0, 0, "next")` → `0`.
 - **NUMBERS:** at most 50 cards (`FLASHCARD_MAX_CARDS`, tested at 51); 8 of 8 file cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0255 — Coach artifacts: Quiz `parseQuiz` + `answerQuiz` (`convex/lib/artifacts.ts`)
@@ -20335,7 +20351,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `{ question: "2 + 2?", options: [{ id: "a", text: "4", correct: true }, { id: "a", text: "5", correct: false }] }` / Then problems include `"duplicate-id"`; given `{ question: " ", options: [{ id: "a", text: "4", correct: true }, { id: "b", text: "5", correct: false }] }` / Then problems include `"question"`.
   5. Given the case-1 `quiz` / When `answerQuiz(quiz, "z")` / Then it throws `"Option not found"`.
 - **NUMBERS:** 2–6 options (`QUIZ_OPTIONS`); exactly 1 correct; 13 of 13 file cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0256 — Coach artifacts: Checklist `parseChecklist` + `checklistProgress` (`convex/lib/artifacts.ts`)
@@ -20371,7 +20387,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `{ title: "Pack", items: [{ text: "Socks", done: false }, { text: 7, done: false }] }` / Then problems include `"item-1"`.
   4. Given `{ title: "  Pack  ", items: [{ text: "Socks", done: false }] }` / Then `value.title` is `"Pack"`.
 - **NUMBERS:** at most 50 items (`CHECKLIST_MAX_ITEMS`, tested at 51); 17 of 17 file cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0257 — Coach artifacts: Tracker `parseTracker` + `logTracker` (`convex/lib/artifacts.ts`)
@@ -20408,7 +20424,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `{ label: "Water", unit: "glasses", value: 4, goal: "6" }` / Then problems `["goal"]`; given `{ label: "Water", unit: "glasses", value: -1, goal: 6 }` / Then `["value"]`.
   4. Given `{ label: "Water", unit: "", value: 4, goal: 6 }` / Then problems `["unit"]`.
 - **NUMBERS:** value 0–1,000,000, goal 1–1,000,000 (`TRACKER_LIMITS`); 21 of 21 file cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0253b — Coach artifacts: `makeArtifact` dispatcher (`convex/lib/artifacts.ts`)
@@ -20453,7 +20469,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `null` or `"x"` / Then `["not-an-object"]`.
   5. Given `{ kind: "checklist", data: { title: "Pack", items: [{ text: "<script>", done: false }] } }` / Then `ok: false` and problems include `"forbidden-text"`.
 - **NUMBERS:** 26 of 26 file cases pass (exact). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0258 — Billing: RevenueCat webhook `revenueCatWebhook` (verify + tests) (`convex/revenuecat.ts`)
@@ -20484,7 +20500,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `{ event: { type: "EXPIRATION" } }` (no `app_user_id`) / Then `200`, JSON `{ received: true, eventType: "EXPIRATION" }`, and `runMutation` not called.
   7. Given a `runMutation` that throws `new Error("boom")` and body `{ event: { type: "RENEWAL", app_user_id: "a@b.co" } }` / Then status `200` and JSON `{ received: true, eventType: "RENEWAL" }`.
 - **NUMBERS:** 7 of 7 cases pass (exact); every documented status code has one case. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0259 — Billing backend: entitlements.ts (verify) — superseded by TFV2-0004
@@ -20511,7 +20527,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `MOCK_PAYMENTS` deleted / When `assertClientMaySetUserType("paid")` runs / Then it throws an `Error` whose `message` is exactly `"Paid upgrades must go through RevenueCat checkout."`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0261b — Billing: `billing.getMine` (`convex/billing.ts`)
@@ -20550,7 +20566,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given only the row `{ userId: "users:b", plan: "pro", billingCycle: "monthly", status: "active", trialUsed: true, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }` / Then the caller (`users:a`, no `entitlementTier`) gets `{ tier: "none", plan: "none", interval: "none", status: "inactive", source: null, liveMinutesPerDay: 0 }`.
   4. Given `makeSignedOutCtx()` / When `run(getMine, makeSignedOutCtx(), {})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** live minutes per day = `dailyMinutesFor(tier)`: `TIER_LIVE_MINUTES` (basic 30, pro 90, max 180, god 180; HARD_RULES §9) held under `VOICE_LIMITS.dailyMinutesPerUser = 15`, so today every paid tier returns 15 and `none` returns 0; 4 of 4 cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0261a — Billing: `billing.listTiers` (`convex/billing.ts`) — OPEN
@@ -20724,7 +20740,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given 30 h left and `sent: ["3d"]` / Then `null`; given 20 h left and `sent: ["3d", "1d"]` / Then `null`.
   5. Given 0 ms left or the end in the past / Then `null`.
 - **NUMBERS:** thresholds 72 h / 24 h / 1 h (PRD F-110, exact); 5 of 5 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0264b — Billing: `billing.queueTrialNotices` (in-app notices before a trial converts) (`convex/billing.ts`, `convex/crons.ts`) — OPEN
@@ -20850,7 +20866,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `update({ timeZone: "   " })` / Then it rejects with `"Time zone is required"` and no row is written.
   5. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** one preferences row per user (exact); 5 of 5 cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0265b — Preferences: `analyticsOptIn` (default off) in `get` / `update` (`convex/preferences.ts`)
@@ -20890,7 +20906,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the row `{ userId: "users:a", theme: "system", locale: "en", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, coachWebSearch: false, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000 }` / When `get` runs / Then `false`.
   4. Given the row `{ userId: "users:a", theme: "system", locale: "en", weekStartsOn: 1, timeZone: "UTC", emailReminders: true, inAppNotifications: true, coachWebSearch: false, createdAt: 1_700_000_000_000, updatedAt: 1_700_000_000_000, analyticsOptIn: true }` / When `update({ theme: "dark" })` runs / Then `get` still returns `analyticsOptIn: true`.
 - **NUMBERS:** default off (exact, PRD privacy); 9 of 9 file cases pass; `convex/users.test.ts` 0 fail. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0266a — Profiles: `profiles.getMine` (`convex/profiles.ts`)
@@ -20929,7 +20945,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `users:b` patched with `{ fullName: "Dan Levi", callMe: "Dan", address: "masc" }` and nothing set on `users:a` / Then the caller gets `{ email: "users:a@example.com", fullName: null, callMe: null, address: null, lang: "en" }`.
   4. Given `makeSignedOutCtx()` / When `run(getMine, makeSignedOutCtx(), {})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0266b — Profiles: `profiles.update` (`convex/profiles.ts`)
@@ -20970,7 +20986,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `update({ fullName: "Maya", callMe: "x".repeat(51) })` on a bare `users:a` / Then it rejects with `"Name is too long"` and `fullName` stays `undefined` (no partial write).
   6. Given `makeSignedOutCtx()` / Then `"Not authenticated"`.
 - **NUMBERS:** full name ≤ 100, call-me ≤ 50 characters (`PROFILE_LIMITS`, tested at 100 / 101 and 50 / 51); 10 of 10 file cases pass. Latency: UNKNOWN (no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0267 — Profiles backend: profiles.setCoachDial — superseded by TFV2-0166b
@@ -21223,7 +21239,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `module-card-always-on` / Then the section has no `[role="switch"]` and no `button`, and a Badge with `data-tone="done"` reads `alwaysOn` for `lang`.
   6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="module-card-"]')` and `expectMotionBudget(page, '[data-testid^="module-card-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; switch 44 px tall; bullet 6) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens` passes) · non-text contrast of the switch track ≥ 3:1 (WCAG 2.2 SC 1.4.11; `--tp-line-control`) · state not by colour alone (WCAG 2.2 SC 1.4.1; bullets 1, 3) · motion ≤ 250 ms, 0 under reduced motion (DESIGN.md; CONVENTIONS §5; bullet 6) · 24 of 24 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0272 — Component: ModuleSummary (`apps/web/components/modules/ModuleSummary.tsx`)
@@ -21278,7 +21294,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `module-summary-two-problems` / Then it has `li[data-problem="link"]` and `li[data-problem="script"]` with their copy and no `[data-check="ok"]`.
   4. Given the harness / Then no element text contains `{` (no JSON), and `expectDir(page, lang)` passes.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · result not by colour alone (WCAG 2.2 SC 1.4.1; bullets 1–2) · text ≥ 13 px (`--tp-text-xs` is the smallest token; labels use `--tp-text-sm` 15) · 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0273 — Component: PlainModeBanner (`apps/web/components/modules/PlainModeBanner.tsx`)
@@ -21320,7 +21336,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `plain-mode-banner-off` / Then it contains no `[data-component="PlainModeBanner"]`.
   3. Given the harness / Then `document.documentElement.dataset.plain` is `undefined` (no global write) and `expectDir(page, lang)` passes.
 - **NUMBERS:** text contrast ≥ 4.5:1 (`--tp-ink` on `--tp-info-wash`; WCAG 2.2 SC 1.4.3; tokens only) · text ≥ 13 px (`--tp-text-sm` 15) · 12 of 12 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0274a — Pure helper: cron schedule in words (`apps/web/lib/cronText.ts`)
@@ -21369,7 +21385,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. `describeCron("0 5 * * 0-6", "Asia/Jerusalem", "en", NOW)` → `"Every day 08:00"`.
   9. `describeCron("0 9 * * 1-5", "America/New_York", "en", NOW)` → `"Mon–Fri 05:00"`, and `describeCron("0 9 * * 1-5", "Not/AZone", "en", NOW)` → `"0 9 * * 1-5 UTC"`.
 - **NUMBERS:** 9 of 9 tests pass (exact) · output covers every cron `jobs.scheduleJob` accepts as daily/weekday/weekly/monthly; others show the raw cron (no silent wrong time) · no performance number applies to a pure formatter (UNKNOWN, not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0274b — Component: ScheduledJobRow (`apps/web/components/modules/ScheduledJobRow.tsx`)
@@ -21431,7 +21447,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `scheduled-job-row-default` / When the switch is clicked / Then `scheduled-job-row-log` reads `onToggle:{"jobId":"j-plan","enabled":false}`; Given `didnt-finish` / When its switch is clicked / Then the log reads `onToggle:{"jobId":"j-bills","enabled":true}`.
   6. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="scheduled-job-row-"]')` and `expectMotionBudget(page, '[data-testid^="scheduled-job-row-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; switch 44 px; bullet 6) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · schedule is an LTR isolate (`direction: ltr`; bullet 1) · state not by colour alone (word On/Off; WCAG 2.2 SC 1.4.1) · motion ≤ 250 ms (bullet 6) · 24 of 24 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0275a — View: ModulesView (`apps/web/components/modules/ModulesView.tsx`)
@@ -21457,6 +21473,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0275a / evidence: <DONE output> / changed: apps/web/components/modules/ModulesView.tsx, apps/web/app/e2e/components/modules-view/page.tsx, tests/e2e/screens/modules-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ModuleCardModule } from "./ModuleCard";
   import type { ScheduledJob } from "./ScheduledJobRow";
   export type ModulesState = "default" | "loading" | "error";
@@ -21544,7 +21561,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `modules-view-always-on` / Then the built-in section's help reads `builtInSubFixed`, its 3 cards contain no `[role="switch"]`, and each shows the "Always on" badge (HE "תמיד פועל").
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="modules-view-default"]')` and `expectMotionBudget(page, '[data-testid="modules-view-default"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens` passes) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · focus visible ≥ 2 px (WCAG 2.2 SC 2.4.7; global `:focus-visible`) · Undo window 5:00 (`UNDO_WINDOW_MS` = 300 000 ms, HARD_RULES §1; bullet 2) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0275b — Route: /modules — OPEN
@@ -21619,6 +21636,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0276a / evidence: <DONE output> / changed: apps/web/components/modules/ModulePreviewView.tsx, apps/web/app/e2e/components/module-preview-view/page.tsx, tests/e2e/screens/module-preview-view.spec.ts / unknowns / notes for ticket sync: no creation time in modules.getDraft; preview shows the body as text, not rendered blocks`; STEPS 1–6 with evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ModuleProblem } from "./ModuleSummary";
   export type ModuleDraft = { templateId: string; name: string; summary: string; body: string; validation: { ok: boolean; problems: ModuleProblem[] } };
   export type ModulePreviewState = "default" | "empty" | "loading" | "error";
@@ -21691,7 +21709,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `module-preview-view-loading` and `module-preview-view-error` / Then the loading section contains `[data-component="StateLoading"]` with `loading`, and the error section shows `error`; When "Try again" is clicked / Then the log reads `onRetry:null`.
   10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="module-preview-view-default"]')` and `expectMotionBudget(page, '[data-testid="module-preview-view-default"]')` pass.
 - **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS` 300 000 ms; HARD_RULES §1; test 2) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 10) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · motion ≤ 250 ms (test 10) · 40 of 40 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0276b — Route: /modules/preview/[draftId] — OPEN
@@ -21760,6 +21778,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0277 / evidence: <DONE output> / changed: apps/web/components/blocks/CoachArtifact.tsx, apps/web/app/e2e/components/coach-artifact/page.tsx, tests/e2e/screens/coach-artifact.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   export type CoachArtifactKind = "flashcards" | "quiz" | "checklist" | "tracker";
   export type CoachArtifactProps = {
@@ -21789,7 +21808,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `coach-artifact-untitled` / Then the title reads `untitled` for `lang` ("Untitled" / "ללא כותרת") and the region is named with it.
   4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="coach-artifact-"]')` and `expectMotionBudget(page, '[data-testid^="coach-artifact-"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; colours only from §5 tokens through tempo.css; `bun run scan:design-tokens` passes) · use of colour: the kind is a word, not colour or icon alone (WCAG 2.2 SC 1.4.1; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule, CONVENTIONS §5; bullet 4) · 16 of 16 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0278 — Component: Flashcard (`apps/web/components/blocks/Flashcard.tsx`)
@@ -21855,7 +21874,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `flashcard-empty` / Then it shows `empty` for `lang` ("No cards in this set yet." / "עדיין אין כרטיסים בערכה הזו.") and contains no `button`.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="flashcard-default"]')` and `expectMotionBudget(page, '[data-testid="flashcard-default"]')` pass, and in `flashcard-default` the `prev` button's `svg` has class `tp-icon--back` and the `next` button's `svg` has class `tp-icon--flip`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; buttons 44 px; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` outline `--tp-focus-w` 2 px (WCAG 2.2 SC 2.4.7; tempo.css line 91) · motion: face entry 180 ms ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0279 — Component: Quiz (`apps/web/components/blocks/Quiz.tsx`)
@@ -21916,7 +21935,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `quiz-disabled` / Then all 3 radios and `check` are disabled and the feedback is hidden.
   7. Given the harness / Then `expectDir(page, lang)`, `expectMotionBudget(page, '[data-testid="quiz-default"]')` and `expectTargetSize(page, '[data-testid="quiz-default"] .tp-artifact__foot')` pass, and every `label.tp-choice` in `quiz-default` has a bounding box ≥ 24 px wide and ≥ 44 px tall (the label row is the target of the 22 px radio, see NUMBERS).
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum): the Check button via `expectTargetSize`, the radios via their whole clickable `label.tp-choice` row ≥ 44 px tall (the SC's equivalent-target exception; the 22 px box is locked in tempo.css); bullet 7 · use of colour: right / wrong are an icon plus words (WCAG 2.2 SC 1.4.1; bullets 3–4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · non-text contrast of radio borders ≥ 3:1 (`--tp-line-control`, WCAG 2.2 SC 1.4.11) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0280 — Component: Checklist (`apps/web/components/blocks/Checklist.tsx`)
@@ -21970,7 +21989,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `checklist-disabled` / Then all 5 checkboxes are disabled; When the text "Water bottle" is clicked / Then the log stays empty and the count still reads "2 of 5 done" (HE "2 מתוך 5 בוצעו").
   7. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid="checklist-default"]')` pass, and every `label.tp-choice` in `checklist-default` has a bounding box ≥ 24 px wide and ≥ 44 px tall (the label row is the target of the 22 px box, see NUMBERS).
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum), met by the whole clickable `label.tp-choice` row ≥ 44 px tall (the SC's equivalent-target exception; the 22 px box is locked in tempo.css); bullet 7 · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · non-text contrast of the box ≥ 3:1 (`--tp-line-control`, WCAG 2.2 SC 1.4.11) · done state is shown by the checked box plus strike-through and the count in words, not colour alone (WCAG 2.2 SC 1.4.1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0281 — Component: Tracker (`apps/web/components/blocks/Tracker.tsx`)
@@ -22030,7 +22049,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `tracker-no-goal` / Then the goal line reads `noGoal` for `lang`; Given `tracker-disabled` / Then `dec` and `inc` are both disabled.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="tracker-default"]')` and `expectMotionBudget(page, '[data-testid="tracker-default"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; buttons 44 px; bullet 7) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · status messages: the new value is announced through a polite live region (WCAG 2.2 SC 4.1.3; bullet 2) · value floor 0, no ceiling (design `tempo.js` `stepTracker`; bullets 4–5) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0282 — Component: TierCard (`apps/web/components/billing/TierCard.tsx`)
@@ -22105,7 +22124,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `tier-card-grid` / Then 4 `article.tp-tier` are visible in the order trial, basic, pro, max (`data-tier`); at `mobile` each card's top is ≥ the previous card's bottom (stacked), at `desktop` all four tops are equal within 1 px (one row).
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="tier-card-default"]')` and `expectMotionBudget(page, '[data-testid="tier-card-grid"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; Choose button 44 px tall, full width; bullet 7) · the current plan is a word, not only a border (WCAG 2.2 SC 1.4.1; bullet 3) · all 4 tiers visible at 390 and 1280 px, never collapsed (PRD F-110; bullet 6) · price values: none in this component (Q-02 open; values come from `billing.listTiers`) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0283 — Component: BillingNotice (`apps/web/components/billing/BillingNotice.tsx`)
@@ -22173,7 +22192,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `billing-notice-cancelled` / Then the title reads `cancelledTitle` and the body contains a `.tp-num` equal to the computed date for `Date.UTC(2026, 10, 1, 7, 30)`; Given `billing-notice-cancelled-no-date` / Then the body reads `cancelledNoDate`.
   7. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="billing-notice-"]')` and `expectMotionBudget(page, '[data-testid^="billing-notice-"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; §5 tokens via tempo.css; `bun run scan:design-tokens` passes) · use of colour: every kind is an icon plus a title in words (WCAG 2.2 SC 1.4.1; bullets 1–6) · motion: none (≤ 250 ms; bullet 7) · 28 of 28 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0284a — View: BillingView (`apps/web/components/billing/BillingView.tsx`)
@@ -22199,6 +22218,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0284a / evidence: <DONE output> / changed: apps/web/components/billing/BillingView.tsx, apps/web/app/e2e/components/billing-view/page.tsx, tests/e2e/screens/billing-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { BillingNoticeProps } from "@/components/billing/BillingNotice";
   import type { BillingInterval, TierCardTier, TierId } from "@/components/billing/TierCard";
   export type BillingState = "default" | "loading" | "error";
@@ -22277,7 +22297,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `billing-view-loading` / Then `[data-component="StateLoading"]` contains `loading` for `lang` and no TierCard exists; Given `billing-view-error` / Then it shows `error` and "Your data is safe."; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
   10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="billing-view-plan"]')` and `expectMotionBudget(page, '[data-testid="billing-view-plan"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; `expectTargetSize`, bullet 10) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through tempo.css and components; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7) · all 4 tiers visible in every ready state, never collapsed (PRD F-110; bullets 1, 8) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 10) · 40 of 40 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0284b — Route: /billing (`apps/web/app/(tempo)/billing/page.tsx`) — OPEN
@@ -22444,7 +22464,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `trial-end-view-loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `trial-end-view-error` / Then it shows `error` and a link named `plans` to `/billing`; When "Try again" (HE "לנסות שוב") is clicked / Then the log reads `onRetry:null`.
   10. Given `trial-end-view-default` / Then `.tp-auth-card__foot` contains `foot` and a link named `ask` with `href="/ask-founder"`, and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="trial-end-view-default"] .te-actions')` and `expectMotionBudget(page, '[data-testid="trial-end-view-default"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; the three choice controls are full-width 44 px buttons; bullet 10) · text contrast ≥ 4.5:1 and control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through tempo.css and components; `bun run scan:design-tokens` passes) · focus visible: global `:focus-visible` 2 px (`--tp-focus-w`, WCAG 2.2 SC 2.4.7) · one primary action (design @flow 3; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md, CONVENTIONS §5; bullet 10) · 40 of 40 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0285b — Route: /billing/trial-end (`apps/web/app/(bare)/billing/trial-end/page.tsx`) — OPEN
@@ -22541,7 +22561,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given the starter `starter:daily-page` and a user template `{ templateId: "templates:1", source: "user", name: "Moving week", periodType: "none", sections: [] }` / When each is rendered in `en` / Then each HTML contains exactly one `button` with `data-duplicate` and `aria-label="Duplicate Daily page"` / `aria-label="Duplicate Moving week"`, whose text is "Duplicate", placed after the Use link and before any Edit link.
   2. Given the same user template rendered in `he` / Then the button text is "שכפול" and its `aria-label` is "שכפול Moving week"; and a card rendered by `renderToStaticMarkup` without `onDuplicate` contains no `data-duplicate` element.
 - **NUMBERS:** 9 of 9 tests pass · target size ≥ 24 × 24 CSS px (`.tp-btn--sm` is 36 px tall; WCAG 2.2 SC 2.5.8; checked in TFV2-0286b) · text contrast ≥ 4.5:1 (tokens only).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0286b — View: TemplatesView (`apps/web/components/templates-library/TemplatesView.tsx`)
@@ -22566,6 +22586,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0286b / evidence: <DONE output> / changed: apps/web/components/templates-library/TemplatesView.tsx, apps/web/app/e2e/components/templates-view/page.tsx, tests/e2e/screens/templates-view.spec.ts / unknowns / notes for ticket sync: "Made with the coach" badge waits for CFG-038`; STEPS 1–6 with evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { TemplateCardModel } from "./TemplateCard";
   export type TemplatesState = "default" | "loading" | "error";
   export type TemplatesViewProps = {
@@ -22628,7 +22649,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `templates-view-no-coach` / Then no button reads `ask` and the section has no `.tp-btn--primary`.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="templates-view-default"]')` and `expectMotionBudget(page, '[data-testid="templates-view-default"]')` pass.
 - **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; test 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (test 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0286c — Route: /templates
@@ -22670,7 +22691,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given no `?state` (signed out under the bypass) / Then the URL does not match `/sign-in/`, `templates-library-route` is attached and `[data-component="StateLoading"]` is attached.
   8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 route cases and 6 of 6 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0287a — View: TemplateBuilderView (`apps/web/components/template-builder/TemplateBuilderView.tsx`)
@@ -22695,6 +22716,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0287a / evidence: <DONE output> / changed: apps/web/components/template-builder/TemplateBuilderView.tsx, apps/web/app/e2e/components/template-builder-view/page.tsx, tests/e2e/screens/template-builder-view.spec.ts / unknowns / notes for ticket sync: TemplateBodyEditor's own slash-menu strings (t("slash.*")) are unchanged`; STEPS 1–6 with evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { Lang } from "@/lib/i18n";
   export type BuilderPeriod = "daily" | "weekly" | "monthly" | "none";
   export type BuilderDraft = { name: string; description: string; periodType: BuilderPeriod; body: string };
@@ -22774,7 +22796,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `offline` / Then the CONVENTIONS §12 offline line is visible and `[data-status]` is absent; Given `save-error` / When Save is clicked / Then a `role="alert"` contains `saveError` and `#template-name` still has "Reading log".
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-builder-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-builder-view-default"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; test 11) · text contrast ≥ 4.5:1 (tokens only; WCAG 2.2 SC 1.4.3) · motion ≤ 250 ms (test 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0287b — Route: /templates/builder
@@ -22820,7 +22842,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given no `?state` (`page.goto(\`/templates/builder?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-builder-route` is attached, and `#template-name` is visible (blank create mode needs no query).
   8. Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/builder?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 8) · INP UNKNOWN locally (not a gate) · 32 of 32 route cases and 6 of 6 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0288a — View: TemplateRunView (`apps/web/components/template-run/TemplateRunView.tsx`)
@@ -22925,7 +22947,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `missing` / Then `[data-missing]` reads `missing`; Given `error` / When "Try again" is clicked / Then the log reads `onRetry:null`; Given `offline` / Then the CONVENTIONS §12 offline line is visible and Next is enabled.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-run-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-run-view-default"]')` pass.
 - **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullet 5) · answer ≤ 4,000 characters (`maxLength`, same as `RUN_ANSWER_MAX`) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0288b — Route: /templates/run/[id]
@@ -22967,7 +22989,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `?state=make-error` / When Next is clicked four times / Then a `role="alert"` contains "Could not make the page. You can try again." (HE "לא הצלחנו ליצור את הדף. אפשר לנסות שוב.").
   7. Given no `?state` (`page.goto(\`/templates/run/abc123?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-run-route` is attached and `[data-component="StateLoading"]` is attached; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/run/starter%3Aweekly-page?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · INP UNKNOWN locally (not a gate) · 28 of 28 route cases and 6 of 6 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0288c — Route: /templates/run/[id] keeps a run draft (`apps/web/app/(bare)/templates/run/[id]/page.tsx`) — OPEN
@@ -23110,7 +23132,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `loading` / Then `[data-component="StateLoading"]` contains `loading`; Given `missing` / Then `[data-missing]` reads `missing`; Given `error` / When "Try again" is clicked / Then the log reads `onRetry:null`; Given `offline` / Then the CONVENTIONS §12 offline line is visible.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-editor-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-editor-view-default"]')` pass.
 - **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullets 5 and 7) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0289b — Route: /templates/editor/[id]
@@ -23151,7 +23173,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `?state=save-error` / When "Save changes" is clicked / Then a `role="alert"` contains "Could not save this template. You can try again." (HE "לא הצלחנו לשמור את התבנית. אפשר לנסות שוב.").
   7. Given no `?state` (`page.goto(\`/templates/editor/abc123?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-editor-route` is attached and `[data-component="StateLoading"]` is attached; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/editor/templates%3A1?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · INP UNKNOWN locally (not a gate) · 28 of 28 route cases and 6 of 6 wiring cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0290a — View: TemplateSketchView (`apps/web/components/template-builder/TemplateSketchView.tsx`)
@@ -23265,7 +23287,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `prefilled` / Then `#sk-outline` has "Morning check⏎Sleep⏎Mood" and `[data-draft-status]` reads `draftSaved`; When "!" is typed at the end / Then the log reads `onOutlineChange:"Morning check\nSleep\nMood!"`; Given `loading` / Then `[data-component="StateLoading"]` contains `loading` and no `#sk-outline` is present; Given `offline` / Then the CONVENTIONS §12 offline line is visible.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="template-sketch-view-default"]')` and `expectMotionBudget(page, '[data-testid="template-sketch-view-default"]')` pass (no click first, so no typing dots are shown).
 - **NUMBERS:** Undo window 5:00 (`UNDO_WINDOW_MS`; HARD_RULES §1; bullet 4) · outline ≤ 1,000 characters (`SKETCH_MAX_CHARS`; bullet 1; within `TEMPLATE_OUTLINE_MAX` = 2,000 of TFV2-0241c) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · text contrast ≥ 4.5:1 (tokens only) · motion ≤ 250 ms (bullet 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0290b — Route: /templates/sketch
@@ -23307,7 +23329,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `?state=loading` / Then `[data-component="StateLoading"]` is attached; Given `?state=offline` / Then the §12 offline line is visible.
   7. Given no `?state` (`page.goto(\`/templates/sketch?lang=${lang}\`)`, signed out under the bypass) / Then the URL does not match `/sign-in/`, `template-sketch-route` is attached and `#sk-outline` is visible; and Given `?state=default` / Then `expectDir(page, lang)` passes and `measureVitals(page, \`/templates/sketch?state=default&lang=${lang}\`)` gives `lcpMs ≤ 2500`, `cls ≤ 0.1`.
 - **NUMBERS:** LCP ≤ 2,500 ms, CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 7) · exactly 0 model calls in e2e (forced states never call Convex) · INP UNKNOWN locally (not a gate) · 28 of 28 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0290c — Route: /templates/sketch autosaves the outline (`apps/web/app/(tempo)/templates/sketch/page.tsx`) — OPEN
@@ -23367,6 +23389,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/settings/SettingsSection.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type SettingsSectionProps = {
     id: string;            // heading id = `${id}-title`
@@ -23392,7 +23415,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `settings-section-no-desc` / Then `#ss-sign-title` is an `h2` with text `Signing in` and the section has 0 `.tp-settings-section__desc` elements.
   3. Given the harness / Then `expectDir(page, lang)` passes, the computed `font-size` of `#ss-look-title` equals that of a probe element styled `font-size: var(--tp-text-lg)` (added with `page.evaluate`), and `expectMotionBudget(page, '[data-testid^="settings-section-"]')` passes.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3, https://www.w3.org/TR/WCAG22/#contrast-minimum; colours only from tempo.css tokens, `bun run scan:design-tokens` passes) · title size = `--tp-text-lg` (CONVENTIONS §5; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule; `expectMotionBudget`, bullet 3) · 12 of 12 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0307 — Component: SettingRow (`apps/web/components/settings/SettingRow.tsx`)
@@ -23418,6 +23441,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/settings/SettingRow.tsx
+  import type React from "react";
   import type { ReactNode } from "react";
   export type SettingRowProps = {
     id: string;          // label id = `${id}-label`, help id = `${id}-help`; the control uses them in aria-labelledby / aria-describedby
@@ -23449,7 +23473,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `setting-row-danger` / Then the row has `data-tone="danger"`, the computed `color` of `#sr-d-label` equals that of a probe element styled `color: var(--tp-danger)`, and the button shows the visible text `Delete my account`.
   5. Given `setting-row-status` / Then `[data-testid="setting-row-status"]` is inside `.tp-setting-row__text` with `role="status"`; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="setting-row-"]')` and `expectMotionBudget(page, '[data-testid^="setting-row-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px for controls in rows (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; `expectTargetSize`, bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only) · use of colour: danger rows carry the word on the button, not colour alone (WCAG 2.2 SC 1.4.1; bullet 4) · row min-height 60 px from tempo.css · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0311 — Component: ConfirmDialog (`apps/web/components/settings/ConfirmDialog.tsx`)
@@ -23475,6 +23499,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   // apps/web/components/settings/ConfirmDialog.tsx ("use client")
+  import type React from "react";
   import type { ReactNode, RefObject } from "react";
   export type ConfirmDialogTone = "neutral" | "danger";
   export type ConfirmDialogProps = {
@@ -23518,7 +23543,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `confirm-dialog-error-open` clicked / Then a `role="alert"` paragraph inside `#cd-error` reads `Couldn't discard. Nothing was changed, so you can try again.`.
   7. Given the neutral dialog open / Then `expectDir(page, lang)`, `expectTargetSize(page, "#cd-discard")` and `expectMotionBudget(page, "#cd-discard")` pass, and on the desktop viewport the dialog's bounding box does not touch the viewport's inline edges (left > 0 and right < 1280), on the mobile viewport its bottom equals the viewport height (844).
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; buttons ≥ 44 px `--tp-touch`; bullet 7) · focus order and trap (WCAG 2.2 SC 2.4.3 Focus Order, SC 2.1.2 No Keyboard Trap — Escape always leaves unless busy; bullets 2–3) · focus visible ≥ 2 px (`--tp-focus-w`, global `:focus-visible`, SC 2.4.7) · text contrast ≥ 4.5:1 (SC 1.4.3; tokens only) · motion ≤ 250 ms (`tp-rise` 240 ms; DESIGN.md; bullet 7) · 28 of 28 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0291a — View: AskFounderView (`apps/web/components/ask-founder/AskFounderView.tsx`) — OPEN
@@ -23724,6 +23749,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0292 / evidence: <DONE output> / changed: apps/web/components/marketing/Container.tsx, apps/web/app/e2e/components/container/page.tsx, tests/e2e/screens/container.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   export type ContainerProps = {
     as?: "div" | "main";   // default "div"
@@ -23745,7 +23771,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `container-main` / Then the element is a `MAIN` with `id="harness-main"`, attribute `tabindex="-1"`, `classList` containing both `tp-container` and `ab-main`, and computed `display` `"grid"`.
   4. Given the harness / Then `expectDir(page, lang)` passes, the computed `direction` of `container-default`'s `p` is `"rtl"` for `he` and `"ltr"` for `en`, and `expectMotionBudget(page, '[data-testid^="container-"]')` passes.
 - **NUMBERS:** max width 1120 px (components.md §2.16; tempo.css `calc(var(--tp-space-20) * 14)`; bullets 1–2) · inline padding 24 px ≥ 768 px, 16 px below (tempo.css lines 1344, 1483; bullet 2) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md motion rule; CONVENTIONS §20; bullet 4) · 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0293 — Component: SiteHeader (`apps/web/components/marketing/SiteHeader.tsx`)
@@ -23770,6 +23796,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0293 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteHeader.tsx, apps/web/app/e2e/components/site-header/page.tsx, tests/e2e/screens/site-header.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   export type MarketingPage = "home" | "about" | "changelog";
   export type SiteHeaderProps = {
@@ -23816,7 +23843,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the harness / When `page.keyboard.press("Tab")` is pressed once from the page start / Then the focused element is the `a.tp-skip` of `site-header-default` with text `EXPECT[lang].skip` and `href="#main"`, and its computed `transform` is `"none"`.
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="site-header-"]')` and `expectMotionBudget(page, '[data-testid^="site-header-"]')` pass, the `header` computed `position` is `"sticky"`, and at desktop the brand link's `x` is greater than the Sign in link's `x` for `he` and smaller for `en`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; links are 44 px tall; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; colours only from §5 tokens through tempo.css, `bun run scan:design-tokens` passes) · focus visible: outline `--tp-focus-w` 2 px (WCAG 2.2 SC 2.4.7; global `:focus-visible` in tempo.css) · bypass blocks: a skip link is the first focusable element (WCAG 2.2 SC 2.4.1; bullet 4) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; CONVENTIONS §20; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0294 — Component: Hero (`apps/web/components/marketing/Hero.tsx`)
@@ -23883,7 +23910,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `hero-default` / Then the `h1` computed `font-size` equals `getComputedStyle(document.documentElement).getPropertyValue("--tp-text-4xl").trim()` at desktop and `--tp-text-3xl` at mobile.
   4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="hero-"]')` and `expectMotionBudget(page, '[data-testid^="hero-"]')` pass, and in `hero-hebrew` the primary link's `x` is greater than the secondary link's `x` for `he` and smaller for `en` (both on one row at desktop; at mobile both still fit one row at 390 px — assert the same comparison).
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; buttons 44 px; bullet 4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · one primary action per hero (components.md §2.16; bullet 1) · title size = `--tp-text-4xl` / `--tp-text-3xl` (CONVENTIONS §5 tokens, not raw px; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 4) · 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0295 — Component: FeatureRow (`apps/web/components/marketing/FeatureRow.tsx`)
@@ -23908,6 +23935,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0295 / evidence: <DONE output> / changed: apps/web/components/marketing/FeatureRow.tsx, apps/web/app/e2e/components/feature-row/page.tsx, tests/e2e/screens/feature-row.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   export type FeatureRowProps = {
     titleId: string;
@@ -23945,7 +23973,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `feature-row-default` / When `page.evaluate` calls `.focus()` on `feature-row-figure-link` / Then `document.activeElement` is not that link (inert).
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="feature-row-"] .tp-feature__text')` and `expectMotionBudget(page, '[data-testid^="feature-row-"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · reading order matches visual order on phones: text above figure (WCAG 2.2 SC 1.3.2; bullet 3) · decorative figure not focusable (WCAG 2.2 SC 2.4.3; bullet 4) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0296 — Component: HowItWorks (`apps/web/components/marketing/HowItWorks.tsx`)
@@ -23988,7 +24016,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `how-it-works-default` / Then at desktop the three `li` boxes share one `y` (±1) and their `x` increases for `en` and decreases for `he`; at mobile each `li`'s `y` is greater than the previous one's; the `.tp-step__num` computed `direction` is `"ltr"` in both languages.
   4. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="how-it-works-"]')` pass.
 - **NUMBERS:** text contrast ≥ 4.5:1 for title and body (WCAG 2.2 SC 1.4.3; §5 tokens); the number uses `--tp-ink-subtle` and is decorative (`aria-hidden`), at `--tp-text-3xl` (large text) · info and relationships: an ordered list conveys sequence (WCAG 2.2 SC 1.3.1; bullet 1) · motion ≤ 250 ms (DESIGN.md; bullet 4) · 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0297 — Component: Quote (`apps/web/components/marketing/Quote.tsx`)
@@ -24026,7 +24054,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `quote-hebrew` / Then the `blockquote` computed `direction` is `"rtl"` in both `lang` runs (auto direction from its Hebrew text), and `quote-default`'s `blockquote` computed `direction` is `"ltr"` in both runs.
   3. Given the harness / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="quote-"]')` pass, and the `figure` computed `text-align` is `"center"`.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens only; `bun run scan:design-tokens` passes) · language of parts handled by `dir="auto"` (WCAG 2.2 SC 1.3.2; bullet 2) · motion ≤ 250 ms (DESIGN.md; bullet 3) · 12 of 12 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0298 — Component: Pricing (`apps/web/components/marketing/Pricing.tsx`)
@@ -24051,6 +24079,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0298 / evidence: <DONE output> / changed: apps/web/components/marketing/Pricing.tsx, apps/web/app/e2e/components/pricing/page.tsx, tests/e2e/screens/pricing.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import { type BillingInterval, TierCard, type TierCardTier } from "@/components/billing/TierCard";
   export type PricingProps = {
     tiers: TierCardTier[];      // in display order; the landing passes billing.listTiers' result
@@ -24091,7 +24120,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `pricing-default` / Then at desktop the 4 cards share one `y` (±1) and their `x` increases for `en` and decreases for `he`; at mobile each card's `y` is greater than the previous card's.
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="pricing-"]')` and `expectMotionBudget(page, '[data-testid^="pricing-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; link 44 px; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · all 4 tiers always visible, never collapsed (components.md §2.16 "Prices always visible"; bullet 1) · price values: UNKNOWN until Q-02 (none in this file; the harness numbers are test data) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0299 — Component: FAQ (`apps/web/components/marketing/FAQ.tsx`)
@@ -24136,7 +24165,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `faq-default` with the first item open / Then that item's `.tp-faq__icon` computed `transform` is not `"none"`, and a closed item's icon computed `transform` is `"none"`.
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="faq-"]')` and `expectMotionBudget(page, '[data-testid^="faq-"]')` pass, and every `summary` box is at least 44 px tall.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; summaries 60 px; bullet 5) · keyboard operable (WCAG 2.2 SC 2.1.1; bullet 3) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion: chevron 120 ms ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; CONVENTIONS §20; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0300 — Component: SiteFooter (`apps/web/components/marketing/SiteFooter.tsx`)
@@ -24161,6 +24190,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0300 / evidence: <DONE output> / changed: apps/web/components/marketing/SiteFooter.tsx, apps/web/app/e2e/components/site-footer/page.tsx, tests/e2e/screens/site-footer.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   import type { MarketingPage } from "./SiteHeader";
   export type SiteFooterProps = {
@@ -24203,7 +24233,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `site-footer-default` / Then at desktop the Terms link's `x` is smaller than the What's new link's `x` for `en` and greater for `he`.
   4. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="site-footer-"]')` and `expectMotionBudget(page, '[data-testid^="site-footer-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; links 44 px; bullet 4) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion ≤ 250 ms (DESIGN.md; bullet 4) · 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0301 — Component: LanguageSwitch (`apps/web/components/marketing/LanguageSwitch.tsx`)
@@ -24228,6 +24258,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0301 / evidence: <DONE output> / changed: apps/web/components/marketing/LanguageSwitch.tsx, apps/web/app/e2e/components/language-switch/page.tsx, tests/e2e/screens/language-switch.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–6 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { Lang } from "@/lib/i18n";
   export type LanguageSwitchProps = {
     current: Lang;
@@ -24260,7 +24291,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `language-switch-default` / When the "עב" link is clicked / Then `language-switch-log` reads `onChoose:"he"`, `page.url()` is unchanged, and `<html lang>` is still `lang` (the component did not switch the language itself).
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="language-switch-"]')` and `expectMotionBudget(page, '[data-testid^="language-switch-"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; links 36 px; bullet 5) · language of parts: each name has its own `lang` (WCAG 2.2 SC 3.1.2; bullet 1) · current state not by colour alone: `aria-current` plus raised surface (WCAG 2.2 SC 1.4.1) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0302 — Landing EN/HE copy dictionaries — superseded by TFV2-0303b
@@ -24337,7 +24368,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `landing-figures-voice` / Then `ol[data-component="LiveTranscript"]` has 3 `.tp-call-line` with `data-who` `you`, `coach`, `you`, speaker labels `you`, `coach`, `you` and texts `line1`, `line2`, `line3`, each text `dir="auto"`; `[data-component="CallActionConfirm"]` shows `action` and `undo`.
   5. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="landing-figures-"]')` and `expectMotionBudget(page, '[data-testid^="landing-figures-"]')` pass, and pressing Tab 3 times from the page start never focuses a `.tp-check`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; check buttons 44 px; bullet 5) · text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; §5 tokens through tempo.css) · done state not by colour alone: check mark plus strike-through (WCAG 2.2 SC 1.4.1; bullet 1) · motion ≤ 250 ms (DESIGN.md; bullet 5) · 20 of 20 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0303b — Screen: Landing (`/`, `apps/web/app/page.tsx`) — OPEN
@@ -24364,6 +24395,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   - **`apps/web/app/page.tsx`** (server component, whole file):
     ```tsx
+    import type React from "react";
     import type { Metadata } from "next";
     import { Suspense } from "react";
     import { LandingScreen } from "@/components/marketing/LandingScreen";
@@ -24596,7 +24628,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given state `offline` / Then `about-offline` contains `[data-component="StateOffline"]` with text `offline` and `role="status"`, and the `h1` and 5 Cards are still visible.
   6. Given state `default` / When the footer `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` and `<html dir>` switch to the other language and the `h1` text is the other language's `heroTitle`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 1) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 1) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components; `bun run scan:design-tokens` passes) · one primary action (components.md §2.16; bullet 3) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0305 — Screen: Changelog (`/changelog`, `apps/web/app/changelog/page.tsx`)
@@ -24701,7 +24733,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given state `offline` / Then `changelog-offline` contains `[data-component="StateOffline"]` with text `offline` and `role="status"`, and the entries are still visible.
   7. Given state `default` / When the header `[data-component="LanguageSwitch"] a[hreflang="<the other language>"]` is clicked / Then `<html lang>` and `<html dir>` switch, the `h1` text is the other language's `heroTitle`, and the first `time` text equals `changelogDate(<first date>, <other language>)`.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; bullet 1) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 1) · use of colour: every change kind has an icon and a word (WCAG 2.2 SC 1.4.1; bullet 3) · motion ≤ 250 ms, ≤ 1 ms under reduced motion (DESIGN.md; bullet 1) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; §5 tokens through the components) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0308a — View: ProfileView (`apps/web/components/settings/ProfileView.tsx`)
@@ -24809,7 +24841,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   12. Given `profile-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and `#sp-name` is enabled.
   13. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="profile-view-default"]')` and `expectMotionBudget(page, '[data-testid="profile-view-default"]')` pass.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 13) · text contrast ≥ 4.5:1, control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only, `bun run scan:design-tokens` passes) · error identification (WCAG 2.2 SC 3.3.1; bullet 3) · labels or instructions (SC 3.3.2; every field labelled) · motion ≤ 250 ms (DESIGN.md; bullet 13) · 52 of 52 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0308b — Route: /settings/profile
@@ -24891,7 +24923,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `?state=save-failed` / Then a `role="alert"` element contains "Couldn't save your profile. What you typed is still here, so try again." (HE "לא הצלחנו לשמור את הפרופיל. מה שנכתב עדיין כאן, אפשר לנסות שוב.").
   9. Given `?state=sign-out-failed` / Then a `role="alert"` element contains "Couldn't sign out. Try again in a moment." (HE "לא הצלחנו להתנתק. אפשר לנסות שוב בעוד רגע."); and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-profile"]')`, `expectMotionBudget(page, '[data-testid="settings-profile"]')` pass.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals; `measureVitals`, bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only; not a gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 9) · motion ≤ 250 ms (DESIGN.md; bullet 9) · backend p95 of `profiles.update`: UNKNOWN (no baseline; not a gate) · existing wiring spec 4 of 4 · 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0309c — Test fixture: kb-59 `next/navigation` mock gains `useSearchParams` (`tests/unit/kb-59.test.tsx`)
@@ -24922,7 +24954,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given the edited mock / When `bun test tests/unit/kb-59.test.tsx --max-concurrency=1` runs against today's preferences page (which does not import `useSearchParams`) / Then all 26 named cases in `names` report `{ pass: true }` (`26 pass`, `0 fail`) — the mock addition changes nothing yet.
   - Given TFV2-0309b later merged / When the same command runs / Then it still reports `26 pass` (that ticket's DONE re-runs it).
 - **NUMBERS:** kb-59 cases passing = 26 of 26 before and after (exact; the suite's own count in `names`) · lines changed = 1 (scope guard).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0309a — View: PreferencesView (`apps/web/components/settings/PreferencesView.tsx`)
@@ -24948,6 +24980,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** AGENTS.md format — `status / ticket: TFV2-0309a / evidence: <DONE output> / changed: apps/web/components/settings/PreferencesView.tsx, apps/web/app/e2e/components/preferences-view/page.tsx, tests/e2e/screens/preferences-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–7 each with its evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { ReactNode } from "react";
   export type PrefsTheme = "light" | "dark" | "system";
   export type PrefsLang = "en" | "he";
@@ -25043,7 +25076,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `preferences-view-signed-out` / Then a link `signIn` has `href="/sign-in"`; given `preferences-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and `#pr-dys-switch` is visible.
   10. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="preferences-view-default"]')` and `expectMotionBudget(page, '[data-testid="preferences-view-default"]')` pass.
 - **NUMBERS:** dial range 0–10 (PRD F-25; `coach.setDial` accepts only integers 0–10, TFV2-0166b; bullet 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 10) · text contrast ≥ 4.5:1, control contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; tokens only) · status messages announced without focus (WCAG 2.2 SC 4.1.3; `output` live region, bullet 7) · motion ≤ 250 ms (DESIGN.md; bullet 10) · 40 of 40 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0309b — Route: /settings/preferences
@@ -25145,7 +25178,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `?state=offline` / Then the offline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") and `#pr-dys-switch` are visible; and given `?state=saved` / Then `.tp-pagehead output` reads "Saved." (HE "נשמר.").
   8. Given `?state=save-error` / Then a `role="alert"` element reads "That change didn't save. Try again in a moment." (HE "השינוי לא נשמר. אפשר לנסות שוב בעוד רגע."); and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-preferences"]')`, `expectMotionBudget(page, '[data-testid="settings-preferences"]')` pass.
 - **NUMBERS:** dial save debounce 400 ms (design settings-prefs.html; `DIAL_SAVE_DELAY_MS`, same as `PreferencesForm.tsx`) · dial 0–10 (PRD F-25; TFV2-0166b) · LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · kb-59 26 of 26, wiring 4 of 4, screen spec 32 of 32 · backend p95: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0310a — View: PrivacyView (`apps/web/components/settings/PrivacyView.tsx`)
@@ -25251,7 +25284,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `privacy-view-offline` / Then `[data-component="StateOffline"]` shows the §12 offline line and the `delBtn` button is visible.
   11. Given the harness / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="privacy-view-default"]')` and `expectMotionBudget(page, '[data-testid="privacy-view-default"]')` pass.
 - **NUMBERS:** usage data off by default (design; CFG-015 "missing means false"; bullet 1) · destructive action needs an explicit tick (design; bullet 4) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 11) · status messages (WCAG 2.2 SC 4.1.3; bullet 2) · text contrast ≥ 4.5:1 (SC 1.4.3; tokens only) · motion ≤ 250 ms (DESIGN.md; bullet 11) · 44 of 44 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0310b — Route: /settings/privacy
@@ -25332,7 +25365,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `?state=offline` / Then the offline line "You're offline. Changes save when you're back." (HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.") is visible; and given `?state=analytics-on` / Then `#pv-an-switch` has `aria-checked="true"`.
   8. Given `?state=signed-out-failed` / Then a `role="alert"` element reads "Your account is deleted. Signing out didn't finish." (HE "החשבון שלך נמחק. ההתנתקות לא הושלמה.") with a "Sign out" (HE "התנתקות") button; and `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="settings-privacy"]')`, `expectMotionBudget(page, '[data-testid="settings-privacy"]')` pass.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; bullet 1) · INP ≤ 200 ms: UNKNOWN locally (preview only) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; bullet 8) · motion ≤ 250 ms (DESIGN.md; bullet 8) · usage data default off (CFG-015) · account restore window 30 days = the existing `ACCOUNT_RESTORE_GRACE_MS` (`convex/lib/accountDeletion.ts`; copy only, not changed here) · backend p95: UNKNOWN (no baseline; not a gate) · 32 of 32 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0312 — PWA: web app manifest + icons (`apps/web/app/manifest.ts`)
@@ -25392,7 +25425,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the manifest / When each icon `src` is requested / Then each answers 200 with a `content-type` containing `image/svg+xml`, and each body starts with `<svg` and contains `viewBox="0 0 512 512"`.
   3. Given `page.goto("/")` (a public route) / Then `head link[rel="manifest"]` exists with `href` `/manifest.webmanifest` (Next.js may append a query string; the spec compares `new URL(href, page.url()).pathname`).
 - **NUMBERS:** manifest fields required for installability present: `name`/`short_name`, `start_url`, `display: "standalone"`, icons with a scalable (`sizes: "any"`) and a `maskable` entry (web.dev "What does it take to be installable?", https://web.dev/articles/install-criteria; bullet 1) · maskable safe zone = central 80 % (W3C Web App Manifest, "maskable" purpose, https://www.w3.org/TR/appmanifest/#icon-masks; maskable "T" spans 160–352 × 168–344 inside 102–410) · Chrome installability check: UNKNOWN locally (incognito contexts), check on preview · raw hex in `apps/web/app`: unchanged (`scan:design-tokens` exit 0) · 3 of 3 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0313a — PWA: service worker with an offline fallback (`apps/web/public/sw.js`)
@@ -25451,7 +25484,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a navigation event, a fake `fetch` rejecting `new TypeError("Failed to fetch")` and `caches.match("/offline.html")` resolving `{ id: "offline" }` / When `fetch` runs / Then the `respondWith` promise resolves to `{ id: "offline" }` and `caches.match` was called with `"/offline.html"`.
   6. Given a navigation event, a rejecting `fetch` and `caches.match` resolving `undefined` / When `fetch` runs / Then the `respondWith` promise resolves to `{ type: "error" }`.
 - **NUMBERS:** cached entries = exactly 1 (`/offline.html`; bullet 1) · stale caches removed on activate (bullet 2) · non-navigation requests untouched (bullet 3) · precache size: one static HTML file (TFV2-0313b; no budget needed, replacing the old UNKNOWN) · 6 of 6 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0313b — PWA: static offline page (`apps/web/public/offline.html`)
@@ -25530,7 +25563,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. (once) Given `localStorage["tempo-lang"] = "he"` set on `/offline.html` and the page reloaded without `?lang=` / Then `<html lang="he" dir="rtl">` and the `h1` reads "אין חיבור כרגע.".
   6. (once) Given `page.goto("/")`, then `await page.evaluate(async () => { await navigator.serviceWorker.register("/sw.js"); await navigator.serviceWorker.ready; })` / When `await context.setOffline(true)` and `await page.goto("/sign-in")` / Then the `h1` reads "You're offline." (the worker answered the failed navigation with the cached page); finally `await context.setOffline(false)`.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; button 44 px; bullet 4) · focus visible 2 px (WCAG 2.2 SC 2.4.7; bullet 4) · text contrast ≥ 4.5:1: ink `#1B1916` on ground `#F3EEE4` and ink-muted `#57514A` on ground, the `docs/design/v3/tokens.css` pairs the app already uses (WCAG 2.2 SC 1.4.3) · motion 0 (bullet 4) · 18 of 18 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0313c — PWA: register the service worker in production (`apps/web/lib/pwa/registerServiceWorker.ts`)
@@ -25602,7 +25635,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `env = { NODE_ENV: "production" }` and `container = undefined` / When it runs / Then it returns `"skipped"`.
   5. Given `env = { NODE_ENV: "production" }` and `register` rejecting `new Error("SecurityError")` / When it runs / Then it resolves `"failed"` (no throw).
 - **NUMBERS:** registrations per page load ≤ 1 (one `useEffect` with `[]` in the root layout) · development registrations = 0 (bullets 1–2) · existing wiring specs unchanged (all pass) · 5 of 5 pass · production behaviour on preview: UNKNOWN until checked there (not a ticket gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0314a — PWA meta: `appleWebApp` + `applicationName` in the root layout (`apps/web/app/layout.tsx`)
@@ -25644,7 +25677,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `const errors = trackConsoleErrors(page)` and `await page.goto("/")` / When the head is read / Then `meta[name="application-name"]` has `content="Tempo"`, `meta[name="apple-mobile-web-app-title"]` has `content="Tempo"`, `meta[name="apple-mobile-web-app-status-bar-style"]` has `content="default"`, and `meta[name="mobile-web-app-capable"], meta[name="apple-mobile-web-app-capable"]` has count ≥ 1 with `content="yes"`; after dropping messages matching `/example\.convex\.cloud|WebSocket/i`, `errors` equals `[]`.
   2. Given the same page / Then `meta[name="theme-color"][media="(prefers-color-scheme: light)"]` has `content="#F3EEE4"` and `meta[name="theme-color"][media="(prefers-color-scheme: dark)"]` has `content="#161412"` (unchanged), and `title` is `Tempo Flow — your brain's operating system`.
 - **NUMBERS:** 2 of 2 cases pass (exact). Theme colours equal the `--tp-ground` light/dark token values in `docs/design/v3/tokens.css` (`#F3EEE4` / `#161412`; exact). Contrast, target size, LCP/CLS: n/a (no visible UI change).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0314b — PWA install store `createInstallPromptStore` (`apps/web/lib/pwa/installPrompt.ts`)
@@ -25708,7 +25741,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given an install event whose `prompt` is `async () => { throw new Error("blocked"); }` / When `await prompt()` / Then it resolves `"unavailable"` and `getState()` is `"unavailable"`.
   11. Given a listener whose unsubscribe function was called / When an install event is dispatched / Then the listener did not run.
 - **NUMBERS:** 11 of 11 cases pass (exact). Install offers per browser after "Not now" = 0 (cases 4–6; old ticket "do not nag repeatedly"). Latency: n/a (pure, synchronous apart from the browser prompt).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0314c — InstallPrompt component (`apps/web/components/pwa/InstallPrompt.tsx`)
@@ -25771,7 +25804,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the same page / Then in `install-prompt-default` the Install button's `boundingBox().x` is smaller than Not now's in `en` and larger in `he`; and `expectTargetSize(page, '[data-testid="install-prompt-default"]')` passes.
   5. (once, EN, 1280×800) Given the page / When Tab moves focus to the `default` Install button / Then its computed `outline-width` is ≥ `2px`; pressing Enter logs `onInstall:null`; and `expectMotionBudget(page, '[data-testid^="install-prompt-"]')` passes.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`); target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`, case 4; buttons are 36 px tall); focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7; case 5); motion none, ≤ 250 ms (`expectMotionBudget`, case 5); CLS contribution 0 when floating (fixed position; web.dev CLS ≤ 0.1, asserted on a real route in TFV2-0314d). LCP: n/a (component).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0314d — Mount the install offer in the root layout (`apps/web/components/pwa/InstallPromptMount.tsx`)
@@ -25796,6 +25829,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   "use client";
+  import type React from "react";
   import { useSyncExternalStore } from "react";
   import { InstallPrompt } from "@/components/pwa/InstallPrompt";
   import { createInstallPromptStore, type InstallPromptStore, type InstallState } from "@/lib/pwa/installPrompt";
@@ -25828,7 +25862,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the notice shown / When Not now is clicked / Then the notice has count 0, `localStorage.getItem("tempo-install-dismissed")` is `"1"`; When the page is reloaded and the synthetic event dispatched again / Then the notice still has count 0 (no second offer).
   4. Given the notice shown / Then on `mobile` (390×844) its `boundingBox()` bottom is ≤ 844 − 64 (`--tp-tabbar-h`) and its width ≤ 390; on `desktop` (1280×800) its width is ≤ 400 and its right edge (en) or left edge (he) is within 24 px + 1 of the viewport edge (`--tp-space-6`).
 - **NUMBERS:** prompts opened without a click = 0 (case 1–2; old ticket "do not auto-install"); offers after Not now = 0 (case 3); width ≤ 400 CSS px desktop (`calc(var(--tp-space-20) * 5)`, case 4); target size ≥ 24×24 and contrast are covered by TFV2-0314c. CLS: the notice is `position: fixed`, so it adds no layout shift by construction (web.dev CLS ≤ 0.1; not separately measured here because the notice appears only after the synthetic event). LCP: unchanged route (n/a).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0315 — Empty states gallery: route spec + e2e registration (`apps/web/app/(tempo)/empty-states/page.tsx`)
@@ -25862,7 +25896,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the same page / Then `expectTargetSize(page, "nav.es-toc")` passes and the first card's "See it there" link has `href="/today"`.
   5. (once, EN, 1280×800) Given `measureVitals(page, "/empty-states")` / Then `lcpMs` ≤ 2500 and `cls` ≤ 0.1.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 (web.dev Core Web Vitals; `measureVitals`, case 5); target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 4); text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; the page uses tokens only — `bun run scan:design-tokens`); no horizontal scroll at 390 px (DESIGN.md §8; case 1). INP: UNKNOWN in the dev server (not a gate). Motion: n/a (skeleton shimmer is the documented exception).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0316a — ChangelogEntry component (`apps/web/components/marketing/ChangelogEntry.tsx`)
@@ -25917,7 +25951,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the same page / Then `changelog-entry-single` has exactly 1 `li.cl-change` with the Fixed word and the Hebrew fixture text, and `changelog-entry-empty` shows its heading and date and has 0 `ul.cl-changes`.
   3. (once, EN, 1280×800) Given the page / When Tab is pressed 3 times / Then `document.activeElement` is never inside `[data-component="ChangelogEntry"]`; and `expectMotionBudget(page, '[data-testid^="changelog-entry-"]')` passes.
 - **NUMBERS:** text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only via existing classes, `bun run scan:design-tokens`); every kind carries a word, not colour alone (WCAG 2.2 SC 1.4.1; case 1); motion none (`expectMotionBudget`, case 3). Target size: n/a (not interactive). LCP/CLS: n/a (component).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 5 — Gen 1
@@ -25963,7 +25997,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given the harness / Then in `mobile-shell-back` the back button's `boundingBox().x` is smaller than the heading's in `en` and larger in `he`; and in `mobile-shell-fab` the FAB's box is within the section's inline-end half (its centre x is right of the section centre in `en`, left of it in `he`).
   5. Given the harness / Then `expectTargetSize(page, '[data-testid="mobile-shell-back"]')`, `expectTargetSize(page, '[data-testid="mobile-shell-icon"]')` and `expectTargetSize(page, '[data-testid="mobile-shell-fab"]')` pass, and the back button's box is ≥ 44×44 and the FAB's ≥ 56×56.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 5) and the native 44 pt minimum (Apple HIG; `TOUCH` = 44, case 5); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts` raw-colour guard, STEP 4); motion: none (no `Animated` in the two components; code-map in STEP 1). LCP/CLS: n/a (harness).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0319 — Mobile tab bar + More sheet: route spec (`apps/mobile/components/v3/TabBar.tsx`)
@@ -25997,7 +26031,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `/today` / Then the Today tab's `boundingBox().x` is smaller than the Tasks tab's in `en` and larger in `he`.
   6. Given `/today` / Then `expectTargetSize(page, '[role="tablist"]')` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 6); TouchRow height ≥ 56 px (components.md §2.17; case 4); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`). Motion: UNKNOWN (RN `Modal` slide duration is platform-defined; react-native-web uses its own constant; not set by this code, not a gate). LCP/CLS: UNKNOWN on the Expo web dev server (not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0320 — Mobile sheet (`Sheet`): harness spec for open, close, focus and alert (`apps/mobile/components/v3/Shell.tsx`)
@@ -26036,7 +26070,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the plain sheet open / When the page is clicked at (10, 10) (the scrim above the panel) / Then the dialog has count 0.
   6. Given the harness / When `mobile-sheet-open-alert` is clicked / Then a visible element with `role="alert"` contains the heading `FIX.alertTitle[lang]` and the text `FIX.alertBody[lang]`; and `expectTargetSize(page, '[role="dialog"]')` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 6); focus stays in the open dialog for 8 of 8 Tab presses and returns to the opener (WCAG 2.2 SC 2.4.3 focus order; cases 3–4); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`). Motion: UNKNOWN (platform `Modal` slide duration; not set by this code; not a gate). LCP/CLS: n/a (harness).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0321 — Mobile Hebrew voice + glossary sweep of `apps/mobile/lib/v3/strings.ts` — OPEN
@@ -26144,7 +26178,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `state=offline` / Then the text `k("offline.title")` is visible and "Call the dentist" is still visible.
   6. Given `state=default` / Then the top-bar button `k("top.search")` has a smaller `boundingBox().x` than the heading `k("top.title")` in `en` and a larger one in `he`; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 6); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`, STEP 5); 5 of 5 states forceable without Convex (CONVENTIONS §7 F; cases 1–5); motion: no animation added (STEP 5 diff). LCP/CLS/INP: UNKNOWN on the Expo web dev server (not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0323 — Mobile screen: Capture — forceable states + route spec (`apps/mobile/app/(tempo)/capture.tsx`)
@@ -26189,7 +26223,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `state=offline` / Then the text `k("offline.title")` is visible and the box labelled `k("cap.label")` is still visible.
   6. Given `state=filled` / Then the close button `k("cap.close")` has a larger `boundingBox().x` than the heading in `en` and a smaller one in `he`; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 6); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`); 4 of 4 states forceable without Convex (cases 1, 3–5); motion: none added. LCP/CLS/INP: UNKNOWN on the Expo web dev server (not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0324 — Mobile screen: Coach — forceable states + route spec (`apps/mobile/app/(tempo)/(tabs)/coach.tsx`)
@@ -26255,7 +26289,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `state=offline` / Then the text `k("offline.title")` and "Can you help me plan Tuesday?" are visible, and the composer textbox and `k("sug.plan")` have count 0.
   7. Given `state=default` / Then the top-bar button `k("top.call")` has a smaller `boundingBox().x` than the heading `k("top.title")` in `en` and a larger one in `he`; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 7); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`); 5 of 5 states forceable without Convex (cases 1, 3–6); motion: none added (the typing dots are static). LCP/CLS/INP: UNKNOWN on the Expo web dev server (not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0325 — Mobile screen: Voice call (honest not-connected layout) — offline forcing + route spec (`apps/mobile/app/(tempo)/voice-call.tsx`)
@@ -26290,7 +26324,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `state=offline` / Then the text `k("off.title")` is visible and `k("unavailable.title")` has count 0.
   6. Given `state=default` / Then the End call button's `boundingBox().x` is larger than Interrupt's in `en` and smaller in `he`; and `expectTargetSize(page, "body")` passes.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 SC 2.5.8; case 6); disabled live controls = 3 of 3 (Interrupt, mic, hold-to-talk; case 1 + code-map), recordings started = 0 (no provider); text contrast: palette colours only (`tests/unit/mobile_v3_screens.test.ts`); motion: none (static bars). LCP/CLS/INP: UNKNOWN on the Expo web dev server (not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0326 — Mobile screen: Tasks — force every state for a Playwright spec (`apps/mobile/app/(tempo)/(tabs)/tasks.tsx`)
@@ -26402,7 +26436,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then for `a = boundingBox(button named translate(lang, "tasks", "top.search"))` and `b = boundingBox(button named translate(lang, "today", "more.settings"))`: in `en` `a.x < b.x`, in `he` `a.x > b.x`; and `expectTargetSize(page, '[data-testid="tasks-screen"]')` passes.
   - `live path` — Given `page.goto("/tasks")` with no `state` (signed out under CFG-032, placeholder Convex URL) / Then `page.url()` ends with `/tasks` (no redirect to `/sign-in`) and the progressbar named `translate(lang, "tasks", "load.label")` is visible (the live query is skipped while signed out).
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="tasks-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · colours only from `usePrefs().colors` (palette `tempoV3Colors`); `bun test tests/unit/mobile_v3_screens.test.ts` (fails on raw colours) → `0 fail`. Motion: no animation added (STEP 5 prints `0`); DESIGN.md limit ≤ 250 ms unchanged. LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0327 — Mobile screen: Notes — force every state for a Playwright spec (`apps/mobile/app/(tempo)/(tabs)/notes.tsx`)
@@ -26512,7 +26546,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "notes", "top.search")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="notes-screen"]')` passes.
   - `live path` — Given `page.goto("/notes")` with no `state` / Then `page.url()` ends with `/notes` and the progressbar named `translate(lang, "notes", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="notes-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 32 of 32 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0328 — Mobile screen: Journal — force every state for a Playwright spec (`apps/mobile/app/(tempo)/journal.tsx`)
@@ -26628,7 +26662,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "today", "top.back")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="journal-screen"]')` passes.
   - `live path` — Given `page.goto("/journal")` with no `state` / Then `page.url()` ends with `/journal` and the progressbar named `translate(lang, "journal", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="journal-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 32 of 32 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0329 — Mobile screen: Habits — force every state for a Playwright spec (`apps/mobile/app/(tempo)/habits.tsx`)
@@ -26769,7 +26803,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "today", "top.back")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="habits-screen"]')` passes.
   - `live path` — Given `page.goto("/habits")` with no `state` / Then `page.url()` ends with `/habits` and the progressbar named `translate(lang, "habits", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="habits-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0330a — Mobile screen: Calendar — force every state for a Playwright spec (`apps/mobile/app/(tempo)/calendar.tsx`)
@@ -26883,7 +26917,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "today", "top.back")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="calendar-screen"]')` passes.
   - `live path` — Given `page.goto("/calendar")` with no `state` / Then `page.url()` ends with `/calendar` and the progressbar named `translate(lang, "calendar", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="calendar-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0330b — Mobile screen: Calendar — week starts on the person's `weekStartsOn` (`apps/mobile/app/(tempo)/calendar.tsx`)
@@ -26961,7 +26995,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `week starts saturday` — Given `?state=week-saturday` / Then `days.first()` contains `translate(lang, "calendar", "dow.sat")`, `days.nth(6)` contains `translate(lang, "calendar", "dow.fri")`, and `days.nth((new Date().getDay() + 1) % 7)` has `aria-selected="true"`.
   - `waits for preferences` — Given `?state=prefs-loading` / Then `getByRole("progressbar", { name: translate(lang, "calendar", "load.label") })` is visible and `getByText("Dentist appointment")` has count 0.
 - **NUMBERS:** Spec cases: 48 of 48 pass (exact). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · unchanged from TFV2-0330a (its `rtl + targets` case still runs). Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). Query latency of `preferences.get`: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0331 — Mobile screen: Routines — force every state for a Playwright spec (`apps/mobile/app/(tempo)/routines.tsx`)
@@ -27049,7 +27083,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "today", "top.back")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="routines-screen"]')` passes.
   - `live path` — Given `page.goto("/routines")` with no `state` / Then `page.url()` ends with `/routines` and, once the phone's (empty) saved runs are read, "Morning reset" is visible (this screen needs no Convex data).
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="routines-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 32 of 32 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0332 — Mobile screen: Templates — force every state for a Playwright spec (`apps/mobile/app/(tempo)/templates.tsx`)
@@ -27158,7 +27192,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the button named `translate(lang, "today", "top.back")` and `b` = the button named `translate(lang, "today", "more.settings")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="templates-screen"]')` passes.
   - `live path` — Given `page.goto("/templates")` with no `state` / Then `page.url()` ends with `/templates` and the progressbar named `translate(lang, "templates", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="templates-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0333a — Mobile component: SwitchControl — 24 px web target (`apps/mobile/components/v3/primitives.tsx`)
@@ -27206,7 +27240,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `target size` — Given the harness / Then the switch input in `switch-control-off` has a bounding box at least 48 wide and 24 high, and `expectTargetSize(page, '[data-testid="switch-control-off"]')` passes.
   - `rtl` — Given the harness / Then in `switch-control-off`, with `s` = the switch's box and `w` = the word's box: in `en` `s.x < w.x`, in `he` `s.x > w.x`.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` plus the 48 × 24 box check. Non-text contrast ≥ 3:1 · WCAG 2.2 SC 1.4.11 · unchanged palette colours (`c.sunken` / `c.done` track, `c.paper` thumb); `bun test tests/unit/mobile_v3_screens.test.ts` (no raw colours) → `0 fail`. Motion: none added. Harness cases: 16 of 16 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0333b — Mobile screen: Settings — force every state for a Playwright spec (`apps/mobile/app/(tempo)/settings.tsx`)
@@ -27313,7 +27347,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default` / Then with `a` = the radio named "English" and `b` = the radio named "עברית": in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="settings-screen"]')` passes (the reading-font input is 48 × 24 after TFV2-0333a).
   - `live path` — Given `page.goto("/settings")` with no `state` / Then `page.url()` ends with `/settings` and the progressbar named `translate(lang, "settings", "load.label")` is visible.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="settings-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` → `0 fail`. Motion: none added (STEP 5 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 36 of 36 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0334 — Mobile screen: Onboarding — force every state for a Playwright spec (`apps/mobile/app/(auth)/onboarding.tsx`)
@@ -27366,7 +27400,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - `rtl + targets` — Given `?state=default&step=2` / Then with `a` = the button named `translate(lang, "onboarding", "back")` and `b` = the button named `translate(lang, "onboarding", "skip.now")`: in `en` `a.boundingBox().x < b.boundingBox().x`, in `he` greater; and `expectTargetSize(page, '[data-testid="onboarding-screen"]')` passes.
   - `live path` — Given `page.goto("/onboarding")` with no `state` (signed out, CFG-042 lets the route render) / Then `page.url()` ends with `/onboarding` (no redirect to `/sign-in`) and the progressbar named `translate(lang, "onboarding", "load.label")` is visible (the flow waits for a profile).
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 (https://www.w3.org/TR/WCAG22/#target-size-minimum) · `expectTargetSize` on `[data-testid="onboarding-screen"]`. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only; `bun test tests/unit/mobile_v3_screens.test.ts` (scans `app/(auth)/onboarding.tsx` for raw colours) → `0 fail`. Motion: none added (STEP 4 prints `0`). LCP / CLS: UNKNOWN on the Expo web dev server (not a gate). Spec cases: 32 of 32 pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0335 — Study track: SM-2 scheduling helper `scheduleSm2` (`convex/lib/sm2.ts`)
@@ -27416,7 +27450,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given quality `6`, then `-1`, then `2.5` / Then each throws a `RangeError` with message `"quality must be an integer from 0 to 5"`.
   8. Given `{ repetitions: -1, easeFactor: 2.5, intervalDays: 0 }`, then `{ repetitions: 0, easeFactor: 1.2, intervalDays: 0 }`, then `{ repetitions: 0, easeFactor: 2.5, intervalDays: Number.NaN }` with quality 4 / Then each throws a `RangeError` with message `"invalid SM-2 state"`.
 - **NUMBERS:** SM-2 constants: E-Factor floor 1.3, starting E-Factor 2.5, I(1) = 1 day, I(2) = 6 days, I(n) = round(I(n−1) × EF) (https://super-memory.com/english/ol/sm2.htm); one day = 86,400,000 ms (`SM2_DAY_MS`); 8 of 8 cases pass. Latency: n/a (pure function).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0336 — Study track: `studyCards` table (schema + indexes) — superseded by CFG-018
@@ -27464,7 +27498,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a note of `users:2` (`makeFakeCtx("users:1", ["users:2"])`), and separately a note of `users:1` with `deletedAt: 1` / When `createCard` runs with each as `sourceNoteId` / Then both reject with `"Note not found"`.
   8. Given `makeSignedOutCtx()` / When `createCard({ front: "Q", back: "A" })` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** front and back ≤ 2,000 characters each (`STUDY_FIELD_MAX`, tested at 2,000 and 2,001); starting E-Factor 2.5 (`SM2_INITIAL_EASE`, SM-2 https://super-memory.com/english/ol/sm2.htm); 8 of 8 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337b — Study track: `study.listDue` (cards due now, oldest first) (`convex/study.ts`)
@@ -27527,7 +27561,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given 500 due cards without a note (`dueAtMs` 1…500) and one deck-A card with `dueAtMs` 501, `nowMs: 1000` / When it runs with `sourceNoteId: noteA` / Then it returns `[]` (the read stops at `LIST_DUE_SCAN_MAX` = 500 rows); and with only 499 note-less cards (deck-A card at `dueAtMs` 500) it returns that one deck-A card.
   6. Given `makeSignedOutCtx()` / When `listDue({ nowMs: 1 })` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 100 cards returned (`LIST_DUE_MAX`, tested with 120 and `limit: 500`), default 50 (`LIST_DUE_DEFAULT`); at most 500 rows read (`LIST_DUE_SCAN_MAX`, tested with 501); 14 of 14 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337c — Study track: `study.reviewCard` (apply SM-2 to one answer) (`convex/study.ts`)
@@ -27575,7 +27609,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a card of `users:1` with `deletedAt: 5` / Then it rejects with `"Card not found"`.
   7. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** next due = now + intervalDays × 86,400,000 ms (`SM2_DAY_MS`); intervals from SM-2 (https://super-memory.com/english/ol/sm2.htm); 21 of 21 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337d — Study track: `study.listDecks` (cards grouped by source note, with counts) (`convex/study.ts`)
@@ -27625,7 +27659,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given 1,001 live cards without a note / Then the null deck has `total: 1000` and `truncated` is `true`; and with exactly 1,000 cards `truncated` is `false`.
   6. Given `makeSignedOutCtx()` / When `listDecks({ nowMs: 1 })` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 1,000 cards counted per call (`DECK_SCAN_MAX`, tested with 1,000 and 1,001; Convex per-function read limits, https://docs.convex.dev/production/state/limits); 27 of 27 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337e — Study track: `study.listDeckCards` (all live cards of one deck) (`convex/study.ts`)
@@ -27664,7 +27698,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given 201 live cards in deck A / Then it returns 200 cards, the first 200 inserted; and with exactly 200 cards it returns all 200.
   6. Given `makeSignedOutCtx()` / When `listDeckCards({})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 200 cards returned (`DECK_CARDS_MAX`, tested with 201); at most 1,000 rows read (`DECK_SCAN_MAX`); 33 of 33 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0338a — Study track: note text helpers `cardsFromMarkdown` + `notePassages` (`convex/lib/studyText.ts`)
@@ -27716,7 +27750,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `""` / Then `cardsFromMarkdown("")` and `notePassages("")` both return `[]`.
   9. Given ``"Para one.\n\nPara two\nline two.\n\n\n```json tempo\n{}\n```"`` / When `notePassages` runs / Then it returns `["Para one.", "Para two\nline two."]`; and a single 600-character paragraph returns one passage of length 500 ending `"…"`, a 500-character paragraph is returned unchanged; and 201 one-word paragraphs return 200 passages while exactly 200 return 200.
 - **NUMBERS:** at most 100 card suggestions (`NOTE_CARDS_MAX`, tested with 150), front ≤ 200 and back ≤ 500 characters (tested at 250 / 600), at most 200 passages of ≤ 500 characters; all well under `STUDY_FIELD_MAX` 2,000 (TFV2-0337a); 9 of 9 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0338b — Study track: `study.cardsFromNote` (card suggestions from one note, nothing saved) (`convex/study.ts`)
@@ -27761,7 +27795,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a note of `users:1` with `deletedAt: 5` / Then it rejects with `"Note not found"`.
   5. Given `makeSignedOutCtx()` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 100 suggestions per call (`NOTE_CARDS_MAX`, proven in TFV2-0338a); 38 of 38 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0339 — Study track: `study.retrieveContext` (keyword passages from a deck's notes only) (`convex/study.ts`)
@@ -27808,7 +27842,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given 21 note ids / Then it rejects with `"Too many notes"`; and given exactly 20 ids it resolves without error.
   7. Given `makeSignedOutCtx()` / When it runs with `{ sourceNoteIds: [], query: "x" }` / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 20 notes per call (`RETRIEVE_NOTES_MAX`, tested with 21), at most 20 passages returned (default 5; tested with 30 matches), at most 8 query words; passages ≤ 500 characters (`PASSAGE_MAX`, TFV2-0338a); 45 of 45 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0340 — Study track: `study.exportAnki` (Anki plain-text export) (`convex/study.ts`)
@@ -27853,7 +27887,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given 1,001 live cards / Then `count` is 1000 and `truncated` is `true`; and with exactly 1,000 cards `count` is 1000 and `truncated` is `false`.
   7. Given `makeSignedOutCtx()` / When `exportAnki({})` runs / Then it rejects with `"Not authenticated"`.
 - **NUMBERS:** at most 1,000 cards per export (`ANKI_EXPORT_MAX`, tested with 1,001; Convex per-function read limits, https://docs.convex.dev/production/state/limits); Anki text format with tab separator and `#html:false` header (https://docs.ankiweb.net/importing/text-files.html); 52 of 52 file cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0341 — Study track: mobile `Flashcard` component (tap to show the answer)
@@ -27879,6 +27913,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   Component (`apps/mobile/components/v3/Flashcard.tsx`):
   ```tsx
+  import type React from "react";
   import { Pressable, View } from "react-native";
   import type { Lang } from "@/lib/v3/i18n";
   import { usePrefs } from "./prefs";
@@ -27920,7 +27955,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given section `flashcard-long` / When it renders / Then `flashcard-counter` reads `12 of 40`/`12 מתוך 40`, and the `flashcard-text` bounding box lies inside the `flashcard-card` bounding box (`x ≥ card.x`, `x + width ≤ card.x + card.width + 1`) and the card is at least 220 px tall.
   6. Given section `flashcard-front` / When `expectTargetSize(page, '[data-testid="flashcard-front"]')` runs and the boxes of `flashcard-side` and `flashcard-counter` are read / Then target size passes, and in `he` the label's `x` is greater than the counter's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `24 passed` of 24 (6 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8, https://www.w3.org/TR/WCAG22/#target-size-minimum; card ≥ 220 px tall; `expectTargetSize`). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token colours only, `tests/unit/mobile_v3_screens.test.ts` "no raw colours" passes). Motion 0 ms (no animation; DESIGN.md limit 250 ms; checked in code by STEP 5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0342 — Study track: mobile `Quiz` component (one multiple-choice question)
@@ -27946,6 +27981,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   Component (`apps/mobile/components/v3/Quiz.tsx`):
   ```tsx
+  import type React from "react";
   import { Pressable, View } from "react-native";
   import type { Lang } from "@/lib/v3/i18n";
   import { usePrefs } from "./prefs";
@@ -27999,7 +28035,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given section `quiz-disabled` / When it renders / Then every radio has `aria-disabled="true"` and `quiz-check` has `aria-disabled="true"`; When `quiz-choice-a` is clicked with `{ force: true }` / Then `quiz-log` is still empty.
   7. Given section `quiz-unanswered` / When `expectTargetSize(page, '[data-testid="quiz-unanswered"]')` runs and the boxes of `quiz-choice-a-mark` and `quiz-choice-a-label` are read / Then target size passes, and in `he` the mark's `x` is greater than the label's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `28 passed` of 28 (7 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; choices are `TOUCH` = 44 px tall; `expectTargetSize`). Text contrast ≥ 4.5:1 and control border contrast ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; token colours only, `colors.lineControl` for borders; "no raw colours" unit test passes). Motion 0 ms (no animation; DESIGN.md limit 250 ms; STEP 5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0343 — Study track: mobile screen `/study` (decks with due counts)
@@ -28080,7 +28116,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   10. Given `/study?state=bogus` / When it loads / Then the `errorTitle` copy is visible (an unknown forced state falls back to `FIXTURES.error`).
   11. Given `/study?state=default` / When `expectTargetSize(page, '[data-testid="study-deck-n1"]')` runs and the boxes of `study-deck-n1-review` and `study-deck-n1-test` are read / Then target size passes, and in `he` the Review button's `x` is greater than the Test button's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `44 passed` of 44 (11 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; small buttons 36 px tall plus hit slop; `expectTargetSize`). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token colours only; "no raw colours" unit test). Motion 0 ms (no animation; DESIGN.md limit 250 ms; STEP 5). Bounded reads: ≤ 1,000 cards counted (`DECK_SCAN_MAX`, TFV2-0337d). LCP/CLS: not measured on Expo web (the CONVENTIONS §20 vitals apply to web routes); UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0344 — Study track: mobile screen `/study/review` (flashcard review with SM-2 answers)
@@ -28164,7 +28200,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   12. Given `/study/review?state=bogus` / When it loads / Then the `errorTitle` copy is visible.
   13. Given `/study/review?state=back` / When `expectTargetSize(page, '[data-testid="study-review-screen"]')` runs and the boxes of `study-review-q0` and `study-review-q3` are read / Then target size passes, and in `he` the Again button's `x` is greater than the Hard button's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `52 passed` of 52 (13 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; buttons `TOUCH` = 44 px; `expectTargetSize`). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token colours only; "no raw colours" unit test). Motion 0 ms (no animation; DESIGN.md limit 250 ms; STEP 5). Queue ≤ 50 cards per session (`limit: 50`, within `LIST_DUE_MAX` 100). SM-2 qualities 0 / 3 / 4 / 5 (https://super-memory.com/english/ol/sm2.htm). LCP/CLS: not measured on Expo web; UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0345a — Study track: recall-quiz builder `buildQuiz` (`apps/mobile/lib/v3/studyQuiz.ts`)
@@ -28210,7 +28246,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the 12 cards of case 4 / When `buildQuiz` runs twice / Then both results are deeply equal.
   6. Given `[]` / Then it returns `null`.
 - **NUMBERS:** at most 10 questions (`TEST_QUESTIONS_MAX`, tested with 12 cards) and at most 4 choices (`TEST_CHOICES_MAX`); 6 of 6 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0345b — Study track: mobile screen `/study/test` (recall quiz with a score)
@@ -28282,7 +28318,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   11. Given `/study/test?state=bogus` / When it loads / Then the `errorTitle` copy is visible.
   12. Given the result of case 3 / When `expectTargetSize(page, '[data-testid="study-test-screen"]')` runs and the boxes of `study-test-again` and `study-test-back` are read / Then target size passes, and in `he` the Try again button's `x` is greater than the Back to Study button's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `48 passed` of 48 (12 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token colours only; "no raw colours" unit test). Motion 0 ms (no animation; DESIGN.md limit 250 ms; STEP 5). At most 10 questions (`TEST_QUESTIONS_MAX`, TFV2-0345a) from at most 200 cards (`DECK_CARDS_MAX`, TFV2-0337e). LCP/CLS: not measured on Expo web; UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0346 — Study track: mobile screen `/study/stats` (progress by SM-2 stage)
@@ -28362,7 +28398,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `/study/stats?state=bogus` / When it loads / Then the `errorTitle` copy is visible.
   10. Given `/study/stats?state=default` / When `expectTargetSize(page, '[data-testid="study-stats-screen"]')` runs and the boxes of `study-stats-new` and `study-stats-learning` are read / Then target size passes, both tiles have the same `y` (three 100 px tiles plus two 8 px gaps fit the 358 px content width at 390 px), and in `he` the New tile's `x` is greater than the Learning tile's `x` (in `en` smaller).
 - **NUMBERS:** Playwright `40 passed` of 40 (10 cases × 2 viewports × 2 languages). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; token colours only; "no raw colours" unit test). Motion 0 ms (no animation; DESIGN.md limit 250 ms; STEP 5). Bounded reads: ≤ 1,000 cards counted (`DECK_SCAN_MAX`, TFV2-0337d). LCP/CLS: not measured on Expo web; UNKNOWN.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0347a — Connectors: `connections.startExecutorConnect` (verify + tests)
@@ -28409,7 +28445,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a `connectionLimits` row `{ userId: A, connectWindowStartMs: Date.now() - connections.HOUR_MS - 1, connectWindowCount: connections.CONNECT_ATTEMPTS_PER_HOUR, createdAt: 1, updatedAt: 1 }` / When `startConnect(world, executor)` runs / Then it resolves, the row's `connectWindowCount` is `1` and its `connectWindowStartMs` is at least the `Date.now()` read before the call.
   4. Given a person with no `connectionLimits` row / When `startConnect(world, executor, A, "coach")` runs / Then the one `oauthPending` row has `returnTo: "coach"` and `startGeneration: 0`.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). Connect cap 5 per person per hour (`CONNECT_ATTEMPTS_PER_HOUR`), window 3,600,000 ms (`HOUR_MS`), attempt life 600,000 ms (`PENDING_TTL_MS`) — code constants in `convex/connections.ts`, marked EXTRAPOLATED there (research doc §4.6). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0347b — Connectors: `handleExecutorCallback` input guards (verify + tests)
@@ -28449,7 +28485,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a started connect with its `state` / When `callback(world, executor, { code: "c".repeat(4097), state, iss: FAKE.issuer })` runs / Then `Location` ends `?executor=error`, no call went to `FAKE.token`, and `world.rows("connections")` has length 0; and for a second started connect, `code: "c".repeat(4096)` passes the guard (one call goes to `FAKE.token`).
   4. Given a started connect whose `oauthClients` row is then patched with `deletedAt: Date.now()` / When `callback(world, executor, { code: SECRETS.code, state, iss: FAKE.issuer })` runs / Then `Location` ends `?executor=error`, no call went to `FAKE.token`, and the `oauthPending` row has a numeric `usedAt`.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). `state` ≤ 512 characters and `code` ≤ 4,096 characters (code literals in `handleExecutorCallback`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0347c — Connectors: `connections.confirmExecutorConnect` (verify + tests)
@@ -28484,7 +28520,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given a staged connect / When `confirm(world, executor, "short-nonce-123")` (15 characters) runs / Then it returns `{ status: "expired" }`, the staged row still has `status: "pending_confirm"` and no `deletedAt`, and `executor.revoked` is `[]`.
   3. Given a staged connect with nonce `n` and then `await world.db.patch(A, { isActive: false })` / When `confirm(world, executor, n)` runs / Then it returns `{ status: "error" }`, `executor.revoked` has length 2, and the staged row has `status: "disconnected"`.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Nonce length 16–128 characters (code pattern); confirm life 600,000 ms (`CONFIRM_TTL_MS`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0348a — Connectors: `searchExecutorFor` read adapter (verify + direct tests)
@@ -28523,7 +28559,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a fully connected person and `executor.options.mcpStatus = 403` / When it runs / Then it returns `{ status: "unavailable" }`, the last `connectionCalls` row has `decision: "auto"` and `outcome: "error"`, and the connection row still has `status: "connected"`.
   4. Given `fakeExecutor({ tools: [{ ...SEARCH_TOOL_DEF, inputSchema: { type: "object", properties: { a: { type: "string" }, b: { type: "string" } }, required: ["a", "b"] } }] })` and a fully connected person / When it runs / Then it returns `{ status: "unavailable" }`, `executor.mcpMethods()` does not contain `"tools/call"`, and the last `connectionCalls` row has `decision: "auto"` and `outcome: "error"`.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). 30 Executor calls per person per hour (`CALLS_PER_HOUR`), MCP session timeout 15,000 ms (`MCP_CLIENT_LIMITS.timeoutMs`), largest answer read 102,400 bytes (`MCP_CLIENT_LIMITS.maxResponseBytes`) — code constants. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0348b — Connectors: `listExecutorFor` (list items from a connected app) — OPEN
@@ -28632,7 +28668,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a connected row patched to `{ status: "unavailable", lastErrorAt: 5 }` / When `recordCall({ …, outcome: "ok", inputDigest: "a".repeat(64), resultBytes: 10, durationMs: 3 })` runs / Then the connection has `status: "connected"`, no `lastErrorAt`, a numeric `lastUsedAt`, and the audit row has `inputDigest`, `resultBytes: 10`, `durationMs: 3`.
   4. Given a connection after `connections.disconnectFlow(world.actionAs(A), deps(executor))` (status `disconnected`, `deletedAt` set) / When `recordCall({ …, outcome: "ok" })` runs / Then a new audit row with `userId: A` exists and the connection has no `lastUsedAt` and still `status: "disconnected"`.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). Audit rows carry 0 bytes of input or result text (key set asserted in case 2). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0351b — Connectors: `connections.reserveCall` hourly limit (verify + tests)
@@ -28667,7 +28703,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a staged connect (start + callback, no confirm) / When `reserveCall` runs on the `pending_confirm` row / Then it returns `"gone"` and A's `connectionLimits` row has no `callWindowCount`.
   4. Given a connection after `disconnectFlow`, and separately the id `"connections:999"` / When `reserveCall` runs on each / Then both return `"gone"` and `callWindowCount` is unchanged.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). 30 calls per person per hour (`CALLS_PER_HOUR`, `HOUR_MS` = 3,600,000 ms; EXTRAPOLATED in code, research doc §4.6). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0351c — Connectors: `connections.markStatus` (verify + tests)
@@ -28701,7 +28737,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given a staged `pending_confirm` row, and separately the id `"connections:999"` / When `markStatus({ status: "needs_reauth" })` runs on each / Then each returns `null`, the staged row is still `pending_confirm` and its secrets row still has a string `accessTokenCipher`.
   3. Given A's connected row patched to `{ status: "needs_reauth", lastErrorAt: 5 }`, and B's connection after `connectFully(world, executor, B)` then `connections.disconnectFlow(world.actionAs(B), deps(executor))` / When `markStatus({ status: "unavailable" })` runs on each / Then the first still has `status: "needs_reauth"` and `lastErrorAt: 5`, and the second still has `status: "disconnected"`.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Refresh lease 30,000 ms (`REFRESH_LEASE_MS`, code constant). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0352a — Connectors: `connections.disconnect` retires staged connects too (verify + tests)
@@ -28735,7 +28771,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given a staged connect (start + callback, no confirm) / When `connections.disconnectFlow(world.actionAs(A), deps(executor))` runs / Then it returns `{ status: "disconnected", revokedAtProvider: true }`, `executor.revoked.map((r) => r.token)` equals `[SECRETS.refresh1, SECRETS.access1]`, the staged row has `status: "disconnected"` and a numeric `deletedAt`, its secrets row has no `accessTokenCipher` or `refreshTokenCipher`, and the last `connectionCalls` row is `{ kind: "disconnect", outcome: "revoked" }`.
   2. Given a connected person (`connectFully`) who then stages a second connect (start + callback, no confirm) / When `disconnectFlow` runs / Then it returns `revokedAtProvider: true`, `executor.revoked` has length 4, both connection rows have `status: "disconnected"`, `world.rows("connectionCalls").filter((r) => r.kind === "disconnect")` has length 2, and `(await view(world)).status` is `"not_connected"`.
 - **NUMBERS:** 2 of 2 new cases pass; whole file `0 fail` (exact). Revoke timeout 5,000 ms per token (code comment on `revokeAndScrub`, RFC 7009). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0352b — Connectors: `connections.sweep` batch and grace guards (verify + tests)
@@ -28769,7 +28805,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given a staged connect whose row is patched to `updatedAt: Date.now() - connections.CONFIRM_TTL_MS - 1` while `confirmExpiresAt` stays in the future / When `sweep` runs / Then `confirmsExpired` is `0` and the row is still `pending_confirm` with no `deletedAt`.
   3. Given a connected person and `run(users.deleteMyAccount, world.as(A), {})` (row `revoking`, `updatedAt` now) / When `sweep` runs / Then `connectionsScrubbed` is `0`, the row is still `revoking`, and its secrets row still has a string `accessTokenCipher`.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Batch 50 rows per kind per run (`SWEEP_BATCH`; case 1 seeds 51); confirm life 600,000 ms (`CONFIRM_TTL_MS`); grace 3,600,000 ms (`REVOKE_GRACE_MS`) — code constants. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0353 — MCP: tool catalog `MCP_TOOLS` + `findTool` (verify + tests)
@@ -28817,7 +28853,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given every tool with a `required` list / When each required field is removed from a copy of its `MINIMAL` input / Then the result contains `` `arguments.${field} is required` `` (10 removals in total).
   6. Given `brain_dump` with `text: "a".repeat(20001)` and `tasks_list` with `limit: 201` / When validated / Then the results equal `["arguments.text must be at most 20000 characters"]` and `["arguments.limit must be <= 200"]`; and `text: "a".repeat(20000)` and `limit: 200` each validate to `[]`.
 - **NUMBERS:** 6 of 6 new cases pass; whole file `0 fail` (exact). Catalog = 11 tools (code truth today; `expect(MCP_TOOLS).toHaveLength(11)` in the existing test). Limits checked: `text` ≤ 20,000 characters, `limit` ≤ 200 (schema literals in `tools.ts`). Backend p95 latency: not applicable (pure module, no I/O).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354a — Day plans: shared writer `upsertDayPlanForUser` (`convex/dayPlans.ts`)
@@ -28880,7 +28916,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `makeFakeCtx(USER)` / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-02-30" })` runs / Then it rejects with `"localDate must be YYYY-MM-DD"`.
   5. Given four USER tasks / When `upsertDayPlanForUser(ctx, USER, { localDate: "2026-10-05", topTaskIds: [all four] })` runs / Then it rejects with `"A day plan can have at most 3 top tasks"` and no `dayPlans` row exists; and with the first three it resolves and the row's `topTaskIds` has length 3.
 - **NUMBERS:** 5 of 5 new cases pass; whole file and `convex/mcp.test.ts` `0 fail` (exact). Top tasks ≤ 3 (`MAX_TOP_TASKS`, case 5 seeds 4). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354b — MCP: `today_plan_set` in `mcpTools.runWriteTool`
@@ -28950,7 +28986,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a task created by B / When A runs `today_plan_set({ date: "2026-10-06", topTaskIds: [it] })`, and separately `topTaskIds: ["garbage"]` / Then both reject with `"Task not found"` and no `dayPlans` row exists.
   7. Given A's plan from case 1's call shape for `"2026-10-06"` / When `today_plan_set({ date: "2026-10-06", timezone: "Asia/Jerusalem", energy: "high" })` runs / Then `plan.id` is the same id, `plan.energy` is `"high"`, `plan.intention` is still `"Ship"`, and exactly one `dayPlans` row exists.
 - **NUMBERS:** 7 of 7 new cases pass; whole file `0 fail` (exact). Top tasks ≤ 3 (`MAX_TOP_TASKS` in `convex/dayPlans.ts`; the old ticket's 10 is wrong). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354c — MCP: `today_plan_set` catalog entry + array schemas (`convex/lib/mcp/tools.ts`, `schema.ts`)
@@ -29019,7 +29055,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `intention: "a".repeat(2001)` and, separately, `energy: "max"` / When validated / Then the results equal `["arguments.intention must be at most 2000 characters"]` and `["arguments.energy must be one of low, medium, high"]`.
   6. Given `handleRpc` with the file's `okTool` / When `tools/call` runs with `{ name: "today_plan_set", arguments: { topTaskIds: ["a"] } }` / Then `result.structuredContent` equals `{ tool: "today_plan_set", args: { topTaskIds: ["a"] } }`.
 - **NUMBERS:** 6 of 6 new cases pass; whole files `0 fail` (exact). Catalog = 12 tools; `topTaskIds` ≤ 3 items (matches `MAX_TOP_TASKS` = 3 in `convex/dayPlans.ts`); `intention` ≤ 2,000 characters. Backend p95 latency: not applicable (pure modules, no I/O).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0355 — MCP: read tools `mcpTools.runReadTool` (verify + tests)
@@ -29054,7 +29090,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given A's plan `{ userId: A, localDate: "2026-10-06", status: "committed", committedAt: 1, intention: "Rest", energy: "low", topTaskIds: [live A task, A task with deletedAt: 5, B task], createdAt: 1, updatedAt: 1 }` / When `today_plan_get({ date: "2026-10-06", timezone: "UTC" })` runs for A / Then `plan` equals `{ status: "committed", intention: "Rest", energy: "low", reflection: null }` and `topTasks` holds only the live A task.
   5. Given A / When `runReadTool({ userId: A, name: "nope", args: {} })` runs / Then it rejects with `"Unknown read tool: nope"`.
 - **NUMBERS:** 5 of 5 new cases pass; whole file `0 fail` (exact). Default list size 50 (`DEFAULT_LIMIT`, case 1 seeds 51); calendar range ≤ 2,764,800,000 ms = 32 days (`maxCalendarRangeMs`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0356 — MCP: write tools `mcpTools.runWriteTool` (verify + tests)
@@ -29089,7 +29125,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given A / When `calendar_create({ title: "   ", startsAtMs: 1000 })` runs, and `calendar_update({ eventId, title: "  " })` runs on A's existing event / Then both reject with `"Give the event a gentle label first."` and the existing event keeps its title.
   5. Given A / When `runWriteTool({ userId: A, name: "task_delete", args: { taskId: "x" } })` runs / Then it rejects with `"Unknown write tool: task_delete"`.
 - **NUMBERS:** 5 of 5 new cases pass; whole file `0 fail` (exact). Delete tools in the write set: 0 (PRD F-100). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0357 — MCP: `brain_dump` action `mcpTools.runBrainDump` (verify + tests)
@@ -29129,7 +29165,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `stubModel(JSON.stringify({ summary: "Nothing", priorities: [] }))` / When `runBrainDump({ userId: A, text: "hmm", accept: true })` runs / Then it rejects with `"No clear items came back. Try a slightly longer list or run again?"` and A has no `tasks` row.
   6. Given a stub / When `runBrainDump({ userId: A, text: "I want to die" })` runs (no `accept`) / Then it returns the crisis object with `resources: crisisCardText(CRISIS_CARD)` and the stub saw 0 calls.
 - **NUMBERS:** 6 of 6 new cases pass; whole file `0 fail` (exact). Planner input ≤ 12,000 characters (`BRAIN_DUMP_MAX_RAW_CHARS`, case 4 sends 12,001); at most 6 items (`ACCEPT_MAX_ITEMS`); model calls for crisis text: 0. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0358a — MCP: `mcpPost` origin, token, version and account guards (tests; creates `convex/mcpHttp.test.ts`)
@@ -29202,7 +29238,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a seeded token and `ctx.db.patch(A, { approvalStatus: "pending" })` / When `post(PING)` is sent / Then the status is 403 with message `"ACCOUNT_PENDING_APPROVAL"`.
   6. Given a token seeded with `{ windowStartMs: Date.now(), windowCount: 120 }` / When `post(PING)` is sent / Then the status is 429, the message is `"Rate limit: 120 calls per minute"` and the `Retry-After` header is `"60"`; and with `Origin: "https://app.tempo.test"` and a fresh token row the same `PING` answers 200.
 - **NUMBERS:** 6 of 6 cases pass (exact). HTTP statuses 400/401/403/429 per RFC 9110 (https://www.rfc-editor.org/rfc/rfc9110) and JSON-RPC 2.0 error code `-32600` (https://www.jsonrpc.org/specification); rate 120 calls per token per 60,000 ms (`RATE_LIMIT_MAX_CALLS`, `RATE_LIMIT_WINDOW_MS` in `convex/mcp.ts`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0358b — MCP: `mcpPost` body limit in UTF-8 bytes, parsing and tool routing
@@ -29242,7 +29278,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a seeded token and one A task in the fake ctx / When `tools/call` with `{ name: "tasks_list", arguments: {} }` and then `{ name: "task_create", arguments: { title: "From MCP" } }` are sent / Then the first `result.structuredContent.tasks` has length 1, and the second creates a `tasks` row with `userId: A` and `title: "From MCP"`.
   7. Given a seeded token / When `tools/call` with `{ name: "brain_dump", arguments: { text: "I want to die" } }` is sent / Then the status is 200 and `result.structuredContent.crisis` is `true` (routed to `runBrainDump`; no model call).
 - **NUMBERS:** 7 of 7 new cases pass; whole file `0 fail` (exact). Body limit 262,144 UTF-8 bytes (`MAX_BODY_BYTES` = 256 × 1024; CONVENTIONS §7 H). HTTP 202/400/413 per RFC 9110; JSON-RPC 2.0 codes `-32700`/`-32600` (https://www.jsonrpc.org/specification). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0358c — MCP: `mcpOptions` CORS preflight (tests)
@@ -29272,7 +29308,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `Origin: "https://app.tempo.test"`, and separately `Origin: "http://localhost:3000"` / When the preflight runs / Then each is 204 with `Access-Control-Allow-Origin` equal to the sent origin and `Vary: "Origin"`.
   3. Given `Origin: "https://evil.test"` / When the preflight runs / Then the status is 403 and there is no `Access-Control-Allow-Origin` header.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Preflight cache 86,400 s (code literal; Fetch standard CORS, https://fetch.spec.whatwg.org/#http-cors-protocol). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0358d — MCP: `mcpNotAllowed` (GET/DELETE 405) (tests)
@@ -29301,7 +29337,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `new Request("https://tempo.test/mcp", { method: "GET" })` and the same with `method: "DELETE"` / When `mcpNotAllowed` handles each / Then each status is 405, the `Allow` header is `"POST, OPTIONS"`, and `await response.text()` is `""`.
 - **NUMBERS:** 1 of 1 new case passes; whole file `0 fail` (exact). HTTP 405 with `Allow` per RFC 9110 §15.5.6. Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0359 — MCP: CLI client `tempo-mcp` (`packages/mcp-cli/src/index.ts`)
@@ -29359,7 +29395,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given a stub answering 200 `{ jsonrpc: "2.0", id: 1, result: { isError: true, content: [{ type: "text", text: "Task not found" }] } }` / When `runCli(["call", "task_update", "{\"taskId\":\"x\"}"], env, io)` runs / Then it returns 1 and `err` received `"Tool error: Task not found"`; and a stub answering 200 `{ jsonrpc: "2.0", id: 1, error: { code: -32602, message: "Unknown tool: nope" } }` for `["call", "nope"]` gives `"Error -32602: Unknown tool: nope"`.
   8. Given a stub that throws `new TypeError("fetch failed")` / When `runCli(["tools"], env, io)` runs / Then it returns 1, `err` received `"Could not reach TEMPO_MCP_URL"`, and no `out` or `err` line in any case of this file contains the token string.
 - **NUMBERS:** 8 of 8 cases pass (exact); requests per command: 1. Protocol: JSON-RPC 2.0 (https://www.jsonrpc.org/specification) over MCP Streamable HTTP, protocol version `2025-06-18` (`LATEST_PROTOCOL_VERSION` in `convex/lib/mcp/dispatch.ts`). Exit codes 0 / 1 / 2 (SPEC). No latency number applies (client-side tool).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360a — MCP: `mcp.createToken` (verify + tests)
@@ -29395,7 +29431,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `ctxFor(A)` / When `createToken({ name: "  Work laptop  " })` , `createToken({ name: "n".repeat(81) })` and `createToken({ name: "m".repeat(80) })` run / Then the stored names are `"Work laptop"`, `"n".repeat(80)` and `"m".repeat(80)`.
   4. Given `ctxFor(A)` / When `createToken({ name: "CLI" })` runs / Then `prefix` equals `token.slice(0, 8)`, starts with `"tmcp_"`, the stored row's `prefix` equals it, and the stored row has no `token` key.
 - **NUMBERS:** 4 of 4 new cases pass; whole file `0 fail` (exact). Name ≤ 80 characters (code literal); prefix 8 characters (`TOKEN_DISPLAY_PREFIX_LENGTH`); at most 10 active tokens (`MAX_ACTIVE_TOKENS_PER_USER`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360b — MCP: `mcp.listTokens` (verify + tests)
@@ -29429,7 +29465,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given A's row 1 `{ name: "old", createdAt: 1 }` inserted first and row 2 `{ name: "new", createdAt: 2, lastUsedAt: 5, revokedAt: 6, windowStartMs: 3, windowCount: 4 }` inserted second / When A lists / Then the names are `["new", "old"]`, `Object.keys(result[0]).sort()` equals `["_id", "createdAt", "lastUsedAt", "name", "prefix", "revokedAt"]` and `Object.keys(result[1]).sort()` equals `["_id", "createdAt", "name", "prefix"]`.
   3. Given only a row for `users:b` (`ctxFor(A, [B])`) / When A lists / Then the result is `[]`.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Secret fields returned: 0 (case 2 key sets). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360c — MCP: `mcp.revokeToken` (verify + tests)
@@ -29463,7 +29499,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `ctxFor(A)` / When `revokeToken({ tokenId: "mcpTokens:999" })` runs / Then it rejects with `"Token not found"`.
   3. Given A's token seeded with `seedToken(ctx, A, "tmcp_" + "B".repeat(43))` / When `revokeToken` runs, then runs again after `spyOn(Date, "now")` returns a later time / Then both return `{ revoked: true }`, the row's `revokedAt` is the first call's time, and `authorizeCall({ tokenHash })` returns `{ status: "unauthorized" }`.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360d — MCP: `mcp.authorizeCall` account, touch and window (verify + tests)
@@ -29502,7 +29538,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given A's token seeded with `{ windowStartMs: Date.now() - 59_000, windowCount: 3 }` / When `authorizeCall` runs / Then it returns `{ status: "ok", userId: A }`, the row has `windowCount: 4` and the same `windowStartMs`.
   3. Given A's token seeded with `{ lastUsedAt: Date.now() - 59_000 }` / When `authorizeCall` runs / Then `lastUsedAt` is unchanged; Given the row patched to `lastUsedAt: Date.now() - 60_000` / When it runs again / Then `lastUsedAt` is at least the `Date.now()` read before that call.
 - **NUMBERS:** 3 of 3 new cases pass; whole file `0 fail` (exact). 120 calls per token per 60,000 ms (`RATE_LIMIT_MAX_CALLS`, `RATE_LIMIT_WINDOW_MS`); one `lastUsedAt` write per 60,000 ms (`TOUCH_INTERVAL_MS`). Backend p95 latency: UNKNOWN (no baseline measured in this repo; not a gate) — CONVENTIONS §20.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0361a — BYOK: key encryption helper `convex/lib/byokCrypto.ts`
@@ -29561,7 +29597,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a valid ciphertext / When `decryptByokKey(key, "users:1", keyCipher, 2)` runs / Then it rejects with `"secret could not be decrypted"`.
   7. Given `byokKeyHint("sk-test-0123456789abcdef")` / Then `"sk-…cdef"`; and `byokAad("users:1")` equals `"tempo-connections|users:1|byokKeys.keyCipher"`.
 - **NUMBERS:** AES-256-GCM with a 96-bit IV, fresh per encryption (NIST SP 800-38D §5.2.1.1 and §8.2, https://csrc.nist.gov/pubs/sp/800/38/d/final; inherited from `encryptSecret`, `IV_BYTES = 12`) · 7 of 7 cases pass (exact) · latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0361b — BYOK: input validation `convex/lib/byokInput.ts`
@@ -29637,7 +29673,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `model: "  "` / Then `"Model is required"`; given `"m".repeat(201)` / Then `"Model is too long"`.
   9. Given `{ ...OK, label: "", key: "short" }` / Then it throws `"Label is required"` (label is checked first), and no thrown message in cases 3–8 contains the key text.
 - **NUMBERS:** 9 of 9 cases pass (exact) · `BYOK_MAX_KEYS` = 10 (the cap `convex/byok.ts` enforces, TFV2-0362c) · endpoint scheme `https:` only (bearer credentials only over TLS: RFC 6750 §5.3, https://www.rfc-editor.org/rfc/rfc6750#section-5.3) · limits label 60, key 16–512, endpoint 300, model 200 characters (the constants above).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362c — BYOK: `byok.checkKeySlot` (internal query: who is adding, and is there room)
@@ -29698,7 +29734,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `users:1` with 9 live keys, 3 soft-deleted keys (`deletedAt: 5`) and 10 keys of `users:2` / When run as `users:1` / Then it returns `{ userId: "users:1" }`.
   4. Given `users:1` with 10 live keys / When run / Then it rejects with `"You can keep up to 10 keys"`.
 - **NUMBERS:** at most 10 live keys per person (`MAX_BYOK_KEYS_PER_USER`, bounded read `.take(11)`; case 4 seeds exactly 10) · 4 of 4 cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362d — BYOK: `byok.insertKey` (internal mutation: store one encrypted key)
@@ -29742,7 +29778,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given an approved `users:1` / When run / Then the returned id's row matches `{ userId: "users:1", provider: "openai_compatible", ...ARGS }` with numeric `createdAt` equal to `updatedAt` and no `deletedAt`.
   4. Given `users:1` with 10 live keys / When run / Then it rejects with `"You can keep up to 10 keys"` and the row count stays 10.
 - **NUMBERS:** cap 10 live keys re-checked in the write (`MAX_BYOK_KEYS_PER_USER`) · 8 of 8 file cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362a — BYOK: `byok.setKey` (action: validate, encrypt, store)
@@ -29819,7 +29855,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `{ ...INPUT, endpointUrl: "http://api.example.com/v1" }` / When run / Then it rejects with `"Endpoint must be an https:// address"` and no row exists.
   6. Given `delete process.env.TEMPO_CONNECTIONS_KEY` / When run / Then it rejects with `"Key vault is not set up"` and no row exists; and given the env restored and 10 live keys for `users:1` / When run / Then it rejects with `"You can keep up to 10 keys"` and the count stays 10.
 - **NUMBERS:** plaintext appears in 0 stored fields and 0 return values (TRD §7 rule 6; cases 3–4) · cap 10 keys · 14 of 14 file cases pass · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362b — BYOK: `byok.listKeys` (query: the vault list, never the key)
@@ -29881,7 +29917,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `users:1` keys A (`createdAt: 10`, `lastCheckOk: true`, `lastCheckedAt: 20`) and B (`createdAt: 30`), a soft-deleted key C of `users:1`, and a key D of `users:2` / When run as `users:1` / Then it returns 2 items, B first then A; A has `lastCheckOk: true` and `lastCheckedAt: 20`; B has no `lastCheckOk` key; for every item `Object.keys(item)` contains none of `"keyCipher"`, `"keyVersion"`, `"userId"`.
   3. Given 11 live keys for `users:1` seeded directly (`createdAt` 1…11) / When run / Then it returns 10 items.
 - **NUMBERS:** list bounded at 10 (`MAX_BYOK_KEYS_PER_USER`; case 3 seeds 11) · ciphertext fields returned: 0 (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362e — BYOK: `byok.deleteKey` (mutation: soft delete)
@@ -29930,7 +29966,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a key of `users:2` / When run as `users:1` (`makeFakeCtx("users:1", ["users:2"])`) / Then it rejects with `"Key not found"` and that row has no `deletedAt`.
   4. Given a key of `users:1` with `deletedAt: 5` / When run as `users:1` / Then it rejects with `"Key not found"` and `deletedAt` stays `5`.
 - **NUMBERS:** soft delete only, 0 rows removed (CONVENTIONS §16) · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362f — BYOK: `byok.keyForUse` (internal query: ciphertext for a server-side call)
@@ -29975,7 +30011,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a key of `users:2` / When run as `users:1` / Then it rejects with `"Key not found"`.
   4. Given a live key of `users:1` (`keyCipher: "v1.iv.sealed"`, `endpointUrl: "https://api.example.com/v1"`, `model: "gpt-4o-mini"`, `keyVersion: 1`) / When run as `users:1` / Then it returns exactly `{ userId: "users:1", keyCipher: "v1.iv.sealed", keyVersion: 1, endpointUrl: "https://api.example.com/v1", model: "gpt-4o-mini" }`.
 - **NUMBERS:** internal function: public API surface added 0 (TRD §7 rule 6) · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362g — BYOK: `byok.recordCheck` (internal mutation: store a health check)
@@ -30016,7 +30052,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given a live key of `users:1` / When run with `ok: false` / Then the row has `lastCheckOk: false` and a numeric `lastCheckedAt` equal to `updatedAt`; and when run again with `ok: true` / Then `lastCheckOk: true`.
   3. Given a key of `users:1` with `deletedAt: 5` / When run as `users:1` / Then it rejects with `"Key not found"` and `lastCheckOk` stays unset.
 - **NUMBERS:** fields written: exactly 3 (`lastCheckedAt`, `lastCheckOk`, `updatedAt`) · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362h — BYOK: `byok.checkKey` (action: one health probe to the endpoint)
@@ -30087,7 +30123,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given the row's `keyCipher` patched to a ciphertext made for `"users:2"` / When run as `users:1` / Then `{ ok: false }`, `fetch` was not called and `lastCheckOk` is `false`.
   6. Given a key of `users:2` / When run as `users:1` / Then it rejects with `"Key not found"` and `fetch` was not called; and given `delete process.env.TEMPO_CONNECTIONS_KEY` with `users:1`'s own key / When run / Then it rejects with `"Key vault is not set up"`.
 - **NUMBERS:** at most 1 outbound request per call, timeout 10,000 ms (`BYOK_CHECK_TIMEOUT_MS`) · provider body characters logged: 0 (case 3) · p95 latency: UNKNOWN (depends on the person's endpoint; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0363a — BYOK: `callLLM` accepts a per-call route (`convex/lib/ai_router.ts`)
@@ -30137,7 +30173,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `fetch` mocked to `jsonResponse(successBody())` / When called with `route: { kind: "default" }` / Then the URL is `DEEPINFRA_CHAT_COMPLETIONS_URL` and the body `model` is `DEFAULT_AI_MODEL` (same as with no `route`).
   5. Given `fetch` mocked to `jsonResponse(successBody())` / When called with `ROUTE` / Then `JSON.stringify(result)` does not contain `"byok-test-key"`.
 - **NUMBERS:** default path unchanged: the 10 existing cases still pass (exact) · BYOK error messages carry 0 provider-body characters (cases 2–3) · timeout 30 s and one retry, as today (code constants) · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0363b — BYOK: `byok.activeKeyForUse` (internal query: the key a person's model calls use) — OPEN
@@ -30350,7 +30386,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given section `error` / Then `[role="alert"]` contains `error` and `safe`; When `retry` is clicked / Then the log reads `onRetry:null`.
   9. Given section `offline` / Then `[role="status"]` shows `offline`, both rows are visible, and every `check`, `delete` and `add` button in the section is disabled; section `saving` shows the submit button with text `saving` and `aria-busy="true"`; section `save-error` shows `[role="alert"]` `errEndpoint` and the Endpoint input has `aria-invalid="true"`; section `checking` shows row 2's button text `checking` with `aria-busy="true"` and row 1's test button disabled.
 - **NUMBERS:** target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; `expectTargetSize`; `.tp-btn--sm` is 36 px high) · focus outline ≥ 2 px (WCAG 2.2 SC 2.4.7; tempo.css `:focus-visible`, case 3) · motion ≤ 250 ms, ≤ 1 ms with reduced motion (DESIGN.md; `expectMotionBudget`) · text contrast ≥ 4.5:1 and control borders ≥ 3:1 (WCAG 2.2 SC 1.4.3 / 1.4.11; only tempo.css classes, `bun run scan:design-tokens` passes) · key characters rendered after save: 0 (TRD §7 rule 6; case 2) · 36 of 36 Playwright cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0364b — Screen: AI keys (`/settings/byok`)
@@ -30398,7 +30434,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `state=error` / Then `[role="alert"]` contains EN "Couldn't load your keys." / HE "לא הצלחנו לטעון את המפתחות." and a Try again button (EN "Try again" / HE "לנסות שוב").
   5. Given `state=offline` / Then `[role="status"]` shows EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.", the 2 rows are visible and the "Save key" / "שמירת מפתח" button is disabled.
 - **NUMBERS:** LCP ≤ 2,500 ms and CLS ≤ 0.1 on `default` (web.dev Core Web Vitals, https://web.dev/articles/vitals; `measureVitals`) · INP ≤ 200 ms: UNKNOWN in the local dev server (measured on preview, not a ticket gate) · target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · motion ≤ 250 ms (DESIGN.md; `expectMotionBudget`) · contrast per WCAG 2.2 SC 1.4.3 / 1.4.11 through tempo.css classes only · 20 of 20 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0365 — Voice: `dailyMinutesFor` / `leaseMs` / `leaseExpired` and the limit values — verify + tests (`convex/lib/voicePolicy.ts`)
@@ -30434,7 +30470,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `{ startedAt: s, lastRenewalAt: s, endedAt: s - 5 }` / Then `leaseMs(…, s)` is `0`; and given `{ startedAt: s, lastRenewalAt: s }` with `now = s - 1_000` / Then `0`.
   5. Given `{ startedAt: s, lastRenewalAt: s + VOICE_LIMITS.maxSessionMs - 1_000 }` / When `leaseExpired(lease, s + VOICE_LIMITS.maxSessionMs)` / Then `false`; and at `s + VOICE_LIMITS.maxSessionMs + 1` / Then `true`.
 - **NUMBERS:** Basic 30, Pro 90, Max 180 live minutes a day (HARD_RULES §9), held under the 15-minute preview cap (VOICE.md A-7, `dailyMinutesPerUser`) · global 120 minutes a day, 20,000 read-aloud characters a day, session ≤ 15 minutes, renew every 15 s, expire after 45 s (code constants, pinned by case 1) · 5 new cases pass, P + 5 total (exact).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0370 — Voice: `speechSentences` / `ttsLanguage` — verify + tests (`convex/lib/voicePolicy.ts`)
@@ -30463,7 +30499,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `"待って… 今日は休み。 明日！"` / When split / Then `["待って…", "今日は休み。", "明日！"]`.
   5. Given `"x".repeat(300)` / When split / Then one piece of length 300; and given `"x".repeat(301)` / Then `["x".repeat(300), "x"]`.
 - **NUMBERS:** sentence ≤ 300 characters (`maxSentenceChars`, VOICE.md A-10) · 5 new cases pass, P + 5 total (exact).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0391 — Voice: `localDateKey` / `utcDateKey` at midnight — verify + tests (`convex/lib/voicePolicy.ts`)
@@ -30489,7 +30525,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given Israel winter time (UTC+2, 15 Nov 2026) / When `localDateKey(Date.UTC(2026, 10, 15, 21, 59, 59), "Asia/Jerusalem")` / Then `"2026-11-15"`; and at `Date.UTC(2026, 10, 15, 22, 0, 0)` / Then `"2026-11-16"`.
   3. Given `localDateKey(Date.UTC(2026, 9, 15, 22, 30), "")` / Then `"2026-10-15"`; and `utcDateKey(Date.UTC(2026, 9, 15, 23, 59, 59, 999))` / Then `"2026-10-15"`, `utcDateKey(Date.UTC(2026, 9, 16))` / Then `"2026-10-16"`.
 - **NUMBERS:** personal cap resets at local midnight, to the second (`.cursorrules`; VOICE.md A-6) · global ceiling on the UTC day · 3 new cases pass, P + 3 total (exact). The Israel offsets (UTC+3 until the last Sunday of October 2026, then UTC+2) come from the IANA tz database shipped with the runtime's ICU.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0366 — Voice: `voice.availability` — verify + tests (`convex/voice.ts`)
@@ -30540,7 +30576,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given one ended lease of `A` today (`dateKey` and `utcDateKey` = today's UTC date, `startedAt: now - 200_000`, `lastRenewalAt: now - 110_000`, `endedAt: now - 110_000`, so 90,000 ms used) / When run / Then `{ available: true, reason: null, minutesLeft: 13 }`.
   5. Given a preferences row `{ locale: "en", timeZone: "Asia/Jerusalem" }` and an ended lease of `A` using 14.5 minutes with `dateKey: "2000-01-01"`, `utcDateKey: "2000-01-01"` / When run / Then `{ available: true, reason: null, minutesLeft: 15 }`; When a second such lease is added with `dateKey: localDateKey(Date.now(), "Asia/Jerusalem")` (import `localDateKey` from `./lib/voicePolicy`) / Then `reason` is `"budget"`.
 - **NUMBERS:** admission order pending → off → language → budget → resting (VOICE.md A-1, TRD §7 rule 3) · `minStartMs` 60,000 ms, 40 sessions a day, preview cap 15 minutes (code constants) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0367a — Voice: `voice.start` — verify + tests (`convex/voice.ts`)
@@ -30578,7 +30614,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a lease started with `"client_key_1"` on conversation 1 / When `A` starts with `"client_key_1"` on a second conversation of `A` / Then a different `sessionId` returns and the old row has `endReason: "replaced"`.
   7. Given a preferences row `{ locale: "en", timeZone: "Asia/Jerusalem" }` / When `A` starts / Then the stored row has `dateKey === localDateKey(Date.now(), "Asia/Jerusalem")` and `utcDateKey === utcDateKey(Date.now())`.
 - **NUMBERS:** one active lease per person (VOICE.md A-2) · `clientKey` 8–64 characters of `[A-Za-z0-9_-]` (code regex) · 7 new cases pass, P + 7 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0367b — Voice: `voice.renew` (heartbeat) — verify + tests (`convex/voice.ts`)
@@ -30614,7 +30650,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a lease patched to `startedAt: now - 90_000`, `lastRenewalAt: now - 10_000` / When `A` renews / Then `{ status: "ok", minutesLeft: 13 }` and the row's `lastRenewalAt` is ≥ `now`.
   5. Given another person's ended lease on the same `utcDateKey` using 120 minutes (`userId: "users:many"`, `dateKey: "2000-01-01"`, `startedAt: now - 200 * 60_000`, `endedAt: now - 80 * 60_000`) / When `A` renews / Then `{ status: "exhausted", minutesLeft: 0 }` and the row has `endReason: "exhausted"`.
 - **NUMBERS:** renew every 15,000 ms, expire after 45,000 ms, global 120 minutes a day (code constants; VOICE.md A-3, A-7) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0367c — Voice: `voice.stop` — verify + tests (`convex/voice.ts`)
@@ -30641,7 +30677,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given a fresh lease of `A` / When `A` stops it / Then the result is `null` and the row has `status: "ended"`, `endReason: "stopped"`, a numeric `endedAt`, and `durationMs` ≥ 0 and < 60,000.
   3. Given a lease of `A` patched with `deletedAt: Date.now()` / When `A` stops it / Then `rejection` gives `"voice_session_ended"`; and given `sessionId` `"voiceSessions:999"` (no row) / Then `"voice_session_ended"`.
 - **NUMBERS:** stop is idempotent and counts at most to last renewal + 15 s for a stale lease (VOICE.md A-5; existing cases) · 3 new cases pass, P + 3 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0368 — Voice: `voice.grant` (30-second Deepgram token) — verify + tests (`convex/voice.ts`)
@@ -30689,7 +30725,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `fakeFetch` returning `{ access_token: "short" }` / When `A` calls `grant` / Then `"voice_connect"`, `grants` is `0` and the log contains `"no usable token"`; and given `{ access_token: "abcdefghijklmnop" }` (16 characters) / Then it returns `{ token: "abcdefghijklmnop", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" }` and `grants` is `1`.
   5. Given a lease of `A` / When `B` calls `grant` with it (`world.actionAs(B)`) / Then `rejection` gives `"voice_session_ended"` and no fetch is made.
 - **NUMBERS:** token TTL 30 s (`tokenTtlSeconds`; TRD §5a) · 3 grants per lease (`grantsPerLease`; VOICE.md A-4) · token length 16–8,192 characters (code check) · key or token characters in logs: 0 · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (provider-bound; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0369 — Voice: `voice.speak` (one sentence read aloud) — verify + tests (`convex/voice.ts`)
@@ -30729,7 +30765,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `fakeFetch` returning `new Response(new Uint8Array(0), { headers: { "content-type": "audio/wav" } })` / When `A` speaks / Then `"voice_connect"` and the counts are given back to `0`.
   5. Given the reply patched with `deletedAt: Date.now()` / When `A` speaks / Then `"voice_session_ended"` and no fetch; and given a live reply but the lease ended by `voice.stop` / When `A` speaks / Then `"voice_session_ended"` and no fetch.
 - **NUMBERS:** 20,000 read-aloud characters a day, audio ≤ 4 MiB (4,194,304 bytes), sentence ≤ 300 characters (code constants; VOICE.md A-7, A-10) · audio stored: 0 bytes · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (provider-bound; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0392 — Voice: a spoken crisis turn gets the fixed card and is never read aloud — tests (`convex/voice.ts`, `convex/coach.ts`)
@@ -30754,7 +30790,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given a live lease of `A` on a conversation / When `coach.sendMessage` runs as `A` with `"I want to kill myself"` / Then it returns `{ success: true, crisis: true }`, the newest message in that conversation has `role: "assistant"` and `modelUsed: "crisis-card"`; When `A` calls `voice.speak` with that message and index `0` / Then it returns `{ status: "done" }`, `net.calls` is empty and the lease has `sentences: 0`, `ttsChars: 0`.
   2. Given a live lease of `A` / When `coach.sendMessage` runs with `"Plan my morning"` / Then it returns `{ success: true }` with no `crisis` key and the conversation holds only the one user message (no assistant message is written by the send).
 - **NUMBERS:** model calls and TTS requests for a crisis turn: 0 (TRD §7 rule 7; VOICE.md L-12) · 2 new cases pass, P + 2 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0390a — Voice prefs: `preferences.getVoicePrefs` (`convex/preferences.ts`)
@@ -30804,7 +30840,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given a row with `locale: "he"` and no voice fields / When run / Then `{ voicePushToTalk: false, voiceLanguage: "he" }`; and given a row with `locale: "he"`, `voicePushToTalk: true`, `voiceLanguage: "en"` / Then `{ voicePushToTalk: true, voiceLanguage: "en" }`.
   4. Given a row with `voicePushToTalk: true` and `deletedAt: 5` / When run / Then `{ voicePushToTalk: false, voiceLanguage: "en" }`.
 - **NUMBERS:** defaults exactly per CFG-020 (`false`, the locale) · 4 new cases pass, P + 4 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0390b — Voice prefs: `preferences.setVoicePrefs` (`convex/preferences.ts`)
@@ -30860,7 +30896,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a row with `theme: "dark"` and `deletedAt: 5` / When run with `{ voicePushToTalk: true }` / Then the row has no `deletedAt`, `theme: "system"` (defaults restored) and `voicePushToTalk: true`.
   5. Given a live row with `updatedAt: 1` / When run with `{}` / Then the row is unchanged (`updatedAt` still `1`) and no row was inserted.
 - **NUMBERS:** fields written per call: only the given voice fields plus `updatedAt` (live row) · 5 new cases pass, P + 5 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0390c — Voice: the call language follows `voiceLanguage` (`convex/voice.ts`)
@@ -30894,7 +30930,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `{ locale: "en", voiceLanguage: "he" }` / When `availability` runs / Then `reason` is `"language"`; When `A` starts / Then `rejection` gives `"voice_language"`.
   3. Given `{ locale: "he" }` with no `voiceLanguage` / When `availability` runs / Then `reason` is `"language"` (unchanged behaviour).
 - **NUMBERS:** lane chosen only from the server's table (TRD §5a: the client never picks the model) · 3 new cases pass, P + 3 total · p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0395 — Voice: turn on the Hebrew lane (Nova-3) in `laneFor` — OPEN
@@ -31061,7 +31097,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `readyState = 1` / When `close()` is called twice / Then `closes` equals `[1000]`; and afterwards `onopen()`, `onmessage({ data: JSON.stringify({ type: "SpeechStarted" }) })`, `onerror()` and `onclose()` call no handler, and `sendAudio(new Blob(["a"]))` sends nothing.
   8. Given `readyState = 3` (already closed by the server) / When `close()` / Then `closes` is empty.
 - **NUMBERS:** 8 of 8 cases pass (exact). Token lifetime 30 s, used once at open (`VOICE_LIMITS.tokenTtlSeconds`, TRD §5a) — not changed here. Audio chunk 100 ms (`VOICE_CLIENT_LIMITS.chunkMs`, repo constant). Latency: UNKNOWN (no baseline measured; CONVENTIONS §20; TFV2-0396 records it).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0372 — Voice: mobile speech socket client `apps/mobile/lib/v3/voice-stt.ts` — OPEN
@@ -31201,7 +31237,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `play` rejects on the first clip / Then it returns `"failed"`; given `play` rejects while `live()` is `false` / Then it returns `"stopped"`.
   7. Given `fetchSentence(0)` rejects / Then it returns `"failed"` and `play` never ran.
 - **NUMBERS:** 7 of 7 cases pass (exact). Sentences fetched ahead = 2 (`VOICE_CLIENT_LIMITS.sentencesAhead`, A-10). Time to first audio: UNKNOWN until measured (TRD §5a target ≈ 1 s; TFV2-0396 records it).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0374 — Voice: barge-in rule `interruptsPlayback` (`apps/web/lib/voice-runtime.ts`)
@@ -31250,7 +31286,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given phase `"speaking"` and `{ kind: "final", text: "wait" }` / Then `false`.
   4. Given each phase of `["idle", "listening", "transcribing", "awaitingReply", "error"]` and `{ kind: "speechStarted" }` / Then `false` for every one.
 - **NUMBERS:** 13 of 13 cases in the file pass (9 existing + 4). Playback stops within the same event-loop turn as the speech event (no timer). End-to-end interrupt latency: UNKNOWN until measured (TRD §5a target: acknowledgement < 0.2 s).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0375a — Voice: lease heartbeat and client bounds `apps/web/lib/voice-lease.ts` (extracted from `useVoiceCall`)
@@ -31365,7 +31401,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given phase `"speaking"` or `"awaitingReply"`, `hiddenSinceMs: 0`, `now - lastActivityMs = 600_000` / Then `false` for both.
   9. Given phase `"speaking"`, `now - hiddenSinceMs = 30_001` / Then `true`; with `30_000` / Then `false`.
 - **NUMBERS:** 9 of 9 cases pass (exact). Renew every 15 000 ms (`VOICE_LIMITS.renewEveryMs`, A-3); lease expires after 45 000 ms without renewal (server, `VOICE_LIMITS.leaseExpiresAfterMs`); idle bound 90 000 ms and hidden bound 30 000 ms (`VOICE_CLIENT_LIMITS`, L-15). All repo constants; not changed here.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0375b — Voice: `useVoiceCall` takes its backend as a parameter (`useConvexVoiceBackend`)
@@ -31431,7 +31467,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `convex/react` mocked so `useMutation(ref)` returns `Object.assign(async () => null, { kind: "mutation", ref })` and `useAction(ref)` returns `Object.assign(async () => null, { kind: "action", ref })`, and the api mocked with `voice: { start: "voice.start", renew: "voice.renew", stop: "voice.stop", grant: "voice.grant", speak: "voice.speak" }` / When `useConvexVoiceBackend()` is called / Then `start`, `renew`, `stop` carry `kind: "mutation"` and refs `"voice.start"`, `"voice.renew"`, `"voice.stop"`, and `grant`, `speak` carry `kind: "action"` and refs `"voice.grant"`, `"voice.speak"`.
   2. Given the text of `useVoiceCall.ts` (`await Bun.file(new URL("./useVoiceCall.ts", import.meta.url)).text()`) / Then it contains neither `from "convex/react"` nor `_generated/api"`, and it contains `backend: VoiceBackend`.
 - **NUMBERS:** 2 of 2 cases pass (exact); `CoachChat.test.tsx` keeps its current pass count with 0 fail. Latency: n/a (no new call).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0376a — Voice: `VoiceCallView` — the call layout without the dialog (extracted from `VoiceCall`)
@@ -31538,7 +31574,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given `default` / When `[data-action="call-end"]` is clicked / Then the log reads `onEnd:undefined`; When `.tp-call__mic` is clicked / Then the log reads `onMicToggle:undefined`.
   10. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="voice-call-view-default"] .tp-call__dock')` and `expectMotionBudget(page, '[data-testid="voice-call-view-default"]')` pass.
 - **NUMBERS:** Playwright `40 passed` of 40 (10 bullets × 2 viewports × 2 languages). Text contrast ≥ 4.5:1 (WCAG 2.2 SC 1.4.3; tokens only, `bun run scan:design-tokens`). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 10. Motion ≤ 250 ms (240 ms entry, 120 ms bars) and ≤ 1 ms reduced · bullet 10. State in words, not colour (WCAG 2.2 SC 1.4.1) · bullets 1–8.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0376b — Voice: `VoiceCall` dialog — harness spec (role, modality, Esc pauses)
@@ -31565,7 +31601,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given the harness / Then `document.activeElement` is inside the dialog (`await page.getByRole("dialog").evaluate((d) => d.contains(document.activeElement))` is `true`).
   3. Given the harness / When `page.keyboard.press("Escape")` / Then `voice-call-log` reads `onMicToggle:undefined` and the dialog is still visible.
 - **NUMBERS:** Playwright `12 passed` of 12 (3 bullets × 2 viewports × 2 languages). Name, role, value exposed (WCAG 2.2 SC 4.1.2) · bullet 1. Focus order and no keyboard trap out of a modal (WCAG 2.2 SC 2.4.3, 2.1.2) · bullets 2–3.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0377 — Voice: `AudioLevel` component (extracted from `VoiceCallView`)
@@ -31615,7 +31651,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given any section / Then its `.tp-level` has `aria-hidden="true"` and `data-component="AudioLevel"`, and `page.getByTestId("audio-level-active").getByRole("img")` has count 0.
   5. Given any viewport and language / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="audio-level-"]')` pass.
 - **NUMBERS:** Playwright `20 passed` of 20; the two VoiceCall specs stay `52 passed`. Motion ≤ 250 ms (120 ms) and ≤ 1 ms reduced (DESIGN.md motion rule; CONVENTIONS §20) · bullet 5. Information not by graphics alone (WCAG 2.2 SC 1.1.1: decorative, hidden) · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0378 — Voice: `LiveTranscript` component (extracted from `VoiceCallView`)
@@ -31641,6 +31677,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   "use client";
+  import type React from "react";
   import { useState } from "react";
   import { useLocale } from "@/components/providers/LocaleProvider";
   import type { Lang } from "@/lib/i18n";
@@ -31665,7 +31702,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `empty` / Then the section contains no `ol`.
   7. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="live-transcript-default"]')` and `expectMotionBudget(page, '[data-testid^="live-transcript-"]')` pass.
 - **NUMBERS:** Playwright `28 passed` of 28; the VoiceCall specs stay `52 passed`. Text contrast ≥ 4.5:1 (`--tp-ink-muted` on `--tp-paper`, WCAG 2.2 SC 1.4.3). Target size ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 7. Status messages announced (WCAG 2.2 SC 4.1.3, `aria-live="polite"`) · bullet 1. Motion ≤ 250 ms · bullet 7.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0379 — Voice: `MicToggle` component (extracted from `VoiceCallView`)
@@ -31706,7 +31743,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `on` / When the button is clicked / Then `mic-toggle-log` reads `onToggle:undefined`; Given `off` / When it is focused and Space is pressed / Then the log reads `onToggle:undefined` again (log text reset to empty between the two by reloading the harness).
   4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="mic-toggle-"]')` and `expectMotionBudget(page, '[data-testid^="mic-toggle-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 96 px) · bullet 4. Non-text contrast ≥ 3:1 for the off border `--tp-line-control` (WCAG 2.2 SC 1.4.11). State exposed (`aria-pressed`, WCAG 2.2 SC 4.1.2) · bullets 1–2. Motion ≤ 250 ms · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0380 — Voice: `Interrupt` component (extracted from `VoiceCallView`)
@@ -31744,7 +31781,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `disabled` / Then the button is disabled; When clicked with `{ force: true }` / Then the log is still empty.
   4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="interrupt-"]')` and `expectMotionBudget(page, '[data-testid^="interrupt-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 4. Text contrast ≥ 4.5:1 (tokens only). Motion ≤ 250 ms · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0381 — Voice: `EndCall` component (extracted from `VoiceCallView`)
@@ -31781,7 +31818,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `default` / When the button is double-clicked (`dblclick()`) and then clicked again / Then `end-call-log` reads `onEnd:undefined` and its `data-count` is `"1"`.
   3. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="end-call-default"]')` and `expectMotionBudget(page, '[data-testid="end-call-default"]')` pass.
 - **NUMBERS:** Playwright `12 passed` of 12; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 3. Text contrast ≥ 4.5:1 for `--tp-on-accent` on `--tp-danger` (tokens only). One end per press series (internal) · bullet 2.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0382 — Voice: `PushToTalk` component (extracted from `VoiceCallView`)
@@ -31807,6 +31844,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   "use client";
+  import type React from "react";
   import { type KeyboardEvent, useId, useState } from "react";
   type CopyKey = "hold" | "release" | "help";
   const COPY: Record<Lang, Record<CopyKey, string>> = {
@@ -31824,7 +31862,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a pointer hold (`pointerdown`) / When `dispatchEvent("pointerleave")` / Then `data-pressed="false"` and the log `onPressEnd:undefined`.
   5. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="push-to-talk-default"]')` and `expectMotionBudget(page, '[data-testid="push-to-talk-default"]')` pass.
 - **NUMBERS:** Playwright `20 passed` of 20; VoiceCall specs stay `52 passed`. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 64 px tall) · bullet 5. Keyboard operable (WCAG 2.2 SC 2.1.1) · bullet 3. Motion ≤ 250 ms · bullet 5.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0383 — Voice: `CallMinutes` component (extracted from `VoiceCallView`)
@@ -31866,7 +31904,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `none` / Then `data-low="true"` and the text "0 minutes left today · running low" / "נשארו 0 דקות היום · הזמן כמעט נגמר".
   5. Given any viewport and language / Then `expectDir(page, lang)` and `expectMotionBudget(page, '[data-testid^="call-minutes-"]')` pass.
 - **NUMBERS:** Playwright `20 passed` of 20; VoiceCall specs stay `52 passed`. Low threshold ≤ 5 minutes (`minutesLow`, repo constant). Text contrast ≥ 4.5:1 for `--tp-caution` on `--tp-caution-wash` and `--tp-ink-muted` on `--tp-sunken` (WCAG 2.2 SC 1.4.3; tokens only). Low state in words, not colour only (WCAG 2.2 SC 1.4.1) · bullets 2–4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0384 — Voice: `CallActionConfirm` component (extracted from `VoiceCallView`)
@@ -31907,7 +31945,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `undone` / Then `data-undone="true"`, the text "Undone. Nothing was added." / "בוטל. שום דבר לא נוסף.", and no button.
   4. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="call-action-confirm-"]')` and `expectMotionBudget(page, '[data-testid^="call-action-confirm-"]')` pass.
 - **NUMBERS:** Playwright `16 passed` of 16; VoiceCall specs stay `52 passed`. Undo window 5 minutes (PRD F-131; owned by the caller). Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8) · bullet 4. Status announced (WCAG 2.2 SC 4.1.3) · bullets 1, 3. Motion ≤ 250 ms (240 ms) · bullet 4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0385 — Voice: `LanguageChip` component (call language) — OPEN
@@ -32014,7 +32052,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given `new ConvexError({ code: "voice_off", message: "x" })` / Then `voiceErrorText(error, "he")` is `"הקול עוד לא מופעל. אפשר להמשיך להקליד כרגיל."`; given `new Error("boom")` / Then `voiceErrorText(error, "en")` is `"Voice couldn't connect just now. Try again in a moment."`.
   5. Given `unavailableText` / Then `"budget"`/`"en"` returns the `voice_daily_limit` English, `"language"`/`"he"` the `voice_language` Hebrew, `"resting"`/`"en"` the `voice_resting` English, `"off"`/`"en"` the `voice_off` English, and `"pending"` returns `null` in both languages.
 - **NUMBERS:** 5 of 5 cases pass (exact). Codes covered: 6 of 6 `VOICE_ERRORS` codes and 5 of 5 availability reasons, in both languages (internal completeness).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0387 — Voice: `ReadAloudButton` component — superseded by TFV2-0206
@@ -32043,6 +32081,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```tsx
   "use client";
+  import type React from "react";
   import { useId } from "react";
   import { useLocale } from "@/components/providers/LocaleProvider";
   import { TpIcon } from "@/components/tempo/TpIcon";
@@ -32072,7 +32111,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `off`, `pending` and `loading` / Then each section contains no `button` and no `[data-component="VoiceStart"]`.
   6. Given any viewport and language / Then `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid^="voice-start-button-"]')` and `expectMotionBudget(page, '[data-testid^="voice-start-button-"]')` pass.
 - **NUMBERS:** Playwright `24 passed` of 24; `CoachChat.test.tsx` 0 fail. Target ≥ 24 × 24 CSS px (WCAG 2.2 SC 2.5.8; 36 px) · bullet 6. Text contrast ≥ 4.5:1 for `--tp-ink-muted` (WCAG 2.2 SC 1.4.3). Reason exposed to assistive tech (`aria-describedby`, WCAG 2.2 SC 1.3.1) · bullets 3–4.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0394 — Voice: end-to-end smoke of the web call with fake providers (harness + Playwright)
@@ -32176,7 +32215,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given a live call / When `[data-action="call-end"]` is clicked / Then `.tp-call` has `data-ended="true"` and the word "Call ended" / "השיחה הסתיימה", `voice-smoke-log` reads `stop:{"sessionId":"voiceSessions:smoke"}`, and `sockets[0].closedWith` is `1000`; When `[data-action="call-close"]` is clicked / Then there is no dialog and `voice-smoke-start` is visible.
   7. Given a live call / When `page.evaluate(() => window.__voice.sockets[0].onerror())` / Then the word is "Not connected" / "לא מחובר", `[role="alert"]` shows "Couldn't connect." / "לא הצלחנו להתחבר.", and the log reads `stop:{"sessionId":"voiceSessions:smoke"}`.
 - **NUMBERS:** Playwright `28 passed` of 28 (7 bullets × 2 viewports × 2 languages). Every call state reached (internal completeness): listening, speaking, paused, ended, error · bullets 1–7. Latency: UNKNOWN (fake providers measure nothing; TFV2-0396 records real values).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0388b — Voice: push-to-talk mode in the call runtime (`useVoiceCall` `pushToTalk`)
@@ -32218,7 +32257,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `voice-smoke-ptt` checked, then Start, and the fake socket open / Then `.tp-ptt` is visible, `.tp-call__mic` has `aria-pressed="false"` and `window.__voice.track.enabled` is `false`; When `.tp-ptt` gets `pointerdown` / Then `track.enabled` is `true` and `.tp-call__mic` has `aria-pressed="true"`; When it gets `pointerup` / Then `track.enabled` is `false` again.
   9. Given the checkbox unchecked, then Start / Then there is no `.tp-ptt` and `window.__voice.track.enabled` is `true`.
 - **NUMBERS:** Playwright `36 passed` of 36 (9 bullets × 2 × 2). Mic on only while held (internal) · bullet 8.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0388c — Voice: the coach starts calls in the person's saved push-to-talk mode (`CoachChat`)
@@ -32246,7 +32285,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **TESTS:**
   1. Given `CoachChat.test.tsx`'s signed-out mocks / When `CoachChat` renders / Then `useQuery` was called with `"preferences.getVoicePrefs"` and `"skip"`, and every existing test in the file still passes.
 - **NUMBERS:** `CoachChat.test.tsx` 0 fail (existing count + 1). One extra query per signed-in chat; latency UNKNOWN (CONVENTIONS §20).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0393 — Voice: spoken coach actions inside a call (confirm with 5-minute Undo) — OPEN
@@ -32352,7 +32391,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a summary object that the test mutates (`s.ack = 1`) / Then a later `summary().ack` is unchanged.
   6. Given `LATENCY_TARGET_MS` / Then it equals `{ ack: 200, first_text: null, first_audio: 1000 }`.
 - **NUMBERS:** 6 of 6 cases pass (exact). Acknowledgement target < 200 ms and first audio ≈ 1 000 ms (TRD §5a step 6) — targets only; measured values UNKNOWN until a preview call is measured (Amit; CONVENTIONS §20: not a ticket gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 6 — Gen 2 (later)
@@ -32603,7 +32642,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `FENCE + "a".repeat(1_048_577)` / Then `{ ok: false, error: "plugin_too_large" }`; Given `"ש".repeat(524_289)` (524,289 characters, 1,048,578 UTF-8 bytes) / Then `{ ok: false, error: "plugin_too_large" }`.
   9. Given a body that itself starts a second `json tempo` fence after a heading (`"# T\n" + FENCE + "{}\n```\n"`) / Then `parsePlugin(packPlugin(M, body)).body === body`; Given body `""` / Then the parsed `body` is `""`.
 - **NUMBERS:** 9 of 9 cases pass (exact). File cap 1,048,576 UTF-8 bytes (`PLUGIN_FILE_MAX_BYTES`, source `BLOCK_CODEC_LIMITS.maxBodyChars` in `packages/utils/src/blocks.ts`; case 8 checks bytes with Hebrew text, CONVENTIONS §7 H). Round trip byte-exact (cases 1, 3). Latency: n/a (pure, O(n)).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0400 — `plugins` table (installed plugins) in `convex/schema.ts` — superseded by CFG-022
@@ -33515,6 +33554,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   // apps/web/components/marketplace/InstallConfirm.tsx ("use client")
+  import type React from "react";
   import type { Lang } from "@/lib/i18n";
   export type PluginPermissionName = "read_pages" | "write_today" | "schedule_job" | "web_request";
   export type PluginPartName = "TaskBlock" | "TemplateBlock" | "setTaskDone";
@@ -33589,6 +33629,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **SPEC:**
   ```ts
   // apps/web/components/marketplace/PluginDetailView.tsx ("use client")
+  import type React from "react";
   import { InstallConfirm, PLUGIN_PART_COPY, PLUGIN_PERMISSION_COPY, type PluginPartName, type PluginPermissionName } from "./InstallConfirm";
   export type PluginDetail = {
     slug: string; name: string; summary: string; description: string | null; authorName: string;
@@ -34406,6 +34447,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
     return <DesktopHandoff link={handoffDeepLink(typeof code === "string" ? code : null)} />;
   }
   // apps/web/components/desktop/DesktopHandoff.tsx ("use client")
+  import type React from "react";
   export type DesktopHandoffProps = { link: string | null };
   export function DesktopHandoff(props: DesktopHandoffProps): React.JSX.Element;
   ```
@@ -34768,6 +34810,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
 - **REPORT:** `status / ticket: TFV2-0423b / evidence: <DONE output> / changed: apps/web/components/desktop/DesktopSettingsView.tsx, apps/web/app/e2e/components/desktop-settings-view/page.tsx, tests/e2e/screens/desktop-settings-view.spec.ts / unknowns / notes for ticket sync`; list STEPS 1–5 with evidence.
 - **SPEC:**
   ```ts
+  import type React from "react";
   import type { DesktopSettings, DesktopUpdateStatus } from "@/lib/desktop/bridge";
   export type DesktopSettingsState = "default" | "loading" | "error" | "not-desktop";
   export type DesktopToggleKey = "launchAtLogin" | "closeToTray" | "autoUpdate";
@@ -35291,7 +35334,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `getPermission` → `"granted"` and `getExpoToken` → `"x".repeat(513)` / Then `{ status: "granted-no-token" }`; and with `"   "` / Then `{ status: "granted-no-token" }`.
   8. Given `platform: "android"` and `ensureAndroidChannel` rejects / When `getPermission` → `"granted"`, token `"ExponentPushToken[y]"` / Then `{ status: "granted", token: "ExponentPushToken[y]" }`.
 - **NUMBERS:** 8 of 8 cases pass (exact). Token length ≤ 512 characters (`PUSH_TOKEN_MAX`, product bound; Expo tokens are ~41 characters, Expo push docs https://docs.expo.dev/push-notifications/sending-notifications/). Prompt shown at most once per install (deterministic: rule 4). Latency: n/a (no network in tests).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0426a — `push.register` (mutation, `convex/push.ts`) — OPEN
@@ -35521,7 +35564,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given a body of 300 Hebrew letters `"א".repeat(300)` / Then the body has exactly 240 code points and ends with `"…"`.
   6. Given `[]` / Then it returns `[]`.
 - **NUMBERS:** 6 of 6 cases pass (exact). ≤ 100 messages per request (`EXPO_PUSH_BATCH_MAX`, Expo push docs); title ≤ 65 and body ≤ 240 code points (product bounds; a nag label is ≤ 60 characters in `convex/nags.ts` `LABEL_MAX`, a phrase ≤ 140 in `NAG_PHRASE_MAX`). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0427b — `readExpoPushTickets` (pure helper `convex/lib/expoPush.ts`)
@@ -35555,7 +35598,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   4. Given a batch of 2 and `{ data: [{ status: "ok", id: "1" }] }` (length mismatch) / Then `{ sent: 0, failed: 2, dead: [] }`.
   5. Given `null`, `"x"` and `{ errors: [{ code: "PUSH_TOO_MANY_EXPERIENCE_IDS" }] }` for a batch of 1 / Then each returns `{ sent: 0, failed: 1, dead: [] }`.
 - **NUMBERS:** 5 of 5 cases pass; whole file 11 of 11 (6 + 5, exact). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0427c — `push.sendToUser` (internalAction, `convex/push.ts`) — OPEN
@@ -35640,7 +35683,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `nowMs = Date.UTC(2026, 9, 31, 14, 0)` (10:00 EDT, the day before US clocks go back on 1 Nov 2026), `540`, `"America/New_York"` / Then `Date.UTC(2026, 10, 1, 14, 0)` (09:00 EST).
   6. Given minute `1440`, `-1` and `2.5` / Then each throws `"Invalid minute of day"`; given `"Mars/Base"` / Then it throws `"Invalid time zone"`.
 - **NUMBERS:** 6 of 6 cases pass (exact instants above, checked against the IANA tz database through Python `zoneinfo` on 2 Nov 2026). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0427e — `nags.setPushTime` (mutation, `convex/nags.ts`) — OPEN
@@ -35880,7 +35923,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Loading: Given `enable-push-card-loading` / Then it contains an element with `role="progressbar"` and `aria-label` `Loading…` / `בטעינה…`, and no button.
   7. Layout: Given `enable-push-card-default` / Then the computed `flex-direction` of `enable-push-card-head` is `row` (en) / `row-reverse` (he); `expectTargetSize(page, '[data-testid="enable-push-card-default"]')` and `expectMotionBudget(page, '[data-testid="enable-push-card-default"]')` pass; and every button's bounding box height is at least 44.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Native touch target ≥ 44 pt · Apple HIG (`TOUCH` = 44 in `primitives.tsx`) · bullet 7 bounding boxes. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only, `tests/unit/mobile_v3_screens.test.ts` "no raw colours" passes. Motion ≤ 250 ms (≤ 1 ms reduced) · DESIGN.md motion rule · `expectMotionBudget`. One OS prompt per install (no re-ask after denied; deterministic). 28 of 28 tests pass (7 bullets × 4).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0428b — Mobile screen: Enable reminders (`apps/mobile/app/(tempo)/enable-push.tsx`) — OPEN
@@ -35995,7 +36038,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Offline and loading: Given `notification-prefs-list-offline` / Then the text `You're offline.` / `אין חיבור כרגע.` is visible and all four switches have `aria-disabled="true"`; Given `notification-prefs-list-loading` / Then a `role="progressbar"` named `Loading…` / `בטעינה…` is present and no switch.
   7. Layout: Given `notification-prefs-list-default` / Then `expectTargetSize(page, '[data-testid="notification-prefs-list-default"]')` and `expectMotionBudget(page, '[data-testid="notification-prefs-list-default"]')` pass, and the first row's computed `flex-direction` is `row` (en) / `row-reverse` (he).
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Row height ≥ 60 (`TOUCH + 16`, Apple HIG 44 pt touch) · code constant. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only. Motion ≤ 250 ms (≤ 1 ms reduced) · DESIGN.md · `expectMotionBudget`. 28 of 28 tests pass (7 bullets × 4).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0429d — Mobile screen: Notifications (`apps/mobile/app/(tempo)/notifications.tsx`) — OPEN
@@ -36111,7 +36154,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Error and unsupported: Given `camera-capture-error` / Then `role="alert"` contains `The camera didn't open` / `המצלמה לא נפתחה` and `Try again` / `לנסות שוב` logs `onRetake:null`; Given `camera-capture-unsupported` / Then `The camera works in the phone app` / `המצלמה עובדת באפליקציה בטלפון` is visible and the only button is `Cancel` / `ביטול`.
   7. Layout: Given `camera-capture-ready` / Then `camera-capture-controls` has computed `flex-direction` `row` (en) / `row-reverse` (he), the shutter's bounding box is at least 72 × 72, `expectTargetSize(page, '[data-testid="camera-capture-ready"]')` and `expectMotionBudget(page, '[data-testid="camera-capture-ready"]')` pass.
 - **NUMBERS:** Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Shutter ≥ 44 × 44 pt (Apple HIG; Android 48 dp, Material) — built at 72 (`SHUTTER_SIZE`) · bullet 7. Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · palette colours only. Motion ≤ 250 ms (≤ 1 ms reduced) · DESIGN.md · `expectMotionBudget`. Photo has alt text · WCAG 2.2 SC 1.1.1 · bullet 5. 28 of 28 tests pass (7 bullets × 4).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0430b — Camera capture state + hook (`apps/mobile/lib/camera-state.ts`, `useCameraCapture.ts`)
@@ -36179,7 +36222,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `captured` and `{ type: "permission", granted: true, canAskAgain: true }` / Then the state is unchanged (the photo is kept).
   8. Given `ready` and `unsupported` / Then `{ status: "unsupported", photo: null }`; and then `{ type: "permission", granted: true, canAskAgain: true }` / Then still `unsupported`.
 - **NUMBERS:** 8 of 8 cases pass (exact). JPEG quality 0.7 (`CAMERA_QUALITY`; product bound that keeps a 12 MP photo well under the 8 MiB upload cap of TFV2-0431b — size per photo on real devices UNKNOWN until measured). Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0431a — `noteImages.generateUploadUrl` (mutation, `convex/noteImages.ts`)
@@ -36216,7 +36259,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given `{ ...makeSignedOutCtx(), storage: { generateUploadUrl: async () => "https://upload.test/u1" } }` / When `run(generateUploadUrl, ctx, {})` / Then it rejects with `"Not authenticated"` and the stub was not called (a call counter stays `0`).
   2. Given the signed-in ctx in STEP 3 / Then it resolves `"https://upload.test/u1"` and the stub was called once.
 - **NUMBERS:** 2 of 2 cases pass (exact). Upload URL lifetime: 1 hour (Convex docs, File Storage) — not asserted (platform value). Backend p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0431b — `noteImages.attach` (mutation, `convex/noteImages.ts`) — OPEN
@@ -36300,7 +36343,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given the POST returns status `500` / Then it rejects with `"Upload failed"`.
   4. Given the POST returns `{}` (no `storageId`), and separately the first fetch rejects / Then each rejects with `"Upload failed"`.
 - **NUMBERS:** 4 of 4 cases pass (exact). Upload time on mobile networks: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0431d — Mobile screen: Add a photo to a note (`apps/mobile/app/(tempo)/attach-photo.tsx`) — OPEN
@@ -36523,7 +36566,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `"exp+tempi://expo-development-client/?url=http%3A%2F%2F10.0.0.2%3A8081"` and `"not a url"` / Then both `{ kind: "foreign" }`.
   8. Given `routeForPushData({ url: "tempo-rhythm://page/n1" })` / Then `"/page/n1"`; `routeForPushData({ url: "https://x.test/today" })`, `routeForPushData(null)` and `routeForPushData({ url: 5 })` / Then each `"/today"`.
 - **NUMBERS:** 8 of 8 cases pass (exact). Note id ≤ 64 characters of `[A-Za-z0-9_-]` (Convex ids are 32 lower-case alphanumerics; bound leaves room). Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0433b — Expo Router native intent (`apps/mobile/app/+native-intent.tsx`) — OPEN
@@ -36612,7 +36655,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   2. Given `apps/mobile/lib/push-tap.ts` as text / Then it contains `useLastNotificationResponse`, `DEFAULT_ACTION_IDENTIFIER`, `routeForPushData(` and `configurePushHandler()`, and does not contain `Linking`.
   3. Given `routeForPushData` imported from `../../apps/mobile/lib/deep-link` / When called with `{ url: "tempo-rhythm://capture" }` / Then it returns `"/capture"` (the payload shape `push.sendToUser` sends, `{ url }`).
 - **NUMBERS:** 3 of 3 unit cases and 2 of 2 smoke cases pass (exact). Tap-to-screen time on a device: UNKNOWN (not measurable in CI; checked on a device build by Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0433d — Web: `/.well-known/*` is public (`apps/web/lib/rootEntry.ts`)
@@ -36638,7 +36681,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   1. Given the updated pinned list test / Then `PUBLIC_ROUTE_PATTERNS` equals the ten entries in SPEC, in order.
   2. Given `decideEntryRedirect({ isAuthenticated: false, isCalendarE2EBypass: false, isPublicRoute: true, pathname: "/.well-known/assetlinks.json", search: "" })` / Then it returns `null`; and with `isPublicRoute: false` and pathname `/today` it still returns `"/sign-in?next=%2Ftoday"`.
 - **NUMBERS:** 9 of 9 tests pass (8 existing + 1, exact). Public patterns 10 (exact). Latency: n/a.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0433e — Web: app-link verification files (`apps/web/app/.well-known/…/route.ts`) — OPEN
@@ -36828,7 +36871,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   3. Given `adaptive-icon.png` / Then width `1024` and height `1024`.
   4. Given `splash-icon.png` / Then width equals height and width ≥ `1024`.
 - **NUMBERS:** 4 of 4 cases pass (exact). App Store icon 1024 × 1024, no alpha (Apple HIG, https://developer.apple.com/design/human-interface-guidelines/app-icons). Android adaptive source 1024 × 1024 (Expo recommendation; the 108 dp × 108 dp layer, Android docs "Adaptive icons").
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0435a — Google Play data safety answers (`apps/mobile/store/play-data-safety.json`) — OPEN
@@ -37039,7 +37082,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given text built with `ICS_MAX_EVENTS + 1` valid VEVENTs / Then `events.length` is `ICS_MAX_EVENTS` and `truncated` is true.
   10. Errors: Given `"hello"` / Then `parseIcs` throws `"Not an iCalendar file"`; Given a valid file and `fallbackTimeZone` `"Mars/Base"` / Then it throws `"Unknown time zone"`; Given a string of `ICS_MAX_BYTES + 1` UTF-8 bytes starting `BEGIN:VCALENDAR` / Then it throws `"iCalendar file is too large"`.
 - **NUMBERS:** File ≤ 1,048,576 UTF-8 bytes (`ICS_MAX_BYTES`, product bound; RFC 5545 sets no limit) · events ≤ 5,000 (`ICS_MAX_EVENTS`, product bound) · checked by cases 9–10. Line folding and escaping exact per RFC 5545 §3.1/§3.3.11 (cases 4). Parse latency: UNKNOWN (no baseline; pure CPU, not a gate). 10 of 10 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0438b — Calendar file export: `serializeIcs` (`convex/lib/ics.ts`)
@@ -37080,7 +37123,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   15. Round trip: Given three events (timed, all-day, with description) / When `parseIcs(serializeIcs(events, nowMs), "UTC")` / Then each returned event equals its input plus `rrule: null`, and `skipped` is 0.
   16. Given `ICS_MAX_EVENTS + 1` events / Then `serializeIcs` throws `"Too many events"`.
 - **NUMBERS:** Content lines ≤ 75 octets (RFC 5545 §3.1) · case 14. Events ≤ 5,000 (`ICS_MAX_EVENTS`, product bound) · case 16. Round trip exact (case 15). 16 of 16 cases pass. Latency: UNKNOWN (pure CPU, not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0439 — Calendar sync: pure merge `mergeEvents` (`convex/lib/calendarMerge.ts`)
@@ -37133,7 +37176,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given incoming `[g6, g6 (different title)]` and no existing rows / Then `toInsert` equals `[<first g6>]` and `duplicates` is 1.
   9. Given existing rows not mentioned in incoming / Then `toDelete` is empty, and the input arrays are deep-equal to copies taken before the call.
 - **NUMBERS:** Deterministic and idempotent: running `mergeEvents` on its own no-change output (case 1) yields no work (exact). Never deletes on absence (case 9, exact). 9 of 9 cases pass. Latency: UNKNOWN (pure CPU, not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0440 — Component: ExternalWriteConfirm (confirm one write to an outside calendar) (`apps/web/components/calendar/ExternalWriteConfirm.tsx`)
@@ -37205,7 +37248,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   - Given `external-write-confirm-error` / Then `role="alert"` reads `That didn't reach your calendar, so nothing changed there. You can try again.` (HE `זה לא הגיע ללוח השנה, אז שום דבר לא השתנה שם. אפשר לנסות שוב.`) and the approve button is enabled; Given `external-write-confirm-offline` / Then `[data-component="StateOffline"]` reads `You're offline. Writing to your calendar needs a connection.` (HE `אין חיבור כרגע. כדי לכתוב ללוח השנה צריך חיבור.`) and the approve button is disabled.
   - Given the harness / When `expectDir(page, lang)`, `expectTargetSize(page, '[data-testid="external-write-confirm-default"]')` and `expectMotionBudget(page, '[data-testid="external-write-confirm-default"]')` run, then Cancel is focused and `Tab` is pressed / Then all pass, focus wraps to the Close button with computed `outline-width` ≥ `2px`, and in `he` the Close button's `x` is smaller than the heading's `x` (in `en` greater).
 - **NUMBERS:** Text contrast ≥ 4.5:1 · WCAG 2.2 SC 1.4.3 · tokens only (`bun run scan:design-tokens`). Target size ≥ 24 × 24 CSS px · WCAG 2.2 SC 2.5.8 · `expectTargetSize`. Focus visible ≥ 2 px · WCAG 2.2 SC 2.4.7 · last bullet. Motion ≤ 250 ms (sheet 240 ms), ≤ 1 ms reduced · CONVENTIONS §5 · `expectMotionBudget`. One write per confirmation (exact; PRD F-131). 32 of 32 cases pass (8 bullets × 2 viewports × 2 languages).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0437a — Calendar sync: `calendarSync.applyImport` writes merged outside events (internal mutation) (`convex/calendarSync.ts`)
@@ -37285,7 +37328,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given `userId` `"users:999"` (no row) / Then it rejects with `"User not found"`.
   9. Scan limit at n and n + 1 (`CALENDAR_IMPORT_SCAN_MAX` = 500; the fake returns index rows in ascending `startsAtMs`): given 500 Tempo rows `{ userId: "users:1", title: "T<i>", startsAtMs: i, createdAt: 1, updatedAt: 1 }` for i = 1…500 (no `externalId`) / When the import sends `{ externalId: "ga", title: "T1", startsAtMs: 1, endsAtMs: null, deleted: false }` and `{ externalId: "gb", title: "T500", startsAtMs: 500, endsAtMs: null, deleted: false }` / Then it returns `conflicts: 2, inserted: 0`; given 501 such rows (i = 1…501) and the import sends `ga` (`T1` at 1) and `{ externalId: "gb", title: "T501", startsAtMs: 501, endsAtMs: null, deleted: false }` / Then it returns `conflicts: 1, inserted: 1` (row 501 is beyond the 500 read, so it is not matched).
 - **NUMBERS:** Incoming events per call ≤ 100 (`CALENDAR_IMPORT_MAX`, product bound; case 7 at 100 and 101). Tempo rows scanned ≤ 500 (`CALENDAR_IMPORT_SCAN_MAX`, product bound; CONVENTIONS §16 bounded reads; case 9 at 500 and 501). p95 latency: UNKNOWN (no measured baseline; CONVENTIONS §20, not a gate). 9 of 9 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0437b — Calendar sync: `calendarSync.importGoogle` reads Google Calendar through Executor (action) (`convex/calendarSync.ts`) — OPEN
@@ -37447,7 +37490,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   9. Given 20,001 lines `` `1/1/24, 10:00 - Dana: m${i}` `` for `i` 0…20000 / Then `messages.length` is `20000`, `messages[19999].text` is `"m19999"` and `truncated` is `true`.
   10. Given `""` and `"\n\n"` / Then each returns `{ messages: [], skippedLines: 0, truncated: false }`.
 - **NUMBERS:** export ≤ 10,485,760 UTF-8 bytes and ≤ 20,000 messages (`WHATSAPP_EXPORT_MAX_BYTES`, `WHATSAPP_EXPORT_MAX_MESSAGES`; source: the existing chat-history bounds in `packages/utils/src/historyImport.ts`; tested at limit + 1); raw text persisted = 0 bytes (HARD_RULES §6.4; one import only); 10 of 10 cases pass. Latency: n/a (pure; no baseline).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0441b — Message bridges: commitment rule `candidateFromText` (`convex/lib/messageCandidates.ts`) — OPEN
@@ -37829,7 +37872,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   6. Given `makeFakeCtx("users:a", ["users:b"])` and a `"users:b"` task `"Call the bank"` / When A commits `["Call the bank"]` / Then `created: 1`, the new row has `userId: "users:a"`, and B's row is unchanged (other-user case: nothing of B's is read or changed).
   7. Given `items: []` / Then `{ created: 0, skipped: 0, taskIds: [] }`.
 - **NUMBERS:** ≤ 200 items per save (`MESSAGE_IMPORT_MAX_ITEMS`; same order as `MAX_REVIEWED_ITEMS` 300 in `convex/memoryImport.ts`, lowered to the WhatsApp candidate cap; tested at 201); title ≤ 280 characters (`MESSAGE_IMPORT_TITLE_MAX`, `QUICK_TITLE_MAX` in `convex/tasks.ts`; tested at 281); raw chat text persisted = 0 bytes (HARD_RULES §6.4); 7 of 7 cases pass. p95 latency: UNKNOWN (no baseline; not a gate).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0444a — Course platforms: deadline normalizer `courseDeadlineItems` (`convex/lib/courseDeadlines.ts`) — OPEN
@@ -38005,7 +38048,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `maxOutputChars` `0`, `8_001` or `1.5`, or `timeoutMs` `0` or `120_001` / Then each rejects with `"Invalid local model options"`.
   8. Given `infer` rejecting `new Error("engine crashed")` / Then it rejects with `"engine crashed"`.
 - **NUMBERS:** prompt ≤ 32,768 UTF-8 bytes, output ≤ 8,000 characters, deadline ≤ 120,000 ms (proposed engineering bounds; the real limits depend on the unchosen engine and model — UNKNOWN; each tested at limit + 1); 8 of 8 cases pass. On-device latency: UNKNOWN (device-dependent).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0446b — Offline inference: deterministic `createStubRunner` (`packages/utils/src/local-model-stub.ts`)
@@ -38042,7 +38085,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   5. Given `createStubRunner({ delayMs: 1000 })` loaded / When `inferWithBudget(..., { maxOutputChars: 100, timeoutMs: 20 })` / Then it rejects with `"Local model timed out"` within 500 ms (the stub stops on abort).
   6. Given a direct `runner.infer("x", { maxOutputChars: 10, signal })` with an already-aborted signal and `delayMs: 1000` / Then it rejects with `"Aborted"`.
 - **NUMBERS:** identical output for identical input (2 calls compared); an aborted run ends within 500 ms (tested); 6 of 6 cases pass. Latency: n/a (stub).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0447a — Offline inference: approved model list `findApprovedLocalModel` (`convex/lib/localModelRegistry.ts`) — OPEN
@@ -38217,7 +38260,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `none` / When `start` with `totalBytes` `0` or `1.5`, or `modelId: ""` / Then the same object each time.
   8. Given `none` / When `progress` 10 / Then the same object.
 - **NUMBERS:** 4 states, 5 events; `receivedBytes` never decreases and never exceeds `totalBytes` (tested); 8 of 8 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0448 — Offline inference: offline coach fallback `offlineCoachReply` (`packages/utils/src/offline-coach.ts`) — OPEN
@@ -38323,7 +38366,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   8. Given one op replayed successfully / When `replay` runs again / Then `apply` was called once in total (no double apply).
   9. Given op 1 whose `apply` enqueues a new op / Then the same replay applies ids `[1, 2]`.
 - **NUMBERS:** ≤ 5,000 queued ops (`SYNC_QUEUE_MAX_OPS`; proposed client-memory bound, UNKNOWN real offline volumes; tested at 5,001 with no eviction); ops lost = 0 (tested); 9 of 9 cases pass. Latency: n/a (pure).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0450 — Inkling distillation: dataset check + job seam `submitDistillJob` (`convex/lib/distill.ts`) — OPEN
@@ -38991,7 +39034,7 @@ make. A build ticket that needs a CFG ticket lists it in `Depends`.
   7. Given `EXPORT_HABITS_MAX + 1` habits / Then `habits.md` has `count` 500, `truncated` true and ends with `"Only the first 500 are included.\n"`.
   8. Given a page with a blank title / Then `pages.md` contains `"## Untitled"`.
 - **NUMBERS:** Pages ≤ 500, tasks ≤ 2,000, events ≤ 2,000, habits ≤ 500 per export (product bounds under Convex's per-query read limits, https://docs.convex.dev/production/state/limits; case 7). No JSON in the output (exact; PRD §6; case 3). p95 latency: UNKNOWN (no baseline; not a gate). 8 of 8 cases pass.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0455b — Compliance: `compliance.purgeExpiredAccounts` hard-deletes accounts past the 30-day grace (internal mutation + cron line) (`convex/compliance.ts`, `convex/crons.ts`) — OPEN

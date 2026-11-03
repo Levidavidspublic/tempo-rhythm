@@ -1,4 +1,4 @@
-# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026
+# Backlog conventions (shared) — Phase 1, 2 Nov 2026 · extended for the Opus rewrite (§9–§21), 2 Nov 2026 · fix round 1 (§23 and edits in §1, §13, §15, §16, §19, §22), 2 Nov 2026 · fix round 3 (§1 file totals, §11 imports, §13 log, §15 target size, §21 Jev id, §23.8), 3 Nov 2026
 
 One source of truth for every ticket in [`BACKLOG-v2.md`](./BACKLOG-v2.md). Decided once here so no
 ticket re-decides it. Verified against this repo at branch `docs/source-2026-11-01`
@@ -26,6 +26,13 @@ file wins and the ticket is out of date.
 No other command forms. Never `bun run test:browser <path>` or `bun run test <path>` in a STEP, DONE,
 EVIDENCE or TEST. EVIDENCE names the same command as DONE, word for word: "the summary of
 `<DONE command>` pasted into the PR".
+
+**A DONE count is the exact whole-file total (fix round 3, 3 Nov 2026).** DONE is `bun test <path>` → `<N> pass`, `0 fail`,
+with N a number: the tests in that file on `integration` today, plus the tests every ticket in this ticket's `Depends`
+chain adds to the same file, plus this ticket's own. Never a name filter (`-t "…"`, `--test-name-pattern`), never a
+symbolic count (`P + 3`, "the 4 new cases passing"). When an earlier ticket also adds tests to the same file, that
+ticket is in `Depends` (so the total is fixed), and STEP 1 checks the starting total with
+`grep -cE '^\s*(test|it)\(' <path>` (expected: the number the ticket states).
 
 **`bun test <path>` runs one file. `bun run test <path>` is WRONG and does not run the file:**
 `scripts/test-suites.ts` treats any extra argument as a *browser-suite name filter*, finds no
@@ -222,6 +229,12 @@ It is a shared file: **no build ticket edits it.** Every web component ticket sa
   `@/components/providers/LocaleProvider`) or `const { lang } = usePrefs();` (mobile, from
   `apps/mobile/components/v3/prefs.tsx`). Placeholders are `{name}` and are filled with
   `copy.count.replace("{n}", String(n))`. The ticket SPEC gives every key with its exact EN and HE value.
+  A ticket with a `COPY` constant writes the lines that make it compile in its SPEC code (web:
+  `"use client";`, `import type { Lang } from "@/lib/i18n";`,
+  `import { useLocale } from "@/components/providers/LocaleProvider";`, and in the component body
+  `const { lang } = useLocale(); const copy = COPY[lang];`) and cites §11 in WHY.
+- A COPY table's copy cells hold only the string that ships. A source note (the repo key it replaces, the old
+  `t("…")` key) goes in its own column, never inside an EN or HE cell.
 - A ticket that **changes an existing** component which already reads `t("<key>")` keeps those keys and
   adds any new string to a `COPY` constant in the same file. It never edits `apps/web/lib/i18n.ts` or
   `apps/web/lib/i18n-groups/*` unless the ticket is about those files.
@@ -308,6 +321,8 @@ noun for a one-word button and an infinitive for a phrase):
   them). A harness page writes it with one helper declared in the page:
   `const log = (name: string) => (...args: unknown[]) => setLog(args.length === 0 ? `${name}:` : `${name}:${JSON.stringify(args.length === 1 ? args[0] : args)}`);`
   with `const [logText, setLog] = useState("");` and `<output data-testid="<id>-log">{logText}</output>`.
+  No other form (never `JSON.stringify(firstArg ?? null)`). A spec expects exactly what this helper writes for
+  the arguments the SPEC passes: `onSaveWhy(null)` → `onSaveWhy:null`; `onRetry()` → `onRetry:`.
 - Components take **all** data and every action through props. A component never calls `useQuery`,
   `useMutation`, `useAction` or `fetch`; only a screen does (§14).
 - Mobile harness routes live at `apps/mobile/app/e2e/<id>.tsx` and follow the same rules. The route
@@ -355,7 +370,10 @@ export function openScreen(page: Page, route: string, opts: { state: string; lan
 export function expectDir(page: Page, lang: HarnessLang): Promise<void>;
 /** Collects console errors from now on; the spec asserts the array is empty at the end. */
 export function trackConsoleErrors(page: Page): string[];
-/** Asserts every visible button, link, input and [role=switch|checkbox|radio|tab|option] inside the locator is at least 24×24 CSS px. */
+/** Asserts every visible button, link, input and [role=switch|checkbox|radio|tab|option] inside the locator is at least 24×24 CSS px.
+ *  The native `.tp-checkbox` / `.tp-radio` inputs are 22×22 by design (tempo.css line 1060); their target is the
+ *  whole `label.tp-choice` row (min-height `--tp-touch`). So a spec never passes a selector that contains them:
+ *  it asserts the label's own `boundingBox()` width and height ≥ 24 instead. */
 export function expectTargetSize(page: Page, selector: string): Promise<void>;
 /** Asserts computed transition-duration and animation-duration of every element under the selector are ≤ 0.25 s, and ≤ 0.001 s after page.emulateMedia({ reducedMotion: "reduce" }) (tempo.css sets 0.01ms under reduced motion). */
 export function expectMotionBudget(page: Page, selector: string): Promise<void>;
@@ -628,7 +646,9 @@ A ticket-specific question not in the register is written in full on the ticket.
 
 Build tickets copy this line exactly:
 
-`1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.`
+`1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (~typesafe/jev-latest): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.`
+
+The Jev model id is `~typesafe/jev-latest` (Amit, 3 Nov 2026; `typesafe/jev-1.13` is retired).
 
 CFG tickets add `· 11 config lane: built by Amit or a convex-arch run only.` `OPEN` tickets write only
 `n/a — OPEN (not buildable until Amit answers).`
@@ -780,3 +800,13 @@ Colours are compared the same way (`"color"`, `"--tp-ink"`), so the check is ind
   literals (`updatedAt: 1_793_577_600_000`), never `Date.now()` unless the assertion is relative to it.
 - A shape word in a test ("plain object", "a draft row", "a quiz block") is defined once in the SPEC as a
   TypeScript type or literal.
+
+### 23.8 Fixture literals that must parse and must not look like secrets (fix round 3, 3 Nov 2026)
+
+- Every tempo block id in a fixture (`json tempo` blocks, `blockId` fields) matches the code's regex
+  `/^blk_[0-7][0-9A-HJKMNP-TV-Z]{25}$/` (`packages/utils/src/blocks.ts` line 22), for example
+  `"blk_01HZY3M4N5P6Q7R8S9T0V1W2X3"`. An id that fails it parses as a broken block and renders nothing.
+- No fixture value looks like a credential: the PR secret scan (gitleaks `generic-api-key`) fails on a
+  `key` / `apiKey` / `token` / `secret` field holding a random-looking string such as `"sk-test-0123456789abcdef"`.
+  Fixture keys are low-entropy and still meet the code's length rule: `"sk-aaaaaaaaaaaaaaaawxyz"` (23 characters,
+  masked `sk-…wxyz`) and `"byok-aaaaaaaaaaaaaawxyz"`. Check with `gitleaks dir docs/backlog` → no findings.
