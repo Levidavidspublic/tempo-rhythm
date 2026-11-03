@@ -487,6 +487,13 @@ CFG-031, CFG-032 and TFV2-0000d.
   (`convex/lib/requireUser.ts`), which throws `"Not authenticated"`, `"User not found"` or
   `"This account is not active"`. AI paths use the gate the module already uses
   (`requireApprovedForAi` in `convex/lib/aiGate.ts`).
+- **Inherited requireUser errors (fix round 4):** a backend SPEC's error list holds `"Not authenticated"` (always
+  tested) plus the errors the function itself throws. `requireUser`'s other two errors, `"User not found"` and
+  `"This account is not active"`, propagate unchanged, are tested in `convex/lib/requireUser.test.ts` (lines 93 and
+  105 on `integration`), and are neither in the ticket's error list nor in its TESTS. A SPEC that names them says
+  so in exactly this sentence: `requireUser's other errors ("User not found", "This account is not active") propagate
+  unchanged and are not this ticket's errors or tests (CONVENTIONS §16).` A Relies-on contract of `requireUser`
+  may still quote all three messages; that is a contract, not an error list.
 - **Ownership:** a row whose `userId !== user._id`, or that does not exist, or whose `deletedAt` is set
   (unless the function is a restore) throws `new Error("<Thing> not found")` with the module's existing
   noun (`"Task not found"`, `"Habit not found"`, `"Template not found"`, `"Job not found"` for new
@@ -802,6 +809,7 @@ Colours are compared the same way (`"color"`, `"--tp-ink"`), so the check is ind
 
 - Every error the SPEC lists has exactly one TESTS case with its exact trigger; every TESTS error is in the
   SPEC. Signed out (`"Not authenticated"`) and, for a row id, the other-user case are always included.
+  `requireUser`'s inherited `"User not found"` / `"This account is not active"` are not "listed" errors (§16).
 - Every limit is tested on both sides: at `n` (accepted, or exactly `n` returned) and at `n + 1` (rejected,
   or capped at `n`). A time window of D days is tested at D (inside) and D + 1 (outside): a 30-day window
   is tested with 30 and 31.
