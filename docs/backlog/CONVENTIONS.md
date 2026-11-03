@@ -238,6 +238,10 @@ It is a shared file: **no build ticket edits it.** Every web component ticket sa
   `"use client";`, `import type { Lang } from "@/lib/i18n";`,
   `import { useLocale } from "@/components/providers/LocaleProvider";`, and in the component body
   `const { lang } = useLocale(); const copy = COPY[lang];`) and cites §11 in WHY.
+- **A key built at run time is cast (fix round 4, 3 Nov 2026).** A template literal or `+` gives a `string`, and a
+  `string` cannot index `Record<CopyKey, string>` (TypeScript TS7053, `bun run typecheck` fails). So the index is always
+  written `` copy[`filter_${v}` as CopyKey] `` — never `` copy[`filter_${v}`] `` or `copy["name_" + id]` — and every key
+  it can build is listed in `CopyKey` and in both COPY rows.
 - A COPY table's copy cells hold only the string that ships. A source note (the repo key it replaces, the old
   `t("…")` key) goes in its own column, never inside an EN or HE cell.
 - A ticket that **changes an existing** component which already reads `t("<key>")` keeps those keys and
@@ -818,3 +822,29 @@ Colours are compared the same way (`"color"`, `"--tp-ink"`), so the check is ind
   `key` / `apiKey` / `token` / `secret` field holding a random-looking string such as `"sk-test-0123456789abcdef"`.
   Fixture keys are low-entropy and still meet the code's length rule: `"sk-aaaaaaaaaaaaaaaawxyz"` (23 characters,
   masked `sk-…wxyz`) and `"byok-aaaaaaaaaaaaaawxyz"`. Check with `gitleaks dir docs/backlog` → no findings.
+
+### 23.9 ARIA roles that a native element already has: the biome-ignore line (fix round 4, 3 Nov 2026)
+
+`bun run lint` runs `biome lint .` in `apps/web` (Biome 2.3.8, `recommended` rules, `apps/web/biome.json` →
+`packages/config/biome.json`). Its rule `lint/a11y/useSemanticElements` fails an element that carries an ARIA role a
+native element already has. Checked on `integration` with that Biome: it fails `role="radio"`, `"checkbox"`, `"group"`,
+`"status"`, `"list"`, `"listitem"`, `"region"` and `"progressbar"` on a `div`, `p`, `span`, `button` or `section`; it
+does not fail `"radiogroup"`, `"listbox"`, `"option"`, `"switch"`, `"tab"`, `"tablist"`, `"alert"`, `"dialog"` or `"img"`.
+
+- `<ul>` and `<ol>` never carry `role="list"` (it fails `useSemanticElements` and `noRedundantRoles`); a spec finds
+  the list with `getByRole("list")` or its class.
+- An element that keeps such a role (tempo.css styles that exact element, and specs select `[role="…"]`) has the repo's
+  mandatory suppression on the line directly above its opening tag, with a reason after the colon. This is the form the
+  code already uses (`apps/web/components/notes-pages/PeriodFilter.tsx` line 40,
+  `apps/web/components/projects/ProjectDetailScreen.tsx` line 331):
+  - as a JSX child: `{/* biome-ignore lint/a11y/useSemanticElements: <reason> */}`;
+  - as the value of an expression (`cond ? (…) : null`, `cond && (…)`, `.map((x) => (…))`): the element is wrapped in
+    parentheses and `// biome-ignore lint/a11y/useSemanticElements: <reason>` is the first line inside them.
+  A comment written among the element's attributes does not suppress anything (Biome reports `suppressions/unused`).
+- `role="region"` with `tabIndex={0}` also fails `lint/a11y/noNoninteractiveTabindex`; one comment names both rules:
+  `biome-ignore lint/a11y/useSemanticElements lint/a11y/noNoninteractiveTabindex: <reason>`.
+- A ticket that writes such an element lists every one under **Lint** in SPEC with its exact comment. Reasons already in
+  the code, reused word for word: radio "one option of the v3 segmented control"; the task check "the v3 TaskRow check is
+  a button with checkbox semantics (tp-check)"; the language switch "the v3 LanguageSwitch is a labelled group of two
+  links, not a form field set".
+- `role="option"` on a `div` fails `lint/a11y/useFocusableInteractive` instead (it needs a `tabIndex`).
