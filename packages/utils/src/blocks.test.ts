@@ -28,7 +28,6 @@ type Codec = Pick<typeof shared, (typeof RUNTIME_EXPORTS)[number]>;
 /** The seven runtime exports of an entry point, read by static property access. */
 function codecOf(entry: Codec): Codec {
   return {
-    // biome-ignore lint/style/useNamingConvention: mirrors the exported BLOCK_CODEC_LIMITS constant.
     BLOCK_CODEC_LIMITS: entry.BLOCK_CODEC_LIMITS,
     pageMetaDataSchema: entry.pageMetaDataSchema,
     parseTempoBlocks: entry.parseTempoBlocks,
@@ -140,8 +139,7 @@ const fixtureBodies: Record<string, string> = {
   duplicateId: fence(task) + fence(task),
   duplicatePageMeta: fence(meta) + fence({ ...meta, id: ids.template }),
   reservedByInvalid: fence({ ...task, data: { ...task.data, title: "" } }) + fence(task),
-  reservedByNesting:
-    fence({ ...task, data: nestedArray(BLOCK_CODEC_LIMITS.maxJsonDepth) }) + fence(task),
+  reservedByNesting: fence({ ...task, data: nestedArray(BLOCK_CODEC_LIMITS.maxJsonDepth) }) + fence(task),
   invalidCalendarDate: fence({ ...meta, data: { ...meta.data, date: "2026-02-30" } }),
   ulidOverflow: fence({ ...task, id: `blk_8${"0".repeat(25)}` }),
   hugeBody: "x".repeat(BLOCK_CODEC_LIMITS.maxBodyChars + 1),
@@ -150,7 +148,7 @@ const fixtureBodies: Record<string, string> = {
     data: { ...task.data, title: "x".repeat(BLOCK_CODEC_LIMITS.maxBlockChars) },
   }),
   tooManyBlocks: Array.from({ length: BLOCK_CODEC_LIMITS.maxBlocks + 1 }, (_, index) =>
-    fence({ ...task, id: `blk_${index.toString(32).toUpperCase().padStart(26, "0")}` })
+    fence({ ...task, id: `blk_${index.toString(32).toUpperCase().padStart(26, "0")}` }),
   ).join(""),
   htmlComment: `<!--\n${fence(task)}-->\n${fence(meta)}`,
   htmlPre: `<pre>\n${fence(task)}</pre>\n${fence(meta)}`,
@@ -220,9 +218,7 @@ describe("shared codec public surface", () => {
         const actual = codec.parseTempoBlocks(body);
         expect(actual, `${name}: ${label}`).toEqual(expected);
         expect(codec.serializeTempoBlocks(actual), `${name}: ${label}`).toBe(body);
-        expect(
-          actual.every((segment) => segment.source === body.slice(segment.start, segment.end))
-        ).toBe(true);
+        expect(actual.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
       }
     }
   });
@@ -265,7 +261,7 @@ describe("shared codec public surface", () => {
  * nothing another suite does in this process can hold it.
  */
 const BUILD_PROBE = `
-const result = await Bun.build({ entrypoints: [process.env.tempoBundleEntry], target: "browser", metafile: true });
+const result = await Bun.build({ entrypoints: [process.env.TEMPO_BUNDLE_ENTRY], target: "browser", metafile: true });
 const metafile = result.metafile;
 const text = result.success && metafile ? await result.outputs[0].text() : "";
 console.log(JSON.stringify({
@@ -286,14 +282,13 @@ interface BundleProbe {
 /** Run the real browser-target build in its own Bun process and hand back its metafile facts. */
 function bundleInOwnProcess(entry: string): BundleProbe {
   const child = spawnSync(process.execPath, ["--eval", BUILD_PROBE], {
-    env: { ...process.env, tempoBundleEntry: entry },
+    env: { ...process.env, TEMPO_BUNDLE_ENTRY: entry },
     encoding: "utf8",
     // Below the 30s test budget, so a hung build fails with its own message, not a test timeout.
     timeout: 20_000,
     killSignal: "SIGKILL",
   });
-  if (child.error)
-    throw new Error(`bun build probe did not finish within 20s: ${child.error.message}`);
+  if (child.error) throw new Error(`bun build probe did not finish within 20s: ${child.error.message}`);
   const stdout = child.stdout ?? "";
   const stderr = child.stderr ?? "";
   if (child.status !== 0) throw new Error(`bun build probe exited ${child.status}:\n${stderr}`);
@@ -310,9 +305,7 @@ describe("shared codec is browser-safe", () => {
 
   function importSpecifiers(source: string): string[] {
     const specifiers: string[] = [];
-    for (const match of source.matchAll(
-      /(?:^|\n)\s*(?:import|export)\b[^;]*?\bfrom\s*["']([^"']+)["']/g
-    )) {
+    for (const match of source.matchAll(/(?:^|\n)\s*(?:import|export)\b[^;]*?\bfrom\s*["']([^"']+)["']/g)) {
       specifiers.push(match[1] as string);
     }
     for (const match of source.matchAll(/(?:^|\n)\s*import\s*["']([^"']+)["']/g)) {
@@ -327,14 +320,7 @@ describe("shared codec is browser-safe", () => {
   test("the shared module imports only zod and uses no platform global", () => {
     const source = read(join(sourceDir, "blocks.ts"));
     expect(importSpecifiers(source)).toEqual(["zod"]);
-    for (const forbidden of [
-      /\bprocess\b/,
-      /\bBuffer\b/,
-      /\bBun\b/,
-      /\bwindow\b/,
-      /\bdocument\b/,
-      /\bfetch\b/,
-    ]) {
+    for (const forbidden of [/\bprocess\b/, /\bBuffer\b/, /\bBun\b/, /\bwindow\b/, /\bdocument\b/, /\bfetch\b/]) {
       expect(source, String(forbidden)).not.toMatch(forbidden);
     }
   });
@@ -342,13 +328,7 @@ describe("shared codec is browser-safe", () => {
   test("the Convex module is only a re-export from @tempo/utils with no second codec", () => {
     const source = read(join(sourceDir, "../../../convex/lib/blocks.ts"));
     expect(importSpecifiers(source)).toEqual(["@tempo/utils"]);
-    for (const duplicated of [
-      /from\s*["']zod["']/,
-      /\bz\./,
-      /function\s+\w+/,
-      /JSON\.parse/,
-      /=>/,
-    ]) {
+    for (const duplicated of [/from\s*["']zod["']/, /\bz\./, /function\s+\w+/, /JSON\.parse/, /=>/]) {
       expect(source, String(duplicated)).not.toMatch(duplicated);
     }
   });
@@ -390,9 +370,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
   function expectExactSpans(body: string) {
     const parsed = parse(body);
     expect(serialize(parsed)).toBe(body);
-    expect(
-      parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))
-    ).toBe(true);
+    expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
     let cursor = 0;
     for (const segment of parsed) {
       expect(segment.start).toBe(cursor);
@@ -414,16 +392,12 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
     expect(valid[1]?.block.type).toBe("task");
     if (valid[1]?.block.type === "task") expect(valid[1].block.data.durationMin).toBe(15);
     expect(serialize(parsed)).toBe(body);
-    expect(
-      parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))
-    ).toBe(true);
+    expect(parsed.every((segment) => segment.source === body.slice(segment.start, segment.end))).toBe(true);
   });
 
   test("exports schemas that apply the same defaults and strict properties", () => {
     const parsedTask = codec.tempoBlockSchema.safeParse(task);
-    expect(
-      parsedTask.success && parsedTask.data.type === "task" && parsedTask.data.data.durationMin
-    ).toBe(15);
+    expect(parsedTask.success && parsedTask.data.type === "task" && parsedTask.data.data.durationMin).toBe(15);
     expect(codec.taskDataSchema.safeParse(task.data).success).toBe(true);
     expect(codec.pageMetaDataSchema.safeParse(meta.data).success).toBe(true);
     expect(codec.templateDataSchema.safeParse(template.data).success).toBe(true);
@@ -431,13 +405,8 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
     expect(codec.pageMetaDataSchema.safeParse({ ...meta.data, extra: 1 }).success).toBe(false);
     expect(codec.templateDataSchema.safeParse({ ...template.data, extra: 1 }).success).toBe(false);
     expect(codec.tempoBlockSchema.safeParse({ ...task, extra: 1 }).success).toBe(false);
-    expect(
-      codec.tempoBlockSchema.safeParse({ ...task, data: { ...task.data, durationMin: 0 } }).success
-    ).toBe(false);
-    expect(
-      codec.tempoBlockSchema.safeParse({ ...task, data: { ...task.data, durationMin: 1441 } })
-        .success
-    ).toBe(false);
+    expect(codec.tempoBlockSchema.safeParse({ ...task, data: { ...task.data, durationMin: 0 } }).success).toBe(false);
+    expect(codec.tempoBlockSchema.safeParse({ ...task, data: { ...task.data, durationMin: 1441 } }).success).toBe(false);
   });
 
   test("preserves CRLF, Unicode, adjacent fences, and ordinary or nested-looking fences", () => {
@@ -511,12 +480,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
         const ordinary = `${opener}\n${fence(task)}${closer}\n`;
 
         expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
-        expect(parsed[0]).toEqual({
-          kind: "markdown",
-          source: ordinary,
-          start: 0,
-          end: ordinary.length,
-        });
+        expect(parsed[0]).toEqual({ kind: "markdown", source: ordinary, start: 0, end: ordinary.length });
         expectExactSpans(body);
       }
     }
@@ -543,23 +507,15 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
   });
 
   test("rejects invalid properties, types, versions, duplicate IDs and page-meta blocks", () => {
-    expect(brokenCodes(fence({ ...task, data: { ...task.data, done: false } }))).toEqual([
-      "invalid_data",
-    ]);
+    expect(brokenCodes(fence({ ...task, data: { ...task.data, done: false } }))).toEqual(["invalid_data"]);
     expect(brokenCodes(fence({ ...task, extra: true }))).toEqual(["invalid_data"]);
-    expect(brokenCodes(fence({ ...meta, data: { ...meta.data, extra: true } }))).toEqual([
-      "invalid_data",
-    ]);
-    expect(brokenCodes(fence({ ...template, data: { ...template.data, extra: true } }))).toEqual([
-      "invalid_data",
-    ]);
+    expect(brokenCodes(fence({ ...meta, data: { ...meta.data, extra: true } }))).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...template, data: { ...template.data, extra: true } }))).toEqual(["invalid_data"]);
     expect(brokenCodes(fence({ ...task, type: "event" }))).toEqual(["unsupported_type"]);
     expect(brokenCodes(fence({ ...task, v: 2 }))).toEqual(["unsupported_version"]);
     expect(brokenCodes(fence([task]))).toEqual(["invalid_envelope"]);
     expect(brokenCodes(fence(task) + fence(task))).toEqual(["duplicate_id"]);
-    expect(brokenCodes(fence(meta) + fence({ ...meta, id: ids.template }))).toEqual([
-      "duplicate_page_meta",
-    ]);
+    expect(brokenCodes(fence(meta) + fence({ ...meta, id: ids.template }))).toEqual(["duplicate_page_meta"]);
   });
 
   test("reserves valid source IDs even when their first block is semantically broken", () => {
@@ -588,9 +544,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       expect(validSegments(fence({ ...meta, data: { ...meta.data, date } }))).toHaveLength(1);
     }
     for (const date of ["2023-02-29", "2026-02-30", "2026-04-31", "2026-13-01", "0000-00-00"]) {
-      expect(brokenCodes(fence({ ...meta, data: { ...meta.data, date } }))).toEqual([
-        "invalid_data",
-      ]);
+      expect(brokenCodes(fence({ ...meta, data: { ...meta.data, date } }))).toEqual(["invalid_data"]);
     }
 
     const overflowId = `blk_8${"0".repeat(25)}`;
@@ -628,31 +582,13 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
     const textAtLimit = "t".repeat(limits.maxTextChars);
     const arrayAtLimit = Array.from({ length: limits.maxArrayItems }, () => shortAtLimit);
 
-    expect(
-      validSegments(fence({ ...meta, data: { ...meta.data, tags: arrayAtLimit } }))
-    ).toHaveLength(1);
-    expect(
-      validSegments(
-        fence({ ...task, data: { ...task.data, title: textAtLimit, reason: textAtLimit } })
-      )
-    ).toHaveLength(1);
-    expect(
-      validSegments(
-        fence({ ...template, data: { ...template.data, name: textAtLimit, tokens: arrayAtLimit } })
-      )
-    ).toHaveLength(1);
+    expect(validSegments(fence({ ...meta, data: { ...meta.data, tags: arrayAtLimit } }))).toHaveLength(1);
+    expect(validSegments(fence({ ...task, data: { ...task.data, title: textAtLimit, reason: textAtLimit } }))).toHaveLength(1);
+    expect(validSegments(fence({ ...template, data: { ...template.data, name: textAtLimit, tokens: arrayAtLimit } }))).toHaveLength(1);
 
-    expect(
-      brokenCodes(fence({ ...meta, data: { ...meta.data, tags: [`${shortAtLimit}x`] } }))
-    ).toEqual(["invalid_data"]);
-    expect(
-      brokenCodes(fence({ ...task, data: { ...task.data, title: `${textAtLimit}x` } }))
-    ).toEqual(["invalid_data"]);
-    expect(
-      brokenCodes(
-        fence({ ...template, data: { ...template.data, tokens: [...arrayAtLimit, "x"] } })
-      )
-    ).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...meta, data: { ...meta.data, tags: [`${shortAtLimit}x`] } }))).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...task, data: { ...task.data, title: `${textAtLimit}x` } }))).toEqual(["invalid_data"]);
+    expect(brokenCodes(fence({ ...template, data: { ...template.data, tokens: [...arrayAtLimit, "x"] } }))).toEqual(["invalid_data"]);
   });
 
   test("measures every size limit in UTF-16 code units, not UTF-8 bytes", () => {
@@ -671,28 +607,16 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
 
     const block = (json: string) => `\`\`\`json tempo\n${json}\n\`\`\`\n`;
     expect(brokenCodes(block(twoByte.repeat(limits.maxBlockChars)))).toEqual(["malformed_json"]);
-    expect(brokenCodes(block(twoByte.repeat(limits.maxBlockChars + 1)))).toEqual([
-      "block_too_large",
-    ]);
+    expect(brokenCodes(block(twoByte.repeat(limits.maxBlockChars + 1)))).toEqual(["block_too_large"]);
     expect(brokenCodes(block(astral.repeat(limits.maxBlockChars / 2)))).toEqual(["malformed_json"]);
-    expect(brokenCodes(block(astral.repeat(limits.maxBlockChars / 2 + 1)))).toEqual([
-      "block_too_large",
-    ]);
+    expect(brokenCodes(block(astral.repeat(limits.maxBlockChars / 2 + 1)))).toEqual(["block_too_large"]);
 
     const shortAstral = astral.repeat(limits.maxShortStringChars / 2);
     const textAstral = astral.repeat(limits.maxTextChars / 2);
-    expect(
-      validSegments(fence({ ...meta, data: { ...meta.data, tags: [shortAstral] } }))
-    ).toHaveLength(1);
-    expect(
-      brokenCodes(fence({ ...meta, data: { ...meta.data, tags: [`${shortAstral}${astral}`] } }))
-    ).toEqual(["invalid_data"]);
-    expect(
-      validSegments(fence({ ...task, data: { ...task.data, title: textAstral } }))
-    ).toHaveLength(1);
-    expect(
-      brokenCodes(fence({ ...task, data: { ...task.data, title: `${textAstral}${astral}` } }))
-    ).toEqual(["invalid_data"]);
+    expect(validSegments(fence({ ...meta, data: { ...meta.data, tags: [shortAstral] } }))).toHaveLength(1);
+    expect(brokenCodes(fence({ ...meta, data: { ...meta.data, tags: [`${shortAstral}${astral}`] } }))).toEqual(["invalid_data"]);
+    expect(validSegments(fence({ ...task, data: { ...task.data, title: textAstral } }))).toHaveLength(1);
+    expect(brokenCodes(fence({ ...task, data: { ...task.data, title: `${textAstral}${astral}` } }))).toEqual(["invalid_data"]);
   });
 
   describe("raw HTML blocks keep fence-looking lines as prose", () => {
@@ -734,16 +658,8 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       ] as const) {
         const hidden = `${open}\n${live}${close} tail text\n`;
         const body = `${hidden}${fence(meta)}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          open
-        ).toEqual([ids.meta]);
-        expect(parse(body)[0], open).toEqual({
-          kind: "markdown",
-          source: hidden,
-          start: 0,
-          end: hidden.length,
-        });
+        expect(validSegments(body).map((segment) => segment.block.id), open).toEqual([ids.meta]);
+        expect(parse(body)[0], open).toEqual({ kind: "markdown", source: hidden, start: 0, end: hidden.length });
         expectExactSpans(body);
       }
     });
@@ -752,28 +668,14 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       const hidden = `<!-- start\n${live}trailing --> and after\n`;
       const body = `${hidden}${fence(meta)}`;
       expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta]);
-      expect(parse(body)[0]).toEqual({
-        kind: "markdown",
-        source: hidden,
-        start: 0,
-        end: hidden.length,
-      });
+      expect(parse(body)[0]).toEqual({ kind: "markdown", source: hidden, start: 0, end: hidden.length });
       expectExactSpans(body);
     });
 
     test("a block that opens and closes on its own line hides nothing after it", () => {
-      for (const single of [
-        "<!-- note -->",
-        "<!-->",
-        "<pre>x</pre>",
-        "<script src=a></script>",
-        "<!DOCTYPE html>",
-      ]) {
+      for (const single of ["<!-- note -->", "<!-->", "<pre>x</pre>", "<script src=a></script>", "<!DOCTYPE html>"]) {
         const body = `${single}\n${live}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          single
-        ).toEqual([ids.task]);
+        expect(validSegments(body).map((segment) => segment.block.id), single).toEqual([ids.task]);
         expectExactSpans(body);
       }
     });
@@ -782,12 +684,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       const hidden = `<script>\n${live}</STYLE>\n`;
       const body = `${hidden}${live}`;
       expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.task]);
-      expect(parse(body)[0]).toEqual({
-        kind: "markdown",
-        source: hidden,
-        start: 0,
-        end: hidden.length,
-      });
+      expect(parse(body)[0]).toEqual({ kind: "markdown", source: hidden, start: 0, end: hidden.length });
       expectProse(`<pre>\n</div>\n${live}</span>\n`);
     });
 
@@ -799,10 +696,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       ] as const) {
         expectProse(`${open}\n${live}${close}\n`);
         const body = `${open}\n${live}${close}\n${fence(meta)}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          open
-        ).toEqual([ids.meta]);
+        expect(validSegments(body).map((segment) => segment.block.id), open).toEqual([ids.meta]);
         expectExactSpans(body);
       }
     });
@@ -832,10 +726,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
         "`<!--`",
       ]) {
         const body = `${notHtml}\n${live}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          notHtml
-        ).toEqual([ids.task]);
+        expect(validSegments(body).map((segment) => segment.block.id), notHtml).toEqual([ids.task]);
         expectExactSpans(body);
       }
     });
@@ -843,10 +734,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
     test("fence-looking lines inside raw HTML do not open ordinary fences", () => {
       for (const marker of ["```", "````", "~~~", "```js", "~~~ md"]) {
         const body = `<!--\n${marker}\n-->\n${live}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          marker
-        ).toEqual([ids.task]);
+        expect(validSegments(body).map((segment) => segment.block.id), marker).toEqual([ids.task]);
         expectExactSpans(body);
       }
       const unclosedInside = `<pre>\n\`\`\`\n</pre>\n${fence(meta)}`;
@@ -860,10 +748,7 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
         ["````", "````"],
       ] as const) {
         const body = `${open}\n<!--\n<pre>\n${close}\n${live}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          open
-        ).toEqual([ids.task]);
+        expect(validSegments(body).map((segment) => segment.block.id), open).toEqual([ids.task]);
         expectExactSpans(body);
       }
       const insideTempo = `\`\`\`json tempo\n<!--\n\`\`\`\n${live}`;
@@ -876,16 +761,8 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       for (const eol of ["\r", "\n", "\r\n"]) {
         const hidden = `<!--${eol}${fence(task, eol)}-->${eol}`;
         const body = `${hidden}${fence(meta, eol)}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          JSON.stringify(eol)
-        ).toEqual([ids.meta]);
-        expect(parse(body)[0]).toEqual({
-          kind: "markdown",
-          source: hidden,
-          start: 0,
-          end: hidden.length,
-        });
+        expect(validSegments(body).map((segment) => segment.block.id), JSON.stringify(eol)).toEqual([ids.meta]);
+        expect(parse(body)[0]).toEqual({ kind: "markdown", source: hidden, start: 0, end: hidden.length });
         expectExactSpans(body);
         expectProse(`<pre>${eol}${fence(task, eol)}</pre>${eol}`);
       }
@@ -895,54 +772,29 @@ describe.each(entryPoints)("Tempo block codec through the %s", (_name, codec) =>
       for (const separator of unicodeSeparators) {
         const hidden = `<!--${separator}start\n${live}end${separator}-->${separator}\n`;
         const body = `${hidden}${fence(meta)}`;
-        expect(
-          validSegments(body).map((segment) => segment.block.id),
-          JSON.stringify(separator)
-        ).toEqual([ids.meta]);
-        expect(parse(body)[0]).toEqual({
-          kind: "markdown",
-          source: hidden,
-          start: 0,
-          end: hidden.length,
-        });
+        expect(validSegments(body).map((segment) => segment.block.id), JSON.stringify(separator)).toEqual([ids.meta]);
+        expect(parse(body)[0]).toEqual({ kind: "markdown", source: hidden, start: 0, end: hidden.length });
         expectExactSpans(body);
       }
     });
 
     test("a real block before, between and after raw HTML blocks stays valid", () => {
       const body = `${fence(meta)}<!--\n${live}-->\n${fence(template)}<pre>\n${live}</pre>\n${live}`;
-      expect(validSegments(body).map((segment) => segment.block.id)).toEqual([
-        ids.meta,
-        ids.template,
-        ids.task,
-      ]);
+      expect(validSegments(body).map((segment) => segment.block.id)).toEqual([ids.meta, ids.template, ids.task]);
       expect(brokenCodes(body)).toEqual([]);
       expectExactSpans(body);
     });
 
     test("scans a maximum-size body of unterminated markers without blowing up", () => {
-      for (const line of [
-        "<!-- x\n",
-        "<pre \n",
-        "<script\t\n",
-        "<!--\r\n",
-        "    <!--\n",
-        "<?\n",
-        "<!-\n",
-      ]) {
-        const body =
-          line.repeat(Math.floor((limits.maxBodyChars - live.length) / line.length)) + live;
+      for (const line of ["<!-- x\n", "<pre \n", "<script\t\n", "<!--\r\n", "    <!--\n", "<?\n", "<!-\n"]) {
+        const body = line.repeat(Math.floor((limits.maxBodyChars - live.length) / line.length)) + live;
         expect(body.length).toBeLessThanOrEqual(limits.maxBodyChars);
         const parsed = parse(body);
         expect(serialize(parsed)).toBe(body);
         expect(parsed.every((segment) => segment.kind !== "broken")).toBe(true);
       }
-      const spaces = `<pre${" ".repeat(limits.maxBodyChars - 10)}\n${live}`.slice(
-        0,
-        limits.maxBodyChars
-      );
+      const spaces = `<pre${" ".repeat(limits.maxBodyChars - 10)}\n${live}`.slice(0, limits.maxBodyChars);
       expect(serialize(parse(spaces))).toBe(spaces);
     });
   });
 });
-
