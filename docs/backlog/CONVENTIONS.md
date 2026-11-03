@@ -355,6 +355,23 @@ noun for a one-word button and an infinitive for a phrase):
   `page.getByTestId("<id>-<state>").locator('[id$="-<name>"]')`, and asserts an id-valued attribute as "ends in `-<name>`".
   The only literal ids left are references to one element outside the component (for example `aria-controls="coach-panel"`,
   the shell's single coach panel) and an id the caller passes in once (TFV2-0292 `Container id`).
+  An id the harness page itself passes to a primitive as a prop (unique per section, e.g. SettingRow `id: "sr-a"`) and the
+  ids the primitive derives from it (`sr-a-label`) are known literals: a spec may select them exactly, scoped to the
+  section (`page.getByTestId("<id>-<state>").locator("#sr-a-label")`). A parent that passes ids to a child's
+  `labelledBy` / `describedBy` / `confirmDescribedBy` props passes the child's uid-prefixed ids
+  (``labelledBy={`${uid}-pv-an-label`}``), never the bare name.
+  Compat exception: a literal id that an existing spec on `integration` already selects (the ticket names that spec's
+  file and line, e.g. `#habits-library-name` in `tests/e2e/feature-sweep.spec.ts`) stays literal; the ticket says so in
+  its Ids line, and its TESTS reach that element only inside the first harness section.
+- **Stacked-harness side effects (fix round 4, 3 Nov 2026).** A component that moves focus on mount, traps Tab, locks
+  `document.body` scroll or listens on `document` while mounted is never mounted in more than one section at a time, or
+  the sections fight (the last one mounted wins focus). Each of its sections renders an opener first,
+  `<button type="button" className="tp-btn tp-btn--secondary" data-testid="<id>-<state>-open">Open</button>` (the
+  `tp-btn` class keeps it ≥ 44 px for `expectTargetSize`), and mounts the component only after a click: a component with an
+  `open` prop gets it from that section's `useState(false)`; a component that is open whenever it is mounted is rendered
+  as `{shown ? <Component … /> : null}` through a small `Slot` component declared in the page that holds
+  `const [shown, setShown] = useState(false);`. Every TESTS bullet clicks its section's opener first, and focus
+  assertions are made with only that one instance mounted.
 
 ## 14. Screen data rule (web)
 
