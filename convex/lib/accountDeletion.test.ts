@@ -288,6 +288,13 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  feedback: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    message: "hello",
+    createdAt: 1,
+    updatedAt: 1,
+    page: "/ask-founder",
+  })),
   chatRequests: fixture("owned-table-soft-delete", (userId) => ({
     userId,
     conversationId: NO_ID("conversations") as Id<"conversations">,
