@@ -20,12 +20,12 @@ Amit adds them to the ruleset.
 | Gate | Checks | Pass rule | Job |
 | --- | --- | --- | --- |
 | `format-naming` | Formatting via `biome format` and naming via Biome's `useNamingConvention` (Google casing) on the PR's changed TS/JS files under `apps/` and `packages/` | no file needs reformatting and no identifier breaks Google naming | `.github/workflows/format-naming.yml` → `format-naming` |
-| `jev-judge` | TypeSafe Jev (`typesafe/jev-router`, OpenRouter System One) scores the PR on instruction-following (a), formatting (b), naming (c), clean code (d), and massive violation (e) | a–d each ≥ 0.85 and e < 0.5; scores posted as one PR comment | `.github/workflows/jev-judge.yml` → `jev-judge` |
+| `jev-judge` | TypeSafe Jev (`~typesafe/jev-latest`, OpenRouter System One) scores the PR on instruction-following (a), formatting (b), naming (c), clean code (d), and massive violation (e) | a–d each ≥ 0.85 and e < 0.5; scores posted as one PR comment | `.github/workflows/jev-judge.yml` → `jev-judge` |
 | `process-check` | The agent's REPORT comment lists the ticket's DONE command and covers every STEP | the DONE command appears and every STEP's key words are covered | `.github/workflows/jev-judge.yml` → `process-check` |
 
 ## Jev judge details
 
-- **Model**: `typesafe/jev-router` on OpenRouter. This is Amit's only OpenRouter exception.
+- **Model**: `~typesafe/jev-latest` on OpenRouter. This is Amit's only OpenRouter exception.
 - **Key**: repository secret `OPENROUTER_API_KEY`. Amit adds the value himself; the value is never
   written anywhere. If the secret is missing the job fails with
   `OPENROUTER_API_KEY not set: Amit adds it in repo Settings > Secrets > Actions`.

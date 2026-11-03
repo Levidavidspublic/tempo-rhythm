@@ -1,7 +1,7 @@
 // Jev judge (config ticket, 2026-11-01).
 //
 // Two per-PR gates in one script, run with `bun .github/scripts/jev-judge.ts <mode>`:
-//   judge          — call TypeSafe Jev (typesafe/jev-router) over OpenRouter's System One API to
+//   judge          — call TypeSafe Jev (~typesafe/jev-latest) over OpenRouter's System One API to
 //                    score a factory PR against its ticket, Amit's style rules (AGENTS.md,
 //                    include.md) and the Google TypeScript style guide, then post the scores.
 //   process-check  — fail unless the agent's REPORT comment lists the ticket's DONE command and
@@ -10,7 +10,7 @@
 // Request format (OpenRouter TypeSafe System One):
 //   https://openrouter.ai/docs/guides/community/typesafe-sdk.md
 //   POST https://openrouter.ai/api/v1/systemone
-//   { "model": "typesafe/jev-router", "state": "...", "questions": { id: { type: "noul", instructions } } }
+//   { "model": "~typesafe/jev-latest", "state": "...", "questions": { id: { type: "noul", instructions } } }
 //   -> { "answers": { id: { type: "noul", noul: 0..1 } } }
 //
 // The API key is read from OPENROUTER_API_KEY and is never logged.
@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 export const SYSTEM_ONE_URL = "https://openrouter.ai/api/v1/systemone";
-export const MODEL = "typesafe/jev-router";
+export const MODEL = "~typesafe/jev-latest";
 export const PASS_THRESHOLD = 0.85;
 export const MASSIVE_VIOLATION_MAX = 0.5;
 export const MISSING_KEY_MESSAGE =
@@ -233,7 +233,7 @@ export function evaluate(scores: Scores): Evaluation {
 
 export function formatComment(scores: Scores, result: Evaluation): string {
   const lines = [
-    "## Jev judge (typesafe/jev-router)",
+    "## Jev judge (~typesafe/jev-latest)",
     "",
     "| Question | Probability | Verdict |",
     "| --- | --- | --- |",

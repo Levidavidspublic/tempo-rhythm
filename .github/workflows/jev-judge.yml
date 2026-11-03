@@ -5,7 +5,7 @@ name: jev-judge
 # process-check (deterministic): the agent's REPORT comment must list the ticket's DONE command and
 # cover every STEP. Fails otherwise.
 #
-# jev-judge (model): calls TypeSafe Jev (typesafe/jev-router) over OpenRouter's System One API with
+# jev-judge (model): calls TypeSafe Jev (~typesafe/jev-latest) over OpenRouter's System One API with
 # the repository secret OPENROUTER_API_KEY (Amit adds the value; never written anywhere). Scores the
 # PR on five questions (a-d must be >= 0.85, e must be < 0.5) and posts the scores as one comment.
 # If the secret is missing the job fails with the exact message that names where Amit adds it.
