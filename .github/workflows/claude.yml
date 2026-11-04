@@ -287,7 +287,7 @@ jobs:
             Do not push. A later workflow step publishes ${{ steps.pr.outputs.is_pr == 'true' && 'the pull request head branch' || 'the current `claude/` branch' }}.
             Never push `master`, `main`, or `integration`.
           claude_args: |
-            --max-turns 25
+            --max-turns 40
             --model claude-sonnet-5
             --setting-sources user
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new)"
