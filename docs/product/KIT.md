@@ -26,6 +26,8 @@ Import paths, from the package comment:
 
 Pages are markdown. json-render draws the blocks. The JSON stays hidden. `packages/utils` holds block helpers (`packages/utils/src/blocks.ts`). The block catalogue in `packages/ui/src/blocks/` includes a decision-steps block. The full catalogue is that folder, not this file.
 
+The alpha uses the existing markdown page, these json-render blocks, and chat. No new component. StudyFetch-like and NotebookLM-like blocks are Gen 1, not alpha (Amit and Nir, 2026-11-05).
+
 ## What the MVP uses
 
 - `TaskRow` for a task on the day.
@@ -43,4 +45,4 @@ The kit must not hard-code left-to-right margins. Use logical properties. Hebrew
 
 ## Sources
 
-`packages/ui/src/index.ts` and `packages/ui/src/primitives/index.ts` at `5504fc40`. [DESIGN.md](./DESIGN.md).
+`packages/ui/src/index.ts` and `packages/ui/src/primitives/index.ts` at `5504fc40`. [DESIGN.md](./DESIGN.md). Amit and Nir, 2026-11-05.

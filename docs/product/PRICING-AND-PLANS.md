@@ -2,28 +2,44 @@
 
 ## Verdict
 
-Two paid plans: $20 a month and $50 a month. Both are the same product. The difference is how much voice-agent use you get. Payments go through Whop and Paddle. Stripe is out. Sign-in is a magic link through Resend.
+$20 a month is the bare essential, so people can afford it. The bare essential is sufficient at $20. Source: Amit, 2026-11-05 evening.
 
-These are Amit's figures. They are not re-checked here.
+$50 a month adds the voice feature. That is the only difference from $20. This confirms the 3 Nov 2026 decision. Source: Amit, 2026-11-05 evening. The 3 Nov file already said voice is the only difference.
 
-## The two plans
+$100 a month is more agentic than $20. It adds an API and calls on the person's behalf. It is for severe executive dysfunction. It is meant to save late fees. He gave no fee amount. This is the Gen 2 plan, because that work is expensive to run. "More agentic" is his name for what $100 adds. Source: Amit, 2026-11-05 evening.
 
-| Plan | Price | Voice-agent use | Text |
+Whether the $100 plan includes the $50 voice feature is UNKNOWN.
+
+Payments go through Whop and Paddle. Stripe is out. Sign-in is a magic link through Resend.
+
+Amit's prices were not re-checked against a live checkout in this pass.
+
+## Minute split from the 3 Nov file
+
+He did not repeat these minutes on the evening of 5 Nov. The rows below are that file's split. They are not a new evening rule.
+
+| Plan in that file | Price | Voice-agent use in that file | Text in that file |
 |---|---|---|---|
 | Lower | $20 a month | 300 minutes a month (10 a day) | Same allowance as the $50 plan |
 | Higher | $50 a month | 1,800 minutes a month (1 hour a day) | Same allowance as the $20 plan |
 
-Source of the minute split: `Downloads/tier-economics-2026-11-03/tempo-omniagent-tier-economics-2026-11-03.md` (2026-11-03), which calls it "Your 300 / 1,800 split." The price points were decided 2026-10-25. The "voice is the difference" line was restated 2026-11-03 and 2026-11-05.
+Source: `Downloads/tier-economics-2026-11-03/tempo-omniagent-tier-economics-2026-11-03.md` (2026-11-03). It calls this "Your 300 / 1,800 split." The price points were decided 2026-10-25.
 
-`docs/HARD_RULES.md` section 9 still says live voice is 30, 90 or 180 minutes a day on Basic, Pro and Max. That file is older. The $20 / $50 minute split wins for the product. The code is not changed in this job.
+`docs/HARD_RULES.md` section 9 still says live voice is 30, 90 or 180 minutes a day on Basic, Pro and Max. That file is older. The code is not changed in this job.
+
+## NotePlan anchor
+
+NotePlan is the price anchor next to the $20 tier. The Nir file says $12 a month or $99 a year, with a 7-day trial. Source: `Downloads/nir-followup-2026-11-05/01-cursor-tempo-docs-nir-update.md`. This pass did not re-check noteplan.co. Amit's prices stay $20, $50, and $100.
+
+Tempo is not priced like NotePlan because the other product has no AI features and no ADHD-specific product. Source: Amit, 2026-11-05 evening.
 
 ## What the code calls a plan
 
 `convex/schema.ts` `subscriptionStates.plan` allows `none`, `trial`, `basic`, `pro`, `max`. `users.entitlementTier` allows `none`, `basic`, `pro`, `max`, `god`.
 
-Which of `basic`, `pro` and `max` is the $20 plan, and which is the $50 plan, is UNKNOWN. `god` is in the schema. What a person pays for it is UNKNOWN. Do not invent a third public price.
+Which of `basic`, `pro` and `max` is the $20 plan, which is the $50 plan, and which name would be the $100 plan, is UNKNOWN. `god` is in the schema. What a person pays for it is UNKNOWN. Do not invent another public price.
 
-A $100 a month plan was named for Gen 2 (website-to-API). It is not one of the two MVP prices. It is not in `subscriptionStates.plan` today.
+The $100 plan is not in `subscriptionStates.plan` today.
 
 ## Payments
 
@@ -49,6 +65,20 @@ Passkeys exist as a route `apps/web/app/settings/passkeys/page.tsx`. The 5 Oct 2
 
 Amit. Raising or lowering prices is executive work he kept (2026-11-04 Nir notes). Agents do not change a live price.
 
+## History
+
+The morning draft of this file said two paid plans, $20 and $50, were the same product, and the difference was how much voice-agent use you get. It placed $100 on Gen 2 as website-to-API, outside the two MVP prices. The evening verdict above wins. The 300 and 1,800 minute rows stay as the 3 Nov file's split.
+
+The Nir file left an open question: keep the $20 tier, or rethink it against NotePlan's $12. The evening answer is the NotePlan paragraph above. The $20 price stays.
+
+## Open questions
+
+- Does the $100 plan include the $50 voice feature? UNKNOWN.
+- Which schema name is $20, which is $50, and which name would be $100? UNKNOWN.
+- What does `god` cost? UNKNOWN.
+- What is Whop's fee for Tempo? UNKNOWN.
+- Does the passkeys route stay? UNKNOWN.
+
 ## Sources
 
-Amit, 2026-11-05. Basic Memory `project-tempo-flow` decisions 2026-10-12, 2026-10-21, 2026-10-25, 2026-10-29. The 3 Nov 2026 tier file named above. `convex/schema.ts` and `.env.example` at `5504fc40`. `docs/HARD_RULES.md` sections 2 and 9 as the older rule.
+Amit, 2026-11-05 evening, over the morning draft. Basic Memory `project-tempo-flow` decisions 2026-10-12, 2026-10-21, 2026-10-25, 2026-10-29. The 3 Nov 2026 tier file named above. The Nir file named above, for the NotePlan anchor only. `convex/schema.ts` and `.env.example` at `5504fc40`. `docs/HARD_RULES.md` sections 2 and 9 as the older rule.

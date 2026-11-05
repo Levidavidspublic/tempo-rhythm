@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Keep the v3 look recorded on 2026-10-21: warm paper, readable type, a centered markdown page, and a quiet coach. A second direction also exists: the black-and-white Broadsheet look (direction 4 of the Leon pitch, 2026-10-28). Both are recorded. Which one ships is UNKNOWN. Do not mix them in one screen.
+Keep the v3 look recorded on 2026-10-21: warm paper, readable type, a centered markdown page, and a quiet coach. A second direction also exists: the black-and-white Broadsheet look (direction 4 of the Leon pitch, 2026-10-28). Nir's notes of 2026-11-05 are recorded below. All of these are recorded. Which one ships is UNKNOWN. Do not mix them in one screen.
 
 ## v3 contract (2026-10-21)
 
@@ -41,6 +41,18 @@ The 21 Oct note says the v3 inventory named 58 web and 13 mobile HTML screens, a
 
 Keep it as a recorded direction (2026-10-28). Do not treat it as the shipped skin until Amit says so.
 
+## Nir (2026-11-05)
+
+Line: "Find your rhythm. Get things done. Don't burn out."
+
+Look and feel: calm, friendly, not overwhelming, with a mascot whose state reflects how the user is doing. Reference: Brainrot (thebrainrotapp.com). The mascot's drawing, name, and states are UNKNOWN. Do not invent them.
+
+Copy method: name the exact moment of pain in the customer's own words, then how it works in 3 steps. Reference: Instacook (instacook.app).
+
+Council check: three strong models from different providers each score screenshots out of 10, compared with Brainrot, NotePlan, and Instacook. Fix and re-score until every model gives 9 or more. Record scores per round. No round has been run. Scores are UNKNOWN.
+
+Which look ships is still UNKNOWN.
+
 ## Sources
 
-`Downloads/grokbot-tempo-omniagent-2026-10-29/tempo/project-docs-2026-10-21/DESIGN.md` (2026-10-29). Basic Memory design lines 2026-10-12 and 2026-10-28. `docs/HARD_RULES.md` section 7.
+`Downloads/grokbot-tempo-omniagent-2026-10-29/tempo/project-docs-2026-10-21/DESIGN.md` (2026-10-29). Basic Memory design lines 2026-10-12 and 2026-10-28. `docs/HARD_RULES.md` section 7. Amit and Nir, 2026-11-05, from `Downloads/nir-followup-2026-11-05/01-cursor-tempo-docs-nir-update.md`.

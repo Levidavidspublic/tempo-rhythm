@@ -4,7 +4,7 @@
 
 The schema that ships today lives in `convex/schema.ts`. This job does not edit that file. The table names below are from `integration` at `5504fc40`. Field lists for the largest tables are summarised. That file is the authority for every field that exists now.
 
-The product target is Firestore, with Firebase Auth, and server code as Vercel functions (FACTORY-LOOP.md, Nir, 2026-11-05). No Firestore collection list exists yet. A ticket must not invent collection names. It maps one Convex table at a time, after Amit accepts the map. Raw mail and chat bodies stay out of the new store the same way they stay out of Convex.
+The product target is Cloud Firestore on the free Spark plan, with Firebase Authentication, and server code as Vercel functions (FACTORY-LOOP.md, Nir, 2026-11-05). Spark has no Cloud Functions and no App Hosting. Every model call runs as a Vercel function. Cloudflare stays. Upgrading to the paid Blaze plan is an open decision. It is Amit's only. It is not a step. No Firestore collection list exists yet. Collection names are UNKNOWN. A ticket must not invent collection names. It maps one Convex table at a time, after Amit accepts the map. Raw mail and chat bodies stay out of the new store the same way they stay out of Convex. The code at `5504fc40` is still Convex.
 
 ## Tables
 
@@ -55,14 +55,19 @@ The product target is Firestore, with Firebase Auth, and server code as Vercel f
 
 ## What is not in the schema
 
-- A $20 or $50 plan name. See [PRICING-AND-PLANS.md](./PRICING-AND-PLANS.md).
-- A $100 Gen 2 plan.
+- Dollar tier names. Evening of 5 Nov 2026: $20 is the bare essential, $50 adds the voice feature, $100 is more agentic (API and calls on the person's behalf). Whether $100 includes the voice feature is UNKNOWN. See [PRICING-AND-PLANS.md](./PRICING-AND-PLANS.md). These are not table names. An older line in this file treated "$100" and "Gen 2" as one absent plan. That evening did not restate the fusion.
+- A Gen 2 read-only assistant as a table. Gen 2 is phone calls, and a website turned into a read-only API on half a CPU core and a headless browser. He said that is not reverse-engineering. Half a CPU core is his figure. It is not an alpha limit and not a collection.
+- A Gen 3 read-write store. Gen 3 waits on a compliance level. The level is UNKNOWN.
+- An alpha text-model column. Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task (2026-11-05 evening). The morning GLM-only line is older for the alpha. Qwen 8B still tags. gpt-oss-safeguard 20B is still the crisis classifier (2026-10-21). None of those names is a new table.
+- A custom-model table. Custom models that teach subtasks and threading are a later stage. Which generation is UNKNOWN. They are not in the alpha.
+- A voice-model or GPU table. Voice-to-voice is an MVP GPU deploy (a 4090 or a 3090, per use, not all day), not the alpha. Which GPU, which voice model, and how many years are UNKNOWN. Hebrew is in that deploy. Listening stays Deepgram until a test says otherwise. Do not switch listening to DeepInfra.
 - A WhatsApp table. Gen 1 does not add one until a ticket says so. Raw mail and chat bodies stay in memory only (`docs/HARD_RULES.md` section 6.4).
+- Any Firestore collection name. UNKNOWN. Do not invent one.
 
 ## Flow
 
 ```
-sign-in (Resend magic link)
+sign-in (Resend magic link, code today)
   -> users row, approvalStatus
   -> notes.body for the day
   -> noteBlocks derived
@@ -73,6 +78,8 @@ sign-in (Resend magic link)
   -> voiceSessions records duration
   -> connections call Executor
 ```
+
+This flow is the code today: Convex, and a Resend magic link. The 5 Nov target is Firebase Authentication plus Cloud Firestore. Who sends the magic link (Resend, Firebase Auth, or both) is UNKNOWN. On the alpha, Executor runs in the backend. The person does not connect MCPs. Collection names stay UNKNOWN.
 
 ## Sources
 

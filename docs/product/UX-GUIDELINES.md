@@ -34,7 +34,7 @@ Empty and error copy never calls the person lazy or a failure. A gap after misse
 
 ## Nudges
 
-Gen 1 may speak first. The MVP does not nag from email or WhatsApp.
+Reminders, several email accounts, WhatsApp, and Discord are Gen 1.1 and 1.5, not the alpha (Amit and Nir, 2026-11-05). Recurring tasks and automatic email alerts sit there too. The alpha and the MVP do not nag from email or WhatsApp.
 
 Reminders that work for Amit come from a friend or use his own wording. A generic "drink water" reminder does not. Source: Basic Memory, 2026-09-19. Nags use the person's phrases (`nags` table).
 
@@ -55,6 +55,10 @@ A study that would justify a points system was not attached. Any gamification be
 
 Ask before a new channel. A notification that repeats without a new fact is a failure. Quiet hours are UNKNOWN. Do not invent a clock time.
 
+## Verification
+
+Council check (Amit and Nir, 2026-11-05). Three strong models from different providers each score screenshots out of 10, compared with Brainrot (thebrainrotapp.com), NotePlan, and Instacook (instacook.app). Fix and re-score until every model gives 9 or more. Record scores per round. No round has been run.
+
 ## Sources
 
-`docs/HARD_RULES.md` sections 1, 7 and 8 at `5504fc40`. Design note 2026-10-21. Ticket standard on `docs/source-2026-11-01` (1 Nov 2026) citing WCAG 2.2 and web.dev. Amit, 2026-11-05. Job file `Downloads/claude-jobs-2026-11-04/03-t3-tempo-docs.md`. Nielsen article date: UNKNOWN.
+`docs/HARD_RULES.md` sections 1, 7 and 8 at `5504fc40`. Design note 2026-10-21. Ticket standard on `docs/source-2026-11-01` (1 Nov 2026) citing WCAG 2.2 and web.dev. Amit, 2026-11-05. Job file `Downloads/claude-jobs-2026-11-04/03-t3-tempo-docs.md`. Nielsen article date: UNKNOWN. Amit and Nir, 2026-11-05, from `Downloads/nir-followup-2026-11-05/01-cursor-tempo-docs-nir-update.md`.

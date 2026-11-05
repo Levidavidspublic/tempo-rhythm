@@ -2,13 +2,21 @@
 
 ## Verdict
 
-Two pictures. The code at `5504fc40` still talks to Convex. The product target, from the factory loop Nir signed on 5 Nov 2026, is Firebase Auth plus Firestore, with server code as Vercel functions. This file records both. It does not move the code.
+Two pictures. The code at `5504fc40` still talks to Convex. The product target, from the factory loop Nir signed on 5 Nov 2026, is Firebase Authentication plus Cloud Firestore on the free Spark plan. Spark has no Cloud Functions and no App Hosting. Server code and every model call run as Vercel functions. Cloudflare stays. Upgrading to the paid Blaze plan is an open decision. It is Amit's only. It is not a step. This file records both pictures. It does not move the code.
 
 The web app is Next.js on Vercel. The phone app is Expo. Executor is the connector hub. Payments are Whop and Paddle in the product target. The installed clients are still Polar and RevenueCat.
 
 Sign-in stays a magic link (Amit, 2026-10-12 and 2026-10-21). Whether that link is sent by Resend, by Firebase Auth, or by both is UNKNOWN. Do not drop Resend in a ticket until he says which.
 
-`docs/HARD_RULES.md` still bans Firebase. The 5 Nov loop is newer and names Firebase as the backend. The ban stays in force for code until a later ticket changes that file. `bun run scan:forbidden-tech` will reject a Firebase import while the ban stands.
+Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task (Amit, 2026-11-05 evening). The morning line that named only GLM 5.3 Flash is older for the alpha. Qwen 8B still tags. gpt-oss-safeguard 20B is still the crisis classifier (2026-10-21). Custom models that teach subtasks and threading are a later stage. Which generation is UNKNOWN. They are not in the alpha.
+
+Executor runs in the backend for the alpha. The person does not connect MCPs. Alpha replaces Basic Memory, Executor, NotePlan, and a chatbot. MVP adds Expo.
+
+Voice-to-voice is a GPU deploy on the MVP, not the alpha. The GPU is a 4090 or a 3090, per use, not all day. Which one, which voice model, and how many years are UNKNOWN. Hebrew is in that voice deploy. Listening stays Deepgram until a test says otherwise. This file does not switch listening to DeepInfra.
+
+$20 is the bare essential. $50 adds the voice feature. $100 is more agentic (API and calls on the person's behalf). Whether $100 includes the voice feature is UNKNOWN.
+
+`docs/HARD_RULES.md` still bans Firebase. The 5 Nov loop is newer and names Firebase as the backend. A ticket adding Firebase fails `bun run scan:forbidden-tech` until that file changes. This file does not edit it.
 
 ## Diagram
 
@@ -16,7 +24,8 @@ Code today:
 
 ```
 Person
-  |  magic link (Resend)          voice (Deepgram now; Hebrew voice-to-voice target)
+  |  magic link (Resend, code today)   listening: Deepgram
+  |  voice-to-voice is MVP, not alpha
   v
 +-------------------+         +----------------------+
 | apps/web          |         | apps/mobile          |
@@ -30,41 +39,48 @@ Person
 |  Auth (magic link)                                 |
 |  queries / mutations / actions / HTTP / crons      |
 |  schema.ts tables (see BACKEND-SCHEMA.md)          |
-|  ai_router.ts  -->  GLM 5.3 Flash target           |
-|                    code today still names Mistral  |
+|  ai_router.ts  -->  code today still names Mistral |
 |  crisis path   -->  gpt-oss-safeguard 20B          |
+|  tagging       -->  Qwen 8B                        |
 |  connections   -->  Executor (MCP), not Composio   |
 +--------+------------------+------------------------+
          |                  |
          v                  v
-   Whop and Paddle     Deepgram / rented GPU voice
+   Whop and Paddle     Listening: Deepgram now
    (target)            Qwen 8B for tagging
-   Polar + RevenueCat
+   Polar + RevenueCat  Voice GPU is the MVP picture
    (installed)
 ```
 
-Product target (FACTORY-LOOP.md, role table, Nir 5 Nov 2026):
+Product target (FACTORY-LOOP.md, role table, Nir 5 Nov 2026). Alpha is web. MVP adds Expo.
 
 ```
 Person
   |  magic link (mailer UNKNOWN: Resend, Firebase Auth, or both)
   v
-+-------------------+         +----------------------+
-| apps/web          |         | apps/mobile          |
-| Next.js on Vercel |         | Expo                 |
-| Vercel functions  |         |                      |
-| = server code     |         |                      |
-+---------+---------+         +----------+-----------+
-          |                              |
-          v                              v
++------------------------+      +----------------------+
+| apps/web (alpha)       |      | apps/mobile          |
+| Next.js on Vercel      |      | Expo, added at MVP   |
+| Vercel functions =     |      |                      |
+| server code and every  |      |                      |
+| model call             |      |                      |
++-----------+------------+      +----------+-----------+
+            |                              |
+            v                              v
 +----------------------------------------------------+
-| Firebase Auth                                      |
-| Firestore (collection layout UNKNOWN)              |
+| Firebase Auth + Cloud Firestore on Spark (free)    |
+| No Cloud Functions. No App Hosting.                |
+| Collection layout UNKNOWN                          |
+| Blaze: open decision, Amit only, not a step        |
 +----------------------------------------------------+
-          |
-          v
-   GLM 5.3 Flash, Qwen 8B, crisis classifier,
-   Deepgram / rented GPU, Executor, Whop, Paddle
+            |
+            v
+   Alpha text: stock GLM 5.3 Flash or DeepSeek by task
+   Qwen 8B tags. Crisis: gpt-oss-safeguard 20B
+   Listening: Deepgram, until a test says otherwise
+   Voice-to-voice: MVP GPU (4090 or 3090), not alpha
+   Executor in the backend. Person does not connect MCPs
+   Cloudflare stays. Whop and Paddle
 ```
 
 Reason, Cursor, and Codex on the Railway box are how the product is built and configured. They are not a runtime the person uses inside the planner. See [CONFIG-PLAN.md](./CONFIG-PLAN.md).
@@ -74,9 +90,9 @@ Reason, Cursor, and Codex on the Railway box are how the product is built and co
 | Part | Path | Role |
 |---|---|---|
 | Web | `apps/web` | The planner, chat, notes, settings |
-| Mobile | `apps/mobile` | Expo shell. Not the MVP exit by itself |
-| Backend today | `convex/` | Data, auth, coach, connections, crons. Still the code |
-| Backend target | Firebase Auth + Firestore | Named in the 5 Nov loop. Collection names UNKNOWN. Server code moves to Vercel functions |
+| Mobile | `apps/mobile` | Expo shell. Alpha is web. MVP adds Expo. Not the MVP exit by itself |
+| Backend today | `convex/` | Data, auth, coach, connections, crons. Still the code at `5504fc40` |
+| Backend target | Firebase Auth + Cloud Firestore on Spark | Named in the 5 Nov loop. No Cloud Functions. No App Hosting. Collection names UNKNOWN. Server code and every model call move to Vercel functions. Blaze is an open decision, not a step |
 | UI kit | `packages/ui` | Shared primitives and tokens |
 | Utils | `packages/utils` | Shared helpers, including blocks and wiki links |
 | Types | `packages/types` | Shared types |
@@ -92,9 +108,9 @@ The coach proposes. The screen shows Accept, Edit, and Reject. Only then does th
 
 ## How tools connect
 
-`connections`, `connectionSecrets`, `oauthClients`, `oauthPending`, and `connectionCalls` are the tables. Executor is the hub (2026-10-25 and 2026-10-29), including Reason and OpenMausBot as tools Tempo must be able to reach. MCP HTTP is `convex/mcpHttp.ts` and `apps/web/app/api/mcp/route.ts`.
+`connections`, `connectionSecrets`, `oauthClients`, `oauthPending`, and `connectionCalls` are the tables in the code today. Executor is the hub (2026-10-25 and 2026-10-29), including Reason and OpenMausBot as tools Tempo must be able to reach. MCP HTTP in the code today is `convex/mcpHttp.ts` and `apps/web/app/api/mcp/route.ts`. On the alpha, Executor runs in the backend. The person does not connect MCPs.
 
-Gen 1 uses email and WhatsApp as proactive sources. Gen 2 adds website-to-API. Neither generation is a reason to keep Convex. The database move is the 5 Nov backend target, not a generation of its own.
+Gen 1 uses email and WhatsApp as proactive sources. Gen 2 is a read-only assistant: phone calls, and a website turned into a read-only API on half a CPU core and a headless browser. He said that is not reverse-engineering. Half a CPU core is his figure. It is not an alpha limit. Gen 3 read-write waits on a compliance level. The level is UNKNOWN. None of these generations is a reason to keep Convex. The database move is the 5 Nov backend target, not a generation of its own.
 
 ## Graphify
 
