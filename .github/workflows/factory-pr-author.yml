@@ -1,0 +1,44 @@
+name: factory-pr-author
+# Re-authors factory bot PRs as Division6066 (FACTORY_PR_TOKEN) so CodeRabbit reviews them.
+# Safety: never checks out or runs PR code; only the script from the base branch + gh API calls.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches: [integration]
+  push:
+    branches: ['ticket/**', 'codex/**', 'cursor/**', 'claude/**', 'reason/**', 'factory/**']
+permissions:
+  contents: read
+  pull-requests: write
+env:
+  BOT_AUTHORS: "reason-machines[bot] chatgpt-codex-connector[bot] chatgpt-codex-connector cursor[bot] claude[bot] github-actions[bot]"
+concurrency:
+  group: factory-pr-author-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  reauthor:
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'push') ||
+      (github.event.pull_request.base.ref == 'integration' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(fromJSON('["reason-machines[bot]","chatgpt-codex-connector[bot]","chatgpt-codex-connector","cursor[bot]","claude[bot]","github-actions[bot]"]'), github.event.pull_request.user.login))
+    steps:
+      - name: Fetch script from base branch (no PR code)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh api "repos/${{ github.repository }}/contents/.github/scripts/factory-pr-author.sh?ref=integration" \
+            -H "Accept: application/vnd.github.raw" > "$RUNNER_TEMP/fpa.sh"
+          chmod +x "$RUNNER_TEMP/fpa.sh"
+      - name: Re-author
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_PR_TOKEN }}   # GITHUB_TOKEN is not used for creation
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            "$RUNNER_TEMP/fpa.sh" pr "$PR_NUMBER"
+          else
+            "$RUNNER_TEMP/fpa.sh" push "$BRANCH"
+          fi
