@@ -2,7 +2,9 @@
 
 ## Verdict
 
-The schema lives in `convex/schema.ts`. This job does not edit that file. The table names below are from `integration` at `5504fc40`. Field lists for the largest tables are summarised. The file is the authority for every field.
+The schema that ships today lives in `convex/schema.ts`. This job does not edit that file. The table names below are from `integration` at `5504fc40`. Field lists for the largest tables are summarised. That file is the authority for every field that exists now.
+
+The product target is Firestore, with Firebase Auth, and server code as Vercel functions (FACTORY-LOOP.md, Nir, 2026-11-05). No Firestore collection list exists yet. A ticket must not invent collection names. It maps one Convex table at a time, after Amit accepts the map. Raw mail and chat bodies stay out of the new store the same way they stay out of Convex.
 
 ## Tables
 
@@ -74,4 +76,4 @@ sign-in (Resend magic link)
 
 ## Sources
 
-`convex/schema.ts` at `5504fc40`. `docs/HARD_RULES.md` sections 1, 6 and 10. Decision packet 2026-10-21.
+`convex/schema.ts` at `5504fc40`. `docs/HARD_RULES.md` sections 1, 6 and 10. Decision packet 2026-10-21. Backend target: [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md), 2026-11-05.

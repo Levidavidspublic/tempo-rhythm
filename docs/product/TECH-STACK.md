@@ -6,6 +6,17 @@ Versions are copied from package.json on `integration` at `5504fc40`. They are n
 
 Amit decided on 2026-10-18 to stay on the current cross-platform stack. No Kotlin plus Swift rewrite. On 2026-09-20 he kept Bun and banned pnpm for Tempo, and banned Electron. The Sep 2026 factory notes that talk about moving Tempo onto a pnpm template are history.
 
+The 5 Nov 2026 factory loop, from Nir, changes the backend row only. Web stays Next.js on Vercel. Mobile stays Expo. The package manager stays Bun.
+
+| Layer | Code at `5504fc40` | Product target |
+|---|---|---|
+| App server | Convex actions, queries, mutations, HTTP, crons | Vercel functions |
+| Auth | Convex Auth, magic link through Resend | Firebase Auth. The magic-link rule still stands. Which product sends the mail is UNKNOWN |
+| Data | `convex/schema.ts` | Firestore. Collection names are UNKNOWN. Do not invent them |
+| Text model | Router code still names Mistral | GLM 5.3 Flash |
+
+`docs/HARD_RULES.md` still lists Firebase as forbidden. The loop is newer. A ticket that adds Firebase fails `scan:forbidden-tech` until that rule file changes. This doc set does not change it.
+
 ## Root `package.json`
 
 | Name | Version |
@@ -83,4 +94,4 @@ Vercel project name recorded in memory: `tempo-web`. Domain recorded in memory: 
 
 ## Sources
 
-`package.json`, `apps/web/package.json`, `apps/mobile/package.json` at `5504fc40`. Amit's model and payment decisions in [PRD.md](./PRD.md).
+`package.json`, `apps/web/package.json`, `apps/mobile/package.json` at `5504fc40`. Amit's model and payment decisions in [PRD.md](./PRD.md). Backend target: [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md), role table, 2026-11-05.

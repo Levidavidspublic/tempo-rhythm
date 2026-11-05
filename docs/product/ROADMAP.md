@@ -2,7 +2,9 @@
 
 ## Verdict
 
-Four levels, in order. MVP, then Gen 1, then Gen 2, then Gen 3. These are not phases. A phase is a one-to-two-week project that someone schedules later. No calendar date is set. Dates in older roadmaps (the 2–4 Oct 2026 weekend, "next week" from 4 Oct) are history.
+Four levels, in order. MVP, then Gen 1, then Gen 2, then Gen 3. These are not phases. A phase is a one-to-two-week project.
+
+The current phase, from Nir on 5 Nov 2026, ends with a usable web alpha by the end of November 2026. That date is a phase deadline. It does not rename MVP or Gen 1. Dates in older roadmaps (the 2–4 Oct 2026 weekend, "next week" from 4 Oct) are history.
 
 ## MVP — an ADHD daily planner that just works
 
@@ -44,4 +46,4 @@ Native App Store and Play builds, a Rust desktop client, and a plugin marketplac
 
 ## Sources
 
-Amit, 2026-11-05. [PRD.md](./PRD.md). Older `docs/ROADMAP.md` (updated 2026-10-03) is history.
+Amit, 2026-11-05. [PRD.md](./PRD.md). Phase deadline: [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md) section 7. Older `docs/ROADMAP.md` (updated 2026-10-03) is history.

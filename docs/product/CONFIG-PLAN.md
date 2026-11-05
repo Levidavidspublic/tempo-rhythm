@@ -4,7 +4,7 @@
 
 Each job below is a config ticket. Grok Bot does not own any of them. Lanes:
 
-- Reason: cloud browser, deploys, Convex.
+- Reason: cloud browser, deploys, and the backend console. Today that console is Convex. The target console is Firebase.
 - Codex on the Railway box: repo files and checks that do not need Amit's sign-in.
 - Cursor: cloud agents, Bugbot, CI. Cursor does not edit `.github/**` unless Amit names that in a later ticket. This plan does not.
 - Amit: sign-in, payment, and approval.
@@ -29,11 +29,13 @@ Names: `BETA_ALLOWLIST_EMAILS`, `BETA_MAX_TESTERS`, `BETA_FOUNDER_EMAIL`.
 
 Done when a tester he approved has premium access, and a stranger does not.
 
-### CFG-03 Convex dev, staging, production
+### CFG-03 Backend consoles
 
-Owner: Reason. Amit only if Convex asks him to sign in.
+Owner: Reason. Amit only if Convex or Firebase asks him to sign in.
 
-Done when dev does not hold a production key. Four lanes stay Dev, preview, staging, production.
+Today: Convex dev, staging, and production. Dev does not hold a production key. Four lanes stay Dev, preview, staging, production.
+
+Target: Firebase Auth and Firestore, server code as Vercel functions (FACTORY-LOOP.md, 2026-11-05). The Firebase project id, the region, and the collection map are UNKNOWN. This ticket does not create the project and does not paste a key. `scan:forbidden-tech` still fails a Firebase import until `docs/HARD_RULES.md` changes in a separate ticket.
 
 ### CFG-04 Vercel `tempo-web`
 

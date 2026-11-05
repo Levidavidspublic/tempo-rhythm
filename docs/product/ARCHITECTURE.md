@@ -2,9 +2,17 @@
 
 ## Verdict
 
-The browser and the phone talk to Convex. Convex holds the data, the auth, and the coach actions. The web app is Next.js on Vercel. The phone app is Expo. Models and voice providers sit behind Convex actions. Executor is the connector hub. Payments are Whop and Paddle in the product target. The installed clients are still Polar and RevenueCat.
+Two pictures. The code at `5504fc40` still talks to Convex. The product target, from the factory loop Nir signed on 5 Nov 2026, is Firebase Auth plus Firestore, with server code as Vercel functions. This file records both. It does not move the code.
+
+The web app is Next.js on Vercel. The phone app is Expo. Executor is the connector hub. Payments are Whop and Paddle in the product target. The installed clients are still Polar and RevenueCat.
+
+Sign-in stays a magic link (Amit, 2026-10-12 and 2026-10-21). Whether that link is sent by Resend, by Firebase Auth, or by both is UNKNOWN. Do not drop Resend in a ticket until he says which.
+
+`docs/HARD_RULES.md` still bans Firebase. The 5 Nov loop is newer and names Firebase as the backend. The ban stays in force for code until a later ticket changes that file. `bun run scan:forbidden-tech` will reject a Firebase import while the ban stands.
 
 ## Diagram
+
+Code today:
 
 ```
 Person
@@ -35,6 +43,30 @@ Person
    (installed)
 ```
 
+Product target (FACTORY-LOOP.md, role table, Nir 5 Nov 2026):
+
+```
+Person
+  |  magic link (mailer UNKNOWN: Resend, Firebase Auth, or both)
+  v
++-------------------+         +----------------------+
+| apps/web          |         | apps/mobile          |
+| Next.js on Vercel |         | Expo                 |
+| Vercel functions  |         |                      |
+| = server code     |         |                      |
++---------+---------+         +----------+-----------+
+          |                              |
+          v                              v
++----------------------------------------------------+
+| Firebase Auth                                      |
+| Firestore (collection layout UNKNOWN)              |
++----------------------------------------------------+
+          |
+          v
+   GLM 5.3 Flash, Qwen 8B, crisis classifier,
+   Deepgram / rented GPU, Executor, Whop, Paddle
+```
+
 Reason, Cursor, and Codex on the Railway box are how the product is built and configured. They are not a runtime the person uses inside the planner. See [CONFIG-PLAN.md](./CONFIG-PLAN.md).
 
 ## Parts
@@ -43,7 +75,8 @@ Reason, Cursor, and Codex on the Railway box are how the product is built and co
 |---|---|---|
 | Web | `apps/web` | The planner, chat, notes, settings |
 | Mobile | `apps/mobile` | Expo shell. Not the MVP exit by itself |
-| Backend | `convex/` | Data, auth, coach, connections, crons |
+| Backend today | `convex/` | Data, auth, coach, connections, crons. Still the code |
+| Backend target | Firebase Auth + Firestore | Named in the 5 Nov loop. Collection names UNKNOWN. Server code moves to Vercel functions |
 | UI kit | `packages/ui` | Shared primitives and tokens |
 | Utils | `packages/utils` | Shared helpers, including blocks and wiki links |
 | Types | `packages/types` | Shared types |
@@ -61,7 +94,7 @@ The coach proposes. The screen shows Accept, Edit, and Reject. Only then does th
 
 `connections`, `connectionSecrets`, `oauthClients`, `oauthPending`, and `connectionCalls` are the tables. Executor is the hub (2026-10-25 and 2026-10-29), including Reason and OpenMausBot as tools Tempo must be able to reach. MCP HTTP is `convex/mcpHttp.ts` and `apps/web/app/api/mcp/route.ts`.
 
-Gen 1 uses email and WhatsApp as proactive sources. Gen 2 adds website-to-API. Those generations do not add a second database.
+Gen 1 uses email and WhatsApp as proactive sources. Gen 2 adds website-to-API. Neither generation is a reason to keep Convex. The database move is the 5 Nov backend target, not a generation of its own.
 
 ## Graphify
 
@@ -71,4 +104,4 @@ This job did not run Graphify and did not install it. Whether the latest artifac
 
 ## Sources
 
-Repo layout at `5504fc40`. `docs/graph/README.md`. [TECH-STACK.md](./TECH-STACK.md). [BACKEND-SCHEMA.md](./BACKEND-SCHEMA.md).
+Repo layout at `5504fc40`. `docs/graph/README.md`. [TECH-STACK.md](./TECH-STACK.md). [BACKEND-SCHEMA.md](./BACKEND-SCHEMA.md). [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md) section "Role → today's tool", row Backend.

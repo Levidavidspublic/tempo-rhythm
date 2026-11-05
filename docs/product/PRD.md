@@ -41,6 +41,20 @@ Also in the MVP, because he placed them there:
 
 Sign-in, plans and payments are in [PRICING-AND-PLANS.md](./PRICING-AND-PLANS.md).
 
+The backend the code uses is Convex. The backend the 5 Nov loop names is Firebase Auth plus Firestore, with server code as Vercel functions. See [ARCHITECTURE.md](./ARCHITECTURE.md). The move is not a product generation.
+
+## Onboarding
+
+Nir, 5 Nov 2026, in the factory loop:
+
+- First get the person invested. Then ask them to buy.
+- At most 2 questions. Each question has a reason the person can hear.
+- Copy uses the person's own words, from real use. Stock nag copy stays out.
+
+## How the loop uses this file
+
+`docs/product/` is the source of truth. The GitHub wiki page `PRD` is a mirror of this file. A wiki edit does not change the product. The loop, the nine checks, and who may merge are in [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md). Tickets live in GitHub, next to the code. There is no second ticket system.
+
 ## Gen 1
 
 Proactive. Connected to email and WhatsApp.
@@ -93,4 +107,4 @@ The older "next week" exit list in `docs/PRD.md` (5 Oct 2026) is history. It is 
 
 ## Sources
 
-Amit, this chat, 2026-11-05. Basic Memory `project-tempo-flow` (facts through 2026-11-01) and the 2026-11-05 MVP session note. `docs/PRD.md` in this repo (version 5 Oct 2026) as history. Downloads: `handoff-2026-09-15/session-b/04-PRD-TEMPO-FLOW.md` (file date 2026-09-30), `handoff-2026-09-15/factory-v2-2026-09-19/products` (2026-09-19 and 2026-09-30), `grokbot-tempo-omniagent-2026-10-29/tempo/project-docs-2026-10-21/PRD.md` (folder date 2026-10-29), `tier-economics-2026-11-03/tempo-omniagent-tier-economics-2026-11-03.md`, `claude-jobs-2026-11-04/03-t3-tempo-docs.md`, `nir-questions-2026-11-04/`. OmniAgent files were not used.
+Amit, this chat, 2026-11-05. Basic Memory `project-tempo-flow` (facts through 2026-11-01) and the 2026-11-05 MVP session note. `docs/PRD.md` in this repo (version 5 Oct 2026) as history. Downloads: `handoff-2026-09-15/session-b/04-PRD-TEMPO-FLOW.md` (file date 2026-09-30), `handoff-2026-09-15/factory-v2-2026-09-19/products` (2026-09-19 and 2026-09-30), `grokbot-tempo-omniagent-2026-10-29/tempo/project-docs-2026-10-21/PRD.md` (folder date 2026-10-29), `tier-economics-2026-11-03/tempo-omniagent-tier-economics-2026-11-03.md`, `claude-jobs-2026-11-04/03-t3-tempo-docs.md`, `nir-questions-2026-11-04/`, `FACTORY-LOOP.md` (2026-11-05). OmniAgent files were not used.

@@ -2,11 +2,11 @@
 
 ## Verdict
 
-Tempo stays on Convex, Next.js, and Expo, on Bun and Turborepo. The product target for text is GLM 5.3 Flash. The product target for payments is Whop and Paddle. The code at `5504fc40` still routes models through Mistral and still has Polar and RevenueCat installed. This file records both. It does not change code.
+The code at `5504fc40` is Convex, Next.js, and Expo, on Bun and Turborepo. The product target for the backend is Firebase Auth plus Firestore, with server code as Vercel functions (Nir, 5 Nov 2026, in the factory loop). The product target for text is GLM 5.3 Flash. The product target for payments is Whop and Paddle. The code still routes models through Mistral and still has Polar and RevenueCat installed. This file records both. It does not change code.
 
 ## Requirements
 
-- Magic-link auth through Convex Auth and Resend. No password provider on the live product.
+- Magic-link auth. No password provider on the live product. The code does this with Convex Auth and Resend. The target auth product is Firebase Auth. Which product sends the mail is UNKNOWN.
 - Pages are markdown in `notes.body`, drawn by json-render.
 - Memory is the `memories` table, one person at a time.
 - Coach writes go through a proposal the person can accept, edit, or reject. The confidence auto-apply clash stays open. See [SPEC.md](./SPEC.md).
@@ -37,8 +37,8 @@ Target order recorded 2026-10-13: GDPR first, then California's equivalent, then
 
 - No Stripe SDK (`docs/HARD_RULES.md` section 2, and Amit 2026-10-29).
 - No OpenRouter in the product path. Jev is his one exception, and it is a judge for pull requests, not a Tempo model.
-- No Zustand, Redux, Firebase, Supabase, Clerk, Auth0, NextAuth, Prisma, or Drizzle (`docs/HARD_RULES.md` section 2).
-- Tenant isolation happens in the Convex query, before a model sees text.
+- `docs/HARD_RULES.md` section 2 still bans Zustand, Redux, Firebase, Supabase, Clerk, Auth0, NextAuth, Prisma, and Drizzle. The 5 Nov loop lifts Firebase only, and only as the named backend target. The other names stay banned. Code that imports Firebase fails the forbidden-tech scan until that rule file is updated in its own ticket.
+- Tenant isolation happens before a model sees text. Today that filter is the Convex query. On Firestore the same rule applies to the security rules and the server function. The Firestore rules text is UNKNOWN.
 - High-stakes actions, including payments and deletions, always ask the person.
 
 ## Environments

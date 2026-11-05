@@ -2,7 +2,7 @@
 
 Written 2026-11-05. Owner: Amit Levin. Repo: `Levidavidspublic/tempo-rhythm`. Branch base: `integration` at `5504fc40`.
 
-These files are the product source of truth. The GitHub wiki is not updated here. A later job mirrors this folder. Existing wiki pages stay as they are: Factory-loop, How-the-factory-works, Tickets-and-labels, Deploy-flow.
+These files are the product source of truth. The GitHub wiki page `PRD` is a mirror of [PRD.md](./PRD.md). A wiki edit does not win. The loop is [../factory/FACTORY-LOOP.md](../factory/FACTORY-LOOP.md). The CI read is [../factory/CI-READONLY.md](../factory/CI-READONLY.md).
 
 ## How to read
 
@@ -21,7 +21,7 @@ Newest decision wins. Older lines stay as history. A fact from the code is marke
 | [KIT.md](./KIT.md) | Shared components in `packages/ui` |
 | [UX-GUIDELINES.md](./UX-GUIDELINES.md) | How timing, touch, states, nudges and Hebrew should feel |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | The parts, and how they talk |
-| [BACKEND-SCHEMA.md](./BACKEND-SCHEMA.md) | Convex tables at `5504fc40` |
+| [BACKEND-SCHEMA.md](./BACKEND-SCHEMA.md) | Convex tables at `5504fc40`, and the Firestore target with no collection names yet |
 | [TRD.md](./TRD.md) | Technical requirements, limits, privacy, security |
 | [TECH-STACK.md](./TECH-STACK.md) | What is installed, with versions from package.json |
 | [ROADMAP.md](./ROADMAP.md) | MVP, then Gen 1, then Gen 2, then Gen 3 |
@@ -41,6 +41,7 @@ Use these words. Do not call a level a phase. A phase is a one-to-two-week proje
 
 ## Decisions that win (2026-10-16 through 2026-11-05)
 
+- Backend target: Firebase Auth plus Firestore. Server code is Vercel functions (FACTORY-LOOP.md, Nir, 2026-11-05). The code is still Convex. Magic link still stands. Who sends the mail is UNKNOWN.
 - Headline: "an ADHD daily planner that just works."
 - Text model: GLM 5.3 Flash (2026-10-21). Tagging: Qwen 8B. Crisis classifier: gpt-oss-safeguard 20B.
 - Plans: $20 and $50 a month. The difference is how much voice-agent use you get (2026-10-25, restated 2026-11-03 and 2026-11-05).
