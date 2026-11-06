@@ -1,0 +1,10 @@
+appId: UNKNOWN.app.id   # fill when the app exists
+---
+- launchApp: { clearState: true }
+- assertVisible: { text: ".*", optional: false }
+- tapOn: { id: "primary-action", optional: true }
+- inputText: "בדיקה 😀 <script>x</script>"
+- back
+- setOrientation: LANDSCAPE
+- setOrientation: PORTRAIT
+- assertNotVisible: "Something went wrong"
