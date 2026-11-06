@@ -1,0 +1,56 @@
+/* KB-03: search status and filter summary on the mounted search screen. */
+.sr-screen .sr-status {
+  min-height: var(--tp-touch);
+  display: flex;
+  align-items: center;
+  color: var(--tp-ink-muted);
+  font-size: var(--tp-text-sm);
+  line-height: var(--tp-leading-body);
+  overflow-wrap: anywhere;
+}
+.sr-screen .sr-status[data-state="error"] { color: var(--tp-danger); }
+.sr-screen .sr-filter-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2) var(--tp-space-3);
+  min-width: 0;
+  color: var(--tp-ink-muted);
+  font-size: var(--tp-text-sm);
+}
+.sr-screen .sr-filter-summary__text { overflow-wrap: anywhere; }
+.sr-screen .sr-filter-summary__clear,
+.sr-screen .sr-gallery__control,
+.sr-screen .sr-gallery__retry {
+  min-height: var(--tp-touch);
+  min-width: var(--tp-touch);
+  padding: var(--tp-space-2) var(--tp-space-3);
+  border: 1px solid var(--tp-line-control);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
+  color: var(--tp-ink);
+  cursor: pointer;
+  font: inherit;
+}
+.sr-screen .sr-filter-summary__clear:hover,
+.sr-screen .sr-gallery__control:hover,
+.sr-screen .sr-gallery__retry:hover { background: var(--tp-hover); }
+.sr-screen :is(.sr-filter-summary__clear, .sr-gallery__control, .sr-gallery__retry):focus-visible {
+  outline: var(--tp-focus-w) solid var(--tp-accent);
+  outline-offset: var(--tp-focus-gap);
+}
+.sr-screen :is(.sr-filter-summary__clear, .sr-gallery__control, .sr-gallery__retry):disabled {
+  cursor: not-allowed;
+  color: var(--tp-ink-muted);
+  background: var(--tp-sunken);
+}
+.sr-screen .sr-gallery__bar { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.sr-screen .sr-gallery__control[aria-pressed="true"] { background: var(--tp-accent-wash); border-color: var(--tp-accent); }
+.sr-screen .sr-gallery__input { min-height: var(--tp-touch); width: 100%; }
+.sr-screen .tp-segmented { max-width: 100%; flex-wrap: wrap; }
+.sr-screen .tp-seg__opt { min-height: var(--tp-touch); }
+.sr-screen .sr-results { min-width: 0; }
+.sr-screen :is(.tp-list-row__title, .tp-list-row__meta) { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .sr-screen :is(.sr-filter-summary__clear, .sr-gallery__control, .sr-gallery__retry) { transition: none; }
+}
