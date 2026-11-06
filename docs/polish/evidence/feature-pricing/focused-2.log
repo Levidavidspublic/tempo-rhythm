@@ -1,0 +1,18 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/lib/rootEntry.test.ts:
+(pass) default entry > treats / as a public route for the marketing page [0.79ms]
+(pass) default entry > does not redirect /api/mcp to /sign-in when signed out [4.70ms]
+(pass) default entry > shows the marketing page to a signed-out visitor on / [18.37ms]
+(pass) default entry > sends a signed-in visitor on / to /today [0.43ms]
+(pass) default entry > leaves a magic-link code on / so Convex Auth can exchange it [0.14ms]
+(pass) default entry > keeps the listed auth and legal routes public for signed-out visitors [0.22ms]
+(pass) default entry > still sends signed-out visitors on app routes to /sign-in [0.07ms]
+(pass) default entry > does not treat a code query on other routes as a free pass [0.04ms]
+(pass) default entry > makes only the pricing route public using the real middleware matcher [31.93ms]
+(pass) default entry > public pricing renders its catalog and checkout status without an account [1369.97ms]
+
+ 10 pass
+ 0 fail
+ 51 expect() calls
+Ran 10 tests across 1 file. [1.93s]
