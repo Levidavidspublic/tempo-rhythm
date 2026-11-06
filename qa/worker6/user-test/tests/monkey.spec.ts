@@ -33,7 +33,9 @@ test(`monkey ${N} actions seed ${SEED}`, async ({page}) => {
             Math.floor(rnd() * 5)
           ],
         );
-    } catch {}
+    } catch {
+      // An action lost its race with a navigation or a dismissed dialog; the loop continues.
+    }
   }
   const alive = await page
     .evaluate(() => document.body.innerText.length > 0)
