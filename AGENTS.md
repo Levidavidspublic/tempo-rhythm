@@ -12,6 +12,7 @@ Every tool is a slot. `factory/SLOTS.md` says which tool fills each slot in this
 3. The doc sections your ticket's WHY points to. The six docs live in the doc store: PRD, TRD, App flow, UI brief, Backend schema, Roadmap.
 4. Run the code-map steps in STEPS before editing. Other tickets may have changed the code today.
 5. Take today's date from the system clock, never from the conversation or session start.
+6. Writing or building from a spec: read `include.md` in the repo root (full method: include.md).
 
 ## Commands
 Use the exact commands under **Commands** in `factory/SLOTS.md` (install, dev, test, lint, typecheck, build, e2e).
@@ -131,3 +132,19 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
+
+## Merge gate
+
+Every PR follows the six steps in `docs/factory/MERGE_GATE.md`, in this order:
+
+1. Scope guard. A changed file outside the ticket's scope auto-rejects the PR.
+2. CI and programmatic checks are all green.
+3. Formatting follows the Google official style guide for each language.
+4. Jev judge scores clean code, formatting, naming and ticket adherence. Each score must be at least 85%.
+5. CodeRabbit review. Fallback, only when CodeRabbit can't keep up: Opus only, through Anthropic's official Claude Code GitHub Action on my Claude subscription token, never an API key. No Sol.
+6. Programmatic merge into `integration`. Never into `main`/`master`.
+
+Agents push branches to GitHub; a GitHub Action opens the PR as Division6066 so CodeRabbit reviews it on Amit's seat.
+The merge gate stays off and not required until CodeRabbit has reviewed a factory PR and Amit has approved the gate PRs.
+
+Graphify re-runs every loop or two and partly updates the tickets (MUTATES files and dependents) to match the current code. The full wording is in `docs/factory/MERGE_GATE.md`.
