@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/marketing/ThemeToggle";
 import { LanguageSwitch } from "@/components/marketing-pages/MarketingChrome";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { getLandingCopy, type SampleLine } from "@/lib/landing-copy";
+import "@/app/v3/landing-motion.css";
 
 /**
  * The landing page's body (apps/web/app/page.tsx).
@@ -111,8 +112,8 @@ export function LandingPage() {
       </nav>
 
       <main>
-        <header className="relative overflow-hidden pb-16 pt-8 md:pb-24 md:pt-12">
-          <div className={`${wrap} relative z-[2]`}>
+        <header className="tempo-hero relative overflow-hidden pb-16 pt-8 md:pb-24 md:pt-12">
+          <div className={`tempo-hero__copy ${wrap} relative z-[2]`}>
             <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-small text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
               {hero.badge}
@@ -144,7 +145,7 @@ export function LandingPage() {
           </div>
 
           <div
-            className="pointer-events-none absolute inset-y-0 end-[-120px] hidden w-[48%] lg:block"
+            className="tempo-hero__examples pointer-events-none absolute inset-y-0 end-[-120px] hidden w-[48%] lg:block"
             aria-hidden
           >
             <article className="absolute start-5 top-10 w-[280px] -rotate-3 rounded-xl border border-border bg-card p-4 shadow-lift">
