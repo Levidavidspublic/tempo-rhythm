@@ -16,15 +16,19 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 
 ---
 
+## Backend target and retained implementation — 6 Nov 2026 draft
+
+Amit's 5–6 Nov decision targets Firebase Authentication and Cloud Firestore on Spark, with server code and model calls in Vercel functions. This owning-file correction is for docs PR #1359; it does not migrate code, deploy rules, change required scans, enable Blaze or change security settings. Retain Convex code and data unchanged until an explicitly reviewed backed-up migration, validation and rollback plan is implemented. New target code requires the DATA-CONTRACT, AUTH-CONTRACT and CHAT-CONTRACT in `docs/product/BUILD-CONTRACT-GAPS.md`. Existing Convex-specific instructions below govern retained code, not an instruction to create new Convex infrastructure. No new ORM, client state library or direct database client is authorized.
+
 ## 2. Forbidden tech (never add as a dependency; never reference in code, env vars, or docs)
 
 | Category | Forbidden | Use instead |
 |---|---|---|
-| Backend-as-a-Service | Firebase, Supabase | Convex |
+| Backend-as-a-Service | Supabase | Firebase Auth + Cloud Firestore on Spark (target); Convex retained unchanged pending verified migration |
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
-| Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
+| Auth | Auth0, Clerk, NextAuth, BetterAuth | Firebase Auth magic-link target; existing Convex Auth retained until migration |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
-| AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Mistral API via native `fetch` against `https://api.mistral.ai/v1/chat/completions` |
+| AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Native `fetch` through a server-only Vercel adapter for the approved product lane; retained Mistral implementation is historical |
 | Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries are the state |
 | HTTP | Axios, ky, got | Native `fetch` |
 | Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions |
@@ -120,13 +124,17 @@ Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That i
 
 ### 6.1 Routing
 
-- All LLM calls go through `convex/lib/ai_router.ts` using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. No vendor SDKs. When a second consumer appears outside `convex/`, migrate the router to `packages/ai/src/router.ts` (same API).
+Target: server-only Vercel functions, native `fetch`, and the approved task/provider lane. Use the Alpha text-generation, tagging, and crisis-classification roles. The dated candidate/configuration mapping is in [CONFIG-PLAN.md](./product/CONFIG-PLAN.md) (5–6 Nov 2026, CFG-05 and CFG-14); model names belong in that mapping, not this governing rule. Candidate mappings are not official availability or deployment evidence. No Venice in the Tempo product runtime, no OpenAI API billing, no host-picking router, and no client-side provider keys. The CI judge remains the sole OpenRouter exception. Exact exports, model mapping, errors, timeouts and limits require CHAT-CONTRACT; do not weaken existing tests or scans to implement this target.
+
+Retained implementation below is historical/current code, not the new target. Do not edit Convex in this docs change.
+
+- Existing Convex LLM calls go through `convex/lib/ai_router.ts` using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. No vendor SDKs. When a second consumer appears outside `convex/`, migrate the router to `packages/ai/src/router.ts` (same API).
 - Three tiers, explicit at every call site:
   - **`fast` → `mistral-small-latest`** — classification, extraction, tagging, short chat turns, accept-reject card copy, confidence scoring.
   - **`balanced` → `mistral-medium-latest`** — coach conversations, planning sessions, brain-dump parsing, rewrites, journal reflection.
   - **`deep` → `mistral-large-latest`** — hard multi-step reasoning, long-context synthesis, rare escalations.
 - Fallback policy: on `429 / 503 / timeout`, retry same tier once with 500 ms backoff, then surface a typed error. On `context_length_exceeded`, automatically escalate `fast → balanced → deep` and stop at the first that fits. No other silent escalation.
-- Rationale: direct Mistral (EU-hosted, GDPR-native, no training on paid API data by default) gives better privacy posture and lower cost than OpenRouter for our workload. OpenRouter is no longer used.
+- Historical rationale for retained code: direct Mistral (EU-hosted, GDPR-native, no training on paid API data by default) gives better privacy posture and lower cost than OpenRouter for our workload. OpenRouter is no longer used.
 - Default `safe_prompt: false` — accept-reject + confidence router already cover this; we don't need Mistral's additional opinionated filter.
 
 ### 6.2 Accept-reject flow

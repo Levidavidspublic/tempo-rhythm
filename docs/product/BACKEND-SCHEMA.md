@@ -55,12 +55,12 @@ The product target is Cloud Firestore on the free Spark plan, with Firebase Auth
 
 ## What is not in the schema
 
-- Dollar tier names. Evening of 5 Nov 2026: $20 is the bare essential, $50 adds the voice feature, $100 is more agentic (API and calls on the person's behalf). Whether $100 includes the voice feature is UNKNOWN. See [PRICING-AND-PLANS.md](./PRICING-AND-PLANS.md). These are not table names. An older line in this file treated "$100" and "Gen 2" as one absent plan. That evening did not restate the fusion.
+- Dollar tier names. Evening of 5 Nov 2026: $20 is the bare essential, $50 adds the voice feature, $100 is more agentic (API and calls on the person's behalf). Whether $100 includes the voice feature is UNKNOWN. See [PRICING-AND-PLANS.md](./PRICING-AND-PLANS.md). These are not table names. The evening decision explicitly associates $100 with Gen 2. Mapping that public price to a persisted plan identifier is still UNKNOWN; this is not a new schema field.
 - A Gen 2 read-only assistant as a table. Gen 2 is phone calls, and a website turned into a read-only API on half a CPU core and a headless browser. He said that is not reverse-engineering. Half a CPU core is his figure. It is not an alpha limit and not a collection.
 - A Gen 3 read-write store. Gen 3 waits on a compliance level. The level is UNKNOWN.
 - An alpha text-model column. Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task (2026-11-05 evening). The morning GLM-only line is older for the alpha. Qwen 8B still tags. gpt-oss-safeguard 20B is still the crisis classifier (2026-10-21). None of those names is a new table.
 - A custom-model table. Custom models that teach subtasks and threading are a later stage. Which generation is UNKNOWN. They are not in the alpha.
-- A voice-model or GPU table. Voice-to-voice is an MVP GPU deploy (a 4090 or a 3090, per use, not all day), not the alpha. Which GPU, which voice model, and how many years are UNKNOWN. Hebrew is in that deploy. Listening stays Deepgram until a test says otherwise. Do not switch listening to DeepInfra.
+- A voice-model or GPU table. Voice-to-voice belongs to MVP, not Alpha. The 6 Nov hosted-first chain and conditional later GPU path are in [VOICE-TO-VOICE.md](./VOICE-TO-VOICE.md); no model/GPU table or approved retention schema is inferred. Existing Deepgram listening is not silently replaced.
 - A WhatsApp table. Gen 1 does not add one until a ticket says so. Raw mail and chat bodies stay in memory only (`docs/HARD_RULES.md` section 6.4).
 - Any Firestore collection name. UNKNOWN. Do not invent one.
 
@@ -79,7 +79,7 @@ sign-in (Resend magic link, code today)
   -> connections call Executor
 ```
 
-This flow is the code today: Convex, and a Resend magic link. The 5 Nov target is Firebase Authentication plus Cloud Firestore. Who sends the magic link (Resend, Firebase Auth, or both) is UNKNOWN. On the alpha, Executor runs in the backend. The person does not connect MCPs. Collection names stay UNKNOWN.
+This flow is the code today: Convex, and a Resend magic link. The 5 Nov target is Firebase Authentication plus Cloud Firestore. The 6 Nov FIREBASE-PLAN names Resend as Tempo's sender; the exact Firebase email-link delivery integration remains OPEN. On the alpha, Executor runs in the backend. The person does not connect MCPs. Collection names stay UNKNOWN.
 
 ## Sources
 

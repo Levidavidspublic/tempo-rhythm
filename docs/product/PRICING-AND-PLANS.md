@@ -31,7 +31,7 @@ Source: `Downloads/tier-economics-2026-11-03/tempo-omniagent-tier-economics-2026
 
 NotePlan is the price anchor next to the $20 tier. The Nir file says $12 a month or $99 a year, with a 7-day trial. Source: `Downloads/nir-followup-2026-11-05/01-cursor-tempo-docs-nir-update.md`. This pass did not re-check noteplan.co. Amit's prices stay $20, $50, and $100.
 
-Tempo is not priced like NotePlan because the other product has no AI features and no ADHD-specific product. Source: Amit, 2026-11-05 evening.
+Amit kept Tempo at $20/$50/$100 and positioned it around ADHD and executive dysfunction (5 Nov 2026 evening). The earlier rationale that NotePlan has no AI was factually incorrect: NotePlan documents AI prompting, text generation, and voice transcription. [NotePlan official AI documentation](https://help.noteplan.co/article/210-ai-features), checked 6 Nov 2026. This correction does not change Tempo prices or establish which ADHD-specific features NotePlan has.
 
 ## What the code calls a plan
 

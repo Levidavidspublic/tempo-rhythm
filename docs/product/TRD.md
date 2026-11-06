@@ -6,14 +6,14 @@ The code at `5504fc40` is Convex, Next.js, and Expo, on Bun and Turborepo. The p
 
 ## Requirements
 
-- Magic-link auth. No password provider on the live product. The code does this with Convex Auth and Resend. The target auth product is Firebase Auth. Who sends the magic link (Resend, Firebase Auth, or both) is UNKNOWN.
+- Magic-link auth. No password provider on the live product. The code does this with Convex Auth and Resend. The target auth product is Firebase Auth. The 6 Nov FIREBASE-PLAN names Resend as Tempo's sender; the exact Firebase email-link delivery integration remains OPEN.
 - Pages are markdown in `notes.body`, drawn by json-render.
 - Memory is the `memories` table, one person at a time.
 - Coach writes go through a proposal the person can accept, edit, or reject. The confidence auto-apply clash stays open. See [SPEC.md](./SPEC.md).
 - Alpha (web) text is stock GLM 5.3 Flash or DeepSeek, chosen by the task (Amit, 2026-11-05 evening). The morning line that named only GLM 5.3 Flash is older for the alpha. Custom models that teach subtasks and threading are a later stage. Which generation is UNKNOWN. They are not in the alpha.
 - Tagging uses Qwen 8B (2026-10-21).
 - Crisis classification uses gpt-oss-safeguard 20B (2026-10-21). A crisis severity path toward a breathing exercise, the person's therapist, or a hotline (ERAN was named for Israel) is a recorded idea from 2026-10-21. The exact routing rules are UNKNOWN. Do not invent a script. Do not present the coach as a clinician.
-- Voice-to-voice is an MVP requirement, not the alpha, in English and Hebrew. It is a GPU deploy. The GPU is a 4090 or a 3090, per use, not all day. Which one, which voice model, and how many years are UNKNOWN. Hebrew is in that voice deploy. Listening stays Deepgram until a test says otherwise. Do not switch listening to DeepInfra.
+- Voice-to-voice is an MVP requirement, not Alpha, in English and Hebrew. Start with the hosted STT → text → TTS chain in [VOICE-TO-VOICE.md](./VOICE-TO-VOICE.md); GPU rental is conditional if hosted quality is inadequate. Exact models, bounded API contract, Hebrew quality, latency and costs remain UNKNOWN. Existing Deepgram listening is not silently replaced.
 - Executor is the only connector hub. On the alpha the person does not connect MCPs. Executor runs in the backend.
 
 ## Generations

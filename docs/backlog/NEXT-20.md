@@ -1,6 +1,6 @@
-# Next 20 MVP tickets, plus config tickets
+# Next 20 product candidates, plus config tickets
 
-Written 2026-11-05 from `docs/product/`. Format: ticket standard v2 (1 Nov 2026) on branch `docs/source-2026-11-01`. That file is not on `integration` yet.
+Updated 6 Nov 2026 against the 5 Nov evening ladder. Format: [TICKET-STANDARD.md](./TICKET-STANDARD.md), copied from `docs/source-2026-11-01`. These are local draft corrections, not approved issues. Historical MVP-01 through MVP-20 identifiers map one-to-one to TF-01 through TF-20; the old prefix no longer assigns every ticket to MVP.
 
 THE BAR: a mid-tier model, about two hours, would almost always build it with nothing left to decide. At most 3 files plus 1 test. STEPS stay inside SCOPE and MUTATES.
 
@@ -10,33 +10,33 @@ None of these are approved-unsent. Each one is missing exact English and Hebrew 
 
 Shared gates, copied for every ticket: build, typecheck, lint, the ticket's tests, numbers or UNKNOWN, formatter, secret scan, forbidden-tech scan, scope guard, config guard, do not weaken a test. Jev is the judge exception Amit already named. REPORT lists every step.
 
-## MVP-01 Sign-in is a magic link
+## TF-01 Sign-in is a magic link
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP, first
+WHEN: Alpha; after AUTH-CONTRACT
 WHY: PRD sign-in. PRICING-AND-PLANS.
 GOAL: Live sign-in offers a magic link and no password.
 SCOPE: the sign-in screen only
 MUTATES: UNKNOWN until the component file is named. Do not guess. Start from `apps/web/app/sign-in/page.tsx` and stop if the real form lives elsewhere.
-STEPS: read the page. If a password field exists, remove it in that file only. Add one test that the password field is absent and the magic-link control is present.
-DONE: `bun run test` for that test exits 0, and the page has no password input.
+STEPS: finish AUTH-CONTRACT and the exact-path code map first, then wire the existing form and its error states; implement the TESTS below. No auth backend change is included in this screen ticket.
+DONE: the named UI test and AUTH-CONTRACT acceptance suite pass, including the real preview link check required by configuration; absence of a password field alone does not prove sign-in.
 EVIDENCE: the test output.
 DO NOT: touch `convex/auth*`, `.env`, or `.github/**`.
 REPORT: files changed and the test line.
 SPEC: exact EN and HE strings UNKNOWN.
-TESTS: Given the sign-in page, When it renders, Then no password field is present.
+TESTS: Given the auth contract and invited/pending fixtures, request and complete a single-use magic link; reject used, expired, malformed links and unsafe redirects; assert pending-user handling and no password field. This UI ticket depends on AUTH-CONTRACT and does not implement auth itself.
 NUMBERS: UNKNOWN for this screen.
 GATES: the shared gates.
 Question: What is the exact English and Hebrew copy on the magic-link screen?
 
-## MVP-02 Day page is the front door
+## TF-02 Day page is the front door
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP, after MVP-01
+WHEN: Alpha; after TF-01 and route code-map
 WHY: APP-FLOW. Three day routes exist.
 GOAL: One route is the day. The other two redirect to it.
 SCOPE: one redirect
@@ -52,33 +52,33 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: Which URL is the day: `/today`, `/plan`, or `/daily-note`?
 
-## MVP-03 Note hides JSON
+## TF-03 Note hides JSON
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after NOTES-CONTRACT
 WHY: SPEC. The person never sees JSON.
 GOAL: A note body that contains a json-render block shows the block, not the raw JSON.
 SCOPE: the note reader
 MUTATES: at most the note page component plus one test. Paths UNKNOWN until read.
 STEPS: read `apps/web/app/(tempo)/notes/[id]/page.tsx` and `p/[pageId]/page.tsx`. Edit only the one that renders the body.
-DONE: a test fixture with a block renders no raw JSON string.
+DONE: valid blocks and surrounding markdown render correctly; malformed blocks fail safely; raw serialization is absent. Hiding the body does not pass.
 EVIDENCE: the test output.
 DO NOT: edit `convex/schema.ts`.
 REPORT: the file and the assertion.
 SPEC: the block's visible English and Hebrew labels are UNKNOWN.
-TESTS: Given a body with one block, When the page renders, Then the raw JSON is absent.
+TESTS: Given valid and malformed block fixtures with surrounding markdown, assert the intended block, preserved markdown, safe malformed state, and absence of raw JSON. An empty body must fail.
 NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: What does that block say on screen in English and in Hebrew?
 
-## MVP-04 Brain-dump thread
+## TF-04 Brain-dump thread
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after CHAT-CONTRACT
 WHY: PRD chat.
 GOAL: A brain dump stays in one thread and can start another thread.
 SCOPE: coach thread list
@@ -94,12 +94,12 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: Is the brain dump `coach` or `brain-dump`? Pick one file.
 
-## MVP-05 Push back with a proposal
+## TF-05 Push back with a proposal
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after PROPOSAL-CONTRACT
 WHY: SPEC item 5 and 6.
 GOAL: "Move this to this" creates a proposal card, not a silent write.
 SCOPE: one proposal card
@@ -115,14 +115,14 @@ NUMBERS: undo at least 5 minutes, from HARD_RULES. The toast copy is UNKNOWN.
 GATES: the shared gates.
 Question: What are the English and Hebrew labels for Accept, Edit, and Reject?
 
-## MVP-06 Do not auto-apply
+## TF-06 Do not auto-apply
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Codex · code model: mid-tier
-WHEN: MVP, blocked on Amit
+WHEN: Alpha; blocked on owner confidence-policy decision
 WHY: HARD_RULES 6.2 clashes with 6.3.
-GOAL: The MVP uses one rule for coach writes.
+GOAL: Alpha uses one approved rule for coach writes.
 SCOPE: the proposal guard only
 MUTATES: UNKNOWN. `convex/lib/coachProposalGuard.ts` is a candidate. Confirm by reading. Plus one test.
 STEPS: do not edit until Amit picks the rule.
@@ -134,15 +134,15 @@ SPEC: UNKNOWN which rule.
 TESTS: not final until the rule is picked.
 NUMBERS: confidence 0.8 is the old auto-apply line. It is not the winner yet.
 GATES: the shared gates.
-Question: For the MVP, does every coach write ask first, or may confidence at or above 0.8 apply and then undo?
+Question: For Alpha, does every coach write ask first, or may confidence at or above 0.8 apply and then undo?
 
-## MVP-07 Template can be turned on
+## TF-07 Template can be turned on
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
-WHY: ROADMAP exit.
+WHEN: UNPLACED; whether Alpha exposes templates is UNKNOWN
+WHY: current APP-FLOW candidate; the morning ROADMAP exit is historical.
 GOAL: Approving a template makes it usable, and it can be turned off.
 SCOPE: the template run screen
 MUTATES: UNKNOWN. Candidates under `apps/web/app/(tempo)/templates/` and `(bare)/templates/`. Pick one.
@@ -155,15 +155,15 @@ SPEC: EN and HE copy UNKNOWN.
 TESTS: Given a template, When the person approves it, Then it is usable, and When they turn it off, Then it is not offered.
 NUMBERS: UNKNOWN.
 GATES: the shared gates.
-Question: Which template route is the MVP one?
+Question: Does Alpha expose templates, and which existing route is canonical?
 
-## MVP-08 Memory import review
+## TF-08 Memory import review
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
-WHY: ROADMAP exit. Settings memory import.
+WHEN: Alpha memory-import candidate; after NOTES-CONTRACT; exact scope remains OPEN
+WHY: current APP-FLOW candidate; the morning ROADMAP exit is historical. Settings memory import.
 GOAL: Pasted memory shows a review list. Nothing is kept until the person says so.
 SCOPE: `apps/web/app/(tempo)/settings/memory/import/page.tsx` plus one test, if that file is the screen. Confirm by reading.
 MUTATES: that page and one test file.
@@ -178,12 +178,12 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: What is the English and Hebrew text on the keep and reject controls?
 
-## MVP-09 Hebrew layout
+## TF-09 Hebrew layout
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha web; phone parity belongs to MVP
 WHY: SPEC item 11.
 GOAL: Choosing Hebrew sets the page to right-to-left. Numbers and code stay left-to-right.
 SCOPE: the direction switch on one layout
@@ -199,12 +199,12 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: Where does the person switch language on the web?
 
-## MVP-10 Gmail connect, no raw mail stored
+## TF-10 Gmail connect, no raw mail stored
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Reason for the account, Codex for the code · code model: mid-tier
-WHEN: MVP
+WHEN: UNPLACED for a single Gmail connection; recurring/multiple-account/automatic checks belong to Gen 1.1/1.5
 WHY: PRD part 4. HARD_RULES 6.4.
 GOAL: Gmail can connect through Executor. A raw message body is not written to Convex.
 SCOPE: the connect button and the RAM-only check
@@ -220,33 +220,33 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: What should the Gmail button say in English and Hebrew?
 
-## MVP-11 Voice round trip
+## TF-11 Voice round trip
 
 STATUS: open
 
-FOR: Tempo Flow · tempo-rhythm · lane Amit for the GPU account, Codex for code · code model: mid-tier
-WHEN: MVP, not the alpha
+FOR: Tempo Flow · tempo-rhythm · assigned voice worker; code role: mid-tier
+WHEN: MVP voice; depends on the separate voice contract
 WHY: PRD voice.
 GOAL: One English and one Hebrew voice round trip. Hard prompts go to GLM 5.3 Flash or DeepSeek.
 SCOPE: the voice screen
 MUTATES: UNKNOWN. Mobile file `apps/mobile/app/(tempo)/voice-call.tsx` exists. Web file UNKNOWN.
-STEPS: do not start. The model and the GPU are UNKNOWN.
+STEPS: use the separately assigned 6 Nov voice brief and contract; do not require a GPU choice before testing the authorized initial API chain.
 DONE: UNKNOWN.
 EVIDENCE: a recording of one interrupted round trip, with no secret on screen.
 DO NOT: rent a GPU. Amit does that.
 REPORT: blocked.
-SPEC: UNKNOWN model, 4090 or 3090, and the term of years.
+SPEC: separate voice contract pending; exact endpoint, interruption, latency and cost evidence remain OPEN. This ticket does not select a GPU or rental term.
 TESTS: not writable yet.
-NUMBERS: minutes are 300 and 1,800 a month. See PRICING. They are not a test until the plan names map.
+NUMBERS: current voice entitlements UNKNOWN; 300/1,800 are historical figures, not active acceptance limits. See PRICING.
 GATES: the shared gates.
-Question: Which voice model, which GPU, and how many years?
+Question: Which unresolved choices remain after the separately assigned voice contract and preview test? Do not re-ask the superseded GPU-first question.
 
-## MVP-12 Visible thinking
+## TF-12 Visible thinking
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after CHAT-CONTRACT
 WHY: UX-GUIDELINES. A reply with no visible work looks untrusted.
 GOAL: While the coach request is in flight, the screen shows a working state.
 SCOPE: the coach transcript
@@ -262,12 +262,12 @@ NUMBERS: skeleton after 100 ms is the hard-rules line for content areas. Whether
 GATES: the shared gates.
 Question: What should the working state say in English and in Hebrew?
 
-## MVP-13 Empty day welcomes
+## TF-13 Empty day welcomes
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after the day route and copy are resolved
 WHY: HARD_RULES section 1.
 GOAL: An empty day does not shame. A return after missed days says welcome back.
 SCOPE: the day empty state
@@ -283,13 +283,13 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: What is the welcome sentence in English and in Hebrew?
 
-## MVP-14 Break
+## TF-14 Break
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
-WHY: PRD job "take a break".
+WHEN: UNPLACED; the evening ladder did not assign the old break feature
+WHY: historical morning break candidate; current stage and behavior remain UNKNOWN.
 GOAL: From the day, the person can start a break.
 SCOPE: one control
 MUTATES: UNKNOWN. Mobile has `breathwork.tsx`. Web has no break route.
@@ -302,14 +302,14 @@ SPEC: UNKNOWN.
 TESTS: not writable yet.
 NUMBERS: duration UNKNOWN.
 GATES: the shared gates.
-Question: What is a break in the MVP: breathwork, a timer, or a line from the coach?
+Question: What is the intended break behavior and its product level?
 
-## MVP-15 Lecture notes are a note
+## TF-15 Lecture notes are a note
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha plain lecture note; StudyFetch-like tools belong to Gen 1
 WHY: PRD study job. APP-FLOW says there is no lecture route.
 GOAL: A lecture note is a note with a page type the person can filter.
 SCOPE: the note create control
@@ -325,14 +325,14 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: Which existing page type should a lecture note use?
 
-## MVP-16 Plan prices on the billing screen
+## TF-16 Plan prices on the billing screen
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: OPEN; price facts are settled but checkout placement and entitlements are not
 WHY: PRICING.
-GOAL: The billing screen shows $20 and $50 a month, and says the difference is voice use.
+GOAL: The billing screen shows $20 and $50 a month, and says $50 adds the voice feature. Minute entitlements remain UNKNOWN.
 SCOPE: `apps/web/app/(tempo)/billing/page.tsx` if that is the screen. Confirm by reading. Plus one test.
 MUTATES: that page and one test.
 STEPS: do not map the prices onto `basic` or `pro` until he says.
@@ -342,16 +342,16 @@ DO NOT: call Whop or Paddle from this ticket. That is config.
 REPORT: the file.
 SPEC: the sentence under the prices, in EN and HE, is UNKNOWN. The prices themselves are $20 and $50.
 TESTS: Given the billing page, When it renders, Then $20 and $50 are shown and Stripe is absent.
-NUMBERS: 300 and 1,800 minutes. Do not print them until the plan mapping exists, or the test will freeze the wrong plan.
+NUMBERS: $20 and $50 are decided prices. Voice minutes and plan identifier mapping remain UNKNOWN; do not turn historical numbers into active entitlements.
 GATES: the shared gates.
 Question: Which schema plan is $20, and which is $50?
 
-## MVP-17 Beta tester gate
+## TF-17 Beta tester gate
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Amit approves people, Codex writes the check · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after AUTH-CONTRACT
 WHY: PRICING. Schema already has `betaAccess` and `approvalStatus`.
 GOAL: A tester Amit approved gets premium. A pending account does not.
 SCOPE: the approval check
@@ -367,12 +367,12 @@ NUMBERS: `BETA_MAX_TESTERS` is a name in `.env.example`. The cap's meaning for t
 GATES: the shared gates.
 Question: What should a waiting tester see, in English and Hebrew?
 
-## MVP-18 No guest on live
+## TF-18 No guest on live
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Codex · code model: mid-tier
-WHEN: MVP
+WHEN: Alpha; after AUTH-CONTRACT and the environment mapping
 WHY: PRICING. Guest sign-in is preview only.
 GOAL: The production build has no guest sign-in control.
 SCOPE: the sign-in screen's guest control
@@ -383,17 +383,17 @@ EVIDENCE: the test.
 DO NOT: edit `.env`.
 REPORT: the env name he confirms.
 SPEC: UNKNOWN env name.
-TESTS: Given production, When sign-in renders, Then guest is absent. Given preview, Then guest is present.
+TESTS: Given Deployment, assert guest UI is absent and direct guest access is rejected server-side by AUTH-CONTRACT. Given Preview, assert the explicitly approved guest behavior. UI hiding alone is not an access-control proof.
 NUMBERS: none.
 GATES: the shared gates.
 Question: Which env name means production for this check?
 
-## MVP-19 Undo toast
+## TF-19 Undo toast
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP, after MVP-05
+WHEN: Alpha; after TF-05 and PROPOSAL-CONTRACT
 WHY: HARD_RULES. At least 5 minutes.
 GOAL: After an accepted AI change, undo shows the time left and can reverse that change.
 SCOPE: the toast
@@ -404,17 +404,17 @@ EVIDENCE: the test.
 DO NOT: shorten the 5 minutes.
 REPORT: the path.
 SPEC: toast copy UNKNOWN.
-TESTS: Given an accepted change, When the toast is open, Then undo is available.
+TESTS: Given PROPOSAL-CONTRACT fixtures, assert availability through the exact five-minute boundary, successful restore, stale-revision/conflicting-edit rejection, repeated-click handling, and failed undo preserving newer content. Timing and revision semantics must be fixed by that prerequisite.
 NUMBERS: 5 minutes, from HARD_RULES section 1.
 GATES: the shared gates.
 Question: What is the undo sentence in English and Hebrew, and which web file owns the toast?
 
-## MVP-20 Shame-free habit row
+## TF-20 Shame-free habit row
 
 STATUS: open
 
 FOR: Tempo Flow · tempo-rhythm · lane Cursor · code model: mid-tier
-WHEN: MVP
+WHEN: UNPLACED for this habit surface; shame-free copy remains a standing rule
 WHY: UX. `HabitRing` exists. It must not scold.
 GOAL: A missed habit does not say the streak is broken.
 SCOPE: `packages/ui/src/primitives/HabitRing.tsx` plus one test, if the words live there. Confirm by reading.
@@ -430,29 +430,33 @@ NUMBERS: UNKNOWN.
 GATES: the shared gates.
 Question: What should a missed habit say, in English and Hebrew?
 
+## Contract prerequisites
+
+[BUILD-CONTRACT-GAPS.md](../product/BUILD-CONTRACT-GAPS.md) names AUTH-CONTRACT, DATA-CONTRACT, NOTES-CONTRACT, CHAT-CONTRACT, PROPOSAL-CONTRACT, and TEST-FOUNDATION. These are OPEN architecture work items, not ready factory tickets. Exact path discovery is agent work; missing owner policy/copy remains explicitly OPEN.
+
 ## Config tickets
 
 These match [CONFIG-PLAN.md](../product/CONFIG-PLAN.md). They are not code-bar tickets. STATUS is open where that file says a name or an owner is UNKNOWN.
 
 | ID | Owner | STATUS | Question |
 |---|---|---|---|
-| CFG-01 | Amit, then Reason | open | NONE for the shape. Still needs Amit to open Resend. |
+| CFG-01 | Amit, then Reason | open | Check the existing Resend account first; assigned configurator may create/store named keys. New account or legal consent remains Amit's. |
 | CFG-02 | Amit, then Reason | open | NONE for the shape. Amit approves testers. |
-| CFG-03 | Reason | open | NONE for the shape. Confirm the four Convex deployments by name before writing keys. |
+| CFG-03 | Reason | open | Use Dev/Test/Preview/Deployment from docs/ENVIRONMENTS.md; Test and Preview share the existing test deployment. New Firebase mapping OPEN. |
 | CFG-04 | Reason, Amit if sign-in is needed | open | Is `tempoflow.dev` still the production domain? |
 | CFG-05 | Codex, then Reason | open | Which env name holds the GLM key? Do not invent it. |
 | CFG-06 | Amit, then Reason | open | What is the Deepgram env name in Convex? |
-| CFG-07 | UNKNOWN | open | Voice model, GPU, and years. Same question as MVP-11. |
-| CFG-08 | Amit | open | Which schema plan is $20, and which is $50? Same question as MVP-16. |
+| CFG-07 | Assigned voice worker | open | Separate 6 Nov voice brief and TF-11 contract; GPU is not the first prerequisite. |
+| CFG-08 | Amit | open | Which schema plan is $20, and which is $50? Same question as TF-16. |
 | CFG-09 | Amit | open | Same plan-name question for Paddle. |
-| CFG-10 | Amit for consent, Reason for wiring | open | Gmail button copy. Same question as MVP-10. |
+| CFG-10 | Amit for consent, Reason for wiring | open | Gmail button copy. Same question as TF-10. |
 | CFG-11 | Reason | open | NONE for the shape. Do not print a token. |
-| CFG-12 | Cursor, read-only | open | NONE. Do not edit `.github/**`. |
-| CFG-13 | Amit turns anything on | open | What dollar cap, if any, before a Cursor automation is switched on? |
+| CFG-12 | Assigned CI worker | open | Named CI changes are authorized in the separate 6 Nov config lane; this docs change edits no workflow. |
+| CFG-13 | Assigned automation worker | open | Cost/cap evidence before a test, then pause; no activation from this docs draft. |
 | CFG-14 | Codex, Amit for the account | open | What should a crisis screen say, and when does it offer breathing, a therapist, or ERAN? |
 
 ## Counts
 
-MVP tickets: 20. STATUS approved-unsent: 0. STATUS open: 20.
+Product candidates: 20 (not all MVP). STATUS approved-unsent: 0. STATUS open: 20.
 Config tickets: 14. All open.
 GitHub issues created: 0.

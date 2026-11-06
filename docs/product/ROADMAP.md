@@ -16,9 +16,9 @@ Goal. A usable web app that replaces Basic Memory, Executor in the backend, Note
 
 Exit. UNKNOWN.
 
-## MVP — Alpha, Expo, and the voice GPU
+## MVP — Alpha, Expo, and Hebrew-capable voice
 
-Goal. The Alpha product on the Expo phone app, plus voice-to-voice on the GPU. Hebrew is in that voice path. The voice model is still UNKNOWN.
+Goal. The Alpha product on the Expo phone app, plus Hebrew-capable voice-to-voice using hosted STT → text → TTS first. GPU rental is conditional on inadequate hosted quality, not an MVP prerequisite. Eligible models and measured Hebrew quality remain UNKNOWN; see [VOICE-TO-VOICE.md](./VOICE-TO-VOICE.md).
 
 Exit. UNKNOWN.
 

@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Alpha is the web app. It replaces four tools. The MVP is that web app, plus the Expo phone app, plus the voice GPU.
+Alpha is the web app. It replaces four tools. The MVP is that web app, plus the Expo phone app, plus Hebrew-capable voice. The 6 Nov brief starts hosted-first; a GPU is conditional, not an MVP prerequisite.
 
 The coach is a coach, not a counsellor. Source: vision lock, 10 Aug 2026, carried in `docs/PRD.md` (5 Oct 2026). Brain dump is not a medical surface (2026-08-10).
 
@@ -23,7 +23,7 @@ Alpha replaces four tools, together:
 
 Inside that replacement: json-render templates, a chat that can brain-dump, keep threads, and push back, and markdown notes. The person never sees JSON. Source: Amit, 2026-11-05 evening. The push-back example "move this to this" is his morning wording the same day.
 
-Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task. The voice GPU is on the MVP. Source: Amit, 2026-11-05 evening.
+Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task. Hebrew-capable voice belongs to MVP; the hosted-first 6 Nov architecture is in VOICE-TO-VOICE.md. Source: Amit, 2026-11-05 evening.
 
 Plain notes that contain lecture notes are part of replacing NotePlan; StudyFetch-like study, NotebookLM-like tools, recurring tasks, and autonomous email checks or alerts are outside Alpha and outside the MVP.
 
@@ -31,7 +31,7 @@ Plain notes that contain lecture notes are part of replacing NotePlan; StudyFetc
 
 The MVP is the Alpha, plus the Expo phone app. Source: Amit, 2026-11-05 evening.
 
-Voice-to-voice is the GPU deploy. It sits on the MVP. It was not moved this evening. Source: Amit, morning of 2026-11-05.
+Voice-to-voice stays on MVP, not Alpha. The 6 Nov brief requests an initial hosted STT → text → TTS chain, with GPU rental only if hosted quality is inadequate. Source: VOICE-TO-VOICE-BRIEF.md, superseding the GPU-first reading of 5 Nov.
 
 If there is no decent pre-built API, rent a 4090 or a 3090 per use, not all day, for a term of years. Years UNKNOWN. Voice model name UNKNOWN. It can handle Hebrew. Hard prompts go to GLM Flash and DeepSeek. Source: Amit, morning of 2026-11-05.
 
@@ -131,7 +131,7 @@ Also history, not deleted:
 - What are the two onboarding questions? UNKNOWN.
 - What compliance level must Gen 3 reach? UNKNOWN.
 - Which harder connections are Gen 1.1, and which are Gen 1.5? UNKNOWN.
-- What is the voice model name? How many years is the GPU rented? Which GPU, a 4090 or a 3090? UNKNOWN.
+- Which eligible Hebrew STT/TTS models and bounded preview contract pass the 6 Nov hosted-first check? UNKNOWN. GPU choice, fit and rental economics are conditional later work, not an initial owner prerequisite.
 - Does the 10 Aug line that also names autism still stand? Not re-decided on 5 Nov.
 - Does the 29 Oct parity set still bind a level? Not restated this evening.
 - Where would a custom model sit? UNKNOWN. Alpha text is stock GLM 5.3 Flash or DeepSeek.

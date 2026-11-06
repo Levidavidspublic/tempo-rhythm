@@ -12,7 +12,7 @@ Alpha text is stock GLM 5.3 Flash or DeepSeek, chosen by the task (Amit, 2026-11
 
 Executor runs in the backend for the alpha. The person does not connect MCPs. Alpha replaces Basic Memory, Executor, NotePlan, and a chatbot. MVP adds Expo.
 
-Voice-to-voice is a GPU deploy on the MVP, not the alpha. The GPU is a 4090 or a 3090, per use, not all day. Which one, which voice model, and how many years are UNKNOWN. Hebrew is in that voice deploy. Listening stays Deepgram until a test says otherwise. This file does not switch listening to DeepInfra.
+Voice-to-voice belongs to MVP, not Alpha, in Hebrew and English. The 6 Nov brief starts with a hosted STT → text → TTS chain; per-use GPU rental is conditional on inadequate hosted quality. See [VOICE-TO-VOICE.md](./VOICE-TO-VOICE.md). Eligible models, actual Hebrew quality, latency and economics remain UNKNOWN. Existing Deepgram listening is not silently replaced.
 
 $20 is the bare essential. $50 adds the voice feature. $100 is more agentic (API and calls on the person's behalf). Whether $100 includes the voice feature is UNKNOWN.
 
@@ -48,7 +48,7 @@ Person
          v                  v
    Whop and Paddle     Listening: Deepgram now
    (target)            Qwen 8B for tagging
-   Polar + RevenueCat  Voice GPU is the MVP picture
+   Polar + RevenueCat  Hosted voice chain at MVP; GPU is conditional
    (installed)
 ```
 

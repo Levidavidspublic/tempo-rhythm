@@ -87,7 +87,7 @@ RevenueCat's client is installed. It is not the product payment target. Alpha is
 | Custom models | Teach subtasks and threading. Not in the alpha | Later stage. Which generation is UNKNOWN. Amit, 2026-11-05 evening |
 | Hard voice prompts | GLM Flash and DeepSeek | Amit, 2026-11-05. This row is not the alpha text-model line |
 | Listening | Deepgram, until a side-by-side test says otherwise | 2026-10-16. A 29 Oct question asked whether to switch listening to DeepInfra. That switch is not decided. Do not switch it in these docs |
-| Voice-to-voice | GPU deploy on the MVP, not the alpha. Hebrew is in that deploy | GPU is a 4090 or a 3090, per use, not all day. Which one, which voice model, and how many years are UNKNOWN. Amit, 2026-11-05 evening |
+| Voice-to-voice | Hebrew/English on MVP, not Alpha; hosted STT → text → TTS first | 6 Nov voice brief. GPU is a conditional later path. Exact models, latency and cost are UNKNOWN; see VOICE-TO-VOICE.md |
 | Bring-your-own voice | A provider by name plus key or OAuth | 2026-10-16 |
 
 `docs/HARD_RULES.md` section 6.1 still routes every LLM call to Mistral through `convex/lib/ai_router.ts`. `.env.example` still names `MISTRAL_API_KEY`. That is the code today. The alpha text target, evening of 5 Nov 2026, is stock GLM 5.3 Flash or DeepSeek, chosen by the task. The morning line that named only GLM 5.3 Flash is older for the alpha. Qwen 8B still tags. gpt-oss-safeguard 20B is still the crisis classifier (2026-10-21). Custom models that teach subtasks and threading are a later stage. Which generation is UNKNOWN. They are not in the alpha. The router change is a later ticket. The code at `5504fc40` is still Convex. The 5 Nov target is Firebase.
