@@ -1,0 +1,58 @@
+convex/lib/ai_router.test.ts(80,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(101,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(123,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(138,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(154,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(171,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(181,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(190,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(205,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(221,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(232,4): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(241,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(253,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(264,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(277,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(292,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(301,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(315,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(332,3): error TS2741: Property 'preconnect' is missing in type 'Mock<(_url: string | URL | Request, init?: RequestInit | undefined) => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(348,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(363,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(375,78): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(timeout: string | number | Timeout | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'string | number | Timeout | undefined'.
+      Type 'Timer' is not assignable to type 'string | number | Timeout | undefined'.
+        Type 'Timer' is missing the following properties from type 'Timeout': close, _onTimeout, [Symbol.dispose]
+  Overload 2 of 3, '(id?: number | Timer | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'number | Timer | undefined'.
+      Type 'string' is not assignable to type 'number | Timer | undefined'.
+  Overload 3 of 3, '(id: number | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'number | undefined'.
+      Type 'string' is not assignable to type 'number'.
+convex/lib/ai_router.test.ts(376,29): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+convex/lib/ai_router.test.ts(376,39): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+convex/lib/ai_router.test.ts(376,46): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+convex/lib/ai_router.test.ts(382,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(393,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(402,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(409,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(419,29): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+convex/lib/ai_router.test.ts(419,39): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+convex/lib/ai_router.test.ts(419,46): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+convex/lib/ai_router.test.ts(423,79): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(timeout: string | number | Timeout | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'string | number | Timeout | undefined'.
+      Type 'Timer' is not assignable to type 'string | number | Timeout | undefined'.
+        Type 'Timer' is missing the following properties from type 'Timeout': close, _onTimeout, [Symbol.dispose]
+  Overload 2 of 3, '(id?: number | Timer | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'number | Timer | undefined'.
+      Type 'string' is not assignable to type 'number | Timer | undefined'.
+  Overload 3 of 3, '(id: number | undefined): void', gave the following error.
+    Argument of type 'string | number | Timeout | Timer | undefined' is not assignable to parameter of type 'number | undefined'.
+      Type 'string' is not assignable to type 'number'.
+convex/lib/ai_router.test.ts(424,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(439,4): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(449,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(458,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<Response>>' but required in type 'typeof fetch'.
+convex/lib/ai_router.test.ts(461,3): error TS2741: Property 'preconnect' is missing in type 'Mock<() => Promise<never>>' but required in type 'typeof fetch'.
