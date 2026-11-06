@@ -8,7 +8,10 @@ Baseline: `5504fc4038fc45d6c8412c23c45b9a9b6cb2ba73` on `integration`.
 This is the continuation of the SAME **13 FM-01–FM-13** work items from
 [PR1361](https://github.com/Levidavidspublic/tempo-rhythm/pull/1361) at
 `379b11db5b521cae0b88880ead38f84ecbb06669`, not a second migration queue.
-No additional FM IDs, issues, dispatcher activity or workers are created.
+No additional FM IDs, implementation issues, dispatcher activity or workers are created.
+[Tracking issue #1363](https://github.com/Levidavidspublic/tempo-rhythm/issues/1363)
+covers only this additive preparation deliverable and its five-file scope; it does not
+close or dispatch any of the 13 migration implementation items.
 Apply this backlog as the reconciled planning successor if reviewed; do not dispatch both versions.
 PR1361's four bootstrap files are not copied, deployed or modified.
 

@@ -2,8 +2,10 @@
 
 Status: additive preparation locally checked; runtime migration **NOT PASS**.
 Worker: Tempo Kitchen, single existing Session, no helpers.
-Machine: this Session's Cloud computer. No PC operation, install, deployment, credentials,
+Machine: this Session's Cloud computer. No PC operation, deployment, credentials,
 model/provider invocation, B3 repair, security-setting change or paid call.
+Correction round installed only pyink/pylint in isolated /tmp/tempo1362-style,
+using the tools and public Google pylintrc specified by the unchanged CI.
 
 ## Baseline and source ownership
 
@@ -13,7 +15,8 @@ Branch: `reason/tempo-r1-part4-migration-351d2cbf`.
 PR1359 inspected at `69735e789880719ececc211a8581511d4aebe7cf` (draft/unmerged).
 PR1361 inspected at `379b11db5b521cae0b88880ead38f84ecbb06669` (draft/unmerged).
 Neither altered. Standard from PR1359: 11 core fields + SPEC/TESTS/NUMBERS/GATES.
-Existing 13 FM IDs reconciled, not 13 additional tickets. No issue or factory activation.
+Existing 13 FM IDs reconciled, not 13 additional tickets. Preparation-only tracking
+issue #1363 was subsequently created for PR1362 scope classification; no factory activation.
 
 ## Worker CHECK — inventory, tickets and test scaffolding
 
@@ -40,7 +43,7 @@ NOT RUN: official Auth/Firestore emulator owner/non-owner behavior.
 Initial prerequisites: Java executable absent; Firebase CLI absent; node_modules absent.
 Parent subsequently reported installing runtime prerequisites in its own scratch area
 and owns the independent demo-emulator run. This worker does not start another
-emulator server or count the parent's pending run as repository PASS.
+emulator server or count the parent's separate run as repository PASS.
 The Python REST test needs no Firebase SDK or project credentials; CLI/Java still required.
 Its temporary synthetic rules are NOT product rules or an accepted collection contract.
 Password sign-up inside the Auth emulator is only synthetic identity setup, not product
@@ -173,6 +176,46 @@ Proof command:
 and explicit staged path allowlist. Expected empty diff and exit0.
 Env files, auth/schema, current deployment and root configuration are not in scope.
 These checks prove unchanged source, not a remote security/deployment attestation.
+
+## PR1362 single correction round
+
+Old remote head: `a0b70e4b5fe6c85dcd814d90174e5dcd7a99a89e`.
+Fresh `git fetch origin integration; git rev-parse FETCH_HEAD` again returned
+`5504fc4038fc45d6c8412c23c45b9a9b6cb2ba73`.
+Exact searches for Firebase migration and R1 PART4 issues found no covering ticket;
+created genuine preparation-only issue #1363 with all 15 standard fields and
+scope/type front-matter. PR body links `Closes #1363`; no config or factory labels.
+
+Reproduced formatter failure: exact CI command
+`pyink --pyink-indentation 2 --line-length 80 --check docs/backlog/*.py`
+returned exit1, both files would reformat. Applied that formatter once.
+AFTER: same command exit0, two files unchanged. AST comparison against pre-format
+copies: identical for both tools; no behavior change.
+
+BLOCKED: next unchanged CI command
+`pylint --rcfile /tmp/tempo1362-style/pylintrc docs/backlog/*.py` returned exit20.
+Actual downloaded Google config line278 has `indent-string='    '` (four spaces),
+while workflow requires pyink two spaces. Reports W0311 bad-indentation throughout;
+also C0103 hyphenated module names, C0301 long strings/docstrings, W1514 encoding
+and W0707 raise-missing-from. These failures remain visible. No lint disable,
+config/check edit, rename to evade scope, or second correction round.
+
+Rechecked PASS: inventory --check (716/639/9621/3); independent git grep/ls-tree
+set equality; 13 sequential FM IDs with all 15 fields each; AST equivalence;
+temporary fixture creation and fail-closed exit1 (not behavioral isolation);
+all four scan/notices commands; exact five added-file assertion; protected diff
+and `git diff --check` against integration. Existing tracked files remain unchanged.
+Prior full-suite failures above are retained, not retried or reclassified.
+
+Separate parent-reported external evidence (not this worker's script): official
+Auth/Firestore demo-r1-isolation fixture exited0; two email-link emulator sign-ins,
+owner PATCH200/read200, second-user GET403/PATCH403, anonymous GET403,
+out-of-scope PATCH403. Evidence in parent's scratch work/emulator-check:
+check_isolation.py, firebase.json, firestore.rules, result.json. Parent reports
+1.104s test execution, NOT product latency. Initial isolated-network URLError,
+one alternate inside official emulators:exec passed; emulators shut down.
+This worker's distinct fixture uses synthetic password identities and is NOT RUN
+for behavioral acceptance. No product preview/email delivery/Hebrew-chain PASS.
 
 ## Exact remaining gates / operational note
 
