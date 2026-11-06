@@ -2,10 +2,12 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
+import { kb71t, type Kb71Lang } from "@/lib/i18n-groups/kb-71";
 import { cn } from "@/lib/utils";
+import "@/app/v3/kb-71.css";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "kb71-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -45,5 +47,67 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   }
 );
 Button.displayName = "Button";
+
+/** Controlled examples of the production primitive; callers provide any action handling. */
+export function Kb71Gallery({
+  lang,
+  onAction,
+  onLink,
+}: {
+  readonly lang: Kb71Lang;
+  readonly onAction?: (sample: string) => void;
+  readonly onLink?: () => void;
+}) {
+  const t = (key: Parameters<typeof kb71t>[1]) => kb71t(lang, key);
+  const act = (sample: string) => (onAction ? () => onAction(sample) : undefined);
+  return (
+    <main
+      className="kb71-gallery"
+      data-component="Kb71Gallery"
+      lang={lang}
+      dir={lang === "he" ? "rtl" : "ltr"}
+    >
+      <h1 className="kb71-gallery__title">{t("title")}</h1>
+      <p className="kb71-gallery__lede">{t("lede")}</p>
+      <div className="kb71-gallery__samples">
+        <Button size="sm" onClick={act("small")}>
+          {t("small")}
+        </Button>
+        <Button onClick={act("default")}>{t("default")}</Button>
+        <Button size="lg" variant="secondary" onClick={act("large")}>
+          {t("large")}
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          aria-label={t("iconName")}
+          onClick={act("icon")}
+        >
+          <span aria-hidden="true">＋</span>
+        </Button>
+        <Button variant="destructive" onClick={act("destructive")}>
+          {t("destructive")}
+        </Button>
+        <Button variant="ghost" onClick={act("ghost")}>
+          {t("ghost")}
+        </Button>
+        <Button variant="link" onClick={act("linkStyle")}>
+          {t("linkStyle")}
+        </Button>
+        <Button disabled onClick={act("disabled")}>
+          {t("disabled")}
+        </Button>
+        <Button className="kb71-gallery__long" onClick={act("long")}>
+          {t("long")}
+        </Button>
+        <Button asChild variant="outline">
+          <a href="/today" onClick={onLink}>
+            {t("slottedLink")}
+          </a>
+        </Button>
+      </div>
+    </main>
+  );
+}
 
 export { Button, buttonVariants };
