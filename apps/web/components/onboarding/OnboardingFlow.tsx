@@ -7,10 +7,11 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { DialControl, SettingsSwitch } from "@/components/settings/controls";
 import { StateLoading, StateOffline, useOnline } from "@/components/settings/states";
-import { TpIcon } from "@/components/tempo/TpIcon";
+import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Lang } from "@/lib/i18n";
+import { translateKb44, type Kb44Lang } from "@/lib/i18n-groups/kb-44";
 import { clampDial } from "@/lib/settings/dial";
 import {
   finishArgs,
@@ -21,6 +22,7 @@ import {
   prefillName,
 } from "@/lib/settings/onboarding";
 import { NameStep } from "./NameStep";
+import "@/app/v3/kb-44.css";
 
 function Card({ children }: { children: ReactNode }) {
   return (
@@ -67,6 +69,7 @@ export function OnboardingFlow() {
   const updateNote = useMutation(api.notes.update);
   const updatePreferences = useMutation(api.preferences.update);
   const [step, setStep] = useState<OnboardingStep>(1);
+  const [resumed, setResumed] = useState(false);
   const [typed, setTyped] = useState<string | null>(null);
   const [nameSkipped, setNameSkipped] = useState(false);
   const [dialDraft, setDialDraft] = useState<number | null>(null);
@@ -92,7 +95,9 @@ export function OnboardingFlow() {
   // `?step=1..5` opens a step.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setStep(parseStep(new URLSearchParams(window.location.search || "").get("step")));
+    const initialStep = parseStep(new URLSearchParams(window.location.search || "").get("step"));
+    setStep(initialStep);
+    setResumed(initialStep > 1);
   }, []);
 
   // Focus moves to each step's heading after Continue, Back or Skip (not on first load).
@@ -120,6 +125,7 @@ export function OnboardingFlow() {
   const go = (next: number) => {
     moved.current = true;
     setError(false);
+    setResumed(false);
     setStep(Math.min(ONBOARDING_STEPS, Math.max(1, next)) as OnboardingStep);
   };
 
@@ -232,13 +238,11 @@ export function OnboardingFlow() {
     <Card>
       <div className="ob-top">
         <span className="tp-auth-card__brand">Tempo</span>
-        <p className="tp-eyebrow" aria-live="polite">
-          <span>{t("set.onb.step")}</span> <span className="tp-num">{step}</span> <span>{t("set.onb.of")}</span>{" "}
-          <span className="tp-num">{ONBOARDING_STEPS}</span>
-        </p>
+        <OnboardingStepSummary step={step} total={ONBOARDING_STEPS} lang={lang} />
       </div>
 
       <StateOffline title="set.onb.offTitle" body="set.onb.offBody" />
+      {resumed ? <OnboardingResumeNotice step={step} lang={lang} disabled={pending} onReview={() => { if (!busy.current) go(1); }} /> : null}
 
       {error ? (
         <div className="tp-notice" data-tone="danger" role="alert" data-component="StateError">
@@ -258,6 +262,7 @@ export function OnboardingFlow() {
         data-component="Form"
         onSubmit={(event) => event.preventDefault()}
       >
+        {isOptionalStep(step) ? <p className="kb44-optional">{translateKb44(lang, "optional")}</p> : null}
         {step === 1 ? (
           <section className="ob-step" aria-labelledby="s1-title">
             {stepTitle("s1-title", t("set.onb.s1Title"), t("set.onb.s1Lede"))}
@@ -436,4 +441,84 @@ export function OnboardingFlow() {
       </form>
     </Card>
   );
+}
+
+/** Visible and spoken progress, without claiming that earlier answers survived a refresh. */
+export function OnboardingStepSummary({ step, total, lang }: {
+  readonly step: number;
+  readonly total: number;
+  readonly lang: Kb44Lang;
+}) {
+  const values = lang === "he"
+    ? { step: `\u2066${step}\u2069`, total: `\u2066${total}\u2069` }
+    : { step: String(step), total: String(total) };
+  return <div className="kb44-summary" data-component="OnboardingStepSummary">
+    <p className="kb44-summary__text" dir="auto" aria-live="polite">{translateKb44(lang, "summary", values)}</p>
+    <progress className="kb44-summary__progress" value={step} max={total} aria-label={translateKb44(lang, "summary.aria", values)} />
+  </div>;
+}
+
+/** Shown only when a step is reopened from the URL; no draft text is stored. */
+export function OnboardingResumeNotice({ step, lang, disabled = false, onReview }: {
+  readonly step: number;
+  readonly lang: Kb44Lang;
+  readonly disabled?: boolean;
+  readonly onReview: () => void;
+}) {
+  return <aside className="kb44-resume" data-component="OnboardingResumeNotice">
+    <TpIcon name="info" size="sm" />
+    <div className="kb44-resume__copy">
+      <p><strong>{translateKb44(lang, "resume.title", { step: `\u2066${step}\u2069` })}</strong></p>
+      <p>{translateKb44(lang, "resume.body")}</p>
+    </div>
+    <button className="tp-btn tp-btn--secondary kb44-resume__action" type="button" disabled={disabled} onClick={onReview}>{translateKb44(lang, "resume.review")}</button>
+  </aside>;
+}
+
+/** Controlled fixture using the mounted summary and notice with fictional input. */
+export function Kb44Gallery() {
+  const [lang, setLang] = useState<Kb44Lang>("en");
+  const [state, setState] = useState<"default" | "empty" | "loading" | "error" | "disabled" | "overflow" | "resume" | "pending">("default");
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("Maya");
+  const [feedback, setFeedback] = useState("");
+  const heading = useRef<HTMLHeadingElement>(null);
+  const moved = useRef(false);
+  useEffect(() => { if (moved.current) { heading.current?.focus(); moved.current = false; } });
+  const move = (next: number) => {
+    if (next === step) return;
+    moved.current = true;
+    setStep(Math.max(1, Math.min(ONBOARDING_STEPS, next)));
+    setFeedback(next > step ? "next" : "back");
+  };
+  const states = ["default", "empty", "loading", "error", "disabled", "overflow", "resume", "pending"] as const;
+  const choose = (next: typeof states[number]) => {
+    setState(next);
+    setStep(next === "resume" ? 3 : 1);
+    setName(next === "empty" ? "" : next === "overflow" ? "Maya Dana Yoni — a very long fictional name that must wrap without pushing the page sideways" : "Maya");
+    setFeedback("");
+  };
+  return <main className="kb44-gallery" data-component="Kb44Gallery" lang={lang} dir={lang === "he" ? "rtl" : "ltr"}>
+    <TpIconSprite />
+    <h1 className="tp-auth-card__title">{translateKb44(lang, "gallery.title")}</h1>
+    <fieldset className="kb44-gallery__controls"><legend className="tp-sr-only">{translateKb44(lang, "gallery.language")}</legend>
+      <button type="button" className="tp-btn tp-btn--secondary" aria-pressed={lang === "en"} onClick={() => setLang("en")}>English</button>
+      <button type="button" className="tp-btn tp-btn--secondary" aria-pressed={lang === "he"} onClick={() => setLang("he")}>עברית</button>
+    </fieldset>
+    <fieldset className="kb44-gallery__controls"><legend className="tp-sr-only">{translateKb44(lang, "gallery.state")}</legend>
+      {states.map((next) => <button key={next} className="tp-btn tp-btn--secondary" type="button" aria-pressed={state === next} onClick={() => choose(next)}>{translateKb44(lang, next === "pending" ? "gallery.pendingState" : `gallery.${next}`)}</button>)}
+    </fieldset>
+    <OnboardingStepSummary step={step} total={ONBOARDING_STEPS} lang={lang} />
+    {state === "resume" ? <OnboardingResumeNotice step={step} lang={lang} onReview={() => { move(1); setState("default"); }} /> : null}
+    {state === "loading" ? <output className="tp-state tp-state--loading" aria-busy="true" data-component="StateLoading"><span className="tp-sr-only">{translateKb44(lang, "gallery.loadingLabel")}</span><span className="tp-skeleton tp-skeleton--w80" /></output> : <>
+      <h2 className="tp-auth-card__title" tabIndex={-1} ref={heading}>{translateKb44(lang, "gallery.name")}</h2>
+      {state === "error" ? <div className="tp-notice" data-tone="danger" role="alert"><strong>{translateKb44(lang, "gallery.errorTitle")}</strong> {translateKb44(lang, "gallery.errorBody")} <button className="tp-btn tp-btn--secondary" type="button" onClick={() => { setState("default"); setFeedback("retry"); }}>{translateKb44(lang, "gallery.retry")}</button></div> : null}
+      <label className="kb44-gallery__field"><span>{translateKb44(lang, "gallery.name")}</span><input className="tp-input" type="text" value={name} dir="auto" disabled={state === "disabled" || state === "pending"} onChange={(event) => setName(event.target.value)} /></label>
+      <nav className="kb44-gallery__nav" aria-label={translateKb44(lang, "gallery.state")}>
+        <button className="tp-btn tp-btn--secondary" type="button" disabled={state === "disabled" || state === "pending" || step === 1} onClick={() => move(step - 1)}>{translateKb44(lang, "gallery.back")}</button>
+        <button className="tp-btn tp-btn--primary" type="button" disabled={state === "disabled" || state === "pending"} onClick={() => move(step + 1)}>{translateKb44(lang, state === "pending" ? "gallery.pending" : "gallery.next")}</button>
+      </nav>
+      {feedback ? <output aria-live="polite">{translateKb44(lang, "gallery.feedback", { action: feedback })}</output> : null}
+    </>}
+  </main>;
 }

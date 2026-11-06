@@ -1,0 +1,20 @@
+/* KB-44: onboarding summary, resume notice, and standalone gallery only. */
+.kb44-summary { display: grid; gap: var(--tp-space-2); flex: 1 1 14rem; min-width: 0; }
+.kb44-summary__text { margin: 0; color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+.kb44-summary__progress { display: block; width: 100%; height: var(--tp-space-2); appearance: none; border: 0; border-radius: var(--tp-radius-pill); background: var(--tp-sunken); }
+.kb44-summary__progress::-webkit-progress-bar { border-radius: var(--tp-radius-pill); background: var(--tp-sunken); }
+.kb44-summary__progress::-webkit-progress-value { border-radius: var(--tp-radius-pill); background: var(--tp-accent); }
+.kb44-summary__progress::-moz-progress-bar { border-radius: var(--tp-radius-pill); background: var(--tp-accent); }
+.kb44-resume { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); min-width: 0; padding: var(--tp-space-4); border: 1px solid var(--tp-line-control); border-radius: var(--tp-radius-md); background: var(--tp-accent-wash); }
+.kb44-resume__copy { flex: 1 1 18ch; min-width: 0; }
+.kb44-resume__copy p { margin: 0; }
+.kb44-resume__action { min-height: var(--tp-touch); min-width: var(--tp-touch); }
+.kb44-optional { margin: 0; color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+.kb44-gallery { display: grid; gap: var(--tp-space-4); max-width: var(--tp-paper-max); min-width: 0; padding: var(--tp-space-4); margin-inline: auto; color: var(--tp-ink); background: var(--tp-paper); font-family: var(--tp-font-sans); }
+.kb44-gallery__controls { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); border: 0; padding: 0; margin: 0; min-width: 0; }
+.kb44-gallery button { min-height: var(--tp-touch); min-width: var(--tp-touch); }
+.kb44-gallery button:focus-visible, .kb44-resume__action:focus-visible { outline: var(--tp-focus-w) solid var(--tp-accent); outline-offset: var(--tp-focus-gap); }
+.kb44-gallery__field { display: grid; gap: var(--tp-space-2); min-width: 0; }
+.kb44-gallery__field input { min-width: 0; width: 100%; min-height: var(--tp-touch); }
+.kb44-gallery__nav { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); justify-content: flex-end; }
+@media (prefers-reduced-motion: reduce) { .kb44-gallery *, .kb44-summary__progress { animation-duration: 0s; transition-duration: 0s; } }
