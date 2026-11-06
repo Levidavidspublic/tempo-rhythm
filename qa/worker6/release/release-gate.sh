@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
 # Release gate. Default is DRY (prints plan). Real run requires SCOUT_STABLE=yes AND CONFIRM=release.
 set -euo pipefail
-PROJECT="${1:?tempo-web|omniagent}"; PREVIEW_URL="${PREVIEW_URL:?}"; TEAM="${VERCEL_SCOPE:-UNKNOWN}"
-run(){ if [[ "${CONFIRM:-}" == release ]]; then echo "+ $*"; eval "$@"; else echo "DRY: $*"; fi; }
-[[ "${SCOUT_STABLE:-}" == yes ]] || { echo "STOP: Scout has not declared loops stable"; exit 3; }
+PROJECT="${1:?tempo-web|omniagent}"
+PREVIEW_URL="${PREVIEW_URL:?}"
+TEAM="${VERCEL_SCOPE:-UNKNOWN}"
+run() {
+  # Callers pass shell syntax on purpose (env prefixes, ||, redirects), so eval is
+  # the contract here rather than an array.
+  if [[ "${CONFIRM:-}" == release ]]; then
+    echo "+ $*"
+    # shellcheck disable=SC2294
+    eval "$@"
+  else
+    echo "DRY: $*"
+  fi
+}
+[[ "${SCOUT_STABLE:-}" == yes ]] || {
+  echo "STOP: Scout has not declared loops stable"
+  exit 3
+}
 PREV_PROD=$(vercel ls "$PROJECT" --scope "$TEAM" --prod 2>/dev/null | awk 'NR==2{print $2}' || echo UNKNOWN)
 echo "rollback target: $PREV_PROD"
 echo "Gate 1 CodeRabbit: confirm manually on release PR (no CLI gate)."
