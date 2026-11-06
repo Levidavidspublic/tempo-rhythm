@@ -1,0 +1,3 @@
+Generated data model schema resolution: /workspace/work/overnight/billing-deletion-fence-oct22/convex/schema.ts
+Actual backend strict check: 0 diagnostic(s), 5 local source/declaration files, 245 total real source/type files.
+Pinned real generated declarations, actual overlay schema; unchanged ES2021/DOM/Bun config; no stubs or application/API consumers.

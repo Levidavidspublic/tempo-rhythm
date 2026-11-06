@@ -1,0 +1,7 @@
+Generated data model schema resolution: /workspace/work/overnight/billing-deletion-fence-oct22/convex/schema.ts
+/workspace/work/overnight/billing-deletion-fence-oct22/convex/lib/billing_deletion_fence.test.ts:203:43 TS2339: Property 'json' does not exist on type 'GenericValidator'.
+  Property 'json' does not exist on type 'VId<any, any>'.
+/workspace/work/overnight/billing-deletion-fence-oct22/convex/lib/billing_deletion_fence.test.ts:203:67 TS2339: Property 'json' does not exist on type 'VString<string, "required"> | VFloat64<number | undefined, "optional"> | VBoolean<boolean | undefined, "optional"> | VString<string | undefined, "optional"> | ... 4 more ... | VUnion<...>'.
+  Property 'json' does not exist on type 'VString<string, "required">'.
+Actual backend strict check: 2 diagnostic(s), 5 local source/declaration files, 245 total real source/type files.
+Pinned real generated declarations, actual overlay schema; unchanged ES2021/DOM/Bun config; no stubs or application/API consumers.

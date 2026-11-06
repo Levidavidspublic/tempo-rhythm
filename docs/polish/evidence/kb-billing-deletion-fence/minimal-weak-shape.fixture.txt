@@ -1,0 +1,4 @@
+type FixtureRow = { _id: string; [field: string]: unknown };
+declare const row: FixtureRow;
+declare function restore(user: { deletedAt?: number; isActive?: boolean }, now: number): unknown;
+restore(row, 1);
