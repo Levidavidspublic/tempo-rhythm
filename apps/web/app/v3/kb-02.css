@@ -1,0 +1,47 @@
+.kb02-screen .kb02-capture-status {
+  display: block;
+  margin-block: var(--tp-space-3);
+  padding: var(--tp-space-3) var(--tp-space-4);
+  border: 1px solid var(--tp-line);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
+  color: var(--tp-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.kb02-screen .kb02-capture-status[data-state="sorting"] { border-inline-start: 3px solid var(--tp-accent); }
+.kb02-screen .kb02-capture-status[data-state="error"],
+.kb02-screen .kb02-capture-status[data-state="offline"] { border-inline-start: 3px solid var(--tp-caution); }
+.kb02-screen .kb02-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2);
+  padding: var(--tp-space-3) var(--tp-space-4);
+  border: 1px solid var(--tp-line);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
+  color: var(--tp-ink);
+}
+.kb02-screen .kb02-recovery__text { flex: 1 1 12rem; overflow-wrap: anywhere; }
+.kb02-screen .kb02-recovery button { min-height: 44px; }
+.kb02-screen .tp-import-row,
+.kb02-screen .tp-import-row__text,
+.kb02-screen .tp-chip { min-width: 0; overflow-wrap: anywhere; }
+.kb02-gallery__controls .tp-btn { min-height: 44px; }
+.kb02-screen .bd-actions > .tp-btn,
+.kb02-screen .bd-row__actions .tp-btn,
+.kb02-screen .bd-saved .tp-btn { min-height: 44px; }
+.kb02-screen .bd-saved .tp-notice__action { margin-inline-start: auto; }
+.kb02-gallery { max-width: 52rem; margin-inline: auto; padding: var(--tp-space-4); }
+.kb02-gallery__controls { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-block: var(--tp-space-4); min-width: 0; padding: 0; border: 0; }
+.kb02-gallery textarea { width: 100%; min-height: 9rem; overflow-wrap: anywhere; }
+.kb02-gallery .tp-surface { min-width: 0; }
+@media (max-width: 480px) {
+  .kb02-screen .bd-row__actions { margin-inline-start: 0; }
+  .kb02-screen .bd-actions > .tp-btn { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb02-screen .kb02-capture-status,
+  .kb02-screen .kb02-recovery { animation: none; transition: none; }
+}
