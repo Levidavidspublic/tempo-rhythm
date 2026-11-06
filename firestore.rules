@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Preview bootstrap only. Collection paths and UID mapping are not approved.
+    // No client, including an authenticated owner, may access documents yet.
+    // Admin SDK access bypasses these rules; enforce ownership in server code.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
