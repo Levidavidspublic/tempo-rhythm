@@ -1,0 +1,1099 @@
+[
+  {
+    "id": "KB-01",
+    "title": "Every chat can be paged, searched, tagged and archived",
+    "type": "data",
+    "lane": "FRONTIER",
+    "batch": 1,
+    "deps": [
+      1094,
+      1096,
+      1110,
+      1112,
+      1113,
+      1114,
+      1115,
+      1123,
+      1127
+    ],
+    "scope": [
+      "convex/schema.ts",
+      "convex/conversations.ts",
+      "convex/messages.ts",
+      "convex/kb_01.test.ts",
+      "docs/polish/evidence/kb-01-every-chat-can-be-paged-searched-tagged-and-archived.md"
+    ]
+  },
+  {
+    "id": "KB-16",
+    "title": "Coach search has bounded modes, source choices and media lookups",
+    "type": "data",
+    "lane": "FRONTIER",
+    "batch": 2,
+    "deps": [
+      "KB-01",
+      1094,
+      1110,
+      1112,
+      1113,
+      1116
+    ],
+    "scope": [
+      "convex/lib/webSearch.ts",
+      "convex/search.ts",
+      "convex/coach.ts",
+      "convex/kb_16.test.ts",
+      "docs/polish/evidence/kb-16-coach-search-has-bounded-modes-source-choices-and-media-lookups.md"
+    ]
+  },
+  {
+    "id": "KB-31",
+    "title": "Chat exports and bulk deletion have bounded receipts and Undo",
+    "type": "data",
+    "lane": "FRONTIER",
+    "batch": 3,
+    "deps": [
+      "KB-01",
+      "KB-16",
+      1094
+    ],
+    "scope": [
+      "convex/conversations.ts",
+      "convex/messages.ts",
+      "convex/kb_31.test.ts",
+      "docs/polish/evidence/kb-31-chat-exports-and-bulk-deletion-have-bounded-receipts-and-undo.md"
+    ]
+  },
+  {
+    "id": "KB-02",
+    "title": "Brain dump keeps the draft and makes the next step clear",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/brain-dump/BrainDumpScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-02.ts",
+      "apps/web/app/v3/kb-02.css",
+      "tests/unit/kb-02.test.tsx",
+      "docs/polish/evidence/kb-02-brain-dump-keeps-the-draft-and-makes-the-next-step-clear.md",
+      "docs/polish/evidence/kb-02-brain-dump-keeps-the-draft-and-makes-the-next-step-clear.jpg"
+    ]
+  },
+  {
+    "id": "KB-03",
+    "title": "Search results keep focus and explain empty filters",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/global-search/SearchScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-03.ts",
+      "apps/web/app/v3/kb-03.css",
+      "tests/unit/kb-03.test.tsx",
+      "docs/polish/evidence/kb-03-search-results-keep-focus-and-explain-empty-filters.md",
+      "docs/polish/evidence/kb-03-search-results-keep-focus-and-explain-empty-filters.jpg"
+    ]
+  },
+  {
+    "id": "KB-04",
+    "title": "Journal entries read comfortably and keep their place",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/journal/JournalScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-04.ts",
+      "apps/web/app/v3/kb-04.css",
+      "tests/unit/kb-04.test.tsx",
+      "docs/polish/evidence/kb-04-journal-entries-read-comfortably-and-keep-their-place.md",
+      "docs/polish/evidence/kb-04-journal-entries-read-comfortably-and-keep-their-place.jpg"
+    ]
+  },
+  {
+    "id": "KB-05",
+    "title": "Goals list has clear progress and a calm empty state",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/goals/GoalsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-05.ts",
+      "apps/web/app/v3/kb-05.css",
+      "tests/unit/kb-05.test.tsx",
+      "docs/polish/evidence/kb-05-goals-list-has-clear-progress-and-a-calm-empty-state.md",
+      "docs/polish/evidence/kb-05-goals-list-has-clear-progress-and-a-calm-empty-state.jpg"
+    ]
+  },
+  {
+    "id": "KB-06",
+    "title": "Goal details show progress and clear states",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/goals/GoalDetailScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-06.ts",
+      "apps/web/app/v3/kb-06.css",
+      "tests/unit/kb-06.test.tsx",
+      "docs/polish/evidence/kb-06-goal-details-show-milestones-without-crowding.md",
+      "docs/polish/evidence/kb-06-goal-details-show-milestones-without-crowding.jpg"
+    ]
+  },
+  {
+    "id": "KB-07",
+    "title": "Goal progress has a readable table beside the chart",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/goals/GoalsProgressScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-07.ts",
+      "apps/web/app/v3/kb-07.css",
+      "tests/unit/kb-07.test.tsx",
+      "docs/polish/evidence/kb-07-goal-progress-has-a-readable-table-beside-the-chart.md",
+      "docs/polish/evidence/kb-07-goal-progress-has-a-readable-table-beside-the-chart.jpg"
+    ]
+  },
+  {
+    "id": "KB-08",
+    "title": "Projects list makes names and counts easy to scan",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/projects/ProjectsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-08.ts",
+      "apps/web/app/v3/kb-08.css",
+      "tests/unit/kb-08.test.tsx",
+      "docs/polish/evidence/kb-08-projects-list-makes-names-and-counts-easy-to-scan.md",
+      "docs/polish/evidence/kb-08-projects-list-makes-names-and-counts-easy-to-scan.jpg"
+    ]
+  },
+  {
+    "id": "KB-09",
+    "title": "Project details keep task actions in reach",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/projects/ProjectDetailScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-09.ts",
+      "apps/web/app/v3/kb-09.css",
+      "tests/unit/kb-09.test.tsx",
+      "docs/polish/evidence/kb-09-project-details-keep-task-actions-in-reach.md",
+      "docs/polish/evidence/kb-09-project-details-keep-task-actions-in-reach.jpg"
+    ]
+  },
+  {
+    "id": "KB-10",
+    "title": "Sign-in stays clear while a magic link is on its way",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [],
+    "scope": [
+      "apps/web/components/auth/SignInForm.tsx",
+      "apps/web/lib/i18n-groups/kb-10.ts",
+      "apps/web/app/v3/kb-10.css",
+      "tests/unit/kb-10.test.tsx",
+      "docs/polish/evidence/kb-10-sign-in-stays-clear-while-a-magic-link-is-on-its-way.md",
+      "docs/polish/evidence/kb-10-sign-in-stays-clear-while-a-magic-link-is-on-its-way.jpg"
+    ]
+  },
+  {
+    "id": "KB-44",
+    "title": "Onboarding shows one clear step and preserves input",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 3,
+    "deps": [],
+    "scope": [
+      "apps/web/components/onboarding/OnboardingFlow.tsx",
+      "apps/web/lib/i18n-groups/kb-44.ts",
+      "apps/web/app/v3/kb-44.css",
+      "tests/unit/kb-44.test.tsx",
+      "docs/polish/evidence/kb-44-onboarding-shows-one-clear-step-and-preserves-input.md",
+      "docs/polish/evidence/kb-44-onboarding-shows-one-clear-step-and-preserves-input.jpg"
+    ]
+  },
+  {
+    "id": "KB-45",
+    "title": "Sign-up explains approval and keeps the form accessible",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [],
+    "scope": [
+      "apps/web/components/auth/SignUpForm.tsx",
+      "apps/web/lib/i18n-groups/kb-45.ts",
+      "apps/web/app/v3/kb-45.css",
+      "tests/unit/kb-45.test.tsx",
+      "docs/polish/evidence/kb-45-sign-up-explains-approval-and-keeps-the-form-accessible.md",
+      "docs/polish/evidence/kb-45-sign-up-explains-approval-and-keeps-the-form-accessible.jpg"
+    ]
+  },
+  {
+    "id": "KB-69",
+    "title": "Approval waiting stays clear while a name saves",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/approval/WaitingForApproval.tsx",
+      "apps/web/lib/i18n-groups/kb-69.ts",
+      "apps/web/app/v3/kb-69.css",
+      "tests/unit/kb-69.test.tsx",
+      "docs/polish/evidence/kb-69-approval-waiting.md",
+      "docs/polish/evidence/kb-69-approval-waiting.jpg"
+    ]
+  },
+  {
+    "id": "KB-66",
+    "title": "Activity load more keeps the reader's place",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/activity/ActivityScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-66.ts",
+      "apps/web/app/v3/kb-66.css",
+      "tests/unit/kb-66.test.tsx",
+      "docs/polish/evidence/kb-66-activity-load-more-keeps-reading-place.md",
+      "docs/polish/evidence/kb-66-activity-load-more-keeps-reading-place.jpg"
+    ]
+  },
+  {
+    "id": "KB-70",
+    "title": "Notification actions keep focus and submit once",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/notifications/NotificationsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-70.ts",
+      "apps/web/app/v3/kb-70.css",
+      "tests/unit/kb-70.test.tsx",
+      "docs/polish/evidence/kb-70-notification-actions-keep-focus-and-submit-once.md",
+      "docs/polish/evidence/kb-70-notification-actions-keep-focus-and-submit-once.jpg"
+    ]
+  },
+  {
+    "id": "KB-67",
+    "title": "Phrase drafts stay with the selected nag",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/app/(tempo)/settings/nags/NagsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-67.ts",
+      "apps/web/app/v3/kb-67.css",
+      "tests/unit/kb-67.test.tsx",
+      "docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.md",
+      "docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.jpg"
+    ]
+  },
+  {
+    "id": "KB-73",
+    "title": "Landing theme control has a reachable localized name",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/marketing/ThemeToggle.tsx",
+      "apps/web/lib/i18n-groups/kb-73.ts",
+      "apps/web/app/v3/kb-73.css",
+      "tests/unit/kb-73.test.tsx",
+      "docs/polish/evidence/kb-73-landing-theme-control-has-a-reachable-localized-name.md",
+      "docs/polish/evidence/kb-73-landing-theme-control-has-a-reachable-localized-name.jpg"
+    ]
+  },
+  {
+    "id": "KB-74",
+    "title": "Mobile navigation drawer keeps keyboard focus in view",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/tempo/TempoShell.tsx",
+      "apps/web/lib/i18n-groups/kb-74.ts",
+      "apps/web/app/v3/kb-74.css",
+      "tests/unit/kb-74.test.tsx",
+      "docs/polish/evidence/kb-74-mobile-navigation-drawer-keeps-keyboard-focus.md",
+      "docs/polish/evidence/kb-74-mobile-navigation-drawer-keeps-keyboard-focus.jpg"
+    ]
+  },
+  {
+    "id": "KB-71",
+    "title": "Shared buttons have phone-sized targets on real screens",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/ui/button.tsx",
+      "apps/web/lib/i18n-groups/kb-71.ts",
+      "apps/web/app/v3/kb-71.css",
+      "tests/unit/kb-71.test.tsx",
+      "docs/polish/evidence/kb-71-shared-buttons-have-phone-sized-targets.md",
+      "docs/polish/evidence/kb-71-shared-buttons-have-phone-sized-targets.jpg"
+    ]
+  },
+  {
+    "id": "KB-75",
+    "title": "Account approval actions keep each row's pending state",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/approval/AdminApprovals.tsx",
+      "apps/web/lib/i18n-groups/kb-75.ts",
+      "apps/web/app/v3/kb-75.css",
+      "tests/unit/kb-75.test.tsx",
+      "docs/polish/evidence/kb-75-admin-approval-actions.md",
+      "docs/polish/evidence/kb-75-admin-approval-actions.jpg"
+    ]
+  },
+  {
+    "id": "KB-76",
+    "title": "A completed Undo cannot dismiss a newer Undo",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/goals/shared.tsx",
+      "apps/web/lib/i18n-groups/kb-76.ts",
+      "apps/web/app/v3/kb-76.css",
+      "tests/unit/kb-76.test.tsx",
+      "docs/polish/evidence/kb-76-undo-request-ownership.md",
+      "docs/polish/evidence/kb-76-undo-request-ownership.jpg"
+    ]
+  },
+  {
+    "id": "KB-59",
+    "title": "Web search preference feedback stays with the latest change",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 4,
+    "deps": [],
+    "scope": [
+      "apps/web/components/coach/CoachWebSearchSetting.tsx",
+      "apps/web/lib/i18n-groups/kb-59.ts",
+      "apps/web/app/v3/kb-59.css",
+      "tests/unit/kb-59.test.tsx",
+      "docs/polish/evidence/kb-59-web-search-preference-request-ownership.md",
+      "docs/polish/evidence/kb-59-web-search-preference-request-ownership.jpg"
+    ]
+  },
+  {
+    "id": "KB-61",
+    "title": "Habit saves cannot close a newly opened sheet",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/habits/HabitSheet.tsx",
+      "apps/web/lib/i18n-groups/kb-61.ts",
+      "apps/web/app/v3/kb-61.css",
+      "tests/unit/kb-61.test.tsx",
+      "docs/polish/evidence/kb-61-habit-sheet-request-ownership.md",
+      "docs/polish/evidence/kb-61-habit-sheet-request-ownership.jpg"
+    ]
+  },
+  {
+    "id": "KB-64",
+    "title": "Failed note Undo shows a safe retry before its deadline",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/notes/UndoDeleteToast.tsx",
+      "apps/web/lib/i18n-groups/kb-64.ts",
+      "apps/web/app/v3/kb-64.css",
+      "tests/unit/kb-64.test.tsx",
+      "docs/polish/evidence/kb-64-note-undo-recovery.md",
+      "docs/polish/evidence/kb-64-note-undo-recovery.jpg"
+    ]
+  },
+  {
+    "id": "KB-77",
+    "title": "Shared inputs have phone-sized targets on real screens",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/ui/input.tsx",
+      "apps/web/lib/i18n-groups/kb-77.ts",
+      "apps/web/app/v3/kb-77.css",
+      "tests/unit/kb-77.test.tsx",
+      "docs/polish/evidence/kb-77-input-phone-targets.md",
+      "docs/polish/evidence/kb-77-input-phone-targets.jpg"
+    ]
+  },
+  {
+    "id": "KB-78",
+    "title": "Confirm dialogs keep keyboard focus while an action is pending",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/you/Controls.tsx",
+      "apps/web/lib/i18n-groups/kb-78.ts",
+      "apps/web/app/v3/kb-78.css",
+      "tests/unit/kb-78.test.tsx",
+      "docs/polish/evidence/kb-78-confirm-sheet-focus.md",
+      "docs/polish/evidence/kb-78-confirm-sheet-focus.jpg"
+    ]
+  },
+  {
+    "id": "KB-11",
+    "title": "Search sources show a site icon with a safe fallback",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-11.ts",
+      "apps/web/app/v3/kb-11.css",
+      "tests/unit/kb-11.test.tsx",
+      "docs/polish/evidence/kb-11-search-sources-show-a-site-icon-with-a-safe-fallback.md",
+      "docs/polish/evidence/kb-11-search-sources-show-a-site-icon-with-a-safe-fallback.jpg"
+    ]
+  },
+  {
+    "id": "KB-12",
+    "title": "Citations open readable source cards with keyboard and touch",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [
+      "KB-11",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-12.ts",
+      "apps/web/app/v3/kb-12.css",
+      "tests/unit/kb-12.test.tsx",
+      "docs/polish/evidence/kb-12-citations-open-readable-source-cards-with-keyboard-and-touch.md",
+      "docs/polish/evidence/kb-12-citations-open-readable-source-cards-with-keyboard-and-touch.jpg"
+    ]
+  },
+  {
+    "id": "KB-13",
+    "title": "Long search answers stay readable across code, tables and quotes",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [
+      "KB-12",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-13.ts",
+      "apps/web/app/v3/kb-13.css",
+      "tests/unit/kb-13.test.tsx",
+      "docs/polish/evidence/kb-13-long-search-answers-stay-readable-across-code-tables-and-quotes.md",
+      "docs/polish/evidence/kb-13-long-search-answers-stay-readable-across-code-tables-and-quotes.jpg"
+    ]
+  },
+  {
+    "id": "KB-14",
+    "title": "History becomes a Library of every saved chat",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 1,
+    "deps": [
+      "KB-01",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-14.ts",
+      "apps/web/app/v3/kb-14.css",
+      "tests/unit/kb-14.test.tsx",
+      "docs/polish/evidence/kb-14-history-becomes-a-library-of-every-saved-chat.md",
+      "docs/polish/evidence/kb-14-history-becomes-a-library-of-every-saved-chat.jpg"
+    ]
+  },
+  {
+    "id": "KB-15",
+    "title": "The Library filters by date, folder, tag and pin",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 1,
+    "deps": [
+      "KB-01",
+      "KB-14",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-15.ts",
+      "apps/web/app/v3/kb-15.css",
+      "tests/unit/kb-15.test.tsx",
+      "docs/polish/evidence/kb-15-the-library-filters-by-date-folder-tag-and-pin.md",
+      "docs/polish/evidence/kb-15-the-library-filters-by-date-folder-tag-and-pin.jpg"
+    ]
+  },
+  {
+    "id": "KB-17",
+    "title": "The coach offers Speed, Balanced and Quality with source choices",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      1098,
+      1118,
+      1120,
+      1126,
+      1129
+    ],
+    "scope": [
+      "apps/web/components/coach/CoachChat.tsx",
+      "apps/web/lib/i18n-groups/kb-17.ts",
+      "apps/web/app/v3/kb-17.css",
+      "tests/unit/kb-17.test.tsx",
+      "docs/polish/evidence/kb-17-the-coach-offers-speed-balanced-and-quality-with-source-choices.md",
+      "docs/polish/evidence/kb-17-the-coach-offers-speed-balanced-and-quality-with-source-choices.jpg"
+    ]
+  },
+  {
+    "id": "KB-18",
+    "title": "Search can stay within chosen domains",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      "KB-17",
+      1098,
+      1118,
+      1120,
+      1126,
+      1129
+    ],
+    "scope": [
+      "apps/web/components/coach/CoachChat.tsx",
+      "apps/web/lib/i18n-groups/kb-18.ts",
+      "apps/web/app/v3/kb-18.css",
+      "tests/unit/kb-18.test.tsx",
+      "docs/polish/evidence/kb-18-search-can-stay-within-chosen-domains.md",
+      "docs/polish/evidence/kb-18-search-can-stay-within-chosen-domains.jpg"
+    ]
+  },
+  {
+    "id": "KB-19",
+    "title": "A search answer can show image results with attribution",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-13",
+      "KB-16",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-19.ts",
+      "apps/web/app/v3/kb-19.css",
+      "tests/unit/kb-19.test.tsx",
+      "docs/polish/evidence/kb-19-a-search-answer-can-show-image-results-with-attribution.md",
+      "docs/polish/evidence/kb-19-a-search-answer-can-show-image-results-with-attribution.jpg"
+    ]
+  },
+  {
+    "id": "KB-20",
+    "title": "Video results open with clear source and duration",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      "KB-19",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-20.ts",
+      "apps/web/app/v3/kb-20.css",
+      "tests/unit/kb-20.test.tsx",
+      "docs/polish/evidence/kb-20-video-results-open-with-clear-source-and-duration.md",
+      "docs/polish/evidence/kb-20-video-results-open-with-clear-source-and-duration.jpg"
+    ]
+  },
+  {
+    "id": "KB-21",
+    "title": "Related questions use the answer sources without another model call",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-20",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-21.ts",
+      "apps/web/app/v3/kb-21.css",
+      "tests/unit/kb-21.test.tsx",
+      "docs/polish/evidence/kb-21-related-questions-use-the-answer-sources-without-another-model-c.md",
+      "docs/polish/evidence/kb-21-related-questions-use-the-answer-sources-without-another-model-c.jpg"
+    ]
+  },
+  {
+    "id": "KB-22",
+    "title": "Typing in the coach suggests previous queries privately",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      "KB-18",
+      1098,
+      1118,
+      1120,
+      1126,
+      1129
+    ],
+    "scope": [
+      "apps/web/components/coach/CoachChat.tsx",
+      "apps/web/lib/i18n-groups/kb-22.ts",
+      "apps/web/app/v3/kb-22.css",
+      "tests/unit/kb-22.test.tsx",
+      "docs/polish/evidence/kb-22-typing-in-the-coach-suggests-previous-queries-privately.md",
+      "docs/polish/evidence/kb-22-typing-in-the-coach-suggests-previous-queries-privately.jpg"
+    ]
+  },
+  {
+    "id": "KB-23",
+    "title": "Calculation widgets show the expression and its result",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-21",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-23.ts",
+      "apps/web/app/v3/kb-23.css",
+      "tests/unit/kb-23.test.tsx",
+      "docs/polish/evidence/kb-23-calculation-widgets-show-the-expression-and-its-result.md",
+      "docs/polish/evidence/kb-23-calculation-widgets-show-the-expression-and-its-result.jpg"
+    ]
+  },
+  {
+    "id": "KB-24",
+    "title": "Quick lookup cards show source and freshness honestly",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      "KB-23",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-24.ts",
+      "apps/web/app/v3/kb-24.css",
+      "tests/unit/kb-24.test.tsx",
+      "docs/polish/evidence/kb-24-quick-lookup-cards-show-source-and-freshness-honestly.md",
+      "docs/polish/evidence/kb-24-quick-lookup-cards-show-source-and-freshness-honestly.jpg"
+    ]
+  },
+  {
+    "id": "KB-25",
+    "title": "Discover offers chosen topics without background tracking",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-03",
+      "KB-16"
+    ],
+    "scope": [
+      "apps/web/components/global-search/SearchScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-25.ts",
+      "apps/web/app/v3/kb-25.css",
+      "tests/unit/kb-25.test.tsx",
+      "docs/polish/evidence/kb-25-discover-offers-chosen-topics-without-background-tracking.md",
+      "docs/polish/evidence/kb-25-discover-offers-chosen-topics-without-background-tracking.jpg"
+    ]
+  },
+  {
+    "id": "KB-26",
+    "title": "Answer actions copy, share and export with a clear preview",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-24",
+      1126
+    ],
+    "scope": [
+      "apps/web/components/coach/SearchAnswer.tsx",
+      "apps/web/lib/i18n-groups/kb-26.ts",
+      "apps/web/app/v3/kb-26.css",
+      "tests/unit/kb-26.test.tsx",
+      "docs/polish/evidence/kb-26-answer-actions-copy-share-and-export-with-a-clear-preview.md",
+      "docs/polish/evidence/kb-26-answer-actions-copy-share-and-export-with-a-clear-preview.jpg"
+    ]
+  },
+  {
+    "id": "KB-27",
+    "title": "Search progress reports only phases that actually happened",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-16",
+      "KB-22",
+      1098,
+      1118,
+      1120,
+      1126,
+      1129
+    ],
+    "scope": [
+      "apps/web/components/coach/CoachChat.tsx",
+      "apps/web/lib/i18n-groups/kb-27.ts",
+      "apps/web/app/v3/kb-27.css",
+      "tests/unit/kb-27.test.tsx",
+      "docs/polish/evidence/kb-27-search-progress-reports-only-phases-that-actually-happened.md",
+      "docs/polish/evidence/kb-27-search-progress-reports-only-phases-that-actually-happened.jpg"
+    ]
+  },
+  {
+    "id": "KB-28",
+    "title": "Chats can be tagged from the Library",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-01",
+      "KB-15",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-28.ts",
+      "apps/web/app/v3/kb-28.css",
+      "tests/unit/kb-28.test.tsx",
+      "docs/polish/evidence/kb-28-chats-can-be-tagged-from-the-library.md",
+      "docs/polish/evidence/kb-28-chats-can-be-tagged-from-the-library.jpg"
+    ]
+  },
+  {
+    "id": "KB-29",
+    "title": "Chats can be archived and brought back",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 2,
+    "deps": [
+      "KB-01",
+      "KB-28",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-29.ts",
+      "apps/web/app/v3/kb-29.css",
+      "tests/unit/kb-29.test.tsx",
+      "docs/polish/evidence/kb-29-chats-can-be-archived-and-brought-back.md",
+      "docs/polish/evidence/kb-29-chats-can-be-archived-and-brought-back.jpg"
+    ]
+  },
+  {
+    "id": "KB-30",
+    "title": "The coach queues messages while an answer is arriving",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 2,
+    "deps": [
+      "KB-27",
+      1098,
+      1118,
+      1120,
+      1126,
+      1129
+    ],
+    "scope": [
+      "apps/web/components/coach/CoachChat.tsx",
+      "apps/web/lib/i18n-groups/kb-30.ts",
+      "apps/web/app/v3/kb-30.css",
+      "tests/unit/kb-30.test.tsx",
+      "docs/polish/evidence/kb-30-the-coach-queues-messages-while-an-answer-is-arriving.md",
+      "docs/polish/evidence/kb-30-the-coach-queues-messages-while-an-answer-is-arriving.jpg"
+    ]
+  },
+  {
+    "id": "KB-32",
+    "title": "The Library selects chats for bulk actions",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-29",
+      "KB-31",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-32.ts",
+      "apps/web/app/v3/kb-32.css",
+      "tests/unit/kb-32.test.tsx",
+      "docs/polish/evidence/kb-32-the-library-selects-chats-for-bulk-actions.md",
+      "docs/polish/evidence/kb-32-the-library-selects-chats-for-bulk-actions.jpg"
+    ]
+  },
+  {
+    "id": "KB-33",
+    "title": "Deleting a chat offers Undo for five minutes",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-31",
+      "KB-32",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-33.ts",
+      "apps/web/app/v3/kb-33.css",
+      "tests/unit/kb-33.test.tsx",
+      "docs/polish/evidence/kb-33-deleting-a-chat-offers-undo-for-five-minutes.md",
+      "docs/polish/evidence/kb-33-deleting-a-chat-offers-undo-for-five-minutes.jpg"
+    ]
+  },
+  {
+    "id": "KB-34",
+    "title": "Chats export to Markdown with their source links",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-31",
+      "KB-33",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-34.ts",
+      "apps/web/app/v3/kb-34.css",
+      "tests/unit/kb-34.test.tsx",
+      "docs/polish/evidence/kb-34-chats-export-to-markdown-with-their-source-links.md",
+      "docs/polish/evidence/kb-34-chats-export-to-markdown-with-their-source-links.jpg"
+    ]
+  },
+  {
+    "id": "KB-35",
+    "title": "Chats export to versioned JSON without hidden metadata",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-31",
+      "KB-34",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-35.ts",
+      "apps/web/app/v3/kb-35.css",
+      "tests/unit/kb-35.test.tsx",
+      "docs/polish/evidence/kb-35-chats-export-to-versioned-json-without-hidden-metadata.md",
+      "docs/polish/evidence/kb-35-chats-export-to-versioned-json-without-hidden-metadata.jpg"
+    ]
+  },
+  {
+    "id": "KB-36",
+    "title": "Long chat transcripts load completely without jumping",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-01",
+      "KB-35",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-36.ts",
+      "apps/web/app/v3/kb-36.css",
+      "tests/unit/kb-36.test.tsx",
+      "docs/polish/evidence/kb-36-long-chat-transcripts-load-completely-without-jumping.md",
+      "docs/polish/evidence/kb-36-long-chat-transcripts-load-completely-without-jumping.jpg"
+    ]
+  },
+  {
+    "id": "KB-37",
+    "title": "Library search finds old message text and opens the match",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-01",
+      "KB-36",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-37.ts",
+      "apps/web/app/v3/kb-37.css",
+      "tests/unit/kb-37.test.tsx",
+      "docs/polish/evidence/kb-37-library-search-finds-old-message-text-and-opens-the-match.md",
+      "docs/polish/evidence/kb-37-library-search-finds-old-message-text-and-opens-the-match.jpg"
+    ]
+  },
+  {
+    "id": "KB-38",
+    "title": "The Library works as a phone-sized list and detail view",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-37",
+      1104
+    ],
+    "scope": [
+      "apps/web/components/history/HistoryScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-38.ts",
+      "apps/web/app/v3/kb-38.css",
+      "tests/unit/kb-38.test.tsx",
+      "docs/polish/evidence/kb-38-the-library-works-as-a-phone-sized-list-and-detail-view.md",
+      "docs/polish/evidence/kb-38-the-library-works-as-a-phone-sized-list-and-detail-view.jpg"
+    ]
+  },
+  {
+    "id": "KB-39",
+    "title": "The native coach opens the complete chat Library",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 3,
+    "deps": [
+      "KB-01",
+      1107,
+      1122
+    ],
+    "scope": [
+      "apps/mobile/components/v3/CoachChats.tsx",
+      "apps/web/lib/i18n-groups/kb-39.ts",
+      "apps/web/app/v3/kb-39.css",
+      "tests/unit/kb-39.test.tsx",
+      "docs/polish/evidence/kb-39-the-native-coach-opens-the-complete-chat-library.md",
+      "docs/polish/evidence/kb-39-the-native-coach-opens-the-complete-chat-library.jpg"
+    ]
+  },
+  {
+    "id": "KB-40",
+    "title": "Native Library filters and tags match the web",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-01",
+      "KB-39",
+      1107,
+      1122
+    ],
+    "scope": [
+      "apps/mobile/components/v3/CoachChats.tsx",
+      "apps/web/lib/i18n-groups/kb-40.ts",
+      "apps/web/app/v3/kb-40.css",
+      "tests/unit/kb-40.test.tsx",
+      "docs/polish/evidence/kb-40-native-library-filters-and-tags-match-the-web.md",
+      "docs/polish/evidence/kb-40-native-library-filters-and-tags-match-the-web.jpg"
+    ]
+  },
+  {
+    "id": "KB-41",
+    "title": "Native chats support archive, selection and delete Undo",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-31",
+      "KB-40",
+      1107,
+      1122
+    ],
+    "scope": [
+      "apps/mobile/components/v3/CoachChats.tsx",
+      "apps/web/lib/i18n-groups/kb-41.ts",
+      "apps/web/app/v3/kb-41.css",
+      "tests/unit/kb-41.test.tsx",
+      "docs/polish/evidence/kb-41-native-chats-support-archive-selection-and-delete-undo.md",
+      "docs/polish/evidence/kb-41-native-chats-support-archive-selection-and-delete-undo.jpg"
+    ]
+  },
+  {
+    "id": "KB-42",
+    "title": "Native chats share Markdown or JSON exports explicitly",
+    "type": "component",
+    "lane": "WORKHORSE",
+    "batch": 3,
+    "deps": [
+      "KB-31",
+      "KB-41",
+      1107,
+      1122
+    ],
+    "scope": [
+      "apps/mobile/components/v3/CoachChats.tsx",
+      "apps/web/lib/i18n-groups/kb-42.ts",
+      "apps/web/app/v3/kb-42.css",
+      "tests/unit/kb-42.test.tsx",
+      "docs/polish/evidence/kb-42-native-chats-share-markdown-or-json-exports-explicitly.md",
+      "docs/polish/evidence/kb-42-native-chats-share-markdown-or-json-exports-explicitly.jpg"
+    ]
+  },
+  {
+    "id": "KB-43",
+    "title": "Native Library can queue follow-up messages safely",
+    "type": "component",
+    "lane": "FRONTIER",
+    "batch": 3,
+    "deps": [
+      "KB-30",
+      "KB-42",
+      1107,
+      1122
+    ],
+    "scope": [
+      "apps/mobile/components/v3/CoachChats.tsx",
+      "apps/web/lib/i18n-groups/kb-43.ts",
+      "apps/web/app/v3/kb-43.css",
+      "tests/unit/kb-43.test.tsx",
+      "docs/polish/evidence/kb-43-native-library-can-queue-follow-up-messages-safely.md",
+      "docs/polish/evidence/kb-43-native-library-can-queue-follow-up-messages-safely.jpg"
+    ]
+  }
+]
