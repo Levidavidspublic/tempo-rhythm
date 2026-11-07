@@ -1,13 +1,17 @@
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { mapRevenueCatEventToUserType } from "./lib/revenuecat_events";
+import {
+  mapRevenueCatEventToUserType,
+  REVENUECAT_PROCESSING_ENABLED,
+  revenueCatIngressDecision,
+} from "./lib/revenuecat_events";
 
 /**
  * RevenueCat webhook handler.
  * Endpoint: POST /api/revenuecat-webhook
  *
- * Receives subscription lifecycle events from RevenueCat and updates
- * user subscription status in Convex.
+ * Processing is off: authenticated deliveries receive a disabled response
+ * before their event body is read or any account is changed.
  *
  * Security: Validates the Authorization header against REVENUECAT_WEBHOOK_SECRET.
  * Set this env var in each Convex deployment's environment variables.
@@ -16,14 +20,26 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
   // Validate authorization header
   const authHeader = request.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  const ingress = revenueCatIngressDecision({
+    authorization: authHeader,
+    configuredSecret: webhookSecret,
+    processingEnabled: REVENUECAT_PROCESSING_ENABLED,
+  });
 
-  if (!webhookSecret) {
+  if (ingress === "not_configured") {
     console.error("[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET is not configured");
     return new Response("Webhook not configured", { status: 503 });
   }
 
-  if (authHeader !== webhookSecret) {
+  if (ingress === "unauthorized") {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (ingress === "disabled") {
+    return new Response(JSON.stringify({ received: false, reason: "payments_disabled" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   let body: Record<string, unknown>;

@@ -1,0 +1,10 @@
+{
+  "validated_source": "d2b259b062dd4649b598370265caf490be78ec89",
+  "integration_parent": "7d1a0f6957852fe9f6d60849e3df9bc7505e90ac",
+  "source_files": {
+    "convex/revenuecat.ts": "2be5df5111c2724cd728f44e9b1f6cb5cf99208f64b4ffe13ed64e7f9adc9e51",
+    "convex/lib/revenuecat_events.ts": "bd72c749c14f4680fb7ce5900fb9e823b4d47cdb2e9117113d58df389b76397b",
+    "convex/lib/revenuecat_events.test.ts": "9f5c182508f22b191ef88db4c8173c53817f8e7c8f87da42309342a6db5c39a1"
+  },
+  "note": "Evidence-only follow-up; no implementation, test, configuration, dependency or check edits. No gate repeated after the completed receipts. Interrupted E2E was resumed exactly once."
+}
