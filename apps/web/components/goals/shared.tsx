@@ -14,6 +14,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -23,6 +24,8 @@ import { api } from "@/convex/_generated/api";
 import { UNDO_WINDOW_MS } from "@/convex/lib/softDelete";
 import { formatCountdown, type GoalStatus, type ProjectStatus } from "@/lib/goals-projects";
 import type { MessageKey } from "@/lib/i18n";
+import { tKb76 } from "@/lib/i18n-groups/kb-76";
+import "@/app/v3/kb-76.css";
 
 /** Dev-only Playwright harness (proxy.ts lets some routes open signed out there). */
 export const E2E_HARNESS =
@@ -303,55 +306,116 @@ export function makeToast(title: string, onUndo?: () => Promise<unknown>): Toast
 }
 
 export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const [now, setNow] = useState(() => Date.now());
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const [feedback, setFeedback] = useState({
+    toast,
+    busy: false,
+    error: false,
+    completed: null as symbol | null,
+  });
   const busyRef = useRef(false);
+  const ownerRef = useRef<{ toast: ToastState; mounted: boolean; request: symbol | null } | null>(
+    null
+  );
+  const busy = feedback.toast === toast && feedback.busy;
+  const error = feedback.toast === toast && feedback.error;
   const left = toast.undoUntilMs - now;
 
+  // Object ownership also covers replacements with the same millisecond-based id.
+  // A fresh owner on every setup keeps StrictMode's setup/cleanup/setup safe.
+  useLayoutEffect(() => {
+    const owner = { toast, mounted: true, request: null as symbol | null };
+    ownerRef.current = owner;
+    busyRef.current = false;
+    return () => {
+      owner.mounted = false;
+      owner.request = null;
+    };
+  }, [toast]);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(() => {
-    if (left <= 0) onClose();
-  }, [left, onClose]);
+  useLayoutEffect(() => {
+    const owner = ownerRef.current;
+    if (left <= 0 && owner?.mounted && owner.toast === toast) {
+      owner.mounted = false;
+      owner.request = null;
+      onClose();
+    }
+  }, [left, onClose, toast]);
+  useLayoutEffect(() => {
+    const owner = ownerRef.current;
+    if (
+      feedback.toast !== toast ||
+      !feedback.completed ||
+      !owner?.mounted ||
+      owner.toast !== toast ||
+      owner.request !== feedback.completed
+    )
+      return;
+    // Publish completion locally first. A parent's already queued replacement
+    // can commit and invalidate this owner before it may close anything.
+    owner.mounted = false;
+    owner.request = null;
+    onClose();
+  }, [feedback, onClose, toast]);
 
   const undo = () => {
-    if (!toast.onUndo || busyRef.current) return;
+    const owner = ownerRef.current;
+    const callback = toast.onUndo;
+    if (
+      !callback ||
+      busyRef.current ||
+      !owner?.mounted ||
+      owner.toast !== toast ||
+      Date.now() >= toast.undoUntilMs
+    )
+      return;
+    const request = Symbol();
+    owner.request = request;
     busyRef.current = true;
-    setBusy(true);
-    setError(false);
-    toast
-      .onUndo()
-      .then(() => onClose())
-      .catch(() => setError(true))
-      .finally(() => {
-        busyRef.current = false;
-        setBusy(false);
-      });
+    setFeedback({ toast, busy: true, error: false, completed: null });
+    const current = () => owner.mounted && ownerRef.current === owner && owner.request === request;
+    const run = async () => {
+      try {
+        await callback();
+        if (current()) setFeedback({ toast, busy: true, error: false, completed: request });
+      } catch {
+        if (current()) {
+          owner.request = null;
+          busyRef.current = false;
+          setFeedback({ toast, busy: false, error: true, completed: null });
+        }
+      }
+    };
+    void run();
   };
 
   return (
     <div className="tp-toast-region">
-      <output className="tp-toast tp-glass" data-component="UndoToast">
+      <output className="tp-toast tp-glass kb76-undo" data-component="UndoToast">
         <span className="tp-toast__icon">
           <TpIcon name="check" />
         </span>
         <span className="tp-toast__text">
-          <span className="tp-toast__title">{toast.title}</span>
+          <span className="tp-toast__title" dir="auto">
+            {toast.title}
+          </span>
           {toast.onUndo ? (
             <span className="tp-toast__sub">
-              {t("gx.toast.sub")} <span className="tp-sr-only">{formatCountdown(UNDO_WINDOW_MS)}</span>
+              {t("gx.toast.sub")}{" "}
+              <span className="tp-sr-only">{formatCountdown(UNDO_WINDOW_MS)}</span>
               <span className="tp-num tp-mono" aria-hidden="true">
                 {formatCountdown(left)}
               </span>
             </span>
           ) : null}
+          {busy ? <span className="tp-toast__sub">{tKb76(lang, "kb76.pending")}</span> : null}
           {error ? (
             <span className="tp-toast__sub" role="alert">
-              {t("gx.toast.undoError")}
+              {tKb76(lang, "kb76.error")}
             </span>
           ) : null}
         </span>
@@ -364,7 +428,7 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
             onClick={undo}
           >
             <TpIcon name="undo" size="sm" />
-            <span>{t("gx.toast.undo")}</span>
+            <span>{error ? tKb76(lang, "kb76.retry") : t("gx.toast.undo")}</span>
           </button>
         ) : null}
         <button
@@ -377,6 +441,103 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
         </button>
       </output>
     </div>
+  );
+}
+
+/** Isolated review of the existing toast; never mounted as a product route. */
+export function Kb76Gallery() {
+  const { lang, dir } = useLocale();
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [waiting, setWaiting] = useState(0);
+  const sequence = useRef(0);
+  const requests = useRef<Array<{ resolve: () => void; reject: () => void }>>([]);
+  const show = (title: string, withUndo = true) => {
+    setToast({
+      id: ++sequence.current,
+      title,
+      undoUntilMs: Date.now() + UNDO_WINDOW_MS,
+      onUndo: withUndo
+        ? () =>
+            new Promise<void>((resolve, reject) => {
+              requests.current.push({
+                resolve,
+                reject: () => reject(new Error("Fictional request")),
+              });
+              setWaiting(requests.current.length);
+            })
+        : undefined,
+    });
+  };
+  const settle = (success: boolean) => {
+    const request = requests.current.shift();
+    if (!request) return;
+    if (success) request.resolve();
+    else request.reject();
+    setWaiting(requests.current.length);
+  };
+  return (
+    <main className="kb76-gallery" dir={dir}>
+      <h1 className="tp-pagehead__title">{tKb76(lang, "kb76.galleryTitle")}</h1>
+      <p>{tKb76(lang, "kb76.galleryIntro")}</p>
+      <fieldset className="kb76-gallery__controls">
+        <legend>{tKb76(lang, "kb76.galleryChanges")}</legend>
+        <div className="kb76-gallery__buttons">
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            onClick={() => show(tKb76(lang, "kb76.maya"))}
+          >
+            {tKb76(lang, "kb76.showMaya")}
+          </button>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            onClick={() => show(tKb76(lang, "kb76.dana"))}
+          >
+            {tKb76(lang, "kb76.showDana")}
+          </button>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            data-gallery-action="long"
+            onClick={() => show(tKb76(lang, "kb76.longTitle"))}
+          >
+            {tKb76(lang, "kb76.showLong")}
+          </button>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            onClick={() => show(tKb76(lang, "kb76.maya"), false)}
+          >
+            {tKb76(lang, "kb76.withoutUndo")}
+          </button>
+        </div>
+      </fieldset>
+      <fieldset className="kb76-gallery__controls">
+        <legend>{tKb76(lang, "kb76.galleryRequests")}</legend>
+        <div className="kb76-gallery__buttons">
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            disabled={waiting === 0}
+            onClick={() => settle(true)}
+          >
+            {tKb76(lang, "kb76.complete")}
+          </button>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            disabled={waiting === 0}
+            onClick={() => settle(false)}
+          >
+            {tKb76(lang, "kb76.reject")}
+          </button>
+        </div>
+      </fieldset>
+      <div className="kb76-gallery__toast">
+        {toast ? <UndoToast key={toast.id} toast={toast} onClose={() => setToast(null)} /> : null}
+      </div>
+    </main>
   );
 }
 
