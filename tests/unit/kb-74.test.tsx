@@ -107,6 +107,16 @@ if (!childMode) {
     await page.screenshot({ path: join(dir, name), fullPage: true, animations: "disabled" });
   }
 
+  async function waitForSettledRail(page: Page) {
+    // Focus commits before the CSS slide ends. Read its actual final transform
+    // and animation state before comparing exact modal/desktop rectangles.
+    await page.waitForFunction(() => {
+      const rail = document.querySelector('[data-component="Sidebar"]');
+      return rail && getComputedStyle(rail).transform === "none" &&
+        rail.getAnimations().every(animation => animation.playState === "finished" || animation.playState === "idle");
+    });
+  }
+
   beforeAll(async () => {
     mkdirSync(join(repo, "work"), { recursive: true });
     fixtureDir = mkdtempSync(join(repo, "work", "kb-74-"));
@@ -134,6 +144,60 @@ if (!childMode) {
     test("local copy has English/Hebrew key parity", () => {
       expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
       expect(kb74t("he", "kb74.closeNavigation")).toBe(he["kb74.closeNavigation"]);
+    });
+
+    test("English and Hebrew drawers expose a named modal containing the real navigation", async () => {
+      for (const lang of ["en", "he"] as const) {
+        const page = await open(390, `lang=${lang}`);
+        try {
+          expect(await page.getByRole("dialog").count()).toBe(0);
+          await openDrawer(page);
+          const drawer = page.getByRole("dialog", { name: lang === "he" ? "ניווט" : "Navigation", exact: true });
+          expect(await drawer.count()).toBe(1);
+          expect(await drawer.getAttribute("aria-modal")).toBe("true");
+          expect(await drawer.getByRole("navigation").count()).toBe(1);
+          expect(await drawer.locator('[data-component="Sidebar"]').count()).toBe(1);
+          expect(await drawer.evaluate(el => el.contains(document.activeElement))).toBe(true);
+          await waitForSettledRail(page);
+          expect(await drawer.boundingBox()).toEqual(await drawer.locator('[data-component="Sidebar"]').boundingBox());
+          await page.keyboard.press("Escape");
+          expect(await page.getByRole("dialog").count()).toBe(0);
+          expect(await page.locator('[aria-modal="true"]').count()).toBe(0);
+        } finally {
+          await page.close();
+        }
+      }
+    });
+
+    test("desktop navigation has no modal semantics after a mobile drawer resize", async () => {
+      for (const lang of ["en", "he"]) {
+        const page = await open(1280, `lang=${lang}`);
+        try {
+          expect(await page.getByRole("dialog").count()).toBe(0);
+          expect(await page.locator('[aria-modal="true"]').count()).toBe(0);
+          expect(await page.getByRole("navigation").filter({ has: page.locator('[data-component="CommandTrigger"]') }).count()).toBe(1);
+          await page.setViewportSize({ width: 390, height: 900 });
+          await openDrawer(page);
+          await page.setViewportSize({ width: 1280, height: 900 });
+          await page.waitForFunction(() => document.querySelector('[data-component="TempoShell"]')?.getAttribute("data-rail") === "closed");
+          expect(await page.getByRole("dialog").count()).toBe(0);
+          expect(await page.locator('[aria-modal="true"]').count()).toBe(0);
+          expect(await page.getByRole("navigation").filter({ has: page.locator('[data-component="CommandTrigger"]') }).count()).toBe(1);
+          await waitForSettledRail(page);
+          const rail = await page.locator('[data-component="Sidebar"]').boundingBox();
+          expect(rail?.x).toBe(lang === "he" ? 1280 - (rail?.width ?? 0) : 0);
+          expect(rail?.height).toBe(900);
+          await page.evaluate(() => {
+            const main = document.querySelector<HTMLElement>("main");
+            if (main) main.style.minHeight = "1800px";
+            window.scrollTo(0, 300);
+          });
+          await page.waitForFunction(() => window.scrollY > 0);
+          expect((await page.locator('[data-component="Sidebar"]').boundingBox())?.y).toBe(0);
+        } finally {
+          await page.close();
+        }
+      }
     });
 
     test("fixture hydrates the real three navigation children with v3 CSS", async () => {
@@ -264,7 +328,7 @@ if (!childMode) {
     test("real command palette supersedes the drawer without returning to an inert rail", async () => {
       const page = await open(); await openDrawer(page);
       await page.locator('[data-component="Sidebar"] [data-component="CommandTrigger"]').click();
-      await page.getByRole("dialog").waitFor();
+      await page.getByRole("dialog").filter({ has: page.getByRole("combobox") }).waitFor();
       expect(await page.locator('[role="combobox"]:focus').count()).toBe(1);
       expect(await page.locator('[data-component="TempoShell"][data-rail="closed"]').count()).toBe(1);
       await page.keyboard.press("Escape");
@@ -275,7 +339,7 @@ if (!childMode) {
     test("Ctrl K supersedes the open drawer and Escape closes only the palette", async () => {
       const page = await open(); await openDrawer(page);
       await page.keyboard.press("Control+k");
-      await page.getByRole("dialog").waitFor();
+      await page.getByRole("dialog").filter({ has: page.getByRole("combobox") }).waitFor();
       expect(await page.locator('[data-component="TempoShell"][data-rail="closed"]').count()).toBe(1);
       expect(await page.locator('[role="combobox"]:focus').count()).toBe(1);
       await page.keyboard.press("Escape");
