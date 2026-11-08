@@ -20,7 +20,7 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 
 | Category | Forbidden | Use instead |
 |---|---|---|
-| Backend-as-a-Service | Firebase, Supabase | Convex |
+| Backend-as-a-Service | Supabase | Convex or Firebase (see below) |
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
 | Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
@@ -30,6 +30,8 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 | Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions |
 | Styling | A second global utility-CSS stack on web, or downgrading `apps/web` off Tailwind v4 | **Web:** Tailwind CSS v4 (`@tailwindcss/postcss`). **Mobile:** NativeWind 4 with Tailwind 3.x in `apps/mobile` |
 | Task trackers in agent spine | Notion, Linear, Airtable | GitHub Issues + GitHub Projects + `TASKS.md` + Convex `agent_*` tables + Discord |
+
+**Firebase is allowed.** A change may move to production once it is proven in preview. (Amit, 2026-11-08. Supersedes the earlier Firebase ban in this table.)
 
 If you believe you need one of these, open an issue first with the specific justification. Do not add it on your own authority.
 
@@ -247,6 +249,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
 - PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
 - All of these must pass before merge.
+- **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
 
 ---
 
