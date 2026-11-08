@@ -5,7 +5,8 @@ Updated: 2026-11-08 (UTC)
 ## Todo
 
 - [x] PHASE 0 — Confirm google-style parses `.ts` with the JS parser (`Unexpected token` / missing root `tsconfig.json`).
-- [ ] PHASE 0 — Parser-fix PR green, labelled `config`, merged.
+- [x] PHASE 0 — Parser-fix PR opened: https://github.com/Levidavidspublic/tempo-rhythm/pull/1369
+- [ ] PHASE 0 — AT: Division6066 adds the `config` label on #1369 after CI has started on the head commit. This token cannot add labels (HTTP 403). Then merge #1369 when every check is green.
 - [ ] PHASE 0 — Re-run checks on #1365, #1368, #1366. Merge #1368 and #1365, then #1366. Note #1361 only if it conflicts.
 - [ ] PHASE 1 — `docs/backlog/FIREBASE-DATA-MODEL.md` and owner-only rules.
 - [ ] PHASE 2 — Firebase Auth email-link behind a flag. Record authorized domains and the mail sender.
@@ -15,7 +16,10 @@ Updated: 2026-11-08 (UTC)
 
 ## Checkpoint
 
-- WALK. Branch `cursor/google-style-ts-parser-7959`.
+- WALK. Branch `cursor/google-style-ts-parser-7959`. PR #1369. Author Division6066.
+- google-style run 42497494168 succeeded. Log: `typescript parser: @typescript-eslint/parser`, `ts files: 1` (`scripts/google-style-parser-smoke.ts`). No parse error.
+- config-guard failed: `Guarded files need the "config" label.` `gh pr edit --add-label` and the labels REST API both returned 403 `Resource not accessible by integration`.
+- AT: Amit (Division6066) adds the `config` label on #1369. A CI run for that head SHA must already exist. Do not push after the label without removing and re-adding it.
 - Cause: gts sets `parserOptions.project` to `./tsconfig.json`. This repo has no root tsconfig, so `@typescript-eslint/parser` does not load.
 - Fix: workflow builds a project from `tsconfig.base.json` plus the changed TS files and sets the parser explicitly. Rules unchanged. No files skipped.
 - Local proof: parser is `@typescript-eslint/parser`, project `/tmp/gts-lint.tsconfig.json`. `scripts/scan-design-tokens.ts` and `apps/web/app/sign-in/page.tsx` parse. The only error on that pair is the existing `n/no-process-exit` in the scan script, not a parse error.
