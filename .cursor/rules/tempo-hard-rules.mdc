@@ -9,7 +9,7 @@ Full rules: [`docs/HARD_RULES.md`](docs/HARD_RULES.md). If anything here looks o
 
 ## Never use
 
-- Firebase, Supabase, any flavor of Prisma / Drizzle ORM.
+- Supabase, any flavor of Prisma / Drizzle ORM.
 - Clerk, Auth0, NextAuth. Auth is **Convex Auth** only.
 - Direct provider SDKs: `openai`, `@anthropic-ai/*`, `@google/generative-ai`, `@mistralai/mistralai`. LLM calls flow through the Mistral API via native `fetch` (`https://api.mistral.ai/v1/chat/completions`) in Convex actions. OpenRouter is not used.
 - `axios`. Use native `fetch`.
