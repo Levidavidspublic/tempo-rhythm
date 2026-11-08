@@ -37,8 +37,41 @@ jobs:
           bun add gts@6.0.2 typescript@5.6.3 >/dev/null
           cd "$GITHUB_WORKSPACE"
           bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
+          # gts's TS override sets parserOptions.project to ./tsconfig.json. This repo has no root
+          # tsconfig (packages extend tsconfig.base.json), so the TypeScript parser never loads and
+          # ESLint parses .ts with the JS parser ("Unexpected token"). Point @typescript-eslint/parser
+          # at a generated project that extends the repo's tsconfig.base.json and includes the changed
+          # TS files. Rules stay as gts ships them; nothing is skipped.
+          python3 - <<'PY'
+          import json, os
+          root = os.environ["GITHUB_WORKSPACE"]
+          changed = open("/tmp/changed.txt").read().splitlines()
+          ts_ext = (".ts", ".tsx", ".mts", ".cts")
+          include = [os.path.join(root, p) for p in changed if p.endswith(ts_ext)]
+          json.dump({
+            "extends": os.path.join(root, "tsconfig.base.json"),
+            "compilerOptions": {"noEmit": True, "jsx": "react-jsx", "allowJs": True},
+            "include": include or [os.path.join(root, "tsconfig.base.json")],
+          }, open("/tmp/gts-lint.tsconfig.json", "w"))
+          cfg_path = "/tmp/gts/node_modules/gts/.eslintrc.json"
+          cfg = json.load(open(cfg_path))
+          for override in cfg.get("overrides", []):
+            files = override.get("files", [])
+            if any(".ts" in str(pat) for pat in files):
+              override["parser"] = "@typescript-eslint/parser"
+              override["parserOptions"] = {
+                "ecmaVersion": "latest",
+                "sourceType": "module",
+                "project": "/tmp/gts-lint.tsconfig.json",
+                "tsconfigRootDir": root,
+              }
+          json.dump(cfg, open("/tmp/gts/node_modules/gts/.eslintrc.tempo.json", "w"))
+          print("typescript parser: @typescript-eslint/parser")
+          print("typescript project: /tmp/gts-lint.tsconfig.json")
+          print("ts files:", len(include))
+          PY
           ESLINT_USE_FLAT_CONFIG=false bunx --cwd /tmp/gts eslint --no-eslintrc \
-            -c /tmp/gts/node_modules/gts/.eslintrc.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
+            -c /tmp/gts/node_modules/gts/.eslintrc.tempo.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
             --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch \
             --rule 'prettier/prettier: off' \
             --rule 'n/no-unsupported-features/es-syntax: [error, {version: ">=22"}]' \
