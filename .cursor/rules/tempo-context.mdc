@@ -15,7 +15,7 @@ alwaysApply: true
 - **Current phase PRD:** [`docs/brain/PRDs/PRD_Phase_1_MVP.md`](docs/brain/PRDs/PRD_Phase_1_MVP.md). Later phases under `docs/brain/PRDs/` are planning only unless the ticket says otherwise.
 - **Brand voice:** [`docs/brain/brand/voice.md`](docs/brain/brand/voice.md) + [`docs/brain/brand/do-and-dont.md`](docs/brain/brand/do-and-dont.md). Anti-shame, calm, concrete. Apply on every UI string.
 - **Repo layout:** `apps/web` (Next 16 + Tailwind v4), `apps/mobile` (Expo 53 + NativeWind), `convex/` at root, `packages/types`, `packages/utils`, `packages/ui`.
-- **Forbidden:** Firebase, Supabase, Prisma/Drizzle ORMs, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google/Mistral AI SDKs, Redux/Zustand/Jotai for app state, Axios, OpenRouter. LLM calls flow through the Mistral API via native `fetch` (`https://api.mistral.ai/v1/chat/completions`) in Convex actions (see HARD_RULES §6).
+- **Firebase is allowed** (a change may move to production once it is proven in preview; Amit, 2026-11-08). **Forbidden:** Supabase, Prisma/Drizzle ORMs, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google/Mistral AI SDKs, Redux/Zustand/Jotai for app state, Axios, OpenRouter. LLM calls flow through the Mistral API via native `fetch` (`https://api.mistral.ai/v1/chat/completions`) in Convex actions (see HARD_RULES §6).
 - **Agent identities (fallback ladder):**
   - Code in IDE with user present → `cursor-ide`
   - Cloud background code agent → `cursor-cloud-1/2/3` (1=core/schema, 2=AI/RAG, 3=platform/UI)
