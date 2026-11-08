@@ -31,7 +31,7 @@ If the PR body references a ticket ID like `T-0012-b`, open `docs/brain/tickets/
 
 For each rule, scan the diff:
 
-- §2 Forbidden tech — any new import or package of Firebase, Supabase, Prisma, Drizzle, Clerk, NextAuth, Auth0, BetterAuth, `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@google/genai`, Axios, Zustand, Jotai, Redux, MobX, Mongoose, TypeORM.
+- §2 Forbidden tech — any new import or package of Supabase, Prisma, Drizzle, Clerk, NextAuth, Auth0, BetterAuth, `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@google/genai`, Axios, Zustand, Jotai, Redux, MobX, Mongoose, TypeORM.
 - §4 Naming conventions — component files `PascalCase.tsx`, hooks `useThing.ts`, Convex files `kebab-case.ts`, Convex table names plural without prefix, enums as `v.union(v.literal(...))`.
 - §5 Schema — every new/modified Convex table: `createdAt`, `updatedAt`, `deletedAt` (unless explicitly excluded like `auditEvents`), compound `by_userId_deletedAt` index if user-owned, `v.id("otherTable")` for refs. No `.filter()` on queries without `.withIndex()`.
 - §6 AI routing — LLM calls via OpenRouter + `fetch`, never a provider SDK. Accept-reject flow for any AI-originating mutation (must go through `proposals`). `confidence` field present on AI-originating rows.

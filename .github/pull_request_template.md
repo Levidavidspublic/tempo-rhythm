@@ -37,7 +37,7 @@ Task: T-XXXX
 
 Read @docs/HARD_RULES.md before ticking. Unchecked boxes must have a note.
 
-- [ ] No forbidden tech added (§2): no Firebase, Supabase, Prisma/Drizzle, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google AI SDKs, Redux/Zustand/Jotai, Axios.
+- [ ] No forbidden tech added (§2): no Supabase, Prisma/Drizzle, Clerk/Auth0/NextAuth, direct OpenAI/Anthropic/Google AI SDKs, Redux/Zustand/Jotai, Axios.
 - [ ] AI-originated state changes surface an accept / edit / reject card with preview (§1, §6).
 - [ ] Schema changes respect `v.*` validators, indexes, soft-delete, and RAM-only fields (§5).
 - [ ] Styling uses design tokens from `packages/ui` — no ad-hoc hex or rogue Tailwind utilities (§7).

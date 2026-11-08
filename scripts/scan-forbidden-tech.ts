@@ -13,10 +13,7 @@ const repoRoot = path.resolve(import.meta.dir, "..");
 
 /** Exact package names (and scope prefixes ending in "/") from HARD_RULES §2. */
 const forbiddenPackages = [
-  // Backend-as-a-Service
-  "firebase",
-  "firebase-admin",
-  "@firebase/",
+  // Backend-as-a-Service (Firebase is allowed: HARD_RULES §2, Amit 2026-11-08)
   "@supabase/",
   "supabase",
   // ORMs
