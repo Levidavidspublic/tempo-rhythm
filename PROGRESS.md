@@ -6,8 +6,9 @@ Updated: 2026-11-08 (UTC)
 
 - [x] PHASE 0 — Confirm google-style parses `.ts` with the JS parser (`Unexpected token` / missing root `tsconfig.json`).
 - [x] PHASE 0 — Parser-fix PR opened: https://github.com/Levidavidspublic/tempo-rhythm/pull/1369
-- [ ] PHASE 0 — AT: Division6066 adds the `config` label on #1369 after CI has started on the head commit. This token cannot add labels (HTTP 403). Then merge #1369 when every check is green.
-- [ ] PHASE 0 — Re-run checks on #1365, #1368, #1366. Merge #1368 and #1365, then #1366. Note #1361 only if it conflicts.
+- [x] PHASE 0 — #1369 merged to integration (2026-11-08). The printed parser line was not proof: the smoke file is valid JavaScript, and `bunx --cwd /tmp/gts` kept the JS parser (`Unexpected token as` on #1368).
+- [ ] PHASE 0 — AT: Division6066 adds `config` on the eslint-cwd follow-up after CI has started on that head SHA. This token cannot add labels (HTTP 403).
+- [ ] PHASE 0 — #1365 is in the integration merge queue. #1368 is formatted and throws instead of `process.exit`, but google-style still fails until eslint runs from the repo directory. Re-add `config` on #1368 only after that follow-up is on integration and #1368's checks have been re-run. Then #1366. #1361 still overlaps #1366.
 - [ ] PHASE 1 — `docs/backlog/FIREBASE-DATA-MODEL.md` and owner-only rules.
 - [ ] PHASE 2 — Firebase Auth email-link behind a flag. Record authorized domains and the mail sender.
 - [ ] PHASE 3 — Port one area at a time to Firestore / Vercel routes.
@@ -26,3 +27,5 @@ Updated: 2026-11-08 (UTC)
 - #1365 latest real `scope-guard` is success, but merge-gate "2 checks" still fails because GitHub `filter=latest` returns older cancelled runs on the same SHA. Not fixed in this PR.
 - #1366 checks are green. Auto-merge job is skipped because `MERGE_GATE_ENABLED` is not true. Merge by hand only after the parser PR is in and checks are re-run.
 - #1368 `google-style` fails first on Prettier for `scripts/scan-forbidden-tech.ts`, before eslint. Parser fix does not clear that. Fix formatting on that branch after this workflow is on `integration`.
+- 2026-11-08 later: #1369 merged. #1365 enqueued (UNSTABLE only because merge-gate "2 checks" still counts a cancelled scope-guard on the same SHA; latest scope-guard, config-guard, CI, CodeRabbit, jev-judge, google-style are success). #1368 commit 94fc5f17 formats the scanner with gts prettier and throws instead of `process.exit`. Prettier passed in CI. eslint still reported `Unexpected token as` because `bunx --cwd /tmp/gts` leaves the JS parser in charge. config-guard on that SHA failed: the existing `config` label does not cover the new commit.
+- Follow-up: run `/tmp/gts/node_modules/.bin/eslint` with cwd at the workspace, clear the inherited `**/*.d.ts` exclude, and put `as const` on the smoke export so a JS parser fails the job.
