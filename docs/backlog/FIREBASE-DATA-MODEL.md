@@ -10,12 +10,23 @@ Owner data the signed-in person may edit lives at `users/{uid}/...`, where `uid`
 
 ## Rules this map needs
 
-After #1366 is on `integration`, the rules stay:
+#1366 adds deny-by-default plus an owner allow on `users/{userId}/{document=**}` that checks only the uid. That allow is not enough. `isInactiveAccount` in `convex/lib/accountDeletion.ts` is `deletedAt !== undefined || isActive === false`, and `requireUser` rejects those accounts. A Firebase ID token can still be presented after the account is deactivated. Replace the owner allow. Do not add a second allow beside it: rules OR together, so the wide allow would stay open.
 
-- `users/{userId}/{document=**}` — read and write only when `request.auth.uid == userId`.
-- `/{document=**}` — deny.
+```
+match /users/{userId}/{document=**} {
+  allow read, write: if request.auth != null
+    && request.auth.uid == userId
+    && accountIsActive(userId);
+}
+function accountIsActive(userId) {
+  let gate = get(/databases/$(database)/documents/private/$(userId)/account/gate).data;
+  return gate.deletedAt == null && gate.isActive != false;
+}
+```
 
-No new allow rule. `private/**` is already denied by the catch-all. Admin SDK bypasses rules.
+A missing gate fails closed (`get` fails). The sign-up route writes the gate before the client is expected to use the tree. `approvalStatus` is not part of this rule: a pending account can still read its own tree, and `requireApprovedUser` stays on the server routes that spend money.
+
+The catch-all deny stays. `private/**` is already denied by it. Admin SDK bypasses rules. This document does not edit `firestore.rules`. The replacement is the rules change that follows #1366, preview project only.
 
 ## Identity
 
@@ -29,7 +40,9 @@ No new allow rule. `private/**` is already denied by the catch-all. Admin SDK by
 
 Path: `users/{uid}/{collection}/{docId}`. Fields stay as in `convex/schema.ts` on this date, minus `userId`. Soft-delete stays `deletedAt`. These tables each declare `userId` in the schema:
 
-`conversations`, `chatRequests`, `memories`, `tasks`, `taskRepeatCfgs`, `calendarEvents`, `focusBlocks`, `notes`, `noteBlocks`, `pageOperations`, `pageOperationPayloads`, `pageProposals`, `habits`, `goals`, `dayPlans`, `timeBlocks`, `habitCheckIns`, `templates`, `userPreferences`, `coachWebSearches`, `nags`, `coachSettings`, `coachProposals`, `notifications`, `connections`, `connectionLimits`, `connectionCalls`.
+`conversations`, `chatRequests`, `memories`, `tasks`, `taskRepeatCfgs`, `calendarEvents`, `focusBlocks`, `notes`, `noteBlocks`, `pageOperations`, `pageOperationPayloads`, `pageProposals`, `habits`, `goals`, `dayPlans`, `timeBlocks`, `habitCheckIns`, `templates`, `userPreferences`, `coachWebSearches`, `nags`, `coachSettings`, `coachProposals`, `notifications`, `connections`, `connectionCalls`.
+
+`connectionLimits` declares `userId` but is not in this list. It holds the connect-attempt and Executor-call counters (`convex/connections.ts`). A client write could reset them. It is private.
 
 `subscriptionStates` and `voiceSessions` declare `userId` but are not in this list. Their writes decide billing and the shared voice cap, so they are private. See the next section.
 
@@ -46,7 +59,8 @@ Path: `users/{uid}/{collection}/{docId}`. Fields stay as in `convex/schema.ts` o
 | `mcpTokens` | `private/{uid}/mcpTokens/{docId}` | SHA-256 of a personal MCP token. The owner may list name and prefix through a Vercel route, not the client SDK. |
 | `oauthClients` | `private/shared/oauthClients/{docId}` | Shared across people. No `userId`. Holds `clientSecretCipher`. Four path segments, so it is a document. `private/oauthClients/{docId}` is three segments (a collection) and cannot be written as a document. |
 | `users` authorization fields | `private/{uid}/account/gate` | `email`, `emailVerificationTime`, `emailVerified`, `role`, `userType`, `betaAccess`, `entitlementTier`, `isGodTier`, `betaApprovedAt`, `isActive`, `approvalStatus`, `approvalUpdatedAt`, `approvalUpdatedBy`, `createdAt`, `updatedAt`, `deletedAt`. `convex/lib/approval.ts` treats `role` and the admin email list as authorization. `updateProfile` and `updateMyProfile` only write `fullName`. `updateUserType` stays a Vercel route that keeps `assertClientMaySetUserType`. The client SDK does not write this document. |
-| `subscriptionStates` | `private/{uid}/subscriptionStates/{docId}` | Plan and status. Written at sign-up and by the billing webhook (`convex/revenuecat.ts`), not by the client SDK. |
+| `subscriptionStates` | `private/{uid}/subscriptionStates/{docId}` | Plan and status. Inserted at sign-up (`convex/auth.ts`) and patched on account deletion (`convex/lib/accountDeletion.ts`). The RevenueCat webhook does not write this collection. `updateSubscriptionStatus` patches `userType` on `private/{uid}/account/gate`. |
+| `connectionLimits` | `private/{uid}/connectionLimits/{docId}` | Connect-attempt and Executor-call counters. The owner may see the numbers through a Vercel route. The client SDK does not write the counters. |
 | `voiceSessions` | `private/{uid}/voiceLeases/{docId}` | `usedGlobalMs` in `convex/voice.ts` sums every lease on one UTC day, and a day with too many rows counts as fully spent. A client insert under the owner rule could fill that cap for everyone. `start`, `renew`, and `stop` stay server routes. |
 
 ## Functions
@@ -61,7 +75,7 @@ Port order, one PR each, after this map and the scanner PR are on `integration`:
 4. Coach: `conversations`, `messages`, `chatRequests`, `memories`, `nags`, `coachSettings`, `coachProposals`, `coachWebSearches`. Reply, web search, and Executor calls stay server routes.
 5. Profile: client writes `name`, `fullName`, and `onboardedAt` on `users/{uid}`. `userPreferences` and `notifications` stay owner collections. Authorization fields and `subscriptionStates` are server routes. Billing webhooks stay server routes (`convex/revenuecat.ts`).
 6. Voice: leases at `private/{uid}/voiceLeases/{docId}`. `convex/voice.ts` `start`, `renew`, `stop`, and the speak actions are server routes. The client does not write the lease rows the global cap reads.
-7. Connections and MCP: owner-visible rows in `connections`, `connectionLimits`, `connectionCalls`. Everything in the private table stays a server route (`convex/connections.ts`, `connectionsHttp.ts`, `mcp.ts`, `mcpHttp.ts`).
+7. Connections and MCP: owner-visible rows in `connections` and `connectionCalls`. `connectionLimits` stays a server route. Everything in the private table stays a server route (`convex/connections.ts`, `connectionsHttp.ts`, `mcp.ts`, `mcpHttp.ts`).
 
 `convex/auth.ts` (`signIn`, `signOut`, `isAuthenticated`) is Phase 2, behind the Firebase flag. Convex Auth keeps working when the flag is off.
 
