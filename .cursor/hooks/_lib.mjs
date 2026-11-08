@@ -71,8 +71,9 @@ export function isForbiddenShell(command) {
     return "Use `npx convex dev` locally and the Convex GitHub Action for prod. `convex deploy` is forbidden without `--prod-confirm` sentinel per HARD_RULES.";
   }
   // Block installs of forbidden tech.
-  // Firebase is allowed (HARD_RULES §2, Amit 2026-11-08).
   const forbiddenPkgs = [
+    "firebase",
+    "firebase-admin",
     "@supabase/",
     "prisma",
     "@prisma/",
