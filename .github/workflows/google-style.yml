@@ -52,6 +52,9 @@ jobs:
             "extends": os.path.join(root, "tsconfig.base.json"),
             "compilerOptions": {"noEmit": True, "jsx": "react-jsx", "allowJs": True},
             "include": include or [os.path.join(root, "tsconfig.base.json")],
+            # tsconfig.base.json excludes **/*.d.ts. A changed declaration file
+            # still matches this job's .ts filter, so the child must clear that exclude.
+            "exclude": [],
           }, open("/tmp/gts-lint.tsconfig.json", "w"))
           cfg_path = "/tmp/gts/node_modules/gts/.eslintrc.json"
           cfg = json.load(open(cfg_path))
@@ -70,7 +73,11 @@ jobs:
           print("typescript project: /tmp/gts-lint.tsconfig.json")
           print("ts files:", len(include))
           PY
-          ESLINT_USE_FLAT_CONFIG=false bunx --cwd /tmp/gts eslint --no-eslintrc \
+          # bunx --cwd /tmp/gts sets eslint's cwd to /tmp/gts. gts override globs are
+          # matched from that cwd, so **/*.ts misses repo files and the JS parser
+          # reports "Unexpected token as". Call the installed binary with cwd
+          # left at the workspace. Rules stay as gts ships them.
+          ESLINT_USE_FLAT_CONFIG=false /tmp/gts/node_modules/.bin/eslint --no-eslintrc \
             -c /tmp/gts/node_modules/gts/.eslintrc.tempo.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
             --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch \
             --rule 'prettier/prettier: off' \
