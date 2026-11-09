@@ -19,6 +19,7 @@ import {
 import {reviewKind} from './release-gate.mjs';
 import {nextStep, ownerTicket} from './review-fix.mjs';
 import {judge as scopeJudge, judgeBatch, isBatchPR} from './scope-guard.mjs';
+import {selectChecks} from './merge-gate-checks.mjs';
 import {
   ciGreen,
   readiness,
@@ -1416,5 +1417,46 @@ t(
     );
   },
 );
+
+t('merge gate counts only the latest run of each check name', () => {
+  const run = (id, name, conclusion) => ({
+    id,
+    name,
+    status: 'completed',
+    conclusion,
+  });
+  const picked = selectChecks([
+    run(1, 'config-guard', 'failure'),
+    run(2, 'config-guard', 'cancelled'),
+    run(3, 'config-guard', 'success'),
+    run(4, 'scope-guard', 'failure'),
+    run(5, 'scope-guard', 'success'),
+    run(6, 'google-style', 'success'),
+    run(7, '2 checks', 'failure'),
+    run(8, 'ci', 'success'),
+  ]);
+  const by = Object.fromEntries(picked.map(r => [r.name, r.conclusion]));
+  assert.equal(by['config-guard'], 'success');
+  assert.equal(by['scope-guard'], 'success');
+  assert.equal(by['google-style'], 'success');
+  assert.equal(by.ci, 'success');
+  assert.equal(by['2 checks'], undefined);
+  assert.equal(picked.length, 4);
+  const newerFailure = selectChecks([
+    run(1, 'config-guard', 'success'),
+    run(2, 'config-guard', 'failure'),
+    run(3, 'google-style', 'success'),
+  ]);
+  assert.equal(
+    newerFailure.find(r => r.name === 'config-guard').conclusion,
+    'failure',
+  );
+  assert.equal(
+    selectChecks([run(1, 'ci', 'success')]).some(
+      r => r.name === 'google-style',
+    ),
+    false,
+  );
+});
 
 console.log(`all ${n} passed`);
