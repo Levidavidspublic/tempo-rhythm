@@ -1,8 +1,20 @@
 # Firebase migration — preview preparation
 
-Status: **DRAFT — NOT DISPATCHABLE. No application migration or deployment completed.**
+Status: **DRAFT — NOT DISPATCHABLE. This PR performs no application migration or deployment.**
 
-## Evidence and boundaries
+## Reconciliation — 2026-11-09
+
+The planning snapshot below was prepared on 2026-11-06. It is historical evidence, not the current setup contract or a dispatch queue. Later merged work supersedes its project alias, deny-all bootstrap, Firebase-policy and missing-contract statements:
+
+- PR #1366 supplies `.firebaserc`, `firebase.json`, `firestore.rules` and `firestore.indexes.json` on `integration`. This branch preserves those files byte-for-byte at integration revision `8354b61f`. The three add/add conflicts were resolved in favor of that merged setup, not the old bootstrap.
+- The source alias now names `tempo-flow-preview-20261106`; the Firestore database location is `europe-west3`. These are repository observations, not fresh remote identity or billing verification.
+- The merged rules allow authenticated owners under `users/{uid}/**` and deny other client access. See [the merged data model](FIREBASE-DATA-MODEL.md) for owner/private collection boundaries. Never put secret records under the owner-readable tree. This PR does not change or deploy those rules.
+- [The merged environment mapping](FIREBASE-ENV-MAPPING.md) supersedes the old claim that Firebase variable names lack a documented contract. No variable is set or credential retrieved in this conflict-resolution pass.
+- PR #1365 reconciled the Firebase ban in `docs/HARD_RULES.md`. The old policy blocker below is historical; it is not a reason to reverse that merged decision.
+
+Revalidate every draft ticket against those current contracts and current source before dispatch. In particular, FM-01/02/12 describe earlier gaps and are not evidence that the merged contracts or setup are missing. Historical access errors below do not establish current vault access. No fresh Firebase, Auth, Vercel, deployment or application-behavior verification was performed here. Convex and protected paths remain unchanged relative to `integration`.
+
+## Historical evidence and boundaries — 2026-11-06
 
 Prepared 2026-11-06 from assigned checkout `5504fc4038fc45d6c8412c23c45b9a9b6cb2ba73` and [product docs PR #1359](https://github.com/Levidavidspublic/tempo-rhythm/pull/1359) at `ebd5446dbaef49dbdc4548319c2d573eb30e43a5` (ARCHITECTURE, BACKEND-SCHEMA, CONFIG-PLAN, TECH-STACK). Those docs remain a draft, not merged project law. The current request explicitly authorizes preview preparation despite the older Firebase ban; this PR does not rewrite policy or weaken a scanner.
 

@@ -1,10 +1,13 @@
 rules_version = '2';
 
+// Deny by default. A signed-in user can read and write only their own data,
+// stored under users/{their Firebase Auth uid}/... . Everything else is closed.
+// Server code (Vercel functions with keyless WIF + Admin SDK) bypasses these rules.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Preview bootstrap only. Collection paths and UID mapping are not approved.
-    // No client, including an authenticated owner, may access documents yet.
-    // Admin SDK access bypasses these rules; enforce ownership in server code.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

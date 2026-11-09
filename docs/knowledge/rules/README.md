@@ -27,4 +27,4 @@ All live in `.cursor/rules/` and each one references HARD_RULES with `@docs/HARD
 HARD_RULES  >  .cursor/rules/  >  Ticket  >  PRD  >  Chat prompt  >  Skill default
 ```
 
-A skill that recommends Firebase does not override HARD_RULES §2. The `tempo-skills.mdc` rule enumerates which skills are green-listed for Tempo; anything not green-listed is either red-listed or neutral (use with judgment).
+Firebase is allowed (HARD_RULES §2, Amit, 2026-11-08). A skill that recommends another forbidden tool does not override HARD_RULES §2. The `tempo-skills.mdc` rule enumerates which skills are green-listed for Tempo; anything not green-listed is either red-listed or neutral (use with judgment).

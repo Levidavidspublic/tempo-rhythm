@@ -82,6 +82,10 @@ A model named in a ticket is labelled either `code model` (the model that writes
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
 12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 
+## Merging and Firebase (Amit, 2026-11-08)
+- Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so.
+- Firebase is allowed. A change may move to production once it is proven in preview.
+
 ## Never — and what enforces it
 These are explained here and enforced elsewhere. Each item names its enforcement, which is listed in SLOTS.md → Enforcement.
 - Deploy to live, or merge into the live branch. Enforced by: live-environment protection and branch protection.
