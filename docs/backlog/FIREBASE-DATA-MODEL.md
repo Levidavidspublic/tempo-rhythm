@@ -6,7 +6,7 @@ Dated 2026-11-08. The gate field defaults and the connection rows were corrected
 
 Owner data the signed-in person may edit lives at `users/{uid}/...`, where `uid` is the Firebase Auth user id. The client reads and writes that tree with the Firestore client SDK and `onSnapshot`. Ciphertext, token hashes, OAuth client secrets, PKCE verifiers, authorization fields, billing state, and voice-budget leases do not live in that tree. They live under `private/...`, which the preview rules deny to every client. Server work uses the Admin SDK in Vercel routes with the existing keyless workload identity. Nothing in this map is deployed by this document.
 
-`firestore.rules` is not on `integration` yet. PR #1366 adds deny-by-default plus owner access to `users/{uid}/**`. That owner rule is an OR, so a later `allow if false` on a subcollection would not close it. Secret rows must stay outside `users/{uid}`.
+`firestore.rules` is on `integration` via #1366: deny-by-default plus owner access to `users/{uid}/**`. That owner rule is an OR, so a later `allow if false` on a subcollection would not close it. Secret rows must stay outside `users/{uid}`.
 
 ## Rules this map needs
 
@@ -83,6 +83,6 @@ Port order, one PR each, after this map and the scanner PR are on `integration`:
 
 ## Not done
 
-- Rules file is still only on PR #1366. This document does not deploy rules.
+- The rules file from #1366 is on `integration`. It still checks only the uid. This document does not deploy the gate replacement.
 - No collection is created by this PR. Firestore creates a collection on first write.
 - EXPO public Firebase env names are unset. Mobile is out of this map's first code PRs.
