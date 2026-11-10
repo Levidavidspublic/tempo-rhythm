@@ -8,6 +8,7 @@ type Env = Record<string, string | undefined>;
 
 const PLAN_ID_SHAPE = /^plan_[A-Za-z0-9]+$/;
 
+/** The Whop checkout link for the trial plan, or null when the flag is off or the plan id is missing or malformed. */
 export function trialCheckoutUrl(env: Env = process.env): string | null {
   if (env.TEMPO_CHECKOUT_ENABLED?.trim() !== "true") {
     return null;

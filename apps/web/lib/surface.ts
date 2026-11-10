@@ -20,6 +20,7 @@ export const COMING_SOON_STATIC_PATHS = ["/favicon.ico"] as const;
 
 type SurfaceEnv = Record<string, string | undefined>;
 
+/** Which surface this deployment serves: TEMPO_SURFACE when it names one, else coming-soon on Vercel production and app everywhere else. */
 export function getSurface(env: SurfaceEnv = process.env): Surface {
   const explicit = env.TEMPO_SURFACE?.trim();
   if (explicit === "app" || explicit === "coming-soon") {

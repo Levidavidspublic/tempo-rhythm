@@ -38,6 +38,7 @@ export function missingGcpEnv(env: Env = process.env): string[] {
   return GCP_ENV_NAMES.filter((name) => !env[name]?.trim());
 }
 
+/** The keyless-access settings from the environment, or null when a required name is missing. */
 export function readGcpConfig(env: Env = process.env): GcpConfig | null {
   if (missingGcpEnv(env).length > 0) {
     return null;
@@ -52,6 +53,7 @@ export function readGcpConfig(env: Env = process.env): GcpConfig | null {
   };
 }
 
+/** The pool provider's resource path, as Google's token exchange expects it. */
 function providerPath(config: GcpConfig): string {
   return `projects/${config.projectNumber}/locations/global/workloadIdentityPools/${config.poolId}/providers/${config.providerId}`;
 }

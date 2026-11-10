@@ -23,6 +23,7 @@ if (!config) {
 }
 
 type Call = { url: string; init?: RequestInit };
+/** A fake fetch that records each call and answers with the given responses in order. */
 function recorder(responses: Response[]) {
   const calls: Call[] = [];
   const fetch = async (url: string, init?: RequestInit) => {

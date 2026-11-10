@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readBodyLimited } from "./read-body";
 
+/** A POST request with the given body and headers. */
 const post = (body: BodyInit, headers: Record<string, string> = {}) =>
   new Request("https://example.com/x", { method: "POST", body, headers });
 

@@ -48,6 +48,7 @@ export function ComingSoonEffects() {
       let frame = 0;
       let x = 0;
       let y = 0;
+      /** Stores the pointer position (-1 to 1) and writes it to the page once per animation frame. */
       const onMove = (event: PointerEvent) => {
         x = (event.clientX / window.innerWidth) * 2 - 1;
         y = (event.clientY / window.innerHeight) * 2 - 1;
@@ -71,6 +72,7 @@ export function ComingSoonEffects() {
     const tabs = root.querySelectorAll<HTMLElement>("[data-go]");
     let step = 1;
     let manual = false;
+    /** Shows one demo step and marks its tab as selected. */
     const go = (next: number) => {
       step = next;
       for (const panel of panels) {
@@ -81,6 +83,7 @@ export function ComingSoonEffects() {
       }
     };
     for (const tab of tabs) {
+      /** A tab click selects its step and stops the automatic advance. */
       const onClick = () => {
         manual = true;
         go(Number(tab.dataset.go));

@@ -25,6 +25,7 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+/** Whop's signature for one delivery: HMAC-SHA256 of `{id}.{timestamp}.{raw body}` with the secret as given, in base64. */
 export async function signWhopPayload(
   secret: string,
   id: string,
@@ -47,6 +48,10 @@ export async function signWhopPayload(
   return btoa(String.fromCharCode(...new Uint8Array(signature)));
 }
 
+/**
+ * True when the request carries a `v1` signature that matches and its timestamp is within the
+ * tolerance. False for any missing header, an empty secret, or a stale or future timestamp.
+ */
 export async function verifyWhopSignature(
   headers: WhopHeaders,
   rawBody: string,

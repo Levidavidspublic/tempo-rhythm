@@ -54,6 +54,7 @@ export const viewport: Viewport = {
   ],
 };
 
+/** Root layout. On the coming-soon surface it renders a bare document with no app providers. */
 export default function RootLayout({
   children,
 }: Readonly<{

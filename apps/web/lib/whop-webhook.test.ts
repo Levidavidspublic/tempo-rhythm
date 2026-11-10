@@ -62,6 +62,7 @@ describe("whop signature", () => {
 
 describe("whop event mapping", () => {
   const sent = { id: "msg_1", timestamp: "1786381404" };
+  /** A Whop event envelope of the given type around `data`. */
   const event = (type: string, data: Record<string, unknown>, timestamp?: string) => ({
     id: "msg_1",
     type,

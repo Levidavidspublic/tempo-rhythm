@@ -42,6 +42,7 @@ export class FirestoreError extends Error {
   }
 }
 
+/** REST base URL for documents in the project's default database. */
 function documentsUrl(config: GcpConfig): string {
   return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(config.projectId)}/databases/(default)/documents`;
 }

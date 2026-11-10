@@ -14,6 +14,7 @@ const SANS = "'Source Sans 3',sans-serif";
 export function WaitlistForm({ note }: { note: ReactNode }) {
   const [status, setStatus] = useState<Status>("idle");
 
+  /** Posts the email to /api/waitlist and sets the joined or error state. Ignores a second submit while one is sending. */
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "sending") {
