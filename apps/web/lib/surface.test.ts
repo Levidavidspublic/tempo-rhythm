@@ -22,9 +22,10 @@ describe("coming-soon surface routing", () => {
     expect(decideComingSoon("/coming-soon")).toEqual({ action: "redirect", to: "/" });
   });
 
-  test("only the waitlist API and the payment webhook pass", () => {
+  test("only the waitlist API, the payment webhook and the release health check pass", () => {
     expect(decideComingSoon("/api/waitlist")).toEqual({ action: "next" });
     expect(decideComingSoon("/api/whop/webhook")).toEqual({ action: "next" });
+    expect(decideComingSoon("/api/health")).toEqual({ action: "next" });
   });
 
   test("every app, sign-in and other API path is not found", () => {
@@ -38,7 +39,8 @@ describe("coming-soon surface routing", () => {
       "/checkout",
       "/about",
       "/privacy",
-      "/api/health",
+      "/api/health/",
+      "/api/health/deep",
       "/api/mcp",
       "/api/waitlist/",
       "/api/waitlist/export",

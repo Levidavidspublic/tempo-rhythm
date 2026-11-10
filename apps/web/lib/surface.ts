@@ -1,8 +1,9 @@
 /**
  * Which surface this deployment serves.
  *
- * - "coming-soon": only the coming-soon page, the waitlist API and the payment webhook exist.
- *   Every other path answers 404. No sign-in, no app routes, no backend client.
+ * - "coming-soon": only the coming-soon page, the waitlist API, the payment webhook and the
+ *   release health check exist. Every other path answers 404. No sign-in, no app routes, no
+ *   backend client.
  * - "app": the full app.
  *
  * Deny by default on live: the Vercel production environment is "coming-soon" unless
@@ -12,8 +13,13 @@ export type Surface = "coming-soon" | "app";
 
 export const COMING_SOON_PATH = "/coming-soon";
 
-/** API routes that stay reachable on the coming-soon surface. Exact paths only. */
-export const COMING_SOON_API_PATHS = ["/api/waitlist", "/api/whop/webhook"] as const;
+/**
+ * API routes that stay reachable on the coming-soon surface. Exact paths only.
+ * `/api/health` is here because the release check and the live smoke read the deployed commit
+ * from it (docs/DEPLOY.md, scripts/factory/release-gate.mjs, deploy-live-plan.mjs). It answers
+ * `{ ok, service, proof, commit }` and calls nothing.
+ */
+export const COMING_SOON_API_PATHS = ["/api/waitlist", "/api/whop/webhook", "/api/health"] as const;
 
 /** Static files the coming-soon page itself needs. Its scripts, styles and fonts live under /_next. */
 export const COMING_SOON_STATIC_PATHS = ["/favicon.ico"] as const;
