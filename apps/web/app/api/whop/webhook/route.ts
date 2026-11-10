@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 256 * 1024;
 
+/** JSON answer that is never cached. */
 function reply(
   body: { received: boolean; handled?: boolean; reason?: string },
   status: number
@@ -27,6 +28,7 @@ function reply(
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
+/** Handles one Whop delivery: checks the signature, then stores the membership event. */
 export async function POST(request: Request): Promise<Response> {
   const secret = process.env.WHOP_WEBHOOK_SECRET;
   if (!secret) {
@@ -90,7 +92,10 @@ export async function POST(request: Request): Promise<Response> {
     } else if (error instanceof FirestoreError) {
       logServerProblem("whop webhook", `Firestore answered ${error.status} ${error.detail}`);
     } else {
-      logServerProblem("whop webhook", "write did not complete");
+      logServerProblem(
+        "whop webhook",
+        `write did not complete (${error instanceof Error ? error.name : "unknown"})`
+      );
     }
     return reply({ received: false, reason: "unavailable" }, 502);
   }

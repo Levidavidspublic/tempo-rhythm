@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { createDocument, FirestoreError } from "./firestore";
 import {
   clearGcpTokenCache,
+  fetchWithTimeout,
   GcpAuthError,
   getGcpAccessToken,
   missingGcpEnv,
+  OUTBOUND_TIMEOUT_MS,
   readGcpConfig,
 } from "./gcp-access-token";
 
@@ -121,11 +123,38 @@ describe("keyless Google access", () => {
   });
 });
 
+describe("outbound requests", () => {
+  test("carry a time limit unless the caller set its own signal", async () => {
+    const seen: Array<AbortSignal | null | undefined> = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (_input: unknown, init?: RequestInit) => {
+      seen.push(init?.signal);
+      return new Response("{}");
+    }) as typeof fetch;
+    try {
+      await fetchWithTimeout("https://example.com/a", { method: "POST" });
+      const own = new AbortController().signal;
+      await fetchWithTimeout("https://example.com/b", { signal: own });
+      expect(seen[0]).toBeInstanceOf(AbortSignal);
+      expect(seen[1]).toBe(own);
+      expect(OUTBOUND_TIMEOUT_MS).toBe(8000);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
 describe("firestore writes", () => {
   const getAccessToken = async () => "sa-token";
 
   test("creates a document and treats an existing one as fine", async () => {
-    const { calls, fetch } = recorder([Response.json({}), new Response("{}", { status: 409 })]);
+    const { calls, fetch } = recorder([
+      Response.json({}),
+      Response.json(
+        { error: { status: "ALREADY_EXISTS", message: "Document already exists" } },
+        { status: 409 }
+      ),
+    ]);
     const fields = { email: { stringValue: "dana@example.com" } };
     expect(await createDocument(config, "waitlist", "abc", fields, { fetch, getAccessToken })).toBe(
       "created"
@@ -138,6 +167,28 @@ describe("firestore writes", () => {
     );
     expect(calls[0]?.init?.method).toBe("POST");
     expect(new Headers(calls[0]?.init?.headers).get("authorization")).toBe("Bearer sa-token");
+  });
+
+  test("a 409 that is not ALREADY_EXISTS is a write that did not happen", async () => {
+    const { fetch } = recorder([
+      Response.json(
+        { error: { status: "ABORTED", message: "Too much contention on these documents." } },
+        { status: 409 }
+      ),
+      new Response("{}", { status: 409 }),
+    ]);
+    for (const expected of ["ABORTED: Too much contention on these documents.", ""]) {
+      const error = await createDocument(
+        config,
+        "waitlist",
+        "abc",
+        {},
+        { fetch, getAccessToken }
+      ).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(FirestoreError);
+      expect((error as FirestoreError).status).toBe(409);
+      expect((error as FirestoreError).detail).toBe(expected);
+    }
   });
 
   test("reports a refusal with its status and Google's reason", async () => {

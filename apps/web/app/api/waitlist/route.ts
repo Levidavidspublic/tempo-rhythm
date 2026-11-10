@@ -20,10 +20,12 @@ export const dynamic = "force-dynamic";
 
 const allow = createRateLimiter(5, 10 * 60_000);
 
+/** JSON answer that is never cached. */
 function json(body: { ok: boolean; reason?: string }, status: number): Response {
   return Response.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
+/** Handles one join: checks the request, then writes the email to Firestore. */
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request.headers.get("origin"), request.headers.get("host"))) {
     return json({ ok: false, reason: "forbidden" }, 403);
@@ -74,7 +76,10 @@ export async function POST(request: Request): Promise<Response> {
     } else if (error instanceof FirestoreError) {
       logServerProblem("waitlist", `Firestore answered ${error.status} ${error.detail}`);
     } else {
-      logServerProblem("waitlist", "write did not complete");
+      logServerProblem(
+        "waitlist",
+        `write did not complete (${error instanceof Error ? error.name : "unknown"})`
+      );
     }
     return json({ ok: false, reason: "unavailable" }, 502);
   }

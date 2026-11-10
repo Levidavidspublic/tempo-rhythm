@@ -13,6 +13,7 @@ export const WHOP_MEMBERSHIP_COLLECTION = "whopMemberships";
 
 export type WhopHeaders = { id: string | null; timestamp: string | null; signature: string | null };
 
+/** Compares two strings without stopping at the first difference. */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
     return false;
@@ -114,6 +115,7 @@ export function membershipEventsCollection(membershipId: string): string {
   return `${WHOP_MEMBERSHIP_COLLECTION}/${membershipId}/events`;
 }
 
+/** A non-empty string, or null. */
 function text(value: unknown): string | null {
   return typeof value === "string" && value !== "" ? value : null;
 }

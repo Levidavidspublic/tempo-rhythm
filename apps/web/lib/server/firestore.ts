@@ -1,5 +1,6 @@
 import {
   type FetchLike,
+  fetchWithTimeout,
   type GcpConfig,
   getGcpAccessToken,
   googleErrorDetail,
@@ -26,7 +27,7 @@ type Deps = {
 };
 
 const defaultDeps: Deps = {
-  fetch: (input, init) => fetch(input, init),
+  fetch: fetchWithTimeout,
   getAccessToken: (config, scope) => getGcpAccessToken(config, scope),
 };
 
@@ -46,8 +47,8 @@ function documentsUrl(config: GcpConfig): string {
 }
 
 /**
- * Creates `collection/documentId`. Returns "created", or "exists" when the document is already
- * there (nothing is overwritten).
+ * Creates `collection/documentId`. Returns "created", or "exists" when Firestore says the
+ * document is already there (ALREADY_EXISTS; nothing is overwritten). Anything else throws.
  */
 export async function createDocument(
   config: GcpConfig,
@@ -64,11 +65,13 @@ export async function createDocument(
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: JSON.stringify({ fields }),
   });
-  if (response.status === 409) {
+  if (response.ok) {
+    return "created";
+  }
+  const detail = await googleErrorDetail(response);
+  // 409 is also what Firestore answers for ABORTED (contention): that write did not happen.
+  if (response.status === 409 && detail.startsWith("ALREADY_EXISTS")) {
     return "exists";
   }
-  if (!response.ok) {
-    throw new FirestoreError(response.status, await googleErrorDetail(response));
-  }
-  return "created";
+  throw new FirestoreError(response.status, detail);
 }

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 // Reads the checkout flag when the page is requested, not when it is built.
 export const dynamic = "force-dynamic";
 
+/** Renders the page; the trial link is passed only when the checkout flag is on. */
 export default function Page() {
   return <ComingSoon trialHref={trialCheckoutUrl()} />;
 }

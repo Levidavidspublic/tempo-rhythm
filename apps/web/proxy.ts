@@ -78,6 +78,7 @@ function comingSoonProxy(request: NextRequest): NextResponse {
   }
 }
 
+/** Picks the surface first: coming-soon requests never reach the app's sign-in proxy. */
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (getSurface() === "coming-soon") {
     return comingSoonProxy(request);

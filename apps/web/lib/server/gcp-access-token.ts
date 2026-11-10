@@ -111,8 +111,15 @@ type Deps = {
   now: () => number;
 };
 
+/** How long one outbound request may take. Each request has its own limit. */
+export const OUTBOUND_TIMEOUT_MS = 8000;
+
+/** fetch with a time limit, so a stalled Google call cannot hold the function open. */
+export const fetchWithTimeout: FetchLike = (input, init) =>
+  fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(OUTBOUND_TIMEOUT_MS) });
+
 const defaultDeps: Deps = {
-  fetch: (input, init) => fetch(input, init),
+  fetch: fetchWithTimeout,
   getOidcToken: (audience) => (audience ? getVercelOidcToken({ audience }) : getVercelOidcToken()),
   now: () => Date.now(),
 };
