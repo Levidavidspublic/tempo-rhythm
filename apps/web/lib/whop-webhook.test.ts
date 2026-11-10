@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createHmac } from "node:crypto";
-import { mapWhopEvent, signWhopPayload, verifyWhopSignature } from "./whop-webhook";
+import {
+  mapWhopEvent,
+  membershipEventsCollection,
+  signWhopPayload,
+  verifyWhopSignature,
+} from "./whop-webhook";
 
 const secret = "ws_test_only_not_a_real_secret";
 const now = 1_800_000_000;
@@ -56,29 +61,72 @@ describe("whop signature", () => {
 });
 
 describe("whop event mapping", () => {
-  const event = (type: string, data: Record<string, unknown>) => ({ id: "evt_1", type, data });
+  const sent = { id: "msg_1", timestamp: "1786381404" };
+  const event = (type: string, data: Record<string, unknown>, timestamp?: string) => ({
+    id: "msg_1",
+    type,
+    timestamp,
+    data,
+  });
 
-  test("keeps a trial start", () => {
+  test("keeps a trial start with Whop's event id and the event's own time", () => {
     expect(
       mapWhopEvent(
-        event("membership.activated", {
-          id: "mem_1",
-          status: "trialing",
-          variant_id: "plan_a",
-          product_id: "prod_a",
-          user_id: "user_a",
-        })
+        event(
+          "membership.activated",
+          {
+            id: "mem_1",
+            status: "trialing",
+            variant_id: "plan_a",
+            product_id: "prod_a",
+            user_id: "user_a",
+          },
+          "2026-08-10T17:03:24.291Z"
+        ),
+        sent
       )
     ).toEqual({
       membershipId: "mem_1",
+      eventId: "msg_1",
+      eventTimestamp: "2026-08-10T17:03:24.291Z",
+      eventType: "membership.activated",
       status: "trialing",
       planId: "plan_a",
       productId: "prod_a",
       whopUserId: "user_a",
       cancelAtPeriodEnd: false,
-      eventId: "evt_1",
-      eventType: "membership.activated",
     });
+  });
+
+  test("a late older event and a newer one are separate documents with their own times", () => {
+    const cancelled = mapWhopEvent(
+      event("membership.updated", { id: "mem_1", status: "canceled" }, "2026-08-12T09:00:00.000Z"),
+      { id: "msg_new", timestamp: "1786525200" }
+    );
+    const lateStart = mapWhopEvent(
+      event(
+        "membership.activated",
+        { id: "mem_1", status: "trialing" },
+        "2026-08-10T17:03:24.291Z"
+      ),
+      { id: "msg_old", timestamp: "1786381404" }
+    );
+    expect(cancelled?.eventId).toBe("msg_new");
+    expect(lateStart?.eventId).toBe("msg_old");
+    expect(membershipEventsCollection("mem_1")).toBe("whopMemberships/mem_1/events");
+    // Whichever arrives last, the newest by event time is still the cancellation.
+    const newest = [lateStart, cancelled].sort((a, b) =>
+      (b?.eventTimestamp ?? "").localeCompare(a?.eventTimestamp ?? "")
+    )[0];
+    expect(newest?.status).toBe("canceled");
+  });
+
+  test("falls back to the signed header time when the body has none", () => {
+    const record = mapWhopEvent(
+      event("membership.updated", { id: "mem_1", status: "active" }),
+      sent
+    );
+    expect(record?.eventTimestamp).toBe(new Date(1786381404 * 1000).toISOString());
   });
 
   test("reads plan_id on older payloads and the cancel flag", () => {
@@ -88,21 +136,44 @@ describe("whop event mapping", () => {
         status: "canceled",
         plan_id: "plan_old",
         cancel_at_period_end: true,
-      })
+      }),
+      sent
     );
     expect(record?.planId).toBe("plan_old");
     expect(record?.status).toBe("canceled");
     expect(record?.cancelAtPeriodEnd).toBe(true);
   });
 
-  test("ignores other events, unknown statuses and unsafe ids", () => {
-    expect(mapWhopEvent(event("payment.succeeded", { id: "pay_1", status: "paid" }))).toBeNull();
+  test("ignores other events, unknown statuses, unsafe ids and events with no id or time", () => {
     expect(
-      mapWhopEvent(event("membership.updated", { id: "mem_1", status: "drafted" }))
+      mapWhopEvent(event("payment.succeeded", { id: "pay_1", status: "paid" }), sent)
     ).toBeNull();
-    expect(mapWhopEvent(event("membership.updated", { id: "a/b", status: "active" }))).toBeNull();
-    expect(mapWhopEvent(event("membership.updated", { status: "active" }))).toBeNull();
-    expect(mapWhopEvent(null)).toBeNull();
-    expect(mapWhopEvent({ type: "membership.updated" })).toBeNull();
+    expect(
+      mapWhopEvent(event("membership.updated", { id: "mem_1", status: "drafted" }), sent)
+    ).toBeNull();
+    expect(
+      mapWhopEvent(event("membership.updated", { id: "a/b", status: "active" }), sent)
+    ).toBeNull();
+    expect(mapWhopEvent(event("membership.updated", { status: "active" }), sent)).toBeNull();
+    expect(
+      mapWhopEvent(event("membership.updated", { id: "mem_1", status: "active" }), {
+        id: "a/b",
+        timestamp: "1786381404",
+      })
+    ).toBeNull();
+    expect(
+      mapWhopEvent(
+        { type: "membership.updated", data: { id: "mem_1", status: "active" } },
+        { id: null, timestamp: "1786381404" }
+      )
+    ).toBeNull();
+    expect(
+      mapWhopEvent(event("membership.updated", { id: "mem_1", status: "active" }), {
+        id: "msg_1",
+        timestamp: null,
+      })
+    ).toBeNull();
+    expect(mapWhopEvent(null, sent)).toBeNull();
+    expect(mapWhopEvent({ type: "membership.updated" }, sent)).toBeNull();
   });
 });

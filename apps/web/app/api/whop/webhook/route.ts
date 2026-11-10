@@ -1,12 +1,18 @@
-import { FirestoreError, type FirestoreFields, setDocumentFields } from "@/lib/server/firestore";
-import { logServerProblem } from "@/lib/server/log";
+import { createDocument, FirestoreError, type FirestoreFields } from "@/lib/server/firestore";
 import { GcpAuthError, readGcpConfig } from "@/lib/server/gcp-access-token";
-import { mapWhopEvent, verifyWhopSignature, WHOP_MEMBERSHIP_COLLECTION } from "@/lib/whop-webhook";
+import { logServerProblem } from "@/lib/server/log";
+import { mapWhopEvent, membershipEventsCollection, verifyWhopSignature } from "@/lib/whop-webhook";
 
 /**
  * POST /api/whop/webhook — Whop tells us when a membership (the $1 trial) starts or changes.
  * The signature is the only thing that authenticates this request; see lib/whop-webhook.ts.
- * Stores one document per membership in Firestore: status "trialing", "active", "canceled", ...
+ *
+ * Each event is stored as its own Firestore document,
+ * `whopMemberships/{membership id}/events/{event id}`, and never overwritten: Whop may deliver
+ * events out of order or more than once. A repeat of the same event is a no-op. The membership's
+ * current state ("trialing", "active", "canceled", ...) is the event with the latest
+ * `eventTimestamp`.
+ *
  * Answers 503 until WHOP_WEBHOOK_SECRET is set, so Whop retries instead of losing events.
  */
 export const runtime = "nodejs";
@@ -30,16 +36,12 @@ export async function POST(request: Request): Promise<Response> {
   if (raw.length > MAX_BODY_BYTES) {
     return reply({ received: false, reason: "too_large" }, 413);
   }
-  const verified = await verifyWhopSignature(
-    {
-      id: request.headers.get("webhook-id"),
-      timestamp: request.headers.get("webhook-timestamp"),
-      signature: request.headers.get("webhook-signature"),
-    },
-    raw,
-    secret
-  );
-  if (!verified) {
+  const headers = {
+    id: request.headers.get("webhook-id"),
+    timestamp: request.headers.get("webhook-timestamp"),
+    signature: request.headers.get("webhook-signature"),
+  };
+  if (!(await verifyWhopSignature(headers, raw, secret))) {
     return reply({ received: false, reason: "bad_signature" }, 401);
   }
 
@@ -49,8 +51,8 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return reply({ received: false, reason: "invalid" }, 400);
   }
-  const record = mapWhopEvent(body);
-  if (!record) {
+  const event = mapWhopEvent(body, headers);
+  if (!event) {
     return reply({ received: true, handled: false }, 200);
   }
 
@@ -60,17 +62,24 @@ export async function POST(request: Request): Promise<Response> {
     return reply({ received: false, reason: "not_configured" }, 503);
   }
   const fields: FirestoreFields = {
-    status: { stringValue: record.status },
-    planId: record.planId ? { stringValue: record.planId } : { nullValue: null },
-    productId: record.productId ? { stringValue: record.productId } : { nullValue: null },
-    whopUserId: record.whopUserId ? { stringValue: record.whopUserId } : { nullValue: null },
-    cancelAtPeriodEnd: { booleanValue: record.cancelAtPeriodEnd },
-    lastEventType: { stringValue: record.eventType },
-    lastEventId: record.eventId ? { stringValue: record.eventId } : { nullValue: null },
-    updatedAt: { timestampValue: new Date().toISOString() },
+    membershipId: { stringValue: event.membershipId },
+    status: { stringValue: event.status },
+    planId: event.planId ? { stringValue: event.planId } : { nullValue: null },
+    productId: event.productId ? { stringValue: event.productId } : { nullValue: null },
+    whopUserId: event.whopUserId ? { stringValue: event.whopUserId } : { nullValue: null },
+    cancelAtPeriodEnd: { booleanValue: event.cancelAtPeriodEnd },
+    eventType: { stringValue: event.eventType },
+    eventTimestamp: { timestampValue: event.eventTimestamp },
+    receivedAt: { timestampValue: new Date().toISOString() },
   };
   try {
-    await setDocumentFields(config, WHOP_MEMBERSHIP_COLLECTION, record.membershipId, fields);
+    // "exists" means Whop sent this event before: already stored, nothing to do.
+    await createDocument(
+      config,
+      membershipEventsCollection(event.membershipId),
+      event.eventId,
+      fields
+    );
     return reply({ received: true, handled: true }, 200);
   } catch (error) {
     if (error instanceof GcpAuthError) {

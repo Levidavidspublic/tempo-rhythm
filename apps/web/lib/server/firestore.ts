@@ -72,27 +72,3 @@ export async function createDocument(
   }
   return "created";
 }
-
-/** Writes `collection/documentId`, replacing only the given fields (creates it when missing). */
-export async function setDocumentFields(
-  config: GcpConfig,
-  collection: string,
-  documentId: string,
-  fields: FirestoreFields,
-  deps: Partial<Deps> = {}
-): Promise<void> {
-  const { fetch: doFetch, getAccessToken } = { ...defaultDeps, ...deps };
-  const token = await getAccessToken(config, FIRESTORE_SCOPE);
-  const mask = Object.keys(fields)
-    .map((name) => `updateMask.fieldPaths=${encodeURIComponent(name)}`)
-    .join("&");
-  const url = `${documentsUrl(config)}/${collection}/${encodeURIComponent(documentId)}?${mask}`;
-  const response = await doFetch(url, {
-    method: "PATCH",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ fields }),
-  });
-  if (!response.ok) {
-    throw new FirestoreError(response.status, await googleErrorDetail(response));
-  }
-}

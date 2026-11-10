@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { createDocument, FirestoreError, setDocumentFields } from "./firestore";
+import { createDocument, FirestoreError } from "./firestore";
 import {
   clearGcpTokenCache,
   GcpAuthError,
@@ -159,20 +159,5 @@ describe("firestore writes", () => {
     expect((error as FirestoreError).detail).toBe(
       "PERMISSION_DENIED: Missing or insufficient permissions."
     );
-  });
-
-  test("updates only the fields it is given", async () => {
-    const { calls, fetch } = recorder([Response.json({})]);
-    await setDocumentFields(
-      config,
-      "whopMemberships",
-      "mem_1",
-      { status: { stringValue: "trialing" } },
-      { fetch, getAccessToken }
-    );
-    expect(calls[0]?.url).toBe(
-      "https://firestore.googleapis.com/v1/projects/demo-project/databases/(default)/documents/whopMemberships/mem_1?updateMask.fieldPaths=status"
-    );
-    expect(calls[0]?.init?.method).toBe("PATCH");
   });
 });

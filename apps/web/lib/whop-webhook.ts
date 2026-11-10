@@ -88,31 +88,62 @@ const HANDLED_TYPES = new Set([
 ]);
 const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
-export type MembershipRecord = {
+/**
+ * One membership event, as we store it. Whop does not guarantee delivery order and may deliver an
+ * event more than once (https://docs.whop.com/developer/guides/webhooks, "Delivery"), so events
+ * are never merged into one "current" document. Each event is its own document, keyed by Whop's
+ * event id: a repeat lands on the same document, and a late older event cannot replace a newer
+ * one. The membership's current state is the event with the latest `eventTimestamp`.
+ */
+export type MembershipEvent = {
   membershipId: string;
+  /** Whop's id for this event (`webhook-id`): the same on every retry of the same event. */
+  eventId: string;
+  /** When Whop created the event (ISO 8601), not when it reached us. */
+  eventTimestamp: string;
+  eventType: string;
   status: WhopMembershipStatus;
   planId: string | null;
   productId: string | null;
   whopUserId: string | null;
   cancelAtPeriodEnd: boolean;
-  eventId: string | null;
-  eventType: string;
 };
+
+/** Where one event is stored: `whopMemberships/{membershipId}/events/{eventId}`. */
+export function membershipEventsCollection(membershipId: string): string {
+  return `${WHOP_MEMBERSHIP_COLLECTION}/${membershipId}/events`;
+}
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value !== "" ? value : null;
 }
 
+/** The event's own time: the envelope's ISO `timestamp`, else the signed `webhook-timestamp` header. */
+function eventTime(bodyTimestamp: unknown, headerTimestamp: string | null): string | null {
+  const fromBody = text(bodyTimestamp);
+  if (fromBody && Number.isFinite(Date.parse(fromBody))) {
+    return new Date(fromBody).toISOString();
+  }
+  const seconds = Number(headerTimestamp);
+  if (headerTimestamp && Number.isFinite(seconds) && seconds > 0) {
+    return new Date(seconds * 1000).toISOString();
+  }
+  return null;
+}
+
 /**
- * Maps a Whop event to the membership record we store, or null when the event is not one we keep.
- * Reads only documented membership fields. The plan id is `variant_id` on current payloads and
+ * Maps a verified Whop request to the membership event we store, or null when it is not one we
+ * keep. Reads only documented fields. The plan id is `variant_id` on current payloads and
  * `plan_id` on webhooks pinned before 2026-10-27.
  */
-export function mapWhopEvent(body: unknown): MembershipRecord | null {
+export function mapWhopEvent(
+  body: unknown,
+  headers: Pick<WhopHeaders, "id" | "timestamp">
+): MembershipEvent | null {
   if (!body || typeof body !== "object") {
     return null;
   }
-  const event = body as { id?: unknown; type?: unknown; data?: unknown };
+  const event = body as { id?: unknown; type?: unknown; timestamp?: unknown; data?: unknown };
   const eventType = text(event.type);
   if (
     !eventType ||
@@ -125,9 +156,14 @@ export function mapWhopEvent(body: unknown): MembershipRecord | null {
   const data = event.data as Record<string, unknown>;
   const membershipId = text(data.id);
   const status = text(data.status) as WhopMembershipStatus | null;
+  const eventId = text(headers.id) ?? text(event.id);
+  const eventTimestamp = eventTime(event.timestamp, headers.timestamp);
   if (
     !membershipId ||
     !SAFE_ID.test(membershipId) ||
+    !eventId ||
+    !SAFE_ID.test(eventId) ||
+    !eventTimestamp ||
     !status ||
     !WHOP_MEMBERSHIP_STATUSES.includes(status)
   ) {
@@ -135,12 +171,13 @@ export function mapWhopEvent(body: unknown): MembershipRecord | null {
   }
   return {
     membershipId,
+    eventId,
+    eventTimestamp,
+    eventType,
     status,
     planId: text(data.variant_id) ?? text(data.plan_id),
     productId: text(data.product_id),
     whopUserId: text(data.user_id),
     cancelAtPeriodEnd: data.cancel_at_period_end === true,
-    eventId: text(event.id),
-    eventType,
   };
 }
