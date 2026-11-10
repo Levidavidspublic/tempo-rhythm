@@ -76,10 +76,10 @@ export async function POST(request: Request): Promise<Response> {
     if (error instanceof GcpAuthError) {
       logServerProblem(
         "whop webhook",
-        `keyless auth stopped at ${error.step} (status ${error.status})`
+        `keyless auth stopped at ${error.step} (status ${error.status}) ${error.detail}`
       );
     } else if (error instanceof FirestoreError) {
-      logServerProblem("whop webhook", `Firestore answered ${error.status}`);
+      logServerProblem("whop webhook", `Firestore answered ${error.status} ${error.detail}`);
     } else {
       logServerProblem("whop webhook", "write did not complete");
     }

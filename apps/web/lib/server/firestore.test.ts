@@ -92,6 +92,29 @@ describe("keyless Google access", () => {
     await expect(failing).rejects.toBeInstanceOf(GcpAuthError);
     expect(noToken.calls).toHaveLength(0);
   });
+  test("keeps Google's reason and what the token claims, never the token itself", async () => {
+    const claims = btoa(
+      JSON.stringify({ iss: "https://issuer.example", aud: "https://aud.example", sub: "owner:x" })
+    ).replace(/=+$/, "");
+    const token = `header.${claims}.signature-part`;
+    const denied = recorder([
+      Response.json(
+        { error: "invalid_target", error_description: "audience does not match" },
+        { status: 400 }
+      ),
+    ]);
+    const error = await getGcpAccessToken(config, "s", {
+      fetch: denied.fetch,
+      getOidcToken: async () => token,
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(GcpAuthError);
+    const detail = (error as GcpAuthError).detail;
+    expect(detail).toContain("invalid_target: audience does not match");
+    expect(detail).toContain("aud=https://aud.example");
+    expect(detail).toContain("sub=owner:x");
+    expect(detail).not.toContain("signature-part");
+    expect(detail).not.toContain(token);
+  });
 });
 
 describe("firestore writes", () => {
@@ -113,10 +136,25 @@ describe("firestore writes", () => {
     expect(new Headers(calls[0]?.init?.headers).get("authorization")).toBe("Bearer sa-token");
   });
 
-  test("reports a refusal with its status", async () => {
-    const { fetch } = recorder([new Response("{}", { status: 403 })]);
-    const write = createDocument(config, "waitlist", "abc", {}, { fetch, getAccessToken });
-    await expect(write).rejects.toBeInstanceOf(FirestoreError);
+  test("reports a refusal with its status and Google's reason", async () => {
+    const { fetch } = recorder([
+      Response.json(
+        { error: { status: "PERMISSION_DENIED", message: "Missing or insufficient permissions." } },
+        { status: 403 }
+      ),
+    ]);
+    const error = await createDocument(
+      config,
+      "waitlist",
+      "abc",
+      {},
+      { fetch, getAccessToken }
+    ).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(FirestoreError);
+    expect((error as FirestoreError).status).toBe(403);
+    expect((error as FirestoreError).detail).toBe(
+      "PERMISSION_DENIED: Missing or insufficient permissions."
+    );
   });
 
   test("updates only the fields it is given", async () => {

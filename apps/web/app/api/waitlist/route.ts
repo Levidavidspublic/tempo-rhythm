@@ -69,10 +69,10 @@ export async function POST(request: Request): Promise<Response> {
     if (error instanceof GcpAuthError) {
       logServerProblem(
         "waitlist",
-        `keyless auth stopped at ${error.step} (status ${error.status})`
+        `keyless auth stopped at ${error.step} (status ${error.status}) ${error.detail}`
       );
     } else if (error instanceof FirestoreError) {
-      logServerProblem("waitlist", `Firestore answered ${error.status}`);
+      logServerProblem("waitlist", `Firestore answered ${error.status} ${error.detail}`);
     } else {
       logServerProblem("waitlist", "write did not complete");
     }

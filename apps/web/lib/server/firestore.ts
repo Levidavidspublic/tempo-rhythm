@@ -1,4 +1,9 @@
-import { type FetchLike, type GcpConfig, getGcpAccessToken } from "./gcp-access-token";
+import {
+  type FetchLike,
+  type GcpConfig,
+  getGcpAccessToken,
+  googleErrorDetail,
+} from "./gcp-access-token";
 
 /**
  * Minimal Cloud Firestore access for Vercel functions, over the REST API with native fetch.
@@ -26,7 +31,11 @@ const defaultDeps: Deps = {
 };
 
 export class FirestoreError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    /** Google's own reason for a refusal, shortened. */
+    readonly detail: string = ""
+  ) {
     super(`Firestore answered ${status}`);
     this.name = "FirestoreError";
   }
@@ -59,7 +68,7 @@ export async function createDocument(
     return "exists";
   }
   if (!response.ok) {
-    throw new FirestoreError(response.status);
+    throw new FirestoreError(response.status, await googleErrorDetail(response));
   }
   return "created";
 }
@@ -84,6 +93,6 @@ export async function setDocumentFields(
     body: JSON.stringify({ fields }),
   });
   if (!response.ok) {
-    throw new FirestoreError(response.status);
+    throw new FirestoreError(response.status, await googleErrorDetail(response));
   }
 }

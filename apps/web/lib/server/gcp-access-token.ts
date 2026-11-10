@@ -52,10 +52,49 @@ function providerPath(config: GcpConfig): string {
 export class GcpAuthError extends Error {
   constructor(
     readonly step: "oidc" | "sts" | "impersonate",
-    readonly status: number
+    readonly status: number,
+    /** Google's own reason for a refusal, shortened. Identifiers only: never a token. */
+    readonly detail: string = ""
   ) {
     super(`Google Cloud keyless auth stopped at "${step}" (status ${status})`);
     this.name = "GcpAuthError";
+  }
+}
+
+const MAX_DETAIL = 300;
+
+/**
+ * Google's reason from an error response, for the server log. Reads the two documented shapes:
+ * `{ error, error_description }` (STS) and `{ error: { status, message } }` (other Google APIs).
+ */
+export async function googleErrorDetail(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as {
+      error?: string | { status?: string; message?: string };
+      error_description?: string;
+    };
+    const parts =
+      typeof body.error === "string"
+        ? [body.error, body.error_description]
+        : [body.error?.status, body.error?.message];
+    return parts
+      .filter((part): part is string => typeof part === "string" && part !== "")
+      .join(": ")
+      .slice(0, MAX_DETAIL);
+  } catch {
+    return "";
+  }
+}
+
+/** The issuer, audience and subject a token claims: what the pool provider checks. Not the token. */
+function tokenClaims(token: string): string {
+  try {
+    const payload = token.split(".")[1] ?? "";
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const { iss, aud, sub } = JSON.parse(json) as Record<string, unknown>;
+    return `token iss=${String(iss)} aud=${String(aud)} sub=${String(sub)}`.slice(0, MAX_DETAIL);
+  } catch {
+    return "";
   }
 }
 
@@ -115,7 +154,10 @@ export async function getGcpAccessToken(
     }),
   });
   if (!sts.ok) {
-    throw new GcpAuthError("sts", sts.status);
+    const reason = [await googleErrorDetail(sts), tokenClaims(subjectToken)]
+      .filter(Boolean)
+      .join(" | ");
+    throw new GcpAuthError("sts", sts.status, reason);
   }
   const federated = ((await sts.json()) as { access_token?: string }).access_token;
   if (!federated) {
@@ -131,7 +173,11 @@ export async function getGcpAccessToken(
     }
   );
   if (!impersonated.ok) {
-    throw new GcpAuthError("impersonate", impersonated.status);
+    throw new GcpAuthError(
+      "impersonate",
+      impersonated.status,
+      await googleErrorDetail(impersonated)
+    );
   }
   const body = (await impersonated.json()) as { accessToken?: string; expireTime?: string };
   if (!body.accessToken) {
