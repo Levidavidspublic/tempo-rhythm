@@ -28,8 +28,8 @@ Before you finish, run all of these from the repo root, in order. Run every step
 3. `bun run typecheck`
 4. `bun run test`
 5. `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices`
-6. `CI=1 bunx playwright test --reporter=line`. `playwright.config.ts` starts the web dev server on `localhost:3000` with mock values (placeholder Convex URL, E2E auth bypass). Tests that need `TEMPO_E2E_STORAGE_STATE` or `PLAYWRIGHT_BASE_URL` skip; that is expected.
-7. `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build`.
+6. `CI=1 bunx playwright test --reporter=line`. `playwright.config.ts` starts the web dev server on `localhost:3000` with mock values (placeholder backend URL, E2E auth bypass). Tests that need `TEMPO_E2E_STORAGE_STATE` or `PLAYWRIGHT_BASE_URL` skip; that is expected.
+7. `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build`. The placeholder is still needed: screens that are not ported to Firebase yet load the old Convex client when the app is built.
 
 Sandbox network failures are `UNKNOWN`, not code failures:
 - Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`) blocked or unreachable, in the build or the dev server: report `UNKNOWN: <command> (Google Fonts blocked)`.
@@ -37,14 +37,14 @@ Sandbox network failures are `UNKNOWN`, not code failures:
 
 Don't:
 - set `PLAYWRIGHT_BASE_URL`, or run tests against a preview or live URL;
-- use real keys, or run `convex dev`, `convex deploy` or any `convex:*` script;
+- use real keys, deploy anything to Firebase (`firebase deploy`), or run `convex dev`, `convex deploy` or any `convex:*` script;
 - edit test config, CI files or scan baselines, or skip tests, to get green.
 
 Report the results in the PR body (or your final message when you're not opening a PR) under `Test results (cloud agent sandbox)`: the Bun version used, then each command with pass, fail or skip counts, plus the last 20 lines of any failure. Anything you could not run goes in as `UNKNOWN: <command> (<reason>)`.
 
 ## Layout
 - `packages/backend` — schema and backend functions. Only a batch's backend ticket edits this.
-- In this repo the backend folder is the one named in SLOTS.md (tempo: convex/).
+- In this repo there is no `packages/backend`. The backend is Firebase (see **Backend: Firebase** below). The old Convex backend is in `convex/` and is frozen.
 - `packages/core` — shared logic. No UI, no platform APIs.
 - `packages/ui` — shared components, built on the design system named in SLOTS.md.
 - `apps/<shell>` — thin shells (web, mobile, desktop, extension). Shells differ only in OS-access features.
@@ -72,7 +72,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 1. One ticket = one folder, one branch, one PR. Branch name: `t/<issue-number>-<short-slug>`.
 2. Touch only files listed in SCOPE. If the work truly needs more, stop and report `blocked: scope overflow`. Don't split the ticket yourself.
 3. Change only the systems named in MUTATES. A change outside MUTATES fails the checks.
-4. Component tickets never edit the backend folder named in `factory/SLOTS.md` (tempo: `convex/`; scope-guard fails the PR unless the owner labels it `convex-arch`). Call the functions the loop's ticket 0 (backend architecture ticket) defines. If one is missing, report `blocked: missing backend <function>`.
+4. Component tickets never edit the backend: the Firebase rules and settings (`firestore.rules`, `firestore.indexes.json`, `firebase.json`, `.firebaserc`) or the frozen `convex/` folder. Use the Firestore paths and server routes the loop's ticket 0 (backend architecture ticket) defines. If one is missing, report `blocked: missing backend <path or route>`. Scope-guard enforces this for `convex/` only (it fails the PR unless the owner labels it `convex-arch`); it does not guard the Firebase files yet, so follow the rule anyway.
 5. You are done when the DONE command prints its expected output and all checks are green. Paste both into the PR as EVIDENCE.
 6. A mock or demo key never proves DONE when DONE names a real check.
 7. Anything you could not verify goes in the PR as `UNKNOWN: <what>`. Never fill a gap with a plausible guess.
@@ -82,9 +82,17 @@ A model named in a ticket is labelled either `code model` (the model that writes
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
 12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 
-## Merging and Firebase (Amit, 2026-11-08)
+## Merging (Amit, 2026-11-08)
 - Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so.
-- Firebase is allowed. A change may move to production once it is proven in preview.
+
+## Backend: Firebase (Amit, 2026-11-10)
+The backend is Firebase. Convex is the old backend and is frozen. If `factory/SLOTS.md` still names Convex in its Backend row, this section wins.
+- **Sign-in:** Firebase Auth, email link.
+- **Data:** Firestore. A person's own data lives under `users/{uid}/...` and the app reads and writes it with the Firestore client SDK. Secrets, billing state and authorization fields live under `private/...`; only server routes touch them. The map is `docs/backlog/FIREBASE-DATA-MODEL.md`.
+- **Server routes:** `apps/web/app/api/**`. They reach Google with the keyless access in `apps/web/lib/server/`. There are no service-account keys: never create one.
+- **Rules and settings:** `firestore.rules` (deny by default), `firestore.indexes.json`, `firebase.json`, `.firebaserc`. Env names are in `docs/backlog/FIREBASE-ENV-MAPPING.md`.
+- **Convex is frozen.** Don't edit `convex/`, don't deploy it, and build nothing new on it. Screens that still read Convex keep working until their port ticket lands; the port order is in the data-model doc.
+- A change may move to production once it is proven in preview (Amit, 2026-11-08). Deploying rules or settings to the production Firebase project is the owner's job, like any deploy to live.
 
 ## Never — and what enforces it
 These are explained here and enforced elsewhere. Each item names its enforcement, which is listed in SLOTS.md → Enforcement.
@@ -128,10 +136,10 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 
 1. **Quiet hours:** don't start anything new between 22:00 and 09:00 Asia/Jerusalem. Work already running may finish. No new branches, PRs or comments in those hours.
 2. **Where tickets live:** GitHub issues in this repo labelled `status:ready` + `needs:manual-run` + an `agent:*` label. Only take an issue whose `agent:*` label matches you (`agent:freebuff`, `agent:opencode`).
-3. **Read before you code:** the whole issue and its comments (FOR / GOAL / SCOPE / DONE), this AGENTS.md, `RULES.md`, and `.github/workflows/*`, so you know which checks must pass (ci, e2e-preview, secret-scan, config-guard, scope-guard).
+3. **Read before you code:** the whole issue and its comments (FOR / GOAL / SCOPE / DONE), this AGENTS.md, `docs/HARD_RULES.md`, and `.github/workflows/*`, so you know which checks must pass (ci, e2e-preview, secret-scan, config-guard, scope-guard).
 4. **Branch:** `t/<issue>-<ticket-id-lowercase>` off `integration`, e.g. `t/712-b04-03`, the factory's name (`ticketBranch()` in `scripts/factory/factory-lib.mjs`). If the branch already exists, continue on it.
 5. **PR:** a **draft** PR **into `integration`** (never `master` or `live`), opened as Division6066, with `Closes #<issue>` in the body. One ticket per PR. Then remove `needs:manual-run` and the `agent:*` label, and add `status:in-pr`.
 6. **CI must pass:** run `bun run lint`, `bun run typecheck`, `bun run test` and the ticket's DONE commands locally first. A PR with red CI isn't done: fix it, or comment that you're blocked.
-7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
+7. **Stay in scope:** only touch the ticket's SCOPE folders. **No backend edits** (Firebase rules, indexes and settings, env, deployments) unless the issue is a **Ticket 0** (backend architecture ticket). **No Convex edits at all:** `convex/` is frozen.
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.

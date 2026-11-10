@@ -20,18 +20,18 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 
 | Category | Forbidden | Use instead |
 |---|---|---|
-| Backend-as-a-Service | Supabase | Convex or Firebase (see below) |
-| ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
-| Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
+| Backend-as-a-Service | Supabase | Firebase: Firebase Auth + Firestore (see below) |
+| ORM | Prisma, Drizzle, TypeORM, Mongoose | Plain Firestore documents with TypeScript types. Check input in the server route (by hand or with `zod`, already a dependency) and in `firestore.rules` |
+| Auth | Auth0, Clerk, NextAuth, BetterAuth | Firebase Auth (email link) |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
 | AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Mistral API via native `fetch` against `https://api.mistral.ai/v1/chat/completions` |
-| Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries are the state |
+| Client state | Redux, Zustand, Jotai, Recoil, MobX | Firestore live reads (`onSnapshot`) are the state |
 | HTTP | Axios, ky, got | Native `fetch` |
-| Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions |
+| Direct DB clients | `mongodb`, `pg`, `mysql2` | Firestore: the client SDK for a person's own data under `users/{uid}`, server routes for everything else |
 | Styling | A second global utility-CSS stack on web, or downgrading `apps/web` off Tailwind v4 | **Web:** Tailwind CSS v4 (`@tailwindcss/postcss`). **Mobile:** NativeWind 4 with Tailwind 3.x in `apps/mobile` |
-| Task trackers in agent spine | Notion, Linear, Airtable | GitHub Issues + GitHub Projects + `TASKS.md` + Convex `agent_*` tables + Discord |
+| Task trackers in agent spine | Notion, Linear, Airtable | GitHub Issues + GitHub Projects + `TASKS.md` + Discord |
 
-**Firebase is allowed.** A change may move to production once it is proven in preview. (Amit, 2026-11-08. Supersedes the earlier Firebase ban in this table.)
+**Firebase is the backend (Amit, 2026-11-10).** Convex was the backend before and is frozen: no edits to `convex/`, no Convex deploys, nothing new built on it. The Convex packages stay installed and are not forbidden tech, because screens that are not ported yet still read Convex. They keep working until their port lands; the order is in `docs/backlog/FIREBASE-DATA-MODEL.md`. A change may move to production once it is proven in preview (Amit, 2026-11-08, which also lifted the earlier Firebase ban in this table).
 
 If you believe you need one of these, open an issue first with the specific justification. Do not add it on your own authority.
 
@@ -53,7 +53,8 @@ If you believe you need one of these, open an issue first with the specific just
 - React components: `PascalCase.tsx` (e.g. `TaskCard.tsx`, `CoachPanel.tsx`).
 - Hooks: `useThing.ts`.
 - Non-component TypeScript modules: `kebab-case.ts` (e.g. `parse-brain-dump.ts`, `confidence-router.ts`).
-- Convex files: `kebab-case.ts` inside `convex/` (e.g. `convex/tasks.ts`, `convex/coach.ts`). **Exception:** multi-word modules must use `snake_case.ts` because the Convex platform rejects hyphens in module paths (e.g. `convex/lib/ai_router.ts`, not `ai-router.ts`).
+- Server routes: Next conventions under `apps/web/app/api/<name>/route.ts` (e.g. `apps/web/app/api/waitlist/route.ts`). Server-only helpers: `kebab-case.ts` in `apps/web/lib/server/` (e.g. `gcp-access-token.ts`).
+- Old Convex files (frozen, for reading only) are `kebab-case.ts` inside `convex/`; multi-word modules there are `snake_case.ts` (e.g. `convex/lib/ai_router.ts`), because Convex rejects hyphens in module paths.
 - Route files (Next.js app router): Next conventions (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`).
 
 ### Identifiers
@@ -61,8 +62,8 @@ If you believe you need one of these, open an issue first with the specific just
 - Variables and functions: `camelCase`.
 - Types and interfaces: `PascalCase`. Prefer `type` aliases over `interface` unless you need declaration merging.
 - Constants: `SCREAMING_SNAKE_CASE` only for genuine compile-time constants (e.g. `MAX_BRAIN_DUMP_LENGTH`). Everything else is `camelCase`.
-- Convex table names: plural, no prefix. `tasks`, `notes`, `journalEntries`, `libraryItems`, `coachMessages`. **Not** `t_tasks`, `tbl_notes`, etc.
-- Convex query/mutation/action names: `camelCase` verbs. `listByUser`, `createTask`, `completeHabit`, `generatePlan`.
+- Firestore collection names: plural `camelCase`, no prefix. `tasks`, `notes`, `journalEntries`, `libraryItems`, `coachMessages`. **Not** `t_tasks`, `tbl_notes`, etc.
+- Names of functions that read or write data: `camelCase` verbs. `listTasks`, `createTask`, `completeHabit`, `generatePlan`.
 
 ### Branch names
 
@@ -80,41 +81,42 @@ If you believe you need one of these, open an issue first with the specific just
 
 ## 5. Schema rules
 
-Every Convex table must have, at minimum:
+The data lives in Firestore. The map from the old Convex tables to Firestore paths is `docs/backlog/FIREBASE-DATA-MODEL.md`; where it and this section differ on a path, the map wins.
+
+Every document a person owns must have, at minimum:
 
 ```ts
-import { defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export const tasks = defineTable({
-  // Ownership — optional for Convex Auth transitional state and anonymous usage.
-  userId: v.optional(v.string()),
-
+// users/{uid}/tasks/{docId}
+// The uid in the path is the owner. There is no userId field.
+type TaskDoc = {
   // Soft-delete + audit
-  createdAt: v.number(),   // Date.now() at insert
-  updatedAt: v.number(),   // Date.now() at every mutation
-  deletedAt: v.optional(v.number()), // null/undefined = live; number = soft-deleted at
+  createdAt: number; // Date.now() at insert
+  updatedAt: number; // Date.now() at every write
+  deletedAt?: number; // missing = live; number = soft-deleted at
 
   // ...domain fields
-})
-  .index("by_user", ["userId", "deletedAt"])
-  .index("by_user_updated", ["userId", "updatedAt"]);
+};
 ```
 
 Rules:
 
-- **`userId` is `v.optional(v.string())`** on every table. Never `v.string()` (non-optional). Convex Auth has transitional states and some tables predate sign-in (e.g. onboarding brain dumps).
-- **Every write sets `updatedAt: Date.now()`.** Never rely on Convex's internal timestamps for user-visible sort order.
+- **The path is the owner.** A person's own data lives at `users/{uid}/{collection}/{docId}`, where `uid` is the Firebase Auth user id. Never store a `userId` field to say who owns a document, and never read it to decide access.
+- **Secrets and gates are private.** Token ciphertext, token hashes, OAuth secrets, authorization fields (`role`, `approvalStatus`, `isActive`, ...), billing state and shared counters live under `private/...`. `firestore.rules` denies that tree to every client; only server routes read or write it. Never put such a field under `users/{uid}`: the owner rule would let the person edit it.
+- **Deny by default.** `firestore.rules` closes everything except a person's own `users/{uid}` tree. A new top-level collection is server-only unless a rules change in the same PR says otherwise, and a rules change is a backend change (AGENTS.md rule 4).
+- **Every write sets `updatedAt: Date.now()`.** Never rely on Firestore's own write time for user-visible sort order.
 - **Soft delete only.** Hard deletes are forbidden except for: RAM-only scanner staging rows, expired rate-limit buckets, and test fixtures. All user-visible data soft-deletes via `deletedAt`. Restore must be possible.
-- **Indexes are mandatory.** Every table that is queried by `userId` has a `by_user` index. Do not scan.
-- **Generic schema.** Do not add columns like `recipe_ingredients_json` or `routine_morning_block_id`. Those are `libraryItems` with a `type` field and a flexible `content` field. The AI layer handles per-user formatting.
-- **Enumerations as `v.union` of literal strings**, not free-form strings. Example: `status: v.union(v.literal("todo"), v.literal("doing"), v.literal("done"), v.literal("archived"))`.
-- **References are `v.id("otherTable")`** not raw strings.
-- **No per-user variant tables.** Never `tasks_user_123`. All users share one `tasks` table; `userId` discriminates.
+- **Query through an index.** Never read a whole collection and filter in code. A query that needs a composite index declares it in `firestore.indexes.json` in the same PR.
+- **Generic schema.** Do not add fields like `recipe_ingredients_json` or `routine_morning_block_id`. Those are `libraryItems` with a `type` field and a flexible `content` field. The AI layer handles per-user formatting.
+- **Enumerations are a union of literal strings**, not free-form strings, and are checked on write. Example: `status: "todo" | "doing" | "done" | "archived"`.
+- **References store the other document's id** in a field named for what it points to (`noteId`, `conversationId`), not a copy of the other document. (EXTRAPOLATED from the data model, which keeps the Convex field names. Whether to use Firestore's reference type instead is not decided.)
+- **No variant collections.** Never `tasks_v2` or `tasks_pro`. Every person's tasks are at `users/{uid}/tasks`.
 
-### Current repository (until migration tasks)
+### Current repository (until the ports land)
 
-Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That is acceptable until `docs/brain/TASKS.md` reconciliation migrates toward the optional-string `userId` pattern for anonymous onboarding. New code should prefer the PRD target when adding tables.
+- `convex/schema.ts` is still the field reference: the Firestore fields are the same, minus `userId`. `convex/` is frozen (§2).
+- Screens that are not ported yet still read and write Convex. Port them in the order the data-model doc gives, one PR each.
+- Server-only collections that exist today: `waitlist` and `whopMemberships`, written by `apps/web/app/api/waitlist/route.ts` and `apps/web/app/api/whop/webhook/route.ts`.
+- The rules on `integration` check only the uid. The data-model doc describes the stricter owner rule that also checks the account gate; it is not written or deployed yet.
 
 ---
 
@@ -122,7 +124,7 @@ Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That i
 
 ### 6.1 Routing
 
-- All LLM calls go through `convex/lib/ai_router.ts` using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. No vendor SDKs. When a second consumer appears outside `convex/`, migrate the router to `packages/ai/src/router.ts` (same API).
+- All LLM calls go through one router using native `fetch` against `https://api.mistral.ai/v1/chat/completions`. No vendor SDKs. The router today is `convex/lib/ai_router.ts`, which is frozen with the rest of `convex/`. A new LLM call is made from a server route through the same router API at `packages/ai/src/router.ts`. That package does not exist yet: the first ticket that needs it ports the router there, unchanged.
 - Three tiers, explicit at every call site:
   - **`fast` → `mistral-small-latest`** — classification, extraction, tagging, short chat turns, accept-reject card copy, confidence scoring.
   - **`balanced` → `mistral-medium-latest`** — coach conversations, planning sessions, brain-dump parsing, rewrites, journal reflection.
@@ -133,9 +135,9 @@ Several tables today use **`userId: v.id("users")`** tied to Convex Auth. That i
 
 ### 6.2 Accept-reject flow
 
-- Every AI-originating mutation goes through `convex/proposals.ts` — it inserts a proposal row, the UI renders a confirm / edit / reject card, and only on confirm does the real mutation run.
+- Every AI-originating change is first written as a proposal document (`users/{uid}/coachProposals`, `users/{uid}/pageProposals`). The UI renders a confirm / edit / reject card, and only on confirm does the real write run.
 - The proposal payload must be a structured preview the UI can render, not a blob of model text.
-- **Never call a mutation directly from an `action` with AI-generated arguments and no user confirm.**
+- **Never let a server route write AI-generated values into a person's data with no user confirm.**
 
 ### 6.3 Confidence router
 
@@ -151,15 +153,15 @@ High-stakes categories (calendar events with real-world consequences, deletions,
 
 Any ingestion of third-party content (email, WhatsApp, Telegram, ChatGPT export, Claude conversation export, Obsidian vault, Apple Notes) must process in memory only:
 
-- Raw message bodies **never** write to disk or Convex.
-- The scanner extracts structured candidates (task, event, commitment, person mention), surfaces them for user approval via the accept-reject flow, and discards the source bytes when the action returns.
+- Raw message bodies **never** write to disk, to Firestore, to logs or to any other store.
+- The scanner extracts structured candidates (task, event, commitment, person mention), surfaces them for user approval via the accept-reject flow, and discards the source bytes when the request ends.
 - Only the approved, derived records persist.
 - If a user re-connects an integration, the scanner re-runs on the live source; there is no "historical cache" of raw content.
 - Document the scanner entry point with a `// RAM-ONLY` comment and include a linter check (`bun run scan:ram-only-audit`) that fails if a scanner function persists raw content.
 
 ### 6.5 Coach personality setting
 
-- `profiles.coachDial: v.number()` in the range `[0, 10]`, default `5`.
+- `profiles.coachDial`: a number in the range `[0, 10]`, default `5`.
 - `0` = warm, gentle, wisdom-forward mentor; `5` = peer friend; `10` = high-intensity accountability archetype (stern and direct).
 - The user may override per session via the coach-settings panel.
 - The system prompt for the coach includes a line: `"Current accountability dial: N / 10. Match tone accordingly."`
@@ -169,8 +171,8 @@ Any ingestion of third-party content (email, WhatsApp, Telegram, ChatGPT export,
 
 - Global RAG: default retrieval is hybrid — recent time-window (7 days) union semantic top-K union graph neighbors of any entity mentioned in the prompt.
 - Scoped RAG (Tempo 1.5): when the user is in a notebook-scope session, retrieval is constrained to the selected notes, folders, projects, or tags.
-- User setting `ragScope: v.union(v.literal("global"), v.literal("scoped"))` with scoped subject stored separately.
-- Never include raw PII from other users in retrieval context. Tenant isolation is enforced at the Convex query layer (`userId` filter) before retrieval, not after.
+- User setting `ragScope: "global" | "scoped"` with scoped subject stored separately.
+- Never include raw PII from other users in retrieval context. Tenant isolation comes from the path: retrieval reads only under `users/{uid}/...` for the signed-in uid. It is enforced before retrieval, not after.
 
 ---
 
@@ -225,7 +227,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
   - Basic: 30 minutes per day
   - Pro: 90 minutes per day
   - Max: 180 minutes per day
-- **Tracking is in minutes of real audio**, not tokens. A `voiceSessions` row opens on session start with `startedAt`, closes with `endedAt`, and computes `durationMs`. The daily budget is the sum of `durationMs` for the user's local calendar day.
+- **Tracking is in minutes of real audio**, not tokens. A voice session document opens on session start with `startedAt`, closes with `endedAt`, and computes `durationMs`. It is server-only (`private/{uid}/voiceLeases/{docId}`): the client never writes it, because the shared daily cap is summed from these documents. The daily budget is the sum of `durationMs` for the user's local calendar day.
 - Daily budgets reset at the user's local midnight (derived from `profiles.timezone`).
 - Session start checks available budget; if < 1 minute remains, walkie-talkie remains available, live voice is gated behind an upgrade prompt.
 
@@ -234,20 +236,21 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 ## 10. Privacy and compliance rules
 
 - **GetTerms.io IDs** live in Vercel / EAS env vars: `TEMPO_GETTERMS_PRIVACY_ID`, `TEMPO_GETTERMS_TERMS_ID`, `TEMPO_GETTERMS_COOKIES_ID`. They are embedded in `app/(legal)/*` routes.
-- **DSR (Data Subject Request) button** lives at Settings → Account → Privacy. Clicking it triggers `convex/dsr.ts:requestDataExport` or `requestAccountDeletion`, which enqueue a job.
-- **Data export** produces a ZIP of the user's data as JSON files, one per table. Generated by a Convex action, stored in Convex file storage, link emailed via Resend.
-- **Account deletion** soft-deletes immediately (all rows for that `userId` set `deletedAt = Date.now()`), with a 30-day grace window where the user can restore. After 30 days, a scheduled job hard-deletes.
+- **DSR (Data Subject Request) button** lives at Settings → Account → Privacy. Clicking it calls a server route that queues a data export or an account deletion. (UNKNOWN: these routes are not built on Firebase yet.)
+- **Data export** produces a ZIP of the user's data as JSON files, one per collection. Generated by a server route, link emailed via Resend. Where the ZIP is stored is UNKNOWN: Firebase Storage is not enabled, and turning it on needs a paid plan, which is the owner's decision.
+- **Account deletion** soft-deletes immediately: the account gate `private/{uid}/account/gate` and every document under `users/{uid}` get `deletedAt = Date.now()`. There is a 30-day grace window where the user can restore. After 30 days, a scheduled job hard-deletes. (UNKNOWN: which scheduler runs that job.)
 - **Privacy mode** (Tempo 1.5): the user may flag their account as "privacy mode," which forces on-device inference, disables third-party analytics (PostHog opt-out), and defers all sync to manual moments.
-- **Analytics are opt-in.** `profiles.analyticsOptIn: v.boolean()`, default `false`. Opt-in is set in the onboarding privacy screen, and may be toggled in Settings → Privacy at any time.
+- **Analytics are opt-in.** `profiles.analyticsOptIn`: a boolean, default `false`. Opt-in is set in the onboarding privacy screen, and may be toggled in Settings → Privacy at any time.
 
 ---
 
 ## 11. Testing rules
 
-- Every new Convex mutation gets at least one test (`convex/<module>.test.ts`) — happy path + one error case minimum.
+- Every new server route and every new module that writes data gets at least one test beside it (`<module>.test.ts`) — happy path + one error case minimum.
+- A change to `firestore.rules` gets rule tests, allowed and denied cases, that pass before it is deployed anywhere. (EXTRAPOLATED: this is the Firebase form of the one-test-per-mutation rule. UNKNOWN: the repo has no rules-test command yet.)
 - Every React component with meaningful logic gets a render test with `@testing-library/react` (web) or `@testing-library/react-native` (mobile).
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
-- PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
+- PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`).
 - All of these must pass before merge.
 - **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
 
@@ -276,16 +279,17 @@ See `docs/ENVIRONMENTS.md` for the full four-mode contract (dev / test / preview
 - **`.env.example`** is the canonical list. Every new env var is added there with a placeholder and a one-line comment.
 - **Secret scanning** runs in CI (Gitleaks + TruffleHog in `.github/workflows/security.yml`). Never merge a PR where the scan fires.
 - **Mistral keys** are scoped per environment and rotated quarterly.
-- **RevenueCat** public keys are safe to ship client-side. Secret keys only in server-side Convex actions.
+- **RevenueCat** public keys are safe to ship client-side. Secret keys only in server routes.
+- **Firebase needs no secret.** The web config values (`NEXT_PUBLIC_FIREBASE_*`) are public. Server routes reach Google with keyless access (the `GCP_*` names in `docs/backlog/FIREBASE-ENV-MAPPING.md`). Never create, download or commit a service-account key.
 - **Four-mode contract.** Dev, test, preview, and deployment are different environments with different trust gates. See `docs/ENVIRONMENTS.md`.
-- **Env file precedence.** `.env.local` > Vercel/Convex/EAS dashboards > `.env.example` (names only, never values). Never create `.env` (without `.local`) in any app workspace.
+- **Env file precedence.** `.env.local` > Vercel / EAS dashboards > `.env.example` (names only, never values). Never create `.env` (without `.local`) in any app workspace.
 
 ---
 
 ## 13.5 Ship state
 
 - Every feature has exactly one state: `planned`, `coded`, `locally-tested`, `preview-tested`, or `shipped-and-running`.
-- An agent MUST NOT describe a feature as "ready", "done", or "shipped" unless it is `shipped-and-running` (live on production Vercel + production Convex).
+- An agent MUST NOT describe a feature as "ready", "done", or "shipped" unless it is `shipped-and-running` (live on production Vercel, backed by the production Firebase project).
 - Casual edits to a `shipped-and-running` feature either (a) re-verify the full ladder or (b) move the feature back to `coded`.
 - `docs/SHIP_STATE.md` is the one-table source of truth. Reality wins — the table updates to match reality, not the other way around.
 
@@ -301,8 +305,8 @@ See `docs/ENVIRONMENTS.md` for the full four-mode contract (dev / test / preview
 
 ## 15. Ask-the-Founder queue
 
-- Submissions land in Convex `askFounderQueue` with `userId`, `subject`, `body`, `priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high"))`, `createdAt`.
-- A Convex HTTP action `/ask-founder/webhook` notifies Pokee, which routes to a Google Sheet + Discord + optional SMS to the founder.
+- Submissions land in an `askFounderQueue` collection with `subject`, `body`, `priority: "low" | "medium" | "high"`, `createdAt`. A server route writes them, and they are server-only. (UNKNOWN: the exact Firestore path. It is not in the data-model doc yet.)
+- A server route notifies Pokee, which routes to a Google Sheet + Discord + optional SMS to the founder.
 - **Never surface another user's submission to any other user.** Transcript sharing requires explicit opt-in per submission.
 
 ---
@@ -313,7 +317,7 @@ See `docs/ENVIRONMENTS.md` for the full four-mode contract (dev / test / preview
 
 - Plugins can declare permission scopes: `read:tasks`, `write:tasks`, `read:notes`, `write:notes`, `read:coach`, etc.
 - Plugins receive scoped API tokens; they never see other users' data, never see credentials, and never make direct network calls outside their declared allowed domains.
-- Plugins run in sandboxed iframes on web and in constrained Convex actions server-side.
+- Plugins run in sandboxed iframes on web and in constrained server routes on the server.
 - Plugin monetization happens on patronage platforms (Patreon, Ko-fi, Buy Me a Coffee, GitHub Sponsors). Tempo Flow takes no cut.
 
 ---
