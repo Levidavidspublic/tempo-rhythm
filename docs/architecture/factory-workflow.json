@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "d5e9870e1223a333b8ffb7ba17c92fe2045b1692"
     }
   },
   "lanes": [
@@ -121,7 +121,7 @@
       "col": 3,
       "type": "security",
       "label": "Checks",
-      "sublabel": "CI and guards",
+      "sublabel": "CI, guards, merge gate",
       "sources": [
         {
           "path": ".github/workflows/ci.yml",
@@ -130,10 +130,10 @@
           "label": "workflow name CI"
         },
         {
-          "path": ".github/workflows/scope-guard.yml",
+          "path": ".github/workflows/merge-gate.yml",
           "line": 1,
-          "end_line": 1,
-          "label": "scope-guard"
+          "end_line": 6,
+          "label": "merge-gate: scope, Jev, CodeRabbit"
         },
         {
           "path": ".github/workflows/security.yml",
@@ -186,10 +186,10 @@
           "label": "Release to production, Amit only"
         },
         {
-          "path": ".github/workflows/e2e-preview.yml",
+          "path": ".github/workflows/release-go.yml",
           "line": 1,
-          "end_line": 1,
-          "label": "e2e-preview present"
+          "end_line": 3,
+          "label": "release-go: comment go on the Release PR"
         }
       ]
     },
@@ -317,7 +317,7 @@
       "items": [
         "Ticket files land via factory-write-tickets. factory-promote opens GitHub issues from docs/tickets.",
         "Dispatcher is factory-dispatch (gh-aw lock + markdown, Copilot). agent-router and dispatch-router route by usage limits and agent preference (claude, codex, cursor); Freebuff and OpenCode are manual fallbacks. It routes; it does not implement the ticket.",
-        "Lanes: factory-lane-claude, factory-lane-cursor, factory-lane-codex. Checks present: CI, scope-guard, config-guard, Security.",
+        "Lanes: factory-lane-claude, factory-lane-cursor, factory-lane-codex. Checks present: CI, scope-guard, config-guard, Security, google-style, format-naming.",
         "factory-quiet-hours gates new work 22:00-09:00 Asia/Jerusalem."
       ]
     },
@@ -325,9 +325,10 @@
       "dot": "amber",
       "title": "Review and ship",
       "items": [
+        "merge-gate.yml (pull_request_target on integration) runs ordered gates: scope, checks incl. google-style, Jev judge (jev-judge.yml, OpenRouter, advisory), CodeRabbit, merge. Gates 4-6 only run when repo variable MERGE_GATE_ENABLED is true. Whether it is a required ruleset check: UNKNOWN.",
         "Batch loop (factory-batch, factory/LOOP.md): component PRs merge into batch/<loop-id>; ONE Cursor Bugbot review runs on the batch PR. factory-review-fix sends findings back to the lane, max 3 rounds, then blocked:amit.",
         "Ship: batch PR enters the GitHub merge queue (enqueue via GraphQL) into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN.",
-        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
+        "Live: Amit runs Release to production (release.yml) or comments go on the Release PR (release-go.yml, Division6066 only; it first runs CI, secret scans and preview-acceptance on the candidate). The release re-runs CI, secret scans, Playwright and ONE review (Bugbot, or CodeRabbit when RELEASE_REVIEWER=coderabbit), deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
       ]
     },
     {

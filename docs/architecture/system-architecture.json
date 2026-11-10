@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "d5e9870e1223a333b8ffb7ba17c92fe2045b1692"
     }
   },
   "components": [
@@ -224,7 +224,7 @@
       "id": "deepinfra",
       "type": "external",
       "label": "DeepInfra",
-      "sublabel": "DeepSeek V4.1 Flash",
+      "sublabel": "DeepSeek V4.1 Flash, Chatterbox TTS",
       "pos": [
         560,
         470
@@ -239,6 +239,86 @@
           "line": 27,
           "end_line": 37,
           "label": "callLLM to DeepInfra"
+        },
+        {
+          "path": "convex/voice.ts",
+          "line": 58,
+          "end_line": 58,
+          "label": "Chatterbox URL on DeepInfra"
+        }
+      ]
+    },
+    {
+      "id": "deepgram",
+      "type": "external",
+      "label": "Deepgram",
+      "sublabel": "voice call speech to text",
+      "pos": [
+        300,
+        470
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "off until keys set",
+      "sources": [
+        {
+          "path": "convex/voice.ts",
+          "line": 57,
+          "end_line": 57,
+          "label": "Deepgram token grant URL"
+        }
+      ]
+    },
+    {
+      "id": "executor",
+      "type": "external",
+      "label": "Executor",
+      "sublabel": "OAuth connection",
+      "pos": [
+        1100,
+        246
+      ],
+      "size": [
+        150,
+        72
+      ],
+      "sources": [
+        {
+          "path": "convex/http.ts",
+          "line": 27,
+          "end_line": 28,
+          "label": "executor OAuth callback route"
+        }
+      ]
+    },
+    {
+      "id": "firebase",
+      "type": "cloud",
+      "label": "Firebase preview",
+      "sublabel": "Firestore config only",
+      "pos": [
+        1100,
+        470
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "runtime use UNKNOWN",
+      "sources": [
+        {
+          "path": "firebase.json",
+          "line": 1,
+          "end_line": 8,
+          "label": "Firestore config"
+        },
+        {
+          "path": "firestore.rules",
+          "line": 1,
+          "end_line": 15,
+          "label": "owner-only rules"
         }
       ]
     },
@@ -408,6 +488,19 @@
       "to": "convex",
       "label": "webhook POST",
       "variant": "security"
+    },
+    {
+      "id": "convex-deepgram",
+      "from": "convex",
+      "to": "deepgram",
+      "label": "30 s token"
+    },
+    {
+      "id": "executor-convex",
+      "from": "executor",
+      "to": "convex",
+      "label": "OAuth callback GET",
+      "variant": "security"
     }
   ],
   "cards": [
@@ -417,7 +510,8 @@
       "items": [
         "Web is apps/web (Next.js 16). Mobile is apps/mobile (Expo 54). Package manager is Bun.",
         "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production is https://www.tempoflow.dev (release.yml health check).",
-        "Polar checkout route sets server to sandbox."
+        "Polar checkout route sets server to sandbox.",
+        "Firebase preview project (.firebaserc, firebase.json, owner-only firestore.rules) is configured. No app, package or Convex code imports firebase: runtime use UNKNOWN."
       ]
     },
     {
@@ -426,7 +520,7 @@
       "items": [
         "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
         "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow. docs/ENVIRONMENTS.md pairs https://preview.tempoflow.dev with ceaseless-dog-617."
       ]
     },
     {
@@ -435,15 +529,17 @@
       "items": [
         "convex/lib/ai_router.ts calls https://api.deepinfra.com/v1/openai/chat/completions with native fetch (key: Convex env DEEPINFRA_API_KEY).",
         "Model is TEMPO_AI_MODEL, default deepseek-ai/DeepSeek-V4.1-Flash. Tiers fast, balanced and deep all map to it for now.",
-        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it."
+        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it.",
+        "Voice call (convex/voice.ts, off unless DEEPGRAM_API_KEY and DEEPINFRA_API_KEY are set): Convex mints a 30-second Deepgram token, the browser streams the mic straight to Deepgram, and Chatterbox multilingual on DeepInfra reads replies aloud.",
+        "Executor: Convex serves GET /connections/executor/callback for the OAuth connection (convex/connections.ts)."
       ]
     },
     {
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
-        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
+        "People, Vercel, Polar, DeepInfra, Deepgram, Executor, Firebase, MCP clients, and RevenueCat sit outside the Convex security group.",
+        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook, the Executor OAuth callback and token-authenticated /mcp are the crossings into Convex.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
     }
