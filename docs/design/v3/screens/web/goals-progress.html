@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goals progress · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — goals-progress.html */
+  .gp-stack { display: grid; gap: var(--tp-space-8); }
+  .gp-charts { display: grid; gap: var(--tp-space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 4)), 1fr)); }
+</style>
+</head>
+<body>
+<!--
+@screen   Goals · chart
+@route    apps/web/app/(tempo)/goals/progress/page.tsx
+@layout   TempoShell
+@data     byGoal = goals.progressByGoal({})                                 // Convex query: per goal, linked tasks done and total
+@data     byWeek = goals.stepsByWeek({ weeks: 4 })                           // Convex query: small steps done per ISO week, all goals
+@actions  change range -> router.replace("?weeks=4|8")                      // client arg to goals.stepsByWeek
+@actions  open a goal -> link /goals/[id]
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Show two small charts: linked tasks done per goal, and small steps done per week.
+          2. Every bar and point carries its number and a label; the highlighted bar is also bold, never colour alone.
+          3. Each chart has a one-sentence summary in words directly under it. Nothing is scored, ranked or called behind.
+          4. Under the charts, a plain list repeats each goal's progress as text, with a link to the goal.
+          5. The range switch (4 weeks / 8 weeks) changes the weekly chart only.
+          6. Empty (no tasks linked yet): kind copy + "Go to goals". Error: "Your data is safe." + Retry. Offline: last known charts stay.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'goals' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Goals','Progress'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="goals.html" data-i18n="nav.goals">Goals</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="gp.crumb">Progress</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page tp-page--wide gp-stack" data-component="PageLayout">
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="goals.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="gp.back">All goals</span></a>
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'How your goals are going', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="gp.title">How your goals are going</h1>
+          <p class="tp-pagehead__sub" data-i18n="gp.sub">A quiet look back. Small steps count, and resting is allowed.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="gp.offline">You're offline. These charts are from your last visit.</span></span></div>
+
+      <div class="gp-stack" data-state-hide>
+        <!-- @component Toolbar | shadcn: — | props: { children: Segmented } | events: — -->
+        <div class="tp-toolbar" data-component="Toolbar">
+          <span class="tp-label" id="gp-range-label" data-i18n="gp.range">Weekly chart</span>
+          <!-- @component Segmented | shadcn: toggle-group | props: { options: ['4','8'], value: '4' } | events: onChange -> router.replace("?weeks=") -->
+          <div class="tp-segmented" role="radiogroup" aria-labelledby="gp-range-label" id="gp-seg" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" data-weeks="4" aria-checked="true" tabindex="0"><span><span class="tp-num">4</span> <span data-i18n="gp.weeks">weeks</span></span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-weeks="8" aria-checked="false" tabindex="-1"><span><span class="tp-num">8</span> <span data-i18n="gp.weeks">weeks</span></span></button>
+          </div>
+        </div>
+
+        <div class="gp-charts">
+          <!-- @component BarChart | shadcn: chart | props: { title, bars: {label,value,pct,highlight?}[] } | events: — -->
+          <figure class="tp-chart tp-surface" data-component="BarChart" aria-labelledby="bar-t">
+            <div class="tp-chart__title" id="bar-t" data-i18n="gp.bar.t">Linked tasks done, by goal</div>
+            <ol class="tp-chart__bars" role="list">
+              <li class="tp-chart__bar" data-highlight="true"><span class="tp-chart__value"><span>4</span> / <span>9</span></span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:44"></span></span><span class="tp-chart__label" data-i18n="gp.l.home">Home</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value"><span>1</span> / <span>4</span></span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:25"></span></span><span class="tp-chart__label" data-i18n="gp.l.talk">Thursday</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value"><span>0</span> / <span>2</span></span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:0"></span></span><span class="tp-chart__label" data-i18n="gp.l.rest">Rest</span></li>
+              <li class="tp-chart__bar"><span class="tp-chart__value"><span>3</span> / <span>3</span></span><span class="tp-chart__track"><span class="tp-chart__fill" style="--pct:100"></span></span><span class="tp-chart__label" data-i18n="gp.l.lease">Lease</span></li>
+            </ol>
+            <!-- @component ChartSummary | shadcn: — | props: { text } | events: — -->
+            <figcaption class="tp-chart__summary" data-component="ChartSummary" data-i18n="gp.bar.s">The lease is done. Feeling settled at home is moving along, 4 of 9. Rest on purpose is resting for now, and that's fine.</figcaption>
+          </figure>
+
+          <!-- @component LineChart | shadcn: chart | props: { points: {x,y,label}[] } | events: — -->
+          <figure class="tp-chart tp-surface" data-component="LineChart" aria-labelledby="line-t">
+            <div class="tp-chart__title" id="line-t" data-i18n="gp.line.t">Small steps done, by week</div>
+            <svg class="tp-chart__svg" viewBox="0 0 400 210" role="img" aria-labelledby="line-s">
+              <line class="tp-chart__grid" x1="30" y1="40" x2="390" y2="40"/>
+              <line class="tp-chart__grid" x1="30" y1="110" x2="390" y2="110"/>
+              <line class="tp-chart__axis" x1="30" y1="180" x2="390" y2="180"/>
+              <polyline class="tp-chart__line" points="60,138 160,96 260,152 360,124"/>
+              <circle class="tp-chart__point" cx="60" cy="138" r="5"/>
+              <circle class="tp-chart__point" cx="160" cy="96" r="5"/>
+              <circle class="tp-chart__point" cx="260" cy="152" r="5"/>
+              <circle class="tp-chart__point" cx="360" cy="124" r="5"/>
+              <text x="60" y="124" text-anchor="middle">3</text>
+              <text x="160" y="82" text-anchor="middle">5</text>
+              <text x="260" y="138" text-anchor="middle">2</text>
+              <text x="360" y="110" text-anchor="middle">4</text>
+              <text x="60" y="202" text-anchor="middle" data-i18n="gp.w39">Wk 39</text>
+              <text x="160" y="202" text-anchor="middle" data-i18n="gp.w40">Wk 40</text>
+              <text x="260" y="202" text-anchor="middle" data-i18n="gp.w41">Wk 41</text>
+              <text x="360" y="202" text-anchor="middle" data-i18n="gp.w42">Wk 42</text>
+            </svg>
+            <!-- @component ChartSummary | shadcn: — | props: { text } | events: — -->
+            <figcaption class="tp-chart__summary" id="line-s" data-component="ChartSummary" data-i18n="gp.line.s">Between 2 and 5 small steps each week. Week 41 was lighter, and this week picked up again.</figcaption>
+          </figure>
+        </div>
+
+        <!-- In words -->
+        <!-- @component Section | shadcn: — | props: { title: 'In words', count: 4 } | events: — -->
+        <section class="tp-section" data-component="Section" aria-labelledby="words-h">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="words-h" data-i18n="gp.words.h">In words</h2>
+            <span class="tp-section__count"><span class="tp-num">4</span></span>
+          </div>
+          <!-- @component ListRow ×4 | shadcn: — | props: { icon, title, meta, href, status } | events: link -> /goals/[id] -->
+          <ul class="tp-list" role="list">
+            <li><a class="tp-list-row" href="goal-detail.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="g1.title">Feel settled at home</span><span class="tp-list-row__meta"><span data-i18n="gp.along">Moving along.</span> <span class="tp-num">4</span> <span data-i18n="gp.of">of</span> <span class="tp-num">9</span> <span data-i18n="gp.done">done.</span></span></span><span class="tp-list-row__end"><span class="tp-status" data-status="active"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span></span></a></li>
+            <li><a class="tp-list-row" href="goal-detail.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="g2.title">Speak calmly on Thursday</span><span class="tp-list-row__meta"><span data-i18n="gp.started">Started this week.</span> <span class="tp-num">1</span> <span data-i18n="gp.of">of</span> <span class="tp-num">4</span> <span data-i18n="gp.done">done.</span></span></span><span class="tp-list-row__end"><span class="tp-status" data-status="active"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span></span></a></li>
+            <li><a class="tp-list-row" href="goal-detail.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="g3.title">Rest on purpose</span><span class="tp-list-row__meta" data-i18n="gp.resting">Resting for now. Nothing is waiting on you.</span></span><span class="tp-list-row__end"><span class="tp-status" data-status="paused"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="status.resting">Resting</span></span></span></a></li>
+            <li><a class="tp-list-row" href="goal-detail.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="g4.title">Sign the new lease</span><span class="tp-list-row__meta"><span data-i18n="gp.all">All</span> <span class="tp-num">3</span> <span data-i18n="gp.done">done.</span></span></span><span class="tp-list-row__end"><span class="tp-status" data-status="done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="status.done">Done</span></span></span></a></li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -> /goals -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-chart"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">Nothing to chart yet.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">Once a goal has a task or two linked to it, you'll see a quiet picture of it here.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="goals.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg><span data-i18n="empty.go">Go to goals</span></a></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 2 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading your progress</span>
+        <div class="tp-skel-list">
+          <div class="tp-skeleton tp-skeleton--block"></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your progress." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your progress.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="nav.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="nav.calendar">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "gp.line.s": "Between 2 and 5 small steps each week. Week 41 was lighter, and this week picked up again.", "gp.line.s8": "Between 2 and 5 small steps each week over 8 weeks. Some weeks were lighter; every week had at least one.", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "התקדמות המטרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.library": "ספרייה",
+    "nav.today": "היום", "nav.plan": "תכנון", "nav.dump": "פריקת מחשבות", "nav.coach": "מאמן",
+    "nav.tasks": "משימות", "nav.calendar": "לוח שנה", "nav.notes": "פתקים", "nav.habits": "הרגלים", "nav.goals": "מטרות", "nav.projects": "פרויקטים",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "gp.crumb": "התקדמות", "gp.back": "כל המטרות",
+    "gp.title": "איך המטרות שלך מתקדמות", "gp.sub": "מבט שקט אחורה. צעדים קטנים נחשבים, ומותר לנוח.",
+    "gp.offline": "אין חיבור כרגע. הגרפים האלה מהביקור הקודם שלך.",
+    "gp.range": "גרף שבועי", "gp.weeks": "שבועות",
+    "gp.bar.t": "משימות מקושרות שבוצעו, לפי מטרה",
+    "gp.l.home": "בית", "gp.l.talk": "חמישי", "gp.l.rest": "מנוחה", "gp.l.lease": "חוזה",
+    "gp.bar.s": "החוזה הושלם. להרגיש בבית מתקדם בנחת, 4 מתוך 9. לנוח בכוונה במנוחה כרגע, וזה בסדר.",
+    "gp.line.t": "צעדים קטנים שבוצעו, לפי שבוע",
+    "gp.w39": "שב׳ 39", "gp.w40": "שב׳ 40", "gp.w41": "שב׳ 41", "gp.w42": "שב׳ 42",
+    "gp.line.s": "בין 2 ל־5 צעדים קטנים בכל שבוע. שבוע 41 היה קל יותר, והשבוע זה חזר לזרום.",
+    "gp.line.s8": "בין 2 ל־5 צעדים קטנים בכל שבוע לאורך 8 שבועות. חלק מהשבועות היו קלים יותר; בכל שבוע היה לפחות צעד אחד.",
+    "gp.words.h": "במילים",
+    "g1.title": "להרגיש בבית", "g2.title": "לדבר ברוגע ביום חמישי", "g3.title": "לנוח בכוונה", "g4.title": "לחתום על החוזה החדש",
+    "gp.along": "מתקדם בנחת.", "gp.started": "התחיל השבוע.", "gp.of": "מתוך", "gp.done": "בוצעו.", "gp.all": "כל",
+    "gp.resting": "במנוחה כרגע. שום דבר לא מחכה לך.",
+    "status.active": "פעילה", "status.resting": "במנוחה", "status.done": "הושלמה",
+    "empty.title": "עדיין אין מה להציג.", "empty.body": "ברגע שלמטרה יהיו משימה או שתיים מקושרות, תופיע כאן תמונה שקטה שלה.", "empty.go": "למטרות",
+    "loading": "טוען את ההתקדמות שלך", "error.title": "לא הצלחנו לטעון את ההתקדמות שלך.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.pages": "דפים", "tab.more": "עוד"
+  }
+};
+
+TP.onReady = function () {
+  // REAL: convex goals.stepsByWeek({ weeks }) — the range is a query arg; here only the summary sentence changes.
+  var seg = document.getElementById("gp-seg"), cap = document.getElementById("line-s");
+  var first = cap.textContent;
+  function sync() {
+    var o = seg.querySelector('[aria-checked="true"]'); if (!o) return;
+    if (o.getAttribute("data-weeks") === "8") { cap.removeAttribute("data-i18n"); cap.textContent = TP.t("gp.line.s8"); }
+    else { cap.setAttribute("data-i18n", "gp.line.s"); cap.textContent = TP.t("gp.line.s") || first; }
+  }
+  seg.addEventListener("click", function () { setTimeout(sync, 0); });
+  seg.addEventListener("keydown", function () { setTimeout(sync, 0); });
+};
+</script>
+</body>
+</html>

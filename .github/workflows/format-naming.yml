@@ -1,0 +1,69 @@
+name: format-naming
+
+# Config ticket (2026-11-01). Google-style formatting + naming gate for PRs, scoped to the repo's
+# linted surface (the `apps/*` and `packages/*` workspaces, which each carry a biome.json).
+#
+# Formatting: `biome format` (check mode) with the repo's shared formatter config
+# (packages/config/biome.json: 2-space indent, double quotes, semicolons, 100 cols).
+# Naming: Biome's `useNamingConvention` rule at `error` via .github/scripts/google-naming.json,
+# which encodes the Google casing rules (lowerCamelCase variables/functions, PascalCase
+# types/classes, CONSTANT_CASE module-level constants).
+#
+# Scoped to the PR's changed files so pre-existing debt does not fail unrelated PRs. Not yet a
+# required ruleset check; Amit can add it to the merge queue later.
+
+on:
+  pull_request:
+    branches: [integration, master, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: format-naming-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  format-naming:
+    name: format-naming
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Formatting and naming (Google style) on changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PR_NUMBER:-}" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "No pull request number; skipping (workflow_dispatch or merge run)."
+            exit 0
+          fi
+          changed="$(gh pr view "$PR_NUMBER" --json files --jq '.files[].path' \
+            | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' \
+            | grep -E '^(apps|packages)/' \
+            | grep -vE '(^|/)convex/_generated/' || true)"
+          files=()
+          while IFS= read -r f; do
+            [ -n "$f" ] && [ -f "$f" ] && files+=("$f")
+          done <<< "$changed"
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed TypeScript/JavaScript files under apps/ or packages/ to check."
+            exit 0
+          fi
+          echo "Checking ${#files[@]} changed file(s):"
+          printf '  %s\n' "${files[@]}"
+          echo "::group::Formatting (biome format)"
+          bunx biome format --config-path=packages/config/biome.json "${files[@]}"
+          echo "::endgroup::"
+          echo "::group::Naming (biome useNamingConvention, Google style)"
+          bunx biome lint --config-path=.github/scripts/google-naming.json --only=useNamingConvention "${files[@]}"
+          echo "::endgroup::"

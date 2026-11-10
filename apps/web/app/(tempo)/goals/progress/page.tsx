@@ -1,23 +1,12 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goals-progress
- * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Goals progress chart.
- * @queries: goals.progressSeries
+ * @source: docs/design/v3/screens/web/goals-progress.html
+ * @queries: users.getProfile, goals.list, tasks.list({ status: "done" })
  * @mutations: (none)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { GoalsProgressScreen } from "@/components/goals/GoalsProgressScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Goals chart"
-      category="Library"
-      source="screens-4.jsx"
-      summary="Goals progress chart."
-    />
-  );
+  return <GoalsProgressScreen />;
 }

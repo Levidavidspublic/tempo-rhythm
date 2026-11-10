@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Tempo Flow runtime",
+    "output": "docs/architecture/system-architecture.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Levidavidspublic/tempo-rhythm",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+    }
+  },
+  "components": [
+    {
+      "id": "person",
+      "type": "external",
+      "label": "Person",
+      "sublabel": "browser and phone",
+      "pos": [
+        36,
+        250
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "mobile",
+      "type": "frontend",
+      "label": "Mobile app",
+      "sublabel": "Expo SDK 54",
+      "pos": [
+        36,
+        470
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/package.json",
+          "line": 2,
+          "end_line": 39,
+          "label": "Expo Router app"
+        }
+      ]
+    },
+    {
+      "id": "vercel",
+      "type": "cloud",
+      "label": "Vercel",
+      "sublabel": "preview + production",
+      "pos": [
+        250,
+        48
+      ],
+      "size": [
+        160,
+        60
+      ],
+      "tag": "prod www.tempoflow.dev",
+      "sources": [
+        {
+          "path": "apps/web/vercel.json",
+          "line": 1,
+          "end_line": 12,
+          "label": "Next.js on Vercel"
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "line": 12,
+          "end_line": 14,
+          "label": "prod health check URL"
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web app",
+      "sublabel": "Next.js 16 PWA",
+      "pos": [
+        250,
+        250
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "apps/web/package.json",
+          "line": 2,
+          "end_line": 33,
+          "label": "tempo-rhythm-web"
+        },
+        {
+          "path": "package.json",
+          "line": 4,
+          "end_line": 8,
+          "label": "Bun workspaces"
+        }
+      ]
+    },
+    {
+      "id": "polar",
+      "type": "external",
+      "label": "Polar",
+      "sublabel": "web checkout",
+      "pos": [
+        430,
+        48
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "sandbox in route",
+      "sources": [
+        {
+          "path": "apps/web/app/checkout/route.ts",
+          "line": 15,
+          "end_line": 26,
+          "label": "Polar checkout route"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Convex Auth",
+      "sublabel": "Resend magic link",
+      "pos": [
+        600,
+        48
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "sources": [
+        {
+          "path": "convex/auth.ts",
+          "line": 1,
+          "end_line": 2,
+          "label": "convexAuth + Resend"
+        },
+        {
+          "path": "convex/schema.ts",
+          "line": 1,
+          "end_line": 1,
+          "label": "auth tables"
+        }
+      ]
+    },
+    {
+      "id": "convex",
+      "type": "backend",
+      "label": "Convex functions",
+      "sublabel": "queries, mutations, http, /mcp",
+      "pos": [
+        560,
+        240
+      ],
+      "size": [
+        210,
+        80
+      ],
+      "sources": [
+        {
+          "path": "convex.json",
+          "line": 1,
+          "end_line": 3,
+          "label": "functions live in convex/"
+        },
+        {
+          "path": "convex/http.ts",
+          "line": 7,
+          "end_line": 17,
+          "label": "auth routes + webhook"
+        },
+        {
+          "path": "convex/http.ts",
+          "line": 20,
+          "end_line": 24,
+          "label": "MCP route"
+        }
+      ]
+    },
+    {
+      "id": "mcpclient",
+      "type": "external",
+      "label": "MCP clients",
+      "sublabel": "personal token",
+      "pos": [
+        860,
+        48
+      ],
+      "size": [
+        160,
+        60
+      ],
+      "sources": [
+        {
+          "path": "apps/web/app/api/mcp/route.ts",
+          "line": 1,
+          "end_line": 30,
+          "label": "web proxy to /mcp"
+        },
+        {
+          "path": "convex/mcpHttp.ts",
+          "line": 1,
+          "end_line": 1,
+          "label": "Streamable HTTP handler"
+        }
+      ]
+    },
+    {
+      "id": "deepinfra",
+      "type": "external",
+      "label": "DeepInfra",
+      "sublabel": "DeepSeek V4.1 Flash",
+      "pos": [
+        560,
+        470
+      ],
+      "size": [
+        180,
+        64
+      ],
+      "sources": [
+        {
+          "path": "convex/lib/ai_router.ts",
+          "line": 27,
+          "end_line": 37,
+          "label": "callLLM to DeepInfra"
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "Convex data",
+      "sublabel": "dev, test, prod",
+      "pos": [
+        860,
+        246
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "tag": "prod Amit only",
+      "sources": [
+        {
+          "path": "packages/types/src/index.ts",
+          "line": 30,
+          "end_line": 48,
+          "label": "three named deployments"
+        },
+        {
+          "path": "docs/ENVIRONMENTS.md",
+          "line": 22,
+          "end_line": 25,
+          "label": "dev staging prod names"
+        },
+        {
+          "path": ".github/workflows/convex-deploy-test.yml",
+          "line": 1,
+          "end_line": 4,
+          "label": "test deploy, live is Amit"
+        }
+      ]
+    },
+    {
+      "id": "revenuecat",
+      "type": "external",
+      "label": "RevenueCat",
+      "sublabel": "mobile entitlements",
+      "pos": [
+        860,
+        470
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "convex/http.ts",
+          "line": 10,
+          "end_line": 16,
+          "label": "webhook into Convex"
+        },
+        {
+          "path": "apps/mobile/utils/revenueCatConfig.ts",
+          "line": 25,
+          "end_line": 26,
+          "label": "mobile API key helper"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client devices",
+      "wraps": [
+        "person",
+        "mobile"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Vercel hosting",
+      "wraps": [
+        "vercel",
+        "web"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "Convex cloud",
+      "wraps": [
+        "auth",
+        "convex",
+        "data"
+      ],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    {
+      "id": "person-web",
+      "from": "person",
+      "to": "web",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-convex",
+      "from": "web",
+      "to": "convex",
+      "label": "Convex client",
+      "variant": "emphasis"
+    },
+    {
+      "id": "convex-data",
+      "from": "convex",
+      "to": "data",
+      "label": "indexed I/O",
+      "variant": "emphasis"
+    },
+    {
+      "id": "person-mobile",
+      "from": "person",
+      "to": "mobile",
+      "label": "Expo app"
+    },
+    {
+      "id": "mobile-convex",
+      "from": "mobile",
+      "to": "convex",
+      "label": "Convex client"
+    },
+    {
+      "id": "vercel-web",
+      "from": "vercel",
+      "to": "web",
+      "label": "hosts"
+    },
+    {
+      "id": "web-polar",
+      "from": "web",
+      "to": "polar",
+      "label": "checkout"
+    },
+    {
+      "id": "auth-convex",
+      "from": "auth",
+      "to": "convex",
+      "label": "session",
+      "variant": "security"
+    },
+    {
+      "id": "mcp-convex",
+      "from": "mcpclient",
+      "to": "convex",
+      "label": "POST /mcp",
+      "variant": "security"
+    },
+    {
+      "id": "convex-deepinfra",
+      "from": "convex",
+      "to": "deepinfra",
+      "label": "chat completions"
+    },
+    {
+      "id": "revenuecat-convex",
+      "from": "revenuecat",
+      "to": "convex",
+      "label": "webhook POST",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Apps and host",
+      "items": [
+        "Web is apps/web (Next.js 16). Mobile is apps/mobile (Expo 54). Package manager is Bun.",
+        "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production is https://www.tempoflow.dev (release.yml health check).",
+        "Polar checkout route sets server to sandbox."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Convex deployments",
+      "items": [
+        "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
+        "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "AI slots",
+      "items": [
+        "convex/lib/ai_router.ts calls https://api.deepinfra.com/v1/openai/chat/completions with native fetch (key: Convex env DEEPINFRA_API_KEY).",
+        "Model is TEMPO_AI_MODEL, default deepseek-ai/DeepSeek-V4.1-Flash. Tiers fast, balanced and deep all map to it for now.",
+        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust boundary",
+      "items": [
+        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
+        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
+        "Web checkout calls Polar from the Next.js route. The access token stays in server env."
+      ]
+    }
+  ]
+}

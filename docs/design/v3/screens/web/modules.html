@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modules · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — modules.html */
+  .md-body { display: grid; gap: var(--tp-space-10); min-width: 0; }
+  .md-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Modules
+@route    apps/web/app/(tempo)/modules/page.tsx
+@layout   TempoShell
+@data     modules = modules.list({})                    // Convex query: built-in + user modules {id, name, does, kind, builtIn, madeByCoach, on}
+@data     plain = modules.getPlainMode({})              // Convex query: boolean
+@data     jobs = jobs.list({})                          // Convex query: {id, name, scheduleText, lastRun {at, result, pageTitle}, on}
+@actions  turn a module on or off -> modules.setEnabled({ moduleId, on })   // optimistic; built-ins can be turned off, never deleted
+@actions  turn Plain mode on or off -> modules.setPlainMode({ on })         // pauses every user module at once; built-ins keep working
+@actions  turn a scheduled job on or off -> jobs.setEnabled({ jobId, on })  // optimistic
+@actions  ask for a new module -> link to coach (coach.send)                // the coach writes it, then Module preview asks for approval
+@actions  open a module -> link to module-preview (modules.get({ moduleId }))
+@states   default | empty | loading | error | offline  (?state=)   + plain (?plain=on)
+@flow     1. Show the Plain mode switch at the top. When it is on, a banner says your own modules are paused and their switches are disabled.
+          2. Show "Your modules": each card says in one line what it does, who made it, and has an On / Off switch with the word.
+          3. Show "Built in": the page types Tempo ships with. Each has a lock badge "Built-in". It can be turned off, but there is no delete.
+          4. Show "Scheduled jobs": name, schedule in mono (Mon–Fri 08:00), when it last ran and where the result went, and a switch.
+          5. A job whose last run did not finish says so plainly and says nothing was changed.
+          6. Empty: no user modules or jobs yet, built-ins still listed, plus a way to ask the coach. Error: "Couldn't load your modules. Your pages are safe."
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'modules' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">Yours</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="modules.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.modules">Modules</span></a></li>
+        <li><a class="tp-tree-item" href="memory.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.memory">What Tempo remembers</span></a></li>
+        <li><a class="tp-tree-item" href="nags.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.nags">Nags</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Modules'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="md.title">Modules</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'default' } | events: — -->
+    <div class="tp-page" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — + button | props: { title: 'Modules', subtitle, actions: [Ask the coach for a module] } | events: link -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="md.title">Modules</h1>
+          <p class="tp-pagehead__sub" data-i18n="md.sub">Modules change how Tempo looks and what it does for you. Turn any of them off. Nothing new goes live until you approve it.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--primary" href="coach-thread.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="md.ask">Ask the coach for a module</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">Switches you flip now will apply as soon as you reconnect.</span></span>
+      </div>
+
+      <div class="md-body">
+
+        <!-- ===== Plain mode ===== -->
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Plain mode' } | events: — -->
+        <section class="tp-settings-section tp-surface" aria-labelledby="plain-title" data-component="SettingsSection" data-state-show="default empty offline">
+          <!-- @component PlainModeBanner | shadcn: alert | props: { on } | events: — -->
+          <div class="tp-notice tp-plain-banner" data-tone="info" role="status" data-component="PlainModeBanner" hidden>
+            <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="plain.bannerT">Plain mode is on.</span><span data-i18n="plain.bannerB">Your own modules are paused, so Tempo looks the way it did on day one. Built-in pages and scheduled jobs work as usual. Turn it off to bring everything back as it was.</span></span>
+          </div>
+          <!-- @component SettingRow | shadcn: — + switch | props: { label: 'Plain mode', help, control: Switch } | events: onCheckedChange -> modules.setPlainMode({ on }) -->
+          <div class="tp-setting-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <h2 class="tp-setting-row__label" id="plain-title" data-i18n="plain.label">Plain mode</h2>
+              <p class="tp-help" id="plain-help" data-i18n="plain.help">Pauses every module you or the coach made, in one tap. Useful on a hard day, or when something looks wrong. Nothing is deleted.</p>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Switch | shadcn: switch | props: { checked: false } | events: onCheckedChange -> modules.setPlainMode({ on }) -->
+              <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="plain-title" aria-describedby="plain-help" data-plain-mode data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Your modules ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Your modules', count: 3 } | events: — -->
+        <section class="tp-section" aria-labelledby="yours-title" data-component="Section">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="yours-title" data-i18n="yours.title">Your modules</h2>
+            <span class="tp-section__count" data-state-hide><span class="tp-num">3</span> <span data-i18n="yours.count">modules, 2 on</span></span>
+          </div>
+
+          <!-- @component ModuleCard ×3 | shadcn: card + switch + badge | props: { module: {id, name, does, kind, madeByCoach, on} } | events: onToggle -> modules.setEnabled({ moduleId, on }) -->
+          <div class="tp-cards" role="list" data-component="CardGrid" data-state-hide>
+            <article class="tp-module-card" role="listitem" data-on="true" data-builtin="false" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-heart"/></svg></span>
+              <h3 class="tp-module-card__name" id="m-water"><a href="module-preview.html" data-i18n="m.water">Water</a></h3>
+              <p class="tp-module-card__does" data-i18n="m.waterDoes">Adds a water tracker to Today, goal 6 glasses. No reminders.</p>
+              <div class="tp-module-card__meta">
+                <!-- @component Badge | shadcn: badge | props: { icon: 'sparkle', label: 'Made with the coach' } | events: — -->
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="badge.coach">Made with the coach</span></span>
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="badge.daily">Daily pages</span></span>
+              </div>
+              <div class="tp-module-card__switch">
+                <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="m-water" data-module="water" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+              </div>
+            </article>
+
+            <article class="tp-module-card" role="listitem" data-on="true" data-builtin="false" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-template"/></svg></span>
+              <h3 class="tp-module-card__name" id="m-monday"><a href="module-preview.html" data-i18n="m.monday">Gentle Monday</a></h3>
+              <p class="tp-module-card__does" data-i18n="m.mondayDoes">New Monday pages start with at most 3 tasks, a short walk and one quiet hour.</p>
+              <div class="tp-module-card__meta">
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="badge.coach">Made with the coach</span></span>
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="badge.template">Template</span></span>
+              </div>
+              <div class="tp-module-card__switch">
+                <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="m-monday" data-module="monday" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+              </div>
+            </article>
+
+            <article class="tp-module-card" role="listitem" data-on="false" data-builtin="false" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></span>
+              <h3 class="tp-module-card__name" id="m-wind"><a href="module-preview.html" data-i18n="m.wind">Evening wind-down</a></h3>
+              <p class="tp-module-card__does" data-i18n="m.windDoes">Adds a short wind-down checklist to the bottom of daily pages.</p>
+              <div class="tp-module-card__meta">
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg><span data-i18n="badge.you">Made by you</span></span>
+                <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="badge.daily">Daily pages</span></span>
+              </div>
+              <div class="tp-module-card__switch">
+                <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="m-wind" data-module="wind" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+              </div>
+            </article>
+          </div>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -->
+          <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-module"/></svg></span>
+            <h3 class="tp-state__title" data-i18n="empty.title">You haven't made a module yet.</h3>
+            <p class="tp-state__body" data-i18n="empty.body">Tell the coach what you'd like Tempo to do, in your own words. For example: "add a water tracker to Today". You'll see exactly what it changes before it goes live.</p>
+            <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="coach-thread.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="empty.action">Talk to the coach</span></a></div>
+          </div>
+        </section>
+
+        <!-- ===== Scheduled jobs ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Scheduled jobs', count: 3 } | events: — -->
+        <section class="tp-section" aria-labelledby="jobs-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="jobs-title" data-i18n="jobs.title">Scheduled jobs</h2>
+            <span class="tp-section__count" data-i18n="jobs.sub">Things Tempo does on a schedule. Each run writes into a page.</span>
+          </div>
+          <!-- @component ScheduledJobRow ×3 | shadcn: — + switch | props: { job: {id, name, scheduleText, lastRun {at, result, pageTitle}, on} } | events: onToggle -> jobs.setEnabled({ jobId, on }) -->
+          <ul class="tp-job-list tp-surface" role="list">
+            <li class="tp-job-row" data-on="true" data-component="ScheduledJobRow">
+              <span class="tp-job-row__name" id="j-plan" data-i18n="j.plan">Morning plan</span>
+              <span class="tp-job-row__schedule tp-num">Mon–Fri 08:00</span>
+              <span class="tp-job-row__last"><span data-i18n="j.planLast">Last ran today at</span> <span class="tp-num tp-mono">08:00</span> · <span data-i18n="j.planWhere">wrote a plan into Today</span></span>
+              <span class="tp-job-row__switch"><button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="j-plan" data-job="plan" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button></span>
+            </li>
+            <li class="tp-job-row" data-on="true" data-component="ScheduledJobRow">
+              <span class="tp-job-row__name" id="j-week" data-i18n="j.week">Sunday week look-back</span>
+              <span class="tp-job-row__schedule tp-num">Sun 18:00</span>
+              <span class="tp-job-row__last"><span data-i18n="j.weekLast">Last ran Sun 11 Oct at</span> <span class="tp-num tp-mono">18:00</span> · <span data-i18n="j.weekWhere">wrote into Week 42</span></span>
+              <span class="tp-job-row__switch"><button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="j-week" data-job="week" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button></span>
+            </li>
+            <li class="tp-job-row" data-on="false" data-component="ScheduledJobRow">
+              <span class="tp-job-row__name" id="j-bills" data-i18n="j.bills">Bills check</span>
+              <span class="tp-job-row__schedule tp-num">1st of month 09:00</span>
+              <span class="tp-job-row__last"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg> <span data-i18n="j.billsLast">Last run on Thu 1 Oct didn't finish. Nothing was changed. It's off until you turn it back on.</span></span>
+              <span class="tp-job-row__switch"><button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="j-bills" data-job="bills" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button></span>
+            </li>
+          </ul>
+        </section>
+
+        <!-- ===== Built in ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Built in', count: 4 } | events: — -->
+        <section class="tp-section" aria-labelledby="builtin-title" data-component="Section" data-state-show="default empty offline">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="builtin-title" data-i18n="bi.title">Built in</h2>
+            <span class="tp-section__count" data-i18n="bi.sub">Tempo's own page types. You can turn one off, but not delete it.</span>
+          </div>
+          <!-- @component ModuleCard ×4 | shadcn: card + switch + badge | props: { module: {id, name, does, builtIn: true, on} } | events: onToggle -> modules.setEnabled({ moduleId, on }) — no delete -->
+          <div class="tp-cards" role="list" data-component="CardGrid">
+            <article class="tp-module-card" role="listitem" data-on="true" data-builtin="true" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg></span>
+              <h3 class="tp-module-card__name" id="b-daily" data-i18n="b.daily">Daily page</h3>
+              <p class="tp-module-card__does" data-i18n="b.dailyDoes">Next up, your tasks, time blocks and energy for one day.</p>
+              <div class="tp-module-card__meta"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="badge.builtin">Built-in</span></span></div>
+              <div class="tp-module-card__switch"><button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-daily" data-module="daily" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button></div>
+            </article>
+            <article class="tp-module-card" role="listitem" data-on="true" data-builtin="true" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span>
+              <h3 class="tp-module-card__name" id="b-weekly" data-i18n="b.weekly">Weekly page</h3>
+              <p class="tp-module-card__does" data-i18n="b.weeklyDoes">A week strip and what each day holds.</p>
+              <div class="tp-module-card__meta"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="badge.builtin">Built-in</span></span></div>
+              <div class="tp-module-card__switch"><button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-weekly" data-module="weekly" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button></div>
+            </article>
+            <article class="tp-module-card" role="listitem" data-on="true" data-builtin="true" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span>
+              <h3 class="tp-module-card__name" id="b-project" data-i18n="b.project">Project page</h3>
+              <p class="tp-module-card__does" data-i18n="b.projectDoes">Status, next steps and a board for one project.</p>
+              <div class="tp-module-card__meta"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="badge.builtin">Built-in</span></span></div>
+              <div class="tp-module-card__switch"><button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-project" data-module="project" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button></div>
+            </article>
+            <article class="tp-module-card" role="listitem" data-on="false" data-builtin="true" data-component="ModuleCard">
+              <span class="tp-module-card__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-habit"/></svg></span>
+              <h3 class="tp-module-card__name" id="b-habits" data-i18n="b.habits">Habits on Today</h3>
+              <p class="tp-module-card__does" data-i18n="b.habitsDoes">Shows today's habits on your daily page. Off: they stay on the Habits page only.</p>
+              <div class="tp-module-card__meta"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="badge.builtin">Built-in</span></span></div>
+              <div class="tp-module-card__switch"><button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="b-habits" data-module="habits" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state tp-state--loading md-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your modules</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your modules." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error md-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your modules.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Your pages are safe and look the same as before. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title } | events: onUndo -> modules.setEnabled (restore) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "switch.on": "On", "switch.off": "Off",
+    "plain.on": "Plain mode is on. Your own modules are paused.", "plain.off": "Plain mode is off. Your modules are back.",
+    "md.turnedOn": "turned on", "md.turnedOff": "turned off",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "מודולים · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.you": "שלך",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.modules": "מודולים", "nav.memory": "מה Tempo זוכר", "nav.nags": "נדנודים",
+    "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "md.title": "מודולים",
+    "md.sub": "מודולים משנים איך Tempo נראה ומה הוא עושה בשבילך. אפשר לכבות כל אחד מהם. שום דבר חדש לא עולה לפני שתאשרי.",
+    "md.ask": "לבקש מהמאמן מודול",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "מתגים שתזיזי עכשיו יופעלו ברגע שהחיבור יחזור.",
+    "plain.bannerT": "מצב פשוט פועל.",
+    "plain.bannerB": "המודולים שלך מושהים, ו־Tempo נראה כמו ביום הראשון. הדפים המובנים והמשימות המתוזמנות עובדים כרגיל. כבי אותו כדי להחזיר הכול כמו שהיה.",
+    "plain.label": "מצב פשוט",
+    "plain.help": "משהה בנגיעה אחת כל מודול שאת או המאמן יצרתם. שימושי ביום קשה, או כשמשהו נראה לא נכון. שום דבר לא נמחק.",
+    "plain.on": "מצב פשוט פועל. המודולים שלך מושהים.", "plain.off": "מצב פשוט כבוי. המודולים שלך חזרו.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "yours.title": "המודולים שלך", "yours.count": "מודולים, 2 פועלים",
+    "m.water": "מים", "m.waterDoes": "מוסיף מעקב מים להיום, יעד של 6 כוסות. בלי תזכורות.",
+    "m.monday": "יום שני רך", "m.mondayDoes": "דפי יום שני חדשים מתחילים עם 3 משימות לכל היותר, הליכה קצרה ושעה שקטה אחת.",
+    "m.wind": "התכנסות לערב", "m.windDoes": "מוסיף רשימה קצרה להתכנסות בתחתית הדפים היומיים.",
+    "badge.coach": "נוצר עם המאמן", "badge.you": "נוצר על ידך", "badge.daily": "דפים יומיים", "badge.template": "תבנית", "badge.builtin": "מובנה",
+    "empty.title": "עוד לא יצרת מודול.",
+    "empty.body": "ספרי למאמן במילים שלך מה היית רוצה ש־Tempo יעשה. למשל: ״להוסיף מעקב מים להיום״. תראי בדיוק מה ישתנה לפני שזה עולה.",
+    "empty.action": "לדבר עם המאמן",
+    "jobs.title": "משימות מתוזמנות", "jobs.sub": "דברים ש־Tempo עושה לפי לוח זמנים. כל הרצה נכתבת לתוך דף.",
+    "j.plan": "תוכנית בוקר", "j.planLast": "רצה לאחרונה היום ב־", "j.planWhere": "כתבה תוכנית בהיום",
+    "j.week": "מבט לאחור ביום ראשון", "j.weekLast": "רצה לאחרונה ביום א׳ 11.10 ב־", "j.weekWhere": "כתבה בשבוע 42",
+    "j.bills": "בדיקת חשבונות", "j.billsLast": "ההרצה האחרונה ביום ה׳ 1.10 לא הסתיימה. שום דבר לא השתנה. היא כבויה עד שתפעילי אותה שוב.",
+    "bi.title": "מובנים", "bi.sub": "סוגי הדפים של Tempo עצמו. אפשר לכבות, אבל לא למחוק.",
+    "b.daily": "דף יומי", "b.dailyDoes": "הדבר הבא, המשימות, בלוקי הזמן והאנרגיה ליום אחד.",
+    "b.weekly": "דף שבועי", "b.weeklyDoes": "פס שבוע ומה כל יום מכיל.",
+    "b.project": "דף פרויקט", "b.projectDoes": "מצב, צעדים הבאים ולוח לפרויקט אחד.",
+    "b.habits": "הרגלים בהיום", "b.habitsDoes": "מציג את ההרגלים של היום בדף היומי. כבוי: הם נשארים רק בדף ההרגלים.",
+    "loading": "טוען את המודולים שלך",
+    "error.title": "לא הצלחנו לטעון את המודולים.", "error.body": "הדפים שלך שמורים ונראים כמו קודם. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "md.turnedOn": "הופעל", "md.turnedOff": "כובה",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  /* Every switch on this screen lands here after tempo.js flips it. */
+  TP.onSwitch = function (sw, on) {
+    if (sw.hasAttribute("data-plain-mode")) {
+      // REAL: convex modules.setPlainMode({ on }) — pauses or resumes every user module; built-ins untouched
+      return;
+    }
+    if (sw.hasAttribute("data-job")) {
+      // REAL: convex jobs.setEnabled({ jobId: sw.dataset.job, on }) — the next run is skipped while off
+      return;
+    }
+    if (sw.hasAttribute("data-module")) {
+      // REAL: convex modules.setEnabled({ moduleId: sw.dataset.module, on }) — optimistic; built-ins can be turned off, never deleted
+      var name = document.getElementById(sw.getAttribute("aria-labelledby"));
+      var label = name ? name.textContent.trim() : "";
+      TP.toast({
+        title: label + " " + TP.t(on ? "md.turnedOn" : "md.turnedOff"),
+        onUndo: function () {
+          // REAL: convex modules.setEnabled({ moduleId, on: !on })
+          sw.setAttribute("aria-checked", String(!on));
+          var w = sw.querySelector(".tp-switch__state"); if (w) w.textContent = TP.t(!on ? "switch.on" : "switch.off");
+          var card = sw.closest(".tp-module-card"); if (card) card.setAttribute("data-on", String(!on));
+          sw.focus();
+        }
+      });
+    }
+  };
+  TP.onReady2 = function (params) {
+    // REAL: useQuery(api.modules.getPlainMode) seeds the Plain mode switch; ?plain=on is the demo hook
+    if (params.get("plain") === "on") {
+      var p = document.querySelector("[data-plain-mode]");
+      if (p) { p.setAttribute("aria-checked", "true"); var w = p.querySelector(".tp-switch__state"); if (w) w.textContent = TP.t("switch.on"); }
+    }
+  };
+})();
+</script>
+</body>
+</html>

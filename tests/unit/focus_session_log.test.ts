@@ -65,7 +65,8 @@ describe("session log leftover wiring", () => {
     expect(tracking).toContain("sessionLogsToTrackingSessions");
     expect(tracking).toContain("sessionLogStorageKey");
     expect(tracking).not.toContain("sessions={[]}");
-    expect(today).toContain("TempoEmptyState");
+    // Today is the v3 screen now; the leftover must still not move onto it.
+    expect(today).toContain("docs/design/v3/screens/mobile/today.html");
     expect(today).not.toContain("sessionLogStorageKey");
   });
 });

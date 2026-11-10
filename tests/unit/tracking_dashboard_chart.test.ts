@@ -66,7 +66,8 @@ describe("mobile tracking leftover wiring", () => {
 
     expect(screen).toContain("TrackingDashboardChart");
     expect(screen).toContain("sessionLogsToTrackingSessions");
-    expect(today).toContain("TempoEmptyState");
+    // Today is the v3 screen now; the leftover must still not move onto it.
+    expect(today).toContain("docs/design/v3/screens/mobile/today.html");
     expect(today).not.toContain("TrackingDashboardChart");
   });
 });

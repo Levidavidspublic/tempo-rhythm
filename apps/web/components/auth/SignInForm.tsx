@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
+import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 
 export type SignInFormProps = {
   /** Page layout uses Soft Editorial; modal keeps compact dark styling */
@@ -72,6 +73,25 @@ export function SignInForm({
   const linkClass = isPage
     ? "font-semibold text-primary hover:underline"
     : "font-semibold text-orange-500 transition hover:text-orange-400";
+
+  if (isPage) {
+    return (
+      <PageCard
+        flow={flow}
+        email={email}
+        setEmail={setEmail}
+        isLoading={isLoading}
+        error={error}
+        sent={magicLinkSent}
+        onSubmit={handleSubmit}
+        onReset={() => {
+          setMagicLinkSent(false);
+          setError("");
+        }}
+        otherHref={otherHref(isSignUp ? "/sign-in" : "/sign-up")}
+      />
+    );
+  }
 
   if (magicLinkSent) {
     return (
@@ -178,6 +198,105 @@ export function SignInForm({
           </button>
         )}
       </p>
+    </div>
+  );
+}
+
+type PageCardProps = {
+  flow: "sign-in" | "sign-up";
+  email: string;
+  setEmail: (email: string) => void;
+  isLoading: boolean;
+  error: string;
+  sent: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  onReset: () => void;
+  otherHref: string | { pathname: string; query: { next: string } };
+};
+
+/**
+ * The v3 auth card (docs/design/v3/screens/web/sign-in.html, sign-up.html): one field, one
+ * primary action, no password anywhere.
+ */
+function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onReset, otherHref }: PageCardProps) {
+  const isSignUp = flow === "sign-up";
+  const fieldId = `${flow}-email`;
+  return (
+    <div className="tp-auth-card" data-component="AuthCard">
+      {/* Outside the app shell, so the page brings the icon sprite itself. */}
+      <TpIconSprite />
+      <Link className="tp-auth-card__brand" href="/">
+        Tempo
+      </Link>
+      {sent ? (
+        <>
+          <div>
+            <h1 className="tp-auth-card__title">Check your email</h1>
+            <p className="tp-auth-card__lede">
+              We sent a sign-in link to <strong>{email}</strong>. Open it on any device to continue.
+            </p>
+            {isSignUp ? (
+              <p className="tp-auth-card__lede">
+                The first time, the link opens a short &ldquo;waiting for approval&rdquo; page: Amit
+                approves each new account by hand.
+              </p>
+            ) : null}
+          </div>
+          <button type="button" className="tp-btn tp-btn--secondary tp-btn--block" onClick={onReset}>
+            Use a different email
+          </button>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="tp-auth-card__title">{isSignUp ? "Create your account" : "Sign in"}</h1>
+            <p className="tp-auth-card__lede">
+              {isSignUp
+                ? "No password. We'll email you a link that makes your account, and Amit approves it by hand."
+                : "No password. We'll email you a link that signs you in."}
+            </p>
+          </div>
+          {error ? (
+            <div className="tp-notice" data-tone="danger" role="alert">
+              <span className="tp-notice__icon">
+                <TpIcon name="alert" size="sm" />
+              </span>
+              <span className="tp-notice__text">{error}</span>
+            </div>
+          ) : null}
+          <form className="tp-form" onSubmit={onSubmit}>
+            <div className="tp-field">
+              <label className="tp-label" htmlFor={fieldId}>
+                Email
+              </label>
+              <input
+                className="tp-input"
+                id={fieldId}
+                type="email"
+                inputMode="email"
+                dir="ltr"
+                spellCheck={false}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required={true}
+                disabled={isLoading}
+                autoComplete="email"
+              />
+            </div>
+            <button type="submit" className="tp-btn tp-btn--primary tp-btn--block" disabled={isLoading}>
+              <TpIcon name="mail" size="sm" />
+              <span>{isLoading ? "Sending link…" : "Send magic link"}</span>
+            </button>
+          </form>
+          <p className="tp-auth-card__foot">
+            {isSignUp ? "Already have an account? " : "Don't have an account? "}
+            <Link href={otherHref} className="font-semibold text-foreground underline underline-offset-2">
+              {isSignUp ? "Sign in" : "Create one"}
+            </Link>
+          </p>
+        </>
+      )}
     </div>
   );
 }

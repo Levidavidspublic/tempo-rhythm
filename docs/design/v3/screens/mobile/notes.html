@@ -1,0 +1,443 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (notes) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notes · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== notes — layout only ===== */
+    .notes-head .tp-pagehead__title { margin: 0; }
+    .notes-tags { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+    .notes-tags .tp-btn { min-height: var(--tp-touch); }
+    .notes-list .tp-list-row { padding-inline: var(--tp-space-2); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Notes
+@route    apps/mobile/app/(tempo)/(tabs)/notes.tsx
+@layout   MobileTabs
+@data     pinned = pages.listPinned({})                                     // Convex query
+@data     recent = pages.listRecent({ tag?, search?, limit: 20 })            // Convex paginated query
+@data     tags = tags.listUsed({ limit: 6 })                                  // Convex query
+@actions  open note -> router.push("/page/[id]")
+@actions  filter by tag -> pages.listRecent({ tag })
+@actions  search -> pages.listRecent({ search })
+@actions  new note -> router.push("/capture")
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the Notes tab. A search box sits at the top, then a few tags to narrow the list.
+          2. Pinned notes come first, then recent notes, newest edit first.
+          3. Each row shows the note's title and, in words, what kind of note it is and when it was last edited.
+          4. Tapping a row opens the note. Tapping a tag shows only notes with that tag; tapping it again shows all.
+          5. The + button opens Capture.
+          6. Empty: no notes yet. Say so kindly and offer Capture.
+          7. Loading: skeleton rows. Error: kind words, data is safe, Try again. Offline: notes stay readable; a banner says edits save later.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Notes
+        @route    apps/mobile/app/(tempo)/(tabs)/notes.tsx
+        @layout   MobileTabs
+        @data     pinned = pages.listPinned({}) · recent = pages.listRecent({ tag?, search? }) · tags = tags.listUsed({})   // Convex queries
+        @actions  open note -> router.push("/page/[id]") · tag filter · search · new -> router.push("/capture")
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Notes" } | events: onSearch -> focus search, onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" id="search-btn" aria-label="Search notes" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+            <span class="tp-mtopbar__title" data-i18n="top.title">Notes</span>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Your notes are here. Edits save when you're back.</span></span>
+          </div>
+
+          <!-- @component PageHeader | shadcn: — | props: { title: "Notes", subtitle: "24 notes" } | events: — -->
+          <div class="tp-pagehead notes-head" data-component="PageHeader">
+            <div class="tp-pagehead__text">
+              <h1 class="tp-pagehead__title" data-i18n="page.title">Notes</h1>
+              <p class="tp-pagehead__sub" data-state-hide><span class="tp-num">24</span> <span data-i18n="page.count">notes</span></p>
+            </div>
+          </div>
+
+          <div class="m-stack" data-state-hide>
+            <!-- @component SearchInput | shadcn: input (+ command) · NativeWind: TextInput with search icon | props: { label: "Search notes", placeholder } | events: onChange -> pages.listRecent({ search }) -->
+            <div class="tp-search" data-component="SearchInput">
+              <label class="tp-label tp-sr-only" for="note-search" data-i18n="search.label">Search notes</label>
+              <div class="tp-search__box">
+                <svg class="tp-icon tp-icon--sm tp-search__icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input class="tp-input" id="note-search" type="search" dir="auto" placeholder="Search notes" data-i18n-attr="placeholder:search.ph" autocomplete="off">
+              </div>
+            </div>
+            <!-- @component Button ×4 (tag filters) | shadcn: toggle (pressed) · NativeWind: Pressable chips | props: { tag, pressed } | events: onPress -> pages.listRecent({ tag }) -->
+            <div class="notes-tags" role="group" aria-label="Filter by tag" data-i18n-attr="aria-label:tags.label" id="tags">
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" aria-pressed="false" data-tag="work"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-hash"/></svg><span data-i18n="tag.work">work</span></button>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" aria-pressed="false" data-tag="moving"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-hash"/></svg><span data-i18n="tag.moving">moving</span></button>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" aria-pressed="false" data-tag="family"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-hash"/></svg><span data-i18n="tag.family">family</span></button>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" aria-pressed="false" data-tag="books"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-hash"/></svg><span data-i18n="tag.books">books</span></button>
+            </div>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 4, label: "Loading your notes" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your notes</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your notes." } | events: onRetry -> refetch pages.listRecent -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your notes.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Empty ===== -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action: "Write a first note" } | events: onAction -> router.push("/capture") -->
+          <div class="tp-state tp-state--empty" data-state-show="empty" data-component="StateEmpty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-page"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">No notes yet.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">Notes are for anything you want to keep: ideas, lists, things people told you. Start with one line.</p>
+            <div class="tp-state__actions">
+              <a class="tp-btn tp-btn--secondary" href="capture.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="empty.capture">Write a first note</span></a>
+            </div>
+          </div>
+
+          <!-- ===== Default content ===== -->
+          <section class="m-stack" aria-labelledby="pinned-h" data-state-hide data-section>
+            <!-- @component Section | shadcn: — | props: { title: "Pinned", count: 2 } | events: — -->
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="pinned-h" data-i18n="h.pinned">Pinned</h2>
+            </div>
+            <!-- @component ListRow ×2 | shadcn: — · NativeWind: Pressable row (Link) | props: { icon, title, meta, href } | events: onPress -> router.push("/page/[id]") -->
+            <ul class="tp-list tp-card notes-list" role="list" data-component="ListRow">
+              <li data-tags="moving"><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-pin"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.moving">Moving checklist</span><span class="tp-list-row__meta"><span><span class="tp-num">5</span> <span data-i18n="n.moving.m">of 12 done</span></span><span class="tp-tag" data-i18n="tag.moving.h">#moving</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li data-tags="work"><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-pin"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.talk">Thursday presentation</span><span class="tp-list-row__meta"><span data-i18n="n.talk.m">Project · edited yesterday</span><span class="tp-tag" data-i18n="tag.work.h">#work</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+            </ul>
+          </section>
+
+          <section class="m-stack" aria-labelledby="recent-h" data-state-hide data-section>
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="recent-h" data-i18n="h.recent">Recent</h2>
+            </div>
+            <!-- @component ListRow ×4 | shadcn: — · NativeWind: Pressable row (Link) | props: { icon, title, meta, href } | events: onPress -> router.push("/page/[id]") -->
+            <ul class="tp-list tp-card notes-list" role="list" data-component="ListRow">
+              <li data-tags=""><a class="tp-list-row" href="today.html">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.daily">Monday, 12 October</span><span class="tp-list-row__meta"><span data-i18n="n.daily.m">Daily page · edited</span> <span class="tp-num tp-mono">08:52</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li data-tags="family"><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.yoni">Ideas for Yoni's birthday</span><span class="tp-list-row__meta"><span data-i18n="n.yoni.m">Note · edited Sunday</span><span class="tp-tag" data-i18n="tag.family.h">#family</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li data-tags="moving"><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.lease">Lease questions for Dana</span><span class="tp-list-row__meta"><span data-i18n="n.lease.m">Note · edited Saturday</span><span class="tp-tag" data-i18n="tag.moving.h">#moving</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li data-tags="books"><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="n.books">Reading list</span><span class="tp-list-row__meta"><span data-i18n="n.books.m">Note · edited 3 Oct</span><span class="tp-tag" data-i18n="tag.books.h">#books</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+            </ul>
+          </section>
+
+          <p class="tp-muted" id="no-match" role="status" hidden data-i18n="search.none">No notes match that. Try a shorter word, or clear the tag.</p>
+        </div>
+
+        <!-- @component CaptureButton | shadcn: button (floating) · NativeWind: Pressable FAB -> router.push("/capture") | props: {} | events: onPress -> open Capture -->
+        <a class="tp-btn tp-btn--secondary tp-btn--icon tp-glass m-fab" href="capture.html" data-component="CaptureButton" aria-label="Capture a thought" data-i18n-attr="aria-label:fab.capture"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-plus"/></svg></a>
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "notes" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {},
+  he: {
+    "doc.title": "פתקים · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "fab.capture": "לרשום מחשבה",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "הפתקים שלך כאן. עריכות יישמרו כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב", "state.retried": "נטען.",
+    "top.search": "חיפוש פתקים", "top.title": "פתקים", "top.avatar": "הגדרות של מאיה רונן",
+    "page.title": "פתקים", "page.count": "פתקים",
+    "search.label": "חיפוש פתקים", "search.ph": "חיפוש פתקים", "search.none": "אין פתקים שמתאימים. אפשר לנסות מילה קצרה יותר, או לנקות את התגית.",
+    "tags.label": "סינון לפי תגית", "tag.work": "עבודה", "tag.moving": "מעבר", "tag.family": "משפחה", "tag.books": "ספרים",
+    "load.label": "טוענים את הפתקים שלך",
+    "err.title": "לא הצלחנו לטעון את הפתקים שלך.", "err.body": "זה אצלנו, לא אצלך.",
+    "empty.title": "עוד אין פתקים.", "empty.body": "פתקים הם לכל מה שרוצים לשמור: רעיונות, רשימות, דברים שאנשים סיפרו לך. אפשר להתחיל בשורה אחת.", "empty.capture": "לכתוב פתק ראשון",
+    "h.pinned": "מוצמדים", "h.recent": "אחרונים",
+    "n.moving": "רשימת המעבר", "n.moving.m": "מתוך 12 בוצעו", "tag.moving.h": "#מעבר",
+    "n.talk": "המצגת של יום חמישי", "n.talk.m": "פרויקט · נערך אתמול", "tag.work.h": "#עבודה",
+    "n.daily": "יום שני, 12 באוקטובר", "n.daily.m": "דף יומי · נערך ב־",
+    "n.yoni": "רעיונות ליום ההולדת של יוני", "n.yoni.m": "פתק · נערך ביום ראשון", "tag.family.h": "#משפחה",
+    "n.lease": "שאלות על החוזה לדנה", "n.lease.m": "פתק · נערך בשבת",
+    "n.books": "רשימת קריאה", "n.books.m": "פתק · נערך ב־3 באוק׳", "tag.books.h": "#ספרים"
+  }
+};
+
+/* Tag filter + search over pinned and recent notes.
+   REAL: convex pages.listRecent({ tag, search }) · pages.listPinned({}) */
+TP.onReady = function () {
+  var tag = "";
+  function apply() {
+    var q = document.getElementById("note-search").value.trim().toLowerCase(), any = false;
+    document.querySelectorAll("[data-section]").forEach(function (sec) {
+      var shown = 0;
+      sec.querySelectorAll("li[data-tags]").forEach(function (li) {
+        var okTag = !tag || li.getAttribute("data-tags").split(" ").indexOf(tag) !== -1;
+        var okText = !q || li.querySelector(".tp-list-row__title").textContent.toLowerCase().indexOf(q) !== -1;
+        li.hidden = !(okTag && okText); if (!li.hidden) shown++;
+      });
+      sec.hidden = !shown; if (shown) any = true;
+    });
+    document.getElementById("no-match").hidden = any;
+  }
+  document.getElementById("tags").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tag]"); if (!b) return;
+    var on = b.getAttribute("aria-pressed") !== "true";
+    document.querySelectorAll("#tags [data-tag]").forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+    b.setAttribute("aria-pressed", String(on));
+    // REAL: convex pages.listRecent({ tag })
+    tag = on ? b.getAttribute("data-tag") : ""; apply();
+  });
+  // REAL: convex pages.listRecent({ search }) — debounced
+  document.getElementById("note-search").addEventListener("input", apply);
+  document.getElementById("search-btn").addEventListener("click", function () { document.getElementById("note-search").focus(); });
+};
+</script>
+</body>
+</html>

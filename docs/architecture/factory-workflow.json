@@ -1,0 +1,343 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Tempo Flow factory workflow",
+    "output": "docs/architecture/factory-workflow.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Levidavidspublic/tempo-rhythm",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+    }
+  },
+  "lanes": [
+    {
+      "id": "flow",
+      "label": "Factory path"
+    },
+    {
+      "id": "control",
+      "label": "Pause and failure",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "intake",
+      "label": "Intake",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "build",
+      "label": "Build and check",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ship",
+      "label": "Review and ship",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "groups": [
+    {
+      "id": "three_lanes",
+      "label": "Claude, Cursor, Codex",
+      "lane": "flow",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "ticket",
+    "dispatch",
+    "lanes",
+    "checks",
+    "bugbot",
+    "ship"
+  ],
+  "nodes": [
+    {
+      "id": "ticket",
+      "lane": "flow",
+      "col": 0,
+      "type": "frontend",
+      "label": "Ticket",
+      "sublabel": "docs to issue",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-write-tickets.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "factory-write-tickets"
+        },
+        {
+          "path": ".github/workflows/factory-promote.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "factory-promote"
+        }
+      ]
+    },
+    {
+      "id": "dispatch",
+      "lane": "flow",
+      "col": 1,
+      "type": "backend",
+      "label": "Dispatcher",
+      "sublabel": "Copilot, router",
+      "tag": "routing only",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-dispatch.lock.yml",
+          "line": 53,
+          "end_line": 53,
+          "label": "name factory-dispatch"
+        },
+        {
+          "path": ".github/workflows/factory-dispatch.md",
+          "line": 24,
+          "end_line": 26,
+          "label": "gh-aw Copilot model var"
+        },
+        {
+          "path": ".github/workflows/agent-router.yml",
+          "line": 1,
+          "end_line": 3,
+          "label": "agent-router"
+        }
+      ]
+    },
+    {
+      "id": "checks",
+      "lane": "flow",
+      "col": 3,
+      "type": "security",
+      "label": "Checks",
+      "sublabel": "CI and guards",
+      "sources": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "workflow name CI"
+        },
+        {
+          "path": ".github/workflows/scope-guard.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "scope-guard"
+        },
+        {
+          "path": ".github/workflows/security.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "workflow name Security"
+        }
+      ]
+    },
+    {
+      "id": "bugbot",
+      "lane": "flow",
+      "col": 4,
+      "type": "security",
+      "label": "Bugbot",
+      "sublabel": "one per batch PR",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-batch.yml",
+          "line": 1,
+          "end_line": 6,
+          "label": "factory-batch"
+        },
+        {
+          "path": ".github/workflows/factory-review-fix.yml",
+          "line": 1,
+          "end_line": 3,
+          "label": "factory-review-fix"
+        }
+      ]
+    },
+    {
+      "id": "ship",
+      "lane": "flow",
+      "col": 5,
+      "type": "cloud",
+      "label": "Ship",
+      "sublabel": "queue, preview, release",
+      "sources": [
+        {
+          "path": ".github/workflows/convex-deploy-test.yml",
+          "line": 1,
+          "end_line": 6,
+          "label": "test deploy on push"
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "line": 1,
+          "end_line": 14,
+          "label": "Release to production, Amit only"
+        },
+        {
+          "path": ".github/workflows/e2e-preview.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "e2e-preview present"
+        }
+      ]
+    },
+    {
+      "id": "pause",
+      "lane": "control",
+      "col": 1,
+      "type": "security",
+      "label": "Pause",
+      "sublabel": "vars or force",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-dispatch.md",
+          "line": 16,
+          "end_line": 16,
+          "label": "pause unless force"
+        },
+        {
+          "path": ".github/workflows/factory-lane-claude.yml",
+          "line": 42,
+          "end_line": 42,
+          "label": "same pause on a lane"
+        }
+      ]
+    },
+    {
+      "id": "blocked",
+      "lane": "control",
+      "col": 3,
+      "type": "security",
+      "label": "blocked:amit",
+      "sublabel": "after 3 fixes",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-failures.yml",
+          "line": 1,
+          "end_line": 6,
+          "label": "factory-failures"
+        }
+      ]
+    },
+    {
+      "id": "lanes",
+      "lane": "flow",
+      "col": 2,
+      "type": "backend",
+      "label": "3 lanes",
+      "sublabel": "Claude Cursor Codex",
+      "sources": [
+        {
+          "path": ".github/workflows/factory-lane-claude.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "factory-lane-claude"
+        },
+        {
+          "path": ".github/workflows/factory-lane-cursor.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "factory-lane-cursor"
+        },
+        {
+          "path": ".github/workflows/factory-lane-codex.yml",
+          "line": 1,
+          "end_line": 1,
+          "label": "factory-lane-codex"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "ticket",
+      "to": "dispatch",
+      "variant": "emphasis"
+    },
+    {
+      "from": "dispatch",
+      "to": "lanes",
+      "label": "route",
+      "variant": "emphasis"
+    },
+    {
+      "from": "lanes",
+      "to": "checks",
+      "variant": "emphasis"
+    },
+    {
+      "from": "checks",
+      "to": "bugbot",
+      "variant": "emphasis"
+    },
+    {
+      "from": "bugbot",
+      "to": "ship",
+      "label": "clear",
+      "variant": "emphasis"
+    },
+    {
+      "from": "bugbot",
+      "to": "lanes",
+      "label": "fix loop",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "checks",
+      "to": "blocked",
+      "label": "3 failures",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "pause",
+      "to": "dispatch",
+      "label": "force=true",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Present workflows",
+      "items": [
+        "Ticket files land via factory-write-tickets. factory-promote opens GitHub issues from docs/tickets.",
+        "Dispatcher is factory-dispatch (gh-aw lock + markdown, Copilot). agent-router and dispatch-router route by usage limits and agent preference (claude, codex, cursor); Freebuff and OpenCode are manual fallbacks. It routes; it does not implement the ticket.",
+        "Lanes: factory-lane-claude, factory-lane-cursor, factory-lane-codex. Checks present: CI, scope-guard, config-guard, Security.",
+        "factory-quiet-hours gates new work 22:00-09:00 Asia/Jerusalem."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Review and ship",
+      "items": [
+        "Batch loop (factory-batch, factory/LOOP.md): component PRs merge into batch/<loop-id>; ONE Cursor Bugbot review runs on the batch PR. factory-review-fix sends findings back to the lane, max 3 rounds, then blocked:amit.",
+        "Ship: batch PR enters the GitHub merge queue (enqueue via GraphQL) into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN.",
+        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Pause and failure",
+      "items": [
+        "FACTORY_PAUSED_ALL or FACTORY_PAUSED skips factory jobs. force=true on workflow_dispatch runs anyway, and the lane and dispatcher steps reject a bot actor.",
+        "factory-failures.yml describes the failure branch: after 3 failed fixes, blocked:amit.",
+        "config-guard.yml is present (same check family as scope-guard). It is named in the Checks card because a node has only three source slots."
+      ]
+    }
+  ]
+}

@@ -23,7 +23,7 @@ export function SignUpForm({
 }: SignUpFormProps) {
   const isPage = variant === "page";
   return (
-    <div className={isPage ? "w-full max-w-md" : ""}>
+    <div className={isPage ? "tp-auth-stack" : ""}>
       <SignInForm
         variant={variant}
         nextPath={nextPath}
@@ -32,7 +32,7 @@ export function SignUpForm({
         onSwitch={onSwitchToSignIn}
       />
       <p
-        className={`mt-4 text-center text-xs ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
+        className={isPage ? "tp-small tp-muted text-center" : "mt-4 text-center text-xs text-gray-400"}
       >
         By continuing you agree to the{" "}
         <Link href={TERMS_URL} target="_blank" rel="noopener noreferrer" className="underline">

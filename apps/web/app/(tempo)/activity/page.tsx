@@ -1,23 +1,14 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: activity
  * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Activity feed of changes.
+ * @source: docs/design/v3/screens/web/activity.html
+ * @summary: What changed in the last seven days, newest first, grouped by day.
  * @queries: activity.list
  * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
+ * @auth: required (calm sign-in link otherwise)
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { ActivityScreen } from "@/components/activity/ActivityScreen";
 
 export default function Page() {
-  return (
-    <ScaffoldScreen
-      title="Recent activity"
-      category="You"
-      source="screens-5.jsx"
-      summary="Activity feed of changes."
-    />
-  );
+  return <ActivityScreen />;
 }

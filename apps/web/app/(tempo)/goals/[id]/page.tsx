@@ -1,30 +1,15 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: goal-detail
- * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Goal detail view with milestones.
- * @queries: goals.get
- * @mutations: goals.update, goals.logMilestone
+ * @source: docs/design/v3/screens/web/goal-detail.html
+ * @queries: users.getProfile, goals.list (the goal is found by id, so a bad id reads as not found)
+ * @mutations: goals.update (title, why, status)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { GoalDetailScreen } from "@/components/goals/GoalDetailScreen";
 
 type Params = { id: string };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function Page({ params }: { params: Promise<Params> }) {
   const { id } = await params;
-  return (
-    <ScaffoldScreen
-      title="Goal detail"
-      category="Library"
-      source="screens-4.jsx"
-      summary={`Goal detail view with milestones. (id: ${id})`}
-    />
-  );
+  return <GoalDetailScreen goalId={id} />;
 }

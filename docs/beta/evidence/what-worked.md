@@ -1,0 +1,22 @@
+# What worked cleanly
+
+- Render pass: 256 of 256 loads (32 routes × 8 variants). All were HTTP 200, with no bounce to /sign-in, 0 px sideways scroll, no console errors, and dir=rtl in Hebrew.
+- /tasks: a 500-character title wraps cleanly. A Hebrew + emoji title ("clumsy קניות 🛒 לשבת") is kept exactly. Reload right after Add makes one task. Five fast taps on complete give the right final state after reload. The focus ring is visible on every field. A task added in tab A shows up live in tab B.
+- /notes: a double click on "New note" makes one note, and so does a double Enter. The `[[` picker links pages, and "Linked here" shows the link. Five fast pin taps give the right state. Delete + Undo works from the list and from the page. The page menu is in Hebrew.
+- /habits: an empty Add shows "Write a few words first, then save." A double Enter makes one habit. Five fast check-ins settle on "Logged today" after reload. The habit shows on Today's strip. A 300-character Hebrew name causes no overflow at 390.
+- /routines: a double click on "New routine" makes one routine. In a run, a double click on "Done, next step" moves one step. "Back a step" and "Skip this one" work, Pause disables Done, and the finish tally shows.
+- /calendar: an empty Add says "Give the event a gentle label first." A double click adds one event. A Hebrew + emoji title shows in the Day and Week views.
+- /plan: an empty block says "Give this block a name." 1000 minutes is refused with a message. A double click on Save makes one block.
+- /templates: Save is disabled while empty. A double click on Save makes one template. "Use" opens the run page ("Make the page / Not now").
+- /journal: five quick "Another prompt" presses give 6 different prompts. The Hebrew prompts are Hebrew.
+- /search: Hebrew and emoji searches find tasks and habits. A 500-character or blank search fails quietly.
+- Coach: a double Enter in Today's coach box sends one message. /coach gives a proposal. A double click on Accept makes one task. Undo still works after leaving and coming back, and removes the task.
+- /brain-dump: "Sort it" is disabled while empty. It sorts 3 lines (Hebrew + emoji included) with reasons and Accept/Reject.
+- /tracking: a 500-character Hebrew intention logs fine, and the "Focus blocks today" total updates.
+- Settings: five fast theme taps and five fast text-size taps keep the last choice after reload. Profile: an empty name gives a clear message, "Undo my edits" restores it, and the email is read-only. Nags: an empty Add says "Give the nag a name."; a double click makes one. Memory: a double Enter makes one entry. The coach-push dial works with the arrow keys.
+- /billing: no payment step and no card fields. Five Monthly/Yearly toggles work and the prices update. "Choosing a plan opens after early access."
+- /notifications: a calm empty state, and "Mark all read" is disabled when there is nothing to read.
+- Ctrl+K: opens, finds pages, Enter opens the page, Esc closes, and a double press toggles cleanly. A Hebrew query works.
+- Sidebar at 390 (he): opens from the top bar. Esc closes it, and so does a tap outside. A nav link navigates and closes it.
+- Keyboard: "Skip to page" works. Every tabbed control on Today, in Hebrew too, has a visible 2 px focus ring.
+- /week opens this week's page ("Week 42") with Focus, Days and Carry forward.

@@ -1,30 +1,21 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: template-editor
- * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Legacy template editor.
- * @queries: (none)
- * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TemplateEditorScreen } from "@/components/template-builder/TemplateEditor";
+import { ProfileReady } from "@/components/today/ProfileReady";
+import { routeParam } from "@/lib/route-param";
 
 type Params = { id: string };
 
+/** Template editor, the plain form view (docs/design/v3/screens/web/template-editor.html). */
 export default async function Page({
   params,
 }: {
   params: Promise<Params>;
 }) {
-  const { id } = await params;
+  const id = routeParam((await params).id);
   return (
-    <ScaffoldScreen
-      title="Template editor (legacy)"
-      category="You"
-      source="screens-5.jsx"
-      summary={`Legacy template editor. (id: ${id})`}
-    />
+    <div data-testid="template-editor-route">
+      <ProfileReady>
+        <TemplateEditorScreen templateId={id} />
+      </ProfileReady>
+    </div>
   );
 }

@@ -68,7 +68,8 @@ describe("mobile streak ring leftover wiring", () => {
     expect(screen).not.toContain("initialStreak");
     expect(ring).not.toContain("initialStreak");
     expect(ring).not.toContain("Count today");
-    expect(today).toContain("TempoEmptyState");
+    // Today is the v3 screen now; the leftover must still not move onto it.
+    expect(today).toContain("docs/design/v3/screens/mobile/today.html");
     expect(today).not.toContain("TrackingStreakRing");
   });
 });

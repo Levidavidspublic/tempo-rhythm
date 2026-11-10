@@ -1,30 +1,21 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: habit-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Single-habit detail with streak history.
- * @queries: habits.get
- * @mutations: habits.logComplete, habits.update
+ * @source: docs/design/v3/screens/web/habit-detail.html
+ * @summary: One habit: Log today, a 6-week grid and one plain sentence. No streaks.
+ * @queries: habits.get, habitCheckIns.listForHabit
+ * @mutations: habitCheckIns.check, habitCheckIns.undo, habits.update
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { HabitDetail } from "@/components/habit-detail/HabitDetail";
 
 type Params = { id: string };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function Page({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   return (
-    <ScaffoldScreen
-      title="Habit detail"
-      category="Library"
-      source="screens-3.jsx"
-      summary={`Single-habit detail with streak history. (id: ${id})`}
-    />
+    <div data-testid="habit-detail-route">
+      <HabitDetail habitId={id} />
+    </div>
   );
 }

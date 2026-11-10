@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your trial ends tomorrow · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — trial-end.html */
+  .te-actions { display: grid; gap: var(--tp-space-2); }
+  .te-facts { margin: 0; display: grid; gap: var(--tp-space-2); }
+  .te-fact { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--tp-space-1) var(--tp-space-4); padding-block: var(--tp-space-2); }
+  .te-fact dd { margin: 0; }
+  .te-confirm { display: grid; gap: var(--tp-space-3); }
+</style>
+</head>
+<body>
+<!--
+@screen   Trial ending
+@route    apps/web/app/(tempo)/billing/trial-end/page.tsx
+@layout   Bare
+@data     plan = billing.getMine({})                 // Convex query: {tier: "trial", trialEndsAt, convertsTo: "basic", priceAfter: 10, interval: "month"}
+@actions  continue -> billing.acknowledgeConversion({})   // nothing is charged now; Basic starts at trialEndsAt
+@actions  see all plans -> link to billing
+@actions  cancel trial -> billing.cancel({})          // asks first, inline; no further charge
+@states   default | empty (n/a) | loading | error | offline  (?state=)   + continued, cancelled
+@flow     1. Shown to people on the $1 trial, 1 day before it ends (also reached from the 1-day notice). Here Maya is shown as a trial user.
+          2. Say it plainly: when the trial ends, what happens if she does nothing, and the exact price after.
+          3. Three clear choices: continue with Basic (the one primary), see every plan, or cancel before any charge.
+          4. Cancel asks once, inline, and says what stays. No guilt, no "are you sure you want to lose…".
+          5. After either choice, show a calm confirmation and a way back to Today.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main class="tp-auth" id="main" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card | props: { title, lede } | events: — -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <div class="tp-auth-card__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline right now.</span><span data-i18n="off.body">Your choice is sent as soon as you're back. Nothing is charged while you're offline.</span></span>
+    </div>
+
+    <!-- ===== Choose ===== -->
+    <div class="te-confirm" id="te-choose" data-state-hide>
+      <h1 class="tp-auth-card__title" data-i18n="te.title">Your trial ends tomorrow</h1>
+      <p class="tp-auth-card__lede" data-i18n="te.lede">You've had three weeks of Tempo for $1. Here's exactly what happens next, so you can decide calmly.</p>
+
+      <dl class="te-facts">
+        <div class="te-fact tp-setting-row"><dt class="tp-strong" data-i18n="k.ends">Trial ends</dt><dd><span class="tp-num" data-i18n="v.ends">Tue 13 Oct 2026, 09:00</span></dd></div>
+        <div class="te-fact tp-setting-row"><dt class="tp-strong" data-i18n="k.then">If you do nothing</dt><dd data-i18n="v.then">Basic starts</dd></div>
+        <div class="te-fact tp-setting-row"><dt class="tp-strong" data-i18n="k.price">Basic costs</dt><dd class="od-nowrap"><span class="tp-num">$10</span> <span data-i18n="v.month">a month</span></dd></div>
+        <div class="te-fact tp-setting-row"><dt class="tp-strong" data-i18n="k.cancel">Cancel</dt><dd data-i18n="v.cancel">Any time, in one step</dd></div>
+      </dl>
+
+      <!-- @component Button ×3 | shadcn: button | props: { variants: primary, secondary, danger-ghost } | events: onContinue -> billing.acknowledgeConversion({}), onCancel -> confirm -> billing.cancel({}) -->
+      <div class="te-actions">
+        <button class="tp-btn tp-btn--primary tp-btn--block" type="button" data-te="continue"><span data-i18n="b.continue">Continue with Basic</span></button>
+        <a class="tp-btn tp-btn--secondary tp-btn--block" href="billing.html"><span data-i18n="b.plans">See every plan</span></a>
+        <button class="tp-btn tp-btn--danger-ghost tp-btn--block" type="button" data-te="ask-cancel" aria-expanded="false" aria-controls="te-cancel"><span data-i18n="b.cancel">Cancel before I'm charged</span></button>
+      </div>
+
+      <!-- @component Notice | shadcn: alert-dialog (inline) | props: { tone: 'caution', title, body } | events: onConfirm -> billing.cancel({}) -->
+      <div class="tp-notice" data-tone="caution" id="te-cancel" role="group" aria-labelledby="tc-title" data-component="Notice" hidden>
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg></span>
+        <span class="tp-notice__text">
+          <span class="tp-notice__title" id="tc-title" tabindex="-1" data-i18n="tc.title">Cancel your trial?</span>
+          <span data-i18n="tc.body">You won't be charged again. You can use Tempo until the trial ends, and your pages stay saved.</span>
+          <span class="te-actions">
+            <button class="tp-btn tp-btn--danger" type="button" data-te="cancel"><span data-i18n="tc.yes">Yes, cancel my trial</span></button>
+            <button class="tp-btn tp-btn--ghost" type="button" data-te="keep"><span data-i18n="tc.no">Go back</span></button>
+          </span>
+        </span>
+      </div>
+
+      <p class="tp-auth-card__foot" data-i18n="te.foot">Questions first? Ask Amit, the founder. A person reads every message.</p>
+      <p class="tp-auth-card__foot"><a href="ask-founder.html" data-i18n="te.ask">Ask the founder</a></p>
+    </div>
+
+    <!-- ===== Done ===== -->
+    <!-- @component StatusPanel | shadcn: card | props: { tone: 'done', title, body } | events: link -->
+    <div class="tp-status-panel" data-tone="done" id="te-done" data-component="StatusPanel" hidden>
+      <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-check"/></svg></span>
+      <h1 class="tp-status-panel__title" id="te-done-title" tabindex="-1"></h1>
+      <p class="tp-status-panel__body" id="te-done-body"></p>
+      <div class="tp-status-panel__actions"><a class="tp-btn tp-btn--secondary" href="today.html"><span data-i18n="d.today">Back to Today</span></a></div>
+    </div>
+
+    <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+    <div class="tp-state tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading empty">
+      <span class="tp-sr-only" data-i18n="loading">Loading your trial details</span>
+      <div class="tp-skel-list" aria-hidden="true">
+        <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+      </div>
+    </div>
+
+    <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your trial details." } | events: onRetry -> refetch -->
+    <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+      <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+      <h1 class="tp-state__title" data-i18n="error.title">Couldn't load your trial details.</h1>
+      <p class="tp-state__body" data-i18n="error.body">Nothing has been charged. Try again, or see every plan.</p>
+      <div class="tp-state__actions">
+        <button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button>
+        <a class="tp-btn tp-btn--ghost" href="billing.html"><span data-i18n="b.plans">See every plan</span></a>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="tp-toast-region" aria-live="polite"></div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "done.cont.t": "You're all set", "done.cont.b": "Basic starts on Tue 13 Oct 2026 at 09:00, at $10 a month. You'll get one more reminder an hour before.",
+    "done.can.t": "Your trial is cancelled", "done.can.b": "You won't be charged again. You can keep using Tempo until Tue 13 Oct 2026, 09:00, and your pages stay saved.",
+    "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "הניסיון שלך מסתיים מחר · Tempo",
+    "skip": "דלגי לתוכן",
+    "off.title": "אין חיבור כרגע.", "off.body": "הבחירה שלך תישלח ברגע שתחזרי. שום דבר לא מחויב בזמן שאין חיבור.",
+    "te.title": "הניסיון שלך מסתיים מחר",
+    "te.lede": "היו לך שלושה שבועות של Tempo ב־1$. הנה בדיוק מה קורה עכשיו, כדי שתוכלי להחליט בנחת.",
+    "k.ends": "הניסיון מסתיים", "v.ends": "יום ג׳ 13.10.2026, 09:00",
+    "k.then": "אם לא תעשי כלום", "v.then": "מסלול Basic מתחיל",
+    "k.price": "Basic עולה", "v.month": "לחודש",
+    "k.cancel": "ביטול", "v.cancel": "בכל רגע, בצעד אחד",
+    "b.continue": "להמשיך עם Basic", "b.plans": "לראות את כל המסלולים", "b.cancel": "לבטל לפני שיש חיוב",
+    "tc.title": "לבטל את הניסיון?", "tc.body": "לא יהיו עוד חיובים. אפשר להשתמש ב־Tempo עד סוף הניסיון, והדפים שלך נשמרים.",
+    "tc.yes": "כן, לבטל את הניסיון", "tc.no": "לחזור",
+    "te.foot": "יש שאלות קודם? אפשר לשאול את עמית, המייסד. אדם קורא כל הודעה.", "te.ask": "לשאול את המייסד",
+    "done.cont.t": "הכול מסודר", "done.cont.b": "Basic מתחיל ביום ג׳ 13.10.2026 בשעה 09:00, ב־10$ לחודש. תקבלי עוד תזכורת אחת שעה לפני.",
+    "done.can.t": "הניסיון שלך בוטל", "done.can.b": "לא יהיו עוד חיובים. אפשר להמשיך להשתמש ב־Tempo עד יום ג׳ 13.10.2026, 09:00, והדפים שלך נשמרים.",
+    "d.today": "חזרה להיום",
+    "loading": "טוען את פרטי הניסיון שלך",
+    "error.title": "לא הצלחנו לטעון את פרטי הניסיון.", "error.body": "שום דבר לא חויב. נסי שוב, או ראי את כל המסלולים.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען."
+  }
+};
+
+(function () {
+  var choose = document.getElementById("te-choose"), done = document.getElementById("te-done");
+  var cancelBox = document.getElementById("te-cancel"), ask = document.querySelector('[data-te="ask-cancel"]');
+
+  function finish(kind) {
+    choose.hidden = true; done.hidden = false;
+    var t = document.getElementById("te-done-title");
+    t.textContent = TP.t("done." + kind + ".t");
+    document.getElementById("te-done-body").textContent = TP.t("done." + kind + ".b");
+    t.focus();
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-te]"); if (!b) return;
+    var act = b.getAttribute("data-te");
+    if (act === "continue") {
+      // REAL: convex billing.acknowledgeConversion({}) — no charge now; Polar converts the subscription at trialEndsAt
+      finish("cont");
+    }
+    if (act === "ask-cancel") {
+      cancelBox.hidden = false; ask.setAttribute("aria-expanded", "true");
+      document.getElementById("tc-title").focus();
+    }
+    if (act === "keep") {
+      cancelBox.hidden = true; ask.setAttribute("aria-expanded", "false"); ask.focus();
+    }
+    if (act === "cancel") {
+      // REAL: convex billing.cancel({}) — cancels the Polar subscription before conversion; access continues until trialEndsAt
+      finish("can");
+    }
+  });
+})();
+</script>
+</body>
+</html>

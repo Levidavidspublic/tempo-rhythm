@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Tempo remembers · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — memory.html */
+  .mm-body { display: grid; gap: var(--tp-space-10); min-width: 0; }
+  .mm-row-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-1); }
+  .mm-state { padding-block: var(--tp-space-6); }
+  .mm-list > li[data-out] { display: none; }
+</style>
+</head>
+<body>
+<!--
+@screen   What Tempo remembers
+@route    apps/web/app/(tempo)/memory/page.tsx
+@layout   TempoShell
+@data     memories = memory.list({ kind: "all" | "fromYou" | "guess" })   // Convex query: {id, fact, source {kind, label, at}, isGuess}
+@data     graphGuesses = lifeGraph.listGuesses({})                         // Convex query: links the AI guessed (F-54), kept apart from links Maya wrote
+@actions  forget one -> memory.forget({ id })                              // soft delete, Undo 5 min -> memory.restore({ id })
+@actions  confirm a guess -> lifeGraph.confirmGuess({ id })                // the "Guess" badge becomes "You confirmed this"
+@actions  forget everything -> memory.forgetAll({})                        // asks first; Undo 5 min -> memory.restoreAll({ batchId })
+@actions  export as Markdown -> memory.exportMarkdown({})                  // returns a file; nothing is removed
+@actions  import from ChatGPT or Claude -> link to memory-import
+@states   default | empty | loading | error | offline  (?state=)   + undo
+@flow     1. Explain in one line what Tempo remembers and why: so the coach doesn't make Maya repeat herself.
+          2. Filter: All, From you, Guesses. Each memory shows where it came from and when.
+          3. Forget removes one memory at once and shows Undo for 5 minutes. Focus moves to the next row.
+          4. Life-graph links Tempo guessed are marked "Guess" in words. Maya can confirm one ("That's right") or forget it.
+          5. Export saves every memory as one Markdown file.
+          6. "Forget everything" asks first, says exactly what goes and what stays, and still offers Undo for 5 minutes.
+          7. Empty: "Tempo doesn't remember anything yet." Error: "Couldn't load your memories. Nothing was forgotten."
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'memory' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">Yours</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="modules.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.modules">Modules</span></a></li>
+        <li><a class="tp-tree-item" href="memory.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.memory">What Tempo remembers</span></a></li>
+        <li><a class="tp-tree-item" href="nags.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.nags">Nags</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['What Tempo remembers'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="mm.title">What Tempo remembers</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — + button | props: { title, subtitle, actions: [Import] } | events: link -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="mm.title">What Tempo remembers</h1>
+          <p class="tp-pagehead__sub" data-i18n="mm.sub">Small things Tempo keeps so the coach doesn't make you repeat yourself. Forget anything, any time. Only you can see this.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--secondary" href="memory-import.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-upload"/></svg><span data-i18n="mm.import">Import from ChatGPT or Claude</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">Anything you forget now is removed as soon as you reconnect.</span></span>
+      </div>
+
+      <div class="mm-body">
+
+        <!-- ===== Memories ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Things you told Tempo', count: 6 } | events: — -->
+        <section class="tp-section" aria-labelledby="mem-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="mem-title" data-i18n="mem.title">Things Tempo remembers</h2>
+            <span class="tp-section__count"><span class="tp-num">6</span> <span data-i18n="mem.count">memories</span></span>
+          </div>
+
+          <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: [All, From you, Imported], value: 'all' } | events: onChange -> memory.list({ kind }) -->
+          <div class="tp-segmented" role="radiogroup" aria-label="Show" data-i18n-attr="aria-label:filter.label" data-component="Segmented" data-filter>
+            <button class="tp-seg__opt" type="button" role="radio" data-value="all" aria-checked="true" tabindex="0"><span data-i18n="filter.all">All</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-value="you" aria-checked="false" tabindex="-1"><span data-i18n="filter.you">From you</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" data-value="imported" aria-checked="false" tabindex="-1"><span data-i18n="filter.imported">Imported</span></button>
+          </div>
+
+          <!-- @component MemoryItem ×6 | shadcn: — + button | props: { memory: {id, fact, source: {kind, label, at}} } | events: onForget -> memory.forget({ id }) (Undo 5 min -> memory.restore) -->
+          <ul class="tp-memory-list mm-list" id="mem-list" role="list" data-component="MemoryItem">
+            <li data-kind="you"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f1" data-i18n="f1">Mondays are hard after the weekend. Start them small.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="src.coach">You said it to the coach</span> · <span data-i18n="d.today">today</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+            <li data-kind="you"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f2" data-i18n="f2">Phone calls feel easier before noon.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="src.coach">You said it to the coach</span> · <span data-i18n="d.fri">Fri 9 Oct</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f2"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+            <li data-kind="you"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f3" data-i18n="f3">Dana is my manager. Yoni is my brother.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="src.page">From your page "Thursday talk"</span> · <span data-i18n="d.thu">Thu 8 Oct</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f3"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+            <li data-kind="you"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f4" data-i18n="f4">I like short plans. Three things a day, not ten.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg><span data-i18n="src.voice">You said it in a voice call</span> · <span data-i18n="d.tue">Tue 6 Oct</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f4"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+            <li data-kind="imported"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f5" data-i18n="f5">Works as a product designer, mostly from home.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-download"/></svg><span data-i18n="src.chatgpt">Imported from ChatGPT</span> · <span data-i18n="d.sat">Sat 3 Oct</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f5"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+            <li data-kind="imported"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="f6" data-i18n="f6">Prefers Hebrew for voice, English for writing.</span>
+              <span class="tp-memory-row__source"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-download"/></svg><span data-i18n="src.claude">Imported from Claude</span> · <span data-i18n="d.sat">Sat 3 Oct</span></span>
+              <span class="tp-memory-row__action"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="f6"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button></span>
+            </div></li>
+          </ul>
+        </section>
+
+        <!-- ===== Life graph guesses ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Links Tempo guessed', count: 3 } | events: — -->
+        <section class="tp-section" aria-labelledby="guess-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="guess-title" data-i18n="g.title">Links Tempo guessed</h2>
+            <span class="tp-section__count" data-i18n="g.sub">Tempo connects people, projects and habits. Links you wrote yourself aren't shown here. These are only guesses until you say so.</span>
+          </div>
+          <!-- @component MemoryItem ×3 | shadcn: — + button + badge | props: { memory: {id, fact, source, isGuess: true} } | events: onConfirm -> lifeGraph.confirmGuess({ id }), onForget -> memory.forget({ id }) -->
+          <ul class="tp-memory-list" role="list" data-component="MemoryItem">
+            <li data-kind="guess"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="g1" data-i18n="g1">Gym slips after late nights.</span>
+              <span class="tp-memory-row__source">
+                <!-- @component Badge | shadcn: badge | props: { icon: 'question', label: 'Guess', tone: 'caution' } | events: — -->
+                <span class="tp-badge" data-tone="caution" data-component="Badge" data-guess-badge><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-question"/></svg><span data-i18n="badge.guess">Guess</span></span>
+                <span data-i18n="g1.src">From 4 weeks of habit logs</span>
+              </span>
+              <span class="tp-memory-row__action mm-row-actions">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-mm="confirm" aria-describedby="g1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="g.right">That's right</span></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="g1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button>
+              </span>
+            </div></li>
+            <li data-kind="guess"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="g2" data-i18n="g2">Dana is part of the "Thursday talk" project.</span>
+              <span class="tp-memory-row__source">
+                <span class="tp-badge" data-tone="caution" data-component="Badge" data-guess-badge><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-question"/></svg><span data-i18n="badge.guess">Guess</span></span>
+                <span data-i18n="g2.src">Her name is on that page twice</span>
+              </span>
+              <span class="tp-memory-row__action mm-row-actions">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-mm="confirm" aria-describedby="g2"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="g.right">That's right</span></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="g2"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button>
+              </span>
+            </div></li>
+            <li data-kind="guess"><div class="tp-memory-row">
+              <span class="tp-memory-row__fact" dir="auto" id="g3" data-i18n="g3">"Moving flat" and "Call the bank" are linked.</span>
+              <span class="tp-memory-row__source">
+                <span class="tp-badge" data-tone="caution" data-component="Badge" data-guess-badge><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-question"/></svg><span data-i18n="badge.guess">Guess</span></span>
+                <span data-i18n="g3.src">Both mention the deposit</span>
+              </span>
+              <span class="tp-memory-row__action mm-row-actions">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-mm="confirm" aria-describedby="g3"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="g.right">That's right</span></button>
+                <button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-action="memory-forget" aria-describedby="g3"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="forget">Forget</span></button>
+              </span>
+            </div></li>
+          </ul>
+        </section>
+
+        <!-- ===== Export + forget all ===== -->
+        <section class="tp-section" aria-labelledby="keep-title" data-state-hide>
+          <h2 class="tp-section__title" id="keep-title" data-i18n="keep.title">Take it with you, or start fresh</h2>
+          <!-- @component ExportArea | shadcn: card + button | props: { format: 'markdown' } | events: onExport -> memory.exportMarkdown({}) -->
+          <div class="tp-export" data-component="ExportArea">
+            <svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-download"/></svg>
+            <div class="tp-export__text">
+              <span class="tp-export__title" data-i18n="ex.title">Export as Markdown</span>
+              <span class="tp-export__note" role="status" data-i18n="ex.note">One file with every memory and where it came from. Nothing is removed.</span>
+            </div>
+            <button class="tp-btn tp-btn--secondary" type="button" data-action="memory-export"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-download"/></svg><span data-i18n="ex.btn">Export</span></button>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — + button | props: { label: 'Forget everything', tone: 'danger' } | events: onClick -> open-sheet (confirm) -> memory.forgetAll({}) -->
+          <div class="tp-setting-row tp-surface" data-tone="danger" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="fa.label">Forget everything</span>
+              <span class="tp-help" data-i18n="fa.help">Removes every memory and guess. Your pages, tasks and chats stay.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <button class="tp-btn tp-btn--danger-ghost" type="button" data-action="open-sheet" aria-controls="forget-sheet" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="fa.btn">Forget everything</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -->
+        <div class="tp-state tp-state--empty mm-state" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-memory"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">Tempo doesn't remember anything yet.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">As you talk with the coach, small useful things show up here, and you decide what stays. You can also bring over what ChatGPT or Claude already knows.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="memory-import.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-upload"/></svg><span data-i18n="mm.import">Import from ChatGPT or Claude</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state tp-state--loading mm-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your memories</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your memories." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error mm-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your memories.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was forgotten. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Forget-all confirmation ===== -->
+  <!-- @component MobileSheet | shadcn: alert-dialog (sheet on phone) | props: { id: 'forget-sheet', title: 'Forget everything Tempo remembers?' } | events: onConfirm -> memory.forgetAll({}), onCancel -> close-sheet -->
+  <div class="tp-sheet-scrim" data-for="forget-sheet" data-action="close-sheet" hidden></div>
+  <section class="tp-sheet tp-glass" id="forget-sheet" role="alertdialog" aria-modal="true" aria-labelledby="fs-title" aria-describedby="fs-body" data-component="MobileSheet" hidden>
+    <span class="tp-sheet__grabber" aria-hidden="true"></span>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="fs-title" data-i18n="fs.title">Forget everything Tempo remembers?</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <p id="fs-body"><span data-i18n="fs.body1">All</span> <span class="tp-num">9</span> <span data-i18n="fs.body2">memories and guesses will be removed. Your pages, tasks and chats stay as they are. You can undo for 5 minutes. If you want a copy, export first.</span></p>
+    </div>
+    <div class="tp-sheet__foot">
+      <button class="tp-btn tp-btn--secondary" type="button" data-action="close-sheet"><span data-i18n="fs.keep">Keep my memories</span></button>
+      <button class="tp-btn tp-btn--danger" type="button" data-mm="forget-all"><span data-i18n="fs.confirm">Forget everything</span></button>
+    </div>
+  </section>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title: 'Forgotten', countdown: 5:00 } | events: onUndo -> memory.restore({ id }) / memory.restoreAll({ batchId }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "memory.forgot": "Forgotten", "forgotAll": "Everything is forgotten", "restoredAll": "Your memories are back.",
+    "g.confirmed": "You confirmed this", "export.working": "Making your file…", "export.ready": "Your file is ready. It downloaded as memories.md.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "מה Tempo זוכר · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.you": "שלך",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.modules": "מודולים", "nav.memory": "מה Tempo זוכר", "nav.nags": "נדנודים",
+    "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "mm.title": "מה Tempo זוכר",
+    "mm.sub": "דברים קטנים ש־Tempo שומר כדי שהמאמן לא יבקש ממך לחזור על עצמך. אפשר לשכוח כל דבר, בכל רגע. רק את רואה את זה.",
+    "mm.import": "ייבוא מ־ChatGPT או מ־Claude",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "מה שתבקשי לשכוח עכשיו יימחק ברגע שהחיבור יחזור.",
+    "mem.title": "דברים ש־Tempo זוכר", "mem.count": "זיכרונות",
+    "filter.label": "הצגה", "filter.all": "הכול", "filter.you": "ממך", "filter.imported": "מיובאים",
+    "f1": "ימי שני קשים אחרי סוף השבוע. להתחיל אותם בקטן.",
+    "f2": "קל יותר לעשות שיחות טלפון לפני הצהריים.",
+    "f3": "דנה היא המנהלת שלי. יוני הוא אח שלי.",
+    "f4": "אני אוהבת תוכניות קצרות. שלושה דברים ביום, לא עשרה.",
+    "f5": "עובדת כמעצבת מוצר, בעיקר מהבית.",
+    "f6": "מעדיפה עברית בקול, ואנגלית בכתיבה.",
+    "src.coach": "אמרת את זה למאמן", "src.page": "מהדף שלך ״הרצאה ביום חמישי״", "src.voice": "אמרת את זה בשיחה קולית",
+    "src.chatgpt": "יובא מ־ChatGPT", "src.claude": "יובא מ־Claude",
+    "d.today": "היום", "d.fri": "יום ו׳ 9.10", "d.thu": "יום ה׳ 8.10", "d.tue": "יום ג׳ 6.10", "d.sat": "שבת 3.10",
+    "forget": "לשכוח",
+    "g.title": "קשרים ש־Tempo ניחש",
+    "g.sub": "Tempo מחבר בין אנשים, פרויקטים והרגלים. קשרים שכתבת בעצמך לא מוצגים כאן. אלה רק ניחושים עד שתגידי אחרת.",
+    "badge.guess": "ניחוש", "g.right": "נכון", "g.confirmed": "את אישרת את זה",
+    "g1": "האימונים נופלים אחרי לילות מאוחרים.", "g1.src": "מתוך 4 שבועות של רישום הרגלים",
+    "g2": "דנה קשורה לפרויקט ״הרצאה ביום חמישי״.", "g2.src": "השם שלה מופיע בדף הזה פעמיים",
+    "g3": "״מעבר דירה״ ו״להתקשר לבנק״ קשורים.", "g3.src": "שניהם מזכירים את הפיקדון",
+    "keep.title": "לקחת איתך, או להתחיל מחדש",
+    "ex.title": "ייצוא כ־Markdown", "ex.note": "קובץ אחד עם כל זיכרון ומאיפה הוא הגיע. שום דבר לא נמחק.", "ex.btn": "ייצוא",
+    "export.working": "מכין את הקובץ שלך…", "export.ready": "הקובץ מוכן. הוא ירד בשם memories.md.",
+    "fa.label": "לשכוח הכול", "fa.help": "מוחק כל זיכרון וכל ניחוש. הדפים, המשימות והשיחות שלך נשארים.", "fa.btn": "לשכוח הכול",
+    "fs.title": "לשכוח את כל מה ש־Tempo זוכר?",
+    "fs.body1": "כל", "fs.body2": "הזיכרונות והניחושים יימחקו. הדפים, המשימות והשיחות שלך נשארים כמו שהם. אפשר לבטל במשך 5 דקות. אם תרצי עותק, כדאי לייצא קודם.",
+    "fs.keep": "להשאיר את הזיכרונות", "fs.confirm": "לשכוח הכול", "sheet.close": "סגירה",
+    "empty.title": "Tempo עוד לא זוכר כלום.",
+    "empty.body": "כשתדברי עם המאמן, דברים קטנים ושימושיים יופיעו כאן, ואת מחליטה מה נשאר. אפשר גם להביא את מה ש־ChatGPT או Claude כבר יודעים.",
+    "loading": "טוען את הזיכרונות שלך",
+    "error.title": "לא הצלחנו לטעון את הזיכרונות.", "error.body": "שום דבר לא נשכח. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "memory.forgot": "נשכח", "forgotAll": "הכול נשכח", "restoredAll": "הזיכרונות שלך חזרו.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  /* Filter: All / From you / Imported (demo filters the rendered rows). */
+  document.addEventListener("click", function (e) {
+    var opt = e.target.closest("[data-filter] [role=radio]");
+    if (opt) {
+      // REAL: convex memory.list({ kind }) — re-query with the chosen filter
+      var v = opt.getAttribute("data-value");
+      document.querySelectorAll("#mem-list > li").forEach(function (li) {
+        li.toggleAttribute("data-out", !(v === "all" || li.getAttribute("data-kind") === v));
+      });
+      return;
+    }
+    var b = e.target.closest("[data-mm]"); if (!b) return;
+    var act = b.getAttribute("data-mm");
+
+    if (act === "confirm") {
+      // REAL: convex lifeGraph.confirmGuess({ id }) — moves the link from "AI guessed" to "you confirmed"
+      var row = b.closest(".tp-memory-row");
+      var badge = row.querySelector("[data-guess-badge]");
+      if (badge) { badge.setAttribute("data-tone", "done"); badge.innerHTML = TP.icon("check", "tp-icon--sm") + "<span></span>"; badge.lastChild.textContent = TP.t("g.confirmed"); }
+      var f = row.querySelector('[data-action="memory-forget"]'); b.remove(); if (f) f.focus();
+    }
+
+    if (act === "forget-all") {
+      // REAL: convex memory.forgetAll({}) — soft delete as one batch; Undo -> memory.restoreAll({ batchId }) for 5 minutes
+      TP.closeSheet();
+      TP.setState("empty");
+      TP.toast({
+        title: TP.t("forgotAll"),
+        onUndo: function () { TP.setState("default"); var m = document.getElementById("main"); if (m) m.focus(); }
+      });
+      var h = document.querySelector(".tp-state--empty .tp-state__title"); if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+    }
+  });
+})();
+</script>
+</body>
+</html>

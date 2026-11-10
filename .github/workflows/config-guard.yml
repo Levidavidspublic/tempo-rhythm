@@ -11,6 +11,8 @@ name: config-guard
 #
 # pull_request_target: the workflow AND the script come from the base branch, so a PR can never
 # rewrite the guard that judges it. It never checks out or runs PR code; it only reads the API.
+# merge_group: same script, same rules. The checkout is the queue base SHA, not the queued diff.
+# The PR number comes from the queue ref. If it cannot be resolved, the job fails closed.
 # Note: for PRs into master/main the guard runs from master/main, so it reports there only after
 # the first promotion that contains this file.
 
@@ -18,6 +20,8 @@ on:
   pull_request_target:
     branches: [integration, master, main]
     types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+  merge_group:
+    branches: [integration, master, main]
 
 permissions:
   contents: read
@@ -26,7 +30,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: config-guard-${{ github.event.pull_request.number }}
+  group: config-guard-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
   cancel-in-progress: true
 
 jobs:
@@ -36,8 +40,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out the guard from the base branch (never PR code)
+        if: github.event_name != 'merge_group'
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - name: Check out the guard from the merge-group base (never the queued diff)
+        if: github.event_name == 'merge_group'
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ github.event.merge_group.base_sha }}
           sparse-checkout: scripts/factory
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -46,5 +58,29 @@ jobs:
       - name: Run config-guard
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node scripts/factory/config-guard.mjs
+          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          QUEUE_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          run_one() { PR_NUMBER="$1" node scripts/factory/config-guard.mjs; }
+          if [ "$EVENT_NAME" != "merge_group" ]; then
+            run_one "$PR_NUMBER"
+            exit 0
+          fi
+          nums=$(
+            {
+              printf '%s\n' "$QUEUE_REF" | grep -oE 'pr-[0-9]+' | cut -d- -f2 || true
+              gh api "repos/${GITHUB_REPOSITORY}/commits/${QUEUE_SHA}/pulls" --jq '.[].number' || true
+            } | sort -u | grep -E '^[0-9]+$' || true
+          )
+          if [ -z "$nums" ]; then
+            echo "::error::merge_group did not identify a pull request (ref: ${QUEUE_REF}). Failing closed."
+            exit 1
+          fi
+          fail=0
+          for n in $nums; do
+            run_one "$n" || fail=1
+          done
+          exit "$fail"

@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { MESSAGES, type MessageKey } from "./i18n";
 import {
   buildTrackingDashboard,
   completeTrackingSession,
+  formatBlockCount,
   formatSessionMinutes,
+  formatTrackingDay,
   parseTrackingLogs,
   type TrackingSessionLog,
   trackingLogsStorageKey,
@@ -68,6 +71,57 @@ describe("tracking dashboard data contract", () => {
   });
 });
 
+describe("tracking copy follows the page language", () => {
+  test("English minutes and block counts read as before", () => {
+    expect(formatSessionMinutes(1, "en")).toBe("1 minute");
+    expect(formatSessionMinutes(0, "en")).toBe("0 minutes");
+    expect(formatSessionMinutes(45, "en")).toBe("45 minutes");
+    expect(formatBlockCount(1, "en")).toBe("1 block");
+    expect(formatBlockCount(0, "en")).toBe("0 blocks");
+    expect(formatBlockCount(3, "en")).toBe("3 blocks");
+    expect(formatBlockCount(3)).toBe("3 blocks");
+  });
+
+  test("Hebrew minutes: one is spelled out, the rest are digits with the plural", () => {
+    expect(formatSessionMinutes(1, "he")).toBe("דקה אחת");
+    expect(formatSessionMinutes(2, "he")).toBe("2 דקות");
+    expect(formatSessionMinutes(5, "he")).toBe("5 דקות");
+    expect(formatSessionMinutes(60, "he")).toBe("60 דקות");
+    expect(formatSessionMinutes(0, "he")).toBe("0 דקות");
+  });
+
+  test("Hebrew block counts", () => {
+    expect(formatBlockCount(1, "he")).toBe("בלוק אחד");
+    expect(formatBlockCount(2, "he")).toBe("2 בלוקים");
+    expect(formatBlockCount(0, "he")).toBe("0 בלוקים");
+  });
+
+  test("day labels are words in the page language, not YYYY-MM-DD", () => {
+    // ICU builds differ on the comma after the English weekday ("Fri 16 Oct" / "Fri, 16 Oct").
+    expect(formatTrackingDay("2026-10-16", "en")).toMatch(/^Fri,? 16 Oct$/);
+    expect(formatTrackingDay("2026-11-01", "en")).toMatch(/^Sun,? 1 Nov$/);
+    expect(formatTrackingDay("2026-10-16")).toMatch(/^Fri,? 16 Oct$/);
+    expect(formatTrackingDay("2026-10-16", "he")).toBe("יום ו׳, 16 באוק׳");
+    expect(formatTrackingDay("2026-11-01", "he")).toBe("יום א׳, 1 בנוב׳");
+  });
+
+  test("an unreadable day key is shown as written", () => {
+    expect(formatTrackingDay("someday", "en")).toBe("someday");
+    expect(formatTrackingDay("", "he")).toBe("");
+  });
+
+  test("every track. key has English and Hebrew copy, and the Hebrew is not English", () => {
+    const keys = (Object.keys(MESSAGES.en) as MessageKey[]).filter((key) => key.startsWith("track."));
+    expect(keys.length).toBeGreaterThan(20);
+    for (const key of keys) {
+      expect(MESSAGES.en[key].trim().length).toBeGreaterThan(0);
+      expect(MESSAGES.he[key]?.trim().length ?? 0).toBeGreaterThan(0);
+      expect(MESSAGES.he[key]).not.toBe(MESSAGES.en[key]);
+      expect(MESSAGES.he[key]).toMatch(/[֐-׿]/);
+    }
+  });
+});
+
 describe("parseTrackingLogs", () => {
   test("keeps valid rows and drops corrupt storage", () => {
     expect(trackingLogsStorageKey("user-1")).toBe("tempo.tracking.logs:v1:user-1");
@@ -98,5 +152,30 @@ describe("TrackingDashboard leftover wiring", () => {
     expect(source).toContain("localStorage");
     expect(source).not.toContain("convex.query");
     expect(source).not.toContain("NEXT_PUBLIC_TRACKING");
+  });
+
+  test("reads every word from i18n and leaves the one main landmark to the app shell", () => {
+    const source = readFileSync(
+      join(import.meta.dir, "../components/tracking/TrackingDashboard.tsx"),
+      "utf8"
+    );
+    expect(source).not.toMatch(/<main[\s>]/);
+    for (const english of [
+      "Session tracking",
+      "Habit streak",
+      "Focus blocks today",
+      "Log this block",
+      "No focus blocks logged yet.",
+      "Focus block removed.",
+      "That block did not save.",
+    ]) {
+      expect(source).not.toContain(english);
+    }
+    const used = Array.from(source.matchAll(/"(track\.[\w.]+)"/g), (match) => match[1] as string);
+    expect(used.length).toBeGreaterThan(20);
+    for (const key of used) {
+      expect(key in MESSAGES.en).toBe(true);
+      expect(key in MESSAGES.he).toBe(true);
+    }
   });
 });

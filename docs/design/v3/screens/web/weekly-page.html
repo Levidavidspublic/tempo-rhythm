@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 42 · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — weekly-page.html */
+  .week-stack { display: grid; gap: var(--tp-space-8); }
+  .week-days { display: grid; gap: var(--tp-space-6); }
+  .week-day { display: grid; gap: var(--tp-space-2); scroll-margin-top: var(--tp-space-20); }
+  .week-day .tp-h3 { margin: 0; }
+  .week-intentions { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-2); }
+</style>
+</head>
+<body>
+<!--
+@screen   Weekly page (Week 42)
+@route    apps/web/app/(tempo)/notes/[id]/page.tsx   (page type "weekly"; reached from /week/2026-W42)
+@layout   TempoShell
+@data     weeklyPage = pages.getWeekly({ isoWeek: "2026-W42" })            // Convex query: the weekly Markdown page + its blocks
+@data     weekTasks = tasks.listForWeek({ isoWeek: "2026-W42" })             // Convex query: tasks with a day this week, grouped by date
+@data     backlinks = pages.backlinks({ pageId })                           // Convex query
+@actions  pick a day -> pages.getDaily({ date })                             // the strip scrolls to that day; "Open day" goes to Today for that date
+@actions  tick task -> tasks.complete({ id })                                // optimistic, Undo 5 min
+@actions  edit intentions -> pages.updateBlock({ pageId, blockId, patch })  // optimistic, autosave
+@actions  add a task to a day -> tasks.create({ pageId, title, date })       // optimistic, Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the weekly page for the current ISO week; it is made from the Weekly template on first open.
+          2. The 7-day strip shows each day with its open task count; today is underlined and selected.
+          3. Pressing a day scrolls to that day's group; tasks are the same task blocks that show on each daily page.
+          4. Week intentions are plain Markdown at the top; Maya can edit them in place.
+          5. Ticking a task strikes it through at once and offers Undo for 5 minutes.
+          6. A day with nothing planned says so kindly; rest is a valid plan.
+          7. Empty week: kind copy + "Add a task". Error: "Your data is safe." + Retry. Offline: keep working, sync later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to page</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'week-42' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Pages','Week 42'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="top.crumb">Pages</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.week">Week 42</strong>
+    </div>
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main: the weekly page ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+    <!-- @component Page | shadcn: — | props: { page: {id, title, isoWeek, icon, tags, blocks[]} } | events: onEdit -> pages.updateBlock({ pageId, blockId, patch }) -->
+    <article class="tp-paper" data-component="Page" aria-labelledby="page-title">
+      <!-- @component PageCover | shadcn: — | props: { cover } | events: — -->
+      <div class="tp-page-cover" data-component="PageCover" aria-hidden="true"></div>
+      <div class="tp-page__body">
+        <!-- @component PageIcon | shadcn: — | props: { icon: 'calendar-grid' } | events: — -->
+        <div class="tp-page-icon" data-component="PageIcon" aria-hidden="true"><svg class="tp-icon"><use href="#i-calendar-grid"/></svg></div>
+
+        <!-- @component PageHead | shadcn: — | props: { variant: 'weekly', title: 'Week 42', meta: { range, tags, template } } | events: — -->
+        <div class="tp-page-head" data-variant="weekly" data-component="PageHead">
+          <div class="tp-page-head__row">
+            <h1 class="tp-page-title" id="page-title"><span data-i18n="page.title">Week</span> <span class="tp-num">42</span></h1>
+            <div class="tp-page-head__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="today.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="head.today">Open Today</span></a>
+            </div>
+          </div>
+          <!-- @component PageMeta | shadcn: — | props: { tags: ['weekly'], range: '12–18 Oct 2026', template: 'Weekly' } | events: — -->
+          <div class="tp-page-meta" data-component="PageMeta">
+            <!-- @component Tag | shadcn: badge | props: { name: 'weekly' } | events: link -->
+            <a class="tp-tag" href="#" data-component="Tag" data-i18n="tag.weekly">weekly</a>
+            <span><span data-i18n="meta.range">Monday 12 to Sunday 18 October</span> <span class="tp-num">2026</span></span>
+            <span data-i18n="page.from">Made from the Weekly template</span>
+          </div>
+
+          <!-- @component WeekStrip | shadcn: toggle-group | props: { days: {date,dow,n,count,today}[], selected: '2026-10-12' } | events: onSelect -> pages.getDaily({ date }) -->
+          <div class="tp-week-strip" role="group" aria-label="Days of this week" data-i18n-attr="aria-label:strip.label" data-component="WeekStrip" data-state-hide>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-12" aria-pressed="true" aria-current="date" aria-label="Monday 12 October, 3 open tasks, today" data-i18n-attr="aria-label:day.mon.label"><span class="tp-week-strip__dow" data-i18n="dow.mon">Mon</span><span class="tp-week-strip__n tp-num">12</span><span class="tp-week-strip__count"><span class="tp-num">3</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-13" aria-pressed="false" aria-label="Tuesday 13 October, 2 open tasks" data-i18n-attr="aria-label:day.tue.label"><span class="tp-week-strip__dow" data-i18n="dow.tue">Tue</span><span class="tp-week-strip__n tp-num">13</span><span class="tp-week-strip__count"><span class="tp-num">2</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-14" aria-pressed="false" aria-label="Wednesday 14 October, 2 open tasks" data-i18n-attr="aria-label:day.wed.label"><span class="tp-week-strip__dow" data-i18n="dow.wed">Wed</span><span class="tp-week-strip__n tp-num">14</span><span class="tp-week-strip__count"><span class="tp-num">2</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-15" aria-pressed="false" aria-label="Thursday 15 October, 1 open task" data-i18n-attr="aria-label:day.thu.label"><span class="tp-week-strip__dow" data-i18n="dow.thu">Thu</span><span class="tp-week-strip__n tp-num">15</span><span class="tp-week-strip__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-16" aria-pressed="false" aria-label="Friday 16 October, 1 open task" data-i18n-attr="aria-label:day.fri.label"><span class="tp-week-strip__dow" data-i18n="dow.fri">Fri</span><span class="tp-week-strip__n tp-num">16</span><span class="tp-week-strip__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-17" aria-pressed="false" aria-label="Saturday 17 October, 1 open task" data-i18n-attr="aria-label:day.sat.label"><span class="tp-week-strip__dow" data-i18n="dow.sat">Sat</span><span class="tp-week-strip__n tp-num">17</span><span class="tp-week-strip__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span></button>
+            <button class="tp-week-strip__day" type="button" data-action="select-day" data-date="2026-10-18" aria-pressed="false" aria-label="Sunday 18 October, nothing planned" data-i18n-attr="aria-label:day.sun.label"><span class="tp-week-strip__dow" data-i18n="dow.sun">Sun</span><span class="tp-week-strip__n tp-num">18</span><span class="tp-week-strip__count" data-i18n="count.rest">rest</span></button>
+          </div>
+        </div>
+
+        <div class="tp-page-content week-stack" data-state-hide>
+
+          <!-- Week intentions (plain Markdown) -->
+          <section class="tp-block" aria-labelledby="int-h">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd -> pages.insertBlock({ pageId, afterId }), onOptions -> menu (move, copy, delete) -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" id="int-h" data-i18n="h.intentions">Intentions for this week</h2>
+            <!-- @component Wikilink | shadcn: command in popover | props: { page: 'Thursday talk' | 'Weekend reset' } | events: link -->
+            <ul class="week-intentions" dir="auto" contenteditable="true">
+              <li data-i18n-html="int.1">Give the <a class="tp-wikilink" href="page-blocks.html">Thursday talk</a> without rushing the slides.</li>
+              <li data-i18n="int.2">Sort the lease with Dana so the move has a date.</li>
+              <li data-i18n-html="int.3">Keep Saturday for the <a class="tp-wikilink" href="page-editor.html">Weekend reset</a> and nothing else.</li>
+            </ul>
+          </section>
+
+          <!-- Tasks grouped per day -->
+          <section class="tp-block" aria-labelledby="tasks-h">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" id="tasks-h" data-i18n="h.tasks">Tasks by day</h2>
+
+            <div class="week-days" id="week-days">
+              <!-- Monday -->
+              <!-- @component Section | shadcn: — | props: { title: 'Monday 12', count: 3 } | events: — -->
+              <section class="tp-section week-day" id="d-2026-10-12" data-component="Section" aria-labelledby="mon-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="mon-h"><span data-i18n="day.mon">Monday</span> <span class="tp-num">12</span> · <span data-i18n="day.today">Today</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">3</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,done,date}[] } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow ×4 | shadcn: checkbox | props: { task: {id,title,minutes,done,due?,tag?} } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w1" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><a class="tp-tag" href="#" data-i18n="tag.work">work</a></span></div>
+                    <span></span>
+                  </li>
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w2" dir="auto" data-i18n="task.dana">Email Dana about the lease</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span></div>
+                    <span></span>
+                  </li>
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w3"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w3" dir="auto" data-i18n="task.rx">Pick up prescription</span><span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">18:00</span></span></span></div>
+                    <span></span>
+                  </li>
+                  <li class="tp-task-row" data-component="TaskRow" data-done="true">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="true" data-action="check" aria-labelledby="w4"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w4" dir="auto" data-i18n="task.plants">Water the plants</span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Tuesday -->
+              <section class="tp-section week-day" id="d-2026-10-13" data-component="Section" aria-labelledby="tue-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="tue-h"><span data-i18n="day.tue">Tuesday</span> <span class="tp-num">13</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">2</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow ×2 | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w5"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w5" dir="auto" data-i18n="task.van">Ask Yoni about the van</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><a class="tp-wikilink" href="#" data-i18n="nav.checklist">Moving checklist</a></span></div>
+                    <span></span>
+                  </li>
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w6"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w6" dir="auto" data-i18n="task.rehearse">Say the talk out loud once</span><span class="tp-task-row__meta"><span><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span></span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Wednesday -->
+              <section class="tp-section week-day" id="d-2026-10-14" data-component="Section" aria-labelledby="wed-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="wed-h"><span data-i18n="day.wed">Wednesday</span> <span class="tp-num">14</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">2</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow ×2 | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w7"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w7" dir="auto" data-i18n="task.books">Pack one box of books</span><span class="tp-task-row__meta"><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span><a class="tp-tag" href="#" data-i18n="tag.home">home</a></span></div>
+                    <span></span>
+                  </li>
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w8"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w8" dir="auto" data-i18n="task.numbers">Check the numbers on slide 3</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span><a class="tp-tag" href="#" data-i18n="tag.work">work</a></span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Thursday -->
+              <section class="tp-section week-day" id="d-2026-10-15" data-component="Section" aria-labelledby="thu-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="thu-h"><span data-i18n="day.thu">Thursday</span> <span class="tp-num">15</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w9"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w9" dir="auto" data-i18n="task.talk">Give the talk</span><span class="tp-task-row__meta"><span><span data-i18n="task.at">at</span> <span class="tp-num tp-mono">10:00</span></span><span class="tp-chip tp-chip--fixed" data-i18n="chip.fixed">Fixed</span></span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Friday -->
+              <section class="tp-section week-day" id="d-2026-10-16" data-component="Section" aria-labelledby="fri-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="fri-h"><span data-i18n="day.fri">Friday</span> <span class="tp-num">16</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w10"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w10" dir="auto" data-i18n="task.rent">Pay the rent</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span></span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Saturday -->
+              <section class="tp-section week-day" id="d-2026-10-17" data-component="Section" aria-labelledby="sat-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="sat-h"><span data-i18n="day.sat">Saturday</span> <span class="tp-num">17</span></h3>
+                  <span class="tp-section__count"><span class="tp-num">1</span> <span data-i18n="count.open">open</span></span>
+                </div>
+                <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks } | events: onToggle -> tasks.complete({ id }) -->
+                <ul class="tp-block-task" role="list" data-component="TaskBlock">
+                  <!-- @component TaskRow | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+                  <li class="tp-task-row" data-component="TaskRow">
+                    <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="w11"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                    <div class="tp-task-row__body"><span class="tp-task-row__title" id="w11" dir="auto" data-i18n="task.reset">Weekend reset: kitchen and packing</span><span class="tp-task-row__meta"><a class="tp-wikilink" href="page-editor.html" data-i18n="nav.weekend">Weekend reset</a></span></div>
+                    <span></span>
+                  </li>
+                </ul>
+              </section>
+
+              <!-- Sunday: nothing planned -->
+              <section class="tp-section week-day" id="d-2026-10-18" data-component="Section" aria-labelledby="sun-h">
+                <div class="tp-section__head">
+                  <h3 class="tp-h3" id="sun-h"><span data-i18n="day.sun">Sunday</span> <span class="tp-num">18</span></h3>
+                </div>
+                <p class="tp-muted" data-i18n="sun.rest">Nothing planned. Rest counts too.</p>
+              </section>
+            </div>
+            <button class="tp-btn tp-btn--ghost" type="button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tasks.add">Add a task to a day</span></button>
+          </section>
+        </div>
+
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onAdd -> tasks.create({ pageId, title, date }) -->
+        <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-leaf"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">This week is still open.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">That's fine. Write one intention, or give one day a single small task.</p>
+          <div class="tp-state__actions">
+            <button class="tp-btn tp-btn--secondary" type="button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tasks.add">Add a task to a day</span></button>
+            <a class="tp-btn tp-btn--ghost" href="brain-dump.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg><span data-i18n="empty.dump">Open brain dump</span></a>
+          </div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your week</span>
+          <div class="tp-skeleton tp-skeleton--block"></div>
+          <div class="tp-skel-list">
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your week." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your week.</h2>
+          <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+
+        <!-- Linked here -->
+        <!-- @component Backlinks | shadcn: card list | props: { links: {page, context}[] } | events: link -->
+        <section class="tp-backlinks" data-component="Backlinks" aria-labelledby="bl-h" data-state-hide>
+          <div class="tp-backlinks__head">
+            <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg>
+            <h2 class="tp-eyebrow" id="bl-h" data-i18n="bl.head">Linked here</h2>
+            <span class="tp-muted tp-small">· <span class="tp-num">3</span></span>
+          </div>
+          <a class="tp-backlink" href="today.html"><span class="tp-backlink__page" data-i18n="nav.today">Today</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.today">Slides first, then the lease email.</span></a>
+          <a class="tp-backlink" href="project-detail.html"><span class="tp-backlink__page" data-i18n="nav.moving">Moving flat</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.moving">This week: lease with Dana, van with Yoni.</span></a>
+          <a class="tp-backlink" href="page-editor.html"><span class="tp-backlink__page" data-i18n="nav.weekend">Weekend reset</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.weekend">Saturday of Week 42.</span></a>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach with this page attached -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "state.retried": "Loaded.", "day.shown": "Showing" },
+  he: {
+    "doc.title": "שבוע 42 · Tempo",
+    "skip": "דלגו לדף",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע", "nav.checklist": "רשימת המעבר", "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.crumb": "דפים", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "page.title": "שבוע", "head.today": "לפתוח את היום", "tag.weekly": "שבועי",
+    "meta.range": "יום שני 12 עד יום ראשון 18 באוקטובר", "page.from": "נוצר מהתבנית השבועית",
+    "strip.label": "ימי השבוע הזה",
+    "day.mon.label": "יום שני 12 באוקטובר, 3 משימות פתוחות, היום",
+    "day.tue.label": "יום שלישי 13 באוקטובר, 2 משימות פתוחות",
+    "day.wed.label": "יום רביעי 14 באוקטובר, 2 משימות פתוחות",
+    "day.thu.label": "יום חמישי 15 באוקטובר, משימה פתוחה אחת",
+    "day.fri.label": "יום שישי 16 באוקטובר, משימה פתוחה אחת",
+    "day.sat.label": "שבת 17 באוקטובר, משימה פתוחה אחת",
+    "day.sun.label": "יום ראשון 18 באוקטובר, אין תוכניות",
+    "dow.mon": "ב׳", "dow.tue": "ג׳", "dow.wed": "ד׳", "dow.thu": "ה׳", "dow.fri": "ו׳", "dow.sat": "ש׳", "dow.sun": "א׳",
+    "count.open": "פתוחות", "count.rest": "מנוחה",
+    "block.add": "הוספת בלוק מתחת", "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "h.intentions": "כוונות לשבוע הזה",
+    "int.1": "להעביר את <a class=\"tp-wikilink\" href=\"page-blocks.html\">ההרצאה ביום חמישי</a> בלי לרוץ על השקפים.",
+    "int.2": "לסגור את החוזה עם דנה כדי שלמעבר יהיה תאריך.",
+    "int.3": "לשמור את השבת ל<a class=\"tp-wikilink\" href=\"page-editor.html\">איפוס סוף שבוע</a> ותו לא.",
+    "h.tasks": "משימות לפי יום",
+    "day.mon": "יום שני", "day.tue": "יום שלישי", "day.wed": "יום רביעי", "day.thu": "יום חמישי", "day.fri": "יום שישי", "day.sat": "שבת", "day.sun": "יום ראשון", "day.today": "היום",
+    "task.slides": "לנסח 3 שקפים ליום חמישי", "task.dana": "לכתוב לדנה על החוזה", "task.rx": "לאסוף מרשם מבית המרקחת", "task.before": "עד",
+    "task.plants": "להשקות את העציצים", "task.van": "לשאול את יוני על הטנדר", "task.rehearse": "להגיד את ההרצאה בקול פעם אחת",
+    "task.books": "לארוז קרטון אחד של ספרים", "task.numbers": "לבדוק את המספרים בשקף 3", "task.talk": "להעביר את ההרצאה", "task.at": "בשעה",
+    "task.rent": "לשלם שכר דירה", "task.reset": "איפוס סוף שבוע: מטבח ואריזה",
+    "unit.min": "דק׳", "tag.work": "עבודה", "tag.home": "בית", "chip.fixed": "קבוע",
+    "sun.rest": "אין תוכניות. גם מנוחה נחשבת.", "tasks.add": "הוספת משימה ליום",
+    "empty.title": "השבוע הזה עוד פתוח.", "empty.body": "זה בסדר. אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת.",
+    "empty.dump": "לפתוח פריקת מחשבות", "loading": "טוען את השבוע שלך", "error.title": "לא הצלחנו לטעון את השבוע שלך.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "bl.head": "מקושר לכאן", "bl.today": "קודם השקפים, ואז המייל על החוזה.", "bl.moving": "השבוע: החוזה עם דנה, הטנדר עם יוני.", "bl.weekend": "השבת של שבוע 42.",
+    "coach.open": "פתיחת המאמן (Ctrl J)", "day.shown": "מוצג",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+/* Day strip: pressing a day scrolls to that day's group. */
+TP.onDaySelect = function (date) {
+  // REAL: convex pages.getDaily({ date }) is prefetched; on the weekly page the strip only scrolls to the day's group
+  var target = document.getElementById("d-" + date);
+  if (!target) return;
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  var h = target.querySelector(".tp-h3"); if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+};
+TP.onReady = function () {
+  // REAL: convex tasks.complete({ id }) is optimistic; per-day counts come from tasks.listForWeek
+  document.getElementById("week-days").addEventListener("click", function (e) {
+    if (!e.target.closest('[data-action="check"]')) return;
+    setTimeout(function () {
+      document.querySelectorAll(".week-day").forEach(function (day) {
+        var c = day.querySelector(".tp-section__count .tp-num");
+        if (c) c.textContent = day.querySelectorAll('.tp-check[aria-checked="false"]').length;
+      });
+    }, 0);
+  });
+};
+</script>
+</body>
+</html>

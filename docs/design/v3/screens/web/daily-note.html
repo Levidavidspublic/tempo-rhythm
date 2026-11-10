@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily note · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — daily-note.html */
+  .daily-top { inset-inline: 0; }
+  .daily-top__saved { padding-inline: var(--tp-space-2); }
+  .daily-main { max-width: calc(var(--tp-paper-max) + var(--tp-space-12)); margin-inline: auto; display: grid; gap: var(--tp-space-4); padding-block-end: var(--tp-space-16); }
+  .daily-flow { gap: var(--tp-space-6); }
+  .daily-state { padding: var(--tp-space-6); }
+  .tp-block-energy .tp-seg { margin-top: var(--tp-space-3); }
+</style>
+</head>
+<body>
+<!--
+@screen   Daily Note (focus)
+@route    apps/web/app/(bare)/daily-note/page.tsx
+@layout   Bare
+@data     dailyPage = pages.getDaily({ date: "2026-10-12" })          // Convex query
+@data     backlinks = pages.backlinks({ pageId })                       // Convex query
+@actions  edit a block -> pages.updateBlock({ pageId, blockId, patch })   // optimistic, autosave
+@actions  tick task -> tasks.complete({ id })                           // optimistic, Undo 5 min
+@actions  set energy -> energy.log({ date, value })                     // optimistic
+@actions  use template -> templates.apply({ pageId, templateId: "daily" }) // Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the daily page for the date in the URL (today by default) with no rail, coach or tab bar.
+          2. If the page has no blocks, offer the Daily template once; "Not now" keeps it blank.
+          3. Every block is editable in place; changes save on their own and "Saved" shows in the top bar.
+          4. Ticking a task strikes it through at once and shows Undo for 5 minutes.
+          5. "Today" in the top bar goes back to the full Today screen.
+          6. Offline: the page stays editable and syncs when the connection returns.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component MobileTopBar | shadcn: — (layout) | props: { title: 'Daily note', back: '/today' } | events: onBack -> router.back -->
+<header class="tp-mtopbar tp-glass daily-top" data-component="MobileTopBar">
+  <a class="tp-btn tp-btn--ghost" href="today.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="nav.today">Today</span></a>
+  <span class="tp-mtopbar__title" data-i18n="dn.top">Daily note</span>
+  <span class="tp-muted tp-small daily-top__saved" data-state-hide="offline" data-i18n="dn.saved">Saved</span>
+  <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</header>
+
+<main class="tp-app__main daily-main" id="main" tabindex="-1">
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+<div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+  <!-- default + offline: the daily Markdown page -->
+  <!-- @component Page | shadcn: — | props: { page: {id, title, date, blocks[]} } | events: onEdit -> pages.updateBlock({ pageId, blockId, patch }) -->
+  <article class="tp-paper" data-component="Page" aria-labelledby="page-title" data-state-hide>
+    <div class="tp-page-cover" aria-hidden="true"></div>
+    <div class="tp-page__body">
+      <div class="tp-page-icon" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-sun"/></svg></div>
+      <!-- @component PageHead | shadcn: — | props: { variant: 'daily', title, meta } | events: — -->
+      <div class="tp-page-head" data-component="PageHead" data-variant="daily">
+        <h1 class="tp-page-title" id="page-title" contenteditable="true" spellcheck="true" data-i18n="dn.title">Monday, 12 October</h1>
+        <!-- @component PageMeta | shadcn: — | props: { tags: ['daily'], template: 'Daily' } | events: — -->
+        <div class="tp-page-meta" data-component="PageMeta">
+          <a class="tp-tag" href="#" data-component="Tag" data-i18n="tag.daily">daily</a>
+          <span data-i18n="dn.from">Made from the Daily template</span>
+        </div>
+      </div>
+
+      <!-- PageMetaBlock: invisible page settings (template id, page type). Never drawn, never read aloud. -->
+      <!-- @component PageMetaBlock | shadcn: — | props: { meta: { template: 'daily', pageType: 'daily', tags: ['daily'] } } | events: — -->
+      <div class="tp-block-meta" data-component="PageMetaBlock" aria-hidden="true"></div>
+
+      <div class="tp-page-content daily-flow">
+        <section class="tp-block" aria-labelledby="dn-int">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-int" data-i18n="dn.h.int">Intention</h2>
+          <p dir="auto" contenteditable="true" data-i18n-html="dn.p.int">One calm thing at a time. Slides first, then the <a class="tp-wikilink" href="#">Moving checklist</a> after lunch.</p>
+        </section>
+
+        <section class="tp-block" aria-labelledby="dn-energy">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-energy" data-i18n="dn.h.energy">Energy</h2>
+          <!-- @component EnergyBlock | shadcn: toggle-group (single) | props: { value: 'steady' } | events: onChange -> energy.log({ date, value }) -->
+          <div class="tp-card tp-block-energy" data-component="EnergyBlock">
+            <p class="tp-muted" id="dn-energy-q" data-i18n="dn.energy.q">How is your energy right now?</p>
+            <!-- @component Dial | shadcn: toggle-group (single) | props: { value: 'quiet'|'steady'|'push' } | events: onChange -->
+            <div class="tp-seg" role="radiogroup" aria-labelledby="dn-energy-q" data-component="Dial">
+              <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="en.quiet">Quiet</span><small data-i18n="en.quiet.h">low battery</small></button>
+              <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0"><span data-i18n="en.steady">Steady</span><small data-i18n="en.steady.h">usual pace</small></button>
+              <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="en.push">Push</span><small data-i18n="en.push.h">full tank</small></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="tp-block" aria-labelledby="dn-top">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-top" data-i18n="dn.h.top">Top three</h2>
+          <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,done}[] } | events: onToggle -> tasks.complete({ id }) -->
+          <ul class="tp-block-task" role="list" data-component="TaskBlock">
+            <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task: {id,title,minutes,done} } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+            <li class="tp-task-row" data-component="TaskRow" data-id="dn1">
+  <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="dn1-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+  <div class="tp-task-row__body">
+    <span class="tp-task-row__title" id="dn1-title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span>
+    <span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span></span>
+  </div>
+  <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html" aria-label="Edit this task" data-i18n-attr="aria-label:task.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></a>
+</li>
+            <li class="tp-task-row" data-component="TaskRow" data-id="dn2">
+  <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="dn2-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+  <div class="tp-task-row__body">
+    <span class="tp-task-row__title" id="dn2-title" dir="auto" data-i18n="task.dana">Email Dana about the lease</span>
+    <span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span>
+  </div>
+  <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html" aria-label="Edit this task" data-i18n-attr="aria-label:task.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></a>
+</li>
+            <li class="tp-task-row" data-component="TaskRow" data-id="dn3">
+  <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="dn3-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+  <div class="tp-task-row__body">
+    <span class="tp-task-row__title" id="dn3-title" dir="auto" data-i18n="task.rx">Pick up prescription</span>
+    <span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">18:00</span></span></span>
+  </div>
+  <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="task-sheet.html" aria-label="Edit this task" data-i18n-attr="aria-label:task.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></a>
+</li>
+          </ul>
+        </section>
+
+        <section class="tp-block" aria-labelledby="dn-time">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-time" data-i18n="dn.h.time">Time blocks</h2>
+          <!-- @component TimeBlock | shadcn: custom | props: { rows: {start,end,title,kind:'fixed'|'flex'}[] } | events: — -->
+          <ul class="tp-block-time" role="list" data-component="TimeBlock">
+            <li class="tp-time-row" data-kind="fixed" data-component="TimeBlockRow"><span class="tp-time-row__time tp-num">09:00–10:30</span><span class="tp-time-row__body"><span class="tp-time-row__title" data-i18n="dn.tb1">Focus: slides</span><span class="tp-chip tp-chip--fixed" data-i18n="kind.fixed">Fixed</span></span></li>
+            <li class="tp-time-row" data-kind="flex" data-component="TimeBlockRow"><span class="tp-time-row__time tp-num">12:30–13:00</span><span class="tp-time-row__body"><span class="tp-time-row__title" data-i18n="dn.tb2">Walk outside</span><span class="tp-chip tp-chip--flex" data-i18n="kind.flex">Flexible</span></span></li>
+          </ul>
+        </section>
+
+        <section class="tp-block" aria-labelledby="dn-notes">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-notes" data-i18n="dn.h.notes">Notes</h2>
+          <p dir="auto" contenteditable="true" data-i18n-html="dn.p.notes">Dana sent photos of the kitchen. Measure the fridge gap before Saturday. <a class="tp-tag" href="#">flat</a></p>
+        </section>
+
+        <section class="tp-block" aria-labelledby="dn-end">
+          <div class="tp-block__handle" data-component="BlockHandle">
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+</div>
+          <h2 class="tp-h2" id="dn-end" data-i18n="dn.h.end">End of day</h2>
+          <p class="tp-muted" data-i18n="dn.p.end">One thing that went okay today:</p>
+          <p dir="auto" contenteditable="true" aria-label="One thing that went okay today" data-i18n-attr="aria-label:dn.end.label"></p>
+        </section>
+      </div>
+
+      <!-- @component Backlinks | shadcn: card list | props: { links: {page, context}[] } | events: link -->
+      <section class="tp-backlinks" data-component="Backlinks" aria-labelledby="dn-bl">
+        <div class="tp-backlinks__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg><h2 class="tp-eyebrow" id="dn-bl" data-i18n="bl.head">Linked here</h2><span class="tp-muted tp-small">· <span class="tp-num">1</span></span></div>
+        <a class="tp-backlink" href="weekly-page.html"><span class="tp-backlink__page" data-i18n="nav.week">Week 42</span><span class="tp-backlink__ctx" dir="auto" data-i18n="dn.bl1">Monday: slides for Thursday, then the lease email.</span></a>
+      </section>
+    </div>
+  </article>
+
+  <!-- empty: a new day with no blocks yet -->
+  <article class="tp-paper" aria-labelledby="dn-empty-title" data-state-show="empty">
+    <div class="tp-page-cover" aria-hidden="true"></div>
+    <div class="tp-page__body">
+      <div class="tp-page-icon" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-sun"/></svg></div>
+      <div class="tp-page-head" data-variant="daily"><h1 class="tp-page-title" id="dn-empty-title" data-i18n="dn.title">Monday, 12 October</h1></div>
+      <div class="tp-page-content">
+        <!-- @component TemplateBlock | shadcn: card + button | props: { template: {id:'daily', name:'Daily', adds[]} } | events: onUse -> templates.apply({ pageId, templateId }), onDismiss -> templates.dismissOffer({ pageId }) -->
+        <div class="tp-block-template" data-component="TemplateBlock">
+          <div class="tp-template-offer" data-status="offered">
+            <div class="tp-template-offer__head"><span class="tp-template-offer__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-template"/></svg></span><div><h2 class="tp-template-offer__title" data-i18n="dn.tpl.title">Use the Daily template?</h2><p class="tp-template-offer__desc" data-i18n="dn.tpl.desc">It adds a few quiet sections. You can delete any of them.</p></div></div>
+            <ul class="tp-template-offer__adds">
+              <li data-i18n="dn.tpl.a1">Intention</li><li data-i18n="dn.tpl.a2">Energy check-in</li><li data-i18n="dn.tpl.a3">Top three tasks</li><li data-i18n="dn.tpl.a4">End of day</li>
+            </ul>
+            <div class="tp-template-offer__actions">
+              <button class="tp-btn tp-btn--primary" type="button" data-action="template-use"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="dn.tpl.use">Use template</span></button>
+              <button class="tp-btn tp-btn--ghost" type="button" data-action="template-dismiss"><span data-i18n="dn.tpl.no">Not now</span></button>
+            </div>
+            <p class="tp-template-offer__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+          </div>
+        </div>
+        <p class="tp-muted" data-i18n="dn.empty.hint">Or just start typing. A page can be one line.</p>
+      </div>
+    </div>
+  </article>
+
+  <div class="tp-paper daily-state" data-state-show="loading error">
+    <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+<div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+  <span class="tp-sr-only" data-i18n="dn.loading">Loading your daily page</span>
+  <div class="tp-skel-list">
+    <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+    <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+    <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+    <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+    <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+  </div>
+</div>
+    <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+<div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+  <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+  <h2 class="tp-state__title" data-i18n="dn.error">Couldn't load today's page.</h2>
+  <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+  <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+</div>
+  </div>
+</main>
+<div class="tp-toast-region" aria-live="polite"></div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "proposal.accepted": "Done. You can undo this for 5 minutes.",
+    "proposal.rejected": "Left as it was. Nothing changed.",
+    "proposal.edit": "Edit",
+    "proposal.doneEditing": "Done editing",
+    "state.retried": "Loaded.",
+    "switch.on": "On",
+    "switch.off": "Off",
+    "more.showing": "Showing",
+    "more.of": "of",
+    "more.all": "That's everything.",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "nag.now": "Good. It's on now.",
+    "nag.snooze": "Snoozed for 30 minutes.",
+    "nag.nottoday": "Okay. Not today. It'll ask again tomorrow.",
+    "template.used": "Template added to this page.",
+    "template.dismissed": "Okay. This page stays as it is.",
+    "broken.restored": "Restored the last version of this part.",
+    "card.showAnswer": "Show answer",
+    "card.showQuestion": "Show question",
+    "quiz.pick": "Pick one answer first.",
+    "quiz.right": "Right.",
+    "quiz.wrong": "Not quite. The answer is: ",
+    "checklist.of": "of",
+    "checklist.done": "done",
+    "dial.quiet": "Quiet",
+    "dial.steady": "Steady",
+    "dial.push": "Push",
+    "dial.of": "of 10",
+    "breath.in": "Breathe in",
+    "breath.hold": "Hold",
+    "breath.out": "Breathe out",
+    "read.aloud": "Read aloud",
+    "read.stop": "Stop reading"
+  },
+  he: {
+    "dn.top": "דף יומי",
+    "dn.saved": "נשמר",
+    "dn.title": "יום שני, 12 באוקטובר",
+    "tag.daily": "יומי",
+    "dn.from": "נוצר מתבנית היום",
+    "dn.h.int": "כוונה",
+    "dn.p.int": "דבר רגוע אחד בכל פעם. קודם השקפים, ואחרי הצהריים <a class=\"tp-wikilink\" href=\"#\">רשימת המעבר</a>.",
+    "dn.h.energy": "אנרגיה",
+    "dn.energy.q": "איך האנרגיה שלך עכשיו?",
+    "en.quiet": "שקט",
+    "en.quiet.h": "סוללה נמוכה",
+    "en.steady": "יציב",
+    "en.steady.h": "קצב רגיל",
+    "en.push": "דחיפה",
+    "en.push.h": "מלא כוח",
+    "dn.h.top": "שלוש החשובות",
+    "task.slides": "לנסח 3 שקפים ליום חמישי",
+    "task.dana": "לכתוב לדנה על החוזה",
+    "task.before": "עד",
+    "task.rx": "לאסוף מרשם מבית המרקחת",
+    "dn.h.time": "בלוקי זמן",
+    "dn.tb1": "ריכוז: שקפים",
+    "kind.fixed": "קבוע",
+    "dn.tb2": "הליכה בחוץ",
+    "kind.flex": "גמיש",
+    "dn.h.notes": "הערות",
+    "dn.p.notes": "דנה שלחה תמונות של המטבח. למדוד את הרווח למקרר לפני שבת. <a class=\"tp-tag\" href=\"#\">דירה</a>",
+    "dn.h.end": "סוף היום",
+    "dn.p.end": "דבר אחד שהלך בסדר היום:",
+    "dn.end.label": "דבר אחד שהלך בסדר היום",
+    "bl.head": "מקושר לכאן",
+    "dn.bl1": "יום שני: שקפים ליום חמישי, ואז המייל על החוזה.",
+    "dn.tpl.title": "להשתמש בתבנית היום?",
+    "dn.tpl.desc": "היא מוסיפה כמה חלקים שקטים. אפשר למחוק כל אחד מהם.",
+    "dn.tpl.a1": "כוונה",
+    "dn.tpl.a2": "בדיקת אנרגיה",
+    "dn.tpl.a3": "שלוש המשימות החשובות",
+    "dn.tpl.a4": "סוף היום",
+    "dn.tpl.use": "להשתמש בתבנית",
+    "dn.tpl.no": "לא עכשיו",
+    "dn.empty.hint": "או פשוט להתחיל להקליד. דף יכול להיות שורה אחת.",
+    "dn.loading": "טוען את הדף היומי שלך",
+    "dn.error": "לא הצלחנו לטעון את הדף של היום.",
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.pages": "דפים",
+    "rail.library": "ספרייה",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "top.search": "חיפוש",
+    "top.back": "חזרה",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "unit.min": "דק׳",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "proposal.accepted": "בוצע. אפשר לבטל במשך 5 דקות.",
+    "proposal.rejected": "נשאר כמו שהיה. שום דבר לא השתנה.",
+    "proposal.edit": "עריכה",
+    "proposal.doneEditing": "סיום עריכה",
+    "state.retried": "נטען.",
+    "switch.on": "פועל",
+    "switch.off": "כבוי",
+    "more.showing": "מוצגות",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "habit.logged": "תועד היום",
+    "habit.log": "לתעד היום",
+    "habit.dayDone": "תועד",
+    "habit.dayOpen": "לא תועד",
+    "nag.now": "יופי. זה קורה עכשיו.",
+    "nag.snooze": "נדחה ב־30 דקות.",
+    "nag.nottoday": "בסדר. לא היום. זה ישאל שוב מחר.",
+    "template.used": "התבנית נוספה לדף.",
+    "template.dismissed": "בסדר. הדף נשאר כמו שהוא.",
+    "broken.restored": "הגרסה הקודמת של החלק הזה שוחזרה.",
+    "card.showAnswer": "הצגת התשובה",
+    "card.showQuestion": "הצגת השאלה",
+    "quiz.pick": "קודם בחרי תשובה אחת.",
+    "quiz.right": "נכון.",
+    "quiz.wrong": "לא בדיוק. התשובה היא: ",
+    "checklist.of": "מתוך",
+    "checklist.done": "בוצעו",
+    "dial.quiet": "שקט",
+    "dial.steady": "יציב",
+    "dial.push": "דחיפה",
+    "dial.of": "מתוך 10",
+    "breath.in": "שאיפה",
+    "breath.hold": "להחזיק",
+    "breath.out": "נשיפה",
+    "read.aloud": "הקראה",
+    "read.stop": "עצירת ההקראה",
+    "doc.title": "דף יומי · Tempo",
+    "block.add": "הוספת בלוק מתחת",
+    "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "task.more": "עריכת המשימה"
+  }
+};
+
+</script>
+</body>
+</html>
