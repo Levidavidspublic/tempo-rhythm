@@ -42,4 +42,24 @@ describe("byte-limited body reader", () => {
     expect(await readBodyLimited(request, 4096)).toBeNull();
     expect(pulled).toBeLessThan(20);
   });
+
+  test("a body that breaks off mid-read is unreadable, not a crash", async () => {
+    let sent = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (!sent) {
+          sent = true;
+          controller.enqueue(new Uint8Array(8));
+          return;
+        }
+        controller.error(new Error("connection reset"));
+      },
+    });
+    const request = new Request("https://example.com/x", {
+      method: "POST",
+      body: stream,
+      duplex: "half",
+    } as RequestInit);
+    expect(await readBodyLimited(request, 4096)).toBeNull();
+  });
 });
