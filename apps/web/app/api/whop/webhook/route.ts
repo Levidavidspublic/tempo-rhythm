@@ -1,6 +1,7 @@
 import { createDocument, FirestoreError, type FirestoreFields } from "@/lib/server/firestore";
 import { GcpAuthError, readGcpConfig } from "@/lib/server/gcp-access-token";
 import { logServerProblem } from "@/lib/server/log";
+import { readBodyLimited } from "@/lib/server/read-body";
 import { mapWhopEvent, membershipEventsCollection, verifyWhopSignature } from "@/lib/whop-webhook";
 
 /**
@@ -34,8 +35,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!secret) {
     return reply({ received: false, reason: "not_configured" }, 503);
   }
-  const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) {
+  const raw = await readBodyLimited(request, MAX_BODY_BYTES);
+  if (raw === null) {
     return reply({ received: false, reason: "too_large" }, 413);
   }
   const headers = {

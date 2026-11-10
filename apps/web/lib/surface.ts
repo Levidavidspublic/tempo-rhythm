@@ -15,6 +15,9 @@ export const COMING_SOON_PATH = "/coming-soon";
 /** API routes that stay reachable on the coming-soon surface. Exact paths only. */
 export const COMING_SOON_API_PATHS = ["/api/waitlist", "/api/whop/webhook"] as const;
 
+/** Static files the coming-soon page itself needs. Its scripts, styles and fonts live under /_next. */
+export const COMING_SOON_STATIC_PATHS = ["/favicon.ico"] as const;
+
 type SurfaceEnv = Record<string, string | undefined>;
 
 export function getSurface(env: SurfaceEnv = process.env): Surface {
@@ -39,8 +42,24 @@ export function decideComingSoon(pathname: string): ComingSoonDecision {
   if (pathname === COMING_SOON_PATH) {
     return { action: "redirect", to: "/" };
   }
-  if ((COMING_SOON_API_PATHS as readonly string[]).includes(pathname)) {
+  if (
+    (COMING_SOON_API_PATHS as readonly string[]).includes(pathname) ||
+    (COMING_SOON_STATIC_PATHS as readonly string[]).includes(pathname)
+  ) {
     return { action: "next" };
   }
   return { action: "not-found" };
+}
+
+// The proxy now sees every path outside /_next, so that on the coming-soon surface a path that
+// only looks like a file (/notes/x.css) cannot slip past the gate into an app route. The app
+// surface keeps exactly the paths it always handled: these two patterns are the proxy's previous
+// matcher, unchanged.
+const APP_PROXY_PAGE_PATHS =
+  /^\/(?:(?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)$/;
+const APP_PROXY_API_PATHS = /^\/(?:api|trpc)(?:.*)$/;
+
+/** Whether the app surface's sign-in proxy handles this path (it skips file-like paths, as before). */
+export function appProxyApplies(pathname: string): boolean {
+  return APP_PROXY_PAGE_PATHS.test(pathname) || APP_PROXY_API_PATHS.test(pathname);
 }

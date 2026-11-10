@@ -1,5 +1,6 @@
 import { createDocument, FirestoreError } from "@/lib/server/firestore";
 import { logServerProblem } from "@/lib/server/log";
+import { readBodyLimited } from "@/lib/server/read-body";
 import { GcpAuthError, missingGcpEnv, readGcpConfig } from "@/lib/server/gcp-access-token";
 import {
   createRateLimiter,
@@ -35,8 +36,8 @@ export async function POST(request: Request): Promise<Response> {
     return json({ ok: false, reason: "slow_down" }, 429);
   }
 
-  const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) {
+  const raw = await readBodyLimited(request, MAX_BODY_BYTES);
+  if (raw === null) {
     return json({ ok: false, reason: "invalid" }, 400);
   }
   let body: unknown;

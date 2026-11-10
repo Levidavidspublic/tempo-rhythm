@@ -6,7 +6,7 @@ import {
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { E2E_WIRING_ROUTES } from "./lib/e2eWiringRoutes";
 import { decideEntryRedirect, PUBLIC_ROUTE_PATTERNS } from "./lib/rootEntry";
-import { decideComingSoon, getSurface } from "./lib/surface";
+import { appProxyApplies, decideComingSoon, getSurface } from "./lib/surface";
 
 const isPublicRoute = createRouteMatcher([...PUBLIC_ROUTE_PATTERNS]);
 
@@ -83,12 +83,14 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (getSurface() === "coming-soon") {
     return comingSoonProxy(request);
   }
+  if (!appProxyApplies(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
   return appProxy(request, event);
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
-  ],
+  // Every path outside /_next. Which of them the app surface acts on is decided in proxy() by
+  // appProxyApplies (lib/surface.ts), which holds the matcher this file used before.
+  matcher: ["/((?!_next).*)"],
 };

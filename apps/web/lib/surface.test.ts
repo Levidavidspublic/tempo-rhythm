@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { decideComingSoon, getSurface } from "./surface";
+import { appProxyApplies, decideComingSoon, getSurface } from "./surface";
 
 describe("surface", () => {
   test("live is coming-soon unless told otherwise (deny by default)", () => {
@@ -47,6 +47,57 @@ describe("coming-soon surface routing", () => {
       "/robots.txt",
     ]) {
       expect(decideComingSoon(path)).toEqual({ action: "not-found" });
+    }
+  });
+
+  test("a path that only looks like a file is not found either", () => {
+    for (const path of [
+      "/p/example.css",
+      "/notes/a.js",
+      "/goals/x.png",
+      "/today.html",
+      "/factory-proof.html",
+      "/next.svg",
+      "/coming-soon.css",
+      "/api/waitlist.js",
+    ]) {
+      expect(decideComingSoon(path)).toEqual({ action: "not-found" });
+    }
+  });
+
+  test("the page's own icon passes", () => {
+    expect(decideComingSoon("/favicon.ico")).toEqual({ action: "next" });
+  });
+});
+
+describe("app surface proxy paths (unchanged from the previous matcher)", () => {
+  test("handles pages and every API path", () => {
+    for (const path of [
+      "/",
+      "/today",
+      "/sign-in",
+      "/notes/abc",
+      "/api/health",
+      "/api/mcp",
+      "/api/x.css",
+      "/trpc/x",
+      "/data.json",
+    ]) {
+      expect(appProxyApplies(path)).toBe(true);
+    }
+  });
+
+  test("still skips file-like paths", () => {
+    for (const path of [
+      "/next.svg",
+      "/favicon.ico",
+      "/notes/x.css",
+      "/a/b.png",
+      "/file.woff2",
+      "/x.html",
+      "/app.js",
+    ]) {
+      expect(appProxyApplies(path)).toBe(false);
     }
   });
 });
