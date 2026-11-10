@@ -2,12 +2,16 @@
 // Runs from the BASE branch on pull_request_target; never checks out or runs PR code here.
 // Usage: node scripts/factory/merge-gate.mjs <scope|checks|jev|coderabbit|merge>
 //  1 scope      wait for the required `scope-guard` check; on failure comment on the TICKET (reason + files).
-//  2 checks     wait until every other check run on the head SHA finished green (gate on them, don't redo them).
-//               Includes `google-style` (gate 3, runs on pull_request because it lints PR files).
+//  2 checks     wait until the latest run of every other check on the head SHA is green.
+//               GitHub's filter=latest still returns older runs of the same name. Keep the
+//               highest id per name, so an older cancelled or failed run does not fail the
+//               gate after a newer success. A newer failure still fails. Includes
+//               `google-style` (gate 3, runs on pull_request because it lints PR files).
 //  4 jev        OpenRouter judge (model from env JEV_MODEL). Strict JSON, fail closed, cost in summary.
 //  5 coderabbit CodeRabbit approval or no open CHANGES_REQUESTED; exit 2 = "can't keep up" -> fallback reviewer.
 //  6 merge      enable squash auto-merge, ONLY when base is integration. Never main/master.
 import {gh, ghAll, repoParts, summary, linkedTickets} from './gh-api.mjs';
+import {isCountedCheck, latestRunPerName} from './merge-gate-checks.mjs';
 
 class GateExit extends Error {
   constructor(code) {
@@ -20,15 +24,6 @@ const {owner, repo} = repoParts();
 const R = `/repos/${owner}/${repo}`;
 const N = Number(process.env.PR_NUMBER);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SELF = new Set([
-  'merge-gate',
-  '1 scope',
-  '2 checks',
-  '4 jev judge',
-  '5 coderabbit',
-  '5b fallback review',
-  '6 merge',
-]);
 
 async function pr() {
   return gh(`${R}/pulls/${N}`);
@@ -42,7 +37,7 @@ async function checkRuns(sha) {
 async function waitFor(sha, pick, timeoutMin) {
   const end = Date.now() + timeoutMin * 60000;
   for (;;) {
-    const runs = (await checkRuns(sha)).filter(pick);
+    const runs = latestRunPerName((await checkRuns(sha)).filter(pick));
     const pending = runs.filter(c => c.status !== 'completed');
     if (runs.length && !pending.length) return runs;
     if (Date.now() > end) return {timeout: true, runs, pending};
@@ -103,11 +98,7 @@ async function scope() {
 
 async function checks() {
   const p = await pr();
-  const res = await waitFor(
-    p.head.sha,
-    c => !SELF.has(c.name) && !/^merge-gate/.test(c.name),
-    60,
-  );
+  const res = await waitFor(p.head.sha, isCountedCheck, 60);
   if (res.timeout) {
     await summary([
       '## 2 checks',
@@ -283,12 +274,14 @@ async function merge() {
   ]);
 }
 
-const cmd = process.argv[2];
-const fns = {scope, checks, jev, coderabbit, merge};
-try {
-  if (!fns[cmd]) throw new Error(`unknown gate ${cmd}`);
-  await fns[cmd]();
-} catch (e) {
-  if (!(e instanceof GateExit)) console.error(e);
-  process.exitCode = e instanceof GateExit ? e.code : 1;
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const cmd = process.argv[2];
+  const fns = {scope, checks, jev, coderabbit, merge};
+  try {
+    if (!fns[cmd]) throw new Error(`unknown gate ${cmd}`);
+    await fns[cmd]();
+  } catch (e) {
+    if (!(e instanceof GateExit)) console.error(e);
+    process.exitCode = e instanceof GateExit ? e.code : 1;
+  }
 }
