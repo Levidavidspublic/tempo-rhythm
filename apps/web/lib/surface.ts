@@ -35,6 +35,16 @@ export function getSurface(env: SurfaceEnv = process.env): Surface {
   return env.VERCEL_ENV === "production" ? "coming-soon" : "app";
 }
 
+/**
+ * True when the route being rendered is the coming-soon page. `segments` are the active route
+ * segments below the root layout (Next's useSelectedLayoutSegments). Route groups such as
+ * "(tempo)" are folders, not part of the path, so they are skipped.
+ */
+export function isComingSoonRoute(segments: readonly string[]): boolean {
+  const path = segments.filter((segment) => !(segment.startsWith("(") && segment.endsWith(")")));
+  return path.length === 1 && `/${path[0]}` === COMING_SOON_PATH;
+}
+
 export type ComingSoonDecision =
   | { action: "rewrite"; to: typeof COMING_SOON_PATH }
   | { action: "redirect"; to: "/" }

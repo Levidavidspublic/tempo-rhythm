@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { appProxyApplies, decideComingSoon, getSurface } from "./surface";
+import { appProxyApplies, decideComingSoon, getSurface, isComingSoonRoute } from "./surface";
 
 describe("surface", () => {
   test("live is coming-soon unless told otherwise (deny by default)", () => {
@@ -69,6 +69,28 @@ describe("coming-soon surface routing", () => {
 
   test("the page's own icon passes", () => {
     expect(decideComingSoon("/favicon.ico")).toEqual({ action: "next" });
+  });
+});
+
+describe("coming-soon route check (root layout on the coming-soon surface)", () => {
+  test("the coming-soon route renders, inside a route group or not", () => {
+    expect(isComingSoonRoute(["coming-soon"])).toBe(true);
+    expect(isComingSoonRoute(["(public)", "coming-soon"])).toBe(true);
+  });
+
+  test("every other route renders nothing", () => {
+    for (const segments of [
+      [],
+      ["(tempo)", "journal"],
+      ["(bare)", "billing", "trial-end"],
+      ["sign-in"],
+      ["coming-soon", "x"],
+      ["x", "coming-soon"],
+      ["(tempo)"],
+      ["/_not-found"],
+    ]) {
+      expect(isComingSoonRoute(segments)).toBe(false);
+    }
   });
 });
 

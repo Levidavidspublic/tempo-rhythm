@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import { ComingSoonOnly } from "@/components/coming-soon/ComingSoonOnly";
 import { Providers } from "@/components/providers/providers";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -65,7 +66,8 @@ export default function RootLayout({
     return (
       <html lang="en" dir="ltr">
         <body data-tempo-flow="" style={{ margin: 0, background: "var(--tp-ground)" }}>
-          {children}
+          {/* App pages need the providers below. Without this guard they throw when the build prerenders them. */}
+          <ComingSoonOnly>{children}</ComingSoonOnly>
         </body>
       </html>
     );
