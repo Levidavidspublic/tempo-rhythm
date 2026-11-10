@@ -12,6 +12,12 @@ export type GcpConfig = {
   poolId: string;
   providerId: string;
   serviceAccountEmail: string;
+  /**
+   * Audience to ask Vercel to put on the OIDC token (optional, from GCP_AUDIENCE). Leave unset
+   * when the pool provider allows Vercel's default audience (https://vercel.com/<team>); set it to
+   * the provider's own audience URL when the provider uses its default. Both are in Vercel's guide.
+   */
+  audience: string | null;
 };
 
 export const GCP_ENV_NAMES = [
@@ -42,6 +48,7 @@ export function readGcpConfig(env: Env = process.env): GcpConfig | null {
     poolId: (env.GCP_WORKLOAD_IDENTITY_POOL_ID as string).trim(),
     providerId: (env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID as string).trim(),
     serviceAccountEmail: (env.GCP_SERVICE_ACCOUNT_EMAIL as string).trim(),
+    audience: env.GCP_AUDIENCE?.trim() || null,
   };
 }
 
@@ -100,13 +107,13 @@ function tokenClaims(token: string): string {
 
 type Deps = {
   fetch: FetchLike;
-  getOidcToken: (audience: string) => Promise<string>;
+  getOidcToken: (audience: string | null) => Promise<string>;
   now: () => number;
 };
 
 const defaultDeps: Deps = {
   fetch: (input, init) => fetch(input, init),
-  getOidcToken: (audience) => getVercelOidcToken({ audience }),
+  getOidcToken: (audience) => (audience ? getVercelOidcToken({ audience }) : getVercelOidcToken()),
   now: () => Date.now(),
 };
 
@@ -132,8 +139,8 @@ export async function getGcpAccessToken(
 
   let subjectToken: string;
   try {
-    // The pool provider checks the token's audience against its own default audience.
-    subjectToken = await getOidcToken(`https://iam.googleapis.com/${providerPath(config)}`);
+    // The pool provider checks the token's audience against the audiences it allows.
+    subjectToken = await getOidcToken(config.audience);
   } catch {
     throw new GcpAuthError("oidc", 0);
   }

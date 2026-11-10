@@ -48,11 +48,11 @@ describe("keyless Google access", () => {
       Response.json({ access_token: "federated" }),
       Response.json({ accessToken: "sa-token", expireTime: new Date(10 * 60_000).toISOString() }),
     ]);
-    const audiences: string[] = [];
+    const audiences: Array<string | null> = [];
     const deps = {
       fetch,
       now: () => 0,
-      getOidcToken: async (audience: string) => {
+      getOidcToken: async (audience: string | null) => {
         audiences.push(audience);
         return "oidc";
       },
@@ -63,7 +63,11 @@ describe("keyless Google access", () => {
 
     const provider =
       "projects/123456/locations/global/workloadIdentityPools/pool/providers/provider";
-    expect(audiences).toEqual([`https://iam.googleapis.com/${provider}`]);
+    // No GCP_AUDIENCE: Vercel's default token is used as it is.
+    expect(audiences).toEqual([null]);
+    expect(readGcpConfig({ ...env, GCP_AUDIENCE: " https://aud.example " })?.audience).toBe(
+      "https://aud.example"
+    );
     expect(calls.map((call) => call.url)).toEqual([
       "https://sts.googleapis.com/v1/token",
       "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/writer%40demo-project.iam.gserviceaccount.com:generateAccessToken",
