@@ -19,6 +19,11 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/privacy",
   "/contact",
   "/success",
+  // Coming-soon page and the two routes it needs (design export: public-coming-soon.html).
+  "/coming-soon",
+  "/api/waitlist",
+  // Whop signs this request; the signature authenticates it, not the session cookie.
+  "/api/whop/webhook",
   "/api/health",
   // The per-user MCP token authenticates this route, not the session cookie.
   "/api/mcp",

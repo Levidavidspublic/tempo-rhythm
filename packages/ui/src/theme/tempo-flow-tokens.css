@@ -1,0 +1,35 @@
+/* Tempo Flow tokens from the design export (assets/tokens.css, "Ukiyo-e Calm", light values).
+   Scoped to [data-tempo-flow] so the screens built from the export can use them while the rest of
+   the app keeps its current --tp-* values. Colour values live here, never in app code (HARD_RULES 7). */
+[data-tempo-flow] {
+  --tp-ground: #F7F3EA;
+  --tp-paper: #FBF9F4;
+  --tp-input: #FFFDF8;
+  --tp-sunken: #EFE8DA;
+  --tp-hover: #EDE6DA;
+  --tp-ink: #1C1B19;
+  --tp-ink-muted: #57514A;
+  --tp-ink-subtle: #6B645C;
+  --tp-line: #D9D0C1;
+  --tp-line-strong: #B9AE9C;
+  --tp-line-control: #877C6B;
+  --tp-accent: #1F3A5F;          /* wave indigo: one main action per screen, links, focus */
+  --tp-on-accent: #FFFFFF;
+  --tp-accent-wash: #E0E7EE;
+  --tp-seal: #B3362B;            /* logo seal, delete (with a word) */
+  --tp-on-seal: #FFFFFF;
+  --tp-sakura: #B4436A;          /* small accents */
+  --tp-sakura-chip: #F7E1E8;
+  --tp-on-sakura-chip: #8E2F52;
+  --tp-sakura-wash: #F2C6CF;     /* decoration only */
+  --tp-wave-wash: #5B7FA6;       /* decoration only */
+  --tp-done: #3B6948;
+  --tp-done-wash: #E3EBDF;
+  --tp-danger: var(--tp-seal);
+  --tp-wood: #E9D3AE;            /* mascot */
+  --tp-wood-dark: #D2B183;
+  --tp-glass: rgba(251, 249, 244, 0.82);
+  --tp-glass-solid: #FBF9F4;
+  --tp-scrim: rgba(28, 27, 25, 0.28);
+  --tp-wave-light: #9CB8D6;      /* decoration only; used by the coming-soon art, not in the export's token file */
+}

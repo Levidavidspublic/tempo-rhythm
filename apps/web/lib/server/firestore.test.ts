@@ -1,0 +1,136 @@
+import { beforeEach, describe, expect, test } from "bun:test";
+import { createDocument, FirestoreError, setDocumentFields } from "./firestore";
+import {
+  clearGcpTokenCache,
+  GcpAuthError,
+  getGcpAccessToken,
+  missingGcpEnv,
+  readGcpConfig,
+} from "./gcp-access-token";
+
+const env = {
+  GCP_PROJECT_ID: "demo-project",
+  GCP_PROJECT_NUMBER: "123456",
+  GCP_WORKLOAD_IDENTITY_POOL_ID: "pool",
+  GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID: "provider",
+  GCP_SERVICE_ACCOUNT_EMAIL: "writer@demo-project.iam.gserviceaccount.com",
+};
+const config = readGcpConfig(env);
+if (!config) {
+  throw new Error("test config");
+}
+
+type Call = { url: string; init?: RequestInit };
+function recorder(responses: Response[]) {
+  const calls: Call[] = [];
+  const fetch = async (url: string, init?: RequestInit) => {
+    calls.push({ url, init });
+    return responses.shift() ?? new Response("{}", { status: 500 });
+  };
+  return { calls, fetch };
+}
+
+describe("keyless Google access", () => {
+  beforeEach(() => clearGcpTokenCache());
+
+  test("names what is missing, never a value", () => {
+    expect(missingGcpEnv({ GCP_PROJECT_ID: "x" })).toEqual([
+      "GCP_PROJECT_NUMBER",
+      "GCP_WORKLOAD_IDENTITY_POOL_ID",
+      "GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID",
+      "GCP_SERVICE_ACCOUNT_EMAIL",
+    ]);
+    expect(readGcpConfig({ GCP_PROJECT_ID: "x" })).toBeNull();
+  });
+
+  test("exchanges the OIDC token, then asks for a service-account token, and caches it", async () => {
+    const { calls, fetch } = recorder([
+      Response.json({ access_token: "federated" }),
+      Response.json({ accessToken: "sa-token", expireTime: new Date(10 * 60_000).toISOString() }),
+    ]);
+    const audiences: string[] = [];
+    const deps = {
+      fetch,
+      now: () => 0,
+      getOidcToken: async (audience: string) => {
+        audiences.push(audience);
+        return "oidc";
+      },
+    };
+
+    expect(await getGcpAccessToken(config, "scope-a", deps)).toBe("sa-token");
+    expect(await getGcpAccessToken(config, "scope-a", deps)).toBe("sa-token");
+
+    const provider =
+      "projects/123456/locations/global/workloadIdentityPools/pool/providers/provider";
+    expect(audiences).toEqual([`https://iam.googleapis.com/${provider}`]);
+    expect(calls.map((call) => call.url)).toEqual([
+      "https://sts.googleapis.com/v1/token",
+      "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/writer%40demo-project.iam.gserviceaccount.com:generateAccessToken",
+    ]);
+    expect(JSON.parse(String(calls[0]?.init?.body))).toMatchObject({
+      audience: `//iam.googleapis.com/${provider}`,
+      subjectToken: "oidc",
+    });
+    expect(JSON.parse(String(calls[1]?.init?.body))).toEqual({ scope: ["scope-a"] });
+  });
+
+  test("says which step stopped", async () => {
+    const stsDenied = recorder([new Response("{}", { status: 403 })]);
+    await expect(
+      getGcpAccessToken(config, "s", { fetch: stsDenied.fetch, getOidcToken: async () => "oidc" })
+    ).rejects.toMatchObject({ step: "sts", status: 403 });
+
+    clearGcpTokenCache();
+    const noToken = recorder([]);
+    const failing = getGcpAccessToken(config, "s", {
+      fetch: noToken.fetch,
+      getOidcToken: async () => {
+        throw new Error("none");
+      },
+    });
+    await expect(failing).rejects.toBeInstanceOf(GcpAuthError);
+    expect(noToken.calls).toHaveLength(0);
+  });
+});
+
+describe("firestore writes", () => {
+  const getAccessToken = async () => "sa-token";
+
+  test("creates a document and treats an existing one as fine", async () => {
+    const { calls, fetch } = recorder([Response.json({}), new Response("{}", { status: 409 })]);
+    const fields = { email: { stringValue: "dana@example.com" } };
+    expect(await createDocument(config, "waitlist", "abc", fields, { fetch, getAccessToken })).toBe(
+      "created"
+    );
+    expect(await createDocument(config, "waitlist", "abc", fields, { fetch, getAccessToken })).toBe(
+      "exists"
+    );
+    expect(calls[0]?.url).toBe(
+      "https://firestore.googleapis.com/v1/projects/demo-project/databases/(default)/documents/waitlist?documentId=abc"
+    );
+    expect(calls[0]?.init?.method).toBe("POST");
+    expect(new Headers(calls[0]?.init?.headers).get("authorization")).toBe("Bearer sa-token");
+  });
+
+  test("reports a refusal with its status", async () => {
+    const { fetch } = recorder([new Response("{}", { status: 403 })]);
+    const write = createDocument(config, "waitlist", "abc", {}, { fetch, getAccessToken });
+    await expect(write).rejects.toBeInstanceOf(FirestoreError);
+  });
+
+  test("updates only the fields it is given", async () => {
+    const { calls, fetch } = recorder([Response.json({})]);
+    await setDocumentFields(
+      config,
+      "whopMemberships",
+      "mem_1",
+      { status: { stringValue: "trialing" } },
+      { fetch, getAccessToken }
+    );
+    expect(calls[0]?.url).toBe(
+      "https://firestore.googleapis.com/v1/projects/demo-project/databases/(default)/documents/whopMemberships/mem_1?updateMask.fieldPaths=status"
+    );
+    expect(calls[0]?.init?.method).toBe("PATCH");
+  });
+});

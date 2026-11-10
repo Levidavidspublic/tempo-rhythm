@@ -18,6 +18,9 @@ describe("default entry", () => {
       "/privacy",
       "/contact",
       "/success",
+      "/coming-soon",
+      "/api/waitlist",
+      "/api/whop/webhook",
       "/api/health",
       "/api/mcp",
     ]);

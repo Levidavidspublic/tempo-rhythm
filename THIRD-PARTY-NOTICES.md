@@ -216,6 +216,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://www.npmjs.com/package/@rn-primitives/types
 - Used by: apps/mobile/package.json
 
+### @vercel/oidc
+
+- Version: 4.0.8
+- License: Apache-2.0
+- Source: https://www.npmjs.com/package/@vercel/oidc
+- Used by: apps/web/package.json
+
 ### ai
 
 - Version: 5.0.82
