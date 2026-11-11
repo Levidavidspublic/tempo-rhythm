@@ -188,6 +188,14 @@ describe("notes soft delete", () => {
 		).rejects.toThrow("Note not found");
 	});
 
+	test("get returns null for a malformed id", async () => {
+		const userA = { _id: "users:a", email: "a@example.com" };
+		const ctx = makeFakeCtx({ identity: { subject: userA._id }, users: [userA] });
+
+		const result = await (notes.get as any)._handler(ctx, { noteId: "not-a-note-id" });
+		expect(result).toBeNull();
+	});
+
 	test("another user's remove throws Note not found", async () => {
 		const userA = { _id: "users:a", email: "a@example.com" };
 		const userB = { _id: "users:b", email: "b@example.com" };
