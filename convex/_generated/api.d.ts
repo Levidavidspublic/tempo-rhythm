@@ -27,6 +27,7 @@ import type * as goals from "../goals.js";
 import type * as habitCheckIns from "../habitCheckIns.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
+import type * as journal from "../journal.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
 import type * as lib_aiGate from "../lib/aiGate.js";
 import type * as lib_ai_errors from "../lib/ai_errors.js";
@@ -115,6 +116,7 @@ declare const fullApi: ApiFromModules<{
   habitCheckIns: typeof habitCheckIns;
   habits: typeof habits;
   http: typeof http;
+  journal: typeof journal;
   "lib/accountDeletion": typeof lib_accountDeletion;
   "lib/aiGate": typeof lib_aiGate;
   "lib/ai_errors": typeof lib_ai_errors;
