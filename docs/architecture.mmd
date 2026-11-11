@@ -1,0 +1,91 @@
+flowchart TD
+
+subgraph group_clients["Client Experiences"]
+  node_web_client["Web Client"]
+  node_mobile_client["Mobile Client"]
+  node_today_surface["Today Surface<br/>[TodayScreen.tsx]"]
+  node_session_player["Session Player<br/>[SessionPlayer.tsx]"]
+end
+
+subgraph group_productivity["Productivity Domains"]
+  node_tasks_api["Task Service<br/>[tasks.ts]"]
+  node_notes_domain["Notes Domain<br/>[notes.ts]"]
+  node_calendar_domain["Calendar Domain<br/>[calendar_events.ts]"]
+  node_habits_domain["Habits And Goals<br/>[habits.ts]"]
+  node_routines_domain["Routines Domain"]
+  node_tracking_domain["Tracking Domain<br/>[streaks.ts]"]
+  node_tempo_db[("Tempo Database<br/>[schema.ts]")]
+end
+
+subgraph group_intelligence["AI And Guidance"]
+  node_coach_service["Coach Service<br/>[coach.ts]"]
+  node_conversation_store["Conversation Store<br/>[conversations.ts]"]
+  node_ai_router["AI Router<br/>[ai_router.ts]"]
+end
+
+subgraph group_platform["Identity And Commerce"]
+  node_auth_service["Auth Service<br/>[auth.ts]"]
+  node_entitlements["Entitlements<br/>[entitlements.ts]"]
+  node_web_checkout["Web Checkout<br/>[route.ts]"]
+  node_mobile_billing["Mobile Billing"]
+end
+
+node_user(("Tempo User"))
+node_mistral{{"Mistral API"}}
+node_polar{{"Polar Checkout"}}
+node_revenuecat{{"RevenueCat"}}
+node_device_storage[("Device Storage")]
+
+node_user -->|"uses"| node_web_client
+node_user -->|"uses"| node_mobile_client
+node_web_client -->|"authenticates"| node_auth_service
+node_mobile_client -->|"authenticates"| node_auth_service
+node_today_surface -->|"loads today"| node_tasks_api
+node_tasks_api -->|"reads/writes"| node_tempo_db
+node_notes_domain -->|"reads/writes"| node_tempo_db
+node_calendar_domain -->|"reads/writes"| node_tempo_db
+node_habits_domain -->|"reads/writes"| node_tempo_db
+node_tracking_domain -->|"reads/writes"| node_tempo_db
+node_coach_service -->|"routes prompts"| node_ai_router
+node_ai_router -->|"calls API"| node_mistral
+node_coach_service -->|"stores context"| node_conversation_store
+node_conversation_store -->|"reads/writes"| node_tempo_db
+node_session_player -->|"logs sessions"| node_device_storage
+node_web_client -->|"starts checkout"| node_web_checkout
+node_web_checkout -->|"creates session"| node_polar
+node_mobile_client -->|"purchases plans"| node_mobile_billing
+node_mobile_billing -->|"loads offerings"| node_revenuecat
+node_revenuecat -.->|"syncs access"| node_entitlements
+node_entitlements -->|"reads access"| node_tempo_db
+
+click node_web_client "https://github.com/division6066/tempo-rhythm/tree/integration/apps/web/app/(tempo)"
+click node_mobile_client "https://github.com/division6066/tempo-rhythm/tree/integration/apps/mobile/app/(tempo)"
+click node_today_surface "https://github.com/division6066/tempo-rhythm/blob/integration/apps/web/components/today/TodayScreen.tsx"
+click node_session_player "https://github.com/division6066/tempo-rhythm/blob/integration/apps/mobile/components/session-player/SessionPlayer.tsx"
+click node_tasks_api "https://github.com/division6066/tempo-rhythm/blob/integration/convex/tasks.ts"
+click node_notes_domain "https://github.com/division6066/tempo-rhythm/blob/integration/convex/notes.ts"
+click node_calendar_domain "https://github.com/division6066/tempo-rhythm/blob/integration/convex/calendar_events.ts"
+click node_habits_domain "https://github.com/division6066/tempo-rhythm/blob/integration/convex/habits.ts"
+click node_routines_domain "https://github.com/division6066/tempo-rhythm/tree/integration/apps/web/app/(tempo)/routines"
+click node_tracking_domain "https://github.com/division6066/tempo-rhythm/blob/integration/convex/streaks.ts"
+click node_tempo_db "https://github.com/division6066/tempo-rhythm/blob/integration/convex/schema.ts"
+click node_coach_service "https://github.com/division6066/tempo-rhythm/blob/integration/convex/coach.ts"
+click node_conversation_store "https://github.com/division6066/tempo-rhythm/blob/integration/convex/conversations.ts"
+click node_ai_router "https://github.com/division6066/tempo-rhythm/blob/integration/convex/lib/ai_router.ts"
+click node_auth_service "https://github.com/division6066/tempo-rhythm/blob/integration/convex/auth.ts"
+click node_entitlements "https://github.com/division6066/tempo-rhythm/blob/integration/convex/lib/entitlements.ts"
+click node_web_checkout "https://github.com/division6066/tempo-rhythm/blob/integration/apps/web/app/checkout/route.ts"
+click node_mobile_billing "https://github.com/division6066/tempo-rhythm/blob/integration/apps/mobile/contexts/RevenueCatContext.tsx"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_web_client,node_mobile_client,node_today_surface,node_session_player,node_user toneBlue
+class node_tasks_api,node_notes_domain,node_calendar_domain,node_habits_domain,node_routines_domain,node_tracking_domain,node_tempo_db,node_device_storage toneAmber
+class node_coach_service,node_conversation_store,node_ai_router,node_mistral toneMint
+class node_auth_service,node_entitlements,node_web_checkout,node_mobile_billing toneRose
+class node_polar,node_revenuecat toneIndigo
