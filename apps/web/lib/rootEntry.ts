@@ -15,6 +15,7 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/",
   "/sign-in",
   "/sign-up",
+  "/pricing",
   "/terms",
   "/privacy",
   "/contact",

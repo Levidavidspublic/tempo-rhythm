@@ -1,0 +1,8 @@
+$ bun scripts/scan-forbidden-tech.ts
+scan:forbidden-tech OK — no forbidden dependencies or imports found.
+$ bun scripts/scan-ram-only-audit.ts
+scan:ram-only-audit OK — hard deletes dropped to 6 (baseline 10). Lower scripts/scan-baselines.json to lock in the improvement.
+$ bun scripts/scan-design-tokens.ts
+scan:design-tokens OK — arbitrary hex 4/18, raw hex 2/2 (at or below baseline).
+$ bun scripts/check-notices.ts
+check:notices OK — every runtime dependency has a notices entry (66 documented).
