@@ -20,12 +20,65 @@ const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:[mc]?[jt]s|[jt]sx)$/i;
 const TEST_LIKE = /(?:\.test|\.spec|_test|_spec)\.[^/.]+$/i;
 const BROWSER_SUITE = /^tests\/unit\/kb-[^/]*\.test\.tsx$/;
 
-const mode = process.argv[2] ?? "all";
+// `bun run test --timeout=120000` forwards the option to this script. Those are bun-test flags,
+// not suite names, so they are split out here and passed on to every `bun test` subprocess
+// instead of being consumed as a group selector.
+// Bun takes a flag's value from the next token too (`--timeout 120000`), so a value-taking flag
+// keeps the token after it; otherwise the value would be read as a browser-suite name and `all`
+// would exit 2 without running a test.
+const VALUE_FLAGS = new Set([
+  "-t",
+  "--test-name-pattern",
+  "--timeout",
+  "--rerun-each",
+  "--retry",
+  "--seed",
+  "--bail",
+  "--reporter",
+  "--reporter-outfile",
+  "--max-concurrency",
+  "--path-ignore-patterns",
+  "--changed",
+  "--parallel",
+  "--parallel-delay",
+  "--shard",
+  "--timings",
+  "--coverage-reporter",
+  "--coverage-dir",
+]);
+
+// A name filter applies inside every subprocess, and bun exits 1 when one process contains no
+// matching test, which would otherwise stop the run at the first suite that has none. That exit is
+// recognised from bun's own "matched 0 tests" report and the run continues; the filter is judged
+// once for the whole run at the end, so an empty match still fails.
+const NAME_FILTER = /^(?:-t|--test-name-pattern)(?:=|$)/;
+const MATCHED_NOTHING = /error: regex "[^"]*" matched 0 tests\./;
+
+const argv = process.argv.slice(2);
+const runnerFlags: string[] = [];
+const positional: string[] = [];
+let i = 0;
+while (i < argv.length) {
+  const arg = argv[i] ?? "";
+  i += 1;
+  if (!arg.startsWith("-")) {
+    positional.push(arg);
+    continue;
+  }
+  runnerFlags.push(arg);
+  const value = VALUE_FLAGS.has(arg) ? argv[i] : undefined;
+  if (value !== undefined) {
+    runnerFlags.push(value);
+    i += 1;
+  }
+}
+
+const mode = positional[0] ?? "all";
 // Optional: name browser suites to run (debugging one suite serially).
-const only = process.argv.slice(3);
+const only = positional.slice(1);
 if (!["all", "unit", "browser"].includes(mode)) {
   console.error(
-    `usage: bun scripts/test-suites.ts [all|unit|browser] [tests/unit/kb-*.test.tsx...] (got "${mode}")`
+    `usage: bun scripts/test-suites.ts [all|unit|browser] [tests/unit/kb-*.test.tsx...] [--bun-test-flags] (got "${mode}")`
   );
   process.exit(2);
 }
@@ -49,19 +102,70 @@ if (browserSuites.length === 0) {
   process.exit(2);
 }
 
+const nameFiltered = runnerFlags.some((arg) => NAME_FILTER.test(arg));
+// Groups whose subprocess exited 0, so some test matched the filter there.
+let matchedGroups = 0;
+
+// Split runs start several bun processes, which changes what two kinds of flag mean. Both are
+// rejected instead of misbehaving silently; both are fine in `unit` mode, which is one process.
+const watched = runnerFlags.includes("--watch") || runnerFlags.includes("-w");
+// bun writes report files at the end of each run, so a forwarded output path would be rewritten by
+// every group and keep only the last group's results.
+const fileOutputFlag = runnerFlags.find(
+  (arg) =>
+    /^--reporter-outfile(?:=|$)/.test(arg) ||
+    /^--coverage-dir(?:=|$)/.test(arg) ||
+    /^--coverage-reporter=.*lcov/.test(arg)
+);
+
+function rejectFlagsThatNeedOneProcess(runs: number): void {
+  if (runs < 2) return;
+  if (watched) {
+    console.error(
+      `--watch would open a watcher on the first of ${runs} bun processes, so the rest would never start.\n` +
+        `Run the file you are editing directly instead: bun test <path> --watch`
+    );
+    process.exit(2);
+  }
+  if (fileOutputFlag !== undefined) {
+    console.error(
+      `${fileOutputFlag} would be written by each of ${runs} bun processes, keeping only the last group's results.\n` +
+        `Run the group you need directly instead, or drop the flag.`
+    );
+    process.exit(2);
+  }
+}
+
 async function run(args: string[], label: string): Promise<void> {
   console.log(`\n=== ${label}\n$ bun ${args.join(" ")}`);
+  // A filtered run reads its own output, to tell "this group matched nothing" from a real failure;
+  // an unfiltered run streams straight through.
   const proc = Bun.spawn({
     cmd: [process.execPath, ...args],
     cwd: root,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: nameFiltered ? "pipe" : "inherit",
+    stderr: nameFiltered ? "pipe" : "inherit",
   });
-  const code = await proc.exited;
-  if (code !== 0) {
-    console.error(`\n${label} failed (exit ${code})`);
-    process.exit(1);
+  let output = "";
+  if (nameFiltered && proc.stdout && proc.stderr) {
+    const [out, err] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    process.stdout.write(out);
+    process.stderr.write(err);
+    output = `${out}${err}`;
   }
+  const code = await proc.exited;
+  if (code === 0) {
+    matchedGroups += 1;
+    return;
+  }
+  // A suite that found no test for the filter is not a failure of the run; the whole-run check
+  // below still fails when no suite matched one.
+  if (nameFiltered && MATCHED_NOTHING.test(output)) return;
+  console.error(`\n${label} failed (exit ${code})`);
+  process.exit(1);
 }
 
 if (mode === "all" || mode === "browser") {
@@ -75,12 +179,30 @@ if (mode === "all" || mode === "browser") {
     console.error(`no browser suite matched ${only.join(", ")}`);
     process.exit(2);
   }
-  for (const suite of selected) await run(["test", suite, "--max-concurrency=1"], suite);
+  // --max-concurrency=1 last, so a forwarded --max-concurrency cannot re-parallelise the group.
+  rejectFlagsThatNeedOneProcess(mode === "all" ? selected.length + 1 : selected.length);
+  for (const suite of selected) await run(["test", suite, ...runnerFlags, "--max-concurrency=1"], suite);
 }
 
 if (mode === "all" || mode === "unit") {
   await run(
-    ["test", "convex", "apps/web/lib", "apps/web/components", "packages", ...unitFiles],
+    [
+      "test",
+      "convex",
+      "apps/web/lib",
+      "apps/web/components",
+      "packages",
+      ...unitFiles,
+      ...runnerFlags,
+    ],
     `unit tests (${unitFiles.length} files in tests/unit, browser suites excluded)`
   );
+}
+
+if (nameFiltered && matchedGroups === 0) {
+  console.error(
+    `no test matched the name filter in any suite (${runnerFlags.join(" ")}).\n` +
+      `Every selected suite filtered its tests out, so nothing ran.`
+  );
+  process.exit(1);
 }
