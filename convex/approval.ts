@@ -1,10 +1,11 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import {
 	internalMutation,
 	internalQuery,
 	mutation,
 	query,
+  type MutationCtx,
 } from "./_generated/server";
 import {
 	APPROVAL_GATE_EPOCH_MS,
@@ -18,6 +19,7 @@ import {
 } from "./lib/approval";
 import { isInactiveAccount } from "./lib/accountDeletion";
 import { resolveUserFromIdentity } from "./lib/requireUser";
+import { BETA_SUBSCRIPTION, betaApprovalGrant, betaRequestStatus } from "./lib/beta_access";
 
 /**
  * Sign-up approval gate (TEMPO-GATE-01). See convex/lib/approval.ts.
@@ -104,6 +106,70 @@ export const assertApprovedForAi = internalQuery({
 	},
 });
 
+/** Request only for the authenticated owner. Requesting never grants access. */
+export const requestBetaAccess = mutation({
+  args: {},
+  returns: v.object({ status: v.union(v.literal("requested"), v.literal("approved"), v.literal("unavailable")) }),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Not authenticated");
+    const user = await resolveUserFromIdentity(ctx, identity);
+    if (!user) return { status: "unavailable" as const };
+    const status = betaRequestStatus(user);
+    if (status === "requested" && user.betaRequestedAt === undefined) {
+      const now = Date.now();
+      await ctx.db.patch(user._id, { betaRequestedAt: now, updatedAt: now });
+    }
+    return { status };
+  },
+});
+
+/** A bounded index page, never an unbounded filter/collect over account identities. */
+export const listBetaRequests = query({
+  args: { cursor: v.union(v.string(), v.null()), numItems: v.number() },
+  returns: v.object({
+    page: v.array(v.object({ id: v.id("users"), email: v.union(v.string(), v.null()), name: v.union(v.string(), v.null()), requestedAt: v.number() })),
+    continueCursor: v.string(), isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    if (!Number.isInteger(args.numItems) || args.numItems < 1 || args.numItems > 50) {
+      throw new ConvexError("Choose between 1 and 50 requests.");
+    }
+    const result = await ctx.db.query("users")
+      .withIndex("by_deletedAt_betaRequestedAt", (q) => q.eq("deletedAt", undefined).gt("betaRequestedAt", 0))
+      .order("asc")
+      .paginate({ cursor: args.cursor, numItems: args.numItems });
+    return {
+      page: result.page.filter((user) => betaRequestStatus(user) === "requested").map((user) => ({
+        id: user._id, email: user.email || null, name: user.fullName || null,
+        requestedAt: user.betaRequestedAt as number,
+      })),
+      continueCursor: result.continueCursor, isDone: result.isDone,
+    };
+  },
+});
+
+/** Approval and its grant commit in the same Convex transaction. */
+async function decideStatus(ctx: MutationCtx, target: Doc<"users">, status: ApprovalStatus, actor: string) {
+  const now = Date.now();
+  const subscription = status === "approved" && target.betaRequestedAt !== undefined
+    ? await ctx.db.query("subscriptionStates").withIndex("by_userId", (q) => q.eq("userId", target._id)).unique()
+    : null;
+  const grant = status === "approved" ? betaApprovalGrant(target, subscription) : null;
+  if (grant?.writeSubscription) {
+    if (subscription) await ctx.db.patch(subscription._id, { ...BETA_SUBSCRIPTION, updatedAt: now });
+    else await ctx.db.insert("subscriptionStates", { userId: target._id, ...BETA_SUBSCRIPTION, createdAt: now, updatedAt: now });
+  }
+  await ctx.db.patch(target._id, {
+    approvalStatus: status, approvalUpdatedAt: now, approvalUpdatedBy: actor, updatedAt: now,
+    // A consumed request cannot regrant access on a later repeated approval.
+    ...(target.betaRequestedAt !== undefined ? { betaRequestedAt: undefined } : {}),
+    ...(grant ? { betaApprovedAt: now } : {}),
+    ...(grant?.grantAccess ? { betaAccess: "tester" as const, userType: "paid" as const, entitlementTier: "max" as const } : {}),
+  });
+}
+
 /** Admin screen: every live account with its gate state, pending first, newest first. */
 export const listForAdmin = query({
 	args: {},
@@ -141,11 +207,7 @@ export const setStatus = mutation({
 		if (isAdminUser(target)) {
 			throw new Error("Admin accounts are always approved");
 		}
-		await ctx.db.patch(args.userId, {
-			approvalStatus: args.status,
-			approvalUpdatedAt: Date.now(),
-			approvalUpdatedBy: admin.email,
-		});
+		await decideStatus(ctx, target, args.status, admin.email);
 		return { userId: args.userId, status: args.status };
 	},
 });
@@ -168,11 +230,7 @@ export const setStatusByEmail = internalMutation({
 		if (!user) {
 			throw new Error(`No user with email ${email}`);
 		}
-		await ctx.db.patch(user._id, {
-			approvalStatus: args.status,
-			approvalUpdatedAt: Date.now(),
-			approvalUpdatedBy: "cli",
-		});
+		await decideStatus(ctx, user, args.status, "cli");
 		return { userId: user._id, email, status: args.status };
 	},
 });

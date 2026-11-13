@@ -3,7 +3,7 @@ import type { Doc } from "../_generated/dataModel";
 /**
  * Single source of truth for what an account is granted at sign-up.
  *
- * Signup is open: every account gets the top entitlement tier. These helpers are
+ * Ordinary signup creates a pending account without a paid entitlement. These helpers are
  * deliberately PURE (no `ctx`, no `db`) so both write paths -- the Convex Auth
  * `createOrUpdateUser` callback in `convex/auth.ts` and the `createOrUpdateUser`
  * mutation in `convex/users.ts` -- share them and cannot drift apart again, and
@@ -44,6 +44,10 @@ export type ReturningUserSnapshot = {
   entitlementTier?: EntitlementTier;
   userType?: UserType;
   betaAccess?: BetaAccess;
+  isGodTier?: boolean;
+  isActive?: boolean;
+  deletedAt?: number;
+  approvalStatus?: "pending" | "approved" | "revoked";
 };
 
 export type ReturningUserPatch = {
@@ -67,9 +71,8 @@ function storedFullName(fullName: string | undefined): string | undefined {
 }
 
 /**
- * Field set for a brand-new account. Everyone gets `max`, but the account starts
- * `approvalStatus: "pending"` (sign-up approval gate, convex/lib/approval.ts) unless
- * the caller passes "approved" (admin emails from TEMPO_ADMIN_EMAILS).
+ * Pending is account state, not a free product plan. Only the existing explicit
+ * admin-approved creation path retains its grant; ordinary signup grants nothing.
  */
 export function newUserFields(
   profile: SignInProfile,
@@ -82,9 +85,9 @@ export function newUserFields(
     emailVerified: profile.emailVerified ?? false,
     ...(fullName ? { fullName } : {}),
     role: "user" as const,
-    userType: GRANTED_USER_TYPE,
-    betaAccess: GRANTED_BETA_ACCESS,
-    entitlementTier: GRANTED_ENTITLEMENT_TIER,
+    userType: approvalStatus === "approved" ? GRANTED_USER_TYPE : "free" as const,
+    betaAccess: approvalStatus === "approved" ? GRANTED_BETA_ACCESS : "none" as const,
+    entitlementTier: approvalStatus === "approved" ? GRANTED_ENTITLEMENT_TIER : "none" as const,
     approvalStatus,
     approvalUpdatedAt: now,
     ...(approvalStatus === "approved" ? { betaApprovedAt: now } : {}),
@@ -103,15 +106,14 @@ export function newUserFields(
  * paid account on its SECOND sign-in -- the first one looks perfect. Keys are
  * added conditionally, never assigned a possibly-undefined value.
  *
- * It also self-heals accounts already damaged by that bug, and normalizes the
- * retired `"god"` tier down to `"max"`. A real, already-granted value is left
- * alone so a RevenueCat/Polar downgrade is not stomped back to `paid` on
- * every sign-in.
+ * Repairs require persisted historical grant evidence. Missing fields alone
+ * authorize nothing. Explicit downgrades and independent billing rows win.
  */
 export function buildReturningUserPatch(
   existing: ReturningUserSnapshot,
   profile: SignInProfile,
   now: number,
+  subscription?: SubscriptionGrantSnapshot | null,
 ): ReturningUserPatch {
   const fullName = storedFullName(profile.fullName);
   const patch: ReturningUserPatch = {
@@ -121,10 +123,12 @@ export function buildReturningUserPatch(
     ...(fullName ? { fullName } : {}),
   };
 
-  // Missing (stripped by the patch-undefined bug), never granted, or on the
-  // retired "god" tier -> bring it up to the granted tier.
+  if (!canPreserveGrant(existing, subscription)) return patch;
+
+  // Only missing fields, or the retired tier, are repaired. An explicit none,
+  // basic, pro or free is never promoted on login, even for a former tester.
   const tier = existing.entitlementTier;
-  if (tier === undefined || tier === "none" || tier === "god") {
+  if (tier === undefined || tier === "god") {
     patch.entitlementTier = GRANTED_ENTITLEMENT_TIER;
   }
 
@@ -164,25 +168,39 @@ const BETA_PLACEHOLDER = {
   source: "beta_signup",
 } as const;
 
+function isBetaPlaceholder(existing: SubscriptionGrantSnapshot): boolean {
+  return existing.plan === BETA_PLACEHOLDER.plan &&
+    existing.status === BETA_PLACEHOLDER.status &&
+    existing.billingCycle === BETA_PLACEHOLDER.billingCycle &&
+    existing.source === BETA_PLACEHOLDER.source;
+}
+
+/** Historical evidence is not permission to reverse a later billing decision. */
+function canPreserveGrant(
+  user: ReturningUserSnapshot,
+  subscription?: SubscriptionGrantSnapshot | null,
+): boolean {
+  if (user.isActive === false || user.deletedAt !== undefined || user.approvalStatus === "revoked") return false;
+  if (user.userType === "free" ||
+    (user.entitlementTier !== undefined && user.entitlementTier !== "max" && user.entitlementTier !== "god")) {
+    return false;
+  }
+  const placeholder = subscription !== undefined && subscription !== null && isBetaPlaceholder(subscription);
+  const activeGrant = subscription?.source === "open_signup_grant" &&
+    subscription.plan === "max" && subscription.status === "active" && subscription.billingCycle === "lifetime";
+  // Never turn an unrelated purchase, cancellation or deletion into a grant.
+  if (subscription && !placeholder && !activeGrant) return false;
+  return user.betaAccess === "tester" || user.betaAccess === "founder" ||
+    user.entitlementTier === "god" || user.isGodTier === true || placeholder || activeGrant;
+}
+
 /**
- * True only for a legitimate grant:
- * - no subscription row yet (open signup inserts `GRANTED_SUBSCRIPTION`)
- * - the exact pre-open-signup placeholder above
- *
- * A cancelled, grace, or unpaid row, and a paid row marked inactive by
- * account deletion, must not be rewritten to lifetime Max on the next login.
- * `buildReturningUserPatch` still heals a missing or `"none"` entitlement
- * tier; that field does not unlock billing. `PremiumGate` reads `userType`,
- * and an explicit `"free"` is left alone.
+ * Only restore a historical grant's missing row or exact beta placeholder.
+ * Existing subscriptions, including inactive/cancelled ones, are never replaced.
  */
 export function shouldGrantSubscription(
   existing?: SubscriptionGrantSnapshot | null,
+  user: ReturningUserSnapshot = {},
 ): boolean {
-  if (!existing) return true;
-  return (
-    existing.plan === BETA_PLACEHOLDER.plan &&
-    existing.status === BETA_PLACEHOLDER.status &&
-    existing.billingCycle === BETA_PLACEHOLDER.billingCycle &&
-    existing.source === BETA_PLACEHOLDER.source
-  );
+  return canPreserveGrant(user, existing) && (!existing || isBetaPlaceholder(existing));
 }

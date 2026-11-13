@@ -145,7 +145,9 @@ export const createOrUpdateUser = mutation({
       // Identity fields plus self-heal only. This path must never write
       // `role`, and must never write `userType` unconditionally - that was
       // the downgrade.
-      await ctx.db.patch(existing._id, buildReturningUserPatch(existing, profile, now));
+      const subscription = await ctx.db.query("subscriptionStates")
+        .withIndex("by_userId", (q) => q.eq("userId", existing._id)).unique();
+      await ctx.db.patch(existing._id, buildReturningUserPatch(existing, profile, now, subscription));
       if (!fullName) {
         await dropPlaceholderFullName(ctx, existing._id);
       }
