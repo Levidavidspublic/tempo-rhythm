@@ -1,12 +1,26 @@
 rules_version = '2';
 
-// Deny by default. A signed-in user can read and write only their own data,
-// stored under users/{their Firebase Auth uid}/... . Everything else is closed.
+// Deny by default. Only approved, active owners can read or write their own data.
 // Server code (Vercel functions with keyless WIF + Admin SDK) bypasses these rules.
 service cloud.firestore {
   match /databases/{database}/documents {
+    function hasApprovedAccount(userId) {
+      let gate = /databases/$(database)/documents/private/$(userId)/account/gate;
+      return exists(gate)
+        && isApprovedAndActive(get(gate).data);
+    }
+
+    function isApprovedAndActive(account) {
+      return account.get('approvalStatus', '') == 'approved'
+        && account.get('deletedAt', null) == null
+        && account.get('isActive', true) == true;
+    }
+
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.get('email_verified', false) == true
+        && hasApprovedAccount(userId);
     }
     match /{document=**} {
       allow read, write: if false;
