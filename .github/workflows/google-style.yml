@@ -3,7 +3,7 @@ name: google-style
 # Gate 3 of merge-gate: Google style guides (https://github.com/google/styleguide), CHANGED FILES ONLY
 # so older code doesn't fail every PR. Runs on pull_request (no secrets) because it lints PR files.
 #   TS/JS: gts (Google's official TypeScript style: eslint + prettier config), via bunx.
-#   Python: pyink (Google's black fork, 2-space) + pylint with Google's pylintrc.
+#   Python: pyink (4-space, Google Python guide section 3.4) + Google's pylintrc.
 #   Shell: shellcheck + shfmt -i 2 -ci (Google Shell Style Guide has no official tool).
 #   Other languages: no official Google tool here (UNKNOWN), not checked.
 on:
@@ -91,7 +91,7 @@ jobs:
           [ ${#f[@]} -eq 0 ] && { echo "no Python files"; exit 0; }
           pip install -q pyink pylint
           curl -fsSL https://raw.githubusercontent.com/google/styleguide/gh-pages/pylintrc -o /tmp/pylintrc
-          pyink --pyink-indentation 2 --line-length 80 --check "${f[@]}"
+          pyink --pyink-indentation 4 --line-length 80 --check "${f[@]}"
           pylint --rcfile /tmp/pylintrc "${f[@]}"
       - name: Shell (shellcheck + shfmt)
         run: |
