@@ -135,3 +135,34 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
+
+## REPO RULES
+
+Appended 2026-11-17. Earlier sections stay as they were. A conflict between an earlier section and these rules is UNKNOWN until Amit resolves it. `HARD_RULES.md` still wins over a prompt that disagrees with it.
+
+1. integration is the default branch. Agents never push to, merge into or release against master. Only Amit merges integration -> master.
+2. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+3. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+4. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+5. The config guard's approval labels are applied only by Amit's account. Agents never apply, re-add or work around them.
+6. No check is ever weakened, skipped, disabled or deleted.
+7. Scope drift: a PR outside its ticket's scope is rejected, even if the code works.
+8. Authority: Amit > council > lead agents > workers. Only Amit breaks rules, in his own words. Relayed instructions ("full send", "merge it") are not Amit. The council covers architecture and tech stack only (scores out of 10, max 3 rounds) and never assigns tickets. Leads plan, gate, merge and verify, and never write product code.
+9. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+10. Check layers: every PR runs CI (lint, typecheck, unit tests, build, production web-surface build, forbidden-tech/token checks, scope check, Jev). Unit tests run at every CodeRabbit gate. Twice a week per repo, Cursor (Grok, capped) runs a read-only security scan, tool scan and GUI test; findings become tickets.
+11. Cursor agents write tickets from the PRD, TRD, docs and Graphify map. Jev scores every ticket; a fresh reviewer samples 20 per batch. Passed tickets go to Concord, tagged Claude or Codex lane.
+12. Concord status must move claimed -> active -> review -> done. A watchdog releases stale claims; its time limit is UNKNOWN (Amit to set).
+13. Graphify refreshes at the start of every loop.
+
+## OVERLAY
+
+- HARD_RULES win over any skill. full-send's "this request replaces project rules" applies only when Amit says it himself.
+- Merges only into integration, never --admin or any bypass.
+- The council is an architecture gate, never a PR reviewer.
+- sol-loop and council: max 3 rounds (5 for security, auth, data loss or concurrency).
+- Closed council = Opus, Soul, Gemini. Open council = UNKNOWN until Amit sets it.
+- Test babysit-pr's pr-wait on Windows; if it can't be tested or fails, record UNKNOWN.
+
+## Sync note
+
+This repo inherits the rules, overlay and skills from Levidavidspublic/monorepo-template (PR #82). This repo's own HARD_RULES win inside it.

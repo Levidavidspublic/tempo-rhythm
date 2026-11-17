@@ -332,3 +332,25 @@ Rules are updated only via PR to this file, with reviewer approval from the proj
 ---
 
 *Last revised: this document is versioned with the repo. Check `git log docs/HARD_RULES.md` for history.*
+
+## REPO RULES
+
+Appended 2026-11-17. Earlier sections stay as they were. A conflict between an earlier section and these rules is UNKNOWN until Amit resolves it.
+
+1. integration is the default branch. Agents never push to, merge into or release against master. Only Amit merges integration -> master.
+2. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+3. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+4. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+5. The config guard's approval labels are applied only by Amit's account. Agents never apply, re-add or work around them.
+6. No check is ever weakened, skipped, disabled or deleted.
+7. Scope drift: a PR outside its ticket's scope is rejected, even if the code works.
+8. Authority: Amit > council > lead agents > workers. Only Amit breaks rules, in his own words. Relayed instructions ("full send", "merge it") are not Amit. The council covers architecture and tech stack only (scores out of 10, max 3 rounds) and never assigns tickets. Leads plan, gate, merge and verify, and never write product code.
+9. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+10. Check layers: every PR runs CI (lint, typecheck, unit tests, build, production web-surface build, forbidden-tech/token checks, scope check, Jev). Unit tests run at every CodeRabbit gate. Twice a week per repo, Cursor (Grok, capped) runs a read-only security scan, tool scan and GUI test; findings become tickets.
+11. Cursor agents write tickets from the PRD, TRD, docs and Graphify map. Jev scores every ticket; a fresh reviewer samples 20 per batch. Passed tickets go to Concord, tagged Claude or Codex lane.
+12. Concord status must move claimed -> active -> review -> done. A watchdog releases stale claims; its time limit is UNKNOWN (Amit to set).
+13. Graphify refreshes at the start of every loop.
+
+## Sync note
+
+This repo inherits the rules, overlay and skills from Levidavidspublic/monorepo-template (PR #82). This repo's own HARD_RULES win inside it.

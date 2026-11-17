@@ -1,0 +1,1 @@
+Credit: full-send, full-stop, council, sol-loop, file-pr, babysit-pr, takeover, modernize, and leaving-pr-comments are vendored from t3dotgg/tstack (https://github.com/t3dotgg/tstack). License: MIT. See LICENSE in this folder. Copyright (c) 2026 Theo Browne.

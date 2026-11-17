@@ -73,3 +73,9 @@ playwright-report/
 
 # Archify CLI checkout used by .github/workflows/archify.yml. Never commit.
 .archify-skill/
+
+# Understand Anything scratch (from monorepo-template PR #82)
+# Legacy data dir: https://github.com/Egonex-AI/Understand-Anything#share-the-graph-with-your-team
+.ua/diff-overlay.json
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json
