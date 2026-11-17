@@ -6,7 +6,7 @@ name: Security
 
 on:
   pull_request:
-    branches: [master, integration]
+    branches: [master, integration, 'batch/**']
     types: [opened, synchronize, reopened, ready_for_review]
   # Required check name is the job `secret-scan`. The queue must be able to run it.
   merge_group:
