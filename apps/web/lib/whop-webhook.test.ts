@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHmac } from "node:crypto";
 import {
+  isConfiguredWhopPlan,
   mapWhopEvent,
   membershipEventsCollection,
   signWhopPayload,
@@ -143,6 +144,13 @@ describe("whop event mapping", () => {
     expect(record?.planId).toBe("plan_old");
     expect(record?.status).toBe("canceled");
     expect(record?.cancelAtPeriodEnd).toBe(true);
+  });
+
+  test("accepts only the configured Tempo plan", () => {
+    expect(isConfiguredWhopPlan({ planId: "plan_tempo" }, "plan_tempo")).toBe(true);
+    expect(isConfiguredWhopPlan({ planId: "plan_other" }, "plan_tempo")).toBe(false);
+    expect(isConfiguredWhopPlan({ planId: null }, "plan_tempo")).toBe(false);
+    expect(isConfiguredWhopPlan({ planId: "plan_tempo" }, "  ")).toBe(false);
   });
 
   test("ignores other events, unknown statuses, unsafe ids and events with no id or time", () => {
