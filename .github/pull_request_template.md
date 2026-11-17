@@ -7,6 +7,12 @@ Owner-tag discipline is enforced by §14.
 
 <!-- 2–3 sentences. Explain *why* this change exists, not *what* files moved. -->
 
+<!--
+What changed:
+Why:
+Where the risk is:
+-->
+
 ## Linked task(s)
 
 <!-- One or more TASKS.md IDs. Keep the exact `T-XXXX` format. -->
@@ -62,4 +68,21 @@ Read @docs/HARD_RULES.md before ticking. Unchecked boxes must have a note.
 ## Reviewer
 
 <!-- Default: Amit (human-amit). For code-agent PRs, a second agent may be tagged
-     with `reviewer` after human approval. Code agents never merge their own PRs. -->
+     with `reviewer` after human approval. -->
+
+Rule 9. PR flow: ticket branch -> loop branch (loop/claude-&lt;date&gt; or loop/codex-&lt;date&gt;), merged on CI + Jev green by the lead. One loop PR -> integration through Gate 1 (Claude lane) or Gate 2 (Codex lane): CodeRabbit + security check + unit tests, max 3 fix rounds, then the lead merges. integration -> preview. Release PR integration -> master, Gate 3: CodeRabbit on what's new since last preview + security check + unit tests. After several previews, Gate 4: final full review on the same release PR; Amit merges -> production; if production checks fail, roll back.
+
+## Risk
+
+<!-- Describe affected behavior, failure modes, and any remaining uncertainty. -->
+
+## How to revert
+
+<!-- Name the commit to revert and any configuration restoration required. -->
+
+## Checks
+
+- CI result:
+- Jev score:
+- CodeRabbit gate result:
+- Council score:

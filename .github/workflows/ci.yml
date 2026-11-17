@@ -173,6 +173,12 @@ jobs:
           NEXT_PUBLIC_CONVEX_URL: https://example.convex.cloud
         run: bun run build
 
+      - name: Build production web surface
+        working-directory: apps/web
+        env:
+          VERCEL_ENV: production
+        run: bun run build
+
   # Required check `ci` (Phase 03): one stable name for the ruleset. Passes only when every job
   # above (install, lint, typecheck, unit tests, build, scans, notices, local E2E) succeeded.
   ci:
