@@ -7,7 +7,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [master, integration]
+    branches: [master, integration, 'batch/**']
     types: [opened, synchronize, reopened, ready_for_review]
   # Merge queue on integration re-runs this required check against the queue commit.
   merge_group:

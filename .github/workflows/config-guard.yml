@@ -18,7 +18,7 @@ name: config-guard
 
 on:
   pull_request_target:
-    branches: [integration, master, main]
+    branches: [integration, master, main, 'batch/**']
     types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
   merge_group:
     branches: [integration, master, main]
