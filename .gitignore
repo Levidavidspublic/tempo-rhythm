@@ -83,3 +83,6 @@ playwright-report/
 .code-map-tools/
 
 __pycache__/
+
+# Understand-Anything current intermediate directory
+.ua/intermediate/

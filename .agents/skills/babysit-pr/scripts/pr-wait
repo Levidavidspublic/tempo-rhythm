@@ -274,6 +274,7 @@ class Watcher:
         self.reported: set[str] = set(self.state["reported"])
         self.printed: set[str] = set()
         self.events = 0
+        self.pending_event = False
         self.required: set[str] | None = None
         self.required_base: str | None = None
         self.prev_snapshot: list[tuple[str, str]] | None = None
@@ -305,6 +306,7 @@ class Watcher:
         self.reported.add(key)
         if not self.baseline:
             self.events += 1
+            self.pending_event = True
             self.say(line)
 
     def finish(self, code: int, lines: Sequence[str] = ()) -> NoReturn:
@@ -397,6 +399,8 @@ class Watcher:
         base = pr["baseRefName"]
         if self.required is None or self.required_base != base:
             self.required = required_checks(self.repo, base)
+            if self.required_base != base:
+                self.pr_files.clear()
             self.required_base = base
             gate = ", ".join(sorted(self.required)) or "none set, so every CI check gates"
             log(f"watching {self.repo}#{self.pr} until {self.until}; required checks: {gate}")
@@ -477,7 +481,8 @@ class Watcher:
             summaries = [c for c in comments if trusted_bot(c) == bot]
             own_reviews = [r for r in reviews if trusted_bot(r) == bot]
             on_head = any((r.get("commit") or {}).get("oid") == head and r.get("state") in ("APPROVED", "COMMENTED") for r in own_reviews)
-            reviewer_blocked = any((r.get("commit") or {}).get("oid") == head and r.get("state") == "CHANGES_REQUESTED" for r in own_reviews)
+            decisions = [r for r in own_reviews if (r.get("commit") or {}).get("oid") == head and r.get("state") in ("APPROVED", "CHANGES_REQUESTED")]
+            reviewer_blocked = bool(decisions and decisions[-1]["state"] == "CHANGES_REQUESTED")
             evidence = on_head or any(head in s["body"] for s in summaries)
             if own_checks:
                 done = all(c["bucket"] == "pass" for c in own_checks.values()) and evidence
@@ -573,7 +578,7 @@ class Watcher:
                 self.finish(0, [f"ready on {short}: {summary}{self.behind(base, base_oid, head)}"])
         if all_done and (stable or self.baseline):
             self.emit(checks_key, f"checks finished on {short}: {summary}")
-        if self.until == "any-change" and self.events:
+        if self.until == "any-change" and self.pending_event:
             self.finish(0)
 
     def run(self) -> NoReturn:

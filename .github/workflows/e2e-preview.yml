@@ -14,7 +14,7 @@ name: e2e-preview
 
 on:
   pull_request:
-    branches: [integration, master, main, "loop/**"]
+    branches: [integration, master, main, 'batch/**', "loop/**"]
     types: [opened, synchronize, reopened, ready_for_review]
   # Queue commits are not Vercel previews. The job still runs, and tests the queued PR's preview SHA.
   merge_group:

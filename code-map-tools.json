@@ -3,7 +3,9 @@
     "package": "graphifyy",
     "version": "0.9.74",
     "source": "https://github.com/Graphify-Labs/graphify/tree/v0.9.74",
-    "mode": "local AST only, no clustering or API inference"
+    "mode": "local AST only through safe JSON/argv adapter; staged graph/manifest publication",
+    "adapter": "scripts/code-map/graphify_safe.py",
+    "license": "Apache-2.0"
   },
   "understandAnything": {
     "source": "https://github.com/Egonex-AI/Understand-Anything",

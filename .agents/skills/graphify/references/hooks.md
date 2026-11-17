@@ -1,33 +1,5 @@
-# graphify reference: commit hook and native AGENTS.md integration
+# Hooks and runtime
 
-Load this when the user asked to install the post-commit hook or wire graphify into a project's AGENTS.md.
+Project hooks call the fixed Python adapter. Codex's hook emits graph-orientation guidance when a local graph exists; it is advisory and is not a merge/check pass. Claude's existing hook-guard read/search checks are retained through the pinned official CLI with GRAPHIFY_NO_AUTO_REFRESH=1. Existing permissions.deny entries stay intact.
 
-## For git commit hook
-
-Install a post-commit hook that auto-rebuilds the graph after every commit. No background process needed - triggers once per commit, works with any editor.
-
-```bash
-graphify hook install    # install
-graphify hook uninstall  # remove
-graphify hook status     # check
-```
-
-After every `git commit`, the hook detects which code files changed (via `git diff HEAD~1`), re-runs AST extraction on those files, and rebuilds `graph.json` and `GRAPH_REPORT.md`. Doc/image changes are ignored by the hook - run `/graphify --update` manually for those.
-
-If a post-commit hook already exists, graphify appends to it rather than replacing it.
-
----
-
-## For native AGENTS.md integration
-
-Run once per project to make graphify always-on in your agent sessions:
-
-```bash
-graphify agents install
-```
-
-This writes a `## graphify` section to the local `AGENTS.md` that instructs your agent to check the graph before answering codebase questions and rebuild it after code changes. No manual `/graphify` needed in future sessions.
-
-```bash
-graphify agents uninstall  # remove the section
-```
+The adapter disables upstream user-scope auto-refresh only in each child process environment. Setup similarly saves/restores the prior process environment value. No global configuration is changed. If Python/uvx/Graphify cannot run, record UNKNOWN and continue independent source exploration while retaining every actual repository gate.

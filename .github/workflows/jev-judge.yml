@@ -15,7 +15,7 @@ name: jev-judge
 
 on:
   pull_request:
-    branches: [integration, master, main, "loop/**"]
+    branches: [integration, master, main, 'batch/**', "loop/**"]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 

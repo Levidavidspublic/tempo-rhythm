@@ -6,7 +6,7 @@ $dataDir = Join-Path $repoRoot '.understand-anything/intermediate'
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 Push-Location $repoRoot
 try {
-    uvx --from graphifyy==0.9.74 graphify extract . --code-only --no-cluster --max-workers 1
+    python (Join-Path $PSScriptRoot 'graphify_safe.py') refresh
     if ($LASTEXITCODE -ne 0) { throw 'Graphify AST refresh failed' }
     $scanPath = Join-Path $dataDir 'scan-result.json'
     $mapPath = Join-Path $dataDir 'import-map.json'

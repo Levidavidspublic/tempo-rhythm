@@ -355,6 +355,16 @@ Owner-requested rule update. These rules replace conflicting historical reviewer
 12. Concord: every task's status must move (claimed → active → review → done). A watchdog releases claims with no update; the time limit is UNKNOWN until Amit sets it.
 13. Graphify refreshes at the start of every loop.
 
+## Completed loop scope contract
+
+Before a lane loop starts, the lead creates an aggregate GitHub issue using the existing ticket schema: type: data and an explicit scope list covering every path expected in the combined diff, including shared hot files. This aggregate is a composition record for already scoped child tickets; it grants no new product implementation authority and does not expand any child ticket's scope.
+
+The completed-loop PR into integration links that aggregate issue with Closes #N and lists its child ticket/PR links, assigned lane and current-head CI/Jev receipts. The lead verifies that the final changed paths exactly match the approved combined scope before requesting Gate 1 or Gate 2. If new paths appear, stop and obtain a separately reviewed scope update. Component-only aggregates cannot claim data/shared-hot-file permissions; the data-type composition ticket must declare the exact combined scope. Convex remains frozen regardless of ticket type.
+
+The existing scope-guard judges the aggregate ticket normally. A loop PR without its linked aggregate ticket, valid type and scope is blocked; do not use a config label as a substitute. Existing batch/** lanes, where present, retain their strict ticket/check requirements and can use the same aggregate composition contract. No loop/batch guard exemption, dispatcher activation or automatic merge is introduced here.
+
+The unchanged data-ticket guard permits shared hot files independently of its scope list. This contract therefore requires explicit hot-file coverage and lead/Jev scope verification as well; it does not claim a new automated exact-union validator or a fully proven loop controller. Every underlying check and the maximum three PR fix rounds remain in force.
+
 ## Sync note
 
 Tempo inherits the public rules, skills and code-map tools from Levidavidspublic/monorepo-template. This docs/HARD_RULES.md wins inside Tempo.

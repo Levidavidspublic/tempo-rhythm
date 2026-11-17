@@ -1,0 +1,3 @@
+Graphify 0.9.74 (graphifyy), Graphify Labs: https://github.com/Graphify-Labs/graphify/tree/v0.9.74
+
+Apache-2.0 license retained in GRAPHIFY-LICENSE; the distribution's original MIT terms and copyright notice are also retained in GRAPHIFY-LICENSE-MIT and GRAPHIFY-NOTICE. Copyright 2026 Safi Shamsi and the Graphify contributors. Project adaptations replace generated semantic recipes with identical safe local-AST adapters/references in agents, Claude and Codex; the official pinned runtime remains installed. No upstream runtime code is modified. Understand-Anything is separately pinned under its MIT license in the ignored tool checkout; tstack attribution remains in .agents/skills/t3dotgg-tstack/.

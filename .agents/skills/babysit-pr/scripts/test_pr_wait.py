@@ -340,6 +340,44 @@ class SafetyTests(unittest.TestCase):
             self.poll(snapshot, checks, watcher)
         self.assertEqual(caught.exception.code, 1)
 
+    def test_pending_any_change_event_survives_a_retry(self):
+        watcher = self.watcher()
+        watcher.until = "any-change"
+        watcher.baseline = False
+        watcher.emit("comment-once", "new comment")
+        watcher.events = 0
+        with self.assertRaises(SystemExit) as caught:
+            self.poll(pr(), {}, watcher)
+        self.assertEqual(caught.exception.code, 0)
+
+    def test_retargeted_base_invalidates_cached_diff(self):
+        watcher = self.watcher()
+        watcher.required = {"old-check"}
+        watcher.required_base = "old-base"
+        watcher.pr_files[HEAD] = {"old-file.py"}
+        self.poll(pr(), {}, watcher)
+        self.assertEqual(watcher.pr_files, {})
+
+    def test_later_approval_clears_earlier_change_request_on_same_head(self):
+        snapshot = pr()
+        snapshot["reviews"] = connection(
+            [
+                {
+                    "id": str(i),
+                    "url": "test",
+                    "body": "review",
+                    "state": state,
+                    "commit": {"oid": HEAD},
+                    "author": {"login": "coderabbitai", "__typename": "Bot"},
+                }
+                for i, state in enumerate(("CHANGES_REQUESTED", "APPROVED"))
+            ]
+        )
+        watcher = self.watcher()
+        checks = {"ci": {"bucket": "pass", "link": "", "description": ""}}
+        self.poll(snapshot, checks, watcher)
+        self.assertIn("bot:coderabbit:" + HEAD, watcher.reported)
+
 
 if __name__ == "__main__":
     unittest.main()

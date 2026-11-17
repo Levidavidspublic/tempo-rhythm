@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --from graphifyy==0.9.74 graphify hook-check"
+            "command": "python scripts/code-map/graphify_safe.py hook"
           }
         ]
       }

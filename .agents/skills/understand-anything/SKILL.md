@@ -18,18 +18,16 @@ The deterministic inventory/import map is not the full semantic knowledge graph.
 
 ## Artefact
 
-Committed dashboard graph (when present):
-
-`.ua/knowledge-graph.json`
+Resolve the official skill data directory before invocation: `.understand-anything/` if that directory exists; otherwise `.ua/`. Because refresh creates `.understand-anything/intermediate/`, the normal output here is `.understand-anything/knowledge-graph.json`. This is a semantic artifact only when separately generated and verified.
 
 Also mirror a copy under `docs/graphs/` only if `docs/TEMPLATE_STATE.md` names that path.
 
 ## Regenerate (local / agent machine)
 
 1. Verify the official plugin or repo-local runtime above is present.
-2. From repo root, run the official `understand` skill against this project through the subscription agent (Codex uses `$understand`). Do not open a dashboard.
-3. Confirm `.ua/knowledge-graph.json` exists.
-4. Update `docs/TEMPLATE_STATE.md` Knowledge graph table: set Actual path + status **generated**.
+2. Resolve the data directory above, then from repo root run the official `understand` skill against this project through the subscription agent (Codex uses `$understand`). Do not open a dashboard.
+3. Confirm knowledge-graph.json exists in the resolved data directory; do not check a different legacy path.
+4. Update `docs/TEMPLATE_STATE.md` Knowledge graph table: set that same resolved Actual path + status **generated** only after verifying the artifact.
 5. Open a **draft** PR. Do not merge.
 
 ## Regenerate on merge

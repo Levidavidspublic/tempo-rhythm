@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --from graphifyy==0.9.74 graphify hook-guard search",
+            "command": "python scripts/code-map/graphify_safe.py hook-guard search",
             "timeout": 10
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --from graphifyy==0.9.74 graphify hook-guard read",
+            "command": "python scripts/code-map/graphify_safe.py hook-guard read",
             "timeout": 10
           }
         ]

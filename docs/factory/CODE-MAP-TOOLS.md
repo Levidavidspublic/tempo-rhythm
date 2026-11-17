@@ -1,35 +1,41 @@
 # Code-map tools
 
-Use structural code maps before editing and refresh Graphify at the start of each loop. Repository HARD_RULES and the skills overlay win over upstream examples. No dashboard or localhost UI is part of this setup.
+Repository HARD_RULES and the completed-loop aggregate contract remain authoritative. Refresh the configured tools at loop start. No dashboard or localhost UI is part of this setup; unavailable required tools block dependent edits.
 
-## Graphify
+## Pinned project setup
 
-Official source: [Graphify-Labs/graphify v0.9.74](https://github.com/Graphify-Labs/graphify/tree/v0.9.74). The repository's existing Graphify workflow already pins `graphifyy==0.9.74`; this config installs that same release for the local agent harnesses.
+`code-map-tools.json` pins Graphify `graphifyy==0.9.74` and the MIT Understand-Anything source at `b861852dda79273bd9d2e01c3160d42e2df510d2`. The portable `scripts/code-map/setup.ps1` provisions the official core under ignored `.code-map-tools/`, verifies the source/license and builds the tool with its frozen lockfile and dependency lifecycle scripts disabled. It does not alter user-profile installations or shared plugin caches.
 
-Project-scoped installs were executed with `uvx --from graphifyy==0.9.74 graphify install --project --platform codex`, the same command for `agents` and `claude`, and `uvx --from graphifyy==0.9.74 graphify cursor install`. Generated hook commands are pinned through uvx. Existing Claude permissions were preserved. Installer backups are outside the worktree.
+Sources: [Graphify v0.9.74](https://github.com/Graphify-Labs/graphify/tree/v0.9.74), [Understand-Anything pinned README](https://github.com/Egonex-AI/Understand-Anything/blob/b861852dda79273bd9d2e01c3160d42e2df510d2/README.md).
 
-Refresh locally with `uvx --from graphifyy==0.9.74 graphify extract . --code-only --no-cluster --max-workers 1`. For later incremental updates use `uvx --from graphifyy==0.9.74 graphify update . --no-cluster`. Query the resulting graph with the same pinned command prefix. Code-only extraction makes no model call; semantic extraction and hosted service trials are not authorized by this setup.
+Actual repo-local `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/code-map/setup.ps1` completed successfully. The current worktree's official core is built at the pinned revision. Global/cloud harness activation and semantic graph generation are not proved by this local result.
 
-Verification on this config worktree: 9,599 nodes and 23,798 edges after the portable setup/refresh completed. Non-code content and unsupported or potentially sensitive files were excluded by the official extractor. This is a structural map, not a semantic security audit. `graphify-out/` remains ignored and is regenerated locally.
+## Safe Graphify adapter
+
+All three project skill mirrors and their eight references use `scripts/code-map/graphify_safe.py`. Query/path/explain values are JSON data in `.code-map-tools/request.json`; the adapter passes them as separate argv values to the pinned CLI with shell evaluation disabled. Quotes, multiline corpus text and backticks never enter executable shell or Python source. Unknown operations and leading option syntax fail closed.
+
+`scripts/code-map/refresh.ps1` runs local AST extraction without clustering or model inference. Each refresh stages a fresh snapshot and publishes the validated graph before its manifest, with rollback and retained prior artifacts on failure. It never relabels a failed extraction as current or silently replaces a shrinking graph. Existing hook matchers, timeouts, other hooks and all Claude permission denies are retained; only Graphify routing changes to the local adapter. Upstream license, MIT license and notice files are preserved in `scripts/code-map/third-party/`.
+
+The actual pinned CLI smoke on a tiny local source fixture produced three nodes/two edges and answered the short `UI` label through the adapter. The final repo-local refresh also completed: **9,663 nodes and 23,896 edges**. This is structural evidence. No dashboard, semantic inference, remote export, media transcription or database push was run.
 
 ## Understand-Anything
 
-Official source: [Egonex-AI/Understand-Anything](https://github.com/Egonex-AI/Understand-Anything/tree/b861852dda79273bd9d2e01c3160d42e2df510d2), MIT. Follow its [README installation instructions](https://github.com/Egonex-AI/Understand-Anything/blob/b861852dda79273bd9d2e01c3160d42e2df510d2/README.md#-multi-platform-installation). The repository includes the public template's portable `code-map-tools.json`, `scripts/code-map/setup.ps1`, `scripts/code-map/refresh.ps1` and usage adapter. The generic upstream installer changes the user's profile; this project setup instead keeps the official pinned source and MIT license in ignored `.code-map-tools/` and does not alter the shared plugin cache. User-level plugin activation remains UNKNOWN until checked in that harness.
+The same actual refresh ran the official deterministic scanner and import-map extractor: **1,906 files**, **505 files with imports**, **1,379 import edges**. Environment files, analysis output and the frozen Convex folders are excluded by the scanner command. Outputs remain local under ignored `.understand-anything/intermediate/`; `.ua/intermediate/` is also ignored.
 
-The actual repo-local command `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/code-map/setup.ps1` completed successfully. It verifies the clean pinned source and MIT license, installs only the official core dependencies with a frozen lockfile and dependency lifecycle scripts disabled, then builds the core package. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/code-map/refresh.ps1` also completed successfully. Use that refresh command at every loop start. No dashboard was started.
+These outputs are an inventory/import map, not the full semantic knowledge graph. The official semantic skill remains a separate subscription-agent task with its own authorization. No model or embedding call was made here. Full cloud-agent availability remains UNKNOWN until verified there.
 
-Use the official plugin's `skills/understand/scan-project.mjs` with the repository root, an output path under `.understand-anything/intermediate/`, `--exclude-analysis-data`, and exclusions for `convex/**,packages/backend/convex/**,.env*,**/.env*,.git/**,graphify-out/**`. Add `projectRoot` with the repository's absolute path to the scanner output, then pass that file and an output path to `skills/understand/extract-import-map.mjs`.
+## Review and guard boundaries
 
-Verification on this worktree: 1,898 files scanned, 504 files with imports, 1,378 import edges. These deterministic outputs are not a complete semantic knowledge graph. No model inference, dashboard, external embedding, or full `/understand` agent pipeline was run. The intermediate directory remains ignored.
+The template's canonical source commit is `a6b20883a3a9dd32cab16360b7a60a48e967f590`; all 45 supplied file hashes and committed blobs match it. Its latest upstream natural CodeRabbit review was rate-limited, so this is source provenance, not upstream approval. This PR requires its own review and all current-head gates.
 
-## GitNexus
+Local focused checks passed: 16 watcher regressions, 10 adapter regressions, five completed-loop contract tests against the unchanged scope guard, and setup retry/environment-restoration control-flow tests. The mock control-flow tests do not replace the actual CLI and repo-local setup/refresh results above. Python uses four-space/80-column pyink and the unmodified official Google pylintrc; both checks passed.
 
-Skipped. The [official license](https://github.com/abhigyanpatwari/GitNexus/blob/main/LICENSE) is PolyForm Noncommercial 1.0.0. Commercial permission for this product is UNKNOWN. Amit must supply compatible commercial permission before use. No `gitnexus analyze`, `clean`, `wiki` or embedding job was run.
+The watcher still fails real Windows startup with `ModuleNotFoundError: No module named 'fcntl'`. Windows monitoring remains UNKNOWN; the isolated test import shim does not prove startup. Use read-only GitHub checks/review tools and never treat a watcher exit code as merge approval.
 
-## Skills and remaining limits
+Both `batch/**` and `loop/**` PR bases retain all eight existing check workflows. A completed loop links an ordinary aggregate issue with valid type and explicit combined scope under the unchanged guard. There is no guard exemption, config-label substitute, controller activation or automatic merge. All existing pauses remain. Legacy reviewer configuration and merge-gate source remain unchanged; runtime controller compatibility is still UNKNOWN.
 
-The nine tstack skills retain their upstream MIT LICENSE and credit under `.agents/skills/t3dotgg-tstack/`. The template's attributed local adaptations strengthen skill authority and fail-closed PR-watcher readiness. Its 13 regression tests passed here. The real Windows command `python .agents/skills/babysit-pr/scripts/pr-wait --help` failed before startup with `ModuleNotFoundError: No module named 'fcntl'`; the regression test's isolated import shim does not prove Windows monitoring works. Windows monitoring through this helper remains UNKNOWN. Use read-only GitHub statuses, required checks and review threads; a helper exit code never proves merge readiness.
+## GitNexus and follow-up work
 
-Legacy `batch/*` automation, scope-guard batch recognition, fallback-review jobs and existing `greptile.json` have not been disabled or weakened. Compatibility with the requested lane-loop process is UNKNOWN until separately reconciled and tested. All required checks and owner approval remain mandatory; no loop execution or automatic sync is enabled by these documents.
+GitNexus was skipped after checking its [PolyForm Noncommercial license](https://github.com/abhigyanpatwari/GitNexus/blob/main/LICENSE). Compatible commercial permission is UNKNOWN. No analyze, clean, wiki or embedding job was run.
 
-Product check defects remain separate: [unit-test discovery #1382](https://github.com/Levidavidspublic/tempo-rhythm/issues/1382) and [missing Playwright browser #1383](https://github.com/Levidavidspublic/tempo-rhythm/issues/1383). They are not fixed or bypassed here. Documentation sync is tracked in [#1385](https://github.com/Levidavidspublic/tempo-rhythm/issues/1385).
+Product check defects remain separate: [unit-test discovery #1382](https://github.com/Levidavidspublic/tempo-rhythm/issues/1382) and [missing Playwright browser #1383](https://github.com/Levidavidspublic/tempo-rhythm/issues/1383). No product code or check bypass is included. Documentation sync is tracked in [#1385](https://github.com/Levidavidspublic/tempo-rhythm/issues/1385).
