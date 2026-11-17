@@ -1,13 +1,19 @@
-import { describe, expect, test } from "bun:test";
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import {describe, expect, test} from 'bun:test';
+import {spawnSync} from 'node:child_process';
+import {mkdtempSync, readFileSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {dirname, join, resolve} from 'node:path';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const script = join(root, "scripts/factory/merge-train.mjs");
-const checks = ["ci", "e2e-preview", "secret-scan", "config-guard", "scope-guard"];
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const script = join(root, 'scripts/factory/merge-train.mjs');
+const checks = [
+  'ci',
+  'e2e-preview',
+  'secret-scan',
+  'config-guard',
+  'scope-guard',
+];
 
 // Run the shipped CLI; only its external GitHub boundary is replaced. Removing
 // the setting guard or restoring head deletion must fail these behavioral tests.
@@ -42,7 +48,7 @@ globalThis.fetch = async (input, options = {}) => {
   const body = options.body ? JSON.parse(options.body) : null;
   trace.calls.push({ method, path, query: url.search, body });
   if (url.origin !== 'https://api.github.com') deny();
-  if (method === 'GET' && path === prefix + '/rules/branches/integration') return response([{ type: 'required_status_checks', parameters: { required_status_checks: scenario.checks.map(context => ({ context })) } }]);
+  if (method === 'GET' && path === prefix + '/rules/branches/integration') return scenario.rulesError ? response({ message: 'Fixture rules unavailable' }, 403) : response([{ type: 'required_status_checks', parameters: { required_status_checks: scenario.checks.map(context => ({ context })) } }]);
   if (method === 'GET' && path === prefix + '/issues' && url.searchParams.get('state') === 'all') return response([issue(1), ...(scenario.two ? [issue(2)] : []), ...(scenario.dataPending ? [issue(3, 'data')] : [])]);
   if (method === 'GET' && path === prefix + '/pulls' && url.searchParams.get('base') === 'integration') return response([pr(1), ...(scenario.two ? [pr(2)] : [])]);
   if (method === 'GET' && /^\/repos\/fixture-owner\/fixture-repo\/pulls\/[12]$/.test(path)) return response(pr(Number(path.split('/').at(-1))));
@@ -69,6 +75,7 @@ globalThis.fetch = async (input, options = {}) => {
 
 type Scenario = {
   setting?: unknown;
+  rulesError?: boolean;
   two?: boolean;
   held?: boolean;
   blocked?: boolean;
@@ -82,52 +89,92 @@ type Scenario = {
 };
 
 type Trace = {
-  calls: { method: string; path: string; query: string; body: unknown }[];
-  merges: { path: string; body: unknown }[];
+  calls: {method: string; path: string; query: string; body: unknown}[];
+  merges: {path: string; body: unknown}[];
   branchDeletes: string[];
-  statusDone: { path: string; body: unknown }[];
+  statusDone: {path: string; body: unknown}[];
   holdsRemoved: string[];
-  updates: { path: string; body: unknown }[];
+  updates: {path: string; body: unknown}[];
   reruns: string[];
   networkAttempts: number;
-  unexpected: { method: string; path: string }[];
+  unexpected: {method: string; path: string}[];
 };
 
-function run(scenario: Scenario, args: string[] = []) {
-  const directory = mkdtempSync(join(tmpdir(), "tempo-merge-preserve-"));
-  const preloadPath = join(directory, "preload.mjs");
-  const scenarioPath = join(directory, "scenario.json");
-  const tracePath = join(directory, "trace.json");
+function run(scenario: Scenario, args: string[] = [], expectedStatus = 0) {
+  const directory = mkdtempSync(join(tmpdir(), 'tempo-merge-preserve-'));
+  const preloadPath = join(directory, 'preload.mjs');
+  const scenarioPath = join(directory, 'scenario.json');
+  const tracePath = join(directory, 'trace.json');
   writeFileSync(preloadPath, preload);
-  writeFileSync(scenarioPath, JSON.stringify({ checks, setting: false, ...scenario }));
-  const child = spawnSync("node", ["--import", pathToFileURL(preloadPath).href, script, ...args], {
-    cwd: root,
-    env: {
-      PATH: process.env.PATH ?? "",
-      ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
-      GH_TOKEN: "synthetic-merge-train-test-token",
-      GITHUB_REPOSITORY: "fixture-owner/fixture-repo",
-      FIXTURE_SCENARIO: scenarioPath,
-      FIXTURE_TRACE: tracePath,
+  writeFileSync(
+    scenarioPath,
+    JSON.stringify({checks, setting: false, ...scenario}),
+  );
+  const child = spawnSync(
+    'node',
+    ['--import', pathToFileURL(preloadPath).href, script, ...args],
+    {
+      cwd: root,
+      env: {
+        PATH: process.env.PATH ?? '',
+        ...(process.env.SystemRoot ? {SystemRoot: process.env.SystemRoot} : {}),
+        GH_TOKEN: 'synthetic-merge-train-test-token',
+        GITHUB_REPOSITORY: 'fixture-owner/fixture-repo',
+        FIXTURE_SCENARIO: scenarioPath,
+        FIXTURE_TRACE: tracePath,
+      },
+      encoding: 'utf8',
+      timeout: 10_000,
     },
-    encoding: "utf8",
-    timeout: 10_000,
-  });
+  );
   expect(child.error).toBeUndefined();
-  expect(child.status).toBe(0);
-  const trace = JSON.parse(readFileSync(tracePath, "utf8")) as Trace;
+  expect(child.status).toBe(expectedStatus);
+  const trace = JSON.parse(readFileSync(tracePath, 'utf8')) as Trace;
   expect(trace.networkAttempts).toBe(0);
   expect(trace.unexpected).toEqual([]);
-  return { trace, output: child.stdout + child.stderr };
+  return {trace, output: child.stdout + child.stderr};
 }
 
-const mutations = (trace: Trace) => trace.calls.filter((call) => call.method !== "GET");
-const metadataReads = (trace: Trace) => trace.calls.filter((call) => call.path === "/repos/fixture-owner/fixture-repo");
+const mutations = (trace: Trace) =>
+  trace.calls.filter(call => call.method !== 'GET');
+const metadataReads = (trace: Trace) =>
+  trace.calls.filter(call => call.path === '/repos/fixture-owner/fixture-repo');
 
-describe("factory CLI preserves branches before merging", () => {
-  for (const setting of [true, "absent", null, "false", 0, {}, "http-error", "read-error", "malformed-json"]) {
+describe('factory CLI preserves branches before merging', () => {
+  test('invalid mode reports failure and exits without a request or mutation', () => {
+    const {trace, output} = run({}, ['--mode', 'invalid'], 1);
+    expect(trace.calls).toEqual([]);
+    expect(output).toContain('FAIL: --mode must be normal or stress');
+    expect(mutations(trace)).toEqual([]);
+  });
+
+  test('top-level API rejection reports failure and exits without mutation', () => {
+    const {trace, output} = run({rulesError: true}, [], 1);
+    expect(trace.calls).toHaveLength(1);
+    expect(trace.calls[0]?.path).toBe(
+      '/repos/fixture-owner/fixture-repo/rules/branches/integration',
+    );
+    expect(output).toContain('FAIL: GitHub API GET');
+    expect(output).toContain('403');
+    expect(mutations(trace)).toEqual([]);
+    expect(trace.merges).toEqual([]);
+    expect(trace.statusDone).toEqual([]);
+    expect(trace.branchDeletes).toEqual([]);
+  });
+
+  for (const setting of [
+    true,
+    'absent',
+    null,
+    'false',
+    0,
+    {},
+    'http-error',
+    'read-error',
+    'malformed-json',
+  ]) {
     test(`blocks merges and ticket writes unless branch deletion is explicitly disabled: ${JSON.stringify(setting)}`, () => {
-      const { trace, output } = run({ setting, held: true }, ["--mode", "stress"]);
+      const {trace, output} = run({setting, held: true}, ['--mode', 'stress']);
       expect(metadataReads(trace)).toHaveLength(1);
       expect(mutations(trace)).toEqual([]);
       expect(trace.merges).toEqual([]);
@@ -139,63 +186,94 @@ describe("factory CLI preserves branches before merging", () => {
     });
   }
 
-  test("merges one green current head, updates its ticket, and retains every branch", () => {
-    const { trace, output } = run({ two: true });
-    expect(trace.merges).toEqual([{ path: "/repos/fixture-owner/fixture-repo/pulls/1/merge", body: { merge_method: "squash", sha: "f".repeat(39) + "1" } }]);
-    expect(trace.statusDone).toEqual([{ path: "/repos/fixture-owner/fixture-repo/issues/1/labels", body: { labels: ["status:done"] } }]);
+  test('merges one green current head, updates its ticket, and retains every branch', () => {
+    const {trace, output} = run({two: true});
+    expect(trace.merges).toEqual([
+      {
+        path: '/repos/fixture-owner/fixture-repo/pulls/1/merge',
+        body: {merge_method: 'squash', sha: 'f'.repeat(39) + '1'},
+      },
+    ]);
+    expect(trace.statusDone).toEqual([
+      {
+        path: '/repos/fixture-owner/fixture-repo/issues/1/labels',
+        body: {labels: ['status:done']},
+      },
+    ]);
     expect(trace.branchDeletes).toEqual([]);
     expect(metadataReads(trace)).toHaveLength(1);
-    const mergeIndex = trace.calls.findIndex((call) => call.path.endsWith("/merge"));
-    expect(trace.calls[mergeIndex - 1]?.path).toBe("/repos/fixture-owner/fixture-repo");
-    expect(output).toContain("one merge per run");
+    const mergeIndex = trace.calls.findIndex(call =>
+      call.path.endsWith('/merge'),
+    );
+    expect(trace.calls[mergeIndex - 1]?.path).toBe(
+      '/repos/fixture-owner/fixture-repo',
+    );
+    expect(output).toContain('one merge per run');
   });
 
-  test("stress mode checks preservation before releasing the hold", () => {
-    const { trace } = run({ held: true }, ["--mode", "stress"]);
+  test('stress mode checks preservation before releasing the hold', () => {
+    const {trace} = run({held: true}, ['--mode', 'stress']);
     expect(trace.holdsRemoved).toHaveLength(1);
     expect(trace.merges).toHaveLength(1);
     expect(trace.branchDeletes).toEqual([]);
-    const holdIndex = trace.calls.findIndex((call) => call.path.endsWith("/hold%3Astress-test"));
-    expect(trace.calls[holdIndex - 1]?.path).toBe("/repos/fixture-owner/fixture-repo");
-    expect(trace.calls[holdIndex + 1]?.path).toBe("/repos/fixture-owner/fixture-repo/pulls/1/merge");
+    const holdIndex = trace.calls.findIndex(call =>
+      call.path.endsWith('/hold%3Astress-test'),
+    );
+    expect(trace.calls[holdIndex - 1]?.path).toBe(
+      '/repos/fixture-owner/fixture-repo',
+    );
+    expect(trace.calls[holdIndex + 1]?.path).toBe(
+      '/repos/fixture-owner/fixture-repo/pulls/1/merge',
+    );
   });
 
-  test("dry run remains read-only even when the repository would delete heads", () => {
-    const { trace, output } = run({ setting: true, held: true }, ["--mode", "stress", "--dry-run"]);
+  test('dry run remains read-only even when the repository would delete heads', () => {
+    const {trace, output} = run({setting: true, held: true}, [
+      '--mode',
+      'stress',
+      '--dry-run',
+    ]);
     expect(mutations(trace)).toEqual([]);
     expect(trace.branchDeletes).toEqual([]);
-    expect(output).toContain("[dry-run] would squash-merge");
+    expect(output).toContain('[dry-run] would squash-merge');
   });
 
   for (const scenario of [
-    { missing: "ci" },
-    { pending: "e2e-preview" },
-    { red: "secret-scan" },
-    { held: true },
-    { blocked: true },
-    { fixing: true },
-    { dataPending: true },
+    {missing: 'ci'},
+    {pending: 'e2e-preview'},
+    {red: 'secret-scan'},
+    {held: true},
+    {blocked: true},
+    {fixing: true},
+    {dataPending: true},
   ]) {
     test(`preservation setting does not bypass an existing gate: ${JSON.stringify(scenario)}`, () => {
-      const { trace } = run(scenario);
+      const {trace} = run(scenario);
       expect(mutations(trace)).toEqual([]);
       expect(trace.merges).toEqual([]);
       expect(metadataReads(trace)).toEqual([]);
     });
   }
 
-  test("behind-head update is retained without merging or changing ticket status", () => {
-    const { trace } = run({ setting: true, behind: true });
-    expect(trace.updates).toEqual([{ path: "/repos/fixture-owner/fixture-repo/pulls/1/update-branch", body: { expected_head_sha: "f".repeat(39) + "1" } }]);
+  test('behind-head update is retained without merging or changing ticket status', () => {
+    const {trace} = run({setting: true, behind: true});
+    expect(trace.updates).toEqual([
+      {
+        path: '/repos/fixture-owner/fixture-repo/pulls/1/update-branch',
+        body: {expected_head_sha: 'f'.repeat(39) + '1'},
+      },
+    ]);
     expect(trace.merges).toEqual([]);
     expect(trace.statusDone).toEqual([]);
     expect(trace.branchDeletes).toEqual([]);
     expect(metadataReads(trace)).toEqual([]);
   });
 
-  test("cancelled required run is rerun without merging or altering its ticket", () => {
-    const { trace } = run({ cancelled: "config-guard" });
-    expect(trace.reruns).toEqual(["/repos/fixture-owner/fixture-repo/actions/runs/123/rerun"]);
+  test('cancelled required run is rerun without merging or altering its ticket', () => {
+    const {trace} = run({cancelled: 'config-guard'});
+    expect(trace.reruns).toEqual([
+      '/repos/fixture-owner/fixture-repo/actions/runs/123/rerun',
+    ]);
     expect(trace.merges).toEqual([]);
     expect(trace.statusDone).toEqual([]);
     expect(trace.branchDeletes).toEqual([]);
