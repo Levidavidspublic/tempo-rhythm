@@ -2,7 +2,7 @@ name: factory-merge
 
 # Phase 04 Step 7. The merge agent: scripts/factory/merge-train.mjs (read its header).
 # Every 15 min (normal mode) + manual (mode normal|stress, batch, dry_run). Factory App token for
-# every write (update branch, label, merge, delete branch); merges with it start the push workflows
+# every write (update branch, label, merge); branches are preserved. Merges start the push workflows
 # on integration. Factory PRs are found by the `factory` label. Data PR first per batch.
 # normal mode never merges hold:stress-test PRs. stress mode = rung 3 only, one PR at a time.
 # PARKED until the Factory App exists (dry_run works without it: read-only, github.token).

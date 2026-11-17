@@ -7,7 +7,8 @@
 // ticket skip that rule. Per PR: skip blocked:amit and merge-fixing; behind -> update-branch
 // (REST PUT /pulls/{n}/update-branch) and wait; a CANCELLED required run (concurrency) -> re-run
 // it; pending -> wait; red -> do nothing (the failure rule reacts); green -> squash-merge,
-// ticket status:done, delete the branch. normal mode never MERGES hold:stress-test (still updates).
+// ticket status:done, preserve the branch. Real merges require the repository's automatic
+// branch deletion setting to be explicitly false. normal mode never MERGES hold:stress-test (still updates).
 // At most one merge per run (the next PR must be updated onto the new integration and re-checked:
 // strict required checks). stress mode: hold PRs too, strictly one at a time, removes the hold
 // label as it starts each one, records actual vs expected_merge for overlap_test tickets, and
@@ -118,10 +119,19 @@ async function main() {
     if (cs.state === "red") { say(`${id}: checks red (${cs.detail.join("; ")}) -> nothing (failure rule reacts)`); continue; }
     if (held && MODE === "normal") { say(`${id}: green but hold:stress-test -> kept up to date, not merged (normal mode)`); continue; }
     if (merged) { say(`${id}: green; waits for the next round (one merge per run)`); continue; }
+    if (!DRY) {
+      let repository;
+      try { repository = await gh(`/repos/${owner}/${repo}`); }
+      catch { say(`${id}: branch preservation cannot be verified -> blocked; repository automatic branch deletion must be explicitly disabled`); continue; }
+      if (repository?.delete_branch_on_merge !== false) { say(`${id}: branch preservation is not confirmed -> blocked; repository automatic branch deletion must be explicitly disabled`); continue; }
+      // Check at the merge boundary, before releasing a hold or changing ticket status.
+      // GitHub has no atomic merge-and-setting assertion: an administrator can still
+      // change this setting concurrently after the read. Never change it ourselves.
+    }
     if (held) await act(`remove hold:stress-test from ${id}`, () => removeLabel(owner, repo, q.number, "hold:stress-test"));
     await act(`squash-merge ${id} (${pr.title})`, () => gh(`/repos/${owner}/${repo}/pulls/${q.number}/merge`, { method: "PUT", body: { merge_method: "squash", sha: pr.head.sha } }));
     await act(`label ticket #${q.ticket} status:done`, async () => { await addLabels(owner, repo, q.ticket, ["status:done"]); await removeLabel(owner, repo, q.ticket, "status:in-pr"); });
-    await act(`delete branch ${pr.head.ref}`, () => gh(`/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(pr.head.ref)}`, { method: "DELETE", allow404: true }));
+    say(`${id}: preserve branch ${pr.head.ref}`);
     if (truthy(q.fm.overlap_test)) {
       // an update-branch leaves a merge commit (2 parents) in the PR: that is the "rebase" outcome
       const commits = await ghAll(`/repos/${owner}/${repo}/pulls/${q.number}/commits`, (j) => j, 250);
