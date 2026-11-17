@@ -79,3 +79,7 @@ playwright-report/
 .ua/diff-overlay.json
 .understand-anything/intermediate/
 .understand-anything/diff-overlay.json
+
+.code-map-tools/
+
+__pycache__/

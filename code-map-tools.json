@@ -1,0 +1,21 @@
+{
+  "graphify": {
+    "package": "graphifyy",
+    "version": "0.9.74",
+    "source": "https://github.com/Graphify-Labs/graphify/tree/v0.9.74",
+    "mode": "local AST only, no clustering or API inference"
+  },
+  "understandAnything": {
+    "source": "https://github.com/Egonex-AI/Understand-Anything",
+    "commit": "b861852dda79273bd9d2e01c3160d42e2df510d2",
+    "license": "MIT",
+    "runtime": ".code-map-tools/understand-anything/understand-anything-plugin",
+    "mode": "deterministic inventory and import map; full semantic graph via subscription agent separately",
+    "dashboard": false
+  },
+  "gitnexus": {
+    "source": "https://github.com/abhigyanpatwari/GitNexus/blob/main/LICENSE",
+    "license": "PolyForm Noncommercial 1.0.0",
+    "status": "skipped: owner license decision required before commercial-product use"
+  }
+}

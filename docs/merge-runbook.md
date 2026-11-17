@@ -6,14 +6,13 @@ document and `AGENTS.md` disagree, `AGENTS.md` wins.
 ## Branch topology
 
 ```
-feature branches  ──PR──▶  integration  ──(Amit, batched)──▶  master
+ticket branches -> lane loop PR -> integration -> preview -> release PR -> master (Amit only)
 ```
 
 - **`master`** is Amit's. Nothing merges into it except by Amit, roughly every
   2 days, by merging `integration`. `master` is protected by the
   `protect-master` ruleset. It must always be deployable.
-- **`integration`** is where agents land. Branch **from** `integration`, open
-  the PR **against** `integration`.
+- Ticket branches target their assigned `loop/claude-<date>` or `loop/codex-<date>` branch. The lead opens one completed loop PR into `integration`; guarded configuration PRs also target `integration`.
 - Branch names: `feat/T-XXXX-<kebab>` · `fix/T-XXXX-<kebab>` ·
   `chore/<scope>-<kebab>` · `docs/<scope>-<kebab>` (Cursor cloud agents use
   their assigned `cursor/<slug>` prefix).
@@ -26,12 +25,12 @@ merges into `integration` only when **all** of these hold:
 1. **All required checks are green** — and green means something: the `Test`,
    `Scans`, `Notices`, and `Security` jobs are enforcing (no
    `continue-on-error`, no no-op steps).
-2. **Greptile passes.**
+2. **The applicable CodeRabbit, Jev, security and unit-test gates pass** under `docs/HARD_RULES.md` REPO RULES 9. No council or vendored skill substitutes for PR review.
 3. **No conflicts** with `integration` at merge time.
 4. **Every changed file is inside the ticket's MUTATES list** (declared file
    scope).
 
-The orchestrator or the tester worker clicks merge, then checks the preview.
+The lead merges only after all applicable gates pass, then verifies the preview. Config PRs also require Amit's current-head approval label; agents never apply or restore it.
 Max 3 agents per repo at once. Only Amit merges `integration` into `master`.
 
 If any gate fails: stop, leave the PR open, report branch name + PR number +
@@ -57,8 +56,7 @@ resolve from **commit-message intent**, not from whichever hunk is easier.
 | Secret scan | `security.yml` | gitleaks or trufflehog found a credential — treat as an incident |
 
 None of these jobs may carry `continue-on-error` or silently no-op when a
-script is missing. If a script must be temporarily disabled, that is a PR to
-this runbook plus an issue explaining why, not a quiet YAML edit.
+script is missing. Never weaken, skip, disable or delete a check to make a PR pass.
 
 ## Ratchet baselines
 
@@ -84,9 +82,6 @@ Regenerate with bun@1.3.9 (`bun install`), commit `bun.lock`, and only then
 re-run CI. Do not paste an older `bun.lock` from a stacked branch — that
 desyncs the lockfile from the manifests on `integration`.
 
-## Convex deployments
+## Convex freeze
 
-Schema/function changes do not deploy from CI. After merging a `convex/`
-change into `integration`, deploy explicitly (`bun x convex deploy`) with the
-deploy key for the target deployment, and record schema changes in
-`convex/MIGRATIONS.md`.
+Convex code, schema, functions, environment and deployments are frozen. No ticket type, legacy automation or approval label authorizes a Convex change.

@@ -16,8 +16,6 @@ After every `git commit`, the hook detects which code files changed (via `git di
 
 If a post-commit hook already exists, graphify appends to it rather than replacing it.
 
-**Tempo Flow:** do not install this hook by default. Parallel cloud agents share the repo; a local post-commit rebuild is not checked in and can surprise other sessions. After merge, regenerate with `graphify update . --no-cluster` and record paths in `docs/TEMPLATE_STATE.md`.
-
 ---
 
 ## For native AGENTS.md integration

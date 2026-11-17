@@ -1,55 +1,29 @@
-# Factory loop — one CodeRabbit review per loop (batch loop)
-<!-- Approved by Amit 2026-10-06 10:26 IDT. Goal: CodeRabbit reviews the ONE batch PR per loop, not once per PR. -->
+# Factory loop - lane loops and four release gates
 
-## The loop
-| Step | What | Who / tool | Review |
-|---|---|---|---|
-| 0 | **Ticket 0** (`type: data`, label `ticket:data`): the Convex architecture for EVERY component in the loop: schema tables, indexes, queries / mutations / actions, regenerated `convex/_generated/`. | Claude lane | CI only |
-| 0b | Ticket 0 lands on `integration` through the merge queue (deploys to TEST `ceaseless-dog-617` via convex-deploy-test). Component tickets start only after this. | merge queue | — |
-| 1 | **8–14 component tickets**, 3–5 per lane (each lane 2–5; 8 can't give every lane 3). Routing at dispatch: `scripts/factory/lane-limits.mjs` (usage limits `FACTORY_*_AT_LIMIT`, order `FACTORY_AGENT_PREFERENCE`, default claude,codex,cursor; `docs/factory/AGENT-LIMITS.md`): build tickets → **Claude/Codex**, browser tests → **Codex** (Playwright), Cursor last; all at limit → Freebuff, then OpenCode (manual, `needs:manual-run`). Components never touch `convex/`. | lanes | CI only (lint, typecheck, unit, Playwright). PRs open as **draft**. No `@coderabbitai review`. |
-| 2 | When the loop's component PRs are CI-green: `factory-batch` **build** creates `batch/<loop-id>` from `integration`, retargets each PR to it and merges its head (merges API). GitHub shows each component PR as **merged into `batch/<loop-id>`** (history kept; no "closed unmerged" noise). | `scripts/factory/batch-loop.mjs build` | — |
-| 3 | **open**: ONE PR `batch/<loop-id>` → `integration`, labels `batch` + `factory`, body = `Closes #N` for every ticket (they close when the batch lands). | `… open` (user token) | — |
-| 4 | **review**: ONE `@coderabbitai review` on the batch PR (skipped if CodeRabbit already reviewed the head). | `… review` | **CodeRabbit, once** |
-| 5 | Findings → fixed **on the batch branch** (`factory-review-fix` → `factory-lane-claude` `target_branch=batch/<loop-id>`, or a person). Each fix round = one more `review`. **Max 3 rounds** (`review-fix:1..3`), then `blocked:amit`. | review-fix / lane | CodeRabbit per round |
-| 6 | CodeRabbit clean (no `CHANGES_REQUESTED` on the head) + the 5 required checks green → **enqueue** (GraphQL `enqueuePullRequest`, squash). | `… enqueue` | — |
-| 7 | **finalize** (automatic when the batch PR merges): comment "landed via #B" + label `merged-via-batch` on each component PR; tickets → `status:done`. | factory-batch (`pull_request: closed`) | — |
+The process is defined by `docs/HARD_RULES.md` REPO RULES 9. Existing checks and protections remain required. Legacy `batch/*` automation is not authority to use an older branch, reviewer or merge policy. Its compatibility with lane loops is UNKNOWN; do not dispatch it to bypass this process.
 
-Conflicts while building: the PR goes back to `integration`, label `batch:conflict`, and rolls to the next loop.
+## Loop flow
 
-## Why component PRs are drafts
-CodeRabbit reviews non-draft PRs automatically when they target the default branch (`integration`) or `^master$`
-(`.coderabbit.yaml` `auto_review.base_branches`). Component PRs target `batch/<loop-id>` and stay draft, so CodeRabbit
-never reviews them; only the batch PR (`batch/<loop-id>` → integration) gets the ONE review. `build` merges drafts directly.
+1. Refresh Graphify at the start of each loop using the local-only command in `docs/factory/CODE-MAP-TOOLS.md`.
+2. Cursor writes tickets from the PRD, TRD, docs and Graphify map. Jev scores each ticket; a fresh reviewer samples 20 per batch. Passed tickets enter Concord with their Claude or Codex lane.
+3. Each ticket uses its own branch/worktree and PR into `loop/claude-<date>` or `loop/codex-<date>`. The lead merges only after all programmatic CI and Jev checks are green. Ticket workers never change Convex.
+4. The lead opens one completed loop PR into integration. Gate 1 (Claude lane) or Gate 2 (Codex lane) requires CodeRabbit review, security checks and unit tests. Maximum three fix rounds; one push per fix, no manual CodeRabbit retriggers. All green: the lead merges into integration and verifies preview.
+5. After both lanes merge, open or update one release PR integration to master. Gate 3 checks changes since the last preview with CodeRabbit, security checks and unit tests.
+6. After several previews, Gate 4 performs the final full review, security checks and unit tests on that same release PR. Only Amit merges it into master and production. Failed production checks require rollback to the last good version; execution of a production action remains Amit's.
 
-## CodeRabbit settings (docs: https://docs.coderabbit.ai)
-- In repo: `.coderabbit.yaml` (read from the PR's **base** branch): `reviews.auto_review.base_branches` = `^master$`
-  (release PRs); the default branch `integration` is reviewed automatically. Component PRs target `batch/<loop-id>`,
-  so CodeRabbit never auto-reviews them — only the batch PR (`batch/<loop-id>` → integration) is reviewed.
-- Review gate (merge-gate #1315): clean = no `CHANGES_REQUESTED` on the head; rate-limit or 30 min timeout → Opus
-  fallback (already in #1315). Fix loop `factory-review-fix` → lane, max 3 rounds (`review-fix:1..3`), then `blocked:amit`.
+## Gates and authority
 
-## Guards
-- **scope-guard rule h**: a component PR that changes `convex/**` fails unless it has the `convex-arch` label added by
-  Division6066. **Rule i**: a batch PR may link many tickets; files must sit inside the union of their scopes; no
-  `convex/` (unless `convex-arch`), no shared hot files.
-- config-guard unchanged. Branch protection unchanged: `integration` = PR + 5 required checks + merge queue (0 approvals);
-  `batch/*` has no rules (merges into it need no review).
+- CodeRabbit is the only PR reviewer. Council is architecture and tech stack only, never PR review or ticket assignment.
+- Existing lint, typecheck, unit, build, production web-surface build, E2E, security, forbidden-tech/token, scope and Jev checks remain enforcing. Green aggregate status cannot replace a skipped underlying test.
+- Config approval labels are applied only by Amit's account to the current head, following config-guard. Never apply, restore or work around them.
+- Convex is frozen: no code, schema, functions, environment or deployment changes. Historical Ticket 0 and `convex-arch` exceptions do not authorize changes.
+- Concord status moves claimed -> active -> review -> done. Watchdog timeout remains UNKNOWN until Amit sets it.
+- Cursor audits run twice weekly per repo, read only and capped; findings become tickets. Starting this job's audits waits for all config PRs to merge, unless Amit says "start audits".
 
-## Quiet hours (Amit 2026-10-06)
-**22:00-09:00 Asia/Jerusalem nothing NEW starts**: no tickets, no `status:ready` promotion, no lane dispatch, no new
-batch loop (`build`/`run` won't create a new `batch/<loop>`), no scheduled builder, no new cloud agent. Work in flight
-finishes: lane fix runs (`fix_note`), batch open/review/status/enqueue/finalize, the merge queue. Required checks and
-`convex-deploy-test` are never gated. Monitoring (nightly E2E, weekly report) runs outside 20:00-09:00.
-Vars `FACTORY_QUIET_START`=22 / `FACTORY_QUIET_END`=9; override `FACTORY_QUIET_HOURS=off`. Details and the workflow
-table: `docs/factory/QUIET-HOURS.md`. Script: `scripts/factory/quiet-hours.mjs`.
+## Quiet hours
 
-## Tokens (R15)
-`build` / `open` / `review` / `enqueue` need a **user** token (Division6066): PRs opened with GITHUB_TOKEN start no CI, and
-Bugbot needs a covered author. In Actions that is secret `FACTORY_BATCH_TOKEN` (not set → PARKED); otherwise run
-`GH_TOKEN=… GITHUB_REPOSITORY=Levidavidspublic/tempo-rhythm node scripts/factory/batch-loop.mjs run --loop <id>`.
+Existing quiet hours remain: 22:00-09:00 Asia/Jerusalem nothing new starts. Work already running may finish. Required checks and monitoring remain governed by existing repository policy; this rule update does not change a schedule or enable any paused factory automation.
 
-## Known limit — Codex can't push from a PR-comment task
-Codex cloud tasks started by `@codex` on a PR run in a sandbox without GitHub write access: on #670 Codex fixed the findings
-but could not push. Codex now has Playwright and gets `browser_test: true` tickets first (lane-limits.mjs); if a PR-comment
-fix task still can't push, the fix needs its environment to allow it (Codex → Environments → tempo-rhythm: allow internet/GitHub access and "push to branch", or let
-Codex open its own PR from the Codex web app). Fallback: a person/Claude applies Codex's diff on the branch.
+## Execution status
+
+The workflow base filters include `loop/**` so existing required checks can run on ticket PRs. A filter addition does not migrate or enable the legacy dispatcher, batch merger, review trigger or queue. Their reconciliation needs its own scoped work before automation is used. All existing factory pauses remain in force.

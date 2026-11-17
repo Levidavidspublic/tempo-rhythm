@@ -8,7 +8,7 @@ name: google-style
 #   Other languages: no official Google tool here (UNKNOWN), not checked.
 on:
   pull_request:
-    branches: [integration]
+    branches: [integration, "loop/**"]
 
 permissions:
   contents: read

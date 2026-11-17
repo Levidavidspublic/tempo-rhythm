@@ -96,8 +96,14 @@ fi
 # Write interpreter path for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
 "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
-# Save scan root so `graphify update` (no args) knows where to look next time
-echo "$(cd INPUT_PATH && pwd)" > graphify-out/.graphify_root
+# Save scan root so `graphify update` (no args) knows where to look next time.
+# The scan path is passed through a quoted heredoc, never substituted into the
+# command line itself: a bare `cd <path>` (or an unquoted heredoc, which
+# still expands $()/backticks in its body) would let a malicious path execute
+# as shell code the moment this line runs.
+"$PYTHON" -c "import os, sys; out_path = os.path.abspath('graphify-out/.graphify_root'); os.chdir(sys.stdin.readline().rstrip('\n')); open(out_path, 'w', encoding='utf-8').write(os.getcwd())" <<'GRAPHIFY_ROOT_EOF'
+INPUT_PATH
+GRAPHIFY_ROOT_EOF
 ```
 
 If the import succeeds, print nothing and move straight to Step 2.
@@ -708,34 +714,3 @@ When the user asks to install the post-commit auto-rebuild hook or wire graphify
 - Always show token cost in the report.
 - Never hide cohesion scores behind symbols - show the raw number.
 - Never run HTML viz on a graph with more than 5,000 nodes without warning the user.
-
----
-
-## Tempo Flow — project paths and regenerate-on-merge
-
-Pinned CLI: `graphifyy==0.9.40` (package name is **graphifyy**, double-y). Skill version file: `.agents/skills/graphify/.graphify_version`.
-
-| Item | Path |
-|---|---|
-| Live graph (gitignored, rebuild locally) | `graphify-out/graph.json` |
-| Durable committed artefact | `docs/graphs/tempo-rhythm.json` |
-| Path registry | `docs/TEMPLATE_STATE.md` |
-
-### First build / regenerate
-
-From repo root, no LLM, no API key:
-
-```bash
-pip install 'graphifyy==0.9.40'   # or pipx / uv tool
-graphify update . --no-cluster
-```
-
-Then copy `graphify-out/graph.json` → `docs/graphs/tempo-rhythm.json`, strip any absolute machine paths to repo-relative paths, and update `docs/TEMPLATE_STATE.md`.
-
-### After merge
-
-Re-run `graphify update . --no-cluster` and `/understand` (Understand Anything Cursor plugin). Refresh the durable artefact and `docs/TEMPLATE_STATE.md` in a follow-up PR. Do **not** invent semantic graph content.
-
-### Commit hook
-
-Do **not** run `graphify hook install` on this repo by default. Multiple agents commit in parallel; a post-commit rebuild would surprise other sessions and is not checked in. Use the regenerate-on-merge procedure above. See `references/hooks.md`.

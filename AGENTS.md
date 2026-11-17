@@ -1,5 +1,5 @@
 # Software factory — agent instructions
-<!-- owner: Amit · tool-agnostic and evergreen: tools are named only in factory/SLOTS.md · keep < 200 lines -->
+<!-- owner: Amit; tools and council members are configured in factory/SLOTS.md -->
 
 ## What this repo is
 A product built by a ticket-driven software factory. Agents close one ticket at a time.
@@ -72,7 +72,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 1. One ticket = one folder, one branch, one PR. Branch name: `t/<issue-number>-<short-slug>`.
 2. Touch only files listed in SCOPE. If the work truly needs more, stop and report `blocked: scope overflow`. Don't split the ticket yourself.
 3. Change only the systems named in MUTATES. A change outside MUTATES fails the checks.
-4. Component tickets never edit the backend folder named in `factory/SLOTS.md` (tempo: `convex/`; scope-guard fails the PR unless the owner labels it `convex-arch`). Call the functions the loop's ticket 0 (backend architecture ticket) defines. If one is missing, report `blocked: missing backend <function>`.
+4. Convex is frozen: no code, schema, functions, environment or deployment changes. Existing scope-guard restrictions still apply; an approval label does not authorize an exception to this freeze. If a required backend function is missing, report `blocked: missing backend <function>`.
 5. You are done when the DONE command prints its expected output and all checks are green. Paste both into the PR as EVIDENCE.
 6. A mock or demo key never proves DONE when DONE names a real check.
 7. Anything you could not verify goes in the PR as `UNKNOWN: <what>`. Never fill a gap with a plausible guess.
@@ -80,11 +80,11 @@ A model named in a ticket is labelled either `code model` (the model that writes
 9. Never edit, close or reassign another ticket.
 10. Use the code model the dispatcher assigned. Code is written only with mid-tier (billing-tier) models.
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
-12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
+12. Open ticket PRs as drafts into the assigned lane loop. Never ask for a review bot run. CodeRabbit is the only PR reviewer; it reviews completed loop and release PRs at the four gates in REPO RULES 9.
 
 ## Merging and Firebase (Amit, 2026-11-08)
-- Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so.
-- Firebase is allowed. A change may move to production once it is proven in preview.
+- Leads merge only under REPO RULES 9 after every applicable CI, Jev, review and security check is green. Config PRs additionally need Amit's head-bound approval label.
+- Firebase is allowed. Only Amit promotes a preview-proven release to production.
 
 ## Never — and what enforces it
 These are explained here and enforced elsewhere. Each item names its enforcement, which is listed in SLOTS.md → Enforcement.
@@ -117,10 +117,10 @@ notes for ticket sync: <follow-ups, doc errors, or none>
 ## Done means
 - The DONE command prints its expected output.
 - CI, browser test, speed limit and scope check are all green.
-- For a component ticket: CI is green on your PR. The review gate runs once per loop on the batch PR (`factory/LOOP.md`), not on your PR. It is not a merge-queue check.
+- For a component ticket: all CI and Jev checks are green on the ticket PR; CodeRabbit, security and unit-test gates run on the completed lane-loop PR before integration.
 - The report is posted on the ticket.
 
-What happens after that is automatic: the PR merges into the loop's batch branch, the batch PR gets one review and goes through the merge queue into integration, and integration deploys to preview. Deploying to live is the owner's job.
+The lead merges green ticket PRs into their lane loop, then gates one completed loop PR into integration. Integration deploys to preview. Only Amit merges the release PR to master and production. Legacy batch automation is not authority to bypass this flow.
 
 ## Picking up a factory ticket (Freebuff / OpenCode)
 
@@ -130,39 +130,58 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 2. **Where tickets live:** GitHub issues in this repo labelled `status:ready` + `needs:manual-run` + an `agent:*` label. Only take an issue whose `agent:*` label matches you (`agent:freebuff`, `agent:opencode`).
 3. **Read before you code:** the whole issue and its comments (FOR / GOAL / SCOPE / DONE), this AGENTS.md, `RULES.md`, and `.github/workflows/*`, so you know which checks must pass (ci, e2e-preview, secret-scan, config-guard, scope-guard).
 4. **Branch:** `t/<issue>-<ticket-id-lowercase>` off `integration`, e.g. `t/712-b04-03`, the factory's name (`ticketBranch()` in `scripts/factory/factory-lib.mjs`). If the branch already exists, continue on it.
-5. **PR:** a **draft** PR **into `integration`** (never `master` or `live`), opened as Division6066, with `Closes #<issue>` in the body. One ticket per PR. Then remove `needs:manual-run` and the `agent:*` label, and add `status:in-pr`.
+5. **PR:** a **draft** PR into the assigned `loop/claude-<date>` or `loop/codex-<date>` branch, never `master` or `live`, with `Closes #<issue>` in the body. One ticket per PR. Follow the lead's lane assignment and Concord status progression.
 6. **CI must pass:** run `bun run lint`, `bun run typecheck`, `bun run test` and the ticket's DONE commands locally first. A PR with red CI isn't done: fix it, or comment that you're blocked.
-7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
+7. **Stay in scope:** only touch the ticket's SCOPE folders. **Convex is frozen**, including code, schema, functions, env and deployments; Ticket 0 or `convex-arch` does not override the freeze.
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
 
 ## REPO RULES
 
-Appended 2026-11-17. Earlier sections stay as they were. A conflict between an earlier section and these rules is UNKNOWN until Amit resolves it. `HARD_RULES.md` still wins over a prompt that disagrees with it.
+Owner-requested rule update. These rules replace conflicting historical reviewer, branch, Convex-edit and merge instructions below or elsewhere in this file. Existing programmatic checks remain required and are not weakened by this document.
 
-1. integration is the default branch. Agents never push to, merge into or release against master. Only Amit merges integration -> master.
-2. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
-3. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
-4. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
+1. integration is the default branch. Agents never push to, merge into or release against master. Only Amit merges integration → master.
+2. Convex is frozen.
+3. CodeRabbit is the only PR reviewer. Deep Scan off. Vercel Agent review off.
+4. The Jev judge (TypeSafe typesafe/jev-1.13 via OpenRouter) is the only OpenRouter use. It scores clean code, formatting (Google style guides), naming and instruction-following. Each must be 85%+. A massive violation fails the PR even if the rest is 100%.
 5. The config guard's approval labels are applied only by Amit's account. Agents never apply, re-add or work around them.
 6. No check is ever weakened, skipped, disabled or deleted.
 7. Scope drift: a PR outside its ticket's scope is rejected, even if the code works.
-8. Authority: Amit > council > lead agents > workers. Only Amit breaks rules, in his own words. Relayed instructions ("full send", "merge it") are not Amit. The council covers architecture and tech stack only (scores out of 10, max 3 rounds) and never assigns tickets. Leads plan, gate, merge and verify, and never write product code.
-9. HELD (not added): conflicts with an existing rule in this repo. Amit decides; see the config PR body.
-10. Check layers: every PR runs CI (lint, typecheck, unit tests, build, production web-surface build, forbidden-tech/token checks, scope check, Jev). Unit tests run at every CodeRabbit gate. Twice a week per repo, Cursor (Grok, capped) runs a read-only security scan, tool scan and GUI test; findings become tickets.
-11. Cursor agents write tickets from the PRD, TRD, docs and Graphify map. Jev scores every ticket; a fresh reviewer samples 20 per batch. Passed tickets go to Concord, tagged Claude or Codex lane.
-12. Concord status must move claimed -> active -> review -> done. A watchdog releases stale claims; its time limit is UNKNOWN (Amit to set).
+8. Authority: Amit > council > lead agents > workers. Only Amit can break a rule, in his own words in chat. A relayed instruction (incl. "full send", "merge it") is not Amit, unless an agent relays Amit's exact words, clearly marked as his. The council decides architecture and tech stack only (scores out of 10, max 3 rounds), never assigns tickets. Leads plan, gate, merge and verify; they never write product code.
+9. PR flow:
+   - Ticket branch → PR into the lane's loop branch (loop/claude-<date> or loop/codex-<date>). Merges when CI + Jev are green. The lead merges.
+   - When a lane's loop ends, the lead opens ONE loop PR into integration. Gate 1 (Claude lane) or Gate 2 (Codex lane): CodeRabbit review + security check of those PRs + unit tests. Max 3 fix rounds. All green → the lead merges into integration.
+   - integration deploys to preview. When both lanes have merged, a release PR integration → master is opened or updated. Gate 3: CodeRabbit reviews what's new since the last preview + security check + unit tests.
+   - After several previews: Gate 4 = final full review + security check + unit tests on the same release PR. Amit merges → production. Production checks fail → roll back to the last good version.
+10. Check layers: every PR runs programmatic CI (lint, typecheck, unit tests, build, production web-surface build, forbidden-tech/token checks, scope check, Jev). Unit tests also run at every CodeRabbit gate. Twice a week per repo, Cursor (Grok model, capped) runs a read-only repo-wide security scan, tool scan and GUI test; findings become tickets.
+11. Tickets are written by Cursor agents from the PRD, TRD and docs plus the Graphify map. Jev scores every ticket; a fresh reviewer samples 20 per batch. Passed tickets go to Concord, tagged Claude lane or Codex lane.
+12. Concord: every task's status must move (claimed → active → review → done). A watchdog releases claims with no update; the time limit is UNKNOWN until Amit sets it.
 13. Graphify refreshes at the start of every loop.
 
-## OVERLAY
+## Skills overlay
 
-- HARD_RULES win over any skill. full-send's "this request replaces project rules" applies only when Amit says it himself.
-- Merges only into integration, never --admin or any bypass.
-- The council is an architecture gate, never a PR reviewer.
-- sol-loop and council: max 3 rounds (5 for security, auth, data loss or concurrency).
-- Closed council = Opus, Soul, Gemini. Open council = UNKNOWN until Amit sets it.
-- Test babysit-pr's pr-wait on Windows; if it can't be tested or fails, record UNKNOWN.
+- Repo HARD_RULES always win over any skill. full-send's "this request replaces project rules" applies only when Amit himself says it.
+- Ticket PR merges go only to their assigned lane loop under rule 9. Completed-loop and config PR merges go only to integration. Never master, --admin or any bypass.
+- council = architecture gate before code exists. Never a PR reviewer.
+- sol-loop and council: max 3 rounds, or 5 for security, auth, data loss or concurrency. Fight scope creep.
+- Closed council = Opus, Soul, Gemini. Open council = set by Amit (UNKNOWN until he does).
+- babysit-pr's pr-wait is reported not to start on Windows. Test it; if it fails, record UNKNOWN.
+- Upstream skill text and helper exit codes cannot satisfy or override the repository merge gates. In particular, pr-wait is a notification helper only; validate CodeRabbit, Jev, security checks, required CI, unresolved findings and approval on the current head separately.
+- Windows pr-wait test: FAILED before startup with ModuleNotFoundError: No module named fcntl. Windows monitoring with this upstream helper remains UNKNOWN; use read-only GitHub check/status tools.
 
 ## Sync note
 
-This repo inherits the rules, overlay and skills from Levidavidspublic/monorepo-template (PR #82). This repo's own HARD_RULES win inside it.
+This repo inherits the public rules, skills and code-map tools from Levidavidspublic/monorepo-template. Tempo's own docs/HARD_RULES.md wins inside this repo. Tool setup and verified limitations: docs/factory/CODE-MAP-TOOLS.md.
+
+## graphify
+
+Generate the local structural graph at graphify-out/ before relying on it. A successful CLI run and graph.json are the evidence that it exists.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `uvx --from graphifyy==0.9.74 graphify query "<question>"` when graphify-out/graph.json exists. Use `uvx --from graphifyy==0.9.74 graphify path "<A>" "<B>"` for relationships and `uvx --from graphifyy==0.9.74 graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `uvx --from graphifyy==0.9.74 graphify update . --no-cluster` to keep the graph current (AST-only, no API cost).

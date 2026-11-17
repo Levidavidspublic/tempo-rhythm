@@ -1,6 +1,6 @@
 ---
 name: full-stop
-description: Trigger this if the user says 'full stop', even as a closing "Full stop." that reads like emphasis.
+description: Run only when the user explicitly asks for the full-stop workflow. Ordinary closing emphasis such as 'Full stop.' does not invoke this skill.
 ---
 
 # Full Stop

@@ -3,7 +3,9 @@
 Built 2 Oct 2026 (IDT). Short rules and links only. No transcript text.
 Goes into each repo as `docs/factory/REFERENCES.md`.
 
-**Precedence when sources disagree (highest first):**
+**Local policy:** docs/HARD_RULES.md REPO RULES is authoritative. The source notes below are references, not permission to use another reviewer or a longer fix loop.
+
+**Historical source order:**
 1. Amit's 1–2 Oct decisions + WEEKEND-PLAN v3 (§2.4 and the 15:24 overrides)
 2. Basic Memory `Main/factory`: Factory merge and deploy policy (30 Sep) > Factory Decisions 18 Sep > Session 17–19 Sep > Doc index 30 Sep
 3. factory-v2 (20 Sep)
@@ -22,7 +24,7 @@ Link: https://www.youtube.com/watch?v=_LCeJZFIsd4 (Startup Ideas Podcast, 14 Sep
 4. Isolate: one fresh branch/worktree per feature per agent. Never build on the base branch.
 5. Build: follow a code-structure guide (service layer). Working code isn't enough if it's sloppy.
 6. Prove: the agent shows before/after evidence (screenshots, video, or measured numbers). "Agents can't pinky promise."
-7. Ship: a third-party code-review agent (Greptile) scores the PR. Loop back to build until it reaches 5/5 with no unresolved comments.
+7. Ship: a third-party code-review agent scores the PR in the source lesson. Locally, CodeRabbit is the only reviewer and REPO RULES 9 defines the gates and maximum rounds.
 8. The human reviews the proof and the score, not the raw diff, then merges.
 9. ⚠ "Up to 15 features in parallel." Plan v3 caps it at 3 agents per repo.
 
@@ -87,7 +89,7 @@ Source: `C:\Users\User\Downloads\factory-kit.zip` → box `/workspace/factory-we
 7. Read a file before you edit it. Regenerate lockfiles, never hand-merge them. Use `--force-with-lease` on your own branch only.
 8. Stop codes: BLOCKED_DEPENDENCY, PATH_DRIFT, SCOPE_OVERFLOW, USER_CHANGES, VERIFICATION. A conflict you can't resolve is a stop, not a guess.
 9. Cursor environment.json: `install` must be idempotent. Use `disableAllMcpServers` plus `mcpServerAllowlist` (deny by default) and an egress allowlist. Secrets are injected only when an agent starts.
-10. No OpenRouter. Never print secret values. Report NAME = SET/UNSET.
+10. No OpenRouter for products; the Jev judge is the sole exception under REPO RULES 4. Never print secret values. Report NAME = SET/UNSET.
 ⚠ Overruled in the kit: the 18:00 Sun–Thu merge window, "nothing runs Fri/Sat", "two products only", "agents never touch keys / credential document", `npx convex env list` as a DONE check, the Opus example, and the Grok 4.5/4.6-only tier.
 
 ## 8. Ras Mic's skills repo — github.com/michaelshimeles/skills
@@ -95,7 +97,7 @@ Link: https://github.com/michaelshimeles/skills (read live 2 Oct 2026). Install:
 1. Isolate (`new-feature`): a fresh worktree/branch per task per agent, plus a scope check against open PRs' changed files. If they overlap, stop and ask.
 2. Build (`code-structure`): actions/boundaries decide why and when. A service layer owns the reusable how. Avoid god services, leaky services and over-abstraction.
 3. Prove (`evidence-driven-testing`): capture BEFORE while you reproduce the problem, and AFTER once it works. In headless runs, use Playwright screenshots. For non-UI changes, give numbers or output pairs.
-4. Ship (`before-and-after` + `greploop`): put the proof in the PR body. Loop with Greptile until 5/5 and zero unresolved comments (max 10 iterations). Use `greploop-apps` for very large PRs.
+4. Ship (`before-and-after` + `greploop`): put the proof in the PR body. Locally, use CodeRabbit and REPO RULES 9; the source lesson's review tooling and ten-round loop do not apply.
 5. Multi-agent: no direct commits to the base branch. Never plain `--force`. Never touch another agent's branch. Regenerate lockfiles. Don't run schema experiments on a shared database.
 6. Rebase onto the latest base, rerun the checks, then push.
 7. Run `unslop` on anything a human reads (commits, PR text, docs).

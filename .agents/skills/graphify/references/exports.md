@@ -20,7 +20,11 @@ graphify export wiki
 graphify export neo4j
 ```
 
-**If `--neo4j-push <uri>`** - the operator runs this in their own terminal. Do not put a Neo4j password on a command line, in a ticket, or in a log. graphify's documented flag is `--password`. Whether it also reads an environment variable is UNKNOWN, so do not invent a flag or a variable name.
+**If `--neo4j-push <uri>`** - push directly to a running Neo4j instance. Ask the user for credentials if not provided:
+
+```bash
+graphify export neo4j --push bolt://localhost:7687 --user neo4j --password PASSWORD
+```
 
 Default URI is `bolt://localhost:7687`, default user is `neo4j`. Uses MERGE - safe to re-run without creating duplicates.
 

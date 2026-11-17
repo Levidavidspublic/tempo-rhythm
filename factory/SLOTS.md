@@ -18,24 +18,23 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-3b | Agent lane B | Claude Code in GitHub Actions (subscription token as org secret `CLAUDE_CODE_OAUTH_TOKEN`) | workflow file `.github/workflows/factory-lane-claude.yml` exists. Whether the secret is set: UNKNOWN |
 | B-3c | Agent lane C | Codex cloud via @codex (subscription only, never an OpenAI API key) | workflow file `.github/workflows/factory-lane-codex.yml` exists. Whether a task actually starts: UNKNOWN |
 | B-4 | Checks | GitHub Actions CI + Playwright | confirmed: `.github/workflows/ci.yml` and `.github/workflows/e2e-preview.yml` |
-| B-5 | Review gate | CodeRabbit (set by Amit 2026-11-02) | **Batch loop (2026-10-06, `factory/LOOP.md`): CodeRabbit reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after CodeRabbit clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). Bugbot security deep scan comparison = pending. |
-| B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
+| B-5 | Review gate | CodeRabbit only | Completed lane-loop and release PRs follow the four gates in `docs/HARD_RULES.md` REPO RULES 9; no manual review retriggers. |
+| B-6 | Merge execution | Lead, after all required checks and gates | Ticket PRs into lane loops; completed lane-loop/config PRs into integration. Existing protection remains. No bypass or autonomous promotion to master. |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
 | C-2 | Configurator | UNKNOWN | |
-| C-3 | Code map | Graphify 0.9.74 + Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Archify: no workflow and no reference in this repo |
+| C-3 | Code map | Graphify + Understand-Anything | Repo setup, local-only commands and verification limitations: `docs/factory/CODE-MAP-TOOLS.md`. Refresh Graphify at every loop start. GitNexus skipped pending compatible commercial permission. |
 | C-4 | Memory log | UNKNOWN | Basic Memory was not confirmed from this repo |
 
 
-## Review gate loop (B-5) — how to invoke
-0. Batch loop (`factory/LOOP.md`): component PRs get CI only (draft, no Bugbot). `batch-loop.mjs build/open` makes the batch PR; `review` posts ONE `@cursor review` on it. Steps 2-3 below apply to the batch PR.
-1. (Before 2026-10-06) Lane opens a PR (`t/<issue>-…` or `factory/…`); Bugbot reviews (auto on push, or comment `bugbot run`).
-2. `factory-review-fix` runs on Bugbot `pull_request_review` (batch/ heads only since 2026-10-06) **or** by hand:
-   - Actions → `factory-review-fix` → Run workflow → `pr_number` (optional `dry_run`).
-   - Findings → `workflow_dispatch` the PR's `factory-lane-<lane>` with `fix_note` = findings; same branch. Labels `review-fix:1..3`; after 3 → `blocked:amit`.
-   - Bugbot "couldn't run" → `blocked:amit`.
-3. When Bugbot is clean **and** the 5 required checks are green → enqueue via GraphQL `enqueuePullRequest` (squash). Do **not** add Bugbot as a merge-queue required check.
+## Review gates and councils
+
+CodeRabbit is the sole PR reviewer. Follow `factory/LOOP.md` and HARD_RULES REPO RULES 9; upstream review helpers and legacy batch scripts cannot authorize a merge. Deep Scan is off (the owner-approved capped state through the reset is a temporary task exception), and Vercel Agent review is off. Account state must be verified separately; this file does not change billing.
+
+- Closed architecture council: Opus, Soul, Gemini. Open council: UNKNOWN until Amit sets it.
+- Cursor audit model: Grok, capped; read-only security/tool/GUI scan twice weekly per repo after this job's audit gate opens.
+- Architecture council: scores out of 10, maximum 3 rounds; sol-loop/council overlay permits at most 5 for security, auth, data loss or concurrency. No ticket assignment or PR-review substitution.
 
 ## Code model of the week
 Mid-tier by BILLING only. Fill in this week's pick:
@@ -79,7 +78,7 @@ Active ruleset `factory-integration` (id 24427298, enforcement active, branch `i
 4. `config-guard`
 5. `scope-guard`
 
-Bugbot is the review gate when Bugbot is enabled (review passed = no unresolved findings). It is not a required reviewer on this ruleset today, and it is not one of the merge-queue checks.
+CodeRabbit is the sole PR reviewer under REPO RULES 9. Historical ruleset observations below are not fresh protection verification and do not authorize merging with missing gates.
 
 This change adds `merge_group` next to the existing pull-request trigger on these workflows, so the queue can run the same five check names:
 
@@ -152,9 +151,9 @@ Whether any of these are set: UNKNOWN.
 ## Enforcement checklist
 Mark each one `configured`, then `tested` once a real run has shown it working. Checked 2026-10-05 against the rulesets API. Classic branch-protection API returned 403, so that view was not used.
 
-- Branch protection on the default branch (`integration`): **configured, not yet tested.** Ruleset `factory-integration` is active: pull request required, the 5 checks above required, non-fast-forward. Review gate is **not yet** part of that ruleset (approving review count is 0; Bugbot is not listed).
+- Branch protection on the default branch (`integration`): **configured, not yet tested.** Ruleset `factory-integration` is active: pull request required, the 5 checks above required, non-fast-forward. Review gate is **not yet** part of that ruleset (approving review count is 0; the historical reviewer was not listed).
 - Live environment requires owner approval: **not yet.** Ruleset `factory-live` is active on `master` (pull request, the same 5 checks, update restriction, no deletion, no force-push). GitHub environments `Production`, `Production – tempo-web`, and `Production – tempo-marketing` have empty `protection_rules`. Owner approval on the environment was not found.
-- Integration allows the merge queue only when checks and the review gate pass: **not yet.** The 5 checks are required, and their workflows now include `merge_group` (not yet tested on a real queue). There is no merge-queue rule. Bugbot is a pre-queue gate only, not a queue check.
+- Integration allows the merge queue only when checks and the review gate pass: **not yet.** The 5 checks are required, and their workflows now include `merge_group` (not yet tested on a real queue). There is no merge-queue rule. CodeRabbit remains an additional process gate; historical protection configuration is not evidence that it is enforced.
 - Claude `.claude/settings.json` denies reading `.env*` and pushing to `master`, `main`, and `integration`: **configured in this change, not yet tested.** No Claude session has been shown hitting the deny.
 - The same denials for every other lane: **not yet.** Cursor hooks deny writing `.env` (except `.env.example`) and force-push to `main`/`master`. They do not deny reading `.env*` or a normal push to `integration`. Codex sandbox rules for the same denials: UNKNOWN.
 - Secret scanning on: **configured, not yet tested** (this session did not watch a scan run). Workflow `.github/workflows/security.yml` exists, and `secret-scan` is a required check.
