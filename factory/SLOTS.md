@@ -24,7 +24,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
 | C-2 | Configurator | UNKNOWN | |
-| C-3 | Code map | Graphify 0.9.74 + Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Archify: no workflow and no reference in this repo |
+| C-3 | Code map | Graphify 0.9.74 + Understand-Anything (MIT); Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Understand-Anything repo-local provisioning is proposed by config PR #1384; it is not installed by this rule-adoption PR. Cloud availability is UNKNOWN until verified; unavailable required tools block dependent edits. Archify: UNKNOWN (no package, workflow or map) |
 | C-4 | Memory log | UNKNOWN | Basic Memory was not confirmed from this repo |
 
 
