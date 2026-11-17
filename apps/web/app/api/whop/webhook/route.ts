@@ -31,6 +31,9 @@ function reply(
 
 /** Handles one Whop delivery: checks the signature, then stores the membership event. */
 export async function POST(request: Request): Promise<Response> {
+  if (process.env.VERCEL_ENV === "preview") {
+    return reply({ received: false, reason: "not_found" }, 404);
+  }
   const secret = process.env.WHOP_WEBHOOK_SECRET;
   if (!secret) {
     return reply({ received: false, reason: "not_configured" }, 503);

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { trialCheckoutUrl } from "./checkout";
+import { NextRequest } from "next/server";
+import { POST as whopWebhook } from "../app/api/whop/webhook/route";
+import { GET as checkout } from "../app/checkout/route";
+import { paypalSandboxCheckout, trialCheckoutUrl } from "./checkout";
 
 describe("trial checkout link", () => {
   test("off by default", () => {
@@ -21,5 +24,66 @@ describe("trial checkout link", () => {
     expect(
       trialCheckoutUrl({ TEMPO_CHECKOUT_ENABLED: "true", WHOP_PLAN_ID: "plan_abc/../x" })
     ).toBeNull();
+  });
+
+  test("preview never renders the Whop checkout link", () => {
+    expect(
+      trialCheckoutUrl({
+        VERCEL_ENV: "preview",
+        TEMPO_CHECKOUT_ENABLED: "true",
+        WHOP_PLAN_ID: "plan_abc123",
+      })
+    ).toBeNull();
+  });
+});
+
+describe("PayPal Sandbox checkout", () => {
+  const preview = { VERCEL_ENV: "preview", PAYPAL_SANDBOX_PAYMENT_LINK_ID: "PLB-TEST12345678" };
+
+  test("fails closed for an absent switch, malformed settings, or production", () => {
+    for (const env of [
+      preview,
+      { ...preview, TEMPO_PAYPAL_SANDBOX_ENABLED: "1" },
+      { VERCEL_ENV: "preview", TEMPO_PAYPAL_SANDBOX_ENABLED: "true" },
+      {
+        ...preview,
+        TEMPO_PAYPAL_SANDBOX_ENABLED: "true",
+        PAYPAL_SANDBOX_PAYMENT_LINK_ID: "https://www.paypal.com/ncp/payment/PLB-TEST12345678",
+      },
+      { ...preview, TEMPO_PAYPAL_SANDBOX_ENABLED: "true", VERCEL_ENV: "production" },
+    ]) {
+      expect(paypalSandboxCheckout(env).status).toBe(404);
+    }
+  });
+
+  test("the checkout route redirects only to the configured sandbox resource", async () => {
+    const previous = process.env;
+    process.env = {
+      ...preview,
+      NODE_ENV: "test",
+      TEMPO_CHECKOUT_ENABLED: "true",
+      WHOP_PLAN_ID: "plan_abc123",
+    };
+    try {
+      const request = new NextRequest(
+        "https://preview.tempoflow.dev/checkout?next=https://www.paypal.com&amount=999"
+      );
+      expect((await checkout(request)).status).toBe(404);
+      const webhook = new Request("https://preview.tempoflow.dev/api/whop/webhook", {
+        method: "POST",
+        body: "{}",
+      });
+      expect((await whopWebhook(webhook)).status).toBe(404);
+
+      process.env.TEMPO_PAYPAL_SANDBOX_ENABLED = "true";
+      const response = await checkout(request);
+      expect(response.status).toBe(303);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("location")).toBe(
+        "https://www.sandbox.paypal.com/ncp/payment/PLB-TEST12345678"
+      );
+    } finally {
+      process.env = previous;
+    }
   });
 });
