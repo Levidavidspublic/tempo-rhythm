@@ -24,7 +24,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
 | C-2 | Configurator | UNKNOWN | |
-| C-3 | Code map | Graphify 0.9.74 + Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Archify: no workflow and no reference in this repo |
+| C-3 | Code map | Graphify 0.9.74 + Understand-Anything (MIT); Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Understand-Anything repo-local provisioning is proposed by config PR #1384; it is not installed by this rule-adoption PR. Cloud availability is UNKNOWN until verified; unavailable required tools block dependent edits. Archify: UNKNOWN (no package, workflow or map) |
 | C-4 | Memory log | UNKNOWN | Basic Memory was not confirmed from this repo |
 
 
@@ -159,3 +159,14 @@ Mark each one `configured`, then `tested` once a real run has shown it working. 
 - The same denials for every other lane: **not yet.** Cursor hooks deny writing `.env` (except `.env.example`) and force-push to `main`/`master`. They do not deny reading `.env*` or a normal push to `integration`. Codex sandbox rules for the same denials: UNKNOWN.
 - Secret scanning on: **configured, not yet tested** (this session did not watch a scan run). Workflow `.github/workflows/security.yml` exists, and `secret-scan` is a required check.
 - Spend caps on every paid provider key: **UNKNOWN.**
+
+<!-- TEMPLATE PUBLIC BEGIN -->
+## Template v2 staged configuration
+- Inheritance: public rules only; no personal layer.
+- The managed AGENTS.md block contains the proposed public rules snapshot. Existing repository policy wins on conflict.
+- Sync controller: disabled. No activation receipt, approval label, workflow or guard change is part of this PR.
+- Full export installation at `.template/public` is proposed only; it is not installed by this three-file rule-adoption PR.
+- Proposed export manifest SHA256: `7cc192a9e5b6b922ecb2863c6eb077567a47f8b4be1d31e712034b711881555f`.
+- All existing pause conditions and checks remain in force. Guard installation and source-prefix/privacy adaptations require a subsequent owner-reviewed config PR.
+- The original 01 four-gate definitions and any conflicting reviewer requirements remain UNKNOWN pending owner review.
+<!-- TEMPLATE PUBLIC END -->
