@@ -3,9 +3,11 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import { ComingSoonOnly } from "@/components/coming-soon/ComingSoonOnly";
 import { Providers } from "@/components/providers/providers";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { getSurface } from "@/lib/surface";
 import { themeInitScript } from "@/lib/theme-script";
 
 const newsreader = localFont({
@@ -53,11 +55,24 @@ export const viewport: Viewport = {
   ],
 };
 
+/** Root layout. On the coming-soon surface it renders a bare document with no app providers. */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Coming-soon surface (live): one public page. No sign-in, no backend client, no theme script.
+  if (getSurface() === "coming-soon") {
+    return (
+      <html lang="en" dir="ltr">
+        <body data-tempo-flow="" style={{ margin: 0, background: "var(--tp-ground)" }}>
+          {/* App pages need the providers below. Without this guard they throw when the build prerenders them. */}
+          <ComingSoonOnly>{children}</ComingSoonOnly>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ConvexAuthNextjsServerProvider>
       <html

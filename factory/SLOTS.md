@@ -18,13 +18,13 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-3b | Agent lane B | Claude Code in GitHub Actions (subscription token as org secret `CLAUDE_CODE_OAUTH_TOKEN`) | workflow file `.github/workflows/factory-lane-claude.yml` exists. Whether the secret is set: UNKNOWN |
 | B-3c | Agent lane C | Codex cloud via @codex (subscription only, never an OpenAI API key) | workflow file `.github/workflows/factory-lane-codex.yml` exists. Whether a task actually starts: UNKNOWN |
 | B-4 | Checks | GitHub Actions CI + Playwright | confirmed: `.github/workflows/ci.yml` and `.github/workflows/e2e-preview.yml` |
-| B-5 | Review gate | Cursor Bugbot (interim, set 2026-10-05); CodeRabbit optional later | **Batch loop (2026-10-06, `factory/LOOP.md`): Bugbot reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after Bugbot clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). |
+| B-5 | Review gate | CodeRabbit (set by Amit 2026-11-02) | **Batch loop (2026-10-06, `factory/LOOP.md`): CodeRabbit reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after CodeRabbit clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). Bugbot security deep scan comparison = pending. |
 | B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
 | — | Backend | Convex | folder `convex/` (not `packages/backend`) |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
 | C-2 | Configurator | UNKNOWN | |
-| C-3 | Code map | Graphify 0.9.74 + Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Archify: no workflow and no reference in this repo |
+| C-3 | Code map | Graphify 0.9.74 + Understand-Anything (MIT); Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Understand-Anything repo-local provisioning is proposed by config PR #1384; it is not installed by this rule-adoption PR. Cloud availability is UNKNOWN until verified; unavailable required tools block dependent edits. Archify: UNKNOWN (no package, workflow or map) |
 | C-4 | Memory log | UNKNOWN | Basic Memory was not confirmed from this repo |
 
 
@@ -159,3 +159,14 @@ Mark each one `configured`, then `tested` once a real run has shown it working. 
 - The same denials for every other lane: **not yet.** Cursor hooks deny writing `.env` (except `.env.example`) and force-push to `main`/`master`. They do not deny reading `.env*` or a normal push to `integration`. Codex sandbox rules for the same denials: UNKNOWN.
 - Secret scanning on: **configured, not yet tested** (this session did not watch a scan run). Workflow `.github/workflows/security.yml` exists, and `secret-scan` is a required check.
 - Spend caps on every paid provider key: **UNKNOWN.**
+
+<!-- TEMPLATE PUBLIC BEGIN -->
+## Template v2 staged configuration
+- Inheritance: public rules only; no personal layer.
+- The managed AGENTS.md block contains the proposed public rules snapshot. Existing repository policy wins on conflict.
+- Sync controller: disabled. No activation receipt, approval label, workflow or guard change is part of this PR.
+- Full export installation at `.template/public` is proposed only; it is not installed by this three-file rule-adoption PR.
+- Proposed export manifest SHA256: `7cc192a9e5b6b922ecb2863c6eb077567a47f8b4be1d31e712034b711881555f`.
+- All existing pause conditions and checks remain in force. Guard installation and source-prefix/privacy adaptations require a subsequent owner-reviewed config PR.
+- The original 01 four-gate definitions and any conflicting reviewer requirements remain UNKNOWN pending owner review.
+<!-- TEMPLATE PUBLIC END -->
