@@ -26,14 +26,14 @@ describe("trial checkout link", () => {
     ).toBeNull();
   });
 
-  test("preview never renders the Whop checkout link", () => {
+  test("preview uses the existing Whop checkout switch and plan", () => {
     expect(
       trialCheckoutUrl({
         VERCEL_ENV: "preview",
         TEMPO_CHECKOUT_ENABLED: "true",
         WHOP_PLAN_ID: "plan_abc123",
       })
-    ).toBeNull();
+    ).toBe("https://whop.com/checkout/plan_abc123");
   });
 });
 
@@ -73,7 +73,7 @@ describe("PayPal Sandbox checkout", () => {
         method: "POST",
         body: "{}",
       });
-      expect((await whopWebhook(webhook)).status).toBe(404);
+      expect((await whopWebhook(webhook)).status).toBe(503);
 
       process.env.TEMPO_PAYPAL_SANDBOX_ENABLED = "true";
       const response = await checkout(request);
