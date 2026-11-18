@@ -4,7 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
+import { TpIcon, TpIconSprite, type TpIconName } from "@/components/tempo/TpIcon";
 import {
   LiveMessage,
   RetryRoot,
@@ -18,8 +18,10 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { translateKb70, type Kb70Lang } from "@/lib/i18n-groups/kb-70";
 import { splitByToday } from "@/lib/you/feeds";
 import { deriveScreenState, intlLocale } from "@/lib/you/screenState";
+import "@/app/v3/kb-70.css";
 
 /**
  * Notifications (docs/design/v3/screens/web/notifications.html): newest first, Today and
@@ -80,7 +82,7 @@ export function NotificationsScreen() {
 }
 
 function NotificationsContent({ onRetry }: { onRetry: () => void }) {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const bounds = useLocalDayBounds();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   // notifications.list calls requireUser: wait for the users row.
@@ -93,6 +95,8 @@ function NotificationsContent({ onRetry }: { onRetry: () => void }) {
   const state = deriveScreenState({ ...input, failed: timedOut });
   const [live, setLive] = useState("");
   const [failed, setFailed] = useState(false);
+  const markAllBusy = useRef(false);
+  const [markAllPending, setMarkAllPending] = useState(false);
 
   const run = async (work: () => Promise<unknown>, done: string) => {
     setFailed(false);
@@ -107,6 +111,15 @@ function NotificationsContent({ onRetry }: { onRetry: () => void }) {
   const list = notices ?? [];
   const unread = list.filter((notice) => notice.readAt === undefined).length;
   const { today, earlier } = splitByToday(list, bounds.startMs);
+  const onMarkAll = () => {
+    if (markAllBusy.current || unread === 0) return;
+    markAllBusy.current = true;
+    setMarkAllPending(true);
+    void run(() => markAllRead({}), t("nt.allread")).finally(() => {
+      markAllBusy.current = false;
+      setMarkAllPending(false);
+    });
+  };
 
   return (
     <div
@@ -117,15 +130,16 @@ function NotificationsContent({ onRetry }: { onRetry: () => void }) {
       <NoticesHead
         action={
           state === "ready" ? (
-            <button
+            <><button
               className="tp-btn tp-btn--secondary"
               type="button"
-              disabled={unread === 0}
-              onClick={() => void run(() => markAllRead({}), t("nt.allread"))}
+              disabled={unread === 0 || markAllPending}
+              aria-describedby={markAllPending ? "kb70-mark-all-feedback" : undefined}
+              onClick={onMarkAll}
             >
               <TpIcon name="check" size="sm" />
               <span>{t("nt.readall")}</span>
-            </button>
+            </button><NotificationReadFeedback pending={markAllPending} lang={lang} /></>
           ) : undefined
         }
       />
@@ -298,8 +312,9 @@ function NoticeRow({
           className="tp-list-row"
           type="button"
           data-unread="true"
-          onClick={() => {
-            opened.current = true;
+          onBlur={() => { opened.current = false; }}
+          onClick={(event) => {
+            opened.current = document.activeElement === event.currentTarget;
             onOpen(notice._id);
           }}
         >
@@ -312,4 +327,49 @@ function NoticeRow({
       )}
     </li>
   );
+}
+
+/** A short explanation while the existing Mark all read action is unavailable during save. */
+export function NotificationReadFeedback({ pending, lang }: {
+  readonly pending: boolean;
+  readonly lang: Kb70Lang;
+}) {
+  return pending ? <output id="kb70-mark-all-feedback" className="kb70-feedback" aria-live="polite" data-component="NotificationReadFeedback">{translateKb70(lang, "pending")}</output> : null;
+}
+
+type Kb70GalleryState = "default" | "pending" | "success" | "error" | "disabled" | "empty" | "overflow";
+
+/** Interactive fixture that mounts the actual row and pending feedback with fictional notices. */
+export function Kb70Gallery({ initialState = "default" }: { readonly initialState?: Kb70GalleryState } = {}) {
+  const { lang, setLang, t } = useLocale();
+  const [state, setState] = useState<Kb70GalleryState>(initialState);
+  const [openedId, setOpenedId] = useState<string | null>(null);
+  const samples: Notice[] = [
+    { _id: "fictional-maya" as Id<"notifications">, title: translateKb70(lang, "gallery.maya"), body: translateKb70(lang, "gallery.mayaBody"), kind: "system", createdAt: 1_700_000_000_000 },
+    { _id: "fictional-dana" as Id<"notifications">, title: translateKb70(lang, "gallery.dana"), body: translateKb70(lang, "gallery.danaBody"), kind: "reminder", createdAt: 1_699_999_000_000 },
+    { _id: "fictional-yoni" as Id<"notifications">, title: translateKb70(lang, "gallery.yoni"), body: translateKb70(lang, "gallery.yoniBody"), kind: "billing", createdAt: 1_699_998_000_000 },
+  ];
+  const notices = state === "empty" ? [] : state === "overflow" ? [{ ...samples[0]!, title: translateKb70(lang, "gallery.longTitle") }] : samples;
+  const states = ["default", "pending", "success", "error", "disabled", "empty", "overflow"] as const;
+  return <main className="kb70-gallery" data-component="Kb70Gallery" lang={lang} dir={lang === "he" ? "rtl" : "ltr"}>
+    <TpIconSprite />
+    <h1 className="tp-pagehead__title">{translateKb70(lang, "gallery.title")}</h1>
+    <fieldset className="kb70-gallery__controls"><legend className="tp-sr-only">{translateKb70(lang, "gallery.language")}</legend>
+      <button type="button" className="tp-btn tp-btn--secondary" aria-pressed={lang === "en"} onClick={() => setLang("en")}>English</button>
+      <button type="button" className="tp-btn tp-btn--secondary" aria-pressed={lang === "he"} onClick={() => setLang("he")}>עברית</button>
+    </fieldset>
+    <fieldset className="kb70-gallery__controls"><legend className="tp-sr-only">{translateKb70(lang, "gallery.states")}</legend>
+      {states.map((next) => <button key={next} type="button" className="tp-btn tp-btn--secondary" aria-pressed={state === next} onClick={() => { setState(next); setOpenedId(null); }}>{translateKb70(lang, `gallery.${next}`)}</button>)}
+    </fieldset>
+    <div className="kb70-gallery__actions">
+      <button type="button" className="tp-btn tp-btn--secondary" disabled={state === "pending" || state === "disabled" || state === "empty" || state === "success"} aria-describedby={state === "pending" ? "kb70-mark-all-feedback" : undefined} onClick={() => setState("success")}>{t("nt.readall")}</button>
+      <NotificationReadFeedback pending={state === "pending"} lang={lang} />
+    </div>
+    {state === "error" ? <p className="tp-notice" data-tone="caution" role="alert">{t("you.saveError")}</p> : null}
+    {state === "success" ? <output className="kb70-gallery__result">{t("nt.allread")}</output> : null}
+    {notices.length === 0 ? <p className="tp-state">{t("nt.empty.b")}</p> : <section className="tp-section" aria-labelledby="kb70-gallery-list">
+      <h2 className="tp-section__title" id="kb70-gallery-list">{t("nt.today")}</h2>
+      <ul className="tp-list">{notices.map((notice) => <NoticeRow key={`${notice._id}-${state}`} notice={state === "success" || openedId === notice._id ? { ...notice, readAt: 1_700_000_001_000 } : notice} today onOpen={(id) => setOpenedId(id)} />)}</ul>
+    </section>}
+  </main>;
 }
