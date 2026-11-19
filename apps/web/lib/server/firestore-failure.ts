@@ -12,14 +12,7 @@ export const FAILURE_COPY_KEYS = [
 ] as const;
 
 export type FirestoreFailure = {
-  kind:
-    | "retry"
-    | "sign-in-again"
-    | "not-allowed"
-    | "not-found"
-    | "conflict"
-    | "setup"
-    | "unknown";
+  kind: "retry" | "sign-in-again" | "not-allowed" | "not-found" | "conflict" | "setup" | "unknown";
   httpStatus: number;
   retry: boolean;
   copyKey: string;
