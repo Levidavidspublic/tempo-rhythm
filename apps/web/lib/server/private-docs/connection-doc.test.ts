@@ -31,7 +31,9 @@ test("unknown and token keys are refused", () => {
 test("bad status, provider, and non-https URLs are refused", () => {
   expect(validateConnectionDoc({ ...valid, status: "connecting" })).toMatchObject({ ok: false });
   expect(validateConnectionDoc({ ...valid, provider: "other" })).toMatchObject({ ok: false });
-  expect(validateConnectionDoc({ ...valid, mcpUrl: "http://example.com/mcp" })).toMatchObject({ ok: false });
+  expect(validateConnectionDoc({ ...valid, mcpUrl: "http://example.com/mcp" })).toMatchObject({
+    ok: false,
+  });
   expect(validateConnectionDoc({ ...valid, issuer: "not a URL" })).toMatchObject({ ok: false });
 });
 
@@ -78,6 +80,6 @@ test("the owner view contains only status-safe keys", () => {
     refreshLeaseUntil: 200,
   });
   expect(Object.keys(view).sort()).toEqual(
-    ["id", "provider", "status", "accountLabel", "connectedAt", "lastUsedAt", "lastErrorAt"].sort(),
+    ["id", "provider", "status", "accountLabel", "connectedAt", "lastUsedAt", "lastErrorAt"].sort()
   );
 });

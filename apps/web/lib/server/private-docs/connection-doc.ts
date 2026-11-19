@@ -57,7 +57,12 @@ const STATUSES = new Set<ConnectionDoc["status"]>([
   "disconnected",
 ]);
 
-const OPTIONAL_STRINGS = ["scope", "accountLabel", "confirmNonceHash", "refreshLeaseToken"] as const;
+const OPTIONAL_STRINGS = [
+  "scope",
+  "accountLabel",
+  "confirmNonceHash",
+  "refreshLeaseToken",
+] as const;
 const REQUIRED_TIMES = ["connectedAt", "createdAt", "updatedAt"] as const;
 const OPTIONAL_NUMBERS = [
   "lastUsedAt",
@@ -82,14 +87,16 @@ function isHttpsUrl(value: unknown): value is string {
 }
 
 export function validateConnectionDoc(
-  input: unknown,
+  input: unknown
 ): { ok: true; doc: ConnectionDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, reason: "connection must be an object" };
   }
 
   const value = input as Record<string, unknown>;
-  const unknownKey = Object.keys(value).find((key) => !CONNECTION_KEYS.has(key as keyof ConnectionDoc));
+  const unknownKey = Object.keys(value).find(
+    (key) => !CONNECTION_KEYS.has(key as keyof ConnectionDoc)
+  );
   if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
   if (value.provider !== "executor") return { ok: false, reason: "invalid provider" };
   if (!STATUSES.has(value.status as ConnectionDoc["status"])) {
@@ -123,7 +130,9 @@ export function validateConnectionDoc(
 }
 
 export function canUseForCall(doc: ConnectionDoc): boolean {
-  return doc.deletedAt === undefined && (doc.status === "connected" || doc.status === "unavailable");
+  return (
+    doc.deletedAt === undefined && (doc.status === "connected" || doc.status === "unavailable")
+  );
 }
 
 export function canConfirm(doc: ConnectionDoc, now: number): boolean {
