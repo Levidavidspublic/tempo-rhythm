@@ -24,6 +24,17 @@ describe("note document", () => {
       ok: false,
       reason: "unknown key: userId",
     });
+
+    const uninspectableNote = new Proxy(validNote, {
+      ownKeys() {
+        throw new Error("uninspectable input");
+      },
+    });
+
+    expect(checkNoteDoc(uninspectableNote)).toEqual({
+      ok: false,
+      reason: "note could not be inspected",
+    });
   });
 
   test("rejects an invalid periodType", () => {

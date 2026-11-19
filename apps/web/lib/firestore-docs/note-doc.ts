@@ -63,7 +63,7 @@ function isCalendarDate(value: unknown): value is string {
   );
 }
 
-export function checkNoteDoc(
+function validateNoteDoc(
   input: unknown,
 ): { ok: true; doc: NoteDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
@@ -117,6 +117,16 @@ export function checkNoteDoc(
   }
 
   return { ok: true, doc: value as NoteDoc };
+}
+
+export function checkNoteDoc(
+  input: unknown,
+): { ok: true; doc: NoteDoc } | { ok: false; reason: string } {
+  try {
+    return validateNoteDoc(input);
+  } catch {
+    return { ok: false, reason: "note could not be inspected" };
+  }
 }
 
 export function softDeleteNote(doc: NoteDoc, nowMs: number): NoteDoc {
