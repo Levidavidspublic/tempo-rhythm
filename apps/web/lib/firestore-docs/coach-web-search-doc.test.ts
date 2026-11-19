@@ -20,7 +20,7 @@ describe("coach web search documents", () => {
         createdAt: 10,
         updatedAt: 10,
         userId: "user",
-      })
+      }),
     ).toEqual({
       ok: false,
       reason: "Unknown key: userId",
@@ -33,7 +33,7 @@ describe("coach web search documents", () => {
         utcDateKey: "2026-02-30",
         createdAt: 10,
         updatedAt: 10,
-      }).ok
+      }).ok,
     ).toBe(false);
   });
 
@@ -43,13 +43,17 @@ describe("coach web search documents", () => {
         utcDateKey: "2026-11-19",
         createdAt: 10.5,
         updatedAt: 11,
-      }).ok
+      }).ok,
     ).toBe(false);
   });
 
   test("utcDateKeyFor follows the UTC day around midnight", () => {
-    expect(utcDateKeyFor(Date.UTC(2026, 10, 18, 23, 59, 59, 999))).toBe("2026-11-18");
-    expect(utcDateKeyFor(Date.UTC(2026, 10, 19, 0, 0, 0, 0))).toBe("2026-11-19");
+    expect(utcDateKeyFor(Date.UTC(2026, 10, 18, 23, 59, 59, 999))).toBe(
+      "2026-11-18",
+    );
+    expect(utcDateKeyFor(Date.UTC(2026, 10, 19, 0, 0, 0, 0))).toBe(
+      "2026-11-19",
+    );
   });
 
   test("soft delete sets deletedAt", () => {
