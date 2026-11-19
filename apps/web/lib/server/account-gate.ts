@@ -7,7 +7,13 @@ export type AccountGate = Readonly<{
 export type AccountAccess = "missing" | "inactive" | "pending" | "approved";
 
 export function accountGatePath(uid: string): string {
-  if (!uid || uid.includes("/") || uid === "." || uid === ".." || /^__.*__$/.test(uid)) {
+  if (
+    !uid ||
+    uid.includes("/") ||
+    uid === "." ||
+    uid === ".." ||
+    /^__.*__$/.test(uid)
+  ) {
     throw new Error("Invalid account id");
   }
 
@@ -15,10 +21,15 @@ export function accountGatePath(uid: string): string {
 }
 
 export function isAccountActive(gate: AccountGate): boolean {
-  return (gate.deletedAt === undefined || gate.deletedAt === null) && gate.isActive !== false;
+  return (
+    (gate.deletedAt === undefined || gate.deletedAt === null) &&
+    gate.isActive !== false
+  );
 }
 
-export function accountAccess(gate: AccountGate | null | undefined): AccountAccess {
+export function accountAccess(
+  gate: AccountGate | null | undefined,
+): AccountAccess {
   if (gate == null) {
     return "missing";
   }

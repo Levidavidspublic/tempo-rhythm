@@ -32,11 +32,18 @@ test("a missing gate has missing access", () => {
 
 test("an active approved gate is approved, while a deleted approved gate is inactive", () => {
   expect(accountAccess({ approvalStatus: "approved" })).toBe("approved");
-  expect(accountAccess({ approvalStatus: "approved", deletedAt: 1 })).toBe("inactive");
+  expect(accountAccess({ approvalStatus: "approved", deletedAt: 1 })).toBe(
+    "inactive",
+  );
 });
 
 test("all non-approved statuses are pending and only approved gates can use paid routes", () => {
-  for (const approvalStatus of [undefined, "pending", "revoked", "unexpected"]) {
+  for (const approvalStatus of [
+    undefined,
+    "pending",
+    "revoked",
+    "unexpected",
+  ]) {
     expect(accountAccess({ approvalStatus })).toBe("pending");
     expect(canUsePaidRoute({ approvalStatus })).toBe(false);
   }
