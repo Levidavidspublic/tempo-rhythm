@@ -40,24 +40,24 @@ describe("task repeat documents", () => {
   });
 
   test("refuses an invalid cycle and repeat count", () => {
-    expect(() =>
-      parseTaskRepeatDoc({ ...minimal, repeatCycle: "HOURLY" }),
-    ).toThrow(new TaskRepeatDocError("repeatCycle"));
+    expect(() => parseTaskRepeatDoc({ ...minimal, repeatCycle: "HOURLY" })).toThrow(
+      new TaskRepeatDocError("repeatCycle")
+    );
     expect(() => parseTaskRepeatDoc({ ...minimal, repeatEvery: 0 })).toThrow(
-      new TaskRepeatDocError("repeatEvery"),
+      new TaskRepeatDocError("repeatEvery")
     );
   });
 
   test("refuses invalid weekdays and malformed skipped dates", () => {
     expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [7] })).toThrow(
-      new TaskRepeatDocError("weekdays"),
+      new TaskRepeatDocError("weekdays")
     );
     expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [2, 2] })).toThrow(
-      new TaskRepeatDocError("weekdays"),
+      new TaskRepeatDocError("weekdays")
     );
-    expect(() =>
-      parseTaskRepeatDoc({ ...minimal, deletedInstanceDates: ["19-11-2026"] }),
-    ).toThrow(new TaskRepeatDocError("deletedInstanceDates"));
+    expect(() => parseTaskRepeatDoc({ ...minimal, deletedInstanceDates: ["19-11-2026"] })).toThrow(
+      new TaskRepeatDocError("deletedInstanceDates")
+    );
   });
 
   test("drops legacy keys and refuses unknown keys", () => {
@@ -69,7 +69,7 @@ describe("task repeat documents", () => {
     };
     expect(parseTaskRepeatDoc(withLegacy)).toEqual(minimal);
     expect(() => parseTaskRepeatDoc({ ...minimal, surprise: true })).toThrow(
-      new TaskRepeatDocError("surprise"),
+      new TaskRepeatDocError("surprise")
     );
   });
 
