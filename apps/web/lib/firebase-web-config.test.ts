@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/useNamingConvention: Firebase environment names are external API keys.
 import { expect, test } from "bun:test";
 
 import {
@@ -58,7 +59,10 @@ test("each missing or blank required name fails closed and is listed", () => {
 
 test("a malformed project id returns null", () => {
   expect(
-    readFirebaseWebConfig({ ...completeEnv, NEXT_PUBLIC_FIREBASE_PROJECT_ID: "Invalid_ID" })
+    readFirebaseWebConfig({
+      ...completeEnv,
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "Invalid_ID",
+    })
   ).toBeNull();
 });
 
