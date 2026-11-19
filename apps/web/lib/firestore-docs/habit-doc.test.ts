@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { checkHabitCheckInDoc, checkHabitDoc, type HabitCheckInDoc, type HabitDoc } from "./habit-doc";
+import {
+  checkHabitCheckInDoc,
+  checkHabitDoc,
+  type HabitCheckInDoc,
+  type HabitDoc,
+} from "./habit-doc";
 
 const habit: HabitDoc = {
   name: "Drink water",

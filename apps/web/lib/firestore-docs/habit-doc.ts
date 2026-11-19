@@ -74,9 +74,7 @@ function isRealLocalDate(value: unknown): value is string {
   const day = Number(match[3]);
   const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
@@ -110,7 +108,8 @@ export function checkHabitDoc(input: unknown): CheckResult<HabitDoc> {
 export function checkHabitCheckInDoc(input: unknown): CheckResult<HabitCheckInDoc> {
   try {
     if (!isRecord(input)) return { ok: false, reason: "check-in must be an object" };
-    if (!hasOnlyKeys(input, checkInKeys)) return { ok: false, reason: "check-in has an unknown key" };
+    if (!hasOnlyKeys(input, checkInKeys))
+      return { ok: false, reason: "check-in has an unknown key" };
     if (typeof input.habitId !== "string" || input.habitId.trim() === "") {
       return { ok: false, reason: "habitId must not be empty" };
     }
