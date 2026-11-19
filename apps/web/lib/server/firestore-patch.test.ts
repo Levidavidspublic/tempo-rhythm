@@ -18,7 +18,10 @@ describe("buildPatchRequest", () => {
   });
 
   test("URL-encodes each document path segment", () => {
-    const result = buildPatchRequest({ ...baseInput, documentPath: "users/user name/tasks/task?1" });
+    const result = buildPatchRequest({
+      ...baseInput,
+      documentPath: "users/user name/tasks/task?1",
+    });
     expect(result.ok && result.url).toContain("/users/user%20name/tasks/task%3F1?");
   });
 
