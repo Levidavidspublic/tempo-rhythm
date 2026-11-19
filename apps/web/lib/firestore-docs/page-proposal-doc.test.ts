@@ -58,6 +58,12 @@ describe("page proposal Firestore document", () => {
         payload: { state: "available", task: { title: "   ", durationMin: 15 } },
       }).ok
     ).toBe(false);
+    expect(
+      checkPageProposalDoc({
+        ...proposal,
+        payload: { state: "available", task: { title: "😀".repeat(300), durationMin: 15 } },
+      }).ok
+    ).toBe(false);
   });
 
   test("rejects durationMin 1441", () => {
