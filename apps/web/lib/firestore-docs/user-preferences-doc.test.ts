@@ -25,25 +25,33 @@ describe("checkUserPreferencesDoc", () => {
   });
 
   test("refuses a userId because ownership comes from the document path", () => {
-    expect(checkUserPreferencesDoc({ ...validDocument, userId: "user-1" })).toMatchObject({
+    expect(
+      checkUserPreferencesDoc({ ...validDocument, userId: "user-1" }),
+    ).toMatchObject({
       ok: false,
     });
   });
 
   test("refuses an unknown theme", () => {
-    expect(checkUserPreferencesDoc({ ...validDocument, theme: "sepia" })).toMatchObject({
+    expect(
+      checkUserPreferencesDoc({ ...validDocument, theme: "sepia" }),
+    ).toMatchObject({
       ok: false,
     });
   });
 
   test("refuses an unsupported week start", () => {
-    expect(checkUserPreferencesDoc({ ...validDocument, weekStartsOn: 2 })).toMatchObject({
+    expect(
+      checkUserPreferencesDoc({ ...validDocument, weekStartsOn: 2 }),
+    ).toMatchObject({
       ok: false,
     });
   });
 
   test("refuses an invalid time zone", () => {
-    expect(checkUserPreferencesDoc({ ...validDocument, timeZone: "Mars/Olympus" })).toMatchObject({
+    expect(
+      checkUserPreferencesDoc({ ...validDocument, timeZone: "Mars/Olympus" }),
+    ).toMatchObject({
       ok: false,
     });
   });
