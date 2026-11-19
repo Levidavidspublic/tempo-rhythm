@@ -24,9 +24,7 @@ export type PageProposalDoc = {
   deletedAt?: number;
 };
 
-type CheckResult =
-  | { ok: true; doc: PageProposalDoc }
-  | { ok: false; reason: string };
+type CheckResult = { ok: true; doc: PageProposalDoc } | { ok: false; reason: string };
 
 const TOP_LEVEL_KEYS = new Set([
   "kind",
@@ -125,7 +123,10 @@ export function checkPageProposalDoc(input: unknown): CheckResult {
     return { ok: false, reason: "document id is invalid" };
   }
   if (!isRealLocalDate(input.localDate)) return { ok: false, reason: "localDate is invalid" };
-  if (typeof input.sourceRequestKey !== "string" || !SOURCE_REQUEST_KEY.test(input.sourceRequestKey)) {
+  if (
+    typeof input.sourceRequestKey !== "string" ||
+    !SOURCE_REQUEST_KEY.test(input.sourceRequestKey)
+  ) {
     return { ok: false, reason: "sourceRequestKey is invalid" };
   }
   if (
@@ -149,10 +150,7 @@ export function checkPageProposalDoc(input: unknown): CheckResult {
     return { ok: false, reason: "status is invalid" };
   }
   if (!checkPayload(input.payload)) return { ok: false, reason: "payload is invalid" };
-  if (
-    "confirmedOperationId" in input &&
-    !isDocumentId(input.confirmedOperationId)
-  ) {
+  if ("confirmedOperationId" in input && !isDocumentId(input.confirmedOperationId)) {
     return { ok: false, reason: "confirmedOperationId is invalid" };
   }
   if (

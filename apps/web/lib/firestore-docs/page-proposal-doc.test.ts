@@ -56,7 +56,7 @@ describe("page proposal Firestore document", () => {
       checkPageProposalDoc({
         ...proposal,
         payload: { state: "available", task: { title: "   ", durationMin: 15 } },
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
@@ -65,7 +65,7 @@ describe("page proposal Firestore document", () => {
       checkPageProposalDoc({
         ...proposal,
         payload: { state: "available", task: { title: "Plan tomorrow", durationMin: 1441 } },
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
