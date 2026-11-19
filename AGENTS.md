@@ -51,6 +51,17 @@ Report the results in the PR body (or your final message when you're not opening
 - `factory/` — SLOTS.md, the ticket template, run logs.
 - The six docs live in the doc store, not in this repo.
 
+## Project reference (read first)
+The permanent reference for every agent working here (Cursor, Codex, Friday, kitchens). The six docs are in this repo at:
+- PRD: `docs/PRD.md`
+- TRD: `docs/TRD.md`
+- App flow: `docs/APP-FLOW.md`
+- UI brief: `docs/UI-BRIEF.md`
+- Backend schema: `docs/BACKEND-SCHEMA.md`
+- Roadmap: `docs/ROADMAP.md`
+
+If a doc is missing, say so in your report; don't invent it. If one of these files disagrees with the doc store named in `factory/SLOTS.md` (A-4), say so in your report too.
+
 ## The ticket (11 fields)
 | Field | Meaning |
 |---|---|
@@ -150,18 +161,18 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 ## Branches, reviews and checks
 - integration is the default branch. Work through PRs into integration. Never push directly to a protected base and never touch master. A repository with a conflicting default branch needs Amit before sync.
 - CodeRabbit is the only PR reviewer. Deep Scan and Vercel Agent review stay off. Architecture councils are advisory and do not replace PR review.
-- Config changes use a separate config PR. Only Amit applies approval labels. Preserve the repository's existing guard and current-head approval requirement; an approval for an earlier head does not approve a later push.
+- Config changes use a separate config PR. Agents may add or remove the `config` approval label on Amit's behalf when Amit has approved the change in chat, or when the change is a CI/config fix he asked for (standing permission from Amit). Other approval labels stay Amit's. Preserve the repository's existing guard and current-head approval requirement; an approval for an earlier head does not approve a later push.
 - Preserve all required checks, their names, thresholds and layers. Never weaken a check, skip or delete a test to pass, or treat a stub or fixture as real runtime proof.
 - Merge flow: exact scope, CI/programmatic checks, language formatting, Jev judge, CodeRabbit, then only the repository-authorized integration merge path. Master merge and production deployment remain Amit's.
 - Jev is the only OpenRouter exception. Its existing repository thresholds and enforcement remain in force. Unverified thresholds or four-gate definitions are UNKNOWN; do not invent or activate them.
-- Keep exactly one existing workflow status label: status:ready, status:dispatched, status:in-pr or status:done. Preserve status:ready for manual-run selection and status:in-pr for an open ticket PR. Assignment labels such as agent:freebuff, agent:opencode and lane:* are separate; never replace the workflow status with an assignment label. Applying the config approval label is never an agent action.
+- Keep exactly one existing workflow status label: status:ready, status:dispatched, status:in-pr or status:done. Preserve status:ready for manual-run selection and status:in-pr for an open ticket PR. Assignment labels such as agent:freebuff, agent:opencode and lane:* are separate; never replace the workflow status with an assignment label. Agents apply the `config` approval label only as the config PR rule above allows.
 - Prove each step with the command and its actual output. Check the current PR head. If unsure whether it worked, report that it did not prove success.
 - Stop when the goal is met, the authorized budget is spent, or three rounds make no progress. Continue independent work when one dependency is blocked. Never start a fourth no-progress round.
 
 ## Permission classes
 - WALK: agent alone, within the authorized scope, without a key or incremental spend.
 - AWAY: use a 1Password dev-vault key through Executor only, with existing task authorization. Never the op CLI. Names only; never print, log, echo, store or screenshot secret values or fragments; never click reveal.
-- AT: spending, plan changes, accepting terms, creating accounts, sending, posting, production deployment, deleting, merging to master and applying config approval labels. Only ticket and PR status reports already explicitly authorized by the assigned work are exempt from the posting restriction; this does not authorize other messages or new disclosures. Put every other needed action under Needs me and continue everything independent.
+- AT: spending, plan changes, accepting terms, creating accounts, sending, posting, production deployment, deleting, merging to master and applying approval labels (except the `config` label, as the config PR rule above allows). Only ticket and PR status reports already explicitly authorized by the assigned work are exempt from the posting restriction; this does not authorize other messages or new disclosures. Put every other needed action under Needs me and continue everything independent.
 - Missing keys: name the vault item and field, never request the value. A missing key blocks its dependent action.
 
 ## Providers and costs
