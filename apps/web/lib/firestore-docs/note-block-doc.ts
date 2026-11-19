@@ -8,11 +8,11 @@ type CommonFields = {
   deletedAt?: number;
 };
 
-type StoredBlock<TType extends string, TData> = CommonFields & {
-  type: TType;
+type StoredBlock<Kind extends string, Data> = CommonFields & {
+  type: Kind;
   blockId: string;
   v: 1;
-  data: TData;
+  data: Data;
 };
 
 export type NoteBlockDoc =
