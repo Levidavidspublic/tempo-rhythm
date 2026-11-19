@@ -29,50 +29,32 @@ describe("chat request documents", () => {
   });
 
   test("rejects the unknown userId key", () => {
-    expect(
-      checkChatRequestDoc({ ...validRequest, userId: "foreign-user" }),
-    ).toEqual({
+    expect(checkChatRequestDoc({ ...validRequest, userId: "foreign-user" })).toEqual({
       ok: false,
       reason: "Unknown field: userId",
     });
   });
 
   test("rejects a bad status", () => {
-    expect(checkChatRequestDoc({ ...validRequest, status: "waiting" }).ok).toBe(
-      false,
-    );
+    expect(checkChatRequestDoc({ ...validRequest, status: "waiting" }).ok).toBe(false);
   });
 
   test("rejects a non-hex payloadDigest", () => {
-    expect(
-      checkChatRequestDoc({ ...validRequest, payloadDigest: "g".repeat(64) })
-        .ok,
-    ).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, payloadDigest: "g".repeat(64) }).ok).toBe(false);
   });
 
   test("rejects a negative sequence", () => {
-    expect(checkChatRequestDoc({ ...validRequest, sequence: -1 }).ok).toBe(
-      false,
-    );
+    expect(checkChatRequestDoc({ ...validRequest, sequence: -1 }).ok).toBe(false);
   });
 
   test("rejects a bad requestKey", () => {
-    expect(
-      checkChatRequestDoc({ ...validRequest, requestKey: "contains spaces" })
-        .ok,
-    ).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, requestKey: "contains spaces" }).ok).toBe(false);
   });
 
   test("rejects updatedAt before createdAt", () => {
-    expect(checkChatRequestDoc({ ...validRequest, updatedAt: 99 }).ok).toBe(
-      false,
-    );
-    expect(
-      checkChatRequestDoc({ ...validRequest, createdAt: undefined }).ok,
-    ).toBe(false);
-    expect(
-      checkChatRequestDoc({ ...validRequest, updatedAt: undefined }).ok,
-    ).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, updatedAt: 99 }).ok).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, createdAt: undefined }).ok).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, updatedAt: undefined }).ok).toBe(false);
   });
 
   test("soft delete sets deletedAt and keeps every other field", () => {

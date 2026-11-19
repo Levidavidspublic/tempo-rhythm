@@ -1,9 +1,4 @@
-export type ChatRequestStatus =
-  | "queued"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type ChatRequestStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export type ChatRequestDoc = {
   conversationId: string;
@@ -20,9 +15,7 @@ export type ChatRequestDoc = {
   deletedAt?: number;
 };
 
-type CheckResult =
-  | { ok: true; doc: ChatRequestDoc }
-  | { ok: false; reason: string };
+type CheckResult = { ok: true; doc: ChatRequestDoc } | { ok: false; reason: string };
 
 const REQUIRED_KEYS = [
   "conversationId",
@@ -128,10 +121,7 @@ export function checkChatRequestDoc(input: unknown): CheckResult {
     }
   }
   for (const key of ["generationLeaseExpiresAtMs", "deletedAt"] as const) {
-    if (
-      candidate[key] !== undefined &&
-      !isSafeNonnegativeInteger(candidate[key])
-    ) {
+    if (candidate[key] !== undefined && !isSafeNonnegativeInteger(candidate[key])) {
       return { ok: false, reason: `${key} must be a safe nonnegative integer` };
     }
   }
@@ -151,9 +141,6 @@ export function checkChatRequestDoc(input: unknown): CheckResult {
   return { ok: true, doc: candidate as ChatRequestDoc };
 }
 
-export function softDeleteChatRequest(
-  doc: ChatRequestDoc,
-  nowMs: number,
-): ChatRequestDoc {
+export function softDeleteChatRequest(doc: ChatRequestDoc, nowMs: number): ChatRequestDoc {
   return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
 }
