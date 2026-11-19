@@ -5,7 +5,12 @@ export type CoachWebSearchDoc = {
   deletedAt?: number;
 };
 
-const COACH_WEB_SEARCH_KEYS = new Set<PropertyKey>(["utcDateKey", "createdAt", "updatedAt", "deletedAt"]);
+const COACH_WEB_SEARCH_KEYS = new Set<PropertyKey>([
+  "utcDateKey",
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+]);
 const UTC_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function isTimestamp(value: unknown): value is number {
@@ -25,7 +30,11 @@ function isUtcDateKey(value: unknown): value is string {
   date.setUTCHours(0, 0, 0, 0);
   date.setUTCFullYear(year, month - 1, day);
 
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 export function utcDateKeyFor(ms: number): string {
@@ -40,15 +49,34 @@ export function checkCoachWebSearchDoc(
   }
 
   const record = input as Record<string, unknown>;
-  const unknownKey = Reflect.ownKeys(record).find((key) => !COACH_WEB_SEARCH_KEYS.has(key));
-  if (unknownKey !== undefined) return { ok: false, reason: `Unknown key: ${String(unknownKey)}` };
-  if (!isUtcDateKey(record.utcDateKey)) return { ok: false, reason: "utcDateKey must be a real YYYY-MM-DD UTC date" };
-  if (!isTimestamp(record.createdAt)) return { ok: false, reason: "createdAt must be a safe nonnegative integer" };
-  if (!isTimestamp(record.updatedAt)) return { ok: false, reason: "updatedAt must be a safe nonnegative integer" };
+  const unknownKey = Reflect.ownKeys(record).find(
+    (key) => !COACH_WEB_SEARCH_KEYS.has(key),
+  );
+  if (unknownKey !== undefined)
+    return { ok: false, reason: `Unknown key: ${String(unknownKey)}` };
+  if (!isUtcDateKey(record.utcDateKey))
+    return {
+      ok: false,
+      reason: "utcDateKey must be a real YYYY-MM-DD UTC date",
+    };
+  if (!isTimestamp(record.createdAt))
+    return {
+      ok: false,
+      reason: "createdAt must be a safe nonnegative integer",
+    };
+  if (!isTimestamp(record.updatedAt))
+    return {
+      ok: false,
+      reason: "updatedAt must be a safe nonnegative integer",
+    };
   if (record.deletedAt !== undefined && !isTimestamp(record.deletedAt)) {
-    return { ok: false, reason: "deletedAt must be a safe nonnegative integer" };
+    return {
+      ok: false,
+      reason: "deletedAt must be a safe nonnegative integer",
+    };
   }
-  if (record.updatedAt < record.createdAt) return { ok: false, reason: "updatedAt cannot be earlier than createdAt" };
+  if (record.updatedAt < record.createdAt)
+    return { ok: false, reason: "updatedAt cannot be earlier than createdAt" };
 
   return {
     ok: true,
@@ -56,15 +84,25 @@ export function checkCoachWebSearchDoc(
       utcDateKey: record.utcDateKey,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      ...(record.deletedAt === undefined ? {} : { deletedAt: record.deletedAt }),
+      ...(record.deletedAt === undefined
+        ? {}
+        : { deletedAt: record.deletedAt }),
     },
   };
 }
 
-export function softDeleteCoachWebSearch(doc: CoachWebSearchDoc, nowMs: number): CoachWebSearchDoc {
+export function softDeleteCoachWebSearch(
+  doc: CoachWebSearchDoc,
+  nowMs: number,
+): CoachWebSearchDoc {
   return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
 }
 
-export function countSearchesOn(docs: readonly CoachWebSearchDoc[], utcDateKey: string): number {
-  return docs.filter((doc) => doc.utcDateKey === utcDateKey && doc.deletedAt === undefined).length;
+export function countSearchesOn(
+  docs: readonly CoachWebSearchDoc[],
+  utcDateKey: string,
+): number {
+  return docs.filter(
+    (doc) => doc.utcDateKey === utcDateKey && doc.deletedAt === undefined,
+  ).length;
 }
