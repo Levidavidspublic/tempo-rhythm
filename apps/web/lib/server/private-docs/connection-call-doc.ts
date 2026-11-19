@@ -157,6 +157,8 @@ export function callViewsNewestFirst(
   return rows
     .filter(({ doc }) => doc.deletedAt === undefined)
     .map(({ id, doc }) => ({ id, doc }))
-    .sort((left, right) => right.doc.createdAt - left.doc.createdAt || left.id.localeCompare(right.id))
+    .sort(
+      (left, right) => right.doc.createdAt - left.doc.createdAt || left.id.localeCompare(right.id)
+    )
     .map(({ id, doc }) => toConnectionCallView(id, doc));
 }
