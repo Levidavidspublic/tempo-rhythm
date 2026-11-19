@@ -1,6 +1,12 @@
 const LEGACY_KEYS = new Set(["userId", "_id", "_creationTime"]);
 
-const CALENDAR_EVENT_KEYS = new Set(["title", "startsAtMs", "createdAt", "updatedAt", "deletedAt"]);
+const CALENDAR_EVENT_KEYS = new Set([
+  "title",
+  "startsAtMs",
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+]);
 
 const FOCUS_BLOCK_KEYS = new Set([
   "startedAtMs",
@@ -47,7 +53,10 @@ function asRecord(input: unknown): Record<string, unknown> {
   return input as Record<string, unknown>;
 }
 
-function refuseUnknownKeys(input: Record<string, unknown>, allowedKeys: Set<string>): void {
+function refuseUnknownKeys(
+  input: Record<string, unknown>,
+  allowedKeys: Set<string>,
+): void {
   for (const key of Object.keys(input)) {
     if (!allowedKeys.has(key) && !LEGACY_KEYS.has(key)) {
       throw new CalendarDocError(key);
@@ -72,7 +81,11 @@ function optionalFinite(value: unknown, field: string): number | undefined {
   return value;
 }
 
-function trimmedString(value: unknown, field: string, maxLength: number): string {
+function trimmedString(
+  value: unknown,
+  field: string,
+  maxLength: number,
+): string {
   if (typeof value !== "string") throw new CalendarDocError(field);
   const trimmed = value.trim();
   if (trimmed.length === 0 || trimmed.length > maxLength) {
@@ -113,7 +126,8 @@ export function parseFocusBlockDoc(input: unknown): FocusBlockDoc {
     updatedAt: finiteNonNegative(value.updatedAt, "updatedAt"),
   };
 
-  if (value.label !== undefined) parsed.label = trimmedString(value.label, "label", 120);
+  if (value.label !== undefined)
+    parsed.label = trimmedString(value.label, "label", 120);
   if (value.taskId !== undefined) {
     if (
       typeof value.taskId !== "string" ||
@@ -129,10 +143,16 @@ export function parseFocusBlockDoc(input: unknown): FocusBlockDoc {
   return parsed;
 }
 
-export function softDeleteCalendarEventDoc(doc: CalendarEventDoc, now: number): CalendarEventDoc {
+export function softDeleteCalendarEventDoc(
+  doc: CalendarEventDoc,
+  now: number,
+): CalendarEventDoc {
   return { ...doc, deletedAt: now, updatedAt: now };
 }
 
-export function softDeleteFocusBlockDoc(doc: FocusBlockDoc, now: number): FocusBlockDoc {
+export function softDeleteFocusBlockDoc(
+  doc: FocusBlockDoc,
+  now: number,
+): FocusBlockDoc {
   return { ...doc, deletedAt: now, updatedAt: now };
 }
