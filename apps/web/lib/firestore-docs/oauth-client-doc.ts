@@ -16,14 +16,11 @@ export type OAuthClientDoc = {
   deletedAt?: number;
 };
 
-type CheckOAuthClientDocResult =
-  | { ok: true; doc: OAuthClientDoc }
-  | { ok: false; reason: string };
+type CheckOAuthClientDocResult = { ok: true; doc: OAuthClientDoc } | { ok: false; reason: string };
 
-export type OAuthClientPublicView = Omit<
-  OAuthClientDoc,
-  "clientSecretCipher" | "keyVersion"
-> & { hasClientSecret: boolean };
+export type OAuthClientPublicView = Omit<OAuthClientDoc, "clientSecretCipher" | "keyVersion"> & {
+  hasClientSecret: boolean;
+};
 
 const allowedKeys = new Set<keyof OAuthClientDoc>([
   "issuer",
@@ -73,7 +70,10 @@ function checkOAuthClientDocValue(input: unknown): CheckOAuthClientDocResult {
   }
 
   for (const field of urlFields) {
-    if (input[field] === undefined && (field === "registrationEndpoint" || field === "revocationEndpoint")) {
+    if (
+      input[field] === undefined &&
+      (field === "registrationEndpoint" || field === "revocationEndpoint")
+    ) {
       continue;
     }
     if (!isHttpsUrl(input[field])) {
@@ -97,7 +97,10 @@ function checkOAuthClientDocValue(input: unknown): CheckOAuthClientDocResult {
   if (input.codeChallengeS256 !== true) {
     return { ok: false, reason: "codeChallengeS256 must be true" };
   }
-  if (input.issParameterSupported !== undefined && typeof input.issParameterSupported !== "boolean") {
+  if (
+    input.issParameterSupported !== undefined &&
+    typeof input.issParameterSupported !== "boolean"
+  ) {
     return { ok: false, reason: "issParameterSupported must be a boolean when present" };
   }
   if (

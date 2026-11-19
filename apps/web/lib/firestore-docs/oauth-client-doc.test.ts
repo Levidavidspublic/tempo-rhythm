@@ -33,20 +33,26 @@ describe("OAuth client documents", () => {
   });
 
   test("refuses a plain clientSecret field", () => {
-    expect(checkOAuthClientDoc({ ...validPublicClient, clientSecret: "fake-secret" }).ok).toBe(false);
+    expect(checkOAuthClientDoc({ ...validPublicClient, clientSecret: "fake-secret" }).ok).toBe(
+      false
+    );
   });
 
   test("refuses an HTTP token endpoint", () => {
-    expect(checkOAuthClientDoc({ ...validPublicClient, tokenEndpoint: "http://issuer.example/token" }).ok).toBe(false);
+    expect(
+      checkOAuthClientDoc({ ...validPublicClient, tokenEndpoint: "http://issuer.example/token" }).ok
+    ).toBe(false);
   });
 
   test("enforces secret presence for the sign-in method", () => {
-    expect(checkOAuthClientDoc({ ...validPublicClient, clientSecretCipher: "fake-ciphertext" }).ok).toBe(false);
+    expect(
+      checkOAuthClientDoc({ ...validPublicClient, clientSecretCipher: "fake-ciphertext" }).ok
+    ).toBe(false);
     expect(
       checkOAuthClientDoc({
         ...validPublicClient,
         tokenEndpointAuthMethod: "client_secret_basic",
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
