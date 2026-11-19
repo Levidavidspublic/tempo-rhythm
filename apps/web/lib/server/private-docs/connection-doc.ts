@@ -97,7 +97,7 @@ export function validateConnectionDoc(
   const unknownKey = Object.keys(value).find(
     (key) => !CONNECTION_KEYS.has(key as keyof ConnectionDoc)
   );
-  if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
+  if (unknownKey !== undefined) return { ok: false, reason: `unknown key: ${unknownKey}` };
   if (value.provider !== "executor") return { ok: false, reason: "invalid provider" };
   if (!STATUSES.has(value.status as ConnectionDoc["status"])) {
     return { ok: false, reason: "invalid status" };

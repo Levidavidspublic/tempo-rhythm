@@ -23,7 +23,7 @@ test("a valid connection document passes", () => {
 });
 
 test("unknown and token keys are refused", () => {
-  for (const key of ["other", "userId", "accessToken", "refreshToken"]) {
+  for (const key of ["", "other", "userId", "accessToken", "refreshToken"]) {
     expect(validateConnectionDoc({ ...valid, [key]: "nope" })).toMatchObject({ ok: false });
   }
 });
