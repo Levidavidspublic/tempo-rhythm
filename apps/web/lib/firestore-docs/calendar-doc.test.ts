@@ -11,16 +11,16 @@ import {
 describe("calendar Firestore document shapes", () => {
   test("parses a valid event and trims its title", () => {
     expect(
-      parseCalendarEventDoc({ title: "  Planning  ", startsAtMs: 10, createdAt: 1, updatedAt: 2 }),
+      parseCalendarEventDoc({ title: "  Planning  ", startsAtMs: 10, createdAt: 1, updatedAt: 2 })
     ).toEqual({ title: "Planning", startsAtMs: 10, createdAt: 1, updatedAt: 2 });
   });
 
   test("refuses an empty event title and a non-finite start", () => {
     expect(() =>
-      parseCalendarEventDoc({ title: "  ", startsAtMs: 10, createdAt: 1, updatedAt: 2 }),
+      parseCalendarEventDoc({ title: "  ", startsAtMs: 10, createdAt: 1, updatedAt: 2 })
     ).toThrow(new CalendarDocError("title"));
     expect(() =>
-      parseCalendarEventDoc({ title: "Planning", startsAtMs: Infinity, createdAt: 1, updatedAt: 2 }),
+      parseCalendarEventDoc({ title: "Planning", startsAtMs: Infinity, createdAt: 1, updatedAt: 2 })
     ).toThrow(new CalendarDocError("startsAtMs"));
   });
 
@@ -33,7 +33,7 @@ describe("calendar Firestore document shapes", () => {
         updatedAt: 2,
         label: "  Deep work  ",
         taskId: "task-1",
-      }),
+      })
     ).toEqual({
       startedAtMs: 10,
       durationMs: 30_000,
@@ -47,13 +47,13 @@ describe("calendar Firestore document shapes", () => {
   test("refuses invalid focus duration and taskId values", () => {
     const base = { startedAtMs: 10, createdAt: 1, updatedAt: 2 };
     expect(() => parseFocusBlockDoc({ ...base, durationMs: 0 })).toThrow(
-      new CalendarDocError("durationMs"),
+      new CalendarDocError("durationMs")
     );
     expect(() => parseFocusBlockDoc({ ...base, durationMs: 86_400_001 })).toThrow(
-      new CalendarDocError("durationMs"),
+      new CalendarDocError("durationMs")
     );
     expect(() => parseFocusBlockDoc({ ...base, durationMs: 1, taskId: "tasks/one" })).toThrow(
-      new CalendarDocError("taskId"),
+      new CalendarDocError("taskId")
     );
   });
 
@@ -66,16 +66,22 @@ describe("calendar Firestore document shapes", () => {
         startsAtMs: 10,
         createdAt: 1,
         updatedAt: 2,
-      }),
+      })
     ).toEqual({ title: "Event", startsAtMs: 10, createdAt: 1, updatedAt: 2 });
     expect(
-      parseFocusBlockDoc({ ...legacy, startedAtMs: 10, durationMs: 1, createdAt: 1, updatedAt: 2 }),
+      parseFocusBlockDoc({ ...legacy, startedAtMs: 10, durationMs: 1, createdAt: 1, updatedAt: 2 })
     ).toEqual({ startedAtMs: 10, durationMs: 1, createdAt: 1, updatedAt: 2 });
     expect(() =>
-      parseCalendarEventDoc({ title: "Event", startsAtMs: 10, createdAt: 1, updatedAt: 2, extra: 1 }),
+      parseCalendarEventDoc({
+        title: "Event",
+        startsAtMs: 10,
+        createdAt: 1,
+        updatedAt: 2,
+        extra: 1,
+      })
     ).toThrow(new CalendarDocError("extra"));
     expect(() =>
-      parseFocusBlockDoc({ startedAtMs: 10, durationMs: 1, createdAt: 1, updatedAt: 2, extra: 1 }),
+      parseFocusBlockDoc({ startedAtMs: 10, durationMs: 1, createdAt: 1, updatedAt: 2, extra: 1 })
     ).toThrow(new CalendarDocError("extra"));
   });
 

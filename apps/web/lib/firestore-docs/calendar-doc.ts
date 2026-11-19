@@ -1,12 +1,6 @@
 const LEGACY_KEYS = new Set(["userId", "_id", "_creationTime"]);
 
-const CALENDAR_EVENT_KEYS = new Set([
-  "title",
-  "startsAtMs",
-  "createdAt",
-  "updatedAt",
-  "deletedAt",
-]);
+const CALENDAR_EVENT_KEYS = new Set(["title", "startsAtMs", "createdAt", "updatedAt", "deletedAt"]);
 
 const FOCUS_BLOCK_KEYS = new Set([
   "startedAtMs",
@@ -121,7 +115,11 @@ export function parseFocusBlockDoc(input: unknown): FocusBlockDoc {
 
   if (value.label !== undefined) parsed.label = trimmedString(value.label, "label", 120);
   if (value.taskId !== undefined) {
-    if (typeof value.taskId !== "string" || value.taskId.length === 0 || value.taskId.includes("/")) {
+    if (
+      typeof value.taskId !== "string" ||
+      value.taskId.length === 0 ||
+      value.taskId.includes("/")
+    ) {
       throw new CalendarDocError("taskId");
     }
     parsed.taskId = value.taskId;
@@ -131,10 +129,7 @@ export function parseFocusBlockDoc(input: unknown): FocusBlockDoc {
   return parsed;
 }
 
-export function softDeleteCalendarEventDoc(
-  doc: CalendarEventDoc,
-  now: number,
-): CalendarEventDoc {
+export function softDeleteCalendarEventDoc(doc: CalendarEventDoc, now: number): CalendarEventDoc {
   return { ...doc, deletedAt: now, updatedAt: now };
 }
 
