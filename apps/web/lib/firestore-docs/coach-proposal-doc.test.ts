@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  type CoachProposalDoc,
-  checkCoachProposalDoc,
-} from "./coach-proposal-doc";
+import { type CoachProposalDoc, checkCoachProposalDoc } from "./coach-proposal-doc";
 
 const pending: CoachProposalDoc = {
   status: "pending",
@@ -35,28 +32,19 @@ describe("checkCoachProposalDoc", () => {
   });
 
   test("refuses a proposal with userId", () => {
-    expect(checkCoachProposalDoc({ ...pending, userId: "user-1" }).ok).toBe(
-      false,
-    );
+    expect(checkCoachProposalDoc({ ...pending, userId: "user-1" }).ok).toBe(false);
   });
 
   test("refuses status applied", () => {
-    expect(checkCoachProposalDoc({ ...pending, status: "applied" }).ok).toBe(
-      false,
-    );
+    expect(checkCoachProposalDoc({ ...pending, status: "applied" }).ok).toBe(false);
   });
 
   test("refuses an accepted proposal without decidedAt", () => {
-    expect(checkCoachProposalDoc({ ...pending, status: "accepted" }).ok).toBe(
-      false,
-    );
+    expect(checkCoachProposalDoc({ ...pending, status: "accepted" }).ok).toBe(false);
   });
 
   test("refuses a pending proposal with decidedAt", () => {
-    expect(
-      checkCoachProposalDoc({ ...pending, decidedAt: pending.createdAt + 1 })
-        .ok,
-    ).toBe(false);
+    expect(checkCoachProposalDoc({ ...pending, decidedAt: pending.createdAt + 1 }).ok).toBe(false);
   });
 
   test("refuses a realism object with an extra key", () => {
@@ -64,7 +52,7 @@ describe("checkCoachProposalDoc", () => {
       checkCoachProposalDoc({
         ...pending,
         realism: { ...pending.realism, confidence: 1 },
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 });

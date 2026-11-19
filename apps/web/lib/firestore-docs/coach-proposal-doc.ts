@@ -13,9 +13,7 @@ export type CoachProposalDoc = {
   deletedAt?: number;
 };
 
-type CoachProposalDocCheck =
-  | { ok: true; doc: CoachProposalDoc }
-  | { ok: false; reason: string };
+type CoachProposalDocCheck = { ok: true; doc: CoachProposalDoc } | { ok: false; reason: string };
 
 const DOC_KEYS = new Set([
   "status",
@@ -26,12 +24,7 @@ const DOC_KEYS = new Set([
   "decidedAt",
   "deletedAt",
 ]);
-const REALISM_KEYS = new Set([
-  "ok",
-  "totalMinutes",
-  "availableMinutes",
-  "note",
-]);
+const REALISM_KEYS = new Set(["ok", "totalMinutes", "availableMinutes", "note"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object") {
@@ -43,7 +36,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function hasExactlyAllowedKeys(
   value: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
+  allowed: ReadonlySet<string>
 ): boolean {
   const keys = Object.keys(value);
   return keys.length === allowed.size && keys.every((key) => allowed.has(key));
@@ -66,15 +59,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
   const hasDecidedAt = Object.hasOwn(input, "decidedAt");
   const hasDeletedAt = Object.hasOwn(input, "deletedAt");
 
-  const {
-    status,
-    taskIds,
-    tenSecondAction,
-    realism,
-    createdAt,
-    decidedAt,
-    deletedAt,
-  } = input;
+  const { status, taskIds, tenSecondAction, realism, createdAt, decidedAt, deletedAt } = input;
   if (status !== "pending" && status !== "accepted" && status !== "rejected") {
     return {
       ok: false,
@@ -83,9 +68,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
   }
   if (
     !Array.isArray(taskIds) ||
-    taskIds.some(
-      (taskId) => typeof taskId !== "string" || taskId.trim().length === 0,
-    ) ||
+    taskIds.some((taskId) => typeof taskId !== "string" || taskId.trim().length === 0) ||
     new Set(taskIds).size !== taskIds.length
   ) {
     return {
@@ -93,16 +76,10 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
       reason: "taskIds must contain unique, non-empty strings.",
     };
   }
-  if (
-    typeof tenSecondAction !== "string" ||
-    tenSecondAction.trim().length === 0
-  ) {
+  if (typeof tenSecondAction !== "string" || tenSecondAction.trim().length === 0) {
     return { ok: false, reason: "tenSecondAction must be a non-empty string." };
   }
-  if (
-    !isPlainObject(realism) ||
-    !hasExactlyAllowedKeys(realism, REALISM_KEYS)
-  ) {
+  if (!isPlainObject(realism) || !hasExactlyAllowedKeys(realism, REALISM_KEYS)) {
     return {
       ok: false,
       reason: "realism must contain exactly its four supported fields.",
@@ -117,10 +94,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
       reason: "realism.totalMinutes must be a non-negative finite number.",
     };
   }
-  if (
-    !isFiniteNumber(realism.availableMinutes) ||
-    realism.availableMinutes < 0
-  ) {
+  if (!isFiniteNumber(realism.availableMinutes) || realism.availableMinutes < 0) {
     return {
       ok: false,
       reason: "realism.availableMinutes must be a non-negative finite number.",
