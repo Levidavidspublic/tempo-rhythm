@@ -49,7 +49,11 @@ export function parseCoachSettingsDoc(input: unknown): CoachSettingsDoc {
     if (!DOCUMENT_KEYS.has(key) && !LEGACY_KEYS.has(key)) invalid(key);
   }
 
-  if (!Number.isInteger(record.dial) || (record.dial as number) < 0 || (record.dial as number) > 10) {
+  if (
+    !Number.isInteger(record.dial) ||
+    (record.dial as number) < 0 ||
+    (record.dial as number) > 10
+  ) {
     invalid("dial");
   }
   if (
@@ -78,7 +82,7 @@ export function parseCoachSettingsDoc(input: unknown): CoachSettingsDoc {
 
 export function readCoachSettings(
   input: unknown | null | undefined,
-  now: number,
+  now: number
 ): CoachSettingsDoc {
   if (
     input == null ||
