@@ -34,12 +34,19 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
     }
 
     const value = input as Record<string, unknown>;
-    const unknownKey = Object.keys(value).find((key) => !GOAL_DOC_KEYS.has(key));
-    if (unknownKey !== undefined) return { ok: false, reason: `unknown key: ${unknownKey}` };
+    const unknownKey = Object.keys(value).find(
+      (key) => !GOAL_DOC_KEYS.has(key),
+    );
+    if (unknownKey !== undefined) {
+      return { ok: false, reason: `unknown key: ${unknownKey}` };
+    }
     if (typeof value.title !== "string" || value.title.trim() === "") {
       return { ok: false, reason: "title must not be blank" };
     }
-    if (value.description !== undefined && typeof value.description !== "string") {
+    if (
+      value.description !== undefined &&
+      typeof value.description !== "string"
+    ) {
       return { ok: false, reason: "description must be a string" };
     }
     if (value.targetDate !== undefined && !isFiniteNumber(value.targetDate)) {
@@ -52,11 +59,19 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
     ) {
       return { ok: false, reason: "progressPercent must be between 0 and 100" };
     }
-    if (value.status !== "active" && value.status !== "completed" && value.status !== "archived") {
+    if (
+      value.status !== "active" &&
+      value.status !== "completed" &&
+      value.status !== "archived"
+    ) {
       return { ok: false, reason: "status is invalid" };
     }
-    if (!isFiniteNumber(value.createdAt)) return { ok: false, reason: "createdAt must be finite" };
-    if (!isFiniteNumber(value.updatedAt)) return { ok: false, reason: "updatedAt must be finite" };
+    if (!isFiniteNumber(value.createdAt)) {
+      return { ok: false, reason: "createdAt must be finite" };
+    }
+    if (!isFiniteNumber(value.updatedAt)) {
+      return { ok: false, reason: "updatedAt must be finite" };
+    }
     if (value.deletedAt !== undefined && !isFiniteNumber(value.deletedAt)) {
       return { ok: false, reason: "deletedAt must be finite" };
     }
