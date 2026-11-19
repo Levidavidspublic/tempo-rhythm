@@ -26,7 +26,7 @@ test("a full valid account gate passes", () => {
 });
 
 test("unknown and profile keys are refused", () => {
-  for (const key of ["unexpected", "name", "fullName", "onboardedAt", "userId"]) {
+  for (const key of ["", "unexpected", "name", "fullName", "onboardedAt", "userId"]) {
     expect(validateAccountGateDoc({ email: "person@example.test", [key]: "value" })).toEqual({
       ok: false,
       reason: `unknown key: ${key}`,

@@ -84,7 +84,7 @@ function validate(
   const unknownKey = Object.keys(value).find(
     (key) => !ACCOUNT_GATE_KEYS.has(key as keyof AccountGateDoc)
   );
-  if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
+  if (unknownKey !== undefined) return { ok: false, reason: `unknown key: ${unknownKey}` };
 
   if (!isValidEmail(value.email)) return { ok: false, reason: "invalid email" };
   if (value.emailVerified !== undefined && typeof value.emailVerified !== "boolean") {
