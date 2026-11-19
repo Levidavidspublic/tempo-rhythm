@@ -48,9 +48,7 @@ export function checkProfilePatch(input: unknown): ProfilePatchResult {
       return { ok: false, reason: "gate-field", field: gateEntry[0] };
     }
 
-    const unknownEntry = entries.find(
-      ([field]) => !PROFILE_FIELD_SET.has(field),
-    );
+    const unknownEntry = entries.find(([field]) => !PROFILE_FIELD_SET.has(field));
     if (unknownEntry) {
       return { ok: false, reason: "unknown-field", field: unknownEntry[0] };
     }
@@ -58,11 +56,7 @@ export function checkProfilePatch(input: unknown): ProfilePatchResult {
     const patch: ProfilePatch = {};
     for (const [field, value] of entries) {
       if (field === "onboardedAt") {
-        if (
-          typeof value !== "number" ||
-          !Number.isFinite(value) ||
-          value <= 0
-        ) {
+        if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
           return { ok: false, reason: "invalid-value", field };
         }
         patch.onboardedAt = value;
