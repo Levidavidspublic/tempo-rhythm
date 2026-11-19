@@ -37,6 +37,13 @@ describe("habit Firestore documents", () => {
     expect(checkHabitDoc({ ...habit, currentStreak: -1 }).ok).toBe(false);
   });
 
+  test("longest streak below the current streak is rejected", () => {
+    expect(checkHabitDoc({ ...habit, currentStreak: 8, longestStreak: 7 })).toEqual({
+      ok: false,
+      reason: "longestStreak must be at least currentStreak",
+    });
+  });
+
   test("valid check-in passes", () => {
     expect(checkHabitCheckInDoc(checkIn)).toEqual({ ok: true, doc: checkIn });
   });
