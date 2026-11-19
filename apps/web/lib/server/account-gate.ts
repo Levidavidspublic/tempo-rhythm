@@ -19,7 +19,7 @@ export function isAccountActive(gate: AccountGate): boolean {
 }
 
 export function accountAccess(gate: AccountGate | null | undefined): AccountAccess {
-  if (gate == null) {
+  if (gate === null || gate === undefined) {
     return "missing";
   }
   if (!isAccountActive(gate)) {
