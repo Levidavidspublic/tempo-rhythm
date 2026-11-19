@@ -4,9 +4,7 @@ import { checkConversationDoc, checkMessageDoc } from "./conversation-doc";
 
 describe("conversation documents", () => {
   test("accepts a valid conversation", () => {
-    expect(
-      checkConversationDoc({ title: "Planning", createdAt: 1, updatedAt: 2 }),
-    ).toEqual({
+    expect(checkConversationDoc({ title: "Planning", createdAt: 1, updatedAt: 2 })).toEqual({
       ok: true,
       doc: { title: "Planning", createdAt: 1, updatedAt: 2 },
     });
@@ -19,14 +17,12 @@ describe("conversation documents", () => {
         userId: "owner",
         createdAt: 1,
         updatedAt: 2,
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
   test("refuses an empty title", () => {
-    expect(
-      checkConversationDoc({ title: "  ", createdAt: 1, updatedAt: 2 }).ok,
-    ).toBe(false);
+    expect(checkConversationDoc({ title: "  ", createdAt: 1, updatedAt: 2 }).ok).toBe(false);
   });
 
   test("refuses a negative nextChatSequence", () => {
@@ -36,7 +32,7 @@ describe("conversation documents", () => {
         nextChatSequence: -1,
         createdAt: 1,
         updatedAt: 2,
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 });
@@ -48,11 +44,9 @@ describe("message documents", () => {
         conversationId: "conversation-1",
         role: "assistant",
         content: "Try this.",
-        sources: [
-          { title: "Tempo", site: "tempo", url: "https://example.com/tempo" },
-        ],
+        sources: [{ title: "Tempo", site: "tempo", url: "https://example.com/tempo" }],
         createdAt: 1,
-      }).ok,
+      }).ok
     ).toBe(true);
   });
 
@@ -63,7 +57,7 @@ describe("message documents", () => {
         role: "tool",
         content: "",
         createdAt: 1,
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
@@ -73,11 +67,9 @@ describe("message documents", () => {
         conversationId: "conversation-1",
         role: "assistant",
         content: "Try this.",
-        sources: [
-          { title: "Unsafe", site: "unsafe", url: "javascript:alert(1)" },
-        ],
+        sources: [{ title: "Unsafe", site: "unsafe", url: "javascript:alert(1)" }],
         createdAt: 1,
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 

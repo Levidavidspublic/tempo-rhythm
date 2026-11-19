@@ -49,16 +49,12 @@ const messageKeys = new Set([
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value))
-    return false;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
-function hasOnlyKeys(
-  input: Record<string, unknown>,
-  allowed: Set<string>,
-): boolean {
+function hasOnlyKeys(input: Record<string, unknown>, allowed: Set<string>): boolean {
   return Object.keys(input).every((key) => allowed.has(key));
 }
 
@@ -78,18 +74,12 @@ function isOptionalTimestamp(value: unknown): value is number | undefined {
   return value === undefined || isFiniteNumber(value);
 }
 
-function isOptionalNonnegativeSafeInteger(
-  value: unknown,
-): value is number | undefined {
-  return (
-    value === undefined ||
-    (Number.isSafeInteger(value) && (value as number) >= 0)
-  );
+function isOptionalNonnegativeSafeInteger(value: unknown): value is number | undefined {
+  return value === undefined || (Number.isSafeInteger(value) && (value as number) >= 0);
 }
 
 function checkConversation(input: unknown): CheckResult<ConversationDoc> {
-  if (!isPlainObject(input))
-    return { ok: false, reason: "Conversation must be a plain object" };
+  if (!isPlainObject(input)) return { ok: false, reason: "Conversation must be a plain object" };
   if (!hasOnlyKeys(input, conversationKeys)) {
     return { ok: false, reason: "Conversation contains an unknown field" };
   }
@@ -108,11 +98,7 @@ function checkConversation(input: unknown): CheckResult<ConversationDoc> {
   if (!isOptionalTimestamp(input.deletedAt)) {
     return { ok: false, reason: "deletedAt must be a finite number" };
   }
-  for (const key of [
-    "technique",
-    "agentThreadId",
-    "activeChatRequestId",
-  ] as const) {
+  for (const key of ["technique", "agentThreadId", "activeChatRequestId"] as const) {
     if (!isOptionalNonEmptyString(input[key])) {
       return { ok: false, reason: `${key} must be a non-empty string` };
     }
@@ -125,9 +111,7 @@ function checkConversation(input: unknown): CheckResult<ConversationDoc> {
   return { ok: true, doc: { ...input } as ConversationDoc };
 }
 
-export function checkConversationDoc(
-  input: unknown,
-): CheckResult<ConversationDoc> {
+export function checkConversationDoc(input: unknown): CheckResult<ConversationDoc> {
   try {
     return checkConversation(input);
   } catch {
@@ -136,29 +120,20 @@ export function checkConversationDoc(
 }
 
 function checkMessage(input: unknown): CheckResult<MessageDoc> {
-  if (!isPlainObject(input))
-    return { ok: false, reason: "Message must be a plain object" };
+  if (!isPlainObject(input)) return { ok: false, reason: "Message must be a plain object" };
   if (!hasOnlyKeys(input, messageKeys))
     return { ok: false, reason: "Message contains an unknown field" };
   if (!isNonEmptyString(input.conversationId)) {
     return { ok: false, reason: "conversationId must be a non-empty string" };
   }
-  if (
-    input.role !== "user" &&
-    input.role !== "assistant" &&
-    input.role !== "system"
-  ) {
+  if (input.role !== "user" && input.role !== "assistant" && input.role !== "system") {
     return { ok: false, reason: "role must be user, assistant, or system" };
   }
-  if (typeof input.content !== "string")
-    return { ok: false, reason: "content must be a string" };
+  if (typeof input.content !== "string") return { ok: false, reason: "content must be a string" };
   if (!isOptionalNonEmptyString(input.modelUsed)) {
     return { ok: false, reason: "modelUsed must be a non-empty string" };
   }
-  if (
-    !isFiniteNumber(input.createdAt) ||
-    !isOptionalTimestamp(input.deletedAt)
-  ) {
+  if (!isFiniteNumber(input.createdAt) || !isOptionalTimestamp(input.deletedAt)) {
     return { ok: false, reason: "timestamps must be finite numbers" };
   }
   for (const key of ["councilResponse", "toolCalls"] as const) {
@@ -168,8 +143,7 @@ function checkMessage(input: unknown): CheckResult<MessageDoc> {
     }
   }
   if (input.sources !== undefined) {
-    if (!Array.isArray(input.sources))
-      return { ok: false, reason: "sources must be an array" };
+    if (!Array.isArray(input.sources)) return { ok: false, reason: "sources must be an array" };
     for (const source of input.sources) {
       if (
         !isPlainObject(source) ||
