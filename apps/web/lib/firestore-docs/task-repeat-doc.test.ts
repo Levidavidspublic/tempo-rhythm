@@ -40,24 +40,33 @@ describe("task repeat documents", () => {
   });
 
   test("refuses an invalid cycle and repeat count", () => {
-    expect(() => parseTaskRepeatDoc({ ...minimal, repeatCycle: "HOURLY" })).toThrow(
-      new TaskRepeatDocError("repeatCycle"),
-    );
+    expect(() =>
+      parseTaskRepeatDoc({ ...minimal, repeatCycle: "HOURLY" }),
+    ).toThrow(new TaskRepeatDocError("repeatCycle"));
     expect(() => parseTaskRepeatDoc({ ...minimal, repeatEvery: 0 })).toThrow(
       new TaskRepeatDocError("repeatEvery"),
     );
   });
 
   test("refuses invalid weekdays and malformed skipped dates", () => {
-    expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [7] })).toThrow(new TaskRepeatDocError("weekdays"));
-    expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [2, 2] })).toThrow(new TaskRepeatDocError("weekdays"));
-    expect(() => parseTaskRepeatDoc({ ...minimal, deletedInstanceDates: ["19-11-2026"] })).toThrow(
-      new TaskRepeatDocError("deletedInstanceDates"),
+    expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [7] })).toThrow(
+      new TaskRepeatDocError("weekdays"),
     );
+    expect(() => parseTaskRepeatDoc({ ...minimal, weekdays: [2, 2] })).toThrow(
+      new TaskRepeatDocError("weekdays"),
+    );
+    expect(() =>
+      parseTaskRepeatDoc({ ...minimal, deletedInstanceDates: ["19-11-2026"] }),
+    ).toThrow(new TaskRepeatDocError("deletedInstanceDates"));
   });
 
   test("drops legacy keys and refuses unknown keys", () => {
-    const withLegacy = { ...minimal, userId: "user", _id: "repeat", _creationTime: 50 };
+    const withLegacy = {
+      ...minimal,
+      userId: "user",
+      _id: "repeat",
+      _creationTime: 50,
+    };
     expect(parseTaskRepeatDoc(withLegacy)).toEqual(minimal);
     expect(() => parseTaskRepeatDoc({ ...minimal, surprise: true })).toThrow(
       new TaskRepeatDocError("surprise"),
@@ -65,7 +74,11 @@ describe("task repeat documents", () => {
   });
 
   test("soft deletes while retaining all other fields", () => {
-    const parsed = parseTaskRepeatDoc({ ...minimal, weekdays: [1], defaultEstimate: 0 });
+    const parsed = parseTaskRepeatDoc({
+      ...minimal,
+      weekdays: [1],
+      defaultEstimate: 0,
+    });
     expect(softDeleteTaskRepeatDoc(parsed, 500)).toEqual({
       ...parsed,
       deletedAt: 500,
