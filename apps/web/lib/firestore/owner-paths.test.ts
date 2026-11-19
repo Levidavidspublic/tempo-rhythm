@@ -17,7 +17,9 @@ test("lists the 25 unique owner collections", () => {
 test("builds user, owner collection, and owner document paths", () => {
   expect(userDocPath("user-1")).toBe("users/user-1");
   expect(ownerCollectionPath("user-1", "tasks")).toBe("users/user-1/tasks");
-  expect(ownerDocPath("user-1", "tasks", "task-1")).toBe("users/user-1/tasks/task-1");
+  expect(ownerDocPath("user-1", "tasks", "task-1")).toBe(
+    "users/user-1/tasks/task-1",
+  );
 });
 
 test("rejects every private collection", () => {
@@ -36,12 +38,16 @@ test("rejects every private collection", () => {
   ];
 
   for (const collection of privateCollections) {
-    expect(() => ownerDocPath("user-1", collection as "tasks", "doc-1")).toThrow(OwnerPathError);
+    expect(() =>
+      ownerDocPath("user-1", collection as "tasks", "doc-1"),
+    ).toThrow(OwnerPathError);
   }
 });
 
 test("rejects an unknown collection", () => {
-  expect(() => ownerCollectionPath("user-1", "tasks_v2" as "tasks")).toThrow(OwnerPathError);
+  expect(() => ownerCollectionPath("user-1", "tasks_v2" as "tasks")).toThrow(
+    OwnerPathError,
+  );
 });
 
 test("rejects invalid uid and document id segments", () => {
@@ -49,7 +55,9 @@ test("rejects invalid uid and document id segments", () => {
 
   for (const segment of invalidSegments) {
     expect(() => userDocPath(segment)).toThrow(OwnerPathError);
-    expect(() => ownerDocPath("user-1", "tasks", segment)).toThrow(OwnerPathError);
+    expect(() => ownerDocPath("user-1", "tasks", segment)).toThrow(
+      OwnerPathError,
+    );
   }
 });
 
@@ -57,7 +65,10 @@ test("does not include rejected uid or document id values in errors", () => {
   const uid = "private/user-value";
   const docId = "private/document-value";
 
-  for (const build of [() => userDocPath(uid), () => ownerDocPath("user-1", "tasks", docId)]) {
+  for (const build of [
+    () => userDocPath(uid),
+    () => ownerDocPath("user-1", "tasks", docId),
+  ]) {
     try {
       build();
       throw new Error("Expected path validation to fail");
