@@ -1,9 +1,5 @@
 export const NAG_PHRASE_SOURCES = ["user", "derived"] as const;
-export const NAG_PHRASE_STATUSES = [
-  "proposed",
-  "accepted",
-  "rejected",
-] as const;
+export const NAG_PHRASE_STATUSES = ["proposed", "accepted", "rejected"] as const;
 
 export type NagPhrase = {
   id: string;
