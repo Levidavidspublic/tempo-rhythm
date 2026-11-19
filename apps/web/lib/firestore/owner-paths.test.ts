@@ -9,7 +9,7 @@ import {
 
 test("lists the 25 unique owner collections", () => {
   expect(OWNER_COLLECTIONS).toHaveLength(25);
-  expect(new Set(OWNER_COLLECTIONS)).toHaveLength(25);
+  expect(new Set(OWNER_COLLECTIONS).size).toBe(25);
   expect(OWNER_COLLECTIONS).toContain("tasks");
   expect(OWNER_COLLECTIONS).toContain("messages");
 });
