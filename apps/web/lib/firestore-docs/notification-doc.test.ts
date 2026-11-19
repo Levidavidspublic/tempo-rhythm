@@ -23,19 +23,19 @@ describe("notification documents", () => {
         ...valid(),
         title: "  A notification  ",
         body: "\nNotification details\t",
-      })
+      }),
     ).toEqual(valid());
   });
 
   test("refuses a bad kind and an empty title or body", () => {
-    expect(() => parseNotificationDoc({ ...valid(), kind: "marketing" })).toThrow(
-      new NotificationDocError("kind")
-    );
+    expect(() =>
+      parseNotificationDoc({ ...valid(), kind: "marketing" }),
+    ).toThrow(new NotificationDocError("kind"));
     expect(() => parseNotificationDoc({ ...valid(), title: "  " })).toThrow(
-      new NotificationDocError("title")
+      new NotificationDocError("title"),
     );
     expect(() => parseNotificationDoc({ ...valid(), body: "" })).toThrow(
-      new NotificationDocError("body")
+      new NotificationDocError("body"),
     );
   });
 
@@ -46,10 +46,10 @@ describe("notification documents", () => {
         userId: "legacy-user",
         _id: "legacy-id",
         _creationTime: 50,
-      })
+      }),
     ).toEqual(valid());
     expect(() => parseNotificationDoc({ ...valid(), surprise: true })).toThrow(
-      new NotificationDocError("surprise")
+      new NotificationDocError("surprise"),
     );
   });
 
@@ -74,7 +74,7 @@ describe("notification documents", () => {
         { ...valid(), readAt: 150 },
         { ...valid(), deletedAt: 160 },
         { ...valid(), readAt: 150, deletedAt: 160 },
-      ])
+      ]),
     ).toBe(1);
   });
 });
