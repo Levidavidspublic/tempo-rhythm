@@ -9,7 +9,7 @@ Every tool is a slot. `factory/SLOTS.md` says which tool fills each slot in this
 ## Read first, every session
 1. `factory/SLOTS.md`: tools per slot, commands, secret names, quiet days.
 2. Your ticket, all 11 fields.
-3. The doc sections your ticket's WHY points to. The six docs live in the doc store: PRD, TRD, App flow, UI brief, Backend schema, Roadmap.
+3. The doc sections your ticket's WHY points to. Agents must use the six in-repo files listed under **Project reference**; whether another doc store is canonical is UNKNOWN in `factory/SLOTS.md` (A-4).
 4. Run the code-map steps in STEPS before editing. Other tickets may have changed the code today.
 5. Take today's date from the system clock, never from the conversation or session start.
 
@@ -49,10 +49,10 @@ Report the results in the PR body (or your final message when you're not opening
 - `packages/ui` — shared components, built on the design system named in SLOTS.md.
 - `apps/<shell>` — thin shells (web, mobile, desktop, extension). Shells differ only in OS-access features.
 - `factory/` — SLOTS.md, the ticket template, run logs.
-- The six docs live in the doc store, not in this repo.
+- Agents must use the six in-repo files listed under **Project reference**; whether another doc store is canonical is UNKNOWN in `factory/SLOTS.md` (A-4).
 
 ## Project reference (read first)
-The permanent reference for every agent working here (Cursor, Codex, Friday, kitchens). The six docs are in this repo at:
+The verified, in-repo reference for every agent working here (Cursor, Codex, Friday, kitchens) is:
 - PRD: `docs/PRD.md`
 - TRD: `docs/TRD.md`
 - App flow: `docs/APP-FLOW.md`
