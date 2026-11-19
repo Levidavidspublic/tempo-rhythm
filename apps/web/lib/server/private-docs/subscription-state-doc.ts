@@ -8,9 +8,7 @@ export type SubscriptionStateDoc = {
   updatedAt: number;
 };
 
-type ValidationResult =
-  | { ok: true; doc: SubscriptionStateDoc }
-  | { ok: false; reason: string };
+type ValidationResult = { ok: true; doc: SubscriptionStateDoc } | { ok: false; reason: string };
 
 const SUBSCRIPTION_STATE_KEYS = new Set<keyof SubscriptionStateDoc>([
   "plan",
@@ -22,13 +20,7 @@ const SUBSCRIPTION_STATE_KEYS = new Set<keyof SubscriptionStateDoc>([
   "updatedAt",
 ]);
 
-const PLANS = new Set<SubscriptionStateDoc["plan"]>([
-  "none",
-  "trial",
-  "basic",
-  "pro",
-  "max",
-]);
+const PLANS = new Set<SubscriptionStateDoc["plan"]>(["none", "trial", "basic", "pro", "max"]);
 const BILLING_CYCLES = new Set<SubscriptionStateDoc["billingCycle"]>([
   "none",
   "monthly",
@@ -53,7 +45,7 @@ function inspectSubscriptionState(input: unknown): ValidationResult {
 
   const value = input as Record<string, unknown>;
   const unknownKey = Object.keys(value).find(
-    (key) => !SUBSCRIPTION_STATE_KEYS.has(key as keyof SubscriptionStateDoc),
+    (key) => !SUBSCRIPTION_STATE_KEYS.has(key as keyof SubscriptionStateDoc)
   );
   if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
 
