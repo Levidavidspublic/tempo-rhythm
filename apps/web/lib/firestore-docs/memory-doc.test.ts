@@ -38,9 +38,14 @@ describe("checkMemoryDoc", () => {
   });
 
   test("accepts and keeps deletedAt on a soft-deleted memory", () => {
-    const result = checkMemoryDoc({ ...validMemory, deletedAt: 1_701_000_000_000 });
+    const result = checkMemoryDoc({
+      ...validMemory,
+      deletedAt: 1_701_000_000_000,
+    });
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.doc.deletedAt).toBe(1_701_000_000_000);
+    if (result.ok) {
+      expect(result.doc.deletedAt).toBe(1_701_000_000_000);
+    }
   });
 });
