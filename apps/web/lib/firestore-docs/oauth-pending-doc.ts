@@ -144,7 +144,7 @@ export function checkOAuthPendingDoc(input: unknown): CheckOAuthPendingDocResult
 
 export function oauthPendingState(
   doc: OAuthPendingDoc,
-  nowMs: number,
+  nowMs: number
 ): "open" | "used" | "expired" | "removed" {
   if (doc.deletedAt !== undefined) return "removed";
   if (doc.usedAt !== undefined) return "used";

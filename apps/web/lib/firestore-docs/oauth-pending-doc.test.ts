@@ -40,7 +40,7 @@ describe("checkOAuthPendingDoc", () => {
 
   test("refuses an HTTP redirect URI", () => {
     expect(
-      checkOAuthPendingDoc({ ...validAttempt, redirectUri: "http://tempo.example.com/callback" }).ok,
+      checkOAuthPendingDoc({ ...validAttempt, redirectUri: "http://tempo.example.com/callback" }).ok
     ).toBe(false);
   });
 
@@ -49,13 +49,13 @@ describe("checkOAuthPendingDoc", () => {
       checkOAuthPendingDoc({
         ...validAttempt,
         expiresAt: validAttempt.createdAt + OAUTH_PENDING_TTL_MS + 1,
-      }).ok,
+      }).ok
     ).toBe(false);
   });
 
   test("refuses a used attempt that still holds the verifier cipher", () => {
     expect(checkOAuthPendingDoc({ ...validAttempt, usedAt: validAttempt.createdAt + 1 }).ok).toBe(
-      false,
+      false
     );
   });
 
@@ -65,7 +65,10 @@ describe("checkOAuthPendingDoc", () => {
 
     const withoutCipher = { ...validAttempt, codeVerifierCipher: undefined };
     expect(
-      oauthPendingState({ ...withoutCipher, usedAt: validAttempt.createdAt + 1 }, validAttempt.expiresAt),
+      oauthPendingState(
+        { ...withoutCipher, usedAt: validAttempt.createdAt + 1 },
+        validAttempt.expiresAt
+      )
     ).toBe("used");
     expect(
       oauthPendingState(
@@ -74,8 +77,8 @@ describe("checkOAuthPendingDoc", () => {
           usedAt: validAttempt.createdAt + 1,
           deletedAt: validAttempt.createdAt + 2,
         } as OAuthPendingDoc,
-        validAttempt.expiresAt,
-      ),
+        validAttempt.expiresAt
+      )
     ).toBe("removed");
   });
 });
