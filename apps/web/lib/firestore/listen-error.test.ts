@@ -36,12 +36,7 @@ describe("readListenError", () => {
   });
 
   test("reads configuration errors as setup failures", () => {
-    for (const code of [
-      "failed-precondition",
-      "invalid-argument",
-      "not-found",
-      "unimplemented",
-    ]) {
+    for (const code of ["failed-precondition", "invalid-argument", "not-found", "unimplemented"]) {
       expect(readListenError({ code })).toEqual({
         kind: "setup",
         retry: false,
@@ -51,9 +46,7 @@ describe("readListenError", () => {
   });
 
   test("reads an unrecognized code as unknown without exposing it", () => {
-    expect(
-      readListenError({ code: "internal", message: "private details" }),
-    ).toEqual({
+    expect(readListenError({ code: "internal", message: "private details" })).toEqual({
       kind: "unknown",
       retry: false,
       copyKey: "fs.listen.unknown",

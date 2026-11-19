@@ -22,10 +22,7 @@ export function readListenError(error: unknown): ListenFailure {
   let code: string | undefined;
 
   try {
-    if (
-      (typeof error === "object" && error !== null) ||
-      typeof error === "function"
-    ) {
+    if ((typeof error === "object" && error !== null) || typeof error === "function") {
       const candidate = (error as { code?: unknown }).code;
       code = typeof candidate === "string" ? candidate : undefined;
     }
