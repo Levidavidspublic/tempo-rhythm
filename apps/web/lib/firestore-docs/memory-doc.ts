@@ -1,9 +1,4 @@
-export type MemorySector =
-  | "semantic"
-  | "episodic"
-  | "procedural"
-  | "emotional"
-  | "general";
+export type MemorySector = "semantic" | "episodic" | "procedural" | "emotional" | "general";
 
 export type MemoryDoc = {
   content: string;
@@ -18,9 +13,7 @@ export type MemoryDoc = {
   deletedAt?: number;
 };
 
-export type CheckMemoryDocResult =
-  | { ok: true; doc: MemoryDoc }
-  | { ok: false; reason: string };
+export type CheckMemoryDocResult = { ok: true; doc: MemoryDoc } | { ok: false; reason: string };
 
 const allowedKeys = new Set<keyof MemoryDoc>([
   "content",
