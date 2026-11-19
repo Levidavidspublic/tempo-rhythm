@@ -1,9 +1,4 @@
-export const TASK_STATUSES = [
-  "todo",
-  "in_progress",
-  "done",
-  "cancelled",
-] as const;
+export const TASK_STATUSES = ["todo", "in_progress", "done", "cancelled"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export const TASK_PRIORITIES = ["low", "medium", "high"] as const;
@@ -43,13 +38,7 @@ export class TaskDocError extends Error {
   }
 }
 
-const REQUIRED_KEYS = [
-  "title",
-  "status",
-  "priority",
-  "createdAt",
-  "updatedAt",
-] as const;
+const REQUIRED_KEYS = ["title", "status", "priority", "createdAt", "updatedAt"] as const;
 const OPTIONAL_STRING_KEYS = [
   "description",
   "repeatCfgId",
@@ -57,12 +46,7 @@ const OPTIONAL_STRING_KEYS = [
   "projectId",
   "projectName",
 ] as const;
-const OPTIONAL_NUMBER_KEYS = [
-  "timeEstimate",
-  "dueAt",
-  "completedAt",
-  "deletedAt",
-] as const;
+const OPTIONAL_NUMBER_KEYS = ["timeEstimate", "dueAt", "completedAt", "deletedAt"] as const;
 const TASK_KEYS = new Set<string>([
   ...REQUIRED_KEYS,
   ...OPTIONAL_STRING_KEYS,
@@ -78,10 +62,7 @@ function fail(field: string): never {
   throw new TaskDocError(field);
 }
 
-function isOneOf<T extends string>(
-  value: unknown,
-  values: readonly T[],
-): value is T {
+function isOneOf<T extends string>(value: unknown, values: readonly T[]): value is T {
   return typeof value === "string" && values.some((item) => item === value);
 }
 
@@ -97,8 +78,7 @@ export function toTaskDoc(input: Record<string, unknown>): TaskDoc {
     clean[key] = value;
   }
 
-  if (typeof clean.title !== "string" || clean.title.trim().length === 0)
-    fail("title");
+  if (typeof clean.title !== "string" || clean.title.trim().length === 0) fail("title");
   if (!isOneOf(clean.status, TASK_STATUSES)) fail("status");
   if (!isOneOf(clean.priority, TASK_PRIORITIES)) fail("priority");
   if (!isFiniteNumber(clean.createdAt)) fail("createdAt");
@@ -110,21 +90,15 @@ export function toTaskDoc(input: Record<string, unknown>): TaskDoc {
   for (const key of OPTIONAL_NUMBER_KEYS) {
     if (key in clean && !isFiniteNumber(clean[key])) fail(key);
   }
-  if ("energy" in clean && !isOneOf(clean.energy, TASK_ENERGIES))
-    fail("energy");
+  if ("energy" in clean && !isOneOf(clean.energy, TASK_ENERGIES)) fail("energy");
   if ("flexibility" in clean && !isOneOf(clean.flexibility, TASK_FLEXIBILITIES))
     fail("flexibility");
 
   if ("timeSpentOnDay" in clean) {
     const spent = clean.timeSpentOnDay;
-    if (typeof spent !== "object" || spent === null || Array.isArray(spent))
-      fail("timeSpentOnDay");
+    if (typeof spent !== "object" || spent === null || Array.isArray(spent)) fail("timeSpentOnDay");
     for (const [day, amount] of Object.entries(spent)) {
-      if (
-        !/^\d{4}-\d{2}-\d{2}$/.test(day) ||
-        !isFiniteNumber(amount) ||
-        amount < 0
-      ) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isFiniteNumber(amount) || amount < 0) {
         fail("timeSpentOnDay");
       }
     }
@@ -156,7 +130,7 @@ export function newTaskDoc(
     priority?: TaskPriority;
     status?: TaskStatus;
   } & Partial<TaskDoc>,
-  now: number,
+  now: number
 ): TaskDoc {
   const status = input.status ?? "todo";
   const candidate: Record<string, unknown> = {
@@ -170,21 +144,15 @@ export function newTaskDoc(
   return toTaskDoc(candidate);
 }
 
-export function patchTaskDoc(
-  doc: TaskDoc,
-  patch: Partial<TaskDoc>,
-  now: number,
-): TaskDoc {
+export function patchTaskDoc(doc: TaskDoc, patch: Partial<TaskDoc>, now: number): TaskDoc {
   const candidate: Record<string, unknown> = {
     ...doc,
     ...patch,
     createdAt: doc.createdAt,
     updatedAt: now,
   };
-  if (doc.status !== "done" && candidate.status === "done")
-    candidate.completedAt = now;
-  if (doc.status === "done" && candidate.status !== "done")
-    delete candidate.completedAt;
+  if (doc.status !== "done" && candidate.status === "done") candidate.completedAt = now;
+  if (doc.status === "done" && candidate.status !== "done") delete candidate.completedAt;
   return toTaskDoc(candidate);
 }
 
