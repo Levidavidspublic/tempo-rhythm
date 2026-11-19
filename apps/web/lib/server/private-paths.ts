@@ -45,29 +45,20 @@ function assertPrivateUid(uid: unknown): asserts uid is string {
   }
 }
 
-function assertPrivateCollection(
-  collection: unknown
-): asserts collection is PrivateCollection {
+function assertPrivateCollection(collection: unknown): asserts collection is PrivateCollection {
   assertValidSegment(collection, "collection");
   if (!privateCollections.has(collection)) {
     throw new PrivatePathError(`Rejected private collection: ${collection}`);
   }
 }
 
-export function privateCollectionPath(
-  uid: string,
-  collection: PrivateCollection
-): string {
+export function privateCollectionPath(uid: string, collection: PrivateCollection): string {
   assertPrivateUid(uid);
   assertPrivateCollection(collection);
   return `private/${uid}/${collection}`;
 }
 
-export function privateDocPath(
-  uid: string,
-  collection: PrivateCollection,
-  docId: string
-): string {
+export function privateDocPath(uid: string, collection: PrivateCollection, docId: string): string {
   assertPrivateUid(uid);
   assertPrivateCollection(collection);
   assertValidSegment(docId, "document id");
