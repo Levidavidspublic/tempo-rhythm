@@ -30,6 +30,7 @@ export type OwnerCollection = (typeof OWNER_COLLECTIONS)[number];
 
 const ownerCollections = new Set<string>(OWNER_COLLECTIONS);
 const reservedSegmentPattern = /^__.*__$/;
+const utf8Encoder = new TextEncoder();
 
 export class OwnerPathError extends Error {
   constructor(message: string) {
@@ -45,7 +46,7 @@ function assertValidSegment(
   if (
     typeof value !== "string" ||
     value.length === 0 ||
-    value.length > 1500 ||
+    utf8Encoder.encode(value).byteLength > 1500 ||
     value.includes("/") ||
     value === "." ||
     value === ".." ||
