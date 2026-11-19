@@ -31,9 +31,7 @@ function isUtcDateKey(value: unknown): value is string {
   date.setUTCFullYear(year, month - 1, day);
 
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
@@ -42,18 +40,15 @@ export function utcDateKeyFor(ms: number): string {
 }
 
 export function checkCoachWebSearchDoc(
-  input: unknown,
+  input: unknown
 ): { ok: true; doc: CoachWebSearchDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, reason: "Coach web search document must be an object" };
   }
 
   const record = input as Record<string, unknown>;
-  const unknownKey = Reflect.ownKeys(record).find(
-    (key) => !COACH_WEB_SEARCH_KEYS.has(key),
-  );
-  if (unknownKey !== undefined)
-    return { ok: false, reason: `Unknown key: ${String(unknownKey)}` };
+  const unknownKey = Reflect.ownKeys(record).find((key) => !COACH_WEB_SEARCH_KEYS.has(key));
+  if (unknownKey !== undefined) return { ok: false, reason: `Unknown key: ${String(unknownKey)}` };
   if (!isUtcDateKey(record.utcDateKey))
     return {
       ok: false,
@@ -84,25 +79,15 @@ export function checkCoachWebSearchDoc(
       utcDateKey: record.utcDateKey,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      ...(record.deletedAt === undefined
-        ? {}
-        : { deletedAt: record.deletedAt }),
+      ...(record.deletedAt === undefined ? {} : { deletedAt: record.deletedAt }),
     },
   };
 }
 
-export function softDeleteCoachWebSearch(
-  doc: CoachWebSearchDoc,
-  nowMs: number,
-): CoachWebSearchDoc {
+export function softDeleteCoachWebSearch(doc: CoachWebSearchDoc, nowMs: number): CoachWebSearchDoc {
   return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
 }
 
-export function countSearchesOn(
-  docs: readonly CoachWebSearchDoc[],
-  utcDateKey: string,
-): number {
-  return docs.filter(
-    (doc) => doc.utcDateKey === utcDateKey && doc.deletedAt === undefined,
-  ).length;
+export function countSearchesOn(docs: readonly CoachWebSearchDoc[], utcDateKey: string): number {
+  return docs.filter((doc) => doc.utcDateKey === utcDateKey && doc.deletedAt === undefined).length;
 }
