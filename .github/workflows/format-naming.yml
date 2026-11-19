@@ -61,9 +61,29 @@ jobs:
           fi
           echo "Checking ${#files[@]} changed file(s):"
           printf '  %s\n' "${files[@]}"
-          echo "::group::Formatting (biome format)"
-          bunx biome format --config-path=packages/config/biome.json "${files[@]}"
-          echo "::endgroup::"
-          echo "::group::Naming (biome useNamingConvention, Google style)"
-          bunx biome lint --config-path=.github/scripts/google-naming.json --only=useNamingConvention "${files[@]}"
-          echo "::endgroup::"
+          # Biome 2 also loads each workspace's own biome.json, whose `extends` path is relative to that
+          # workspace, so a run from the repo root fails with "Failed to resolve the configuration".
+          # Run per workspace (apps/<x>, packages/<x>) with the same two configs. The shared config's
+          # VCS ignore-file lookup is relative to the working directory (packages/* have no
+          # .gitignore), so it is off here; the changed files are passed explicitly.
+          root="$PWD"
+          biome="$root/node_modules/.bin/biome"
+          fmt_config="$root/packages/config/biome.json"
+          naming_config="$root/.github/scripts/google-naming.json"
+          mapfile -t pairs < <(printf '%s\n' "${files[@]}" \
+            | awk -F/ '{ ws = (NF >= 3) ? $1 "/" $2 : $1; print ws "\t" substr($0, length(ws) + 2) }')
+          mapfile -t workspaces < <(printf '%s\n' "${pairs[@]}" | cut -f1 | sort -u)
+          status=0
+          for ws in "${workspaces[@]}"; do
+            rel=()
+            for pair in "${pairs[@]}"; do
+              if [ "${pair%%$'\t'*}" = "$ws" ]; then rel+=("${pair#*$'\t'}"); fi
+            done
+            echo "::group::Formatting (biome format) in $ws"
+            (cd "$ws" && "$biome" format --vcs-use-ignore-file=false --config-path="$fmt_config" "${rel[@]}") || status=1
+            echo "::endgroup::"
+            echo "::group::Naming (biome useNamingConvention, Google style) in $ws"
+            (cd "$ws" && "$biome" lint --config-path="$naming_config" --only=useNamingConvention "${rel[@]}") || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
