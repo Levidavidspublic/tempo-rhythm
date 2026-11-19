@@ -34,7 +34,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
-function hasExactlyAllowedKeys(value: Record<string, unknown>, allowed: ReadonlySet<string>): boolean {
+function hasExactlyAllowedKeys(
+  value: Record<string, unknown>,
+  allowed: ReadonlySet<string>
+): boolean {
   const keys = Object.keys(value);
   return keys.length === allowed.size && keys.every((key) => allowed.has(key));
 }
@@ -69,15 +72,18 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
   if (!isPlainObject(realism) || !hasExactlyAllowedKeys(realism, REALISM_KEYS)) {
     return { ok: false, reason: "realism must contain exactly its four supported fields." };
   }
-  if (typeof realism.ok !== "boolean") return { ok: false, reason: "realism.ok must be a boolean." };
+  if (typeof realism.ok !== "boolean")
+    return { ok: false, reason: "realism.ok must be a boolean." };
   if (!isFiniteNumber(realism.totalMinutes) || realism.totalMinutes < 0) {
     return { ok: false, reason: "realism.totalMinutes must be a non-negative finite number." };
   }
   if (!isFiniteNumber(realism.availableMinutes) || realism.availableMinutes < 0) {
     return { ok: false, reason: "realism.availableMinutes must be a non-negative finite number." };
   }
-  if (typeof realism.note !== "string") return { ok: false, reason: "realism.note must be a string." };
-  if (!isFiniteNumber(createdAt)) return { ok: false, reason: "createdAt must be a finite number." };
+  if (typeof realism.note !== "string")
+    return { ok: false, reason: "realism.note must be a string." };
+  if (!isFiniteNumber(createdAt))
+    return { ok: false, reason: "createdAt must be a finite number." };
   if (hasDecidedAt && !isFiniteNumber(decidedAt)) {
     return { ok: false, reason: "decidedAt must be a finite number when present." };
   }

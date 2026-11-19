@@ -15,7 +15,11 @@ describe("checkCoachProposalDoc", () => {
   });
 
   test("accepts a valid accepted proposal with decidedAt", () => {
-    const accepted: CoachProposalDoc = { ...pending, status: "accepted", decidedAt: pending.createdAt + 1 };
+    const accepted: CoachProposalDoc = {
+      ...pending,
+      status: "accepted",
+      decidedAt: pending.createdAt + 1,
+    };
     expect(checkCoachProposalDoc(accepted)).toEqual({ ok: true, doc: accepted });
   });
 
@@ -36,6 +40,8 @@ describe("checkCoachProposalDoc", () => {
   });
 
   test("refuses a realism object with an extra key", () => {
-    expect(checkCoachProposalDoc({ ...pending, realism: { ...pending.realism, confidence: 1 } }).ok).toBe(false);
+    expect(
+      checkCoachProposalDoc({ ...pending, realism: { ...pending.realism, confidence: 1 } }).ok
+    ).toBe(false);
   });
 });
