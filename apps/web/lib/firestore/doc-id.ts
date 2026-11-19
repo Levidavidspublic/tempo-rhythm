@@ -8,9 +8,7 @@ function defaultRandomBytes(length: number): Uint8Array {
   return crypto.getRandomValues(new Uint8Array(length));
 }
 
-export function newDocId(
-  randomBytes: (length: number) => Uint8Array = defaultRandomBytes
-): string {
+export function newDocId(randomBytes: (length: number) => Uint8Array = defaultRandomBytes): string {
   let id = "";
 
   while (id.length < DOC_ID_LENGTH) {
