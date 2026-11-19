@@ -26,7 +26,7 @@ test("encodes scalar values to exact Firestore REST shapes", () => {
       note: null,
       createdAt: 1_731_000_000_000,
       rank: 0.5,
-    })
+    }),
   ).toEqual({
     title: { stringValue: "Task" },
     completed: { booleanValue: false },
@@ -64,7 +64,12 @@ test("encodes a task-like object with checklist maps", () => {
 });
 
 test("omits undefined keys at every map level", () => {
-  expect(encodeFields({ absent: undefined, nested: { kept: "yes", absent: undefined } })).toEqual({
+  expect(
+    encodeFields({
+      absent: undefined,
+      nested: { kept: "yes", absent: undefined },
+    }),
+  ).toEqual({
     nested: { mapValue: { fields: { kept: { stringValue: "yes" } } } },
   });
 });
@@ -91,13 +96,13 @@ test("decodes empty containers and timestamps and rejects invalid REST values", 
       emptyList: { arrayValue: {} },
       emptyMap: { mapValue: {} },
       updatedAt: { timestampValue: "2026-11-19T00:00:00Z" },
-    })
+    }),
   ).toEqual({ emptyList: [], emptyMap: {}, updatedAt: "2026-11-19T00:00:00Z" });
 
-  expect(() => decodeFields({ bad: { bytesValue: "abc" } } as unknown as RestFields)).toThrow(
-    /bad/
-  );
-  expect(() => decodeFields({ badInteger: { integerValue: "9007199254740992" } })).toThrow(
-    /badInteger/
-  );
+  expect(() =>
+    decodeFields({ bad: { bytesValue: "abc" } } as unknown as RestFields),
+  ).toThrow(/bad/);
+  expect(() =>
+    decodeFields({ badInteger: { integerValue: "9007199254740992" } }),
+  ).toThrow(/badInteger/);
 });

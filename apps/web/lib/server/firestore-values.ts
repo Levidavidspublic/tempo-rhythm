@@ -34,7 +34,11 @@ function isPlainObject(value: object): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
-function encodeValue(value: unknown, path: string, insideArray = false): RestValue {
+function encodeValue(
+  value: unknown,
+  path: string,
+  insideArray = false,
+): RestValue {
   if (value === null) return { nullValue: null };
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { booleanValue: value };
@@ -61,7 +65,8 @@ function encodeValue(value: unknown, path: string, insideArray = false): RestVal
   if (typeof value === "object" && isPlainObject(value)) {
     const fields: RestFields = {};
     for (const [key, item] of Object.entries(value)) {
-      if (item !== undefined) fields[key] = encodeValue(item, propertyPath(path, key));
+      if (item !== undefined)
+        fields[key] = encodeValue(item, propertyPath(path, key));
     }
     return { mapValue: { fields } };
   }
@@ -85,20 +90,24 @@ function decodeValue(value: RestValue, path: string): PlainValue {
 
   if ("integerValue" in value) {
     const decoded = Number(value.integerValue);
-    if (!Number.isSafeInteger(decoded) || decoded.toString() !== value.integerValue) {
+    if (
+      !Number.isSafeInteger(decoded) ||
+      decoded.toString() !== value.integerValue
+    ) {
       throw new FirestoreValueError(path);
     }
     return decoded;
   }
 
   if ("doubleValue" in value) {
-    if (!Number.isFinite(value.doubleValue)) throw new FirestoreValueError(path);
+    if (!Number.isFinite(value.doubleValue))
+      throw new FirestoreValueError(path);
     return value.doubleValue;
   }
 
   if ("arrayValue" in value) {
     return (value.arrayValue.values ?? []).map((item, index) =>
-      decodeValue(item, `${path}[${index}]`)
+      decodeValue(item, `${path}[${index}]`),
     );
   }
 
@@ -111,7 +120,7 @@ function decodeValue(value: RestValue, path: string): PlainValue {
 
 function decodeFieldsAtPath(
   fields: RestFields | undefined,
-  parentPath: string
+  parentPath: string,
 ): Record<string, PlainValue> {
   const decoded: Record<string, PlainValue> = {};
   for (const [key, value] of Object.entries(fields ?? {})) {
@@ -120,6 +129,8 @@ function decodeFieldsAtPath(
   return decoded;
 }
 
-export function decodeFields(fields: RestFields | undefined): Record<string, PlainValue> {
+export function decodeFields(
+  fields: RestFields | undefined,
+): Record<string, PlainValue> {
   return decodeFieldsAtPath(fields, "");
 }
