@@ -61,8 +61,6 @@ test("nextEmailSignInState chooses the state from the link and remembered email"
   const link = { oobCode: "Made_up-123" } as const;
 
   expect(nextEmailSignInState({ link: null, rememberedEmail: null })).toBe("idle");
-  expect(nextEmailSignInState({ link, rememberedEmail: " Person@Example.com " })).toBe(
-    "signing_in"
-  );
-  expect(nextEmailSignInState({ link, rememberedEmail: null })).toBe("confirm_email");
+  expect(nextEmailSignInState({ link, rememberedEmail: " Person@Example.com " })).toBe("signingIn");
+  expect(nextEmailSignInState({ link, rememberedEmail: null })).toBe("confirmEmail");
 });

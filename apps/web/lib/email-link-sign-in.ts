@@ -45,8 +45,8 @@ export const EMAIL_SIGN_IN_STATES = [
   "idle",
   "sending",
   "sent",
-  "confirm_email",
-  "signing_in",
+  "confirmEmail",
+  "signingIn",
   "expired",
   "unavailable",
 ] as const;
@@ -68,11 +68,11 @@ const EMAIL_SIGN_IN_COPY: Readonly<Record<EmailSignInState, EmailSignInCopy>> = 
     title: "Check your inbox",
     body: "Open the link in the email to continue.",
   },
-  confirm_email: {
+  confirmEmail: {
     title: "Confirm your email",
     body: "Type your email once more to finish signing in.",
   },
-  signing_in: {
+  signingIn: {
     title: "Signing you in",
     body: "Your Tempo Flow is nearly ready.",
   },
@@ -99,6 +99,6 @@ export function nextEmailSignInState(input: {
   }
 
   return input.rememberedEmail && normalizeSignInEmail(input.rememberedEmail)
-    ? "signing_in"
-    : "confirm_email";
+    ? "signingIn"
+    : "confirmEmail";
 }
