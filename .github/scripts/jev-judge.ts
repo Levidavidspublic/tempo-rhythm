@@ -285,6 +285,12 @@ function parseKeyValues(section: string): Map<string, string> {
   const currentValue: string[] = [];
   const keyRe = /^([A-Za-z_][\w-]*):\s*(.*)$/;
   for (const line of section.split("\n")) {
+    if (/^\s*```/.test(line)) {
+      if (currentKey) entries.set(currentKey, currentValue.join("\n").trim());
+      currentKey = null;
+      currentValue.length = 0;
+      continue;
+    }
     const m = line.match(keyRe);
     if (m) {
       if (currentKey) entries.set(currentKey, currentValue.join("\n").trim());

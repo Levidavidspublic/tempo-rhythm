@@ -149,6 +149,28 @@ describe("parseTicketFields", () => {
     expect(fields.done).toBe("`bun test a.test.ts` -> 6 pass, 0 fail");
     expect(fields.steps).toEqual(["run the map", "write the fix"]);
   });
+
+  test("excludes a closing fence from DONE when no REPORT field follows it", () => {
+    const body = [
+      "---",
+      "ticket: TK-23",
+      "---",
+      "",
+      "```",
+      "STEPS:",
+      "  1. run the map",
+      "  2. write the fix",
+      "DONE: bun run test",
+      "```",
+    ].join("\n");
+    const fields = parseTicketFields(body);
+
+    expect(fields).toEqual({
+      steps: ["run the map", "write the fix"],
+      done: "bun run test",
+    });
+    expect(checkReportCoverage(fields, "bun run test; ran map and write fix").problems).toEqual([]);
+  });
 });
 
 describe("splitSteps", () => {
