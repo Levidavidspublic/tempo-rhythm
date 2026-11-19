@@ -63,8 +63,6 @@ describe("voice lease documents", () => {
     const otherDay = { ...endedLease, utcDateKey: "2026-11-20", durationMs: 10_000 };
     const deleted = { ...endedLease, durationMs: 20_000, deletedAt: 6_000 };
 
-    expect(usedMsOnUtcDay([activeLease, endedLease, otherDay, deleted], "2026-11-19")).toBe(
-      7_000
-    );
+    expect(usedMsOnUtcDay([activeLease, endedLease, otherDay, deleted], "2026-11-19")).toBe(7_000);
   });
 });

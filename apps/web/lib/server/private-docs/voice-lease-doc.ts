@@ -163,10 +163,7 @@ export function leaseUsedMs(doc: VoiceLeaseDoc): number {
     : Math.max(0, doc.lastRenewalAt - doc.startedAt);
 }
 
-export function usedMsOnUtcDay(
-  leases: readonly VoiceLeaseDoc[],
-  utcDateKey: string
-): number {
+export function usedMsOnUtcDay(leases: readonly VoiceLeaseDoc[], utcDateKey: string): number {
   return leases
     .filter((lease) => lease.utcDateKey === utcDateKey && lease.deletedAt === undefined)
     .reduce((total, lease) => total + leaseUsedMs(lease), 0);
