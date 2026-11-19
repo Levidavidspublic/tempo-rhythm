@@ -39,9 +39,7 @@ test("hides soft-deleted documents without dropping them and restores them", () 
   const restored = applyLiveChanges(deleted, [
     { type: "modified", id: "kept", data: { name: "Visible", createdAt: 1 } },
   ]);
-  expect(restored.items).toEqual([
-    { id: "kept", data: { name: "Visible", createdAt: 1 } },
-  ]);
+  expect(restored.items).toEqual([{ id: "kept", data: { name: "Visible", createdAt: 1 } }]);
 });
 
 test("accepts a custom item comparator", () => {
@@ -70,9 +68,9 @@ test("ignores invalid changes and reuses the list for no-op batches", () => {
   expect(applyLiveChanges(list, [])).toBe(list);
   expect(ignored).toBe(list);
   expect(applyLiveChanges(list, [{ type: "removed", id: "absent" }])).toBe(list);
-  expect(
-    applyLiveChanges(list, [{ type: "modified", id: "valid", data: list.byId.valid }])
-  ).toBe(list);
+  expect(applyLiveChanges(list, [{ type: "modified", id: "valid", data: list.byId.valid }])).toBe(
+    list
+  );
 });
 
 test("does not mutate its input list or documents", () => {
