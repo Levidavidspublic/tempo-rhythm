@@ -40,7 +40,7 @@ export class OwnerPathError extends Error {
 
 function assertValidSegment(
   value: unknown,
-  segment: "uid" | "document id",
+  segment: "uid" | "document id"
 ): asserts value is string {
   if (
     typeof value !== "string" ||
@@ -55,13 +55,9 @@ function assertValidSegment(
   }
 }
 
-function assertOwnerCollection(
-  collection: unknown,
-): asserts collection is OwnerCollection {
+function assertOwnerCollection(collection: unknown): asserts collection is OwnerCollection {
   if (typeof collection !== "string" || !ownerCollections.has(collection)) {
-    throw new OwnerPathError(
-      `Rejected owner collection: ${String(collection)}`,
-    );
+    throw new OwnerPathError(`Rejected owner collection: ${String(collection)}`);
   }
 }
 
@@ -70,20 +66,13 @@ export function userDocPath(uid: string): string {
   return `users/${uid}`;
 }
 
-export function ownerCollectionPath(
-  uid: string,
-  collection: OwnerCollection,
-): string {
+export function ownerCollectionPath(uid: string, collection: OwnerCollection): string {
   assertValidSegment(uid, "uid");
   assertOwnerCollection(collection);
   return `users/${uid}/${collection}`;
 }
 
-export function ownerDocPath(
-  uid: string,
-  collection: OwnerCollection,
-  docId: string,
-): string {
+export function ownerDocPath(uid: string, collection: OwnerCollection, docId: string): string {
   assertValidSegment(uid, "uid");
   assertOwnerCollection(collection);
   assertValidSegment(docId, "document id");
