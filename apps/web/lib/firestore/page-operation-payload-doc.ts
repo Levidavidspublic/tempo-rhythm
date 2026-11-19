@@ -87,7 +87,8 @@ export function checkPageOperationPayloadDoc(input: unknown): PageOperationPaylo
       if (!isRecord(splice) || !hasOnlyFields(splice, spliceFields)) {
         return refusal("Splice must contain only supported fields");
       }
-      if (!isTime(splice.startUtf16)) return refusal("startUtf16 must be a safe nonnegative integer");
+      if (!isTime(splice.startUtf16))
+        return refusal("startUtf16 must be a safe nonnegative integer");
       if (typeof splice.removedText !== "string" || typeof splice.insertedText !== "string") {
         return refusal("Splice text must be a string");
       }

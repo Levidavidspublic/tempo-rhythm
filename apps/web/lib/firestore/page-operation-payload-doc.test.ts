@@ -37,10 +37,18 @@ test("rejects owner identity, unknown fields, and empty identifiers", () => {
 });
 
 test("rejects invalid times and cleanup before the undo deadline", () => {
-  for (const field of ["undoUntilMs", "cleanupDueAtMs", "createdAt", "updatedAt", "deletedAt"] as const) {
+  for (const field of [
+    "undoUntilMs",
+    "cleanupDueAtMs",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ] as const) {
     expect(checkPageOperationPayloadDoc({ ...availableDoc, [field]: -1 }).ok).toBe(false);
     expect(checkPageOperationPayloadDoc({ ...availableDoc, [field]: 1.5 }).ok).toBe(false);
-    expect(checkPageOperationPayloadDoc({ ...availableDoc, [field]: Number.MAX_SAFE_INTEGER + 1 }).ok).toBe(false);
+    expect(
+      checkPageOperationPayloadDoc({ ...availableDoc, [field]: Number.MAX_SAFE_INTEGER + 1 }).ok
+    ).toBe(false);
   }
   expect(checkPageOperationPayloadDoc({ ...availableDoc, deletedAt: undefined }).ok).toBe(false);
   expect(checkPageOperationPayloadDoc({ ...availableDoc, undoUntilMs: 201 }).ok).toBe(false);
@@ -48,8 +56,14 @@ test("rejects invalid times and cleanup before the undo deadline", () => {
 
 test("rejects invalid available payloads without exposing splice text", () => {
   const invalidPayloads = [
-    { state: "available", splices: [{ startUtf16: -1, removedText: "secret-a", insertedText: "secret-b" }] },
-    { state: "available", splices: [{ startUtf16: 1.5, removedText: "secret-a", insertedText: "secret-b" }] },
+    {
+      state: "available",
+      splices: [{ startUtf16: -1, removedText: "secret-a", insertedText: "secret-b" }],
+    },
+    {
+      state: "available",
+      splices: [{ startUtf16: 1.5, removedText: "secret-a", insertedText: "secret-b" }],
+    },
     { state: "available", splices: [{ startUtf16: 0, removedText: 1, insertedText: "secret-b" }] },
     { state: "available", splices: [{ startUtf16: 0, removedText: "secret-a", insertedText: 1 }] },
   ];
@@ -65,9 +79,14 @@ test("rejects invalid available payloads without exposing splice text", () => {
 });
 
 test("rejects unknown payload states and invalid expired times", () => {
-  expect(checkPageOperationPayloadDoc({ ...availableDoc, payload: { state: "missing" } }).ok).toBe(false);
+  expect(checkPageOperationPayloadDoc({ ...availableDoc, payload: { state: "missing" } }).ok).toBe(
+    false
+  );
   expect(
-    checkPageOperationPayloadDoc({ ...availableDoc, payload: { state: "expired", expiredAtMs: -1 } }).ok
+    checkPageOperationPayloadDoc({
+      ...availableDoc,
+      payload: { state: "expired", expiredAtMs: -1 },
+    }).ok
   ).toBe(false);
 });
 
