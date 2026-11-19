@@ -85,7 +85,8 @@ export function readCoachSettings(
   now: number
 ): CoachSettingsDoc {
   if (
-    input == null ||
+    input === null ||
+    input === undefined ||
     (typeof input === "object" &&
       !Array.isArray(input) &&
       (input as Record<string, unknown>).deletedAt !== undefined)
