@@ -31,9 +31,7 @@ describe("checkTemplateDoc", () => {
   });
 
   test("refuses an unsupported periodType", () => {
-    expect(
-      checkTemplateDoc({ ...validTemplate, periodType: "yearly" }).ok,
-    ).toBe(false);
+    expect(checkTemplateDoc({ ...validTemplate, periodType: "yearly" }).ok).toBe(false);
   });
 
   test("refuses an object body", () => {
