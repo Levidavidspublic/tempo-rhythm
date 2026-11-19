@@ -16,7 +16,9 @@ test("newTaskDoc sets defaults and timestamps", () => {
     createdAt: 100,
     updatedAt: 100,
   });
-  expect(newTaskDoc({ title: "Finished", status: "done" }, 200).completedAt).toBe(200);
+  expect(
+    newTaskDoc({ title: "Finished", status: "done" }, 200).completedAt,
+  ).toBe(200);
 });
 
 test("toTaskDoc drops datastore and ownership fields", () => {
@@ -41,33 +43,66 @@ test("toTaskDoc drops datastore and ownership fields", () => {
 });
 
 test("invalid enumerations name their fields", () => {
-  const base = { title: "Task", status: "todo", priority: "low", createdAt: 1, updatedAt: 1 };
-  for (const field of ["status", "priority", "energy", "flexibility"] as const) {
-    expect(() => toTaskDoc({ ...base, [field]: "invalid" })).toThrow(new TaskDocError(field));
+  const base = {
+    title: "Task",
+    status: "todo",
+    priority: "low",
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  for (const field of [
+    "status",
+    "priority",
+    "energy",
+    "flexibility",
+  ] as const) {
+    expect(() => toTaskDoc({ ...base, [field]: "invalid" })).toThrow(
+      new TaskDocError(field),
+    );
   }
 });
 
 test("invalid required, unknown, and checklist fields throw", () => {
-  const base = { title: "Task", status: "todo", priority: "low", createdAt: 1, updatedAt: 1 };
+  const base = {
+    title: "Task",
+    status: "todo",
+    priority: "low",
+    createdAt: 1,
+    updatedAt: 1,
+  };
   expect(() => toTaskDoc({ ...base, title: "  " })).toThrow(TaskDocError);
-  expect(() => toTaskDoc({ ...base, createdAt: "yesterday" })).toThrow(TaskDocError);
-  expect(() => toTaskDoc({ ...base, surprise: true })).toThrow(TaskDocError);
-  expect(() => toTaskDoc({ ...base, checklist: [{ id: "1", text: "Step" }] })).toThrow(
-    TaskDocError
+  expect(() => toTaskDoc({ ...base, createdAt: "yesterday" })).toThrow(
+    TaskDocError,
   );
+  expect(() => toTaskDoc({ ...base, surprise: true })).toThrow(TaskDocError);
+  expect(() =>
+    toTaskDoc({ ...base, checklist: [{ id: "1", text: "Step" }] }),
+  ).toThrow(TaskDocError);
 });
 
 test("patchTaskDoc manages completion transitions and timestamps", () => {
   const original = newTaskDoc({ title: "Task" }, 10);
   const done = patchTaskDoc(original, { status: "done" }, 20);
-  expect(done).toMatchObject({ status: "done", completedAt: 20, createdAt: 10, updatedAt: 20 });
+  expect(done).toMatchObject({
+    status: "done",
+    completedAt: 20,
+    createdAt: 10,
+    updatedAt: 20,
+  });
   const reopened = patchTaskDoc(done, { status: "in_progress" }, 30);
-  expect(reopened).toMatchObject({ status: "in_progress", createdAt: 10, updatedAt: 30 });
+  expect(reopened).toMatchObject({
+    status: "in_progress",
+    createdAt: 10,
+    updatedAt: 30,
+  });
   expect("completedAt" in reopened).toBe(false);
 });
 
 test("soft delete and restore round-trip without removing other fields", () => {
-  const original = newTaskDoc({ title: "Task", description: "Keep me", projectName: "Home" }, 10);
+  const original = newTaskDoc(
+    { title: "Task", description: "Keep me", projectName: "Home" },
+    10,
+  );
   const deleted = softDeleteTaskDoc(original, 20);
   const restored = restoreTaskDoc(deleted, 30);
   expect(deleted).toMatchObject({
@@ -76,7 +111,11 @@ test("soft delete and restore round-trip without removing other fields", () => {
     description: "Keep me",
     projectName: "Home",
   });
-  expect(restored).toMatchObject({ updatedAt: 30, description: "Keep me", projectName: "Home" });
+  expect(restored).toMatchObject({
+    updatedAt: 30,
+    description: "Keep me",
+    projectName: "Home",
+  });
   expect("deletedAt" in restored).toBe(false);
 });
 
