@@ -16,9 +16,7 @@ export type TimeBlockDoc = {
   deletedAt?: number;
 };
 
-type CheckTimeBlockDocResult =
-  | { ok: true; doc: TimeBlockDoc }
-  | { ok: false; reason: string };
+type CheckTimeBlockDocResult = { ok: true; doc: TimeBlockDoc } | { ok: false; reason: string };
 
 const allowedKeys = new Set<keyof TimeBlockDoc>([
   "localDate",
@@ -45,8 +43,7 @@ function isPlainObject(input: unknown): input is Record<string, unknown> {
 }
 
 function isRealLocalDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
-    return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   const hasExpectedYear = date.getUTCFullYear() === year;
@@ -56,15 +53,11 @@ function isRealLocalDate(value: unknown): value is string {
 }
 
 function isOptionalNonEmptyString(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (typeof value === "string" && value.trim().length > 0)
-  );
+  return value === undefined || (typeof value === "string" && value.trim().length > 0);
 }
 
 function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
-  if (!isPlainObject(input))
-    return { ok: false, reason: "Time block must be a plain object" };
+  if (!isPlainObject(input)) return { ok: false, reason: "Time block must be a plain object" };
 
   for (const key of Object.keys(input)) {
     if (!allowedKeys.has(key as keyof TimeBlockDoc)) {
@@ -102,10 +95,7 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
       reason: "durationMinutes must be an integer from 5 to 720",
     };
   }
-  if (
-    typeof input.startsAtMs !== "number" ||
-    !Number.isFinite(input.startsAtMs)
-  ) {
+  if (typeof input.startsAtMs !== "number" || !Number.isFinite(input.startsAtMs)) {
     return { ok: false, reason: "startsAtMs must be a finite number" };
   }
   if (typeof input.endsAtMs !== "number" || !Number.isFinite(input.endsAtMs)) {
@@ -117,9 +107,7 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
       reason: "endsAtMs must match startsAtMs plus durationMinutes",
     };
   }
-  if (
-    !["focus", "task", "habit", "break", "other"].includes(input.kind as string)
-  ) {
+  if (!["focus", "task", "habit", "break", "other"].includes(input.kind as string)) {
     return { ok: false, reason: "kind is invalid" };
   }
   if (!["planned", "done", "skipped"].includes(input.status as string)) {
