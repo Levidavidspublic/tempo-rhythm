@@ -18,11 +18,16 @@ describe("coach settings Firestore document", () => {
     const base = { dial: 5, taskLoad: 2, acceptedStreak: 0, updatedAt: 100 };
     expect(() => parseCoachSettingsDoc({ ...base, dial: 11 })).toThrow("Invalid field: dial");
     expect(() => parseCoachSettingsDoc({ ...base, dial: 2.5 })).toThrow("Invalid field: dial");
-    expect(() => parseCoachSettingsDoc({ ...base, taskLoad: 5 })).toThrow("Invalid field: taskLoad");
+    expect(() => parseCoachSettingsDoc({ ...base, taskLoad: 5 })).toThrow(
+      "Invalid field: taskLoad"
+    );
   });
 
   test("reads a missing document as the defaults", () => {
-    expect(readCoachSettings(undefined, 123)).toEqual({ ...COACH_SETTINGS_DEFAULTS, updatedAt: 123 });
+    expect(readCoachSettings(undefined, 123)).toEqual({
+      ...COACH_SETTINGS_DEFAULTS,
+      updatedAt: 123,
+    });
     expect(readCoachSettings(null, 456)).toEqual({ ...COACH_SETTINGS_DEFAULTS, updatedAt: 456 });
   });
 
@@ -48,7 +53,7 @@ describe("coach settings Firestore document", () => {
       updatedAt: 100,
     });
     expect(() => parseCoachSettingsDoc({ ...legacy, surprise: true })).toThrow(
-      new CoachSettingsDocError("surprise"),
+      new CoachSettingsDocError("surprise")
     );
   });
 
