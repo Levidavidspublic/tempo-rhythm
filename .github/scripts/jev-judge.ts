@@ -26,6 +26,8 @@ export const PASS_THRESHOLD = 0.85;
 export const MASSIVE_VIOLATION_MAX = 0.5;
 export const MISSING_KEY_MESSAGE =
   "OPENROUTER_API_KEY not set: Amit adds it in repo Settings > Secrets > Actions";
+const NO_PR_DESCRIPTION = "(no PR description)";
+const MAX_PR_DESCRIPTION_LENGTH = 20_000;
 
 export interface UsageInfo {
   prompt_tokens?: number;
@@ -81,6 +83,7 @@ export interface JudgeInput {
   agentsMd: string;
   includeMd: string;
   diff: string;
+  prBody: string;
   report: string;
 }
 
@@ -182,6 +185,10 @@ export function buildQuestions(): QuestionSet {
 }
 
 export function buildState(input: JudgeInput): string {
+  const prDescription =
+    input.prBody.length > MAX_PR_DESCRIPTION_LENGTH
+      ? `${input.prBody.slice(0, MAX_PR_DESCRIPTION_LENGTH)}\n... (PR description truncated)`
+      : input.prBody || NO_PR_DESCRIPTION;
   const parts = [
     "=== TICKET (the issue this PR closes) ===",
     input.issueBody || "(no ticket body)",
@@ -197,6 +204,10 @@ export function buildState(input: JudgeInput): string {
     "",
     "=== PR DIFF ===",
     input.diff || "(no diff)",
+    "",
+    "=== PR DESCRIPTION (written by the agent; " +
+      "the ticket's EVIDENCE and REPORT fields point here) ===",
+    prDescription,
     "",
     "=== AGENT'S REPORT COMMENT ===",
     input.report,
@@ -411,11 +422,18 @@ async function callJev(state: string): Promise<Record<string, NoulAnswer>> {
 
 async function runJudge(prNumber: string, ticketNumber: number): Promise<void> {
   const issueBody = sh(`gh issue view ${ticketNumber} --json body --jq .body`);
+  let prBody: string;
+  try {
+    prBody = sh(`gh pr view ${prNumber} --json body --jq .body`).replace(/\n$/, "");
+  } catch {
+    prBody = NO_PR_DESCRIPTION;
+  }
   const state = buildState({
     issueBody,
     agentsMd: readOr("AGENTS.md", "(AGENTS.md not found)"),
     includeMd: readOr("include.md", "(include.md not present in this repository)"),
     diff: sh(`gh pr diff ${prNumber}`),
+    prBody,
     report: findReportComment(prNumber) ?? "(no REPORT comment found)",
   });
   const answers = await callJev(state);
