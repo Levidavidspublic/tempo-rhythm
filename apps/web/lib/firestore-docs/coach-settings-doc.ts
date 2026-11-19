@@ -63,26 +63,19 @@ export function parseCoachSettingsDoc(input: unknown): CoachSettingsDoc {
   ) {
     invalid("taskLoad");
   }
-  if (
-    !Number.isInteger(record.acceptedStreak) ||
-    (record.acceptedStreak as number) < 0
-  ) {
+  if (!Number.isInteger(record.acceptedStreak) || (record.acceptedStreak as number) < 0) {
     invalid("acceptedStreak");
   }
   if (!isFiniteNumber(record.updatedAt)) invalid("updatedAt");
-  if (record.panicUntil !== undefined && !isFiniteNumber(record.panicUntil))
-    invalid("panicUntil");
-  if (record.deletedAt !== undefined && !isFiniteNumber(record.deletedAt))
-    invalid("deletedAt");
+  if (record.panicUntil !== undefined && !isFiniteNumber(record.panicUntil)) invalid("panicUntil");
+  if (record.deletedAt !== undefined && !isFiniteNumber(record.deletedAt)) invalid("deletedAt");
 
   return {
     dial: record.dial as number,
     taskLoad: record.taskLoad as number,
     acceptedStreak: record.acceptedStreak as number,
     updatedAt: record.updatedAt,
-    ...(record.panicUntil === undefined
-      ? {}
-      : { panicUntil: record.panicUntil }),
+    ...(record.panicUntil === undefined ? {} : { panicUntil: record.panicUntil }),
     ...(record.deletedAt === undefined ? {} : { deletedAt: record.deletedAt }),
   };
 }
