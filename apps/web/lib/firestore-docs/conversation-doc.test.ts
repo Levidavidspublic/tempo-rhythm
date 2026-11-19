@@ -4,7 +4,9 @@ import { checkConversationDoc, checkMessageDoc } from "./conversation-doc";
 
 describe("conversation documents", () => {
   test("accepts a valid conversation", () => {
-    expect(checkConversationDoc({ title: "Planning", createdAt: 1, updatedAt: 2 })).toEqual({
+    expect(
+      checkConversationDoc({ title: "Planning", createdAt: 1, updatedAt: 2 }),
+    ).toEqual({
       ok: true,
       doc: { title: "Planning", createdAt: 1, updatedAt: 2 },
     });
@@ -12,17 +14,29 @@ describe("conversation documents", () => {
 
   test("refuses a conversation with userId", () => {
     expect(
-      checkConversationDoc({ title: "Planning", userId: "owner", createdAt: 1, updatedAt: 2 }).ok,
+      checkConversationDoc({
+        title: "Planning",
+        userId: "owner",
+        createdAt: 1,
+        updatedAt: 2,
+      }).ok,
     ).toBe(false);
   });
 
   test("refuses an empty title", () => {
-    expect(checkConversationDoc({ title: "  ", createdAt: 1, updatedAt: 2 }).ok).toBe(false);
+    expect(
+      checkConversationDoc({ title: "  ", createdAt: 1, updatedAt: 2 }).ok,
+    ).toBe(false);
   });
 
   test("refuses a negative nextChatSequence", () => {
     expect(
-      checkConversationDoc({ title: "Planning", nextChatSequence: -1, createdAt: 1, updatedAt: 2 }).ok,
+      checkConversationDoc({
+        title: "Planning",
+        nextChatSequence: -1,
+        createdAt: 1,
+        updatedAt: 2,
+      }).ok,
     ).toBe(false);
   });
 });
@@ -34,7 +48,9 @@ describe("message documents", () => {
         conversationId: "conversation-1",
         role: "assistant",
         content: "Try this.",
-        sources: [{ title: "Tempo", site: "tempo", url: "https://example.com/tempo" }],
+        sources: [
+          { title: "Tempo", site: "tempo", url: "https://example.com/tempo" },
+        ],
         createdAt: 1,
       }).ok,
     ).toBe(true);
@@ -42,8 +58,12 @@ describe("message documents", () => {
 
   test("refuses the tool role", () => {
     expect(
-      checkMessageDoc({ conversationId: "conversation-1", role: "tool", content: "", createdAt: 1 })
-        .ok,
+      checkMessageDoc({
+        conversationId: "conversation-1",
+        role: "tool",
+        content: "",
+        createdAt: 1,
+      }).ok,
     ).toBe(false);
   });
 
@@ -53,7 +73,9 @@ describe("message documents", () => {
         conversationId: "conversation-1",
         role: "assistant",
         content: "Try this.",
-        sources: [{ title: "Unsafe", site: "unsafe", url: "javascript:alert(1)" }],
+        sources: [
+          { title: "Unsafe", site: "unsafe", url: "javascript:alert(1)" },
+        ],
         createdAt: 1,
       }).ok,
     ).toBe(false);
