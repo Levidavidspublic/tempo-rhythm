@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   checkOAuthPendingDoc,
   OAUTH_PENDING_TTL_MS,
-  oauthPendingState,
   type OAuthPendingDoc,
+  oauthPendingState,
 } from "./oauth-pending-doc";
 
 const validAttempt = {

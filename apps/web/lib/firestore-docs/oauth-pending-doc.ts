@@ -1,6 +1,6 @@
 export const OAUTH_PENDING_TTL_MS = 600_000;
 
-export type OAuthPendingDoc = {
+type OauthPendingDoc = {
   provider: "executor";
   stateHash: string;
   codeVerifierCipher?: string;
@@ -18,11 +18,11 @@ export type OAuthPendingDoc = {
   deletedAt?: number;
 };
 
-type CheckOAuthPendingDocResult =
-  | { ok: true; doc: OAuthPendingDoc }
+type CheckOauthPendingDocResult =
+  | { ok: true; doc: OauthPendingDoc }
   | { ok: false; reason: string };
 
-const allowedKeys = new Set<keyof OAuthPendingDoc>([
+const allowedKeys = new Set<keyof OauthPendingDoc>([
   "provider",
   "stateHash",
   "codeVerifierCipher",
@@ -63,13 +63,13 @@ function isHttpsUrl(value: unknown): value is string {
   }
 }
 
-function checkOAuthPendingDocValue(input: unknown): CheckOAuthPendingDocResult {
+function checkOauthPendingDocValue(input: unknown): CheckOauthPendingDocResult {
   if (!isPlainObject(input)) {
     return { ok: false, reason: "OAuth pending attempt must be a plain object" };
   }
 
   for (const key of Object.keys(input)) {
-    if (!allowedKeys.has(key as keyof OAuthPendingDoc)) {
+    if (!allowedKeys.has(key as keyof OauthPendingDoc)) {
       return { ok: false, reason: "OAuth pending attempt contains an unexpected field" };
     }
   }
@@ -131,19 +131,19 @@ function checkOAuthPendingDocValue(input: unknown): CheckOAuthPendingDocResult {
     return { ok: false, reason: "Finished attempts must not retain a verifier cipher" };
   }
 
-  return { ok: true, doc: { ...input } as OAuthPendingDoc };
+  return { ok: true, doc: { ...input } as OauthPendingDoc };
 }
 
-export function checkOAuthPendingDoc(input: unknown): CheckOAuthPendingDocResult {
+function checkOauthPendingDoc(input: unknown): CheckOauthPendingDocResult {
   try {
-    return checkOAuthPendingDocValue(input);
+    return checkOauthPendingDocValue(input);
   } catch {
     return { ok: false, reason: "OAuth pending attempt could not be read safely" };
   }
 }
 
 export function oauthPendingState(
-  doc: OAuthPendingDoc,
+  doc: OauthPendingDoc,
   nowMs: number
 ): "open" | "used" | "expired" | "removed" {
   if (doc.deletedAt !== undefined) return "removed";
@@ -151,3 +151,8 @@ export function oauthPendingState(
   if (nowMs >= doc.expiresAt) return "expired";
   return "open";
 }
+
+// biome-ignore lint/style/useNamingConvention: TK-51 fixes the public checker name.
+export { checkOauthPendingDoc as checkOAuthPendingDoc };
+// biome-ignore lint/style/useNamingConvention: TK-51 fixes the public document type name.
+export type { OauthPendingDoc as OAuthPendingDoc };
