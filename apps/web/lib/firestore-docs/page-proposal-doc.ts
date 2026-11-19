@@ -54,7 +54,10 @@ const STATUSES = new Set(["pending", "confirmed", "rejected", "cancelled", "expi
 const SOURCE_REQUEST_KEY = /^[A-Za-z0-9_-]{1,128}$/;
 const BLOCK_ID = /^blk_[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
 const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/;
-const MAX_TASK_TITLE_LENGTH = 500;
+// The writer contract has two independent 500-character limits: user-facing Unicode code points
+// and the block codec's UTF-16 code units. Astral characters (for example emoji) use two units.
+const MAX_TASK_TITLE_CODE_POINTS = 500;
+const MAX_TASK_TITLE_UTF16_UNITS = 500;
 
 function isRecord(input: unknown): input is Record<string, unknown> {
   return typeof input === "object" && input !== null && !Array.isArray(input);
@@ -94,8 +97,8 @@ function checkPayload(payload: unknown): boolean {
     if (
       typeof payload.task.title !== "string" ||
       payload.task.title.trim() === "" ||
-      payload.task.title.length > MAX_TASK_TITLE_LENGTH ||
-      [...payload.task.title].length > MAX_TASK_TITLE_LENGTH
+      payload.task.title.length > MAX_TASK_TITLE_UTF16_UNITS ||
+      [...payload.task.title].length > MAX_TASK_TITLE_CODE_POINTS
     ) {
       return false;
     }

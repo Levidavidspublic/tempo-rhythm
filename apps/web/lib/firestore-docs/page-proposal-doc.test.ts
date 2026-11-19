@@ -61,6 +61,7 @@ describe("page proposal Firestore document", () => {
     expect(
       checkPageProposalDoc({
         ...proposal,
+        // 300 code points but 600 UTF-16 units exceeds the downstream block codec limit.
         payload: { state: "available", task: { title: "😀".repeat(300), durationMin: 15 } },
       }).ok
     ).toBe(false);
