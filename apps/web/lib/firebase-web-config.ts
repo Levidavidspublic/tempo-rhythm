@@ -56,6 +56,11 @@ export class FirebaseWebConfigValidationError extends Error {
   }
 }
 
+/**
+ * Reads the Firebase web configuration, returning `null` when required values are absent.
+ *
+ * @throws {FirebaseWebConfigValidationError} When a present value fails validation.
+ */
 export function readFirebaseWebConfig(
   env: FirebaseWebEnv = publicFirebaseEnv()
 ): FirebaseWebConfig | null {
