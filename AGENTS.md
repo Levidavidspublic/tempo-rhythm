@@ -51,6 +51,17 @@ Report the results in the PR body (or your final message when you're not opening
 - `factory/` — SLOTS.md, the ticket template, run logs.
 - The six docs live in the doc store, not in this repo.
 
+## Project reference (read first)
+The permanent reference for every agent working here (Cursor, Codex, Friday, kitchens). The six docs are in this repo at:
+- PRD: `docs/PRD.md`
+- TRD: `docs/TRD.md`
+- App flow: `docs/APP-FLOW.md`
+- UI brief: `docs/UI-BRIEF.md`
+- Backend schema: `docs/BACKEND-SCHEMA.md`
+- Roadmap: `docs/ROADMAP.md`
+
+If a doc is missing, say so in your report; don't invent it. If one of these files disagrees with the doc store named in `factory/SLOTS.md` (A-4), say so in your report too.
+
 ## The ticket (11 fields)
 | Field | Meaning |
 |---|---|
