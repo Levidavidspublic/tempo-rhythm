@@ -31,7 +31,9 @@ describe("checkTemplateDoc", () => {
   });
 
   test("refuses an unsupported periodType", () => {
-    expect(checkTemplateDoc({ ...validTemplate, periodType: "yearly" }).ok).toBe(false);
+    expect(
+      checkTemplateDoc({ ...validTemplate, periodType: "yearly" }).ok,
+    ).toBe(false);
   });
 
   test("refuses an object body", () => {
@@ -39,7 +41,10 @@ describe("checkTemplateDoc", () => {
   });
 
   test("accepts and keeps a soft-delete timestamp", () => {
-    const result = checkTemplateDoc({ ...validTemplate, deletedAt: 1_700_000_000_002 });
+    const result = checkTemplateDoc({
+      ...validTemplate,
+      deletedAt: 1_700_000_000_002,
+    });
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.doc.deletedAt).toBe(1_700_000_000_002);

@@ -8,7 +8,9 @@ export type TemplateDoc = {
   deletedAt?: number;
 };
 
-type CheckTemplateDocResult = { ok: true; doc: TemplateDoc } | { ok: false; reason: string };
+type CheckTemplateDocResult =
+  | { ok: true; doc: TemplateDoc }
+  | { ok: false; reason: string };
 
 const allowedKeys = new Set<keyof TemplateDoc>([
   "name",
@@ -20,7 +22,12 @@ const allowedKeys = new Set<keyof TemplateDoc>([
   "deletedAt",
 ]);
 
-const periodTypes = new Set<TemplateDoc["periodType"]>(["daily", "weekly", "monthly", "none"]);
+const periodTypes = new Set<TemplateDoc["periodType"]>([
+  "daily",
+  "weekly",
+  "monthly",
+  "none",
+]);
 
 export function checkTemplateDoc(input: unknown): CheckTemplateDocResult {
   try {
@@ -35,7 +42,7 @@ export function checkTemplateDoc(input: unknown): CheckTemplateDocResult {
 
     const candidate = input as Record<string, unknown>;
     const unknownKey = Object.keys(candidate).find(
-      (key) => !allowedKeys.has(key as keyof TemplateDoc)
+      (key) => !allowedKeys.has(key as keyof TemplateDoc),
     );
     if (unknownKey !== undefined) {
       return { ok: false, reason: `Unexpected field: ${unknownKey}` };
@@ -52,7 +59,10 @@ export function checkTemplateDoc(input: unknown): CheckTemplateDocResult {
       return { ok: false, reason: "name must be at most 120 characters" };
     }
 
-    if (Object.hasOwn(candidate, "description") && typeof candidate.description !== "string") {
+    if (
+      Object.hasOwn(candidate, "description") &&
+      typeof candidate.description !== "string"
+    ) {
       return { ok: false, reason: "description must be a string" };
     }
     if (
@@ -64,15 +74,22 @@ export function checkTemplateDoc(input: unknown): CheckTemplateDocResult {
     if (typeof candidate.body !== "string") {
       return { ok: false, reason: "body must be a string" };
     }
-    if (typeof candidate.createdAt !== "number" || !Number.isFinite(candidate.createdAt)) {
+    if (
+      typeof candidate.createdAt !== "number" ||
+      !Number.isFinite(candidate.createdAt)
+    ) {
       return { ok: false, reason: "createdAt must be a finite number" };
     }
-    if (typeof candidate.updatedAt !== "number" || !Number.isFinite(candidate.updatedAt)) {
+    if (
+      typeof candidate.updatedAt !== "number" ||
+      !Number.isFinite(candidate.updatedAt)
+    ) {
       return { ok: false, reason: "updatedAt must be a finite number" };
     }
     if (
       Object.hasOwn(candidate, "deletedAt") &&
-      (typeof candidate.deletedAt !== "number" || !Number.isFinite(candidate.deletedAt))
+      (typeof candidate.deletedAt !== "number" ||
+        !Number.isFinite(candidate.deletedAt))
     ) {
       return { ok: false, reason: "deletedAt must be a finite number" };
     }
@@ -84,8 +101,12 @@ export function checkTemplateDoc(input: unknown): CheckTemplateDocResult {
       createdAt: candidate.createdAt,
       updatedAt: candidate.updatedAt,
     };
-    if (typeof candidate.description === "string") doc.description = candidate.description;
-    if (typeof candidate.deletedAt === "number") doc.deletedAt = candidate.deletedAt;
+    if (typeof candidate.description === "string") {
+      doc.description = candidate.description;
+    }
+    if (typeof candidate.deletedAt === "number") {
+      doc.deletedAt = candidate.deletedAt;
+    }
 
     return { ok: true, doc };
   } catch {
