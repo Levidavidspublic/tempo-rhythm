@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/useNamingConvention: The ticket defines the public OAuth API names.
 export type OAuthClientDoc = {
   issuer: string;
   redirectUri: string;
