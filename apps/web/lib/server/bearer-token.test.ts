@@ -46,7 +46,7 @@ describe("readBearerToken", () => {
 
   test("reads the authorization header from Headers", () => {
     expect(
-      readBearerTokenFromHeaders(new Headers({ authorization: "Bearer aaa.bbb.ccc" })),
+      readBearerTokenFromHeaders(new Headers({ authorization: "Bearer aaa.bbb.ccc" }))
     ).toEqual({ ok: true, token: "aaa.bbb.ccc" });
   });
 });
