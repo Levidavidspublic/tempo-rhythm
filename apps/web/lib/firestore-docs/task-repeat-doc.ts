@@ -61,17 +61,11 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function isWeekday(value: unknown): value is number {
-  return (
-    Number.isInteger(value) &&
-    typeof value === "number" &&
-    value >= 0 &&
-    value <= 6
-  );
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 6;
 }
 
 export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
-  if (typeof input !== "object" || input === null || Array.isArray(input))
-    invalid("document");
+  if (typeof input !== "object" || input === null || Array.isArray(input)) invalid("document");
 
   const source = input as Record<string, unknown>;
   for (const key of Object.keys(source)) {
@@ -82,16 +76,9 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
     if (!(key in source)) invalid(key);
   }
 
-  if (
-    !REPEAT_CYCLES.includes(
-      source.repeatCycle as (typeof REPEAT_CYCLES)[number],
-    )
-  )
+  if (!REPEAT_CYCLES.includes(source.repeatCycle as (typeof REPEAT_CYCLES)[number]))
     invalid("repeatCycle");
-  if (
-    !Number.isInteger(source.repeatEvery) ||
-    (source.repeatEvery as number) < 1
-  )
+  if (!Number.isInteger(source.repeatEvery) || (source.repeatEvery as number) < 1)
     invalid("repeatEvery");
   if (
     !Array.isArray(source.weekdays) ||
@@ -102,7 +89,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
   if (
     !Array.isArray(source.deletedInstanceDates) ||
     !source.deletedInstanceDates.every(
-      (date) => typeof date === "string" && DATE_PATTERN.test(date),
+      (date) => typeof date === "string" && DATE_PATTERN.test(date)
     )
   )
     invalid("deletedInstanceDates");
@@ -126,10 +113,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
     invalid("monthlyWeekOfMonth");
   if (source.monthlyWeekday !== undefined && !isWeekday(source.monthlyWeekday))
     invalid("monthlyWeekday");
-  if (
-    source.monthlyLastDay !== undefined &&
-    typeof source.monthlyLastDay !== "boolean"
-  )
+  if (source.monthlyLastDay !== undefined && typeof source.monthlyLastDay !== "boolean")
     invalid("monthlyLastDay");
   if (
     source.defaultEstimate !== undefined &&
@@ -142,8 +126,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
       !DATE_PATTERN.test(source.lastTaskCreationDay))
   )
     invalid("lastTaskCreationDay");
-  if (source.deletedAt !== undefined && !isFiniteNumber(source.deletedAt))
-    invalid("deletedAt");
+  if (source.deletedAt !== undefined && !isFiniteNumber(source.deletedAt)) invalid("deletedAt");
 
   const result: Record<string, unknown> = {};
   for (const key of [...REQUIRED_KEYS, ...OPTIONAL_KEYS]) {
@@ -152,9 +135,6 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
   return result as TaskRepeatDoc;
 }
 
-export function softDeleteTaskRepeatDoc(
-  doc: TaskRepeatDoc,
-  now: number,
-): TaskRepeatDoc {
+export function softDeleteTaskRepeatDoc(doc: TaskRepeatDoc, now: number): TaskRepeatDoc {
   return { ...doc, deletedAt: now, updatedAt: now };
 }
