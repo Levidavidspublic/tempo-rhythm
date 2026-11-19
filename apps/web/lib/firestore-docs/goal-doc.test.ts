@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  checkGoalDoc,
-  restoreGoal,
-  softDeleteGoal,
-  type GoalDoc,
-} from "./goal-doc";
+import { checkGoalDoc, restoreGoal, softDeleteGoal, type GoalDoc } from "./goal-doc";
 
 const goal: GoalDoc = {
   title: "Ship the Firestore port",
