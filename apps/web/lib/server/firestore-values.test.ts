@@ -20,7 +20,13 @@ const task = {
 
 test("encodes scalar values to exact Firestore REST shapes", () => {
   expect(
-    encodeFields({ title: "Task", completed: false, note: null, createdAt: 1_731_000_000_000, rank: 0.5 })
+    encodeFields({
+      title: "Task",
+      completed: false,
+      note: null,
+      createdAt: 1_731_000_000_000,
+      rank: 0.5,
+    })
   ).toEqual({
     title: { stringValue: "Task" },
     completed: { booleanValue: false },
@@ -91,7 +97,7 @@ test("decodes empty containers and timestamps and rejects invalid REST values", 
   expect(() => decodeFields({ bad: { bytesValue: "abc" } } as unknown as RestFields)).toThrow(
     /bad/
   );
-  expect(() =>
-    decodeFields({ badInteger: { integerValue: "9007199254740992" } })
-  ).toThrow(/badInteger/);
+  expect(() => decodeFields({ badInteger: { integerValue: "9007199254740992" } })).toThrow(
+    /badInteger/
+  );
 });
