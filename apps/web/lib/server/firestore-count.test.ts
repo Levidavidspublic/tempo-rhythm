@@ -84,14 +84,31 @@ describe("buildCountRequest", () => {
     ["empty collection", "project", "user", "", [], undefined],
     ["slash in uid", "project", "user/other", "items", [], undefined],
     ["slash in collection", "project", "user", "items/other", [], undefined],
-    ["empty field", "project", "user", "items", [{ field: "", value: { nullValue: null } }], undefined],
-    ["invalid field", "project", "user", "items", [{ field: "bad.field", value: { nullValue: null } }], undefined],
+    [
+      "empty field",
+      "project",
+      "user",
+      "items",
+      [{ field: "", value: { nullValue: null } }],
+      undefined,
+    ],
+    [
+      "invalid field",
+      "project",
+      "user",
+      "items",
+      [{ field: "bad.field", value: { nullValue: null } }],
+      undefined,
+    ],
     [
       "more than five filters",
       "project",
       "user",
       "items",
-      Array.from({ length: 6 }, (_, index) => ({ field: `field${index}`, value: { nullValue: null } as const })),
+      Array.from({ length: 6 }, (_, index) => ({
+        field: `field${index}`,
+        value: { nullValue: null } as const,
+      })),
       undefined,
     ],
     [
@@ -118,9 +135,9 @@ describe("readCountResult", () => {
     ["3", 3],
     ["0", 0],
   ])("reads %s", (integerValue, count) => {
-    expect(
-      readCountResult([{ result: { aggregateFields: { count: { integerValue } } } }])
-    ).toEqual({ ok: true, count });
+    expect(readCountResult([{ result: { aggregateFields: { count: { integerValue } } } }])).toEqual(
+      { ok: true, count }
+    );
   });
 
   test("refuses an error entry", () => {
