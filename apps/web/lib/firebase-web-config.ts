@@ -46,6 +46,16 @@ export function missingFirebaseWebEnv(env: FirebaseWebEnv = publicFirebaseEnv())
 
 const FIREBASE_PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
 
+export class FirebaseWebConfigValidationError extends Error {
+  readonly field: (typeof FIREBASE_WEB_ENV_NAMES)[number];
+
+  constructor(field: (typeof FIREBASE_WEB_ENV_NAMES)[number]) {
+    super(`Invalid Firebase web configuration for ${field}`);
+    this.name = "FirebaseWebConfigValidationError";
+    this.field = field;
+  }
+}
+
 export function readFirebaseWebConfig(
   env: FirebaseWebEnv = publicFirebaseEnv()
 ): FirebaseWebConfig | null {
@@ -55,7 +65,7 @@ export function readFirebaseWebConfig(
 
   const projectId = (env.NEXT_PUBLIC_FIREBASE_PROJECT_ID as string).trim();
   if (!FIREBASE_PROJECT_ID_PATTERN.test(projectId)) {
-    return null;
+    throw new FirebaseWebConfigValidationError("NEXT_PUBLIC_FIREBASE_PROJECT_ID");
   }
 
   return Object.freeze({

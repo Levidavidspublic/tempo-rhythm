@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 
 import {
   FIREBASE_WEB_ENV_NAMES,
+  FirebaseWebConfigValidationError,
   missingFirebaseWebEnv,
   readFirebaseWebConfig,
   type FirebaseWebEnv,
@@ -57,13 +58,25 @@ test("each missing or blank required name fails closed and is listed", () => {
   }
 });
 
-test("a malformed project id returns null", () => {
-  expect(
+test("a malformed project id reports its field without exposing its value", () => {
+  const invalidProjectId = "Invalid_ID";
+  const readInvalidConfig = () =>
     readFirebaseWebConfig({
       ...completeEnv,
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "Invalid_ID",
-    })
-  ).toBeNull();
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: invalidProjectId,
+    });
+
+  expect(readInvalidConfig).toThrow(FirebaseWebConfigValidationError);
+
+  try {
+    readInvalidConfig();
+  } catch (error) {
+    expect(error).toBeInstanceOf(FirebaseWebConfigValidationError);
+    expect((error as FirebaseWebConfigValidationError).field).toBe(
+      "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+    );
+    expect((error as Error).message).not.toContain(invalidProjectId);
+  }
 });
 
 test("the documented names are exposed and missing output never contains values", () => {
