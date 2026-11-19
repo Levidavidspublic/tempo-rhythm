@@ -1,5 +1,9 @@
 export const NAG_PHRASE_SOURCES = ["user", "derived"] as const;
-export const NAG_PHRASE_STATUSES = ["proposed", "accepted", "rejected"] as const;
+export const NAG_PHRASE_STATUSES = [
+  "proposed",
+  "accepted",
+  "rejected",
+] as const;
 
 export type NagPhrase = {
   id: string;
@@ -42,21 +46,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function finiteNumber(value: unknown, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) throw new NagDocError(field);
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new NagDocError(field);
+  }
   return value;
 }
 
 export function parseNagDoc(input: unknown): NagDoc {
-  if (!isRecord(input)) throw new NagDocError("document");
-
-  for (const key of Object.keys(input)) {
-    if (!TOP_LEVEL_KEYS.has(key)) throw new NagDocError(key);
+  if (!isRecord(input)) {
+    throw new NagDocError("document");
   }
 
-  if (typeof input.label !== "string") throw new NagDocError("label");
+  for (const key of Object.keys(input)) {
+    if (!TOP_LEVEL_KEYS.has(key)) {
+      throw new NagDocError(key);
+    }
+  }
+
+  if (typeof input.label !== "string") {
+    throw new NagDocError("label");
+  }
   const label = input.label.trim();
-  if (label.length < 1 || label.length > 120) throw new NagDocError("label");
-  if (typeof input.enabled !== "boolean") throw new NagDocError("enabled");
+  if (label.length < 1 || label.length > 120) {
+    throw new NagDocError("label");
+  }
+  if (typeof input.enabled !== "boolean") {
+    throw new NagDocError("enabled");
+  }
   if (!Array.isArray(input.phrases) || input.phrases.length > 50) {
     throw new NagDocError("phrases");
   }
@@ -64,19 +80,29 @@ export function parseNagDoc(input: unknown): NagDoc {
   const phraseIds = new Set<string>();
   const phrases = input.phrases.map((phrase, index): NagPhrase => {
     const prefix = `phrases[${index}]`;
-    if (!isRecord(phrase)) throw new NagDocError(prefix);
+    if (!isRecord(phrase)) {
+      throw new NagDocError(prefix);
+    }
     for (const key of Object.keys(phrase)) {
-      if (!PHRASE_KEYS.has(key)) throw new NagDocError(`${prefix}.${key}`);
+      if (!PHRASE_KEYS.has(key)) {
+        throw new NagDocError(`${prefix}.${key}`);
+      }
     }
     if (typeof phrase.id !== "string" || phrase.id.length === 0) {
       throw new NagDocError(`${prefix}.id`);
     }
-    if (phraseIds.has(phrase.id)) throw new NagDocError(`${prefix}.id`);
+    if (phraseIds.has(phrase.id)) {
+      throw new NagDocError(`${prefix}.id`);
+    }
     phraseIds.add(phrase.id);
 
-    if (typeof phrase.text !== "string") throw new NagDocError(`${prefix}.text`);
+    if (typeof phrase.text !== "string") {
+      throw new NagDocError(`${prefix}.text`);
+    }
     const text = phrase.text.trim();
-    if (text.length < 1 || text.length > 500) throw new NagDocError(`${prefix}.text`);
+    if (text.length < 1 || text.length > 500) {
+      throw new NagDocError(`${prefix}.text`);
+    }
     if (!NAG_PHRASE_SOURCES.includes(phrase.source as NagPhrase["source"])) {
       throw new NagDocError(`${prefix}.source`);
     }
@@ -106,6 +132,8 @@ export function parseNagDoc(input: unknown): NagDoc {
 }
 
 export function softDeleteNagDoc(doc: NagDoc, now: number): NagDoc {
-  if (!Number.isFinite(now)) throw new NagDocError("now");
+  if (!Number.isFinite(now)) {
+    throw new NagDocError("now");
+  }
   return { ...doc, phrases: [...doc.phrases], deletedAt: now, updatedAt: now };
 }
