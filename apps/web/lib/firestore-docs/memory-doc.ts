@@ -1,9 +1,4 @@
-export type MemorySector =
-  | "semantic"
-  | "episodic"
-  | "procedural"
-  | "emotional"
-  | "general";
+export type MemorySector = "semantic" | "episodic" | "procedural" | "emotional" | "general";
 
 export type MemoryDoc = {
   content: string;
@@ -18,9 +13,7 @@ export type MemoryDoc = {
   deletedAt?: number;
 };
 
-type CheckMemoryDocResult =
-  | { ok: true; doc: MemoryDoc }
-  | { ok: false; reason: string };
+type CheckMemoryDocResult = { ok: true; doc: MemoryDoc } | { ok: false; reason: string };
 
 const allowedKeys = new Set<keyof MemoryDoc>([
   "content",
@@ -69,10 +62,7 @@ export function checkMemoryDoc(input: unknown): CheckMemoryDocResult {
   if (typeof input.content !== "string" || input.content.trim().length === 0) {
     return { ok: false, reason: "content must be a non-empty string" };
   }
-  if (
-    typeof input.sector !== "string" ||
-    !sectors.has(input.sector as MemorySector)
-  ) {
+  if (typeof input.sector !== "string" || !sectors.has(input.sector as MemorySector)) {
     return { ok: false, reason: "sector is invalid" };
   }
   if (!isFiniteNumber(input.salience) || input.salience < 0) {
@@ -90,10 +80,7 @@ export function checkMemoryDoc(input: unknown): CheckMemoryDocResult {
   if (!isFiniteNumber(input.lastAccessed)) {
     return { ok: false, reason: "lastAccessed must be a finite number" };
   }
-  if (
-    !Number.isSafeInteger(input.accessCount) ||
-    (input.accessCount as number) < 0
-  ) {
+  if (!Number.isSafeInteger(input.accessCount) || (input.accessCount as number) < 0) {
     return {
       ok: false,
       reason: "accessCount must be a nonnegative safe integer",
