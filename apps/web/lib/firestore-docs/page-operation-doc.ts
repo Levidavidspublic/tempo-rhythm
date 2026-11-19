@@ -31,7 +31,9 @@ export type PageOperationDoc = {
   deletedAt?: number;
 };
 
-type CheckResult = { ok: true; doc: PageOperationDoc } | { ok: false; reason: string };
+type CheckResult =
+  | { ok: true; doc: PageOperationDoc }
+  | { ok: false; reason: string };
 
 const REQUIRED_KEYS = [
   "noteId",
@@ -85,7 +87,9 @@ function isRevision(value: unknown): value is number {
 }
 
 function isDocumentId(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0 && !value.includes("/");
+  return (
+    typeof value === "string" && value.trim().length > 0 && !value.includes("/")
+  );
 }
 
 /** Checks an untrusted, content-free Firestore page-operation receipt. */
@@ -103,15 +107,26 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
   }
 
   if (!isDocumentId(record.noteId)) return fail("noteId must be a document id");
-  for (const key of ["undoneByOperationId", "undoOfOperationId", "proposalId"] as const) {
+  for (const key of [
+    "undoneByOperationId",
+    "undoOfOperationId",
+    "proposalId",
+  ] as const) {
     if (record[key] !== undefined && !isDocumentId(record[key])) {
       return fail(`${key} must be a document id`);
     }
   }
-  if (typeof record.requestId !== "string" || !REQUEST_ID.test(record.requestId)) {
+  if (
+    typeof record.requestId !== "string" ||
+    !REQUEST_ID.test(record.requestId)
+  ) {
     return fail("requestId must contain a valid req_ ULID");
   }
-  for (const key of ["requestDigest", "baseBodyDigest", "resultBodyDigest"] as const) {
+  for (const key of [
+    "requestDigest",
+    "baseBodyDigest",
+    "resultBodyDigest",
+  ] as const) {
     if (typeof record[key] !== "string" || !DIGEST.test(record[key])) {
       return fail(`${key} must be a lowercase SHA-256 digest`);
     }
@@ -119,9 +134,12 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
   if (!KINDS.has(record.kind as string)) return fail("invalid kind");
   if (!SOURCES.has(record.source as string)) return fail("invalid source");
   if (!RESULTS.has(record.result as string)) return fail("invalid result");
-  if (typeof record.affectsBody !== "boolean") return fail("affectsBody must be boolean");
+  if (typeof record.affectsBody !== "boolean")
+    return fail("affectsBody must be boolean");
   if (!isRevision(record.baseRevision) || !isRevision(record.resultRevision)) {
-    return fail("revisions must be safe nonnegative integers below MAX_SAFE_INTEGER");
+    return fail(
+      "revisions must be safe nonnegative integers below MAX_SAFE_INTEGER",
+    );
   }
   if (!Array.isArray(record.delta)) return fail("delta must be an array");
   for (const entry of record.delta) {
@@ -133,7 +151,9 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     if (
       keys.length !== 3 ||
       !keys.every((key) =>
-        ["startUtf16", "removedLengthUtf16", "insertedLengthUtf16"].includes(key)
+        ["startUtf16", "removedLengthUtf16", "insertedLengthUtf16"].includes(
+          key,
+        ),
       )
     ) {
       return fail("delta entry has an invalid shape");
@@ -161,12 +181,19 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     }
   }
 
-  const has = (key: string) => Object.hasOwn(record, key) && record[key] !== undefined;
+  const has = (key: string) =>
+    Object.hasOwn(record, key) && record[key] !== undefined;
   if (record.result === "applied") {
-    if (!record.affectsBody || record.resultRevision !== record.baseRevision + 1) {
-      return fail("an applied write must affect the body and advance one revision");
+    if (
+      !record.affectsBody ||
+      record.resultRevision !== record.baseRevision + 1
+    ) {
+      return fail(
+        "an applied write must affect the body and advance one revision",
+      );
     }
-    if (record.delta.length === 0) return fail("an applied write must have a nonempty delta");
+    if (record.delta.length === 0)
+      return fail("an applied write must have a nonempty delta");
   } else {
     if (
       record.affectsBody ||
@@ -174,7 +201,9 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
       record.resultBodyDigest !== record.baseBodyDigest ||
       record.delta.length !== 0
     ) {
-      return fail("a noop must leave the body, revision, digest, and delta unchanged");
+      return fail(
+        "a noop must leave the body, revision, digest, and delta unchanged",
+      );
     }
     if (
       has("undoUntilMs") ||
@@ -186,7 +215,10 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     }
   }
 
-  if (has("undoUntilMs") && (record.result !== "applied" || record.kind === "undo")) {
+  if (
+    has("undoUntilMs") &&
+    (record.result !== "applied" || record.kind === "undo")
+  ) {
     return fail("undoUntilMs is only valid on an applied non-undo operation");
   }
   if (has("undoneAtMs") !== has("undoneByOperationId")) {
@@ -196,7 +228,10 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     return fail("undoOfOperationId must be present exactly when kind is undo");
   }
   const appliedAtMs = record.appliedAtMs as number;
-  if (record.metadataExpiresAtMs !== appliedAtMs + PAGE_OPERATION_METADATA_TTL_MS) {
+  if (
+    record.metadataExpiresAtMs !==
+    appliedAtMs + PAGE_OPERATION_METADATA_TTL_MS
+  ) {
     return fail("metadataExpiresAtMs must be 48 hours after appliedAtMs");
   }
 
