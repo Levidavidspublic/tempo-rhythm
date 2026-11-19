@@ -6,11 +6,7 @@ const OOB_CODE_MAX_LENGTH = 512;
 export function normalizeSignInEmail(raw: string): string | null {
   const email = raw.trim().toLowerCase();
 
-  if (
-    email.length === 0 ||
-    email.length > EMAIL_MAX_LENGTH ||
-    !EMAIL_SHAPE.test(email)
-  ) {
+  if (email.length === 0 || email.length > EMAIL_MAX_LENGTH || !EMAIL_SHAPE.test(email)) {
     return null;
   }
 
@@ -29,8 +25,7 @@ export function parseEmailSignInLink(href: string): EmailSignInLink | null {
   }
 
   const isAllowedOrigin =
-    url.protocol === "https:" ||
-    (url.protocol === "http:" && url.hostname === "localhost");
+    url.protocol === "https:" || (url.protocol === "http:" && url.hostname === "localhost");
   const oobCode = url.searchParams.get("oobCode");
 
   if (
@@ -60,37 +55,36 @@ export type EmailSignInState = (typeof EMAIL_SIGN_IN_STATES)[number];
 
 type EmailSignInCopy = Readonly<{ title: string; body: string }>;
 
-const EMAIL_SIGN_IN_COPY: Readonly<Record<EmailSignInState, EmailSignInCopy>> =
-  {
-    idle: {
-      title: "Sign in with your email",
-      body: "We'll send you a secure link to sign in.",
-    },
-    sending: {
-      title: "Sending your link",
-      body: "This will only take a moment.",
-    },
-    sent: {
-      title: "Check your inbox",
-      body: "Open the link in the email to continue.",
-    },
-    confirm_email: {
-      title: "Confirm your email",
-      body: "Type your email once more to finish signing in.",
-    },
-    signing_in: {
-      title: "Signing you in",
-      body: "Your Tempo Flow is nearly ready.",
-    },
-    expired: {
-      title: "That link has expired",
-      body: "You can request a fresh link and continue.",
-    },
-    unavailable: {
-      title: "Sign-in is taking a pause",
-      body: "Please try again in a little while.",
-    },
-  };
+const EMAIL_SIGN_IN_COPY: Readonly<Record<EmailSignInState, EmailSignInCopy>> = {
+  idle: {
+    title: "Sign in with your email",
+    body: "We'll send you a secure link to sign in.",
+  },
+  sending: {
+    title: "Sending your link",
+    body: "This will only take a moment.",
+  },
+  sent: {
+    title: "Check your inbox",
+    body: "Open the link in the email to continue.",
+  },
+  confirm_email: {
+    title: "Confirm your email",
+    body: "Type your email once more to finish signing in.",
+  },
+  signing_in: {
+    title: "Signing you in",
+    body: "Your Tempo Flow is nearly ready.",
+  },
+  expired: {
+    title: "That link has expired",
+    body: "You can request a fresh link and continue.",
+  },
+  unavailable: {
+    title: "Sign-in is taking a pause",
+    body: "Please try again in a little while.",
+  },
+};
 
 export function emailSignInCopy(state: EmailSignInState): EmailSignInCopy {
   return EMAIL_SIGN_IN_COPY[state];
