@@ -1,9 +1,5 @@
 import { expect, test } from "bun:test";
-import {
-  buildBatchGetRequest,
-  buildGetRequest,
-  MAX_BATCH_GET_DOCUMENTS,
-} from "./firestore-get";
+import { buildBatchGetRequest, buildGetRequest, MAX_BATCH_GET_DOCUMENTS } from "./firestore-get";
 
 const PROJECT_ID = "demo-project";
 
