@@ -73,16 +73,16 @@ function isEpochMilliseconds(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
 }
 
-function validate(input: unknown):
-  | { ok: true; doc: AccountGateDoc }
-  | { ok: false; reason: string } {
+function validate(
+  input: unknown
+): { ok: true; doc: AccountGateDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, reason: "account gate must be an object" };
   }
 
   const value = input as Record<string, unknown>;
   const unknownKey = Object.keys(value).find(
-    (key) => !ACCOUNT_GATE_KEYS.has(key as keyof AccountGateDoc),
+    (key) => !ACCOUNT_GATE_KEYS.has(key as keyof AccountGateDoc)
   );
   if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
 
@@ -107,9 +107,7 @@ function validate(input: unknown):
   }
   if (
     value.entitlementTier !== undefined &&
-    !ENTITLEMENT_TIERS.has(
-      value.entitlementTier as NonNullable<AccountGateDoc["entitlementTier"]>,
-    )
+    !ENTITLEMENT_TIERS.has(value.entitlementTier as NonNullable<AccountGateDoc["entitlementTier"]>)
   ) {
     return { ok: false, reason: "invalid entitlementTier" };
   }
@@ -121,9 +119,7 @@ function validate(input: unknown):
   }
   if (
     value.approvalStatus !== undefined &&
-    !APPROVAL_STATUSES.has(
-      value.approvalStatus as NonNullable<AccountGateDoc["approvalStatus"]>,
-    )
+    !APPROVAL_STATUSES.has(value.approvalStatus as NonNullable<AccountGateDoc["approvalStatus"]>)
   ) {
     return { ok: false, reason: "invalid approvalStatus" };
   }
@@ -140,7 +136,7 @@ function validate(input: unknown):
 }
 
 export function validateAccountGateDoc(
-  input: unknown,
+  input: unknown
 ): { ok: true; doc: AccountGateDoc } | { ok: false; reason: string } {
   try {
     return validate(input);

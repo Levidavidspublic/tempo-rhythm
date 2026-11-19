@@ -1,10 +1,6 @@
 import { expect, test } from "bun:test";
 
-import {
-  type AccountGateDoc,
-  newAccountGate,
-  validateAccountGateDoc,
-} from "./account-gate-doc";
+import { type AccountGateDoc, newAccountGate, validateAccountGateDoc } from "./account-gate-doc";
 
 test("a full valid account gate passes", () => {
   const gate: AccountGateDoc = {
@@ -41,7 +37,7 @@ test("unknown and profile keys are refused", () => {
 test("each bad enum value is refused", () => {
   for (const field of ["role", "userType", "betaAccess", "entitlementTier", "approvalStatus"]) {
     expect(validateAccountGateDoc({ email: "person@example.test", [field]: "invalid" }).ok).toBe(
-      false,
+      false
     );
   }
 });
@@ -57,7 +53,7 @@ test("bad times are refused", () => {
   ]) {
     for (const badTime of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1, "1"]) {
       expect(validateAccountGateDoc({ email: "person@example.test", [field]: badTime }).ok).toBe(
-        false,
+        false
       );
     }
   }
