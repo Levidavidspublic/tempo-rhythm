@@ -8,7 +8,7 @@ export type DeletionWindow =
 
 export function readDeletionWindow(
   deletedAt: number | null | undefined,
-  now: number,
+  now: number
 ): DeletionWindow {
   if (deletedAt === undefined || deletedAt === null) {
     return { state: "live" };
@@ -30,9 +30,6 @@ export function readDeletionWindow(
   };
 }
 
-export function canRestoreAccount(
-  deletedAt: number | null | undefined,
-  now: number,
-): boolean {
+export function canRestoreAccount(deletedAt: number | null | undefined, now: number): boolean {
   return readDeletionWindow(deletedAt, now).state === "restorable";
 }

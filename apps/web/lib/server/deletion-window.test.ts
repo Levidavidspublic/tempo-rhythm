@@ -45,7 +45,7 @@ describe("deletion window", () => {
 
   test("invalid deletion times throw", () => {
     expect(() => readDeletionWindow(Number.NaN, 1_000)).toThrow(
-      new RangeError("Invalid deletedAt"),
+      new RangeError("Invalid deletedAt")
     );
     expect(() => readDeletionWindow(-1, 1_000)).toThrow(new RangeError("Invalid deletedAt"));
     expect(() => readDeletionWindow(1_001, 1_000)).toThrow(new RangeError("Invalid deletedAt"));
