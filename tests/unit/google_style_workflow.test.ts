@@ -8,9 +8,15 @@ const workflow = readFileSync(
 );
 
 describe("google-style workflow", () => {
-  test("leaves formatting to Biome while preserving the gts ESLint gate", () => {
-    expect(workflow).not.toMatch(/\bprettier\s+.*--check/);
+  test("splits formatting ownership without leaving non-workspace files unchecked", () => {
+    expect(workflow).toContain(
+      "mapfile -t prettier_f < <(printf '%s\\n' \"${f[@]}\" | grep -vE '^(apps|packages)/' || true)",
+    );
+    expect(workflow).toMatch(
+      /prettier --config \/tmp\/gts\/node_modules\/gts\/\.prettierrc\.tempo\.json \\\n\s+--check "\$\{prettier_f\[@\]\/\#\/\$GITHUB_WORKSPACE\/\}"/,
+    );
     expect(workflow).toContain("/tmp/gts/node_modules/.bin/eslint");
+    expect(workflow).toContain('"${f[@]/#/$GITHUB_WORKSPACE/}"');
     expect(workflow).toContain("--rule 'prettier/prettier: off'");
   });
 });

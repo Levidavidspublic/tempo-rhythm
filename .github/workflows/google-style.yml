@@ -2,7 +2,7 @@ name: google-style
 
 # Gate 3 of merge-gate: Google style guides (https://github.com/google/styleguide), CHANGED FILES ONLY
 # so older code doesn't fail every PR. Runs on pull_request (no secrets) because it lints PR files.
-#   TS/JS: gts ESLint checks (formatting is enforced by the Biome format-naming workflow).
+#   TS/JS: gts ESLint checks; Biome formats apps/packages, Prettier formats the remaining files.
 #   Python: pyink (Google's black fork, 2-space) + pylint with Google's pylintrc.
 #   Shell: shellcheck + shfmt -i 2 -ci (Google Shell Style Guide has no official tool).
 #   Other languages: no official Google tool here (UNKNOWN), not checked.
@@ -30,13 +30,40 @@ jobs:
         run: |
           mapfile -t f < <(grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' /tmp/changed.txt || true)
           [ ${#f[@]} -eq 0 ] && { echo "no TS/JS files"; exit 0; }
-          # gts 6.0.2 + TS 5.6 (gts's typescript-eslint breaks on TS 7). Formatting is
-          # owned by the Biome format-naming workflow, so the prettier rule stays off.
-          # Parser/node version is raised to the repo's Node 22 so modern syntax is not
-          # flagged as a style violation.
+          # gts 6.0.2 + TS 5.6 (gts's typescript-eslint breaks on TS 7). Parser/node
+          # version is raised to the repo's Node 22 so modern syntax is not flagged as
+          # a style violation. The prettier rule stays off inside eslint (double run).
           mkdir -p /tmp/gts && cd /tmp/gts && echo '{"name":"gts-runner","private":true}' > package.json
           bun add gts@6.0.2 typescript@5.6.3 >/dev/null
           cd "$GITHUB_WORKSPACE"
+          # apps/ and packages/ are formatted by the format-naming workflow with Biome.
+          # Keep this required gate's Prettier coverage for TS/JS everywhere else.
+          mapfile -t prettier_f < <(printf '%s\n' "${f[@]}" | grep -vE '^(apps|packages)/' || true)
+          if [ ${#prettier_f[@]} -eq 0 ]; then
+            echo "no TS/JS files outside apps/ or packages/ for Prettier"
+          else
+            # Amit's decision (2026-11-19): use Biome's options wherever Prettier remains.
+            python3 - <<'PY'
+          import json, os
+          root = os.environ["GITHUB_WORKSPACE"]
+          biome = json.load(open(os.path.join(root, "packages/config/biome.json")))
+          fmt = biome.get("formatter", {})
+          js = biome.get("javascript", {}).get("formatter", {})
+          cfg = json.load(open("/tmp/gts/node_modules/gts/.prettierrc.json"))
+          cfg["singleQuote"] = js.get("quoteStyle", "double") == "single"
+          cfg["jsxSingleQuote"] = js.get("jsxQuoteStyle", "double") == "single"
+          cfg["bracketSpacing"] = js.get("bracketSpacing", fmt.get("bracketSpacing", True))
+          cfg["trailingComma"] = js.get("trailingCommas", "all")
+          cfg["arrowParens"] = "avoid" if js.get("arrowParentheses") == "asNeeded" else "always"
+          cfg["semi"] = js.get("semicolons", "always") == "always"
+          cfg["printWidth"] = js.get("lineWidth", fmt.get("lineWidth", 80))
+          cfg["tabWidth"] = fmt.get("indentWidth", 2)
+          cfg["useTabs"] = fmt.get("indentStyle", "tab") == "tab"
+          json.dump(cfg, open("/tmp/gts/node_modules/gts/.prettierrc.tempo.json", "w"))
+          PY
+            bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.tempo.json \
+              --check "${prettier_f[@]/#/$GITHUB_WORKSPACE/}"
+          fi
           # gts's TS override sets parserOptions.project to ./tsconfig.json. This repo has no root
           # tsconfig (packages extend tsconfig.base.json), so the TypeScript parser never loads and
           # ESLint parses .ts with the JS parser ("Unexpected token"). Point @typescript-eslint/parser
