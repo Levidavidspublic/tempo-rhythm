@@ -23,7 +23,7 @@ function assertAllowedFields(fields: Record<string, unknown>): void {
 
 export function stampCreate<T extends Record<string, unknown>>(
   fields: T,
-  now: number,
+  now: number
 ): T & { createdAt: number; updatedAt: number } {
   assertValidNow(now);
   assertAllowedFields(fields);
@@ -38,30 +38,27 @@ export function stampCreate<T extends Record<string, unknown>>(
 
 export function stampUpdate<T extends Record<string, unknown>>(
   changes: T,
-  now: number,
+  now: number
 ): T & { updatedAt: number } {
   assertValidNow(now);
   assertAllowedFields(changes);
 
   if (Object.hasOwn(changes, "createdAt") || Object.hasOwn(changes, "deletedAt")) {
-    throw new WriteStampError(
-      "createdAt and deletedAt cannot be changed by stampUpdate",
-    );
+    throw new WriteStampError("createdAt and deletedAt cannot be changed by stampUpdate");
   }
 
   return { ...changes, updatedAt: now };
 }
 
-export function softDeletePatch(
-  now: number,
-): { deletedAt: number; updatedAt: number } {
+export function softDeletePatch(now: number): { deletedAt: number; updatedAt: number } {
   assertValidNow(now);
   return { deletedAt: now, updatedAt: now };
 }
 
-export function restorePatch(
-  now: number,
-): { set: { updatedAt: number }; remove: readonly ["deletedAt"] } {
+export function restorePatch(now: number): {
+  set: { updatedAt: number };
+  remove: readonly ["deletedAt"];
+} {
   assertValidNow(now);
   return { set: { updatedAt: now }, remove: ["deletedAt"] as const };
 }

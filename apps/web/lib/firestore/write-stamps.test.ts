@@ -44,12 +44,8 @@ describe("Firestore write stamps", () => {
 
   test("owner and Convex fields are refused by create and update", () => {
     for (const key of ["userId", "uid", "ownerId", "_id"]) {
-      expect(() => stampCreate({ [key]: "value" }, 100)).toThrow(
-        WriteStampError,
-      );
-      expect(() => stampUpdate({ [key]: "value" }, 100)).toThrow(
-        WriteStampError,
-      );
+      expect(() => stampCreate({ [key]: "value" }, 100)).toThrow(WriteStampError);
+      expect(() => stampUpdate({ [key]: "value" }, 100)).toThrow(WriteStampError);
     }
   });
 
