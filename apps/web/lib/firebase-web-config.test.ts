@@ -62,7 +62,7 @@ test("a malformed project id returns null", () => {
     readFirebaseWebConfig({
       ...completeEnv,
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "Invalid_ID",
-    })
+    }),
   ).toBeNull();
 });
 
