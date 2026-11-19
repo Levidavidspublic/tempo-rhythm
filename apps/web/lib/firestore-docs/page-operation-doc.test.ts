@@ -34,7 +34,10 @@ function applied(overrides: Partial<PageOperationDoc> = {}): PageOperationDoc {
 
 describe("checkPageOperationDoc", () => {
   test("accepts a valid applied save", () => {
-    expect(checkPageOperationDoc(applied())).toEqual({ ok: true, doc: applied() });
+    expect(checkPageOperationDoc(applied())).toEqual({
+      ok: true,
+      doc: applied(),
+    });
   });
 
   test("accepts a valid noop", () => {
@@ -50,19 +53,27 @@ describe("checkPageOperationDoc", () => {
   });
 
   test("rejects the unknown userId key", () => {
-    expect(checkPageOperationDoc({ ...applied(), userId: "user_01" }).ok).toBe(false);
+    expect(checkPageOperationDoc({ ...applied(), userId: "user_01" }).ok).toBe(
+      false,
+    );
   });
 
   test("rejects a bad requestId", () => {
-    expect(checkPageOperationDoc(applied({ requestId: "req_not-a-ulid" })).ok).toBe(false);
+    expect(
+      checkPageOperationDoc(applied({ requestId: "req_not-a-ulid" })).ok,
+    ).toBe(false);
   });
 
   test("rejects an uppercase digest", () => {
-    expect(checkPageOperationDoc(applied({ requestDigest: "A".repeat(64) })).ok).toBe(false);
+    expect(
+      checkPageOperationDoc(applied({ requestDigest: "A".repeat(64) })).ok,
+    ).toBe(false);
   });
 
   test("rejects an applied write that does not advance one revision", () => {
-    expect(checkPageOperationDoc(applied({ resultRevision: 6 })).ok).toBe(false);
+    expect(checkPageOperationDoc(applied({ resultRevision: 6 })).ok).toBe(
+      false,
+    );
   });
 
   test("rejects a noop carrying undoUntilMs", () => {
@@ -77,10 +88,16 @@ describe("checkPageOperationDoc", () => {
   });
 
   test("rejects kind undo without undoOfOperationId", () => {
-    expect(checkPageOperationDoc(applied({ kind: "undo", undoUntilMs: undefined })).ok).toBe(false);
+    expect(
+      checkPageOperationDoc(applied({ kind: "undo", undoUntilMs: undefined }))
+        .ok,
+    ).toBe(false);
   });
 
   test("rejects a wrong metadataExpiresAtMs", () => {
-    expect(checkPageOperationDoc(applied({ metadataExpiresAtMs: appliedAtMs + 1 })).ok).toBe(false);
+    expect(
+      checkPageOperationDoc(applied({ metadataExpiresAtMs: appliedAtMs + 1 }))
+        .ok,
+    ).toBe(false);
   });
 });
