@@ -43,7 +43,14 @@ describe("MCP token documents", () => {
   test("the owner view omits hashes and window fields and reports revocation", () => {
     const view = toMcpTokenView("token-1", { ...validDoc, revokedAt: 1_700_000_000_200 });
 
-    expect(Object.keys(view)).toEqual(["id", "name", "prefix", "createdAt", "lastUsedAt", "revoked"]);
+    expect(Object.keys(view)).toEqual([
+      "id",
+      "name",
+      "prefix",
+      "createdAt",
+      "lastUsedAt",
+      "revoked",
+    ]);
     expect(view.revoked).toBe(true);
   });
 

@@ -51,7 +51,10 @@ export function validateMcpTokenDoc(
   }
 
   for (const key of ["createdAt", "lastUsedAt", "revokedAt", "windowStartMs"] as const) {
-    if ((key === "createdAt" || value[key] !== undefined) && !isSafeNonNegativeInteger(value[key])) {
+    if (
+      (key === "createdAt" || value[key] !== undefined) &&
+      !isSafeNonNegativeInteger(value[key])
+    ) {
       return { ok: false, reason: `${key} must be a safe non-negative integer` };
     }
   }
