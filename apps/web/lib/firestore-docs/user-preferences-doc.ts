@@ -40,9 +40,7 @@ function check(input: unknown): UserPreferencesDocCheck {
 
   const keys = Reflect.ownKeys(input);
   const unknownKey = keys.find(
-    (key) =>
-      typeof key !== "string" ||
-      !allowedKeys.has(key as keyof UserPreferencesDoc),
+    (key) => typeof key !== "string" || !allowedKeys.has(key as keyof UserPreferencesDoc)
   );
   if (unknownKey !== undefined) {
     return {
@@ -58,11 +56,7 @@ function check(input: unknown): UserPreferencesDocCheck {
   if (doc.locale !== "en" && doc.locale !== "he") {
     return { ok: false, reason: "Invalid locale" };
   }
-  if (
-    doc.weekStartsOn !== 0 &&
-    doc.weekStartsOn !== 1 &&
-    doc.weekStartsOn !== 6
-  ) {
+  if (doc.weekStartsOn !== 0 && doc.weekStartsOn !== 1 && doc.weekStartsOn !== 6) {
     return { ok: false, reason: "Invalid week start" };
   }
   if (typeof doc.timeZone !== "string") {
@@ -98,9 +92,7 @@ function check(input: unknown): UserPreferencesDocCheck {
   return { ok: true, doc: input as UserPreferencesDoc };
 }
 
-export function checkUserPreferencesDoc(
-  input: unknown,
-): UserPreferencesDocCheck {
+export function checkUserPreferencesDoc(input: unknown): UserPreferencesDocCheck {
   try {
     return check(input);
   } catch {
