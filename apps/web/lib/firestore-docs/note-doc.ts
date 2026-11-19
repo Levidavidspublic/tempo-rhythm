@@ -26,12 +26,7 @@ const NOTE_KEYS = new Set<keyof NoteDoc>([
   "deletedAt",
 ]);
 
-const PERIOD_TYPES = new Set<NoteDoc["periodType"]>([
-  "daily",
-  "weekly",
-  "monthly",
-  "none",
-]);
+const PERIOD_TYPES = new Set<NoteDoc["periodType"]>(["daily", "weekly", "monthly", "none"]);
 
 const PAGE_TYPES = new Set<NonNullable<NoteDoc["pageType"]>>([
   "daily",
@@ -57,23 +52,19 @@ function isCalendarDate(value: unknown): value is string {
   const date = new Date(Date.UTC(year, month - 1, day));
 
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
 function validateNoteDoc(
-  input: unknown,
+  input: unknown
 ): { ok: true; doc: NoteDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, reason: "note must be an object" };
   }
 
   const value = input as Record<string, unknown>;
-  const unknownKey = Object.keys(value).find(
-    (key) => !NOTE_KEYS.has(key as keyof NoteDoc),
-  );
+  const unknownKey = Object.keys(value).find((key) => !NOTE_KEYS.has(key as keyof NoteDoc));
   if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
 
   if (typeof value.title !== "string") {
@@ -120,7 +111,7 @@ function validateNoteDoc(
 }
 
 export function checkNoteDoc(
-  input: unknown,
+  input: unknown
 ): { ok: true; doc: NoteDoc } | { ok: false; reason: string } {
   try {
     return validateNoteDoc(input);
