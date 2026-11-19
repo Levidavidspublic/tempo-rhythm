@@ -18,6 +18,12 @@ export type VoiceLeaseDoc = {
   deletedAt?: number;
 };
 
+export type ActiveLeaseAccounting = {
+  now: number;
+  renewEveryMs: number;
+  maxSessionMs: number;
+};
+
 const VOICE_LEASE_KEYS = new Set<keyof VoiceLeaseDoc>([
   "conversationId",
   "clientKey",
@@ -157,14 +163,23 @@ export function validateVoiceLeaseDoc(
   }
 }
 
-export function leaseUsedMs(doc: VoiceLeaseDoc): number {
-  return doc.status === "ended"
-    ? (doc.durationMs as number)
-    : Math.max(0, doc.lastRenewalAt - doc.startedAt);
+export function leaseUsedMs(doc: VoiceLeaseDoc, accounting: ActiveLeaseAccounting): number {
+  if (doc.status === "ended") return doc.durationMs as number;
+
+  const activeUntil = Math.min(
+    accounting.now,
+    doc.lastRenewalAt + accounting.renewEveryMs,
+    doc.startedAt + accounting.maxSessionMs
+  );
+  return Math.max(0, activeUntil - doc.startedAt);
 }
 
-export function usedMsOnUtcDay(leases: readonly VoiceLeaseDoc[], utcDateKey: string): number {
+export function usedMsOnUtcDay(
+  leases: readonly VoiceLeaseDoc[],
+  utcDateKey: string,
+  accounting: ActiveLeaseAccounting
+): number {
   return leases
     .filter((lease) => lease.utcDateKey === utcDateKey && lease.deletedAt === undefined)
-    .reduce((total, lease) => total + leaseUsedMs(lease), 0);
+    .reduce((total, lease) => total + leaseUsedMs(lease, accounting), 0);
 }

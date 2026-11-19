@@ -30,6 +30,8 @@ const endedLease: VoiceLeaseDoc = {
   endReason: "stopped",
 };
 
+const accounting = { now: 10_000, renewEveryMs: 2_000, maxSessionMs: 8_000 };
+
 describe("voice lease documents", () => {
   test("valid active and ended leases pass", () => {
     expect(validateVoiceLeaseDoc(activeLease)).toEqual({ ok: true, doc: activeLease });
@@ -54,15 +56,18 @@ describe("voice lease documents", () => {
     expect(validateVoiceLeaseDoc({ ...activeLease, endedAt: 5_000 }).ok).toBe(false);
   });
 
-  test("leaseUsedMs returns active elapsed time and ended duration", () => {
-    expect(leaseUsedMs(activeLease)).toBe(3_000);
-    expect(leaseUsedMs(endedLease)).toBe(4_000);
+  test("leaseUsedMs returns backend-style active lease time and ended duration", () => {
+    expect(leaseUsedMs(activeLease, accounting)).toBe(5_000);
+    expect(leaseUsedMs({ ...activeLease, lastRenewalAt: 9_000 }, accounting)).toBe(8_000);
+    expect(leaseUsedMs(endedLease, accounting)).toBe(4_000);
   });
 
   test("usedMsOnUtcDay sums one day and skips soft-deleted leases", () => {
     const otherDay = { ...endedLease, utcDateKey: "2026-11-20", durationMs: 10_000 };
     const deleted = { ...endedLease, durationMs: 20_000, deletedAt: 6_000 };
 
-    expect(usedMsOnUtcDay([activeLease, endedLease, otherDay, deleted], "2026-11-19")).toBe(7_000);
+    expect(
+      usedMsOnUtcDay([activeLease, endedLease, otherDay, deleted], "2026-11-19", accounting)
+    ).toBe(9_000);
   });
 });
