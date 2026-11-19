@@ -36,7 +36,30 @@ jobs:
           mkdir -p /tmp/gts && cd /tmp/gts && echo '{"name":"gts-runner","private":true}' > package.json
           bun add gts@6.0.2 typescript@5.6.3 >/dev/null
           cd "$GITHUB_WORKSPACE"
-          bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
+          # Amit's decision (2026-11-19): the repo has one formatting rule, Biome's (double quotes).
+          # Prettier keeps gts's config file but takes its formatter options from
+          # packages/config/biome.json, so a file Biome formats passes here too and the two gates
+          # can no longer contradict each other. Every other gts rule is unchanged.
+          python3 - <<'PY'
+          import json, os
+          root = os.environ["GITHUB_WORKSPACE"]
+          biome = json.load(open(os.path.join(root, "packages/config/biome.json")))
+          fmt = biome.get("formatter", {})
+          js = biome.get("javascript", {}).get("formatter", {})
+          cfg = json.load(open("/tmp/gts/node_modules/gts/.prettierrc.json"))
+          cfg["singleQuote"] = js.get("quoteStyle", "double") == "single"
+          cfg["jsxSingleQuote"] = js.get("jsxQuoteStyle", "double") == "single"
+          cfg["bracketSpacing"] = js.get("bracketSpacing", fmt.get("bracketSpacing", True))
+          cfg["trailingComma"] = js.get("trailingCommas", "all")
+          cfg["arrowParens"] = "avoid" if js.get("arrowParentheses") == "asNeeded" else "always"
+          cfg["semi"] = js.get("semicolons", "always") == "always"
+          cfg["printWidth"] = js.get("lineWidth", fmt.get("lineWidth", 80))
+          cfg["tabWidth"] = fmt.get("indentWidth", 2)
+          cfg["useTabs"] = fmt.get("indentStyle", "tab") == "tab"
+          json.dump(cfg, open("/tmp/gts/node_modules/gts/.prettierrc.tempo.json", "w"))
+          print("prettier options (gts file, formatter options from packages/config/biome.json):", cfg)
+          PY
+          bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.tempo.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
           # gts's TS override sets parserOptions.project to ./tsconfig.json. This repo has no root
           # tsconfig (packages extend tsconfig.base.json), so the TypeScript parser never loads and
           # ESLint parses .ts with the JS parser ("Unexpected token"). Point @typescript-eslint/parser
@@ -81,6 +104,7 @@ jobs:
             -c /tmp/gts/node_modules/gts/.eslintrc.tempo.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
             --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch \
             --rule 'prettier/prettier: off' \
+            --rule 'quotes: [warn, double, {avoidEscape: true}]' \
             --rule 'n/no-unsupported-features/es-syntax: [error, {version: ">=22"}]' \
             --rule 'n/no-unsupported-features/node-builtins: [error, {version: ">=22"}]' \
             --rule 'n/no-unsupported-features/es-builtins: [error, {version: ">=22"}]' \
