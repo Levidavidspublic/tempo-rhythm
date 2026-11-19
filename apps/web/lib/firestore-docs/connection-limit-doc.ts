@@ -43,7 +43,10 @@ function checkConnectionLimitDocValue(input: unknown): CheckConnectionLimitDocRe
 
   for (const field of ["connectWindowCount", "callWindowCount", "disconnectGeneration"] as const) {
     const value = input[field];
-    if (value !== undefined && (typeof value !== "number" || !Number.isInteger(value) || value < 0)) {
+    if (
+      value !== undefined &&
+      (typeof value !== "number" || !Number.isInteger(value) || value < 0)
+    ) {
       return { ok: false, reason: `${field} must be a non-negative integer when present` };
     }
   }
@@ -58,7 +61,10 @@ function checkConnectionLimitDocValue(input: unknown): CheckConnectionLimitDocRe
     const value = input[field];
     if (value === undefined || typeof value !== "number" || !Number.isFinite(value) || value < 0) {
       if (field === "deletedAt" && value === undefined) continue;
-      if ((field === "connectWindowStartMs" || field === "callWindowStartMs") && value === undefined) {
+      if (
+        (field === "connectWindowStartMs" || field === "callWindowStartMs") &&
+        value === undefined
+      ) {
         continue;
       }
       return { ok: false, reason: `${field} must be a finite non-negative number` };
@@ -96,7 +102,7 @@ export function nextDisconnectGeneration(doc: ConnectionLimitDoc | null | undefi
 
 export function checkConnectionLimitUpdate(
   previous: ConnectionLimitDoc,
-  next: unknown,
+  next: unknown
 ): CheckConnectionLimitDocResult {
   const result = checkConnectionLimitDoc(next);
   if (!result.ok) return result;

@@ -41,7 +41,9 @@ describe("connection limit documents", () => {
   });
 
   test("refuses updatedAt before createdAt", () => {
-    expect(checkConnectionLimitDoc({ ...validDoc, updatedAt: validDoc.createdAt - 1 }).ok).toBe(false);
+    expect(checkConnectionLimitDoc({ ...validDoc, updatedAt: validDoc.createdAt - 1 }).ok).toBe(
+      false
+    );
   });
 
   test("reads a missing disconnect generation as zero and increments it", () => {
@@ -53,8 +55,8 @@ describe("connection limit documents", () => {
   });
 
   test("refuses an update with a lower disconnect generation", () => {
-    expect(
-      checkConnectionLimitUpdate(validDoc, { ...validDoc, disconnectGeneration: 3 }).ok,
-    ).toBe(false);
+    expect(checkConnectionLimitUpdate(validDoc, { ...validDoc, disconnectGeneration: 3 }).ok).toBe(
+      false
+    );
   });
 });
