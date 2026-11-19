@@ -17,7 +17,9 @@ describe("day plan documents", () => {
   });
 
   test("four top tasks are rejected", () => {
-    expect(checkDayPlanDoc({ ...draft, topTaskIds: ["a", "b", "c", "d"] })).toEqual({
+    expect(
+      checkDayPlanDoc({ ...draft, topTaskIds: ["a", "b", "c", "d"] }),
+    ).toEqual({
       ok: false,
       reason: "topTaskIds has more than 3 tasks",
     });

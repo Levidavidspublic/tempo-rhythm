@@ -36,12 +36,14 @@ function isLocalDate(value: unknown): value is string {
   const day = Number(match[3]);
   const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
 }
 
 export function checkDayPlanDoc(
-  input: unknown
+  input: unknown,
 ): { ok: true; doc: DayPlanDoc } | { ok: false; reason: string } {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, reason: "day plan must be an object" };
@@ -54,11 +56,15 @@ export function checkDayPlanDoc(
     }
   }
 
-  if (!isLocalDate(value.localDate)) return { ok: false, reason: "invalid localDate" };
+  if (!isLocalDate(value.localDate))
+    return { ok: false, reason: "invalid localDate" };
   if (value.status !== "draft" && value.status !== "committed") {
     return { ok: false, reason: "invalid status" };
   }
-  if (value.energy !== undefined && !["low", "medium", "high"].includes(value.energy as string)) {
+  if (
+    value.energy !== undefined &&
+    !["low", "medium", "high"].includes(value.energy as string)
+  ) {
     return { ok: false, reason: "invalid energy" };
   }
 
@@ -67,9 +73,18 @@ export function checkDayPlanDoc(
       return { ok: false, reason: `${key} must be a string` };
     }
   }
-  for (const key of ["committedAt", "createdAt", "updatedAt", "deletedAt"] as const) {
+  for (const key of [
+    "committedAt",
+    "createdAt",
+    "updatedAt",
+    "deletedAt",
+  ] as const) {
     if (typeof value[key] !== "number" || !Number.isFinite(value[key])) {
-      if (key === "createdAt" || key === "updatedAt" || value[key] !== undefined) {
+      if (
+        key === "createdAt" ||
+        key === "updatedAt" ||
+        value[key] !== undefined
+      ) {
         return { ok: false, reason: `${key} must be a finite number` };
       }
     }
@@ -81,8 +96,13 @@ export function checkDayPlanDoc(
     }
     if (value.topTaskIds.length > 3)
       return { ok: false, reason: "topTaskIds has more than 3 tasks" };
-    if (value.topTaskIds.some((id) => typeof id !== "string" || id.trim() === "")) {
-      return { ok: false, reason: "topTaskIds contains an empty or invalid id" };
+    if (
+      value.topTaskIds.some((id) => typeof id !== "string" || id.trim() === "")
+    ) {
+      return {
+        ok: false,
+        reason: "topTaskIds contains an empty or invalid id",
+      };
     }
     if (new Set(value.topTaskIds).size !== value.topTaskIds.length) {
       return { ok: false, reason: "topTaskIds contains a duplicate id" };
