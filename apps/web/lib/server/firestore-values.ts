@@ -49,7 +49,7 @@ function encodeValue(value: unknown, path: string, insideArray = false): RestVal
     if (insideArray) throw new FirestoreValueError(path);
     return {
       arrayValue: {
-        values: value.map((item, index) => {
+        values: Array.from(value, (item, index) => {
           const itemPath = `${path}[${index}]`;
           if (item === undefined) throw new FirestoreValueError(itemPath);
           return encodeValue(item, itemPath, true);
