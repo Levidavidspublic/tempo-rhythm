@@ -71,7 +71,8 @@ export function parseNotificationDoc(input: unknown): NotificationDoc {
     updatedAt: parseNumber(record.updatedAt, "updatedAt"),
   };
 
-  if (record.readAt !== undefined) doc.readAt = parseNumber(record.readAt, "readAt");
+  if (record.readAt !== undefined)
+    doc.readAt = parseNumber(record.readAt, "readAt");
   if (record.deletedAt !== undefined) {
     doc.deletedAt = parseNumber(record.deletedAt, "deletedAt");
   }
@@ -79,15 +80,23 @@ export function parseNotificationDoc(input: unknown): NotificationDoc {
   return doc;
 }
 
-export function markNotificationRead(doc: NotificationDoc, now: number): NotificationDoc {
+export function markNotificationRead(
+  doc: NotificationDoc,
+  now: number,
+): NotificationDoc {
   if (doc.readAt !== undefined) return doc;
   return { ...doc, readAt: now, updatedAt: now };
 }
 
-export function softDeleteNotificationDoc(doc: NotificationDoc, now: number): NotificationDoc {
+export function softDeleteNotificationDoc(
+  doc: NotificationDoc,
+  now: number,
+): NotificationDoc {
   return { ...doc, deletedAt: now, updatedAt: now };
 }
 
 export function countUnread(docs: readonly NotificationDoc[]): number {
-  return docs.filter((doc) => doc.readAt === undefined && doc.deletedAt === undefined).length;
+  return docs.filter(
+    (doc) => doc.readAt === undefined && doc.deletedAt === undefined,
+  ).length;
 }
