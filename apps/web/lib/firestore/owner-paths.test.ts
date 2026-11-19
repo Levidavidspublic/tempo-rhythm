@@ -57,10 +57,7 @@ test("does not include rejected uid or document id values in errors", () => {
   const uid = "private/user-value";
   const docId = "private/document-value";
 
-  for (const build of [
-    () => userDocPath(uid),
-    () => ownerDocPath("user-1", "tasks", docId),
-  ]) {
+  for (const build of [() => userDocPath(uid), () => ownerDocPath("user-1", "tasks", docId)]) {
     try {
       build();
       throw new Error("Expected path validation to fail");

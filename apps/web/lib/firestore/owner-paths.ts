@@ -38,7 +38,10 @@ export class OwnerPathError extends Error {
   }
 }
 
-function assertValidSegment(value: unknown, segment: "uid" | "document id"): asserts value is string {
+function assertValidSegment(
+  value: unknown,
+  segment: "uid" | "document id"
+): asserts value is string {
   if (
     typeof value !== "string" ||
     value.length === 0 ||
