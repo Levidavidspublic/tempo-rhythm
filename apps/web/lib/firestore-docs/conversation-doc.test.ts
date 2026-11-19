@@ -1,34 +1,38 @@
-import { describe, expect, test } from "bun:test";
+import {describe, expect, test} from 'bun:test';
 
-import { checkConversationDoc, checkMessageDoc } from "./conversation-doc";
+import {checkConversationDoc, checkMessageDoc} from './conversation-doc';
 
-describe("conversation documents", () => {
-  test("accepts a valid conversation", () => {
-    expect(checkConversationDoc({ title: "Planning", createdAt: 1, updatedAt: 2 })).toEqual({
+describe('conversation documents', () => {
+  test('accepts a valid conversation', () => {
+    expect(
+      checkConversationDoc({title: 'Planning', createdAt: 1, updatedAt: 2})
+    ).toEqual({
       ok: true,
-      doc: { title: "Planning", createdAt: 1, updatedAt: 2 },
+      doc: {title: 'Planning', createdAt: 1, updatedAt: 2},
     });
   });
 
-  test("refuses a conversation with userId", () => {
+  test('refuses a conversation with userId', () => {
     expect(
       checkConversationDoc({
-        title: "Planning",
-        userId: "owner",
+        title: 'Planning',
+        userId: 'owner',
         createdAt: 1,
         updatedAt: 2,
       }).ok
     ).toBe(false);
   });
 
-  test("refuses an empty title", () => {
-    expect(checkConversationDoc({ title: "  ", createdAt: 1, updatedAt: 2 }).ok).toBe(false);
+  test('refuses an empty title', () => {
+    expect(
+      checkConversationDoc({title: '  ', createdAt: 1, updatedAt: 2}).ok
+    ).toBe(false);
   });
 
-  test("refuses a negative nextChatSequence", () => {
+  test('refuses a negative nextChatSequence', () => {
     expect(
       checkConversationDoc({
-        title: "Planning",
+        title: 'Planning',
         nextChatSequence: -1,
         createdAt: 1,
         updatedAt: 2,
@@ -37,47 +41,51 @@ describe("conversation documents", () => {
   });
 });
 
-describe("message documents", () => {
-  test("accepts a valid message with sources", () => {
+describe('message documents', () => {
+  test('accepts a valid message with sources', () => {
     expect(
       checkMessageDoc({
-        conversationId: "conversation-1",
-        role: "assistant",
-        content: "Try this.",
-        sources: [{ title: "Tempo", site: "tempo", url: "https://example.com/tempo" }],
+        conversationId: 'conversation-1',
+        role: 'assistant',
+        content: 'Try this.',
+        sources: [
+          {title: 'Tempo', site: 'tempo', url: 'https://example.com/tempo'},
+        ],
         createdAt: 1,
       }).ok
     ).toBe(true);
   });
 
-  test("refuses the tool role", () => {
+  test('refuses the tool role', () => {
     expect(
       checkMessageDoc({
-        conversationId: "conversation-1",
-        role: "tool",
-        content: "",
+        conversationId: 'conversation-1',
+        role: 'tool',
+        content: '',
         createdAt: 1,
       }).ok
     ).toBe(false);
   });
 
-  test("refuses a javascript source URL", () => {
+  test('refuses a javascript source URL', () => {
     expect(
       checkMessageDoc({
-        conversationId: "conversation-1",
-        role: "assistant",
-        content: "Try this.",
-        sources: [{ title: "Unsafe", site: "unsafe", url: "javascript:alert(1)" }],
+        conversationId: 'conversation-1',
+        role: 'assistant',
+        content: 'Try this.',
+        sources: [
+          {title: 'Unsafe', site: 'unsafe', url: 'javascript:alert(1)'},
+        ],
         createdAt: 1,
       }).ok
     ).toBe(false);
   });
 
-  test("keeps deletedAt on a soft-deleted message", () => {
+  test('keeps deletedAt on a soft-deleted message', () => {
     const result = checkMessageDoc({
-      conversationId: "conversation-1",
-      role: "user",
-      content: "Old message",
+      conversationId: 'conversation-1',
+      role: 'user',
+      content: 'Old message',
       createdAt: 1,
       deletedAt: 2,
     });
