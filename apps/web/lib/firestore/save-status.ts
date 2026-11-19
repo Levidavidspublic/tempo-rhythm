@@ -41,6 +41,6 @@ export function mergeSaveStatus(statuses: readonly SaveStatus[]): SaveStatus {
   if (statuses.length === 0) return SAVE_STATUSES.loading;
 
   return statuses.reduce((worst, status) =>
-    SAVE_STATE_PRIORITY[status.state] < SAVE_STATE_PRIORITY[worst.state] ? status : worst,
+    SAVE_STATE_PRIORITY[status.state] < SAVE_STATE_PRIORITY[worst.state] ? status : worst
   );
 }
