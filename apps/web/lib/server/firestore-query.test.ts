@@ -17,7 +17,7 @@ describe("Firestore list query builder", () => {
         uid: "owner1",
         collection: "tasks",
         filters: [{ field: "priority", op: ">=", value: 2 }],
-      }).body.structuredQuery.where,
+      }).body.structuredQuery.where
     ).toEqual({
       fieldFilter: {
         field: { fieldPath: "priority" },
@@ -36,7 +36,7 @@ describe("Firestore list query builder", () => {
           { field: "done", op: "==", value: false },
           { field: "score", op: "<", value: 2.5 },
         ],
-      }).body.structuredQuery.where,
+      }).body.structuredQuery.where
     ).toEqual({
       compositeFilter: {
         op: "AND",
@@ -67,7 +67,7 @@ describe("Firestore list query builder", () => {
         collection: "notes",
         orderBy: { field: "title", direction: "desc" },
         startAfter: "later",
-      }).body.structuredQuery,
+      }).body.structuredQuery
     ).toMatchObject({
       orderBy: [{ field: { fieldPath: "title" }, direction: "DESCENDING" }],
       startAt: { values: [{ stringValue: "later" }], before: false },
@@ -91,13 +91,13 @@ describe("Firestore list query builder", () => {
       buildListQuery({
         ...base,
         filters: [{ field: "bad.name", op: "==", value: "x" }],
-      }),
+      })
     ).toThrow(FirestoreQueryError);
     expect(() =>
       buildListQuery({
         ...base,
         filters: [{ field: "score", op: "==", value: Infinity }],
-      }),
+      })
     ).toThrow(FirestoreQueryError);
     expect(() =>
       buildListQuery({
@@ -107,19 +107,15 @@ describe("Firestore list query builder", () => {
           op: "==" as const,
           value: true,
         })),
-      }),
+      })
     ).toThrow(FirestoreQueryError);
   });
 
   test("refuses invalid limits and an unordered cursor", () => {
     const base = { uid: "owner1", collection: "tasks" };
     for (const limit of [0, 201, 1.5]) {
-      expect(() => buildListQuery({ ...base, limit })).toThrow(
-        FirestoreQueryError,
-      );
+      expect(() => buildListQuery({ ...base, limit })).toThrow(FirestoreQueryError);
     }
-    expect(() => buildListQuery({ ...base, startAfter: 1 })).toThrow(
-      FirestoreQueryError,
-    );
+    expect(() => buildListQuery({ ...base, startAfter: 1 })).toThrow(FirestoreQueryError);
   });
 });

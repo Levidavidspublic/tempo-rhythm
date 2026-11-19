@@ -106,8 +106,7 @@ export function buildListQuery(request: ListRequest): {
     structuredQuery.orderBy = [
       {
         field: { fieldPath: request.orderBy.field },
-        direction:
-          request.orderBy.direction === "asc" ? "ASCENDING" : "DESCENDING",
+        direction: request.orderBy.direction === "asc" ? "ASCENDING" : "DESCENDING",
       },
     ];
   }
