@@ -8,7 +8,9 @@ import {
 } from "./email-link-sign-in";
 
 test("normalizeSignInEmail trims and lower-cases a good address", () => {
-  expect(normalizeSignInEmail("  Person@Example.com  ")).toBe("person@example.com");
+  expect(normalizeSignInEmail("  Person@Example.com  ")).toBe(
+    "person@example.com",
+  );
 });
 
 test("normalizeSignInEmail rejects unusable addresses", () => {
@@ -25,21 +27,31 @@ test("parseEmailSignInLink reads secure and local sign-in links", () => {
     ),
   ).toEqual({ oobCode: "Made_up-123" });
   expect(
-    parseEmailSignInLink("http://localhost/finish?mode=signIn&oobCode=Local_code-456"),
+    parseEmailSignInLink(
+      "http://localhost/finish?mode=signIn&oobCode=Local_code-456",
+    ),
   ).toEqual({ oobCode: "Local_code-456" });
 });
 
 test("parseEmailSignInLink rejects links that are not usable for sign-in", () => {
   expect(
-    parseEmailSignInLink("https://example.com/finish?mode=resetPassword&oobCode=Reset_123"),
+    parseEmailSignInLink(
+      "https://example.com/finish?mode=resetPassword&oobCode=Reset_123",
+    ),
   ).toBeNull();
-  expect(parseEmailSignInLink("https://example.com/finish?mode=signIn")).toBeNull();
   expect(
-    parseEmailSignInLink("https://example.com/finish?mode=signIn&oobCode=bad%20code"),
+    parseEmailSignInLink("https://example.com/finish?mode=signIn"),
+  ).toBeNull();
+  expect(
+    parseEmailSignInLink(
+      "https://example.com/finish?mode=signIn&oobCode=bad%20code",
+    ),
   ).toBeNull();
   expect(parseEmailSignInLink("not a URL")).toBeNull();
   expect(
-    parseEmailSignInLink("http://example.com/finish?mode=signIn&oobCode=Code_123"),
+    parseEmailSignInLink(
+      "http://example.com/finish?mode=signIn&oobCode=Code_123",
+    ),
   ).toBeNull();
 
   const result = parseEmailSignInLink(
@@ -49,7 +61,8 @@ test("parseEmailSignInLink rejects links that are not usable for sign-in", () =>
 });
 
 test("every email sign-in state has calm, non-empty copy", () => {
-  const bannedWords = /\b(failed|wrong|invalid|error|must|should|forgot|password)\b/i;
+  const bannedWords =
+    /\b(failed|wrong|invalid|error|must|should|forgot|password)\b/i;
 
   for (const state of EMAIL_SIGN_IN_STATES) {
     const copy = emailSignInCopy(state);
@@ -62,9 +75,13 @@ test("every email sign-in state has calm, non-empty copy", () => {
 test("nextEmailSignInState chooses the state from the link and remembered email", () => {
   const link = { oobCode: "Made_up-123" } as const;
 
-  expect(nextEmailSignInState({ link: null, rememberedEmail: null })).toBe("idle");
-  expect(nextEmailSignInState({ link, rememberedEmail: " Person@Example.com " })).toBe(
-    "signing_in",
+  expect(nextEmailSignInState({ link: null, rememberedEmail: null })).toBe(
+    "idle",
   );
-  expect(nextEmailSignInState({ link, rememberedEmail: null })).toBe("confirm_email");
+  expect(
+    nextEmailSignInState({ link, rememberedEmail: " Person@Example.com " }),
+  ).toBe("signing_in");
+  expect(nextEmailSignInState({ link, rememberedEmail: null })).toBe(
+    "confirm_email",
+  );
 });
