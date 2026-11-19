@@ -16,7 +16,7 @@ export type TimeBlockDoc = {
   deletedAt?: number;
 };
 
-export type CheckTimeBlockDocResult =
+type CheckTimeBlockDocResult =
   | { ok: true; doc: TimeBlockDoc }
   | { ok: false; reason: string };
 
@@ -45,7 +45,8 @@ function isPlainObject(input: unknown): input is Record<string, unknown> {
 }
 
 function isRealLocalDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   const hasExpectedYear = date.getUTCFullYear() === year;
@@ -55,11 +56,15 @@ function isRealLocalDate(value: unknown): value is string {
 }
 
 function isOptionalNonEmptyString(value: unknown): boolean {
-  return value === undefined || (typeof value === "string" && value.trim().length > 0);
+  return (
+    value === undefined ||
+    (typeof value === "string" && value.trim().length > 0)
+  );
 }
 
 function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
-  if (!isPlainObject(input)) return { ok: false, reason: "Time block must be a plain object" };
+  if (!isPlainObject(input))
+    return { ok: false, reason: "Time block must be a plain object" };
 
   for (const key of Object.keys(input)) {
     if (!allowedKeys.has(key as keyof TimeBlockDoc)) {
@@ -80,7 +85,10 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
     startMinute < 0 ||
     startMinute > 1439
   ) {
-    return { ok: false, reason: "startMinute must be an integer from 0 to 1439" };
+    return {
+      ok: false,
+      reason: "startMinute must be an integer from 0 to 1439",
+    };
   }
   const durationMinutes = input.durationMinutes;
   if (
@@ -89,18 +97,29 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
     durationMinutes < 5 ||
     durationMinutes > 720
   ) {
-    return { ok: false, reason: "durationMinutes must be an integer from 5 to 720" };
+    return {
+      ok: false,
+      reason: "durationMinutes must be an integer from 5 to 720",
+    };
   }
-  if (typeof input.startsAtMs !== "number" || !Number.isFinite(input.startsAtMs)) {
+  if (
+    typeof input.startsAtMs !== "number" ||
+    !Number.isFinite(input.startsAtMs)
+  ) {
     return { ok: false, reason: "startsAtMs must be a finite number" };
   }
   if (typeof input.endsAtMs !== "number" || !Number.isFinite(input.endsAtMs)) {
     return { ok: false, reason: "endsAtMs must be a finite number" };
   }
   if (input.endsAtMs - input.startsAtMs !== durationMinutes * 60_000) {
-    return { ok: false, reason: "endsAtMs must match startsAtMs plus durationMinutes" };
+    return {
+      ok: false,
+      reason: "endsAtMs must match startsAtMs plus durationMinutes",
+    };
   }
-  if (!["focus", "task", "habit", "break", "other"].includes(input.kind as string)) {
+  if (
+    !["focus", "task", "habit", "break", "other"].includes(input.kind as string)
+  ) {
     return { ok: false, reason: "kind is invalid" };
   }
   if (!["planned", "done", "skipped"].includes(input.status as string)) {
@@ -111,7 +130,10 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
   }
   for (const field of ["dayPlanId", "taskId", "habitId"] as const) {
     if (!isOptionalNonEmptyString(input[field])) {
-      return { ok: false, reason: `${field} must be a non-empty string when present` };
+      return {
+        ok: false,
+        reason: `${field} must be a non-empty string when present`,
+      };
     }
   }
   for (const field of ["createdAt", "updatedAt"] as const) {
@@ -123,7 +145,10 @@ function checkTimeBlockDocValue(input: unknown): CheckTimeBlockDocResult {
     input.deletedAt !== undefined &&
     (typeof input.deletedAt !== "number" || !Number.isFinite(input.deletedAt))
   ) {
-    return { ok: false, reason: "deletedAt must be a finite number when present" };
+    return {
+      ok: false,
+      reason: "deletedAt must be a finite number when present",
+    };
   }
 
   return { ok: true, doc: { ...input } as TimeBlockDoc };
