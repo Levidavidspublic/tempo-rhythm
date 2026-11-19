@@ -57,7 +57,10 @@ describe("readFirestoreDocument", () => {
     ["a non-object answer", null],
     ["a missing name", { updateTime }],
     ["a non-string name", { name: 42, updateTime }],
-    ["a name outside the default database", { name: "projects/tempo/documents/users/u1", updateTime }],
+    [
+      "a name outside the default database",
+      { name: "projects/tempo/documents/users/u1", updateTime },
+    ],
     ["a collection path", document("users/u1/tasks")],
     ["an empty path segment", document("users/u1//t1")],
     ["non-object fields", document("users/u1", { fields: [] })],
