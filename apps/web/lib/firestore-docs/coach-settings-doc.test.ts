@@ -10,16 +10,33 @@ import {
 
 describe("coach settings Firestore document", () => {
   test("parses a valid document", () => {
-    const doc = { dial: 5, taskLoad: 3, acceptedStreak: 2, updatedAt: 100, panicUntil: 200 };
+    const doc = {
+      dial: 5,
+      taskLoad: 3,
+      acceptedStreak: 2,
+      updatedAt: 100,
+      panicUntil: 200,
+    };
     expect(parseCoachSettingsDoc(doc)).toEqual(doc);
   });
 
   test("refuses dial 11, fractional dial, and task load 5", () => {
     const base = { dial: 5, taskLoad: 2, acceptedStreak: 0, updatedAt: 100 };
+<<<<<<< ours
     expect(() => parseCoachSettingsDoc({ ...base, dial: 11 })).toThrow("Invalid field: dial");
     expect(() => parseCoachSettingsDoc({ ...base, dial: 2.5 })).toThrow("Invalid field: dial");
     expect(() => parseCoachSettingsDoc({ ...base, taskLoad: 5 })).toThrow(
       "Invalid field: taskLoad"
+=======
+    expect(() => parseCoachSettingsDoc({ ...base, dial: 11 })).toThrow(
+      "Invalid field: dial",
+    );
+    expect(() => parseCoachSettingsDoc({ ...base, dial: 2.5 })).toThrow(
+      "Invalid field: dial",
+    );
+    expect(() => parseCoachSettingsDoc({ ...base, taskLoad: 5 })).toThrow(
+      "Invalid field: taskLoad",
+>>>>>>> theirs
     );
   });
 
@@ -28,12 +45,28 @@ describe("coach settings Firestore document", () => {
       ...COACH_SETTINGS_DEFAULTS,
       updatedAt: 123,
     });
+<<<<<<< ours
     expect(readCoachSettings(null, 456)).toEqual({ ...COACH_SETTINGS_DEFAULTS, updatedAt: 456 });
+=======
+    expect(readCoachSettings(null, 456)).toEqual({
+      ...COACH_SETTINGS_DEFAULTS,
+      updatedAt: 456,
+    });
+>>>>>>> theirs
   });
 
   test("reads a soft-deleted document as the defaults", () => {
-    const deleted = { dial: 9, taskLoad: 4, acceptedStreak: 7, updatedAt: 100, deletedAt: 200 };
-    expect(readCoachSettings(deleted, 300)).toEqual({ ...COACH_SETTINGS_DEFAULTS, updatedAt: 300 });
+    const deleted = {
+      dial: 9,
+      taskLoad: 4,
+      acceptedStreak: 7,
+      updatedAt: 100,
+      deletedAt: 200,
+    };
+    expect(readCoachSettings(deleted, 300)).toEqual({
+      ...COACH_SETTINGS_DEFAULTS,
+      updatedAt: 300,
+    });
   });
 
   test("drops legacy keys and refuses an unknown key", () => {
