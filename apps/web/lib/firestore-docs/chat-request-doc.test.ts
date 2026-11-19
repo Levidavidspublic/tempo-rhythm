@@ -46,6 +46,8 @@ describe("chat request documents", () => {
 
   test("rejects updatedAt before createdAt", () => {
     expect(checkChatRequestDoc({ ...validRequest, updatedAt: 99 }).ok).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, createdAt: undefined }).ok).toBe(false);
+    expect(checkChatRequestDoc({ ...validRequest, updatedAt: undefined }).ok).toBe(false);
   });
 
   test("soft delete sets deletedAt and keeps every other field", () => {

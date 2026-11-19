@@ -91,7 +91,12 @@ export function checkChatRequestDoc(input: unknown): CheckResult {
     return { ok: false, reason: "generationEpoch must be a safe nonnegative integer" };
   }
 
-  for (const key of ["createdAt", "updatedAt", "generationLeaseExpiresAtMs", "deletedAt"] as const) {
+  for (const key of ["createdAt", "updatedAt"] as const) {
+    if (!isSafeNonnegativeInteger(candidate[key])) {
+      return { ok: false, reason: `${key} must be a safe nonnegative integer` };
+    }
+  }
+  for (const key of ["generationLeaseExpiresAtMs", "deletedAt"] as const) {
     if (candidate[key] !== undefined && !isSafeNonnegativeInteger(candidate[key])) {
       return { ok: false, reason: `${key} must be a safe nonnegative integer` };
     }
