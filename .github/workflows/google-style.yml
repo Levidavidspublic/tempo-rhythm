@@ -34,10 +34,25 @@ jobs:
           # version is raised to the repo's Node 22 so modern syntax is not flagged as
           # a style violation. The prettier rule stays off inside eslint (double run).
           mkdir -p /tmp/gts && cd /tmp/gts && echo '{"name":"gts-runner","private":true}' > package.json
-          bun add gts@6.0.2 typescript@5.6.3 >/dev/null
+          bun add gts@6.0.2 typescript@5.6.3 @biomejs/biome@2.3.8 >/dev/null
           cd "$GITHUB_WORKSPACE"
-          # apps/ and packages/ are formatted by the format-naming workflow with Biome.
-          # Keep this required gate's Prettier coverage for TS/JS everywhere else.
+          # Use Biome for its apps/packages ownership and Prettier everywhere else.
+          # Both run in this required job, so format-naming being optional cannot leave a gap.
+          mapfile -t biome_f < <(printf '%s\n' "${f[@]}" | grep -E '^(apps|packages)/' || true)
+          if [ ${#biome_f[@]} -eq 0 ]; then
+            echo "no TS/JS files under apps/ or packages/ for Biome"
+          else
+            mapfile -t workspaces < <(printf '%s\n' "${biome_f[@]}" | cut -d/ -f1-2 | sort -u)
+            for ws in "${workspaces[@]}"; do
+              rel=()
+              for file in "${biome_f[@]}"; do
+                [[ "$file" == "$ws/"* ]] && rel+=("${file#"$ws/"}")
+              done
+              (cd "$ws" && /tmp/gts/node_modules/.bin/biome format \
+                --vcs-use-ignore-file=false \
+                --config-path="$GITHUB_WORKSPACE/packages/config/biome.json" "${rel[@]}")
+            done
+          fi
           mapfile -t prettier_f < <(printf '%s\n' "${f[@]}" | grep -vE '^(apps|packages)/' || true)
           if [ ${#prettier_f[@]} -eq 0 ]; then
             echo "no TS/JS files outside apps/ or packages/ for Prettier"
