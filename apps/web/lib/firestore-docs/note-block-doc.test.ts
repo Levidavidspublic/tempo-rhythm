@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
+// prettier-ignore
 import { checkNoteBlockDoc, softDeleteNoteBlock, type NoteBlockDoc } from "./note-block-doc";
 
-const common = { noteId: "note_1", position: 0, createdAt: 100, updatedAt: 100 };
+const common = {
+  noteId: "note_1",
+  position: 0,
+  createdAt: 100,
+  updatedAt: 100,
+};
 const pageMeta = {
   ...common,
   type: "page-meta",
@@ -39,10 +45,17 @@ const template = {
 } as const;
 
 describe("note block documents", () => {
+  // prettier-ignore
   test("accepts a valid page-meta block", () => expect(checkNoteBlockDoc(pageMeta).ok).toBe(true));
+  // prettier-ignore
   test("accepts a valid task block", () => expect(checkNoteBlockDoc(task).ok).toBe(true));
+  // prettier-ignore
   test("accepts a valid template block", () => expect(checkNoteBlockDoc(template).ok).toBe(true));
   test("accepts a valid broken block without blockId", () => {
+<<<<<<< ours
+=======
+    // prettier-ignore
+>>>>>>> theirs
     expect(
       checkNoteBlockDoc({
         ...common,
@@ -51,14 +64,20 @@ describe("note block documents", () => {
       }).ok
     ).toBe(true);
   });
+  // prettier-ignore
   test("rejects the unknown userId key", () =>
     expect(checkNoteBlockDoc({ ...pageMeta, userId: "user_1" }).ok).toBe(false));
+  // prettier-ignore
   test("rejects an unknown key inside data", () =>
-    expect(checkNoteBlockDoc({ ...pageMeta, data: { ...pageMeta.data, extra: true } }).ok).toBe(
-      false
-    ));
+    expect(
+      checkNoteBlockDoc({
+        ...pageMeta,
+        data: { ...pageMeta.data, extra: true },
+      }).ok
+    ).toBe(false));
   test("rejects an unknown type", () =>
     expect(checkNoteBlockDoc({ ...pageMeta, type: "event" }).ok).toBe(false));
+  // prettier-ignore
   test("rejects a task with durationMin 0", () =>
     expect(checkNoteBlockDoc({ ...task, data: { ...task.data, durationMin: 0 } }).ok).toBe(false));
   test("soft delete sets deletedAt and keeps data unchanged", () => {

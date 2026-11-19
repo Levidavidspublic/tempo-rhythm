@@ -8,13 +8,22 @@ type CommonFields = {
   deletedAt?: number;
 };
 
+<<<<<<< ours
 type StoredBlock<Ttype extends string, Tdata> = CommonFields & {
   type: Ttype;
   blockId: string;
   v: 1;
   data: Tdata;
+=======
+type StoredBlock<Type extends string, Data> = CommonFields & {
+  type: Type;
+  blockId: string;
+  v: 1;
+  data: Data;
+>>>>>>> theirs
 };
 
+// prettier-ignore
 export type NoteBlockDoc =
   | StoredBlock<"page-meta", { pageType: PageType; date?: string; tags: string[] }>
   | StoredBlock<
@@ -60,6 +69,7 @@ export type NoteBlockDoc =
         | "nesting_too_deep";
     });
 
+// prettier-ignore
 type CheckResult = { ok: true; doc: NoteBlockDoc } | { ok: false; reason: string };
 type RecordValue = Record<string, unknown>;
 
@@ -78,6 +88,7 @@ const ERROR_CODES = new Set([
   "duplicate_page_meta",
   "nesting_too_deep",
 ]);
+// prettier-ignore
 const COMMON_KEYS = ["type", "noteId", "position", "createdAt", "updatedAt", "deletedAt"];
 
 function isRecord(value: unknown): value is RecordValue {
@@ -100,10 +111,12 @@ function isOptionalNullableString(value: unknown): boolean {
   return value === undefined || value === null || typeof value === "string";
 }
 
+// prettier-ignore
 function stringsOnly(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+// prettier-ignore
 function validCommon(input: RecordValue): string | undefined {
   if (typeof input.noteId !== "string" || input.noteId.trim() === "" || input.noteId.includes("/"))
     return "invalid noteId";
@@ -119,6 +132,7 @@ function validCommon(input: RecordValue): string | undefined {
   return undefined;
 }
 
+// prettier-ignore
 function validStoredEnvelope(input: RecordValue): string | undefined {
   if (typeof input.blockId !== "string" || input.blockId.trim() === "") return "invalid blockId";
   if (input.v !== 1) return "invalid version";
@@ -126,6 +140,7 @@ function validStoredEnvelope(input: RecordValue): string | undefined {
   return undefined;
 }
 
+// prettier-ignore
 export function checkNoteBlockDoc(input: unknown): CheckResult {
   if (!isRecord(input)) return { ok: false, reason: "document must be an object" };
   if (!["page-meta", "task", "template", "broken"].includes(input.type as string)) {
@@ -137,9 +152,11 @@ export function checkNoteBlockDoc(input: unknown): CheckResult {
 
   if (input.type === "broken") {
     const allowed = [...COMMON_KEYS, "blockId", "errorCode"];
+    // prettier-ignore
     if (!hasOnlyKeys(input, allowed)) return { ok: false, reason: "unknown top-level key" };
     if (input.blockId !== undefined && typeof input.blockId !== "string")
       return { ok: false, reason: "invalid blockId" };
+    // prettier-ignore
     if (typeof input.errorCode !== "string" || !ERROR_CODES.has(input.errorCode))
       return { ok: false, reason: "invalid errorCode" };
     return { ok: true, doc: input as NoteBlockDoc };
@@ -210,6 +227,7 @@ export function checkNoteBlockDoc(input: unknown): CheckResult {
   return { ok: true, doc: input as NoteBlockDoc };
 }
 
+// prettier-ignore
 export function softDeleteNoteBlock(doc: NoteBlockDoc, nowMs: number): NoteBlockDoc {
   return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
 }
