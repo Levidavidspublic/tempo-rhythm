@@ -36,13 +36,17 @@ describe("connection secret documents", () => {
 
   test("refuses a deleted document that still holds ciphertext", () => {
     expect(checkConnectionSecretDoc({ ...validSecret, deletedAt: validSecret.updatedAt }).ok).toBe(
-      false,
+      false
     );
   });
 
   test("does not include a ciphertext value in a refusal reason", () => {
     const cipher = "cipher-must-not-leak";
-    const result = checkConnectionSecretDoc({ ...validSecret, deletedAt: 1, accessTokenCipher: cipher });
+    const result = checkConnectionSecretDoc({
+      ...validSecret,
+      deletedAt: 1,
+      accessTokenCipher: cipher,
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).not.toContain(cipher);
