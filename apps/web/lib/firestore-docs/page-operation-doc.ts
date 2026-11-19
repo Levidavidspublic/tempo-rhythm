@@ -133,7 +133,7 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     if (
       keys.length !== 3 ||
       !keys.every((key) =>
-        ["startUtf16", "removedLengthUtf16", "insertedLengthUtf16"].includes(key),
+        ["startUtf16", "removedLengthUtf16", "insertedLengthUtf16"].includes(key)
       )
     ) {
       return fail("delta entry has an invalid shape");
@@ -176,7 +176,12 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     ) {
       return fail("a noop must leave the body, revision, digest, and delta unchanged");
     }
-    if (has("undoUntilMs") || has("undoneAtMs") || has("undoneByOperationId") || has("undoOfOperationId")) {
+    if (
+      has("undoUntilMs") ||
+      has("undoneAtMs") ||
+      has("undoneByOperationId") ||
+      has("undoOfOperationId")
+    ) {
       return fail("a noop cannot carry undo fields");
     }
   }
