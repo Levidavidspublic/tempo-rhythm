@@ -91,7 +91,8 @@ export function toTaskDoc(input: Record<string, unknown>): TaskDoc {
     if (key in clean && !isFiniteNumber(clean[key])) fail(key);
   }
   if ("energy" in clean && !isOneOf(clean.energy, TASK_ENERGIES)) fail("energy");
-  if ("flexibility" in clean && !isOneOf(clean.flexibility, TASK_FLEXIBILITIES)) fail("flexibility");
+  if ("flexibility" in clean && !isOneOf(clean.flexibility, TASK_FLEXIBILITIES))
+    fail("flexibility");
 
   if ("timeSpentOnDay" in clean) {
     const spent = clean.timeSpentOnDay;
@@ -125,7 +126,7 @@ export function toTaskDoc(input: Record<string, unknown>): TaskDoc {
 
 export function newTaskDoc(
   input: { title: string; priority?: TaskPriority; status?: TaskStatus } & Partial<TaskDoc>,
-  now: number,
+  now: number
 ): TaskDoc {
   const status = input.status ?? "todo";
   const candidate: Record<string, unknown> = {

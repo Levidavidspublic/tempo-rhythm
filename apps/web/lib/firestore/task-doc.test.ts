@@ -30,7 +30,13 @@ test("toTaskDoc drops datastore and ownership fields", () => {
     _id: "task",
     _creationTime: 0,
   });
-  expect(result).toEqual({ title: "Task", status: "todo", priority: "low", createdAt: 1, updatedAt: 2 });
+  expect(result).toEqual({
+    title: "Task",
+    status: "todo",
+    priority: "low",
+    createdAt: 1,
+    updatedAt: 2,
+  });
   expect("userId" in result).toBe(false);
 });
 
@@ -46,7 +52,9 @@ test("invalid required, unknown, and checklist fields throw", () => {
   expect(() => toTaskDoc({ ...base, title: "  " })).toThrow(TaskDocError);
   expect(() => toTaskDoc({ ...base, createdAt: "yesterday" })).toThrow(TaskDocError);
   expect(() => toTaskDoc({ ...base, surprise: true })).toThrow(TaskDocError);
-  expect(() => toTaskDoc({ ...base, checklist: [{ id: "1", text: "Step" }] })).toThrow(TaskDocError);
+  expect(() => toTaskDoc({ ...base, checklist: [{ id: "1", text: "Step" }] })).toThrow(
+    TaskDocError
+  );
 });
 
 test("patchTaskDoc manages completion transitions and timestamps", () => {
@@ -62,7 +70,12 @@ test("soft delete and restore round-trip without removing other fields", () => {
   const original = newTaskDoc({ title: "Task", description: "Keep me", projectName: "Home" }, 10);
   const deleted = softDeleteTaskDoc(original, 20);
   const restored = restoreTaskDoc(deleted, 30);
-  expect(deleted).toMatchObject({ deletedAt: 20, updatedAt: 20, description: "Keep me", projectName: "Home" });
+  expect(deleted).toMatchObject({
+    deletedAt: 20,
+    updatedAt: 20,
+    description: "Keep me",
+    projectName: "Home",
+  });
   expect(restored).toMatchObject({ updatedAt: 30, description: "Keep me", projectName: "Home" });
   expect("deletedAt" in restored).toBe(false);
 });
