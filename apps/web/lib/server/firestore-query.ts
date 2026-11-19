@@ -70,9 +70,10 @@ function fieldFilter(filter: ListFilter) {
   };
 }
 
-export function buildListQuery(
-  request: ListRequest
-): { parent: string; body: { structuredQuery: Record<string, unknown> } } {
+export function buildListQuery(request: ListRequest): {
+  parent: string;
+  body: { structuredQuery: Record<string, unknown> };
+} {
   validateSegment(request.uid, "uid");
   validateSegment(request.collection, "collection");
 
