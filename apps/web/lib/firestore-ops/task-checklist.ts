@@ -12,11 +12,7 @@ function copyChecklist(task: TaskDoc) {
   return (task.checklist ?? []).map((item) => ({ ...item }));
 }
 
-export function planTaskChecklist(
-  task: TaskDoc,
-  action: TaskChecklistAction,
-  now: number
-) {
+export function planTaskChecklist(task: TaskDoc, action: TaskChecklistAction, now: number) {
   if (task.deletedAt !== undefined) return { ok: false as const, reason: "deleted" as const };
   if (!Number.isFinite(now)) return { ok: false as const, reason: "bad-time" as const };
 

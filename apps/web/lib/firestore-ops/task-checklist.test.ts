@@ -64,14 +64,14 @@ test("removes an item", () => {
     { id: "two", text: "Cook", completed: false },
   ]);
   const result = planTaskChecklist(stored, { kind: "remove", itemId: "one" }, 2);
-  expect(result.ok && result.checklist).toEqual([
-    { id: "two", text: "Cook", completed: false },
-  ]);
+  expect(result.ok && result.checklist).toEqual([{ id: "two", text: "Cook", completed: false }]);
   expect(result.ok && [result.doneCount, result.totalCount]).toEqual([0, 1]);
 });
 
 test("refuses a deleted task", () => {
-  expect(planTaskChecklist({ ...task(), deletedAt: 2 }, { kind: "add", itemId: "one", text: "Chop" }, 3)).toEqual({
+  expect(
+    planTaskChecklist({ ...task(), deletedAt: 2 }, { kind: "add", itemId: "one", text: "Chop" }, 3)
+  ).toEqual({
     ok: false,
     reason: "deleted",
   });
