@@ -27,11 +27,12 @@ describe("pickTasksDueInRange", () => {
     expect(pickTasksDueInRange(rows, 10, 20).map(({ id }) => id)).toEqual(["start"]);
   });
 
-  test("drops deleted rows and rows without a due time", () => {
+  test("drops deleted, cancelled, and undated rows", () => {
     const deleted = { ...row("deleted", 10), deletedAt: 0 };
-    expect(pickTasksDueInRange([deleted, row("undated"), row("kept", 11)], 10, 20)).toEqual([
-      row("kept", 11),
-    ]);
+    const cancelled = row("cancelled", 12, "cancelled");
+    expect(
+      pickTasksDueInRange([deleted, row("undated"), cancelled, row("kept", 11)], 10, 20)
+    ).toEqual([row("kept", 11)]);
   });
 
   test("returns an empty list for an upside-down or non-finite range", () => {

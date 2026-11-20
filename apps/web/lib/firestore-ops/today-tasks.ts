@@ -8,7 +8,9 @@ export type TodayTaskRow = {
 };
 
 function byDueTimeThenId<T extends TodayTaskRow>(left: T, right: T): number {
-  return (left.dueAt ?? 0) - (right.dueAt ?? 0) || left.id.localeCompare(right.id);
+  const dueTimeDifference = (left.dueAt ?? 0) - (right.dueAt ?? 0);
+  if (dueTimeDifference !== 0) return dueTimeDifference;
+  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
 }
 
 /** Pick tasks in the half-open due window [dueFrom, dueTo). */
@@ -23,6 +25,7 @@ export function pickTasksDueInRange<T extends TodayTaskRow>(
     .filter(
       (row) =>
         row.deletedAt === undefined &&
+        row.status !== "cancelled" &&
         row.dueAt !== undefined &&
         row.dueAt >= dueFrom &&
         row.dueAt < dueTo
