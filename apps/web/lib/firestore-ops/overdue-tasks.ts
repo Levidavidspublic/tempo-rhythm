@@ -15,16 +15,14 @@ export function pickOverdueTasks<T extends TaskDoc & { id: string }>(
         task.deletedAt === undefined
     )
     .slice()
-    .sort((left, right) =>
-      (left.dueAt as number) - (right.dueAt as number) || left.id.localeCompare(right.id)
+    .sort(
+      (left, right) =>
+        (left.dueAt as number) - (right.dueAt as number) || left.id.localeCompare(right.id)
     );
 }
 
 type OverdueSummary = {
-  copyKey:
-    | "today.carriedOver.none"
-    | "today.carriedOver.one"
-    | "today.carriedOver.many";
+  copyKey: "today.carriedOver.none" | "today.carriedOver.one" | "today.carriedOver.many";
   count: number;
 };
 

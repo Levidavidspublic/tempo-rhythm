@@ -37,9 +37,7 @@ test("done and cancelled tasks are left out", () => {
 });
 
 test("soft-deleted tasks are left out", () => {
-  expect(
-    pickOverdueTasks([task("deleted", { dueAt: 1, deletedAt: 2 })], DAY_START)
-  ).toEqual([]);
+  expect(pickOverdueTasks([task("deleted", { dueAt: 1, deletedAt: 2 })], DAY_START)).toEqual([]);
 });
 
 test("tasks with no due time are left out", () => {
