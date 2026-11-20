@@ -9,7 +9,7 @@ import {
 
 test("lists the 25 unique owner collections", () => {
   expect(OWNER_COLLECTIONS).toHaveLength(25);
-  expect(new Set(OWNER_COLLECTIONS)).toHaveLength(25);
+  expect(new Set(OWNER_COLLECTIONS).size).toBe(25);
   expect(OWNER_COLLECTIONS).toContain("tasks");
   expect(OWNER_COLLECTIONS).toContain("messages");
 });
@@ -51,6 +51,16 @@ test("rejects invalid uid and document id segments", () => {
     expect(() => userDocPath(segment)).toThrow(OwnerPathError);
     expect(() => ownerDocPath("user-1", "tasks", segment)).toThrow(OwnerPathError);
   }
+});
+
+test("enforces the Firestore segment limit in UTF-8 bytes", () => {
+  const maximumMultibyteId = "é".repeat(750);
+  const oversizedMultibyteId = "é".repeat(751);
+
+  expect(ownerDocPath("user-1", "tasks", maximumMultibyteId)).toBe(
+    `users/user-1/tasks/${maximumMultibyteId}`
+  );
+  expect(() => ownerDocPath("user-1", "tasks", oversizedMultibyteId)).toThrow(OwnerPathError);
 });
 
 test("does not include rejected uid or document id values in errors", () => {

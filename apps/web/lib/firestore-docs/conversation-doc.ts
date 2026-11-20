@@ -98,6 +98,15 @@ function isFirestoreValue(value: unknown, insideArray = false): boolean {
   return false;
 }
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function checkConversation(input: unknown): CheckResult<ConversationDoc> {
   if (!isPlainObject(input)) return { ok: false, reason: "Conversation must be a plain object" };
   if (!hasOnlyKeys(input, conversationKeys)) {
@@ -175,7 +184,7 @@ function checkMessage(input: unknown): CheckResult<MessageDoc> {
         typeof source.title !== "string" ||
         typeof source.site !== "string" ||
         typeof source.url !== "string" ||
-        !/^https?:\/\//.test(source.url)
+        !isHttpUrl(source.url)
       ) {
         return {
           ok: false,

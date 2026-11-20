@@ -251,6 +251,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://github.com/expressjs/compression
 - Used by: apps/mobile/package.json
 
+### firebase
+
+- Version: 13.4.0
+- License: Apache-2.0
+- Source: https://firebase.google.com/
+- Used by: apps/web/package.json
+
 ### convex
 
 - Version: 1.32.0
