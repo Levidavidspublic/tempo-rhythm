@@ -66,9 +66,9 @@ describe("planFocusSessionFinish", () => {
   });
 
   test("refuses a task id containing a slash", () => {
-    expect(
-      planFocusSessionFinish({ startedAtMs: NOW - 60_000, taskId: "tasks/one" }, NOW)
-    ).toEqual({ ok: false, reason: "bad_task" });
+    expect(planFocusSessionFinish({ startedAtMs: NOW - 60_000, taskId: "tasks/one" }, NOW)).toEqual(
+      { ok: false, reason: "bad_task" }
+    );
   });
 });
 

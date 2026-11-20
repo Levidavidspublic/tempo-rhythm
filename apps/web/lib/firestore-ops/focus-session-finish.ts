@@ -1,7 +1,4 @@
-import {
-  parseFocusBlockDoc,
-  type FocusBlockDoc,
-} from "../firestore-docs/calendar-doc";
+import { parseFocusBlockDoc, type FocusBlockDoc } from "../firestore-docs/calendar-doc";
 
 const MIN_FOCUS_DURATION_MS = 60_000;
 const MAX_FOCUS_DURATION_MS = 24 * 60 * 60 * 1000;
@@ -47,7 +44,8 @@ export function planFocusSessionFinish(
     return { ok: false, reason: "bad_task" };
   }
 
-  const label = typeof input.label === "string" ? input.label.trim().slice(0, MAX_LABEL_LENGTH) : "";
+  const label =
+    typeof input.label === "string" ? input.label.trim().slice(0, MAX_LABEL_LENGTH) : "";
   const doc = parseFocusBlockDoc({
     startedAtMs: input.startedAtMs,
     durationMs: Math.min(elapsedMs, MAX_FOCUS_DURATION_MS),
