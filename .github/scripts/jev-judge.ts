@@ -420,7 +420,7 @@ async function callJev(state: string): Promise<Record<string, NoulAnswer>> {
   return data.answers;
 }
 
-export async function runJudge(
+async function runJudge(
   prNumber: string,
   ticketNumber: number,
   prBody: string
