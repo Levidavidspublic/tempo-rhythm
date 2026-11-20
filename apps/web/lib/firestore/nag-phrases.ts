@@ -1,9 +1,4 @@
-import {
-  NagDocError,
-  parseNagDoc,
-  type NagDoc,
-  type NagPhrase,
-} from "../firestore-docs/nag-doc";
+import { NagDocError, parseNagDoc, type NagDoc, type NagPhrase } from "../firestore-docs/nag-doc";
 
 export type NagPhrasePlan =
   | {
@@ -14,11 +9,7 @@ export type NagPhrasePlan =
   | { kind: "unchanged" }
   | { kind: "refused"; reason: string };
 
-function validatedPatch(
-  stored: NagDoc,
-  phrases: NagPhrase[],
-  now: number
-): NagPhrasePlan {
+function validatedPatch(stored: NagDoc, phrases: NagPhrase[], now: number): NagPhrasePlan {
   const patch = { phrases, updatedAt: now };
 
   try {
