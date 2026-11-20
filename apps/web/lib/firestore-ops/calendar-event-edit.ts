@@ -1,7 +1,4 @@
-import {
-  parseCalendarEventDoc,
-  type CalendarEventDoc,
-} from "../firestore-docs/calendar-doc";
+import { parseCalendarEventDoc, type CalendarEventDoc } from "../firestore-docs/calendar-doc";
 
 export type CalendarEventEdit = {
   title?: string;
@@ -16,7 +13,7 @@ export type CalendarEventEditPlan =
 export function planCalendarEventEdit(
   stored: CalendarEventDoc,
   edit: CalendarEventEdit,
-  now: number,
+  now: number
 ): CalendarEventEditPlan {
   if (stored.deletedAt !== undefined) {
     return { kind: "refused", reason: "event is deleted" };

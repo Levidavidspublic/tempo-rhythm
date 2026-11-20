@@ -51,7 +51,7 @@ describe("planCalendarEventEdit", () => {
 
   test("refuses a deleted event", () => {
     expect(
-      planCalendarEventEdit({ ...STORED_EVENT, deletedAt: 250 }, { title: "New title" }, 300),
+      planCalendarEventEdit({ ...STORED_EVENT, deletedAt: 250 }, { title: "New title" }, 300)
     ).toEqual({ kind: "refused", reason: "event is deleted" });
   });
 
@@ -63,8 +63,8 @@ describe("planCalendarEventEdit", () => {
       planCalendarEventEdit(
         stored,
         { title: STORED_EVENT.title, startsAtMs: STORED_EVENT.startsAtMs },
-        300,
-      ),
+        300
+      )
     ).toEqual({ kind: "unchanged" });
     expect(stored).toEqual(before);
   });
