@@ -23,6 +23,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { useRenameProject } from "@/lib/data/tasks/use-rename-project";
 import {
   dayLabel,
   isNewProjectId,
@@ -40,7 +41,12 @@ import { kb09t } from "@/lib/i18n-groups/kb-09";
  * True when `next` names a new project that has no task yet. The name lives on a project's tasks,
  * so nothing can keep it until the first task is added.
  */
-export function waitsForFirstTask(projectId: string, taskCount: number, next: string, name: string): boolean {
+export function waitsForFirstTask(
+  projectId: string,
+  taskCount: number,
+  next: string,
+  name: string
+): boolean {
   return taskCount === 0 && isNewProjectId(projectId) && next !== "" && next !== name;
 }
 
@@ -68,7 +74,11 @@ export function ProjectDetailScreen({ projectSlug }: { projectSlug: string }) {
 /** The paper page; `titled` when it holds the page-title heading that names it. */
 function Paper({ children, titled = false }: { children: ReactNode; titled?: boolean }) {
   return (
-    <article className="tp-paper kb09-project" data-component="Page" aria-labelledby={titled ? "page-title" : undefined}>
+    <article
+      className="tp-paper kb09-project"
+      data-component="Page"
+      aria-labelledby={titled ? "page-title" : undefined}
+    >
       <div className="tp-page-cover" data-component="PageCover" aria-hidden="true" />
       <div className="tp-page__body">
         <div className="tp-page-icon" data-component="PageIcon" aria-hidden="true">
@@ -92,18 +102,22 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const createTask = useMutation(api.tasks.create);
   const removeTask = useMutation(api.tasks.remove);
   const updateTask = useMutation(api.tasks.update);
-  const renameProject = useMutation(api.tasks.renameProject);
-  const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate((store, { taskId }) => {
-    const rows = store.getQuery(api.tasks.list, args);
-    if (!rows) return;
-    store.setQuery(
-      api.tasks.list,
-      args,
-      rows.map((row) =>
-        row._id === taskId ? { ...row, status: (row.status === "done" ? "todo" : "done") as "todo" | "done" } : row,
-      ),
-    );
-  });
+  const renameProject = useRenameProject();
+  const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate(
+    (store, { taskId }) => {
+      const rows = store.getQuery(api.tasks.list, args);
+      if (!rows) return;
+      store.setQuery(
+        api.tasks.list,
+        args,
+        rows.map((row) =>
+          row._id === taskId
+            ? { ...row, status: (row.status === "done" ? "todo" : "done") as "todo" | "done" }
+            : row
+        )
+      );
+    }
+  );
   const [adding, setAdding] = useState(false);
   // A new project was named before it had a task: the page says it is kept once it has one.
   const [namedNew, setNamedNew] = useState(false);
@@ -193,7 +207,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         if (revision !== renameRevision.current) return;
         setError(true);
         setRenameState("error");
-      },
+      }
     );
   };
 
@@ -216,19 +230,24 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         setToast(
           makeToast(
             t(wasDone ? "pd.task.reopened" : "pd.task.done"),
-            canUndo ? () => updateTask({ taskId: task._id, status: before }) : undefined,
-          ),
+            canUndo ? () => updateTask({ taskId: task._id, status: before }) : undefined
+          )
         );
       },
-      () => setError(true),
+      () => setError(true)
     );
   };
 
   const addRow = adding ? (
-    <InlineAdd id="pd-add" label={t("pd.task.label")} onSubmit={addTask} onCancel={() => {
-      setAdding(false);
-      requestAnimationFrame(() => addButtonRef.current?.focus());
-    }} />
+    <InlineAdd
+      id="pd-add"
+      label={t("pd.task.label")}
+      onSubmit={addTask}
+      onCancel={() => {
+        setAdding(false);
+        requestAnimationFrame(() => addButtonRef.current?.focus());
+      }}
+    />
   ) : null;
 
   return (
@@ -242,7 +261,13 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
                 ref={titleRef}
                 className="gx-title-input"
                 aria-label={t("pd.titleLabel")}
-                aria-describedby={renameState !== "idle" ? "kb09-rename-notice" : namedNew ? "kb09-first-task-notice" : undefined}
+                aria-describedby={
+                  renameState !== "idle"
+                    ? "kb09-rename-notice"
+                    : namedNew
+                      ? "kb09-first-task-notice"
+                      : undefined
+                }
                 aria-invalid={renameState === "error" || undefined}
                 aria-busy={renameState === "pending"}
                 dir="auto"
@@ -283,7 +308,9 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         </div>
 
         <ProjectDetailNotice id="kb09-rename-notice" kind={renameState} lang={lang} />
-        {namedNew && rows.length === 0 ? <ProjectDetailNotice id="kb09-first-task-notice" kind="firstTask" lang={lang} /> : null}
+        {namedNew && rows.length === 0 ? (
+          <ProjectDetailNotice id="kb09-first-task-notice" kind="firstTask" lang={lang} />
+        ) : null}
 
         {error && renameState !== "error" ? (
           <p className="tp-notice" data-tone="caution" role="alert">
@@ -297,7 +324,12 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             title={t("pd.empty.title")}
             body={t("pd.empty.body")}
             action={
-              <button ref={addButtonRef} className="tp-btn tp-btn--secondary" type="button" onClick={() => setAdding(true)}>
+              <button
+                ref={addButtonRef}
+                className="tp-btn tp-btn--secondary"
+                type="button"
+                onClick={() => setAdding(true)}
+              >
                 <TpIcon name="plus" size="sm" />
                 <span>{t("pd.empty.add")}</span>
               </button>
@@ -329,7 +361,12 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
                 </ul>
               ) : null}
               {addRow ?? (
-                <button ref={addButtonRef} className="tp-btn tp-btn--ghost" type="button" onClick={() => setAdding(true)}>
+                <button
+                  ref={addButtonRef}
+                  className="tp-btn tp-btn--ghost"
+                  type="button"
+                  onClick={() => setAdding(true)}
+                >
                   <TpIcon name="plus" size="sm" />
                   <span>{t("pd.tasks.add")}</span>
                 </button>
@@ -360,9 +397,14 @@ function TaskRow({
   const done = task.status === "done";
   const titleId = `task-${task._id}-title`;
   const minutes = minutesFromEstimate(task.timeEstimate);
-  const day = task.dueAt === undefined ? null : dayLabel(task.dueAt, todayStartMs, todayEndMs, lang);
+  const day =
+    task.dueAt === undefined ? null : dayLabel(task.dueAt, todayStartMs, todayEndMs, lang);
   return (
-    <li className="tp-task-row kb09-task-row" data-component="TaskRow" data-done={done ? "true" : undefined}>
+    <li
+      className="tp-task-row kb09-task-row"
+      data-component="TaskRow"
+      data-done={done ? "true" : undefined}
+    >
       <div className="tp-task-row__body">
         <span className="tp-task-row__title" id={titleId} dir="auto">
           {task.title}
@@ -417,8 +459,12 @@ export function ProjectTaskActions({
         disabled={disabled}
         onClick={onToggle}
       >
-        <span className="kb09-task-actions__box" aria-hidden="true">{done ? <TpIcon name="check" size="sm" /> : null}</span>
-        <span className="kb09-task-actions__text">{kb09t(lang, done ? "task.reopen" : "task.complete")}</span>
+        <span className="kb09-task-actions__box" aria-hidden="true">
+          {done ? <TpIcon name="check" size="sm" /> : null}
+        </span>
+        <span className="kb09-task-actions__text">
+          {kb09t(lang, done ? "task.reopen" : "task.complete")}
+        </span>
       </button>
     </div>
   );
@@ -428,8 +474,15 @@ export function ProjectDetailNotice({
   id,
   kind,
   lang,
-}: Readonly<{ id?: string; kind: "idle" | "pending" | "saved" | "error" | "firstTask"; lang: "en" | "he" }>) {
-  const text = kind === "idle" ? "" : kb09t(lang, kind === "firstTask" ? "firstTask" : (`rename.${kind}` as const));
+}: Readonly<{
+  id?: string;
+  kind: "idle" | "pending" | "saved" | "error" | "firstTask";
+  lang: "en" | "he";
+}>) {
+  const text =
+    kind === "idle"
+      ? ""
+      : kb09t(lang, kind === "firstTask" ? "firstTask" : (`rename.${kind}` as const));
   const statusVisible = kind !== "idle" && kind !== "error";
   return (
     <>
@@ -443,7 +496,9 @@ export function ProjectDetailNotice({
         </output>
       </p>
       {kind === "error" ? (
-        <p className="kb09-notice" data-kind="error" id={id} role="alert">{text}</p>
+        <p className="kb09-notice" data-kind="error" id={id} role="alert">
+          {text}
+        </p>
       ) : null}
     </>
   );
@@ -457,7 +512,9 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const [completedTasks, setCompletedTasks] = useState<Set<number>>(() => new Set());
-  const [notice, setNotice] = useState<"idle" | "pending" | "saved" | "error" | "firstTask">("idle");
+  const [notice, setNotice] = useState<"idle" | "pending" | "saved" | "error" | "firstTask">(
+    "idle"
+  );
   const [tasks, setTasks] = useState<string[]>([kb09t(lang, "gallery.initialTask")]);
   const addButton = useRef<HTMLButtonElement>(null);
   const draftInput = useRef<HTMLInputElement>(null);
@@ -465,7 +522,8 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
     if (adding) draftInput.current?.focus();
   }, [adding]);
   const views: View[] = ["default", "empty", "loading", "error", "disabled", "overflow"];
-  const shownTitle = view === "overflow" ? `${title} — ${kb09t(lang, "gallery.longText").repeat(12)}` : title;
+  const shownTitle =
+    view === "overflow" ? `${title} — ${kb09t(lang, "gallery.longText").repeat(12)}` : title;
   return (
     <main className="kb09-project" lang={lang} dir={lang === "he" ? "rtl" : "ltr"}>
       <div className="kb09-gallery">
@@ -473,7 +531,12 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
         <fieldset className="kb09-gallery__states">
           <legend>{kb09t(lang, "gallery.state")}</legend>
           {views.map((item) => (
-            <button key={item} type="button" aria-pressed={view === item} onClick={() => setView(item)}>
+            <button
+              key={item}
+              type="button"
+              aria-pressed={view === item}
+              onClick={() => setView(item)}
+            >
               {kb09t(lang, `gallery.${item}`)}
             </button>
           ))}
@@ -493,13 +556,19 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
             onBlur={() => setNotice("saved")}
           />
         </label>
-        {view === "overflow" ? <p className="tp-muted" dir="auto">{shownTitle}</p> : null}
+        {view === "overflow" ? (
+          <p className="tp-muted" dir="auto">
+            {shownTitle}
+          </p>
+        ) : null}
         <ProjectDetailNotice id="kb09-gallery-notice" lang={lang} kind={notice} />
         {view === "loading" ? <output>{kb09t(lang, "gallery.loadingText")}</output> : null}
         {view === "error" ? (
           <div role="alert">
             <p>{kb09t(lang, "gallery.errorText")}</p>
-            <button type="button" onClick={() => setView("default")}>{kb09t(lang, "gallery.retry")}</button>
+            <button type="button" onClick={() => setView("default")}>
+              {kb09t(lang, "gallery.retry")}
+            </button>
           </div>
         ) : null}
         {view === "empty" ? <p>{kb09t(lang, "gallery.emptyText")}</p> : null}
@@ -507,16 +576,22 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
           <ul className="tp-block-task">
             {tasks.map((task, index) => (
               <li className="tp-task-row kb09-task-row" key={`${task}-${index}`}>
-                <span className="tp-task-row__title" dir="auto">{view === "overflow" ? `${task} ${kb09t(lang, "gallery.longText").repeat(12)}` : task}</span>
+                <span className="tp-task-row__title" dir="auto">
+                  {view === "overflow"
+                    ? `${task} ${kb09t(lang, "gallery.longText").repeat(12)}`
+                    : task}
+                </span>
                 <ProjectTaskActions
                   title={task}
                   done={completedTasks.has(index)}
                   lang={lang}
-                  onToggle={() => setCompletedTasks((previous) => {
-                    const next = new Set(previous);
-                    if (!next.delete(index)) next.add(index);
-                    return next;
-                  })}
+                  onToggle={() =>
+                    setCompletedTasks((previous) => {
+                      const next = new Set(previous);
+                      if (!next.delete(index)) next.add(index);
+                      return next;
+                    })
+                  }
                   disabled={view === "disabled"}
                 />
               </li>
@@ -524,21 +599,56 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
           </ul>
         ) : null}
         {adding ? (
-          <form className="kb09-gallery__form" onSubmit={(event) => {
-            event.preventDefault();
-            if (!draft.trim()) return;
-            setTasks([...tasks, draft.trim()]);
-            setDraft("");
-            setAdding(false);
-            requestAnimationFrame(() => addButton.current?.focus());
-          }}>
-            <label><span>{kb09t(lang, "gallery.taskLabel")}</span><input ref={draftInput} dir="auto" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => {
-              if (event.key === "Escape") { event.preventDefault(); setAdding(false); requestAnimationFrame(() => addButton.current?.focus()); }
-            }} /></label>
-            <button type="submit" disabled={!draft.trim()}>{kb09t(lang, "gallery.add")}</button>
-            <button type="button" onClick={() => { setAdding(false); requestAnimationFrame(() => addButton.current?.focus()); }}>{kb09t(lang, "gallery.cancel")}</button>
+          <form
+            className="kb09-gallery__form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!draft.trim()) return;
+              setTasks([...tasks, draft.trim()]);
+              setDraft("");
+              setAdding(false);
+              requestAnimationFrame(() => addButton.current?.focus());
+            }}
+          >
+            <label>
+              <span>{kb09t(lang, "gallery.taskLabel")}</span>
+              <input
+                ref={draftInput}
+                dir="auto"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setAdding(false);
+                    requestAnimationFrame(() => addButton.current?.focus());
+                  }
+                }}
+              />
+            </label>
+            <button type="submit" disabled={!draft.trim()}>
+              {kb09t(lang, "gallery.add")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(false);
+                requestAnimationFrame(() => addButton.current?.focus());
+              }}
+            >
+              {kb09t(lang, "gallery.cancel")}
+            </button>
           </form>
-        ) : <button ref={addButton} className="tp-btn tp-btn--secondary" type="button" onClick={() => setAdding(true)}>{kb09t(lang, "gallery.add")}</button>}
+        ) : (
+          <button
+            ref={addButton}
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            onClick={() => setAdding(true)}
+          >
+            {kb09t(lang, "gallery.add")}
+          </button>
+        )}
       </div>
     </main>
   );
