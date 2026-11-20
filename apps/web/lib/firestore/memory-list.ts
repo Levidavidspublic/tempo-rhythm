@@ -18,9 +18,10 @@ export function pickMemories(
   total: number;
   bySector: Record<MemorySector, number>;
 } {
-  const bySector = Object.fromEntries(
-    memorySectors.map((sector) => [sector, 0])
-  ) as Record<MemorySector, number>;
+  const bySector = Object.fromEntries(memorySectors.map((sector) => [sector, 0])) as Record<
+    MemorySector,
+    number
+  >;
   const liveRows = rows.filter(({ doc }) => doc.deletedAt === undefined);
 
   for (const { doc } of liveRows) {
