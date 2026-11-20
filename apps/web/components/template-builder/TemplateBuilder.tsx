@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ReadView } from "@/components/editor/ReadView";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -11,10 +11,12 @@ import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { dayTokens } from "@/lib/editor/markdown-model";
+import type { HabitGoalDraft } from "@/lib/i18n-groups/habit-goal-templates";
 import { localIsoDate } from "@/lib/period-pages";
 import { templatePageDraft } from "@/lib/template-pages";
 import { parseSketch } from "@/lib/template-sketch";
 import { useOnline } from "@/lib/useOnline";
+import { HabitGoalTemplates } from "./HabitGoalTemplates";
 import { TemplateBodyEditor } from "./TemplateBodyEditor";
 
 export type PeriodType = "daily" | "weekly" | "monthly" | "none";
@@ -149,7 +151,7 @@ function BuilderMissing() {
 
 type BuilderMode = { kind: "create"; note?: string } | { kind: "edit"; templateId: string };
 
-function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderMode }) {
+function BuilderForm({ initial, mode, offerOutlines = false }: { initial: TemplateDraft; mode: BuilderMode; offerOutlines?: boolean }) {
   const { t, lang } = useLocale();
   const router = useRouter();
   const create = useMutation(api.templates.create);
@@ -161,6 +163,11 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Edits permanently claim this draft, including edits later cleared or undone.
+  const claimed = useRef(false);
+  const saving = useRef(false);
+  const [outlineLocked, setOutlineLocked] = useState(false);
+  const [editorInitial, setEditorInitial] = useState({ body: initial.body, key: 0 });
   // The example date is read after mount, so the server render and the first client render agree.
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(localIsoDate(new Date())), []);
@@ -168,21 +175,40 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
   const dirty = name !== saved.name || description !== saved.description || body !== saved.body;
   const canSave = name.trim().length > 0 && !pending && (mode.kind === "create" || dirty);
 
+  const claimDraft = () => {
+    claimed.current = true;
+    setOutlineLocked(true);
+  };
   const onName = (value: string) => {
+    claimDraft();
     setName(value);
     setNotice("");
   };
   const onDescription = (value: string) => {
+    claimDraft();
     setDescription(value);
     setNotice("");
   };
   const onBody = (value: string) => {
+    claimDraft();
     setBody(value);
     setNotice("");
   };
 
+  const onChooseOutline = (outline: HabitGoalDraft): boolean => {
+    if (!offerOutlines || mode.kind !== "create" || claimed.current || saving.current || name || description || body) return false;
+    claimDraft();
+    setName(outline.name);
+    setDescription(outline.description);
+    setBody(outline.body);
+    // The real editor reads initialValue only on mount. Only a pristine first selection remounts it.
+    setEditorInitial({ body: outline.body, key: 1 });
+    return true;
+  };
+
   const onSave = async () => {
-    if (!canSave) return;
+    if (!canSave || saving.current) return;
+    saving.current = true;
     setPending(true);
     setError("");
     setNotice("");
@@ -199,6 +225,7 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
         });
         setSaved({ ...initial, name, description, body });
         setNotice(t("tb.savedNote"));
+        saving.current = false;
         setPending(false);
       } else {
         await create({
@@ -211,6 +238,7 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
       }
     } catch {
       setError(t("tb.saveError"));
+      saving.current = false;
       setPending(false);
     }
   };
@@ -249,6 +277,8 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
           <span className="tp-notice__text">{notice}</span>
         </output>
       ) : null}
+
+      {offerOutlines ? <HabitGoalTemplates blocked={pending ? "pending" : outlineLocked ? "locked" : null} onChoose={onChooseOutline} /> : null}
 
       <div className="tp-split tp-split--even bld-split" data-component="Split">
         <article className="tp-paper" data-component="PageEditor" aria-labelledby="template-name-label">
@@ -307,7 +337,8 @@ function BuilderForm({ initial, mode }: { initial: TemplateDraft; mode: BuilderM
 
             <div className="tp-page-content bld-flow tp-slash-anchor" data-component="BlockList">
               <TemplateBodyEditor
-                initialValue={initial.body}
+                key={editorInitial.key}
+                initialValue={editorInitial.body}
                 ariaLabel={t("tb.body")}
                 placeholder={t("tb.bodyPh")}
                 onChange={onBody}
@@ -394,5 +425,5 @@ export function TemplateBuilderScreen({ fromId, editId, outline }: { fromId?: st
       />
     );
   }
-  return <BuilderForm key="blank" initial={EMPTY_DRAFT} mode={{ kind: "create" }} />;
+  return <BuilderForm key="blank" initial={EMPTY_DRAFT} mode={{ kind: "create" }} offerOutlines={fromId === undefined && editId === undefined && outline === undefined} />;
 }
