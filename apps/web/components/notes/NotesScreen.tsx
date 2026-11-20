@@ -1,18 +1,18 @@
 "use client";
 
-import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import type { MessageKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { MessageKey } from "@/lib/i18n";
 import { notePatch, shouldAdoptRemoteTitle } from "@/lib/note-sync";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
-import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
 import { UndoDeleteToast } from "./UndoDeleteToast";
 import { WeekGlance } from "./WeekGlance";
 
@@ -29,7 +29,7 @@ export type PinToggleOutcome = "toggled" | "signed-out" | "error";
 
 export async function runPinToggle(
   isAuthenticated: boolean,
-  toggle: () => Promise<unknown>,
+  toggle: () => Promise<unknown>
 ): Promise<PinToggleOutcome> {
   if (!isAuthenticated) return "signed-out";
   try {
@@ -116,7 +116,10 @@ function NotesList() {
   const handleDelete = async (id: Id<"notes">) => {
     const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
-    setRemovedStack((stack) => [...stack.filter((r) => r.id !== id), { id, undoUntilMs: result.undoUntilMs }]);
+    setRemovedStack((stack) => [
+      ...stack.filter((r) => r.id !== id),
+      { id, undoUntilMs: result.undoUntilMs },
+    ]);
   };
 
   const handleUndo = async () => {
@@ -208,7 +211,11 @@ function NotesList() {
                         >
                           {t("notes.confirmDelete")}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setPendingDeleteId(null)}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setPendingDeleteId(null)}
+                        >
                           {t("notes.cancel")}
                         </Button>
                       </>
@@ -266,7 +273,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const note = useQuery(
     api.notes.getSafe,
-    isAuthenticated && profile != null ? { noteId } : "skip",
+    isAuthenticated && profile != null ? { noteId } : "skip"
   );
   const updateNote = useMutation(api.notes.update);
   const togglePin = useMutation(api.notes.togglePin);
@@ -308,7 +315,19 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   // A completion belongs to this mounted note, not merely to a matching note id.
   // Layout cleanup also fences settlements during removal and StrictMode replay.
   useLayoutEffect(() => {
-    const owner: Owner = { noteId, alive: true, revision: 0, titleRevision: 0, bodyRevision: 0, save: null, saveRevision: 0, savedRevision: -1, pin: false, deleting: false, deleteIntent: 0 };
+    const owner: Owner = {
+      noteId,
+      alive: true,
+      revision: 0,
+      titleRevision: 0,
+      bodyRevision: 0,
+      save: null,
+      saveRevision: 0,
+      savedRevision: -1,
+      pin: false,
+      deleting: false,
+      deleteIntent: 0,
+    };
     ownerRef.current = owner;
     setErrors({ save: false, pin: false, delete: false });
     setBusy({ save: false, pin: false, delete: false });
@@ -318,7 +337,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     };
   }, [noteId]);
   const owns = (owner: Owner | null): owner is Owner =>
-    owner?.alive === true && ownerRef.current === owner && owner.noteId === noteId && !wasDeleted.current;
+    owner?.alive === true &&
+    ownerRef.current === owner &&
+    owner.noteId === noteId &&
+    !wasDeleted.current;
   const markError = (owner: Owner, operation: Operation, failed: boolean) => {
     if (owns(owner)) setErrors((current) => ({ ...current, [operation]: failed }));
   };
@@ -341,13 +363,15 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     }
   }, [note]);
 
-
-
   // Another writer changed this page while it is open: the coach saving a decision to today's
   // page, or the same page in another tab. With no unsaved body edit here the editor takes the
   // new text, so the next autosave can't write over it. Unsaved edits here (or a save on its
   // way) win, as before.
-  const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
+  const [remoteBody, setRemoteBody] = useState<{
+    before: string;
+    after: string;
+    seq: number;
+  } | null>(null);
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
     if (note.body === bodyRef.current || edits.current.body || saveTimer.current) return;
@@ -359,7 +383,15 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   // The same for the title: a rename saved in another tab shows here instead of being written back.
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
-    if (!shouldAdoptRemoteTitle(note.title, titleRef.current, edits.current.title, saveTimer.current !== null)) return;
+    if (
+      !shouldAdoptRemoteTitle(
+        note.title,
+        titleRef.current,
+        edits.current.title,
+        saveTimer.current !== null
+      )
+    )
+      return;
     titleRef.current = note.title;
     setTitle(note.title);
   }, [note]);
@@ -375,7 +407,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     const { savedTitle, savedBody, revision, titleRevision, bodyRevision, patch } = snapshot;
     // Joining this revision propagates its rejection without silently retrying it.
     if (owner.save && revision <= owner.saveRevision) return owner.save;
-    if (revision <= owner.savedRevision || (patch.title === undefined && patch.body === undefined)) {
+    if (
+      revision <= owner.savedRevision ||
+      (patch.title === undefined && patch.body === undefined)
+    ) {
       // A clean reopened editor still waits for this note's outgoing write before chat/delete.
       return pendingPageSaves.get(owner.noteId);
     }
@@ -385,32 +420,44 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     // Enqueue immediately: a reopened page must follow this outgoing immutable snapshot.
     // An earlier rejected revision releases the queue for this explicit newer write.
     const previous = pendingPageSaves.get(owner.noteId);
-    const request = Promise.resolve(previous).catch(() => {}).then(async () => {
-      try {
-        await updateNote({ noteId: owner.noteId as Id<"notes">, ...patch });
-        owner.savedRevision = revision;
-        if (!owns(owner)) return;
-        // Equal text can be a newer A→B→A edit; only its own revision may clear dirty state.
-        if (patch.title !== undefined && owner.titleRevision === titleRevision && titleRef.current === savedTitle) edits.current.title = false;
-        if (patch.body !== undefined && owner.bodyRevision === bodyRevision && bodyRef.current === savedBody) edits.current.body = false;
-        if (!edits.current.title && !edits.current.body) {
-          setSaveState("saved");
-          markError(owner, "save", false);
+    const request = Promise.resolve(previous)
+      .catch(() => {})
+      .then(async () => {
+        try {
+          await updateNote({ noteId: owner.noteId as Id<"notes">, ...patch });
+          owner.savedRevision = revision;
+          if (!owns(owner)) return;
+          // Equal text can be a newer A→B→A edit; only its own revision may clear dirty state.
+          if (
+            patch.title !== undefined &&
+            owner.titleRevision === titleRevision &&
+            titleRef.current === savedTitle
+          )
+            edits.current.title = false;
+          if (
+            patch.body !== undefined &&
+            owner.bodyRevision === bodyRevision &&
+            bodyRef.current === savedBody
+          )
+            edits.current.body = false;
+          if (!edits.current.title && !edits.current.body) {
+            setSaveState("saved");
+            markError(owner, "save", false);
+          }
+        } catch (error) {
+          if (owns(owner) && owner.revision === revision) {
+            setSaveState("idle");
+            markError(owner, "save", true);
+          }
+          throw error;
+        } finally {
+          if (owner.save === request) {
+            owner.save = null;
+            markBusy(owner, "save", false);
+          }
+          if (pendingPageSaves.get(owner.noteId) === request) pendingPageSaves.delete(owner.noteId);
         }
-      } catch (error) {
-        if (owns(owner) && owner.revision === revision) {
-          setSaveState("idle");
-          markError(owner, "save", true);
-        }
-        throw error;
-      } finally {
-        if (owner.save === request) {
-          owner.save = null;
-          markBusy(owner, "save", false);
-        }
-        if (pendingPageSaves.get(owner.noteId) === request) pendingPageSaves.delete(owner.noteId);
-      }
-    });
+      });
     owner.save = request;
     pendingPageSaves.set(owner.noteId, request);
     await request;
@@ -468,9 +515,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     clearTimeout(saveTimer.current);
     saveTimer.current = null;
     const owner = ownerRef.current;
-    if (owns(owner)) void saveNow(owner).catch(() => {
-      // The current page keeps its draft and exposes the same explicit save recovery.
-    });
+    if (owns(owner))
+      void saveNow(owner).catch(() => {
+        // The current page keeps its draft and exposes the same explicit save recovery.
+      });
   };
   useEffect(() => {
     const onPageHide = () => sendWaitingSave.current();
@@ -537,7 +585,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     }
     try {
       // A failed autosave has no timer, but its draft still must save before deletion.
-      while (owns(owner) && (pendingPageSaves.has(owner.noteId) || edits.current.title || edits.current.body)) {
+      while (
+        owns(owner) &&
+        (pendingPageSaves.has(owner.noteId) || edits.current.title || edits.current.body)
+      ) {
         await saveNow(owner);
       }
       if (!owns(owner) || owner.deleteIntent !== intent) return;
@@ -561,7 +612,9 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     if (!owns(owner) || owner.save || owner.deleting) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = null;
-    try { await saveNow(owner); } catch {
+    try {
+      await saveNow(owner);
+    } catch {
       // The error stays visible and the draft stays dirty until a successful save.
     }
   };
@@ -611,44 +664,63 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
 
   return (
     <>
-    {(["save", "pin", "delete"] as const).map((operation) => errors[operation] ? (
-      <div className="tp-notice" role="alert" data-component="PageActionError" data-operation={operation} key={operation}>
-        <p className="tp-notice__text">{t(operation === "pin" ? "notes.pinError" : "notes.error")}</p>
-        <button
-          type="button"
-          className="tp-btn tp-btn--secondary tp-notice__action"
-          disabled={busy[operation] || (operation === "save" && busy.delete)}
-          aria-busy={busy[operation]}
-          onClick={() => void (operation === "save" ? retrySave() : operation === "pin" ? handleTogglePin() : handleDelete())}
-        >
-          {t("coachChat.retry")}
-        </button>
-      </div>
-    ) : null)}
-    <PageEditorView
-      key={note?._id ?? noteId}
-      noteId={noteId}
-      title={title}
-      initialBody={note?.body ?? body}
-      body={body}
-      remoteBody={remoteBody}
-      pinned={note?.pinned ?? false}
-      saveState={saveState}
-      confirmingDelete={confirmingDelete}
-      onTitleChange={handleTitleChange}
-      onBodyChange={handleBodyChange}
-      onTogglePin={() => void handleTogglePin()}
-      onAskDelete={() => setConfirmingDelete(true)}
-      onConfirmDelete={() => void handleDelete()}
-      onCancelDelete={() => {
-        if (ownerRef.current) ownerRef.current.deleteIntent += 1;
-        setConfirmingDelete(false);
-        setErrors((current) => ({ ...current, delete: false }));
-      }}
-      backHref={backHref}
-      lead={lead ?? (note?.pageType === "weekly" && note.date ? <WeekGlance monday={note.date} /> : undefined)}
-      canDelete={canDelete}
-    />
+      {(["save", "pin", "delete"] as const).map((operation) =>
+        errors[operation] ? (
+          <div
+            className="tp-notice"
+            role="alert"
+            data-component="PageActionError"
+            data-operation={operation}
+            key={operation}
+          >
+            <p className="tp-notice__text">
+              {t(operation === "pin" ? "notes.pinError" : "notes.error")}
+            </p>
+            <button
+              type="button"
+              className="tp-btn tp-btn--secondary tp-notice__action"
+              disabled={busy[operation] || (operation === "save" && busy.delete)}
+              aria-busy={busy[operation]}
+              onClick={() =>
+                void (operation === "save"
+                  ? retrySave()
+                  : operation === "pin"
+                    ? handleTogglePin()
+                    : handleDelete())
+              }
+            >
+              {t("coachChat.retry")}
+            </button>
+          </div>
+        ) : null
+      )}
+      <PageEditorView
+        key={note?._id ?? noteId}
+        noteId={noteId}
+        title={title}
+        initialBody={note?.body ?? body}
+        body={body}
+        remoteBody={remoteBody}
+        pinned={note?.pinned ?? false}
+        saveState={saveState}
+        confirmingDelete={confirmingDelete}
+        onTitleChange={handleTitleChange}
+        onBodyChange={handleBodyChange}
+        onTogglePin={() => void handleTogglePin()}
+        onAskDelete={() => setConfirmingDelete(true)}
+        onConfirmDelete={() => void handleDelete()}
+        onCancelDelete={() => {
+          if (ownerRef.current) ownerRef.current.deleteIntent += 1;
+          setConfirmingDelete(false);
+          setErrors((current) => ({ ...current, delete: false }));
+        }}
+        backHref={backHref}
+        lead={
+          lead ??
+          (note?.pageType === "weekly" && note.date ? <WeekGlance monday={note.date} /> : undefined)
+        }
+        canDelete={canDelete}
+      />
     </>
   );
 }
