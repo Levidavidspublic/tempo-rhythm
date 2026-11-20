@@ -57,15 +57,10 @@ export function TodayScreen() {
   const todayTasks = useTodayTasks(
     isAuthenticated && hasConvexUser ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
-  const habits = useQuery(
-    api.habits.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
-  );
+  const habits = useQuery(api.habits.list, isAuthenticated && hasConvexUser ? {} : "skip");
   const calendarEvents = useQuery(
     api.calendar_events.listInRange,
-    isAuthenticated && hasConvexUser
-      ? { startMs: bounds.startMs, endMs: bounds.endMs }
-      : "skip",
+    isAuthenticated && hasConvexUser ? { startMs: bounds.startMs, endMs: bounds.endMs } : "skip"
   );
 
   const isLoading =
@@ -73,9 +68,7 @@ export function TodayScreen() {
     (isAuthenticated &&
       (profile === undefined ||
         (hasConvexUser &&
-          (todayTasks === undefined ||
-            habits === undefined ||
-            calendarEvents === undefined))));
+          (todayTasks === undefined || habits === undefined || calendarEvents === undefined))));
 
   if (isLoading) {
     return (
