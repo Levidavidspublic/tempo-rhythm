@@ -11,10 +11,7 @@ export function okReply(data: unknown, status = 200): Response {
     throw new TypeError("Successful reply status must be between 200 and 299");
   }
 
-  return Response.json(
-    { ok: true, data },
-    { status, headers: { "cache-control": "no-store" } }
-  );
+  return Response.json({ ok: true, data }, { status, headers: { "cache-control": "no-store" } });
 }
 
 /** Builds a client-safe refusal without exposing server error details. */
