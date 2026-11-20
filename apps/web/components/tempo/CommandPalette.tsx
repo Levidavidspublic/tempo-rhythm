@@ -19,6 +19,7 @@ import {
   searchHref,
 } from "@/lib/command-palette";
 import type { MessageKey } from "@/lib/i18n";
+import { useNoteTitleSearch } from "@/lib/data/notes/use-note-title-search";
 import { useOnline } from "@/lib/useOnline";
 import { TpIcon, type TpIconName } from "./TpIcon";
 
@@ -126,7 +127,7 @@ function CommandBody({
   // The same gate as the rail: page queries wait for the users row (getProfile is null until then).
   const profile = useQuery(api.users.getProfile, withRecent && isAuthenticated ? {} : "skip");
   const rail = useQuery(api.notes.listForRail, withRecent && profile && !typed ? { limit: RAIL_LIMIT } : "skip");
-  const found = useQuery(api.notes.searchTitles, withRecent && profile && typed ? { query: typed, limit: 6 } : "skip");
+  const found = useNoteTitleSearch(withRecent && profile && typed ? { query: typed, limit: 6 } : "skip");
 
   const rows = useMemo(() => {
     const out: Row[] = [];
