@@ -147,12 +147,7 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     }
   }
 
-  for (const key of [
-    "appliedAtMs",
-    "metadataExpiresAtMs",
-    "createdAt",
-    "updatedAt",
-  ] as const) {
+  for (const key of ["appliedAtMs", "metadataExpiresAtMs", "createdAt", "updatedAt"] as const) {
     if (!isTimestamp(record[key])) {
       return fail(`${key} must be a safe nonnegative integer timestamp`);
     }
