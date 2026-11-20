@@ -78,15 +78,15 @@ test("timeSpentOnDay accepts numeric records and rejects non-record objects", ()
     updatedAt: 1,
   };
   expect(toTaskDoc({ ...base, timeSpentOnDay: {} }).timeSpentOnDay).toEqual({});
-  expect(
-    toTaskDoc({ ...base, timeSpentOnDay: { "2026-11-20": 15 } }).timeSpentOnDay
-  ).toEqual({ "2026-11-20": 15 });
+  expect(toTaskDoc({ ...base, timeSpentOnDay: { "2026-11-20": 15 } }).timeSpentOnDay).toEqual({
+    "2026-11-20": 15,
+  });
   expect(() => toTaskDoc({ ...base, timeSpentOnDay: new Date(0) })).toThrow(
     new TaskDocError("timeSpentOnDay")
   );
-  expect(() =>
-    toTaskDoc({ ...base, timeSpentOnDay: new Map([["2026-11-20", -1]]) })
-  ).toThrow(new TaskDocError("timeSpentOnDay"));
+  expect(() => toTaskDoc({ ...base, timeSpentOnDay: new Map([["2026-11-20", -1]]) })).toThrow(
+    new TaskDocError("timeSpentOnDay")
+  );
 });
 
 test("patchTaskDoc manages completion transitions and timestamps", () => {
