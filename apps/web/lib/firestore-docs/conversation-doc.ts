@@ -78,6 +78,24 @@ function isOptionalNonnegativeSafeInteger(value: unknown): value is number | und
   return value === undefined || (Number.isSafeInteger(value) && (value as number) >= 0);
 }
 
+function isFirestoreValue(value: unknown, insideArray = false): boolean {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    isFiniteNumber(value)
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return !insideArray && value.every((item) => item !== undefined && isFirestoreValue(item, true));
+  }
+  if (isPlainObject(value)) {
+    return Object.values(value).every((item) => item === undefined || isFirestoreValue(item));
+  }
+  return false;
+}
+
 function checkConversation(input: unknown): CheckResult<ConversationDoc> {
   if (!isPlainObject(input)) return { ok: false, reason: "Conversation must be a plain object" };
   if (!hasOnlyKeys(input, conversationKeys)) {
@@ -138,8 +156,11 @@ function checkMessage(input: unknown): CheckResult<MessageDoc> {
   }
   for (const key of ["councilResponse", "toolCalls"] as const) {
     const value = input[key];
-    if (value !== undefined && !Array.isArray(value) && !isPlainObject(value)) {
-      return { ok: false, reason: `${key} must be a plain object or an array` };
+    if (
+      value !== undefined &&
+      ((!Array.isArray(value) && !isPlainObject(value)) || !isFirestoreValue(value))
+    ) {
+      return { ok: false, reason: `${key} must be an encodable Firestore object or array` };
     }
   }
   if (input.sources !== undefined) {
