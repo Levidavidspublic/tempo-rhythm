@@ -1,10 +1,9 @@
 "use client";
 
 import type { Id } from "@/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { CheckCircle2, Circle, ListTodo } from "lucide-react";
 import Link from "next/link";
-import { api } from "@/convex/_generated/api";
+import { useToggleTask } from "@/lib/data/tasks/use-toggle-task";
 import { cn } from "@/lib/utils";
 
 type TodayTask = {
@@ -32,7 +31,7 @@ const priorityLabel: Record<TodayTask["priority"], string> = {
 };
 
 export function TodayTaskList({ tasks }: TodayTaskListProps) {
-  const toggleCompletion = useMutation(api.tasks.toggleCompletion);
+  const toggleCompletion = useToggleTask();
 
   const activeTasks = tasks.filter((task) => task.status !== "done");
   const visibleTasks = activeTasks.slice(0, 3);
@@ -88,7 +87,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
                   key={task._id}
                   className={cn(
                     "rounded-2xl border border-border/80 bg-background/70 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition",
-                    isDone && "opacity-75",
+                    isDone && "opacity-75"
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -101,7 +100,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
                         "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                         isDone
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card text-muted-foreground",
+                          : "border-border bg-card text-muted-foreground"
                       )}
                       aria-label={
                         isDone ? `Mark ${task.title} as not done` : `Mark ${task.title} complete`
@@ -119,7 +118,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
                         <p
                           className={cn(
                             "font-medium text-foreground",
-                            isDone && "text-muted-foreground line-through",
+                            isDone && "text-muted-foreground line-through"
                           )}
                         >
                           {task.title}
@@ -127,7 +126,7 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
                         <span
                           className={cn(
                             "text-xs font-semibold uppercase tracking-wide",
-                            priorityClass[task.priority],
+                            priorityClass[task.priority]
                           )}
                         >
                           {priorityLabel[task.priority]}
@@ -146,8 +145,12 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
 
           {hiddenTaskCount > 0 ? (
             <p className="text-sm text-muted-foreground">
-              {hiddenTaskCount} more open {hiddenTaskCount === 1 ? "task is" : "tasks are"} waiting in{" "}
-              <Link href="/tasks" className="font-semibold text-primary underline-offset-4 hover:underline">
+              {hiddenTaskCount} more open {hiddenTaskCount === 1 ? "task is" : "tasks are"} waiting
+              in{" "}
+              <Link
+                href="/tasks"
+                className="font-semibold text-primary underline-offset-4 hover:underline"
+              >
                 Tasks
               </Link>
               .
