@@ -1,40 +1,25 @@
-import { afterAll, beforeEach, expect, mock, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
-// files that run later can still import every export, and put them back after this file.
-const realModules = {
-  "convex/react": { ...(await import("convex/react")) },
-  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
-};
-afterAll(() => {
-  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
-});
-
-const useMutationCalls: unknown[] = [];
-const markerMutation = async () => null;
-
-mock.module("convex/react", () => ({
-  useMutation: (mutation: unknown) => {
-    useMutationCalls.push(mutation);
-    return markerMutation;
-  },
-}));
-mock.module("@/convex/_generated/api", () => ({
-  api: { tasks: { update: "tasks.update" } },
-}));
-
-const { useUpdateTask } = await import("./use-update-task");
-
-beforeEach(() => {
-  useMutationCalls.length = 0;
-});
+import { getFunctionName } from "convex/server";
+import type { Id } from "@/convex/_generated/dataModel";
+import { makeUseUpdateTask } from "./use-update-task";
 
 test("calls useMutation once with tasks.update and returns its mutation unchanged", () => {
-  const mutation: unknown = useUpdateTask();
-  expect(mutation).toBe(markerMutation);
-  expect(useMutationCalls).toEqual(["tasks.update"]);
+  const markerMutation = Object.assign(async ({ taskId }: { taskId: Id<"tasks"> }) => taskId, {
+    withOptimisticUpdate() {
+      throw new Error("Unexpected optimistic update");
+    },
+  });
+  const calls: string[] = [];
+  const useUpdateTask = makeUseUpdateTask((reference, ...args) => {
+    calls.push(getFunctionName(reference));
+    expect(args).toHaveLength(0);
+    return markerMutation;
+  });
+
+  expect(useUpdateTask()).toBe(markerMutation);
+  expect(calls).toEqual(["tasks:update"]);
 });
 
 test("TodayEnergyRecommendations uses the update-task seam", () => {
