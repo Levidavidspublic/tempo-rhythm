@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
@@ -19,6 +19,7 @@ import {
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { useRoutineNotes } from "@/lib/data/notes/use-routine-notes";
 import {
   isRoutinePage,
   newRoutineBody,
@@ -127,7 +128,7 @@ function RoutinesContent() {
   const ready = profile === "ready";
   // notes.listRoutines returns recent pages that mention the tag (bounded); isRoutinePage checks
   // it is really the tag.
-  const notes = useQuery(api.notes.listRoutines, ready ? {} : "skip");
+  const notes = useRoutineNotes(ready ? {} : "skip");
   const create = useMutation(api.notes.create);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(false);
