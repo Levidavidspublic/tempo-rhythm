@@ -10,6 +10,7 @@ import type { MessageKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { notePatch, shouldAdoptRemoteTitle } from "@/lib/note-sync";
+import { useToggleNotePin } from "@/lib/data/notes/use-toggle-note-pin";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
 import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
@@ -73,7 +74,7 @@ function NotesList() {
   const { isAuthenticated } = useConvexAuth();
   const notes = useQuery(api.notes.list, isAuthenticated ? {} : "skip");
   const createNote = useMutation(api.notes.create);
-  const togglePin = useMutation(api.notes.togglePin);
+  const togglePin = useToggleNotePin();
   const removeNote = useMutation(api.notes.remove);
   const restoreNote = useMutation(api.notes.restore);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -266,7 +267,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     isAuthenticated && profile != null ? { noteId } : "skip",
   );
   const updateNote = useMutation(api.notes.update);
-  const togglePin = useMutation(api.notes.togglePin);
+  const togglePin = useToggleNotePin();
   const removeNote = useMutation(api.notes.remove);
   const restoreNote = useMutation(api.notes.restore);
 
