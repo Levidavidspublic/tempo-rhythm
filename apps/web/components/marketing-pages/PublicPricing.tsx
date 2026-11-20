@@ -43,31 +43,46 @@ export function PublicPricing() {
         .tp-public-pricing .tp-site-header__brand { min-height: var(--tp-touch); min-width: var(--tp-touch); }
       `}</style>
       <TpIconSprite />
-      <a className="tp-skip" href="#pricing-main">{t("mk.skip")}</a>
+      <a className="tp-skip" href="#pricing-main">
+        {t("mk.skip")}
+      </a>
       <header className="tp-site-header">
         <div className="tp-container tp-site-header__inner">
-          <Link className="tp-site-header__brand" href="/">{t("mk.brand")}</Link>
+          <Link className="tp-site-header__brand" href="/">
+            {t("mk.brand")}
+          </Link>
           <nav className="tp-site-nav" aria-label={t("mk.nav")}>
-            <Link className="tp-site-link" href="/sign-in">{t("mk.signin")}</Link>
+            <Link className="tp-site-link" href="/sign-in">
+              {t("mk.signin")}
+            </Link>
             <LanguageSwitch long={false} />
           </nav>
         </div>
       </header>
 
-      <main id="pricing-main" className="tp-container" tabIndex={-1} style={{ paddingBlockEnd: "var(--tp-space-16)" }}>
+      <main
+        id="pricing-main"
+        className="tp-container"
+        tabIndex={-1}
+        style={{ paddingBlockEnd: "var(--tp-space-16)" }}
+      >
         <header className="tp-hero">
           <h1 className="tp-hero__title">{copy.title}</h1>
           <p className="tp-hero__lede">{copy.availability}</p>
           <p>{copy.beta}</p>
           <div className="tp-hero__actions">
-            <Link className="tp-btn tp-btn--primary" href="/sign-up">{copy.account}</Link>
+            <Link className="tp-btn tp-btn--primary" href="/sign-up">
+              {copy.account}
+            </Link>
           </div>
           <p className="tp-hero__note">{copy.access}</p>
         </header>
 
         <section className="tp-section" aria-labelledby="public-pricing-tiers">
           <div className="tp-section__head bl-cycle">
-            <h2 className="tp-section__title" id="public-pricing-tiers">{copy.plans}</h2>
+            <h2 className="tp-section__title" id="public-pricing-tiers">
+              {copy.plans}
+            </h2>
             <Segmented<BillingInterval>
               label={t("set.billing.cycle")}
               value={cycle}
@@ -79,7 +94,9 @@ export function PublicPricing() {
             />
           </div>
           <div className="tp-tiers">
-            {TIERS.map((tier) => <PlanCard key={tier.id} tier={tier} interval={cycle} current={false} early={false} />)}
+            {TIERS.map((tier) => (
+              <PlanCard key={tier.id} tier={tier} interval={cycle} current={false} early={false} />
+            ))}
           </div>
         </section>
       </main>
@@ -87,9 +104,15 @@ export function PublicPricing() {
       <footer className="tp-site-footer">
         <div className="tp-container tp-site-footer__inner">
           <nav className="tp-site-footer__links" aria-label={t("mk.foot")}>
-            <Link className="tp-site-link" href="/terms">{t("mk.terms")}</Link>
-            <Link className="tp-site-link" href="/privacy">{t("mk.privacy")}</Link>
-            <Link className="tp-site-link" href="/contact">{t("mk.contact")}</Link>
+            <Link className="tp-site-link" href="/terms">
+              {t("mk.terms")}
+            </Link>
+            <Link className="tp-site-link" href="/privacy">
+              {t("mk.privacy")}
+            </Link>
+            <Link className="tp-site-link" href="/contact">
+              {t("mk.contact")}
+            </Link>
           </nav>
           <p className="tp-site-footer__small">{t("mk.small")}</p>
         </div>
