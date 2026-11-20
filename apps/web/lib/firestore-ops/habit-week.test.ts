@@ -51,33 +51,21 @@ test("three check-ins mark three days", () => {
 });
 
 test("two check-ins on one date count once and keep the latest time", () => {
-  const result = habitWeekStrip(
-    [checkIn(dates[2], 50), checkIn(dates[2], 90)],
-    "habit-1",
-    dates
-  );
+  const result = habitWeekStrip([checkIn(dates[2], 50), checkIn(dates[2], 90)], "habit-1", dates);
 
   expect(result.days[2]).toEqual({ localDate: dates[2], done: true, checkedAt: 90 });
   expect(result.doneCount).toBe(1);
 });
 
 test("another habit's check-ins are left out", () => {
-  const result = habitWeekStrip(
-    [checkIn(dates[1], 10, { habitId: "habit-2" })],
-    "habit-1",
-    dates
-  );
+  const result = habitWeekStrip([checkIn(dates[1], 10, { habitId: "habit-2" })], "habit-1", dates);
 
   expect(result.days.every((day) => !day.done)).toBe(true);
   expect(result.doneCount).toBe(0);
 });
 
 test("deleted check-ins are left out", () => {
-  const result = habitWeekStrip(
-    [checkIn(dates[4], 10, { deletedAt: 20 })],
-    "habit-1",
-    dates
-  );
+  const result = habitWeekStrip([checkIn(dates[4], 10, { deletedAt: 20 })], "habit-1", dates);
 
   expect(result.days[4]).toEqual({ localDate: dates[4], done: false });
   expect(result.doneCount).toBe(0);
