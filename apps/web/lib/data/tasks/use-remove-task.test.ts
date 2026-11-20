@@ -41,7 +41,7 @@ describe("useRemoveTask", () => {
   test("ChecklistBoard deletes through the hook", () => {
     const source = readFileSync(
       join(import.meta.dir, "../../../components/tasks-checklists/ChecklistBoard.tsx"),
-      "utf8",
+      "utf8"
     );
     expect(source).toContain("useRemoveTask()");
     expect(source).not.toContain("useMutation(api.tasks.remove)");
