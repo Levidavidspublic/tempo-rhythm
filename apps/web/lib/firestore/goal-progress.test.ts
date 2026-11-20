@@ -33,7 +33,7 @@ describe("planGoalProgress", () => {
 
   test("moving a completed goal to 80 makes it active", () => {
     expect(
-      planGoalProgress({ ...goal, progressPercent: 100, status: "completed" }, 80, now),
+      planGoalProgress({ ...goal, progressPercent: 100, status: "completed" }, 80, now)
     ).toEqual({
       kind: "patch",
       patch: { progressPercent: 80, updatedAt: now, status: "active" },

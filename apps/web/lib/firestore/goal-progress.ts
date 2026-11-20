@@ -6,11 +6,7 @@ export type GoalProgressPlan =
   | { kind: "refused"; reason: string };
 
 /** Plans a checked, immutable Firestore patch for a goal progress change. */
-export function planGoalProgress(
-  stored: GoalDoc,
-  percent: number,
-  now: number,
-): GoalProgressPlan {
+export function planGoalProgress(stored: GoalDoc, percent: number, now: number): GoalProgressPlan {
   try {
     if (stored.deletedAt !== undefined) {
       return { kind: "refused", reason: "goal is deleted" };
