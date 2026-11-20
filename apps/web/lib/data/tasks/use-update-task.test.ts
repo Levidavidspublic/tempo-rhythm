@@ -40,7 +40,7 @@ test("calls useMutation once with tasks.update and returns its mutation unchange
 test("TodayEnergyRecommendations uses the update-task seam", () => {
   const source = readFileSync(
     join(import.meta.dir, "../../../components/today/TodayEnergyRecommendations.tsx"),
-    "utf8",
+    "utf8"
   );
 
   expect(source).toContain("useUpdateTask()");
