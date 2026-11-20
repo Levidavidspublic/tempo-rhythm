@@ -2,7 +2,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { kb71t, type Kb71Lang } from "@/lib/i18n-groups/kb-71";
+import { type Kb71Lang, kb71t } from "@/lib/i18n-groups/kb-71";
 import { cn } from "@/lib/utils";
 import "@/app/v3/kb-71.css";
 
@@ -77,12 +77,7 @@ export function Kb71Gallery({
         <Button size="lg" variant="secondary" onClick={act("large")}>
           {t("large")}
         </Button>
-        <Button
-          size="icon"
-          variant="outline"
-          aria-label={t("iconName")}
-          onClick={act("icon")}
-        >
+        <Button size="icon" variant="outline" aria-label={t("iconName")} onClick={act("icon")}>
           <span aria-hidden="true">＋</span>
         </Button>
         <Button variant="destructive" onClick={act("destructive")}>
