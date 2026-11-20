@@ -134,10 +134,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
     (!isFiniteNumber(source.defaultEstimate) || source.defaultEstimate < 0)
   )
     invalid("defaultEstimate");
-  if (
-    source.lastTaskCreationDay !== undefined &&
-    !isCalendarDate(source.lastTaskCreationDay)
-  )
+  if (source.lastTaskCreationDay !== undefined && !isCalendarDate(source.lastTaskCreationDay))
     invalid("lastTaskCreationDay");
   if (source.deletedAt !== undefined && !isFiniteNumber(source.deletedAt)) invalid("deletedAt");
 
