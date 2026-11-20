@@ -7,9 +7,16 @@ import {
   linkedTicketNumber,
   parseScores,
   parseTicketFields,
+  runJudge,
   splitSteps,
   usageCostLine,
 } from "./jev-judge.ts";
+
+describe("runJudge", () => {
+  test("uses the PR description supplied by main instead of fetching it again", () => {
+    expect(runJudge.toString()).not.toContain("gh pr view");
+  });
+});
 
 describe("buildState", () => {
   const input = {

@@ -420,14 +420,12 @@ async function callJev(state: string): Promise<Record<string, NoulAnswer>> {
   return data.answers;
 }
 
-async function runJudge(prNumber: string, ticketNumber: number): Promise<void> {
+export async function runJudge(
+  prNumber: string,
+  ticketNumber: number,
+  prBody: string
+): Promise<void> {
   const issueBody = sh(`gh issue view ${ticketNumber} --json body --jq .body`);
-  let prBody: string;
-  try {
-    prBody = sh(`gh pr view ${prNumber} --json body --jq .body`).replace(/\n$/, "");
-  } catch {
-    prBody = NO_PR_DESCRIPTION;
-  }
   const state = buildState({
     issueBody,
     agentsMd: readOr("AGENTS.md", "(AGENTS.md not found)"),
@@ -480,7 +478,7 @@ async function main(): Promise<void> {
     return;
   }
   if (mode === "process-check") await runProcessCheck(prNumber, ticketNumber);
-  else await runJudge(prNumber, ticketNumber);
+  else await runJudge(prNumber, ticketNumber, prBody.replace(/\n$/, ""));
 }
 
 if (import.meta.main) {
