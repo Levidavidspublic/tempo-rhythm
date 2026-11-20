@@ -27,7 +27,10 @@ function formatterFor(timeZone: string): Intl.DateTimeFormat {
   });
 }
 
-function partsAt(formatter: Intl.DateTimeFormat, instantMs: number): DateParts & {
+function partsAt(
+  formatter: Intl.DateTimeFormat,
+  instantMs: number
+): DateParts & {
   hour: number;
   minute: number;
   second: number;
