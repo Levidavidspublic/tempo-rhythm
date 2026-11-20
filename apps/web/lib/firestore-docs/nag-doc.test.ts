@@ -73,6 +73,13 @@ describe("nag document", () => {
     expect(() => parseNagDoc(tooMany)).toThrow("Invalid field: phrases");
   });
 
+  test("accepts no phrases and refuses missing phrase elements", () => {
+    expect(parseNagDoc({ ...validNag(), phrases: [] }).phrases).toEqual([]);
+    expect(() => parseNagDoc({ ...validNag(), phrases: new Array(1) })).toThrow(
+      "Invalid field: phrases[0]"
+    );
+  });
+
   test("drops legacy keys and refuses unknown top-level and phrase keys", () => {
     const parsed = parseNagDoc({
       ...validNag(),
