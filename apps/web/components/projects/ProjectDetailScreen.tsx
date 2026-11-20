@@ -39,12 +39,7 @@ import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
  * True when `next` names a new project that has no task yet. The name lives on a project's tasks,
  * so nothing can keep it until the first task is added.
  */
-export function waitsForFirstTask(
-  projectId: string,
-  taskCount: number,
-  next: string,
-  name: string
-): boolean {
+export function waitsForFirstTask(projectId: string, taskCount: number, next: string, name: string): boolean {
   return taskCount === 0 && isNewProjectId(projectId) && next !== "" && next !== name;
 }
 
@@ -72,11 +67,7 @@ export function ProjectDetailScreen({ projectSlug }: { projectSlug: string }) {
 /** The paper page; `titled` when it holds the page-title heading that names it. */
 function Paper({ children, titled = false }: { children: ReactNode; titled?: boolean }) {
   return (
-    <article
-      className="tp-paper"
-      data-component="Page"
-      aria-labelledby={titled ? "page-title" : undefined}
-    >
+    <article className="tp-paper" data-component="Page" aria-labelledby={titled ? "page-title" : undefined}>
       <div className="tp-page-cover" data-component="PageCover" aria-hidden="true" />
       <div className="tp-page__body">
         <div className="tp-page-icon" data-component="PageIcon" aria-hidden="true">
@@ -101,21 +92,17 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const removeTask = useMutation(api.tasks.remove);
   const updateTask = useMutation(api.tasks.update);
   const renameProject = useRenameProject();
-  const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate(
-    (store, { taskId }) => {
-      const rows = store.getQuery(api.tasks.list, args);
-      if (!rows) return;
-      store.setQuery(
-        api.tasks.list,
-        args,
-        rows.map((row) =>
-          row._id === taskId
-            ? { ...row, status: (row.status === "done" ? "todo" : "done") as "todo" | "done" }
-            : row
-        )
-      );
-    }
-  );
+  const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate((store, { taskId }) => {
+    const rows = store.getQuery(api.tasks.list, args);
+    if (!rows) return;
+    store.setQuery(
+      api.tasks.list,
+      args,
+      rows.map((row) =>
+        row._id === taskId ? { ...row, status: (row.status === "done" ? "todo" : "done") as "todo" | "done" } : row,
+      ),
+    );
+  });
   const [adding, setAdding] = useState(false);
   // A new project was named before it had a task: the page says it is kept once it has one.
   const [namedNew, setNamedNew] = useState(false);
@@ -181,7 +168,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     // The name lives on each of the project's tasks; one mutation renames them all together.
     renameProject({ projectId, name: next }).then(
       () => setError(false),
-      () => setError(true)
+      () => setError(true),
     );
   };
 
@@ -204,21 +191,16 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         setToast(
           makeToast(
             t(wasDone ? "pd.task.reopened" : "pd.task.done"),
-            canUndo ? () => updateTask({ taskId: task._id, status: before }) : undefined
-          )
+            canUndo ? () => updateTask({ taskId: task._id, status: before }) : undefined,
+          ),
         );
       },
-      () => setError(true)
+      () => setError(true),
     );
   };
 
   const addRow = adding ? (
-    <InlineAdd
-      id="pd-add"
-      label={t("pd.task.label")}
-      onSubmit={addTask}
-      onCancel={() => setAdding(false)}
-    />
+    <InlineAdd id="pd-add" label={t("pd.task.label")} onSubmit={addTask} onCancel={() => setAdding(false)} />
   ) : null;
 
   return (
@@ -281,11 +263,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             title={t("pd.empty.title")}
             body={t("pd.empty.body")}
             action={
-              <button
-                className="tp-btn tp-btn--secondary"
-                type="button"
-                onClick={() => setAdding(true)}
-              >
+              <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setAdding(true)}>
                 <TpIcon name="plus" size="sm" />
                 <span>{t("pd.empty.add")}</span>
               </button>
@@ -317,11 +295,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
                 </ul>
               ) : null}
               {addRow ?? (
-                <button
-                  className="tp-btn tp-btn--ghost"
-                  type="button"
-                  onClick={() => setAdding(true)}
-                >
+                <button className="tp-btn tp-btn--ghost" type="button" onClick={() => setAdding(true)}>
                   <TpIcon name="plus" size="sm" />
                   <span>{t("pd.tasks.add")}</span>
                 </button>
@@ -352,8 +326,7 @@ function TaskRow({
   const done = task.status === "done";
   const titleId = `task-${task._id}-title`;
   const minutes = minutesFromEstimate(task.timeEstimate);
-  const day =
-    task.dueAt === undefined ? null : dayLabel(task.dueAt, todayStartMs, todayEndMs, lang);
+  const day = task.dueAt === undefined ? null : dayLabel(task.dueAt, todayStartMs, todayEndMs, lang);
   return (
     <li className="tp-task-row" data-component="TaskRow" data-done={done ? "true" : undefined}>
       {/* biome-ignore lint/a11y/useSemanticElements: the v3 TaskRow check is a button with checkbox semantics (tp-check) */}
