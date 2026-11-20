@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { type KeyboardEvent, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -8,6 +8,7 @@ import { useShellSlots } from "@/components/tempo/ShellSlots";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useTemplateList } from "@/lib/data/templates/use-template-list";
 import { filterTemplates, type TemplateScope } from "@/lib/template-pages";
 import { TemplateCard, type TemplateCardModel } from "./TemplateCard";
 
@@ -26,7 +27,7 @@ const SCOPE_LABEL = { all: "tpl.all", starter: "tpl.builtin", mine: "tpl.yours" 
 export function TemplatesLibrary() {
   const { t } = useLocale();
   const shell = useShellSlots();
-  const templates = useQuery(api.templates.list, { scope: "all" });
+  const templates = useTemplateList({ scope: "all" });
   const remove = useMutation(api.templates.remove);
   const [scope, setScope] = useState<TemplateScope>("all");
   const [query, setQuery] = useState("");
