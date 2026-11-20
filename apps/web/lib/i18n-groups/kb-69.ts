@@ -1,17 +1,19 @@
 /** KB-69 approval waiting copy. Hebrew is machine-drafted for Amit's native read. */
 export const en = {
   "waiting.title": "Waiting for approval",
-  "waiting.lede": "Thanks for signing up. Tempo is a small beta, and Amit approves each new account by hand.",
+  "waiting.lede":
+    "Thanks for signing up. Tempo is a small beta, and Amit approves each new account by hand.",
   "waiting.nextTitle": "What happens next",
   "waiting.next1": "Amit approves your account. No email is sent when that happens.",
   "waiting.next2": "If this page is still open, Tempo opens right here by itself.",
   "waiting.next3": "If you close it, come back any time and sign in with this email.",
   "revoked.title": "Your access is paused",
-  "revoked.body": "Access for this account is paused for now. If you think this is a mistake, reply to your sign-in email.",
-  "signedInAs": "Signed in as",
-  "signOut": "Sign out",
-  "signingOut": "Signing out…",
-  "signOutError": "We couldn't sign you out yet. Please try again.",
+  "revoked.body":
+    "Access for this account is paused for now. If you think this is a mistake, reply to your sign-in email.",
+  signedInAs: "Signed in as",
+  signOut: "Sign out",
+  signingOut: "Signing out…",
+  signOutError: "We couldn't sign you out yet. Please try again.",
   "name.label": "What should Tempo call you?",
   "name.optional": "(optional)",
   "name.help": "A first name or a nickname. You can leave this empty.",
@@ -44,10 +46,10 @@ export const he: Record<keyof typeof en, string> = {
   "waiting.next3": "אם סגרתם אותו, אפשר לחזור בכל זמן ולהתחבר עם המייל הזה.",
   "revoked.title": "הגישה מושהית",
   "revoked.body": "הגישה לחשבון הזה מושהית כרגע. אם נראה לכם שזו טעות, אפשר להשיב למייל ההתחברות.",
-  "signedInAs": "מחוברים בתור",
-  "signOut": "התנתקות",
-  "signingOut": "מתנתקים…",
-  "signOutError": "לא הצלחנו לנתק את החשבון עדיין. אפשר לנסות שוב.",
+  signedInAs: "מחוברים בתור",
+  signOut: "התנתקות",
+  signingOut: "מתנתקים…",
+  signOutError: "לא הצלחנו לנתק את החשבון עדיין. אפשר לנסות שוב.",
   "name.label": "איך Tempo יקרא לכם?",
   "name.optional": "(לא חובה)",
   "name.help": "שם פרטי או כינוי. אפשר גם להשאיר ריק.",
@@ -73,7 +75,11 @@ export const he: Record<keyof typeof en, string> = {
 
 export type Kb69Lang = "en" | "he";
 export type Kb69Key = keyof typeof en;
-export function kb69t(lang: Kb69Lang, key: Kb69Key, values?: Readonly<Record<string, string>>): string {
+export function kb69t(
+  lang: Kb69Lang,
+  key: Kb69Key,
+  values?: Readonly<Record<string, string>>
+): string {
   const message: string = (lang === "he" ? he : en)[key];
   return values ? message.replace(/\{(\w+)\}/g, (_, name: string) => values[name] ?? "") : message;
 }
