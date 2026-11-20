@@ -86,4 +86,12 @@ describe("checkPageOperationDoc", () => {
   test("rejects a wrong metadataExpiresAtMs", () => {
     expect(checkPageOperationDoc(applied({ metadataExpiresAtMs: appliedAtMs + 1 })).ok).toBe(false);
   });
+
+  test("rejects an undefined createdAt", () => {
+    expect(checkPageOperationDoc({ ...applied(), createdAt: undefined }).ok).toBe(false);
+  });
+
+  test("rejects an undefined updatedAt", () => {
+    expect(checkPageOperationDoc({ ...applied(), updatedAt: undefined }).ok).toBe(false);
+  });
 });
