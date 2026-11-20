@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preferences · Settings · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — settings-prefs.html */
+  .pr-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .pr-dial { padding: var(--tp-space-3) var(--tp-space-5) var(--tp-space-5); display: grid; gap: var(--tp-space-2); }
+  .pr-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Settings · Preferences
+@route    apps/web/app/(tempo)/settings/preferences/page.tsx
+@layout   TempoShell
+@data     prefs = profiles.getPrefs({})                    // Convex query: {theme, lang, textSize, dyslexiaFont, coachDial, weekStart, notify {weeklyPage, founderReplies}}
+@actions  change any preference -> profiles.updatePrefs({ key, value })   // optimistic, saves on change, no Save button
+@actions  change coach dial -> profiles.setCoachDial({ value })            // debounced 400 ms
+@states   default | empty (n/a: defaults always exist) | loading | error | offline  (?state=)
+@flow     1. Three groups: How Tempo looks, How the coach works, Your week and notices.
+          2. Every change applies right away and a quiet status line says "Saved". Nothing to submit.
+          3. Theme: light, dark or match this device. Language: English or Hebrew (Hebrew flips the layout).
+          4. Text size small / medium / large. Reading font turns on a font made for easier reading (dyslexia friendly).
+          5. Reduced motion is not a switch here: Tempo follows the device setting, and the row says where to change it.
+          6. Coach dial 0–10 shows a number and a word (Quiet, Steady, Push). Default for new people is 4.
+          7. Week start: Sunday or Monday. Billing notices are always on, so the switch is locked and says why.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'settings-prefs' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="set-label" data-i18n="rail.set">Settings</div>
+      <ul class="tp-tree" role="list" aria-labelledby="set-label">
+        <li><a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.profile">Profile</span></a></li>
+        <li><a class="tp-tree-item" href="settings-prefs.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.prefs">Preferences</span></a></li>
+        <li><a class="tp-tree-item" href="settings-integrations.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.integ">Connections</span></a></li>
+        <li><a class="tp-tree-item" href="settings-privacy.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-shield"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.privacy">Privacy</span></a></li>
+        <li><a class="tp-tree-item" href="billing.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.billing">Plan and billing</span></a></li>
+        <li><a class="tp-tree-item" href="notifications.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notif">Notifications</span></a></li>
+        <li><a class="tp-tree-item" href="ask-founder.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.founder">Ask the founder</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Settings', 'Preferences'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><span data-i18n="rail.set">Settings</span> / <strong data-i18n="nav.prefs">Preferences</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="pr.title">Preferences</h1>
+          <p class="tp-pagehead__sub" data-i18n="pr.sub">Make Tempo comfortable to read and to use. Changes save as you go.</p>
+          <p class="tp-help" role="status" id="saved-note"></p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">Look and text size change on this device right away.</span></span>
+      </div>
+
+      <div class="pr-body">
+
+        <!-- ===== Look ===== -->
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'How Tempo looks' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="look-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="look-title" data-i18n="look.title">How Tempo looks</h2>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — + toggle-group | props: { label: 'Theme', control: Segmented } | events: onChange -> profiles.updatePrefs({ key: 'theme', value }) -->
+          <div class="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="theme-l" data-i18n="theme.label">Theme</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: [light, dark, system], value: 'system' } | events: onChange -->
+              <div class="tp-segmented" role="radiogroup" aria-labelledby="theme-l" data-pref="theme" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" data-value="light" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="theme.light">Light</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="dark" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-moon"/></svg><span data-i18n="theme.dark">Dark</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="system" aria-checked="true" tabindex="0"><span data-i18n="theme.system">Match this device</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="lang-l" data-i18n="lang.label">Language</span>
+              <span class="tp-help" data-i18n="lang.help">Hebrew turns the layout right to left.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component LanguageSwitch | shadcn: toggle-group | props: { options: [en, he], value: 'en' } | events: onChange -> profiles.updatePrefs({ key: 'lang', value }) -->
+              <div class="tp-segmented" role="radiogroup" aria-labelledby="lang-l" data-pref="lang" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" data-value="en" aria-checked="true" tabindex="0"><span lang="en">English</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="he" aria-checked="false" tabindex="-1"><span lang="he">עברית</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="size-l" data-i18n="size.label">Text size</span>
+              <span class="tp-help" data-i18n="size.help">Changes text everywhere in Tempo.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: [s, m, l], value: 'm' } | events: onChange -> profiles.updatePrefs({ key: 'textSize', value }) -->
+              <div class="tp-segmented" role="radiogroup" aria-labelledby="size-l" data-pref="size" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" data-value="s" aria-checked="false" tabindex="-1"><span data-i18n="size.s">Small</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="m" aria-checked="true" tabindex="0"><span data-i18n="size.m">Medium</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="l" aria-checked="false" tabindex="-1"><span data-i18n="size.l">Large</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="dys-l" data-i18n="dys.label">Reading font</span>
+              <span class="tp-help" id="dys-h" data-i18n="dys.help">A font made for easier reading, with more space between letters. Helpful with dyslexia.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Switch | shadcn: switch | props: { checked: false } | events: onCheckedChange -> TP.setDyslexia(on) + profiles.updatePrefs({ key: 'dyslexiaFont', value }) -->
+              <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="dys-l" aria-describedby="dys-h" data-pref-switch="dyslexia" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+            </div>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — | props: { label: 'Less motion', control: none } | events: — -->
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="motion.label">Less motion</span>
+              <span class="tp-help" data-i18n="motion.help">Tempo follows your device. When "Reduce motion" is on in your system settings, animations stop and words carry the meaning.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Badge | shadcn: badge | props: { icon: 'info', label: 'Follows device' } | events: — -->
+              <span class="tp-badge" data-tone="info" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg><span data-i18n="motion.badge">Follows device</span></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Coach ===== -->
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'How the coach works' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="coach-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="coach-title" data-i18n="coach.title">How the coach works</h2>
+            <p class="tp-settings-section__desc" data-i18n="coach.desc">This is the starting point for every new chat. You can still change it inside a chat.</p>
+          </div>
+          <div class="pr-dial">
+            <!-- @component CoachDial | shadcn: slider | props: { value: 4 } | events: onValueChange -> profiles.setCoachDial({ value }) -->
+            <div class="tp-dial" data-component="Dial">
+              <div class="tp-dial__head">
+                <label class="tp-label" for="dial" data-i18n="dial.label">How much should the coach push?</label>
+                <span class="tp-dial__value"><span class="tp-dial__num tp-num" data-dial-num>4</span><span class="tp-dial__of" data-i18n="dial.of">of 10</span><span class="tp-dial__word" data-dial-word>Steady</span></span>
+              </div>
+              <input class="tp-slider" id="dial" type="range" min="0" max="10" step="1" value="4" aria-describedby="dial-help">
+              <div class="tp-dial__scale" aria-hidden="true"><span><span class="tp-num">0</span> <span data-i18n="dial.quiet">Quiet</span></span><span data-i18n="dial.steady">Steady</span><span><span data-i18n="dial.push">Push</span> <span class="tp-num">10</span></span></div>
+            </div>
+            <p class="tp-help" id="dial-help" data-i18n="dial.help">Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans.</p>
+          </div>
+        </section>
+
+        <!-- ===== Week + notices ===== -->
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Your week and notices' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="notify-title" id="notify" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="notify-title" data-i18n="wk.title">Your week and notices</h2>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — + select | props: { label: 'Week starts on', control: Select } | events: onChange -> profiles.updatePrefs({ key: 'weekStart', value }) -->
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <label class="tp-setting-row__label" for="weekstart" data-i18n="wk.label">Week starts on</label>
+              <span class="tp-help" id="wk-help" data-i18n="wk.help">Used by the calendar and your weekly page.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Select | shadcn: select | props: { options: [sun, mon], value: 'sun' } | events: onChange -->
+              <div class="tp-select" data-component="Select">
+                <select class="tp-select__input" id="weekstart" aria-describedby="wk-help" data-pref-select="weekStart">
+                  <option value="sun" selected data-i18n="wk.sun">Sunday</option>
+                  <option value="mon" data-i18n="wk.mon">Monday</option>
+                </select>
+                <svg class="tp-icon tp-icon--sm tp-select__icon" aria-hidden="true"><use href="#i-down"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="n1-l" data-i18n="n1.label">Weekly page is ready</span>
+              <span class="tp-help" id="n1-h" data-i18n="n1.help">A short notice when your new week is set up.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Switch | shadcn: switch | props: { checked: true } | events: onCheckedChange -> profiles.updatePrefs({ key: 'notify.weeklyPage', value }) -->
+              <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="n1-l" aria-describedby="n1-h" data-pref-switch="notify.weeklyPage" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+            </div>
+          </div>
+
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="n2-l" data-i18n="n2.label">Replies from the founder</span>
+              <span class="tp-help" id="n2-h" data-i18n="n2.help">When Amit answers something you asked.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="n2-l" aria-describedby="n2-h" data-pref-switch="notify.founderReplies" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+            </div>
+          </div>
+
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="n3-l" data-i18n="n3.label">Billing notices</span>
+              <span class="tp-help" id="n3-h" data-i18n="n3.help">Always on, so a charge never surprises you. You'll hear 3 days, 1 day and 1 hour before any plan change.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-disabled="true" aria-labelledby="n3-l" aria-describedby="n3-h" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state tp-state--loading pr-state" role="status" data-component="StateLoading" data-state-show="loading empty">
+          <span class="tp-sr-only" data-i18n="loading">Loading your preferences</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your preferences." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error pr-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your preferences.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Your settings are safe. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "saved": "Saved.", "switch.on": "On", "switch.off": "Off",
+    "dial.quiet": "Quiet", "dial.steady": "Steady", "dial.push": "Push", "dial.of": "of 10",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "העדפות · הגדרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.set": "הגדרות",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן",
+    "nav.profile": "פרופיל", "nav.prefs": "העדפות", "nav.integ": "חיבורים", "nav.privacy": "פרטיות",
+    "nav.billing": "מסלול ותשלום", "nav.notif": "התראות", "nav.founder": "לשאול את המייסד", "nav.dyslexia": "גופן קריאה",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "pr.title": "העדפות", "pr.sub": "שיהיה לך נוח לקרוא ולעבוד ב־Tempo. השינויים נשמרים תוך כדי.",
+    "saved": "נשמר.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "המראה וגודל הטקסט משתנים במכשיר הזה מיד.",
+    "look.title": "איך Tempo נראה",
+    "theme.label": "ערכת צבעים", "theme.light": "בהירה", "theme.dark": "כהה", "theme.system": "כמו במכשיר",
+    "lang.label": "שפה", "lang.help": "בעברית הפריסה עוברת לימין לשמאל.",
+    "size.label": "גודל טקסט", "size.help": "משנה את הטקסט בכל Tempo.", "size.s": "קטן", "size.m": "בינוני", "size.l": "גדול",
+    "dys.label": "גופן קריאה", "dys.help": "גופן שנבנה לקריאה קלה יותר, עם יותר רווח בין האותיות. עוזר עם דיסלקציה.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "motion.label": "פחות תנועה", "motion.help": "Tempo עוקב אחרי המכשיר שלך. כשהאפשרות ״הפחתת תנועה״ פועלת בהגדרות המערכת, האנימציות נעצרות והמילים נושאות את המשמעות.",
+    "motion.badge": "לפי המכשיר",
+    "coach.title": "איך המאמן עובד", "coach.desc": "זו נקודת ההתחלה לכל שיחה חדשה. אפשר עדיין לשנות את זה בתוך שיחה.",
+    "dial.label": "כמה שהמאמן ידחוף?", "dial.of": "מתוך 10", "dial.quiet": "שקט", "dial.steady": "יציב", "dial.push": "דוחף",
+    "dial.help": "שקט: המאמן מחכה שתבקשי. יציב: בדיקות עדינות. דוחף: יותר תזכורות ותוכניות נחרצות יותר.",
+    "wk.title": "השבוע וההתראות שלך", "wk.label": "השבוע מתחיל ביום", "wk.help": "משמש את לוח השנה ואת הדף השבועי שלך.",
+    "wk.sun": "ראשון", "wk.mon": "שני",
+    "n1.label": "הדף השבועי מוכן", "n1.help": "הודעה קצרה כשהשבוע החדש שלך מוכן.",
+    "n2.label": "תשובות מהמייסד", "n2.help": "כשעמית עונה על משהו ששאלת.",
+    "n3.label": "הודעות על תשלום", "n3.help": "תמיד פועל, כדי שחיוב אף פעם לא יפתיע אותך. תקבלי הודעה 3 ימים, יום אחד ושעה אחת לפני כל שינוי במסלול.",
+    "loading": "טוען את ההעדפות שלך",
+    "error.title": "לא הצלחנו לטעון את ההעדפות.", "error.body": "ההגדרות שלך בטוחות. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  var root = document.documentElement;
+  var note = document.getElementById("saved-note");
+  function saved() { note.textContent = ""; setTimeout(function () { note.textContent = TP.t("saved"); }, 50); }
+
+  function applyPref(key, value) {
+    // REAL: convex profiles.updatePrefs({ key, value }) — optimistic; device-local mirror in localStorage
+    if (key === "theme") {
+      if (value === "system") { try { localStorage.setItem("tempo-theme", "system"); } catch (e) {} root.setAttribute("data-theme", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+      else TP.setTheme(value);
+    }
+    if (key === "size") {
+      try { localStorage.setItem("tempo-text-size", value); } catch (e) {}
+      if (value === "m") root.removeAttribute("data-text-size"); else root.setAttribute("data-text-size", value);
+    }
+    if (key === "lang" && value !== root.lang) {
+      try { localStorage.setItem("tempo-lang", value); } catch (e) {}
+      var u = new URL(location.href); u.searchParams.set("lang", value); location.href = u.toString();
+      return;
+    }
+    saved();
+  }
+
+  function readGroup(group) {
+    var c = group.querySelector('[role="radio"][aria-checked="true"]');
+    if (c && group._last !== c.getAttribute("data-value")) { group._last = c.getAttribute("data-value"); applyPref(group.getAttribute("data-pref"), group._last); }
+  }
+
+  /* Sync controls with what is already set on this device. */
+  function sync() {
+    var t = null; try { t = localStorage.getItem("tempo-theme"); } catch (e) {}
+    var size = root.getAttribute("data-text-size") || "m";
+    var vals = { theme: t || "system", lang: root.lang === "he" ? "he" : "en", size: size };
+    document.querySelectorAll("[data-pref]").forEach(function (g) {
+      var v = vals[g.getAttribute("data-pref")]; g._last = v;
+      g.querySelectorAll('[role="radio"]').forEach(function (o) { var on = o.getAttribute("data-value") === v; o.setAttribute("aria-checked", String(on)); o.tabIndex = on ? 0 : -1; });
+    });
+    var dys = document.querySelector('[data-pref-switch="dyslexia"]'), on = root.getAttribute("data-dyslexia") === "on";
+    dys.setAttribute("aria-checked", String(on)); dys.querySelector(".tp-switch__state").textContent = TP.t(on ? "switch.on" : "switch.off");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(sync, 0); }); else setTimeout(sync, 0);
+
+  ["click", "keyup"].forEach(function (type) {
+    document.addEventListener(type, function (e) {
+      var g = e.target.closest && e.target.closest("[data-pref]"); if (g) setTimeout(function () { readGroup(g); }, 0);
+    });
+  });
+
+  TP.onSwitch = function (sw, on) {
+    var key = sw.getAttribute("data-pref-switch"); if (!key) return;
+    if (key === "dyslexia") TP.setDyslexia(on);
+    // REAL: convex profiles.updatePrefs({ key, value: on })
+    saved();
+  };
+
+  document.getElementById("weekstart").addEventListener("change", function () {
+    // REAL: convex profiles.updatePrefs({ key: "weekStart", value })
+    saved();
+  });
+
+  var dialTimer;
+  document.getElementById("dial").addEventListener("input", function (e) {
+    clearTimeout(dialTimer);
+    dialTimer = setTimeout(function () {
+      // REAL: convex profiles.setCoachDial({ value }) — debounced 400 ms
+      saved();
+    }, 400);
+  });
+})();
+</script>
+</body>
+</html>

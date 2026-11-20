@@ -1,0 +1,57 @@
+name: factory-quiet-hours
+
+# Reusable quiet-hours check (Amit, 6 Oct 2026; factory/LOOP.md "Quiet hours"). Between FACTORY_QUIET_START
+# (default 22) and FACTORY_QUIET_END (default 9) Asia/Jerusalem nothing NEW starts. Callers run this as a job
+# and gate their work job on `needs.quiet.outputs.quiet != 'true'`, so a quiet-hours run ends GREEN with a
+# "quiet hours, skipped" notice. Override: repo/org variable FACTORY_QUIET_HOURS=off.
+# Script: scripts/factory/quiet-hours.mjs (unit tests in scripts/factory/test-factory.mjs).
+# NEVER call this from a required check (ci, e2e-preview, secret-scan, config-guard, scope-guard), the merge
+# queue, or convex-deploy-test.
+
+on:
+  workflow_call:
+    inputs:
+      what:
+        description: What would start (shown in the notice)
+        required: true
+        type: string
+      exempt:
+        description: true = never quiet (work already in flight, e.g. a lane fix run with fix_note; read-only dry run)
+        required: false
+        type: boolean
+        default: false
+      exempt_reason:
+        description: Why the run is exempt (shown in the notice)
+        required: false
+        type: string
+        default: ""
+    outputs:
+      quiet:
+        description: "'true' = quiet hours, skip the work job"
+        value: ${{ jobs.check.outputs.quiet }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Quiet hours (22:00-09:00 Asia/Jerusalem)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      quiet: ${{ steps.q.outputs.quiet }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - name: Quiet hours?
+        id: q
+        env:
+          FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+          FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+          FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
+          QUIET_EXEMPT: ${{ inputs.exempt }}
+          QUIET_EXEMPT_REASON: ${{ inputs.exempt_reason }}
+          WHAT: ${{ inputs.what }}
+        run: node scripts/factory/quiet-hours.mjs --what "$WHAT"

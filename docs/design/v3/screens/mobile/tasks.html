@@ -1,0 +1,502 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (tasks) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tasks · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== tasks — layout only ===== */
+    .tasks-head .tp-pagehead__title { margin: 0; }
+    .tasks-tools { display: grid; gap: var(--tp-space-3); }
+    .tasks-filter { overflow-x: auto; scrollbar-width: none; }
+    .tasks-filter .tp-segmented { flex-wrap: nowrap; }
+    .tasks-add { justify-content: flex-start; padding-inline: var(--tp-space-1); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Tasks
+@route    apps/mobile/app/(tempo)/(tabs)/tasks.tsx
+@layout   MobileTabs
+@data     tasks = tasks.list({ filter: "all"|"today"|"upcoming"|"inbox", search })   // Convex query
+@data     counts = tasks.counts({ date: localDate })                             // Convex query
+@actions  tick task -> tasks.complete({ id })                                    // optimistic, Undo 5 min -> tasks.reopen({ id })
+@actions  change filter -> tasks.list({ filter })                                 // client state + query arg
+@actions  search -> tasks.list({ search })
+@actions  add a task -> router.push("/capture")
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the Tasks tab. Show every open task, grouped: Today, Coming up, Inbox, then Done today.
+          2. A search box and a filter (All / Today / Coming up / Inbox) sit at the top. The filter shows its choice with a dot and a word.
+          3. Each task shows its title and, in words, how long it takes or when it is due. Tags and linked notes show as small links.
+          4. Ticking a task completes it at once and shows an Undo toast for 5 minutes. The open count updates.
+          5. Inbox items are things captured but not sorted yet; they say how they were captured.
+          6. The + button opens Capture.
+          7. Empty: nothing waiting. Say that is allowed, and offer Capture.
+          8. Loading: skeleton rows. Error: kind words, data is safe, Try again. Offline: everything stays usable; a banner says changes save later.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Tasks
+        @route    apps/mobile/app/(tempo)/(tabs)/tasks.tsx
+        @layout   MobileTabs
+        @data     tasks = tasks.list({ filter, search }) · counts = tasks.counts({ date })    // Convex queries
+        @actions  tick task -> tasks.complete({ id }) (Undo 5 min) · filter · search · add -> router.push("/capture")
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Tasks" } | events: onSearch -> focus search, onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" id="search-btn" aria-label="Search tasks" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+            <span class="tp-mtopbar__title" data-i18n="top.title">Tasks</span>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Changes save when you're back.</span></span>
+          </div>
+
+          <!-- @component PageHeader | shadcn: — | props: { title: "Tasks", subtitle: "6 open · 1 done today" } | events: — -->
+          <div class="tp-pagehead tasks-head" data-component="PageHeader">
+            <div class="tp-pagehead__text">
+              <h1 class="tp-pagehead__title" data-i18n="page.title">Tasks</h1>
+              <p class="tp-pagehead__sub" data-state-hide><span class="tp-num" id="open-count">6</span> <span data-i18n="page.open">open</span> · <span class="tp-num">1</span> <span data-i18n="page.done">done today</span></p>
+            </div>
+          </div>
+
+          <div class="tasks-tools" data-state-hide>
+            <!-- @component SearchInput | shadcn: input (+ command) · NativeWind: TextInput with search icon | props: { label: "Search tasks", placeholder } | events: onChange -> tasks.list({ search }) -->
+            <div class="tp-search" data-component="SearchInput">
+              <label class="tp-label tp-sr-only" for="task-search" data-i18n="search.label">Search tasks</label>
+              <div class="tp-search__box">
+                <svg class="tp-icon tp-icon--sm tp-search__icon" aria-hidden="true"><use href="#i-search"/></svg>
+                <input class="tp-input" id="task-search" type="search" dir="auto" placeholder="Search tasks" data-i18n-attr="placeholder:search.ph" autocomplete="off">
+              </div>
+            </div>
+            <!-- @component Segmented | shadcn: toggle-group (single) / tabs · NativeWind: SegmentedControl (scrolls sideways) | props: { options: ["all","today","upcoming","inbox"], value: "all" } | events: onChange -> tasks.list({ filter }) -->
+            <div class="tasks-filter">
+              <div class="tp-segmented" role="radiogroup" aria-label="Show" data-i18n-attr="aria-label:filter.label" id="filter" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0" data-value="all"><span data-i18n="filter.all">All</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="today"><span data-i18n="filter.today">Today</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="upcoming"><span data-i18n="filter.upcoming">Coming up</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="inbox"><span data-i18n="filter.inbox">Inbox</span></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 4, label: "Loading your tasks" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your tasks</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your tasks." } | events: onRetry -> refetch tasks.list -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your tasks.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Empty ===== -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action: "Capture a thought" } | events: onAction -> router.push("/capture") -->
+          <div class="tp-state tp-state--empty" data-state-show="empty" data-component="StateEmpty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-checklist"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">Nothing waiting.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">No open tasks right now, and that is allowed. When something comes up, write it down and it lands here.</p>
+            <div class="tp-state__actions">
+              <a class="tp-btn tp-btn--secondary" href="capture.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="empty.capture">Capture a thought</span></a>
+            </div>
+          </div>
+
+          <!-- ===== Default content ===== -->
+          <section class="m-stack" aria-labelledby="g-today" data-group="today" data-state-hide>
+            <!-- @component Section | shadcn: — | props: { title: "Today", count: 3 } | events: — -->
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="g-today" data-i18n="g.today">Today</h2>
+              <span class="tp-section__count"><span class="tp-num">3</span> <span data-i18n="g.open">open</span></span>
+            </div>
+            <!-- @component TaskRow ×8 (all groups) | shadcn: checkbox · NativeWind: Pressable + Checkbox | props: { task: {id, title, minutes?, due?, tag?, page?, source?, done} } | events: onToggle -> tasks.complete (optimistic, Undo 5 min) -->
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <li class="tp-task-row" data-component="TaskRow" data-id="t1">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t1-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t1-title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span>
+                  <span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><span class="tp-tag" data-i18n="tag.work">work</span></span>
+                </div>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow" data-id="t2">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t2-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t2-title" dir="auto" data-i18n="task.dana">Email Dana about the lease</span>
+                  <span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span><span class="tp-wikilink" data-i18n="page.moving">Moving checklist</span></span>
+                </div>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow" data-id="t3">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t3-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t3-title" dir="auto" data-i18n="task.rx">Pick up prescription</span>
+                  <span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">18:00</span></span></span>
+                </div>
+              </li>
+            </ul>
+            <a class="tp-btn tp-btn--ghost tasks-add" href="capture.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tasks.add">Add a task</span></a>
+          </section>
+
+          <section class="m-stack" aria-labelledby="g-upcoming" data-group="upcoming" data-state-hide>
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="g-upcoming" data-i18n="g.upcoming">Coming up</h2>
+              <span class="tp-section__count"><span class="tp-num">2</span> <span data-i18n="g.open">open</span></span>
+            </div>
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <li class="tp-task-row" data-component="TaskRow" data-id="t5">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t5-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t5-title" dir="auto" data-i18n="task.van">Book the moving van</span>
+                  <span class="tp-task-row__meta"><span data-i18n="due.thu">Thu 15 Oct</span><span class="tp-wikilink" data-i18n="page.moving">Moving checklist</span></span>
+                </div>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow" data-id="t6">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t6-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t6-title" dir="auto" data-i18n="task.yoni">Send Yoni the birthday plan</span>
+                  <span class="tp-task-row__meta"><span data-i18n="due.fri">Fri 16 Oct</span><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span></span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <section class="m-stack" aria-labelledby="g-inbox" data-group="inbox" data-state-hide>
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="g-inbox" data-i18n="g.inbox">Inbox</h2>
+              <span class="tp-section__count"><span class="tp-num">1</span> <span data-i18n="g.tosort">to sort</span></span>
+            </div>
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <li class="tp-task-row" data-component="TaskRow" data-id="t7">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t7-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t7-title" dir="auto" data-i18n="task.shelf">Shelf for the hallway?</span>
+                  <span class="tp-task-row__meta"><span><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg> <span data-i18n="src.voice">Captured by voice</span></span><span class="tp-num tp-mono">08:31</span></span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <section class="m-stack" aria-labelledby="g-done" data-group="done" data-state-hide>
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="g-done" data-i18n="g.done">Done today</h2>
+              <span class="tp-section__count"><span class="tp-num">1</span></span>
+            </div>
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <li class="tp-task-row" data-component="TaskRow" data-id="t4" data-done="true">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="true" data-action="check" aria-labelledby="t4-title"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body">
+                  <span class="tp-task-row__title" id="t4-title" dir="auto" data-i18n="task.plants">Water the plants</span>
+                  <span class="tp-task-row__meta"><span data-i18n="task.donenote">Done at</span> <span class="tp-num tp-mono">08:05</span></span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <p class="tp-muted" id="no-match" role="status" hidden data-i18n="search.none">No tasks match that. Try a shorter word.</p>
+        </div>
+
+        <!-- @component CaptureButton | shadcn: button (floating) · NativeWind: Pressable FAB -> router.push("/capture") | props: {} | events: onPress -> open Capture -->
+        <a class="tp-btn tp-btn--secondary tp-btn--icon tp-glass m-fab" href="capture.html" data-component="CaptureButton" aria-label="Capture a thought" data-i18n-attr="aria-label:fab.capture"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-plus"/></svg></a>
+        <!-- @component UndoToast | shadcn: sonner · NativeWind: burnt / sonner-native | props: { title: "Task done", countdown: 5:00 } | events: onUndo -> tasks.reopen({ id }) -->
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "tasks" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "toast.title": "Done", "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss", "task.undone": "Task done", "task.sub": "You can undo for" },
+  he: {
+    "doc.title": "משימות · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "fab.capture": "לרשום מחשבה",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "השינויים יישמרו כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.title": "בוצע", "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "top.search": "חיפוש משימות", "top.title": "משימות", "top.avatar": "הגדרות של מאיה רונן",
+    "page.title": "משימות", "page.open": "פתוחות", "page.done": "בוצעו היום",
+    "search.label": "חיפוש משימות", "search.ph": "חיפוש משימות", "search.none": "אין משימות שמתאימות. אפשר לנסות מילה קצרה יותר.",
+    "filter.label": "הצגה", "filter.all": "הכול", "filter.today": "היום", "filter.upcoming": "בקרוב", "filter.inbox": "תיבה",
+    "load.label": "טוענים את המשימות שלך",
+    "err.title": "לא הצלחנו לטעון את המשימות שלך.", "err.body": "זה אצלנו, לא אצלך.",
+    "empty.title": "שום דבר לא מחכה.", "empty.body": "אין משימות פתוחות כרגע, וזה בסדר. כשמשהו יעלה, רשמי אותו והוא יגיע לכאן.", "empty.capture": "לרשום מחשבה",
+    "g.today": "היום", "g.open": "פתוחות", "g.upcoming": "בקרוב", "g.inbox": "תיבה", "g.tosort": "למיון", "g.done": "בוצעו היום",
+    "task.slides": "לנסח 3 שקפים ליום חמישי", "unit.min": "דק׳", "tag.work": "עבודה",
+    "task.dana": "לכתוב לדנה על החוזה", "page.moving": "רשימת המעבר",
+    "task.rx": "לאסוף מרשם מבית המרקחת", "task.before": "עד",
+    "tasks.add": "הוספת משימה",
+    "task.van": "להזמין משאית להובלה", "due.thu": "חמישי 15 באוק׳",
+    "task.yoni": "לשלוח ליוני את התוכנית ליום ההולדת", "due.fri": "שישי 16 באוק׳",
+    "task.shelf": "מדף למסדרון?", "src.voice": "נלכד בקול",
+    "task.plants": "להשקות את העציצים", "task.donenote": "בוצע ב־",
+    "task.undone": "המשימה בוצעה", "task.sub": "אפשר לבטל עוד"
+  }
+};
+
+/* Filter, search, tick + Undo toast.
+   REAL: convex tasks.list({ filter, search }) · tasks.complete({ id }) / tasks.reopen({ id }) */
+TP.onReady = function () {
+  var filter = "all";
+  function groups() { return document.querySelectorAll("[data-group]"); }
+  function apply() {
+    var q = document.getElementById("task-search").value.trim().toLowerCase(), any = false;
+    groups().forEach(function (g) {
+      var name = g.getAttribute("data-group");
+      var inFilter = filter === "all" || filter === name;
+      var rows = g.querySelectorAll(".tp-task-row"), shown = 0;
+      rows.forEach(function (r) {
+        var hit = !q || r.querySelector(".tp-task-row__title").textContent.toLowerCase().indexOf(q) !== -1;
+        r.hidden = !hit; if (hit) shown++;
+      });
+      g.hidden = !inFilter || !shown; if (!g.hidden) any = true;
+    });
+    document.getElementById("no-match").hidden = any;
+  }
+  document.getElementById("filter").addEventListener("click", function (e) {
+    var opt = e.target.closest('[role="radio"]'); if (!opt) return;
+    // REAL: convex tasks.list({ filter })
+    filter = opt.getAttribute("data-value"); apply();
+  });
+  // REAL: convex tasks.list({ search }) — debounced
+  document.getElementById("task-search").addEventListener("input", apply);
+  document.getElementById("search-btn").addEventListener("click", function () { document.getElementById("task-search").focus(); });
+
+  document.getElementById("m-main").addEventListener("click", function (e) {
+    var chk = e.target.closest(".tp-check"); if (!chk) return;
+    setTimeout(function () {
+      var open = document.querySelectorAll('[data-group]:not([data-group="done"]) .tp-check[aria-checked="false"]').length;
+      document.getElementById("open-count").textContent = open;
+      // REAL: convex tasks.complete({ id }) with a 5-minute Undo -> tasks.reopen({ id })
+      if (chk.getAttribute("aria-checked") === "true") {
+        TP.toast({ title: TP.t("task.undone"), sub: TP.t("task.sub"), onUndo: function () { chk.click(); } });
+      }
+    }, 0);
+  });
+};
+</script>
+</body>
+</html>

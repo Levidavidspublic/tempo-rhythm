@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · Settings · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — settings-privacy.html */
+  .pv-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .pv-sheet-body { display: grid; gap: var(--tp-space-3); }
+  .pv-list { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+  .pv-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Settings · Privacy
+@route    apps/web/app/(tempo)/settings/privacy/page.tsx
+@layout   TempoShell
+@data     privacy = profiles.getPrivacy({})            // Convex query: {analyticsOptIn (default false), exportStatus: "none" | "preparing" | "ready", deletion: null | {requestedAt, hardDeleteAt}}
+@actions  toggle analytics -> profiles.updatePrefs({ key: "analyticsOptIn", value })   // default off; optimistic
+@actions  export my data -> dsr.requestDataExport({})   // enqueues a job; a ZIP is built and a download link is emailed (Resend)
+@actions  delete account -> dsr.requestAccountDeletion({})   // asks first; soft-deletes everything now; hard delete after 30 days
+@actions  restore account -> dsr.cancelAccountDeletion({})   // any time inside the 30 days
+@states   default | empty (n/a) | loading | error | offline  (?state=)   + export requested, deletion pending
+@flow     1. Analytics: one switch, Off by default. Say what is sent and what never is.
+          2. Export: one button. Say what's in the file and that the link arrives by email. The button becomes a status line.
+          3. Delete: a danger row. It opens a confirmation that lists what goes, says 30 days to change her mind, and needs a tick before the delete button works.
+          4. After deleting, a notice at the top shows the exact date it becomes final, with a Restore button.
+          5. Link to the full privacy policy.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'settings-privacy' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="set-label" data-i18n="rail.set">Settings</div>
+      <ul class="tp-tree" role="list" aria-labelledby="set-label">
+        <li><a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.profile">Profile</span></a></li>
+        <li><a class="tp-tree-item" href="settings-prefs.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.prefs">Preferences</span></a></li>
+        <li><a class="tp-tree-item" href="settings-integrations.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.integ">Connections</span></a></li>
+        <li><a class="tp-tree-item" href="settings-privacy.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-shield"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.privacy">Privacy</span></a></li>
+        <li><a class="tp-tree-item" href="billing.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.billing">Plan and billing</span></a></li>
+        <li><a class="tp-tree-item" href="notifications.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notif">Notifications</span></a></li>
+        <li><a class="tp-tree-item" href="ask-founder.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.founder">Ask the founder</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Settings', 'Privacy'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><span data-i18n="rail.set">Settings</span> / <strong data-i18n="nav.privacy">Privacy</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="pv.title">Privacy</h1>
+          <p class="tp-pagehead__sub" data-i18n="pv.sub">Your data is yours. Take it with you, or take it away.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">Export and delete need a connection, so they wait until you're back.</span></span>
+      </div>
+
+      <!-- @component Notice | shadcn: alert | props: { tone: 'danger', title, body, action: Restore } | events: onRestore -> dsr.cancelAccountDeletion({}) -->
+      <div class="tp-notice" data-tone="danger" role="status" id="pending" data-component="Notice" hidden>
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg></span>
+        <span class="tp-notice__text">
+          <span class="tp-notice__title" tabindex="-1" id="pending-title" data-i18n="pend.title">Your account will be deleted on Wed 11 Nov 2026.</span>
+          <span data-i18n="pend.body">Until then, everything is kept and you can bring it all back.</span>
+        </span>
+        <span class="tp-notice__action"><button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-pv="restore"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="pend.btn">Restore my account</span></button></span>
+      </div>
+
+      <div class="pv-body">
+
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Usage data' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="an-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="an-title" data-i18n="an.title">Usage data</h2>
+          </div>
+          <!-- @component SettingRow | shadcn: — + switch | props: { label: 'Share usage data', checked: false } | events: onCheckedChange -> profiles.updatePrefs({ key: 'analyticsOptIn', value }) -->
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" id="an-l" data-i18n="an.label">Help improve Tempo</span>
+              <span class="tp-help" id="an-h" data-i18n="an.help">Shares which buttons and screens get used, so Amit can see what's confusing. Never what you write or say. Off unless you turn it on.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <!-- @component Switch | shadcn: switch | props: { checked: false } | events: onCheckedChange -->
+              <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="an-l" aria-describedby="an-h" data-pv-switch="analytics" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Your data' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="data-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="data-title" data-i18n="data.title">Your data</h2>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — + button | props: { label: 'Export everything' } | events: onClick -> dsr.requestDataExport({}) -->
+          <div class="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="ex.label">Download a copy of everything</span>
+              <span class="tp-help" data-i18n="ex.help">Your pages, tasks, habits, chats and memories, in one ZIP file. We email you a link when it's ready, usually within a few minutes.</span>
+              <span class="tp-help" role="status" id="ex-status"></span>
+            </div>
+            <div class="tp-setting-row__control">
+              <button class="tp-btn tp-btn--secondary" type="button" data-pv="export"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-download"/></svg><span data-i18n="ex.btn">Request my copy</span></button>
+            </div>
+          </div>
+
+          <!-- @component SettingRow | shadcn: — + link | props: { label: 'Privacy policy' } | events: link -> /privacy -->
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="pol.label">Privacy policy</span>
+              <span class="tp-help" data-i18n="pol.help">The full details, in plain words.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <a class="tp-btn tp-btn--ghost" href="/privacy"><span data-i18n="pol.btn">Read it</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Delete account' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="del-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="del-title" data-i18n="del.title">Leave Tempo</h2>
+          </div>
+          <!-- @component SettingRow | shadcn: — + button | props: { label: 'Delete my account', tone: 'danger' } | events: onClick -> open-sheet (confirm) -> dsr.requestAccountDeletion({}) -->
+          <div class="tp-setting-row tp-setting-row--stack od-row" data-tone="danger" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="del.label">Delete my account</span>
+              <span class="tp-help" data-i18n="del.help">Everything is hidden right away and removed for good after 30 days. Change your mind before then and it all comes back.</span>
+            </div>
+            <div class="tp-setting-row__control">
+              <button class="tp-btn tp-btn--danger-ghost" type="button" data-action="open-sheet" aria-controls="del-sheet" aria-expanded="false" id="del-open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="del.btn">Delete my account</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state tp-state--loading pv-state" role="status" data-component="StateLoading" data-state-show="loading empty">
+          <span class="tp-sr-only" data-i18n="loading">Loading your privacy settings</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your privacy settings." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error pv-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your privacy settings.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was changed or shared. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Delete confirmation ===== -->
+  <!-- @component MobileSheet | shadcn: alert-dialog (sheet on phone) | props: { id: 'del-sheet', title: 'Delete your account?' } | events: onConfirm -> dsr.requestAccountDeletion({}), onCancel -> close-sheet -->
+  <div class="tp-sheet-scrim" data-for="del-sheet" data-action="close-sheet" hidden></div>
+  <section class="tp-sheet tp-glass" id="del-sheet" role="alertdialog" aria-modal="true" aria-labelledby="ds-title" aria-describedby="ds-body" data-component="MobileSheet" hidden>
+    <span class="tp-sheet__grabber" aria-hidden="true"></span>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="ds-title" data-i18n="ds.title">Delete your account?</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body pv-sheet-body">
+      <p id="ds-body" data-i18n="ds.body">This hides everything now and removes it for good after 30 days:</p>
+      <ul class="pv-list">
+        <li data-i18n="ds.l1">Your pages, tasks, habits and plans</li>
+        <li data-i18n="ds.l2">Your chats with the coach and what Tempo remembers</li>
+        <li data-i18n="ds.l3">Your plan. Nothing more is charged.</li>
+      </ul>
+      <p class="tp-help" data-i18n="ds.tip">Want a copy first? Request it on this page before you go.</p>
+      <!-- @component Checkbox | shadcn: checkbox | props: { label } | events: onChange -> enables the delete button -->
+      <label class="tp-choice" data-component="Checkbox"><input class="tp-checkbox" type="checkbox" id="ds-ok" aria-describedby="ds-need"><span class="tp-choice__text"><span data-i18n="ds.ok">I understand. Delete my account in 30 days.</span><span class="tp-choice__hint" id="ds-need" data-i18n="ds.need">Tick this to turn on the delete button.</span></span></label>
+    </div>
+    <div class="tp-sheet__foot">
+      <button class="tp-btn tp-btn--secondary" type="button" data-action="close-sheet"><span data-i18n="ds.keep">Keep my account</span></button>
+      <button class="tp-btn tp-btn--danger" type="button" data-pv="delete" aria-disabled="true" aria-describedby="ds-need"><span data-i18n="ds.confirm">Delete my account</span></button>
+    </div>
+  </section>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title } | events: onUndo -> dsr.cancelAccountDeletion({}) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "switch.on": "On", "switch.off": "Off",
+    "an.on": "Thank you. Usage data is on.", "an.off": "Usage data is off.",
+    "ex.sent": "We're putting your file together. A link will arrive at maya.ronen@example.com.",
+    "deleted": "Account set to delete in 30 days", "restored": "Welcome back. Your account is restored.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "פרטיות · הגדרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.set": "הגדרות",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן",
+    "nav.profile": "פרופיל", "nav.prefs": "העדפות", "nav.integ": "חיבורים", "nav.privacy": "פרטיות",
+    "nav.billing": "מסלול ותשלום", "nav.notif": "התראות", "nav.founder": "לשאול את המייסד", "nav.dyslexia": "גופן קריאה",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "pv.title": "פרטיות", "pv.sub": "המידע שלך שייך לך. אפשר לקחת אותו איתך, או למחוק אותו.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "ייצוא ומחיקה צריכים חיבור, אז הם יחכו עד שתחזרי.",
+    "pend.title": "החשבון שלך יימחק ביום ד׳ 11.11.2026.", "pend.body": "עד אז הכול נשמר, ואפשר להחזיר הכול.", "pend.btn": "לשחזר את החשבון",
+    "an.title": "נתוני שימוש", "an.label": "לעזור לשפר את Tempo",
+    "an.help": "משתף באילו כפתורים ומסכים משתמשים, כדי שעמית יראה מה מבלבל. אף פעם לא את מה שאת כותבת או אומרת. כבוי, אלא אם תפעילי.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "an.on": "תודה. נתוני השימוש פועלים.", "an.off": "נתוני השימוש כבויים.",
+    "data.title": "המידע שלך",
+    "ex.label": "להוריד עותק של הכול",
+    "ex.help": "הדפים, המשימות, ההרגלים, השיחות והזיכרונות שלך, בקובץ ZIP אחד. נשלח לך קישור במייל כשהוא מוכן, בדרך כלל תוך כמה דקות.",
+    "ex.btn": "לבקש עותק", "ex.sent": "אנחנו מכינים את הקובץ שלך. הקישור יגיע אל maya.ronen@example.com.",
+    "pol.label": "מדיניות הפרטיות", "pol.help": "כל הפרטים, במילים פשוטות.", "pol.btn": "לקריאה",
+    "del.title": "לעזוב את Tempo", "del.label": "למחוק את החשבון שלי",
+    "del.help": "הכול מוסתר מיד ונמחק לתמיד אחרי 30 יום. אם תתחרטי לפני כן, הכול חוזר.",
+    "del.btn": "למחוק את החשבון שלי",
+    "ds.title": "למחוק את החשבון שלך?",
+    "ds.body": "זה מסתיר הכול עכשיו ומוחק לתמיד אחרי 30 יום:",
+    "ds.l1": "הדפים, המשימות, ההרגלים והתוכניות שלך", "ds.l2": "השיחות שלך עם המאמן ומה ש־Tempo זוכר", "ds.l3": "המסלול שלך. לא יהיו עוד חיובים.",
+    "ds.tip": "רוצה עותק קודם? אפשר לבקש אותו בדף הזה לפני שאת הולכת.",
+    "ds.ok": "הבנתי. למחוק את החשבון שלי בעוד 30 יום.", "ds.need": "סמני כאן כדי להפעיל את כפתור המחיקה.",
+    "ds.keep": "להשאיר את החשבון", "ds.confirm": "למחוק את החשבון שלי", "sheet.close": "סגירה",
+    "deleted": "החשבון יימחק בעוד 30 יום", "restored": "ברוכה השבה. החשבון שלך שוחזר.",
+    "loading": "טוען את הגדרות הפרטיות שלך",
+    "error.title": "לא הצלחנו לטעון את הגדרות הפרטיות.", "error.body": "שום דבר לא השתנה ושום דבר לא שותף. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  var ok = document.getElementById("ds-ok");
+  var del = document.querySelector('[data-pv="delete"]');
+  ok.addEventListener("change", function () { del.setAttribute("aria-disabled", String(!ok.checked)); });
+
+  TP.onSwitch = function (sw, on) {
+    if (sw.getAttribute("data-pv-switch") !== "analytics") return;
+    // REAL: convex profiles.updatePrefs({ key: "analyticsOptIn", value: on }) — PostHog loads only when true
+    TP.toast({ title: TP.t(on ? "an.on" : "an.off") });
+  };
+
+  function restore() {
+    // REAL: convex dsr.cancelAccountDeletion({}) — clears deletedAt on every row for this user
+    document.getElementById("pending").hidden = true;
+    var b = document.getElementById("del-open"); if (b) b.focus();
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pv]"); if (!b) return;
+    var act = b.getAttribute("data-pv");
+
+    if (act === "export") {
+      // REAL: convex dsr.requestDataExport({}) — enqueues the ZIP job; Resend emails the link
+      b.disabled = true;
+      document.getElementById("ex-status").textContent = TP.t("ex.sent");
+    }
+
+    if (act === "delete") {
+      if (b.getAttribute("aria-disabled") === "true") { ok.focus(); return; }
+      // REAL: convex dsr.requestAccountDeletion({}) — soft delete now (deletedAt), hard delete by a scheduled job after 30 days
+      TP.closeSheet();
+      ok.checked = false; b.setAttribute("aria-disabled", "true");
+      document.getElementById("pending").hidden = false;
+      var t = document.getElementById("pending-title"); if (t) t.focus();
+      TP.toast({ title: TP.t("deleted"), onUndo: function () { restore(); TP.toast({ title: TP.t("restored") }); } });
+    }
+
+    if (act === "restore") { restore(); TP.toast({ title: TP.t("restored") }); }
+  });
+})();
+</script>
+</body>
+</html>

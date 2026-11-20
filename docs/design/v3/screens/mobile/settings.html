@@ -1,0 +1,620 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (settings) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== settings — layout only ===== */
+    .st-profile { display: flex; align-items: center; gap: var(--tp-space-3); min-width: 0; }
+    .st-profile__text { display: grid; gap: var(--tp-space-1); min-width: 0; }
+    .st-segs { overflow-x: auto; scrollbar-width: none; }
+    .st-segs .tp-segmented { flex-wrap: nowrap; }
+    .st-rows { display: grid; gap: 0; }
+    .st-sheet-body { display: grid; gap: var(--tp-space-4); }
+    .st-sheet-actions { display: grid; gap: var(--tp-space-2); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Settings
+@route    apps/mobile/app/(tempo)/settings.tsx
+@layout   MobileTabs
+@data     profile = profiles.getMine({})        // Convex query: displayName, email, language, readingFont, textSize, theme, coachDial, analyticsOptIn, plan
+@actions  change what the coach calls you -> profiles.setDisplayName({ name })     // saves on blur
+@actions  change language -> profiles.updatePrefs({ key: "language", value })      // applies at once; Hebrew turns the layout right to left
+@actions  reading font -> profiles.updatePrefs({ key: "readingFont", value })
+@actions  text size -> profiles.updatePrefs({ key: "textSize", value })
+@actions  theme -> profiles.updatePrefs({ key: "theme", value })
+@actions  coach dial -> profiles.setCoachDial({ value })                           // debounced
+@actions  usage analytics -> profiles.updatePrefs({ key: "analyticsOptIn", value }) // default Off
+@actions  download my data -> dsr.requestDataExport({})                            // link emailed when ready
+@actions  delete my account -> dsr.requestAccountDeletion({})                      // 30 days to change your mind
+@actions  billing -> router.push("/billing") · sign out -> auth.signOut({})
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open Settings from the avatar or from More. Sections run top to bottom: You, Reading and looks, Coach, Privacy, Plan, then Sign out.
+          2. You: name and email, and what the coach calls you.
+          3. Reading and looks: language (English / עברית), reading font switch, text size, theme. Each one applies at once.
+          4. Coach: the dial from 0 to 10, shown as a number and a word: quiet, steady or push.
+          5. Privacy: usage analytics is Off until you turn it on. Download my data. Delete my account, which first explains the 30 days to change your mind.
+          6. Plan: shows the current plan and links to billing.
+          7. Sign out asks once, kindly, and says nothing is lost.
+          8. Empty does not apply to settings (defaults always exist), so empty shows the defaults. Loading: skeleton rows. Error: kind words, data is safe, Try again. Offline: changes save when you're back.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Settings
+        @route    apps/mobile/app/(tempo)/settings.tsx
+        @layout   MobileTabs
+        @data     profile = profiles.getMine({})    // Convex query
+        @actions  profiles.updatePrefs · profiles.setDisplayName · profiles.setCoachDial · dsr.requestDataExport · dsr.requestAccountDeletion · auth.signOut
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Settings", back: "/today" } | events: onBack -> router.back -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="today.html" aria-label="Back" data-i18n-attr="aria-label:top.back"><svg class="tp-icon tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <span class="tp-mtopbar__title" data-i18n="top.title">Settings</span>
+            <span class="tp-mtopbar__spacer" aria-hidden="true"></span>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Changes save when you're back.</span></span>
+          </div>
+
+          <!-- @component PageHeader | shadcn: — | props: { title: "Settings" } | events: — -->
+          <div class="tp-pagehead" data-component="PageHeader">
+            <div class="tp-pagehead__text">
+              <h1 class="tp-pagehead__title" data-i18n="page.title">Settings</h1>
+              <p class="tp-pagehead__sub" data-i18n="page.sub">Every change applies at once. Nothing here can break anything.</p>
+            </div>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 5, label: "Loading your settings" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your settings</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your settings." } | events: onRetry -> refetch profiles.getMine -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your settings.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">Tempo keeps working with your last settings.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Empty (settings always have defaults) ===== -->
+          <!-- @component Notice | shadcn: alert | props: { tone: "info", text } | events: — -->
+          <div class="tp-notice" data-tone="info" role="status" data-state-show="empty" data-component="Notice">
+            <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="empty.title">These are the starting settings.</span><span data-i18n="empty.body">Change anything you like. You can come back here any time.</span></span>
+          </div>
+
+          <!-- ===== You ===== -->
+          <!-- @component SettingsSection | shadcn: card · NativeWind: View section | props: { title: "You" } | events: — -->
+          <section class="tp-settings-section" aria-labelledby="you-title" data-component="SettingsSection" data-state-show="default empty offline">
+            <div class="tp-settings-section__head">
+              <h2 class="tp-settings-section__title" id="you-title" data-i18n="you.title">You</h2>
+            </div>
+            <div class="st-profile">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+              <span class="st-profile__text">
+                <span class="tp-strong" data-i18n="you.name">Maya Ronen</span>
+                <span class="tp-small tp-muted tp-ltr" dir="ltr">maya.ronen@example.com</span>
+              </span>
+            </div>
+            <!-- @component Field | shadcn: form item · NativeWind: TextInput | props: { id: "call-me", label: "What should the coach call you?", help } | events: onBlur -> profiles.setDisplayName({ name }) -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="call-me" data-i18n="you.call">What should the coach call you?</label>
+              <input class="tp-input" id="call-me" type="text" dir="auto" maxlength="40" value="Maya" autocomplete="given-name" aria-describedby="call-me-help">
+              <p class="tp-help" id="call-me-help" data-i18n="you.callHelp">Only the coach uses it, to talk to you.</p>
+            </div>
+          </section>
+
+          <!-- ===== Reading and looks ===== -->
+          <!-- @component SettingsSection | shadcn: card · NativeWind: View section | props: { title: "Reading and looks" } | events: — -->
+          <section class="tp-settings-section" aria-labelledby="look-title" data-component="SettingsSection" data-state-show="default empty offline">
+            <div class="tp-settings-section__head">
+              <h2 class="tp-settings-section__title" id="look-title" data-i18n="look.title">Reading and looks</h2>
+            </div>
+
+            <!-- @component SettingRow | shadcn: — + toggle-group | props: { label: "Language", control: Segmented } | events: onChange -> profiles.updatePrefs({ key: "language", value }) -->
+            <div class="tp-setting-row tp-setting-row--stack" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <span class="tp-setting-row__label" id="lang-l" data-i18n="lang.label">Language</span>
+                <span class="tp-help" data-i18n="lang.help">Hebrew turns the layout right to left.</span>
+              </div>
+              <div class="tp-setting-row__control">
+                <!-- @component Segmented | shadcn: toggle-group (single) · NativeWind: SegmentedControl | props: { options: ["en","he"], value: "en" } | events: onChange -->
+                <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="lang-l" data-pref="lang" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="en" aria-checked="true" tabindex="0"><span lang="en">English</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="he" aria-checked="false" tabindex="-1"><span lang="he">עברית</span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- @component SettingRow | shadcn: — + switch | props: { label: "Reading font", control: Switch } | events: onCheckedChange -> profiles.updatePrefs({ key: "readingFont", value }) -->
+            <div class="tp-setting-row" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <span class="tp-setting-row__label" id="dys-l" data-i18n="dys.label">Reading font</span>
+                <span class="tp-help" id="dys-h" data-i18n="dys.help">A font made for easier reading, with more space between letters. Helpful with dyslexia.</span>
+              </div>
+              <div class="tp-setting-row__control">
+                <!-- @component Switch | shadcn: switch · NativeWind: Switch + "On"/"Off" Text | props: { checked: false } | events: onCheckedChange -->
+                <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="dys-l" aria-describedby="dys-h" data-pref-switch="dyslexia" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+              </div>
+            </div>
+
+            <!-- @component SettingRow | shadcn: — + toggle-group | props: { label: "Text size", control: Segmented } | events: onChange -> profiles.updatePrefs({ key: "textSize", value }) -->
+            <div class="tp-setting-row tp-setting-row--stack" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <span class="tp-setting-row__label" id="size-l" data-i18n="size.label">Text size</span>
+                <span class="tp-help" data-i18n="size.help">Changes text everywhere in Tempo.</span>
+              </div>
+              <div class="tp-setting-row__control">
+                <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="size-l" data-pref="size" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="s" aria-checked="false" tabindex="-1"><span data-i18n="size.s">Small</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="m" aria-checked="true" tabindex="0"><span data-i18n="size.m">Medium</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="l" aria-checked="false" tabindex="-1"><span data-i18n="size.l">Large</span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- @component SettingRow | shadcn: — + toggle-group | props: { label: "Theme", control: Segmented } | events: onChange -> profiles.updatePrefs({ key: "theme", value }) -->
+            <div class="tp-setting-row tp-setting-row--stack" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <span class="tp-setting-row__label" id="theme-l" data-i18n="theme.label">Theme</span>
+              </div>
+              <div class="tp-setting-row__control st-segs">
+                <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="theme-l" data-pref="theme" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="light" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="theme.light">Light</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="dark" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-moon"/></svg><span data-i18n="theme.dark">Dark</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="system" aria-checked="true" tabindex="0"><span data-i18n="theme.system">Like my phone</span></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Coach ===== -->
+          <!-- @component SettingsSection | shadcn: card · NativeWind: View section | props: { title: "Coach" } | events: — -->
+          <section class="tp-settings-section" aria-labelledby="coach-title" data-component="SettingsSection" data-state-show="default empty offline">
+            <div class="tp-settings-section__head">
+              <h2 class="tp-settings-section__title" id="coach-title" data-i18n="coach.title">Coach</h2>
+            </div>
+            <!-- @component CoachDial | shadcn: slider · NativeWind: @react-native-community/slider + number and word | props: { value: 4 } | events: onChange -> profiles.setCoachDial({ value }) -->
+            <div class="tp-dial" data-component="Dial">
+              <div class="tp-dial__head">
+                <label class="tp-label" for="dial" data-i18n="dial.label">How much should the coach push?</label>
+                <span class="tp-dial__value"><span class="tp-dial__num tp-num" data-dial-num>4</span><span class="tp-dial__of" data-i18n="dial.of">of 10</span><span class="tp-dial__word" data-dial-word>Steady</span></span>
+              </div>
+              <input class="tp-slider" id="dial" type="range" min="0" max="10" step="1" value="4" aria-describedby="dial-help">
+              <div class="tp-dial__scale" aria-hidden="true"><span><span class="tp-num">0</span> <span data-i18n="dial.quiet">Quiet</span></span><span data-i18n="dial.steady">Steady</span><span><span data-i18n="dial.push">Push</span> <span class="tp-num">10</span></span></div>
+            </div>
+            <p class="tp-help" id="dial-help" data-i18n="dial.help">Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans.</p>
+          </section>
+
+          <!-- ===== Privacy ===== -->
+          <!-- @component SettingsSection | shadcn: card · NativeWind: View section | props: { title: "Privacy" } | events: — -->
+          <section class="tp-settings-section" aria-labelledby="priv-title" data-component="SettingsSection" data-state-show="default empty offline">
+            <div class="tp-settings-section__head">
+              <h2 class="tp-settings-section__title" id="priv-title" data-i18n="priv.title">Privacy</h2>
+              <p class="tp-settings-section__desc" data-i18n="priv.desc">Your pages, tasks and chats are yours. You decide what leaves your phone.</p>
+            </div>
+            <!-- @component SettingRow | shadcn: — + switch | props: { label: "Share usage analytics", control: Switch (default Off) } | events: onCheckedChange -> profiles.updatePrefs({ key: "analyticsOptIn", value }) -->
+            <div class="tp-setting-row" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <span class="tp-setting-row__label" id="an-l" data-i18n="an.label">Share usage analytics</span>
+                <span class="tp-help" id="an-h" data-i18n="an.help">Which buttons get tapped, never what you write. Off unless you turn it on.</span>
+              </div>
+              <div class="tp-setting-row__control">
+                <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="an-l" aria-describedby="an-h" data-pref-switch="analytics" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+              </div>
+            </div>
+            <!-- @component TouchRow ×2 | shadcn: — · NativeWind: Pressable row | props: { label } | events: onPress -> dsr.requestDataExport({}), onPress -> open MobileSheet "delete-sheet" -->
+            <div class="st-rows">
+              <button class="tp-touch-row" type="button" id="export-btn" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-download"/></svg><span class="tp-touch-row__label" data-i18n="export.label">Download my data</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+              <button class="tp-touch-row" type="button" data-action="open-sheet" aria-controls="delete-sheet" aria-haspopup="dialog" aria-expanded="false" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-x"/></svg><span class="tp-touch-row__label" data-i18n="delete.label">Delete my account</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+            </div>
+            <p class="tp-muted tp-small" id="export-note" role="status" hidden></p>
+          </section>
+
+          <!-- ===== Plan ===== -->
+          <!-- @component SettingsSection | shadcn: card · NativeWind: View section | props: { title: "Plan" } | events: — -->
+          <section class="tp-settings-section" aria-labelledby="plan-title" data-component="SettingsSection" data-state-show="default empty offline">
+            <div class="tp-settings-section__head">
+              <h2 class="tp-settings-section__title" id="plan-title" data-i18n="plan.title">Plan</h2>
+            </div>
+            <!-- @component TouchRow | shadcn: — · NativeWind: Pressable row (Link) | props: { label: "Plan and billing", value: "Free" } | events: onPress -> router.push("/billing") -->
+            <a class="tp-touch-row" href="../web/billing.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-card"/></svg><span class="tp-touch-row__label" data-i18n="plan.label">Plan and billing</span><span class="tp-touch-row__value" data-i18n="plan.value">Free</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </section>
+
+          <!-- ===== Sign out ===== -->
+          <!-- @component Button | shadcn: button · NativeWind: Pressable | props: { variant: "secondary" } | events: onPress -> open MobileSheet "signout-sheet" -->
+          <button class="tp-btn tp-btn--secondary tp-btn--block" type="button" data-action="open-sheet" aria-controls="signout-sheet" aria-haspopup="dialog" aria-expanded="false" data-state-show="default empty offline" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-logout"/></svg><span data-i18n="out.btn">Sign out</span></button>
+        </div>
+
+        <div class="tp-toast-region" aria-live="polite"></div>
+
+        <!-- @component MobileSheet | shadcn: alert-dialog · NativeWind: @gorhom/bottom-sheet | props: { id: "signout-sheet", title: "Sign out of Tempo?" } | events: onConfirm -> auth.signOut({}), onClose -->
+        <div class="tp-sheet-scrim" data-for="signout-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="signout-sheet" role="alertdialog" aria-modal="true" aria-labelledby="out-title" aria-describedby="out-body" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="out-title" data-i18n="out.title">Sign out of Tempo?</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body st-sheet-body">
+            <p id="out-body" data-i18n="out.body">Nothing is lost. Everything is here when you sign back in with your email.</p>
+            <div class="st-sheet-actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--block" href="../web/sign-in.html" id="out-go"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-logout"/></svg><span data-i18n="out.go">Sign out</span></a>
+              <button class="tp-btn tp-btn--ghost tp-btn--block" type="button" data-action="close-sheet"><span data-i18n="out.stay">Stay signed in</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component MobileSheet | shadcn: alert-dialog · NativeWind: @gorhom/bottom-sheet | props: { id: "delete-sheet", title: "Delete your account?" } | events: onConfirm -> dsr.requestAccountDeletion({}), onClose -->
+        <div class="tp-sheet-scrim" data-for="delete-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="delete-sheet" role="alertdialog" aria-modal="true" aria-labelledby="del-title" aria-describedby="del-body" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="del-title" data-i18n="del.title">Delete your account?</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body st-sheet-body">
+            <p id="del-body" data-i18n="del.body">Your account closes today. For 30 days you can sign in and bring everything back. After that, your pages, tasks, chats and memories are erased for good.</p>
+            <p class="tp-small tp-muted" data-i18n="del.tip">If you might want your notes, download your data first.</p>
+            <div class="st-sheet-actions">
+              <button class="tp-btn tp-btn--danger tp-btn--block" type="button" id="del-go"><span data-i18n="del.go">Delete my account</span></button>
+              <button class="tp-btn tp-btn--ghost tp-btn--block" type="button" data-action="close-sheet"><span data-i18n="del.keep">Keep my account</span></button>
+            </div>
+            <p class="tp-small" id="del-note" role="status" tabindex="-1" hidden></p>
+          </div>
+        </section>
+
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "more" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" aria-current="page" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "switch.on": "On", "switch.off": "Off",
+    "dial.quiet": "Quiet", "dial.steady": "Steady", "dial.push": "Push", "dial.of": "of 10",
+    "saved": "Saved.", "saved.name": "Saved. The coach will call you",
+    "an.on": "Thank you. Only taps are shared, never what you write.", "an.off": "Usage analytics is off.",
+    "export.note": "We're putting your data together. A download link will arrive by email, usually within an hour.",
+    "del.done": "Your account is closed. You have 30 days to sign in and bring it all back."
+  },
+  he: {
+    "doc.title": "הגדרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "השינויים יישמרו כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב",
+    "top.back": "חזרה", "top.title": "הגדרות",
+    "page.title": "הגדרות", "page.sub": "כל שינוי חל מיד. שום דבר כאן לא יכול לקלקל כלום.",
+    "load.label": "טוענים את ההגדרות שלך",
+    "err.title": "לא הצלחנו לטעון את ההגדרות שלך.", "err.body": "Tempo ממשיכה לעבוד עם ההגדרות האחרונות שלך.",
+    "empty.title": "אלה הגדרות ההתחלה.", "empty.body": "אפשר לשנות כל מה שתרצי. אפשר לחזור לכאן בכל זמן.",
+    "you.title": "את", "you.name": "מאיה רונן", "you.call": "איך המאמן יקרא לך?", "you.callHelp": "רק המאמן משתמש בזה, כדי לדבר איתך.",
+    "look.title": "קריאה ומראה",
+    "lang.label": "שפה", "lang.help": "בעברית הפריסה עוברת מימין לשמאל.",
+    "dys.label": "גופן קריאה", "dys.help": "גופן שנועד לקריאה קלה יותר, עם יותר רווח בין האותיות. עוזר עם דיסלקציה.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "size.label": "גודל טקסט", "size.help": "משנה את הטקסט בכל Tempo.", "size.s": "קטן", "size.m": "בינוני", "size.l": "גדול",
+    "theme.label": "ערכת צבעים", "theme.light": "בהירה", "theme.dark": "כהה", "theme.system": "כמו בטלפון",
+    "coach.title": "מאמן",
+    "dial.label": "כמה המאמן ידחוף?", "dial.of": "מתוך 10", "dial.quiet": "שקט", "dial.steady": "יציב", "dial.push": "דחיפה",
+    "dial.help": "שקט: המאמן מחכה שתבקשי. יציב: בדיקות עדינות. דחיפה: יותר תזכורות ותוכניות נחרצות יותר.",
+    "priv.title": "פרטיות", "priv.desc": "הדפים, המשימות והשיחות שלך שייכים לך. את מחליטה מה יוצא מהטלפון.",
+    "an.label": "שיתוף נתוני שימוש", "an.help": "על אילו כפתורים לוחצים, אף פעם לא מה שאת כותבת. כבוי עד שתפעילי.",
+    "an.on": "תודה. משותפות רק לחיצות, אף פעם לא מה שאת כותבת.", "an.off": "שיתוף נתוני השימוש כבוי.",
+    "export.label": "הורדת הנתונים שלי", "delete.label": "מחיקת החשבון שלי",
+    "export.note": "אנחנו מכינים את הנתונים שלך. קישור להורדה יגיע במייל, בדרך כלל תוך שעה.",
+    "plan.title": "תוכנית", "plan.label": "תוכנית וחיוב", "plan.value": "חינמית",
+    "out.btn": "יציאה", "out.title": "לצאת מ־Tempo?", "out.body": "שום דבר לא הולך לאיבוד. הכול יחכה לך כשתיכנסי שוב עם המייל שלך.",
+    "out.go": "יציאה", "out.stay": "להישאר מחוברת",
+    "del.title": "למחוק את החשבון שלך?",
+    "del.body": "החשבון שלך ייסגר היום. במשך 30 יום אפשר להיכנס ולהחזיר הכול. אחרי זה, הדפים, המשימות, השיחות והזיכרונות יימחקו לתמיד.",
+    "del.tip": "אם ייתכן שתרצי את הפתקים שלך, כדאי להוריד את הנתונים קודם.",
+    "del.go": "מחיקת החשבון שלי", "del.keep": "להשאיר את החשבון",
+    "del.done": "החשבון שלך נסגר. יש לך 30 יום להיכנס ולהחזיר הכול.",
+    "saved": "נשמר.", "saved.name": "נשמר. המאמן יקרא לך"
+  }
+};
+
+/* Preferences apply at once.
+   REAL: convex profiles.updatePrefs({ key, value }) · profiles.setDisplayName({ name }) · profiles.setCoachDial({ value })
+         · dsr.requestDataExport({}) · dsr.requestAccountDeletion({}) · auth.signOut({}) */
+TP.onReady = function () {
+  var root = document.documentElement;
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function stored(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function check(group, value) {
+    group.querySelectorAll('[role="radio"]').forEach(function (o) {
+      var on = o.getAttribute("data-value") === value;
+      o.setAttribute("aria-checked", String(on)); o.tabIndex = on ? 0 : -1;
+    });
+  }
+  function setSwitch(sw, on) {
+    sw.setAttribute("aria-checked", String(on));
+    var w = sw.querySelector(".tp-switch__state"); w.textContent = TP.t(on ? "switch.on" : "switch.off");
+  }
+
+  // Reflect the current preferences.
+  var groups = {}; document.querySelectorAll("[data-pref]").forEach(function (g) { groups[g.getAttribute("data-pref")] = g; });
+  check(groups.lang, root.lang === "he" ? "he" : "en");
+  check(groups.size, root.getAttribute("data-text-size") || "m");
+  check(groups.theme, stored("tempo-theme") || "system");
+  setSwitch(document.querySelector('[data-pref-switch="dyslexia"]'), root.getAttribute("data-dyslexia") === "on");
+
+  document.getElementById("m-main").addEventListener("click", function (e) {
+    var opt = e.target.closest("[data-pref] [role=\"radio\"]"); if (!opt) return;
+    var key = opt.closest("[data-pref]").getAttribute("data-pref"), v = opt.getAttribute("data-value");
+    if (key === "lang") {
+      // REAL: convex profiles.updatePrefs({ key: "language", value: v }) — then the app re-renders in that language
+      store("tempo-lang", v);
+      var p = new URLSearchParams(location.search); p.set("lang", v); p.delete("dir");
+      location.search = p.toString();
+    } else if (key === "size") {
+      // REAL: convex profiles.updatePrefs({ key: "textSize", value: v })
+      store("tempo-text-size", v);
+      if (v === "m") root.removeAttribute("data-text-size"); else root.setAttribute("data-text-size", v);
+    } else if (key === "theme") {
+      // REAL: convex profiles.updatePrefs({ key: "theme", value: v })
+      var t = v === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : v;
+      TP.setTheme(t); store("tempo-theme", v);
+    }
+  });
+
+  TP.onSwitch = function (sw, on) {
+    var k = sw.getAttribute("data-pref-switch");
+    if (k === "dyslexia") {
+      // REAL: convex profiles.updatePrefs({ key: "readingFont", value: on ? "dyslexia" : "standard" })
+      TP.setDyslexia(on);
+    } else if (k === "analytics") {
+      // REAL: convex profiles.updatePrefs({ key: "analyticsOptIn", value: on }) — default false
+      TP.toast({ title: TP.t(on ? "an.on" : "an.off"), undoMs: 6000 });
+    }
+  };
+
+  document.getElementById("call-me").addEventListener("change", function (e) {
+    var name = e.target.value.trim();
+    // REAL: convex profiles.setDisplayName({ name })
+    TP.toast({ title: name ? TP.t("saved.name") + " " + name + "." : TP.t("saved"), undoMs: 6000 });
+  });
+
+  document.getElementById("export-btn").addEventListener("click", function () {
+    // REAL: convex dsr.requestDataExport({}) — a job builds the file; the link is emailed
+    var n = document.getElementById("export-note"); n.textContent = TP.t("export.note"); n.hidden = false;
+  });
+  document.getElementById("del-go").addEventListener("click", function () {
+    // REAL: convex dsr.requestAccountDeletion({}) — soft delete now, 30-day restore window
+    var n = document.getElementById("del-note"); n.textContent = TP.t("del.done"); n.hidden = false; n.focus();
+    this.disabled = true;
+  });
+  document.getElementById("out-go").addEventListener("click", function () {
+    // REAL: convex auth.signOut({}) then router.replace("/sign-in")
+  });
+};
+</script>
+</body>
+</html>

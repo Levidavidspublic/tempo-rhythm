@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekend reset · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — page-editor.html */
+  .editor-flow { display: grid; gap: var(--tp-space-3); }
+  .editor-flow > .tp-block { padding-block: var(--tp-space-1); }
+  .editor-flow .tp-h2 { margin-top: var(--tp-space-5); }
+  .editor-slash-line { min-height: 32px; padding-block: var(--tp-space-1); }
+</style>
+</head>
+<body>
+<!--
+@screen   Page editor (Markdown page)
+@route    apps/web/app/(tempo)/notes/[id]/page.tsx
+@layout   TempoShell
+@data     page = pages.get({ id })                                         // Convex query: title, icon, tags, ordered blocks
+@data     backlinks = pages.backlinks({ pageId: id })                      // Convex query
+@actions  edit text / heading -> pages.updateBlock({ pageId, blockId, patch })   // optimistic, autosave ("Saved")
+@actions  rename page -> pages.rename({ id, title })                       // optimistic
+@actions  insert block from slash menu -> pages.insertBlock({ pageId, afterId, type })  // optimistic, Undo 5 min
+@actions  move / copy / delete block -> pages.moveBlock / pages.duplicateBlock / pages.removeBlock  // Undo 5 min
+@actions  tick task -> tasks.complete({ id })                              // optimistic, Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the page by id; it is a plain Markdown document drawn as quiet blocks.
+          2. Type anywhere to edit; changes save on their own and the top bar says "Saved".
+          3. Type "/" on an empty line to open the slash menu; arrows move, Enter adds, Esc closes.
+          4. Every block has + (add below) and grip (move, copy, delete) buttons; nothing is drag-only.
+          5. Tasks with a day also show on Today; [[links]] add the page to "Linked here" on the other page.
+          6. Empty page: a hint to type or use "/". Error: "Your data is safe." + Retry. Offline: keep editing, sync later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to page</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'weekend-reset' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Moving flat','Weekend reset'], saved: true } | events: onToggleTheme, onToggleRail, onPageOptions -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.moving">Moving flat</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.weekend">Weekend reset</strong>
+    </div>
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Page options" data-i18n-attr="aria-label:top.more"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main: page editor ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+    <!-- @component PageEditor | shadcn: — | props: { page: {id, title, icon, tags, blocks[]} } | events: onEdit -> pages.updateBlock({ pageId, blockId, patch }), onRename -> pages.rename({ id, title }) -->
+    <article class="tp-paper" data-component="PageEditor" aria-labelledby="page-title">
+      <!-- @component PageCover | shadcn: — | props: { cover } | events: — -->
+      <div class="tp-page-cover" data-component="PageCover" aria-hidden="true"></div>
+      <div class="tp-page__body">
+        <!-- @component PageIcon | shadcn: — | props: { icon: 'box' } | events: — -->
+        <div class="tp-page-icon" data-component="PageIcon" aria-hidden="true"><svg class="tp-icon"><use href="#i-box"/></svg></div>
+        <h1 class="tp-page-title" id="page-title" contenteditable="true" spellcheck="true" data-i18n="page.title">Weekend reset</h1>
+        <!-- @component PageMeta | shadcn: — | props: { tags: ['home','weekly'], edited: '2 minutes ago' } | events: — -->
+        <div class="tp-page-meta" data-component="PageMeta">
+          <!-- @component Tag ×2 | shadcn: badge | props: { name } | events: link -->
+          <a class="tp-tag" href="#" data-component="Tag" data-i18n="tag.home">home</a>
+          <a class="tp-tag" href="#" data-component="Tag" data-i18n="tag.weekly">weekly</a>
+          <span data-i18n="page.edited">Edited 2 minutes ago</span>
+        </div>
+
+        <!-- @component BlockList | shadcn: — | props: { blocks: Block[] } | events: onReorder -> pages.moveBlock({ pageId, blockId, toIndex }) -->
+        <div class="tp-page-content editor-flow" data-component="BlockList" data-state-hide>
+
+          <!-- @component TextBlock | shadcn: — | props: { markdown } | events: onEdit -> pages.updateBlock -->
+          <div class="tp-block" data-component="TextBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd -> pages.insertBlock({ pageId, afterId }), onOptions -> menu (move, copy, delete) -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <p dir="auto" contenteditable="true" data-i18n-html="p.intro">Saturday is for small, visible wins. Nothing heroic. Anything urgent goes onto <a class="tp-wikilink" href="today.html">Today</a>.</p>
+          </div>
+
+          <!-- @component HeadingBlock | shadcn: — | props: { level: 2, text } | events: onEdit -> pages.updateBlock -->
+          <div class="tp-block" data-component="HeadingBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" contenteditable="true" data-i18n="h.kitchen">Kitchen</h2>
+          </div>
+
+          <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,done,day?}[] } | events: onToggle -> tasks.complete({ id }) -->
+          <div class="tp-block" data-component="TaskBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <ul class="tp-block-task" role="list">
+              <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task: {id,title,minutes,done,day?} } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="k1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="k1" dir="auto" data-i18n="task.counter">Clear the counter</span><span class="tp-task-row__meta"><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span></span></div>
+                <span></span>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow" data-done="true">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="true" data-action="check" aria-labelledby="k2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="k2" dir="auto" data-i18n="task.dishes">Run the dishwasher</span></div>
+                <span></span>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="k3"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="k3" dir="auto" data-i18n="task.fridge">Wipe the fridge shelves</span><span class="tp-task-row__meta"><span><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span><span data-i18n="task.sat">Saturday</span></span></div>
+                <span></span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- @component HeadingBlock | shadcn: — | props: { level: 2, text } | events: onEdit -> pages.updateBlock -->
+          <div class="tp-block" data-component="HeadingBlock">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" contenteditable="true" data-i18n="h.packing">Packing</h2>
+          </div>
+
+          <!-- Hovered block: handle visible -->
+          <!-- @component TextBlock | shadcn: — | props: { markdown } | events: onEdit -> pages.updateBlock -->
+          <div class="tp-block" data-component="TextBlock" data-hover>
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component Wikilink | shadcn: command in popover | props: { page: 'Moving checklist' } | events: link -->
+            <p dir="auto" contenteditable="true" data-i18n-html="p.packing">Books first. They are heavy, so small boxes. Ask Yoni about borrowing the van, see <a class="tp-wikilink" href="#">Moving checklist</a>. <a class="tp-tag" href="#">boxes</a></p>
+          </div>
+
+          <!-- Active line with slash menu open -->
+          <!-- @component SlashCommand | shadcn: command in popover | props: { query: '' } | events: onChoose -> pages.insertBlock({ pageId, afterId, type }) -->
+          <div class="tp-block tp-slash-anchor" data-component="SlashCommand">
+            <div class="editor-slash-line tp-slash-line" role="combobox" tabindex="0" aria-expanded="true" aria-controls="slash" aria-haspopup="listbox" aria-label="New block, type to filter" data-i18n-attr="aria-label:slash.label">
+              <span class="tp-slash-trigger">/</span><span class="tp-caret" aria-hidden="true"></span>
+            </div>
+
+            <!-- @component SlashMenu | shadcn: command in popover | props: { items: {type,name,hint,shortcut?}[] } | events: arrows, Enter -> pages.insertBlock, Esc -> close -->
+            <div class="tp-slash-menu tp-glass" id="slash" data-component="SlashMenu">
+              <div class="tp-slash-menu__search"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="slash.hint">Type to filter · ↑ ↓ to move · Enter to add</span></div>
+              <div role="listbox" aria-label="Insert a block" data-i18n-attr="aria-label:slash.list" aria-activedescendant="opt-task">
+                <div role="group" aria-labelledby="g-tempo">
+                  <div class="tp-slash-menu__group" id="g-tempo" data-i18n="slash.g.tempo">Tempo blocks</div>
+                  <div class="tp-slash-item" role="option" id="opt-task" aria-selected="true"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-task"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.task">Task</span><span class="tp-slash-item__hint" data-i18n="slash.task.h">Shows on Today when it has a day</span></span><kbd class="tp-kbd">[]</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-time" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.time">Time block</span><span class="tp-slash-item__hint" data-i18n="slash.time.h">A fixed or flexible slot</span></span><span></span></div>
+                  <div class="tp-slash-item" role="option" id="opt-habit" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.habit">Habit</span><span class="tp-slash-item__hint" data-i18n="slash.habit.h">A gentle log, no streaks</span></span><span></span></div>
+                  <div class="tp-slash-item" role="option" id="opt-energy" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-energy"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.energy">Energy check-in</span><span class="tp-slash-item__hint" data-i18n="slash.energy.h">Quiet, steady or push</span></span><span></span></div>
+                  <div class="tp-slash-item" role="option" id="opt-nag" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.nag">Nag</span><span class="tp-slash-item__hint" data-i18n="slash.nag.h">A reminder in your own words</span></span><span></span></div>
+                </div>
+                <div role="group" aria-labelledby="g-basic">
+                  <div class="tp-slash-menu__group" id="g-basic" data-i18n="slash.g.basic">Text</div>
+                  <div class="tp-slash-item" role="option" id="opt-heading" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-heading"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.heading">Heading</span><span class="tp-slash-item__hint" data-i18n="slash.heading.h">A section title</span></span><kbd class="tp-kbd">#</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-list" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.bullet">Bullet list</span><span class="tp-slash-item__hint" data-i18n="slash.bullet.h">Plain points</span></span><kbd class="tp-kbd">-</kbd></div>
+                  <div class="tp-slash-item" role="option" id="opt-link" aria-selected="false"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="slash.link">Link to a page</span><span class="tp-slash-item__hint" data-i18n="slash.link.h">Shows up under Linked here</span></span><kbd class="tp-kbd">[[</kbd></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- empty: a page with no blocks yet -->
+        <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onType -> pages.insertBlock -->
+        <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-text"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">This page is empty.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">Just start writing. Type / on a new line for tasks, time blocks and more.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="new-page.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="empty.tpl">Start from a template</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+        <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading this page</span>
+          <div class="tp-skel-list">
+            <div class="tp-skeleton tp-skeleton--w100"></div>
+            <div class="tp-skeleton tp-skeleton--w80"></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skeleton tp-skeleton--w60"></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't open this page." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't open this page.</h2>
+          <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+
+        <!-- Linked here -->
+        <!-- @component Backlinks | shadcn: card list | props: { links: {page, context}[] } | events: link -->
+        <section class="tp-backlinks" data-component="Backlinks" aria-labelledby="bl-h" data-state-hide>
+          <div class="tp-backlinks__head">
+            <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg>
+            <h2 class="tp-eyebrow" id="bl-h" data-i18n="bl.head">Linked here</h2>
+            <span class="tp-muted tp-small">· <span class="tp-num">3</span></span>
+          </div>
+          <a class="tp-backlink" href="#"><span class="tp-backlink__page" data-i18n="nav.checklist">Moving checklist</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.a">Kitchen and packing live in the Weekend reset.</span></a>
+          <a class="tp-backlink" href="weekly-page.html"><span class="tp-backlink__page" data-i18n="nav.week">Week 42</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.b">Saturday: Weekend reset, nothing else planned.</span></a>
+          <a class="tp-backlink" href="today.html"><span class="tp-backlink__page" data-i18n="nav.today">Today</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.c">Moving checklist after lunch.</span></a>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach with this page attached -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "state.retried": "Loaded." },
+  he: {
+    "doc.title": "איפוס סוף שבוע · Tempo",
+    "skip": "דלגו לדף",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע", "nav.checklist": "רשימת המעבר", "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "top.more": "אפשרויות דף", "top.avatar": "מאיה רונן",
+    "page.title": "איפוס סוף שבוע", "tag.home": "בית", "tag.weekly": "שבועי", "page.edited": "נערך לפני 2 דקות",
+    "block.add": "הוספת בלוק מתחת", "block.options": "אפשרויות בלוק: הזזה, העתקה, מחיקה",
+    "p.intro": "שבת היא לניצחונות קטנים ונראים. בלי גבורה. כל דבר דחוף עובר ל<a class=\"tp-wikilink\" href=\"today.html\">היום</a>.",
+    "h.kitchen": "מטבח", "task.counter": "לפנות את השיש", "unit.min": "דק׳", "task.dishes": "להפעיל את המדיח", "task.fridge": "לנגב את מדפי המקרר", "task.sat": "שבת",
+    "h.packing": "אריזה",
+    "p.packing": "קודם הספרים. הם כבדים, אז קרטונים קטנים. לשאול את יוני אם אפשר לשאול את הטנדר, ראו <a class=\"tp-wikilink\" href=\"#\">רשימת המעבר</a>. <a class=\"tp-tag\" href=\"#\">קרטונים</a>",
+    "slash.label": "בלוק חדש, הקלידו לסינון", "slash.hint": "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה", "slash.list": "הוספת בלוק",
+    "slash.g.tempo": "בלוקים של Tempo", "slash.task": "משימה", "slash.task.h": "מופיעה בהיום כשיש לה תאריך",
+    "slash.time": "בלוק זמן", "slash.time.h": "חלון קבוע או גמיש", "slash.habit": "הרגל", "slash.habit.h": "תיעוד עדין, בלי רצפים",
+    "slash.energy": "בדיקת אנרגיה", "slash.energy.h": "שקט, יציב או דחיפה", "slash.nag": "תזכורת", "slash.nag.h": "תזכורת במילים שלך",
+    "slash.g.basic": "טקסט", "slash.heading": "כותרת", "slash.heading.h": "כותרת לקטע", "slash.bullet": "רשימת נקודות", "slash.bullet.h": "נקודות פשוטות",
+    "slash.link": "קישור לדף", "slash.link.h": "יופיע תחת ״מקושר לכאן״",
+    "bl.head": "מקושר לכאן", "bl.a": "המטבח והאריזה נמצאים באיפוס סוף השבוע.", "bl.b": "שבת: איפוס סוף שבוע, בלי תוכניות נוספות.", "bl.c": "רשימת המעבר אחרי הצהריים.",
+    "empty.title": "הדף הזה ריק.", "empty.body": "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד.",
+    "empty.tpl": "להתחיל מתבנית", "loading": "טוען את הדף", "error.title": "לא הצלחנו לפתוח את הדף הזה.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+</script>
+</body>
+</html>

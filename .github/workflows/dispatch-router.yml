@@ -11,6 +11,9 @@
 #               .github/**, docs/**, *.md                       -> codex
 #   3. No match -> no dispatch; the router comments asking for an area: label.
 #
+# Usage limits: scripts/factory/lane-limits.mjs re-checks the picked lane (FACTORY_*_AT_LIMIT, FACTORY_AGENT_PREFERENCE);
+# an agent at its limit is replaced by the next available one; all three at their limit -> agent:freebuff (then
+# agent:opencode) + needs:manual-run, run by hand. docs/factory/AGENT-LIMITS.md.
 # Guards: the person who applied `ready` must have write/maintain/admin on the repo (triage is not
 # enough), and nothing dispatches on Friday or Saturday (Asia/Jerusalem), per the cloud-agent policy.
 # Capacity: max 2 running tickets per lane per repo (claude, cursor). "Running" = open issue labeled
@@ -39,8 +42,15 @@ permissions:
   issues: write
 
 jobs:
-  route:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: github.event.label.name == 'ready' && github.event.sender.type != 'Bot'
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "dispatch-router #${{ github.event.issue.number }} (lane start)"
+  route:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && github.event.label.name == 'ready' && github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
@@ -49,6 +59,11 @@ jobs:
     outputs:
       lane: ${{ steps.pick.outputs.lane }}
     steps:
+      - name: Checkout lane-limits script (default branch, no credentials)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
       - name: Pick lane, enforce capacity, label and comment
         id: pick
         env:
@@ -59,6 +74,11 @@ jobs:
           BODY: ${{ github.event.issue.body }}
           SENDER: ${{ github.event.sender.login }}
           MAX_PER_LANE: "2"
+          # Usage limits + preference (scripts/factory/lane-limits.mjs, docs/factory/AGENT-LIMITS.md).
+          FACTORY_CLAUDE_AT_LIMIT: ${{ vars.FACTORY_CLAUDE_AT_LIMIT }}
+          FACTORY_CODEX_AT_LIMIT: ${{ vars.FACTORY_CODEX_AT_LIMIT }}
+          FACTORY_CURSOR_AT_LIMIT: ${{ vars.FACTORY_CURSOR_AT_LIMIT }}
+          FACTORY_AGENT_PREFERENCE: ${{ vars.FACTORY_AGENT_PREFERENCE }}
         run: |
           set -euo pipefail
           perm=$(gh api "repos/$REPO/collaborators/$SENDER/permission" --jq .permission 2>/dev/null || echo none)
@@ -87,6 +107,22 @@ jobs:
             gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: no lane matched. Add one area: label (area:ui, area:frontend, area:convex, area:backend, area:auth, area:tests, area:ci, area:docs, area:refactor) or list MUTATES paths, then re-apply \`ready\`."
             echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # Usage limits: an agent at its limit (FACTORY_*_AT_LIMIT) gets nothing new; fall back in FACTORY_AGENT_PREFERENCE
+          # order; claude, codex and cursor all at their limit -> Freebuff, then OpenCode (manual run, labels only), then
+          # blocked:amit. Never a pay-per-use agent.
+          res=$(node scripts/factory/lane-limits.mjs --want "$lane")
+          new_lane=$(printf '%s\n' "$res" | sed -n 's/^lane=//p')
+          manual=$(printf '%s\n' "$res" | sed -n 's/^manual=//p')
+          add_labels=$(printf '%s\n' "$res" | sed -n 's/^labels=//p')
+          reason=$(printf '%s\n' "$res" | sed -n 's/^reason=//p')
+          if [ "$manual" = true ] || [ -z "$new_lane" ]; then
+            IFS=, read -ra fl <<< "$add_labels"
+            for l in "${fl[@]}"; do gh label create "$l" -R "$REPO" --color FBCA04 --force >/dev/null; gh issue edit "$ISSUE" -R "$REPO" --add-label "$l"; done
+            gh issue comment "$ISSUE" -R "$REPO" --body "Dispatch router: $reason. Nothing started; see docs/factory/AGENT-LIMITS.md."
+            echo "::notice title=Usage limits::#$ISSUE -> $add_labels"
+            echo "lane=" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$new_lane" != "$lane" ]; then why="$why; $reason"; lane="$new_lane"; fi
 
           if [ "$lane" = codex ]; then
             gh label create "handoff:codex" -R "$REPO" --color BFD4F2 --force >/dev/null
@@ -207,8 +243,13 @@ jobs:
           gh issue view "$ISSUE" --repo "$REPO" --comments | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-issue.md"
           # Checkout's includeIf file is still runner-readable. Lock it, then
           # drop includeIf from .git/config before the model starts.
+          # checkout@v6 writes a host includeIf for the gitdir AND one for
+          # gitdir/worktrees/*, both pointing at the same credentials file.
+          # Lock each file once: after chattr +i, a second chown gets EPERM.
+          locked=' '
           while read -r _key path; do
             [ -n "${path:-}" ] || continue
+            case "$locked" in *" ${path} "*) continue ;; esac
             # checkout@v6 also records /github/runner_temp/... for container
             # jobs. That path is absent on the host runner. Skip it. An
             # existing file outside the temp dirs still fails the step.
@@ -223,6 +264,7 @@ jobs:
               sudo -n chown root:root "$path"
               sudo -n chmod 0400 "$path"
               sudo -n chattr +i "$path" || true
+              locked="${locked}${path} "
             fi
           done < <(git config --local --get-regexp '^includeIf\.' || true)
           /usr/local/bin/tempo-safe-git status >/dev/null

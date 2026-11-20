@@ -1,20 +1,25 @@
 name: Graphify
 
-# Rebuild the code knowledge graph on every push to integration.
-# graphifyy 0.9.74: `graphify update . --no-cluster` is local tree-sitter AST.
-# No API key and no secrets. This workflow is not a required check.
-# Do not add it to a ruleset.
+# Rebuild the code knowledge graph on every push to integration (merge-queue / auto-merge merges are pushes too).
+# graphifyy 0.9.74: `graphify update . --no-cluster` is local tree-sitter AST. No API key, no secrets.
+# Not a required check. Do not add it to a ruleset.
 #
-# Persistence is an Actions artifact, not a commit. Rulesets
-# integration-protection and protect-integration require a pull request onto
-# integration, so a bot push would be rejected. Phase 06 Step 3 allows a Factory App PR
-# into docs/graph/ instead; the Factory App doesn't exist yet, so: artifact (decided 2026-10-03).
-# No pause check on purpose: read-only output, it builds nothing and changes nothing.
+# Output: Actions artifact `graphify-graph` (graphify-out/graph.json, 14 days) + a job summary with the download command.
+# Not committed: graph.json is ~7 MB and changes on almost every push; committing it would bloat history.
+# docs/graph/README.md is the stable path: it says where the graph lives and how to rebuild or download it.
+#
+# Pause (Run Book v5 B4): same check as every factory workflow. Paused = push runs skip.
+# workflow_dispatch with force=true runs anyway, from a person only (Amit / Grok Bot), never a bot.
 
 on:
   push:
     branches: [integration]
   workflow_dispatch:
+    inputs:
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off only)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,9 +31,16 @@ concurrency:
 jobs:
   rebuild-graph:
     name: Rebuild graph
+    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: force=true only from a person
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install uv
@@ -54,3 +66,13 @@ jobs:
           path: graphify-out/graph.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo "### Graphify graph (graphifyy 0.9.74) for ${GITHUB_SHA::7}"
+            echo "Artifact \`graphify-graph\` ($(du -h graphify-out/graph.json | cut -f1)). Download:"
+            echo '```'
+            echo "gh run download ${GITHUB_RUN_ID} -R ${GITHUB_REPOSITORY} -n graphify-graph -D graphify-out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,6 +2,10 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
+import { CarryOverStrip } from "@/components/carry-over-strip/CarryOverStrip";
+import { DayPlanPanel } from "@/components/day-plan-panel/DayPlanPanel";
+import { DayPlanSummary } from "@/components/day-plan-summary/DayPlanSummary";
+import { HabitCheckInStrip } from "@/components/habit-checkin-strip/HabitCheckInStrip";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { Button } from "@/components/ui/button";
@@ -9,12 +13,34 @@ import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
 import { TodayAgenda } from "./TodayAgenda";
+import { DailyPage } from "./DailyPage";
+import { TodayChat } from "./TodayChat";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayEnergyRecommendations } from "./TodayEnergyRecommendations";
 import { TodayGreeting } from "./TodayGreeting";
-import { TodayHabitStrip } from "./TodayHabitStrip";
 import { TodayQuickAdd } from "./TodayQuickAdd";
 import { TodayTaskList } from "./TodayTaskList";
+
+// HabitCheckInStrip replaces TodayHabitStrip. The page still subscribes to
+// api.habits.list so the signed-in screen does not open before that read resolves.
+function TodayWiredStrips() {
+  return (
+    <div className="space-y-6">
+      <div className="empty:hidden" data-testid="today-day-plan-panel">
+        <DayPlanPanel />
+      </div>
+      <div className="empty:hidden" data-testid="today-day-plan-summary">
+        <DayPlanSummary />
+      </div>
+      <div className="empty:hidden" data-testid="today-carry-over">
+        <CarryOverStrip />
+      </div>
+      <div className="empty:hidden" data-testid="today-habit-checkin">
+        <HabitCheckInStrip />
+      </div>
+    </div>
+  );
+}
 
 export function TodayScreen() {
   // Reactive bounds: refreshes across local midnight, on visibility change, and
@@ -67,7 +93,12 @@ export function TodayScreen() {
   }
 
   if (!isAuthenticated) {
-    return <TaskViewsScreen view="today" />;
+    return (
+      <>
+        <TaskViewsScreen view="today" />
+        <TodayWiredStrips />
+      </>
+    );
   }
 
   if (!profile || !todayTasks || !habits || !calendarEvents) {
@@ -90,11 +121,11 @@ export function TodayScreen() {
     <div className="container mx-auto max-w-5xl px-6 py-12">
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
+        <TodayChat />
+        <DailyPage dayStartMs={bounds.startMs} tasks={todayTasks} />
+        <TodayWiredStrips />
         <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
-        <div className="grid gap-6 xl:grid-cols-2">
-          <TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} />
-          <TodayHabitStrip habits={habits} />
-        </div>
+        <TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} />
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-start">
           <TodayQuickAdd dueAt={bounds.endMs - 1} />
           <TodayTaskList tasks={todayTasks} />

@@ -48,10 +48,117 @@ jobs:
               ;;
           esac
 
+      # A comment on an existing pull request must be fixed on that pull request's
+      # head branch. issue_comment checks out the default branch and
+      # pull_request_review_comment checks out the merge commit, so neither one
+      # lands on the head by default. Resolve the head from fresh API metadata and
+      # fail closed on anything that is not a same-repository, open pull request
+      # with a plain branch name. Event and API values reach the shell through
+      # env only, never by expression interpolation into the script text.
+      - name: Resolve pull request
+        id: pr
+        if: steps.gate.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_IS_PR: ${{ github.event.issue.pull_request && 'true' || 'false' }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # Byte-wise character classes: no locale can widen [A-Za-z0-9].
+          export LC_ALL=C
+          is_pr=false
+          pr_number=''
+          case "$EVENT_NAME" in
+            issue_comment)
+              if [ "$ISSUE_IS_PR" = "true" ]; then
+                is_pr=true
+                pr_number="$ISSUE_NUMBER"
+              fi
+              ;;
+            pull_request_review_comment)
+              is_pr=true
+              pr_number="$REVIEW_PR_NUMBER"
+              ;;
+          esac
+          if [ "$is_pr" != "true" ]; then
+            echo "is_pr=false" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request event. The default checkout is used."
+            exit 0
+          fi
+          case "$pr_number" in
+            ''|*[!0-9]*) echo "::error::pull request number is not valid"; exit 1 ;;
+          esac
+          if ! pr_json=$(gh api "repos/${REPO}/pulls/${pr_number}"); then
+            echo "::error::could not read pull request ${pr_number}"
+            exit 1
+          fi
+          state=$(jq -r '.state // ""' <<<"$pr_json")
+          head_repo=$(jq -r '.head.repo.full_name // ""' <<<"$pr_json")
+          head_ref=$(jq -r '.head.ref // ""' <<<"$pr_json")
+          head_sha=$(jq -r '.head.sha // ""' <<<"$pr_json")
+          if [ "$state" != "open" ]; then
+            echo "::error::pull request is not open"
+            exit 1
+          fi
+          if [ "$head_repo" != "$REPO" ]; then
+            echo "::error::pull request head is not in this repository; forks are refused"
+            exit 1
+          fi
+          case "$head_ref" in
+            ''|-*|*..*|*:*|*' '*|*[!A-Za-z0-9._/-]*|master|main|integration|HEAD)
+              echo "::error::pull request head branch is not allowed"
+              exit 1
+              ;;
+          esac
+          case "$head_sha" in
+            *[!0-9a-f]*)
+              echo "::error::pull request head sha is not valid"
+              exit 1
+              ;;
+          esac
+          if [ "${#head_sha}" -ne 40 ]; then
+            echo "::error::pull request head sha is not valid"
+            exit 1
+          fi
+          # Outputs are written only after every check passed. head_ref is limited
+          # to [A-Za-z0-9._/-] and head_sha to 40 hex characters, so neither can
+          # carry a newline or a workflow command.
+          {
+            echo "is_pr=true"
+            echo "head_ref=${head_ref}"
+            echo "head_sha=${head_sha}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Pull request ${pr_number}: head branch ${head_ref} at ${head_sha}"
+
       - uses: actions/checkout@v6
         if: steps.gate.outputs.allowed == 'true'
         with:
+          # An empty ref keeps the event's default checkout. For a pull request the
+          # head branch is named in full: checkout then fetches exactly that branch
+          # and creates a local branch of the same name (checkout -B).
+          ref: ${{ steps.pr.outputs.is_pr == 'true' && format('refs/heads/{0}', steps.pr.outputs.head_ref) || '' }}
           fetch-depth: 1
+
+      # The head can move between the API read and the checkout. Fail closed
+      # before bun install and before the model starts.
+      - name: Verify the pull request head checkout
+        if: steps.gate.outputs.allowed == 'true' && steps.pr.outputs.is_pr == 'true'
+        env:
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
+          actual_sha=$(git rev-parse HEAD)
+          actual_ref=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$actual_sha" != "$HEAD_SHA" ] || [ "$actual_ref" != "$HEAD_REF" ]; then
+            echo "::error::checkout is not the verified pull request head (the branch moved or the checkout is wrong)"
+            exit 1
+          fi
+          echo "Checked out the pull request head at ${actual_sha}"
 
       # --- the repo uses Bun 1.3.9, with Node 24 for the action runtime ---
       - uses: actions/setup-node@v7
@@ -71,7 +178,7 @@ jobs:
         run: |
           set -euo pipefail
           git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
-          # pull_request_review_comment checks out the PR merge commit. A fork
+          # The checkout can be a PR head branch or merge commit, and either one
           # can replace .github/scripts. Install the blobs from integration,
           # where this lane's workflows land. master does not have them yet.
           TRUSTED_REF=integration
@@ -116,8 +223,13 @@ jobs:
           unset header
           # Checkout's includeIf file is still runner-readable. Lock it, then
           # drop includeIf from .git/config before the model starts.
+          # checkout@v6 writes a host includeIf for the gitdir AND one for
+          # gitdir/worktrees/*, both pointing at the same credentials file.
+          # Lock each file once: after chattr +i, a second chown gets EPERM.
+          locked=' '
           while read -r _key path; do
             [ -n "${path:-}" ] || continue
+            case "$locked" in *" ${path} "*) continue ;; esac
             # checkout@v6 also records /github/runner_temp/... for container
             # jobs. That path is absent on the host runner. Skip it. An
             # existing file outside the temp dirs still fails the step.
@@ -132,6 +244,7 @@ jobs:
               sudo -n chown root:root "$path"
               sudo -n chmod 0400 "$path"
               sudo -n chattr +i "$path" || true
+              locked="${locked}${path} "
             fi
           done < <(git config --local --get-regexp '^includeIf\.' || true)
           /usr/local/bin/tempo-safe-git status >/dev/null
@@ -169,10 +282,9 @@ jobs:
             Use only `/usr/local/bin/tempo-safe-git`.
             Do not run `git`, `bun`, or `bunx` directly.
             Do not run lint, test, or typecheck. CI runs those on the pull request.
-            To name a branch, write one line starting with `claude/` to `.tempo-branch-name`,
-            then run `/usr/local/bin/tempo-safe-git branch-new`.
+            ${{ steps.pr.outputs.is_pr == 'true' && format('You are on the head branch of this pull request, `{0}`. Commit your fix on this branch with the `add` and `commit` wrappers. Do not create a new branch.', steps.pr.outputs.head_ref) || 'To name a branch, write one line starting with `claude/` to `.tempo-branch-name`, then run `/usr/local/bin/tempo-safe-git branch-new`.' }}
             To commit, write `.tempo-commit-msg`, then run `add` and `commit` on that wrapper.
-            Do not push. A later workflow step publishes the current `claude/` branch.
+            Do not push. A later workflow step publishes ${{ steps.pr.outputs.is_pr == 'true' && 'the pull request head branch' || 'the current `claude/` branch' }}.
             Never push `master`, `main`, or `integration`.
           claude_args: |
             --max-turns 25
@@ -181,16 +293,28 @@ jobs:
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new)"
       - name: Push the claude branch
         if: steps.gate.outputs.allowed == 'true'
+        env:
+          IS_PR: ${{ steps.pr.outputs.is_pr }}
+          PR_HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          PR_HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
         run: |
           set -euo pipefail
           git() { /usr/bin/git -c core.hooksPath=/dev/null "$@"; }
           /usr/local/bin/tempo-safe-git status >/dev/null
           head=$(git rev-parse --abbrev-ref HEAD)
+          # On a pull request the verified head branch is also publishable, not
+          # only claude/* branches. Any other branch is still not pushed.
+          pr_head=false
+          if [ "${IS_PR:-}" = "true" ] && [ -n "${PR_HEAD_REF:-}" ] && [ "$head" = "$PR_HEAD_REF" ]; then
+            pr_head=true
+          fi
           case "$head" in
             claude/*) ;;
             *)
-              echo "Nothing to push from ${head}."
-              exit 0
+              if [ "$pr_head" != "true" ]; then
+                echo "Nothing to push from ${head}."
+                exit 0
+              fi
               ;;
           esac
           case "$head" in
@@ -199,11 +323,42 @@ jobs:
               exit 1
               ;;
           esac
+          if [ "$pr_head" = "true" ]; then
+            # Only new commits on top of the verified head may be published.
+            case "$PR_HEAD_SHA" in
+              *[!0-9a-f]*) echo "::error::verified head sha is not valid"; exit 1 ;;
+            esac
+            if [ "${#PR_HEAD_SHA}" -ne 40 ]; then
+              echo "::error::verified head sha is not valid"
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$PR_HEAD_SHA" HEAD; then
+              echo "::error::HEAD does not descend from the verified pull request head. Refusing to push."
+              exit 1
+            fi
+            if [ "$(git rev-parse HEAD)" = "$PR_HEAD_SHA" ]; then
+              echo "Nothing to push from ${head}: no new commits."
+              exit 0
+            fi
+          fi
           # Token stays in the environment of this one git process. It is not
           # written to .git/config and it is not printed.
+          # Optional second argument: the verified remote head sha. It is sent as an
+          # explicit expected value, so the push is rejected unless the remote branch
+          # is exactly that commit. This is a compare-and-swap guard, not a history
+          # rewrite: the ancestry check above already guarantees HEAD descends from
+          # that sha, so every accepted update is a fast-forward. It closes the gap
+          # where the remote head is reset to an ancestor of the verified head while
+          # this job runs; a plain push would fast-forward it and restore commits
+          # that were removed on purpose.
           auth_push() {
             local branch="$1"
+            local lease_sha="${2:-}"
             local header
+            local -a lease_args=()
+            if [ -n "$lease_sha" ]; then
+              lease_args=("--force-with-lease=refs/heads/${branch}:${lease_sha}")
+            fi
             header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
             case "$header" in
               ''|*'['*|*']'*|*$'\n'*)
@@ -219,14 +374,20 @@ jobs:
                   -c core.hooksPath=/dev/null \
                   -c core.fsmonitor= \
                   -c core.sshCommand= \
-                  push --no-verify -u origin "$branch"; then
+                  push --no-verify "${lease_args[@]}" -u origin "$branch"; then
               unset header
               return 0
             fi
             unset header
             return 1
           }
-          if ! auth_push "$head"; then
+          # Only the pull request head path leases on the verified sha. claude/*
+          # publishing is unchanged.
+          lease_sha=""
+          if [ "$pr_head" = "true" ]; then
+            lease_sha="$PR_HEAD_SHA"
+          fi
+          if ! auth_push "$head" "$lease_sha"; then
             echo "::error::Push of $head failed. Refusing to force-push."
             exit 1
           fi
