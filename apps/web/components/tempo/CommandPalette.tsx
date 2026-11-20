@@ -3,15 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import {
-  type KeyboardEvent,
-  type RefObject,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, type RefObject, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
@@ -81,11 +73,7 @@ const JUMP_ICON: Readonly<Record<string, TpIconName>> = {
   notifications: "bell",
 };
 
-const GROUP_LABEL: Record<CommandGroup, MessageKey> = {
-  recent: "cmd.g.recent",
-  jump: "cmd.g.jump",
-  act: "cmd.g.act",
-};
+const GROUP_LABEL: Record<CommandGroup, MessageKey> = { recent: "cmd.g.recent", jump: "cmd.g.jump", act: "cmd.g.act" };
 
 type Variant = "dialog" | "page";
 
@@ -94,10 +82,7 @@ type Variant = "dialog" | "page";
  * had it before the palette opened, while that control is still in the page; otherwise the main
  * content (`#main`, the skip link's target). Null when there is neither.
  */
-export function pickReturnFocus(
-  opener: Element | null,
-  main: HTMLElement | null
-): HTMLElement | null {
+export function pickReturnFocus(opener: Element | null, main: HTMLElement | null): HTMLElement | null {
   if (!opener?.isConnected) return main;
   const doc = opener.ownerDocument;
   // Nothing was focused: the page itself is not a place to return to.
@@ -141,13 +126,8 @@ function CommandBody({
   const typed = query.trim();
   // The same gate as the rail: page queries wait for the users row (getProfile is null until then).
   const profile = useQuery(api.users.getProfile, withRecent && isAuthenticated ? {} : "skip");
-  const rail = useQuery(
-    api.notes.listForRail,
-    withRecent && profile && !typed ? { limit: RAIL_LIMIT } : "skip"
-  );
-  const found = useNoteTitleSearch(
-    withRecent && profile && typed ? { query: typed, limit: 6 } : "skip"
-  );
+  const rail = useQuery(api.notes.listForRail, withRecent && profile && !typed ? { limit: RAIL_LIMIT } : "skip");
+  const found = useNoteTitleSearch(withRecent && profile && typed ? { query: typed, limit: 6 } : "skip");
 
   const rows = useMemo(() => {
     const out: Row[] = [];
@@ -166,9 +146,7 @@ function CommandBody({
     }
     const screens = typed
       ? REAL_SCREENS
-      : DEFAULT_JUMP_SLUGS.map((slug) => REAL_SCREENS.find((s) => s.slug === slug)).filter(
-          (s) => s !== undefined
-        );
+      : DEFAULT_JUMP_SLUGS.map((slug) => REAL_SCREENS.find((s) => s.slug === slug)).filter((s) => s !== undefined);
     const jump: Row[] = screens.map((screen) => {
       const label = SCREEN_LABEL[screen.slug];
       const hint = JUMP_HINT[screen.slug];
@@ -184,55 +162,12 @@ function CommandBody({
       };
     });
     const actions: Row[] = [
-      {
-        id: "a-new",
-        group: "act",
-        name: t("cmd.a.new"),
-        hint: t("cmd.a.new.h"),
-        action: "new-page",
-        icon: "plus",
-      },
-      {
-        id: "a-task",
-        group: "act",
-        name: t("cmd.a.task"),
-        hint: t("cmd.a.task.h"),
-        href: "/tasks",
-        icon: "task",
-      },
-      {
-        id: "a-dump",
-        group: "act",
-        name: t("cmd.a.dump"),
-        hint: t("cmd.a.dump.h"),
-        href: "/brain-dump",
-        icon: "inbox",
-      },
-      {
-        id: "a-theme",
-        group: "act",
-        name: t("cmd.a.theme"),
-        hint: t("cmd.a.theme.h"),
-        action: "theme",
-        icon: "moon",
-      },
-      {
-        id: "a-font",
-        group: "act",
-        name: t("cmd.a.font"),
-        hint: t("cmd.a.font.h"),
-        action: "font",
-        icon: "type",
-      },
-      {
-        id: "a-all",
-        group: "act",
-        name: t("cmd.all"),
-        hint: t("cmd.all.h"),
-        href: "/search",
-        icon: "search",
-        always: true,
-      },
+      { id: "a-new", group: "act", name: t("cmd.a.new"), hint: t("cmd.a.new.h"), action: "new-page", icon: "plus" },
+      { id: "a-task", group: "act", name: t("cmd.a.task"), hint: t("cmd.a.task.h"), href: "/tasks", icon: "task" },
+      { id: "a-dump", group: "act", name: t("cmd.a.dump"), hint: t("cmd.a.dump.h"), href: "/brain-dump", icon: "inbox" },
+      { id: "a-theme", group: "act", name: t("cmd.a.theme"), hint: t("cmd.a.theme.h"), action: "theme", icon: "moon" },
+      { id: "a-font", group: "act", name: t("cmd.a.font"), hint: t("cmd.a.font.h"), action: "font", icon: "type" },
+      { id: "a-all", group: "act", name: t("cmd.all"), hint: t("cmd.all.h"), href: "/search", icon: "search", always: true },
     ];
     // Page matches already come filtered from the server; screens and actions filter here.
     return [...out, ...filterRows(jump, typed), ...filterRows(actions, typed)];
@@ -299,10 +234,7 @@ function CommandBody({
   };
 
   const recentLoading =
-    withRecent &&
-    !typed &&
-    isAuthenticated &&
-    (profile === undefined || (profile !== null && rail === undefined));
+    withRecent && !typed && isAuthenticated && (profile === undefined || (profile !== null && rail === undefined));
   const recentEmpty = withRecent && !typed && rail !== undefined && rail.length === 0;
   const recentRows = rows.filter((row) => row.group === "recent");
   const count = rows.length;
@@ -362,14 +294,7 @@ function CommandBody({
         </p>
       ) : null}
 
-      <div
-        className="cmd__list"
-        role="listbox"
-        id={listId}
-        aria-label={t("cmd.list")}
-        data-component="SlashMenu"
-        ref={listRef}
-      >
+      <div className="cmd__list" role="listbox" id={listId} aria-label={t("cmd.list")} data-component="SlashMenu" ref={listRef}>
         {groups.map((group) => {
           const groupRows = rows.filter((row) => row.group === group);
           const isRecent = group === "recent";
@@ -395,9 +320,7 @@ function CommandBody({
                   </div>
                 </div>
               ) : null}
-              {isRecent && recentEmpty ? (
-                <p className="tp-slash-item__hint">{t("cmd.recent.empty")}</p>
-              ) : null}
+              {isRecent && recentEmpty ? <p className="tp-slash-item__hint">{t("cmd.recent.empty")}</p> : null}
               {groupRows.map((row) => {
                 const selected = row === current;
                 return (
@@ -425,7 +348,8 @@ function CommandBody({
                       <span className="tp-slash-item__name" dir="auto">
                         {row.always && typed ? (
                           <>
-                            {row.name} <q dir="auto">{typed}</q>
+                            {row.name}{" "}
+                            <q dir="auto">{typed}</q>
                           </>
                         ) : (
                           row.name
@@ -472,11 +396,7 @@ export function CommandPanel() {
   const { t } = useLocale();
   const inputRef = useRef<HTMLInputElement | null>(null);
   return (
-    <section
-      className="tp-slash-menu tp-glass cmd cmd--page"
-      data-component="CommandPalette"
-      aria-label={t("cmd.title")}
-    >
+    <section className="tp-slash-menu tp-glass cmd cmd--page" data-component="CommandPalette" aria-label={t("cmd.title")}>
       <CommandBody variant="page" onDone={() => undefined} inputRef={inputRef} />
     </section>
   );

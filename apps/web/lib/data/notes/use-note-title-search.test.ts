@@ -18,7 +18,7 @@ describe("useNoteTitleSearch", () => {
     expect(useNoteTitleSearch(args)).toBe(marker);
     expect(calls).toHaveLength(1);
     expect(getFunctionName(calls[0]!.reference)).toBe("notes:searchTitles");
-    expect(calls[0]?.args).toBe(args);
+    expect(calls[0]!.args).toBe(args);
   });
 
   test("passes skip to notes:searchTitles and returns its result unchanged", () => {
@@ -35,6 +35,6 @@ describe("useNoteTitleSearch", () => {
     expect(useNoteTitleSearch("skip")).toBe(marker);
     expect(calls).toHaveLength(1);
     expect(getFunctionName(calls[0]!.reference)).toBe("notes:searchTitles");
-    expect(calls[0]?.args).toBe("skip");
+    expect(calls[0]!.args).toBe("skip");
   });
 });
