@@ -1053,7 +1053,7 @@ function TaskRow({
           type="button"
           className={cn(
             "tp-btn tp-btn--sm",
-            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost",
+            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost"
           )}
           disabled={actionsDisabled}
           aria-label={named(confirmingDelete ? "tasks.confirmDeleteName" : "tasks.deleteName")}
