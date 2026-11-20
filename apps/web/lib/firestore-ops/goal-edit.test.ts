@@ -65,8 +65,8 @@ test("the same values give unchanged", () => {
     planGoalEdit(
       storedGoal(),
       { title: "Learn piano", description: "Practice every day", targetDate: 2_000 },
-      300,
-    ),
+      300
+    )
   ).toEqual({ kind: "unchanged" });
 });
 
