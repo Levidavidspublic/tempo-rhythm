@@ -1,37 +1,30 @@
-import { afterAll, describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-// Bun's module mocks are process-wide. Preserve the real modules for tests that run afterward.
-const realModules = {
-  "convex/react": { ...(await import("convex/react")) },
-  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
-};
-afterAll(() => {
-  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
-});
-
-const mutationCalls: unknown[] = [];
-const marker = async () => "renamed";
-
-mock.module("convex/react", () => ({
-  useMutation: (reference: unknown) => {
-    mutationCalls.push(reference);
-    return marker;
-  },
-}));
-mock.module("@/convex/_generated/api", () => ({
-  api: { tasks: { renameProject: "tasks.renameProject" } },
-}));
-
-const { useRenameProject } = await import("./use-rename-project");
+import { getFunctionName } from "convex/server";
+import { makeUseRenameProject } from "./use-rename-project";
 
 describe("useRenameProject", () => {
-  test("uses the renameProject mutation and returns its mutation function", () => {
-    mutationCalls.length = 0;
+  test("uses tasks.renameProject and returns its mutation unchanged", async () => {
+    const renameArgs = { projectId: "project-1", name: "New name" };
+    const mutationCalls: string[] = [];
 
-    expect(useRenameProject() as unknown).toBe(marker);
-    expect(mutationCalls).toEqual(["tasks.renameProject"]);
+    async function renameProject(args: typeof renameArgs) {
+      expect(args).toBe(renameArgs);
+      return 2;
+    }
+    renameProject.withOptimisticUpdate = () => renameProject;
+
+    const useRenameProjectWithFakeMutation = makeUseRenameProject((reference, ...args) => {
+      mutationCalls.push(getFunctionName(reference));
+      expect(args).toHaveLength(0);
+      return renameProject;
+    });
+
+    const mutation = useRenameProjectWithFakeMutation();
+    expect(mutation).toBe(renameProject);
+    expect(mutationCalls).toEqual(["tasks:renameProject"]);
+    expect(await mutation(renameArgs)).toBe(2);
   });
 
   test("ProjectDetailScreen renames projects through the hook", () => {
