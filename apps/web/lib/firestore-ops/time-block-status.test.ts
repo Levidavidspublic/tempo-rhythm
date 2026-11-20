@@ -28,9 +28,7 @@ test("plans a planned block as done", () => {
 });
 
 test("plans a done block back to planned", () => {
-  expect(
-    planTimeBlockStatus({ ...block, status: "done" }, "planned", 1_795_162_000_000)
-  ).toEqual({
+  expect(planTimeBlockStatus({ ...block, status: "done" }, "planned", 1_795_162_000_000)).toEqual({
     ok: true,
     changed: true,
     status: "planned",
