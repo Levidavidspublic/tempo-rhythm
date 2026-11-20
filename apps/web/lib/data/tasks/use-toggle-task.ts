@@ -8,6 +8,12 @@ type ToggleTask = (
   args: FunctionArgs<typeof api.tasks.toggleCompletion>
 ) => Promise<FunctionReturnType<typeof api.tasks.toggleCompletion>>;
 
-export function useToggleTask(): ToggleTask {
-  return useMutation(api.tasks.toggleCompletion);
+export function makeUseToggleTask(
+  useMutationImpl: (reference: typeof api.tasks.toggleCompletion) => ToggleTask
+) {
+  return function useToggleTask(): ToggleTask {
+    return useMutationImpl(api.tasks.toggleCompletion);
+  };
 }
+
+export const useToggleTask = makeUseToggleTask(useMutation);

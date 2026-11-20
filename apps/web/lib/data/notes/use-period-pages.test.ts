@@ -1,44 +1,31 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-const realModules = {
-  "convex/react": { ...(await import("convex/react")) },
-  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
-};
-afterAll(() => {
-  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
-});
-
-const calls: Array<[unknown, unknown]> = [];
-const marker: never[] = [];
-mock.module("convex/react", () => ({
-  ...realModules["convex/react"],
-  useQuery: (query: unknown, args: unknown) => {
-    calls.push([query, args]);
-    return marker;
-  },
-}));
-mock.module("@/convex/_generated/api", () => ({
-  api: { notes: { listPeriodPages: "notes.listPeriodPages" } },
-}));
-
-const { usePeriodPages } = await import("./use-period-pages");
+import { getFunctionName } from "convex/server";
+import { makeUsePeriodPages } from "./use-period-pages";
 
 describe("usePeriodPages", () => {
-  beforeEach(() => calls.splice(0));
-
   test("passes period page arguments to the query and returns its value unchanged", () => {
     const args = { pageType: "daily" as const, before: 5, limit: 10 };
+    const marker: never[] = [];
+    const usePeriodPages = makeUsePeriodPages((reference, receivedArgs) => {
+      expect(getFunctionName(reference)).toBe("notes:listPeriodPages");
+      expect(receivedArgs as unknown).toBe(args);
+      return marker;
+    });
 
     expect(usePeriodPages(args as unknown as Parameters<typeof usePeriodPages>[0])).toBe(marker);
-    expect(calls).toEqual([["notes.listPeriodPages", args]]);
   });
 
   test("passes skip through unchanged", () => {
-    usePeriodPages("skip");
+    expect.assertions(3);
+    const usePeriodPages = makeUsePeriodPages((reference, receivedArgs) => {
+      expect(getFunctionName(reference)).toBe("notes:listPeriodPages");
+      expect(receivedArgs).toBe("skip");
+      return undefined;
+    });
 
-    expect(calls).toEqual([["notes.listPeriodPages", "skip"]]);
+    expect(usePeriodPages("skip")).toBeUndefined();
   });
 
   test("JournalScreen reads period pages through the hook", () => {
