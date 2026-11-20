@@ -71,9 +71,10 @@ describe("buildApprovalPatch", () => {
 
   test("refuses admins identified by the gate or caller", () => {
     const base = { decision: "approved" as const, decidedBy: "admin@example.com", now: 100 };
-    expect(
-      buildApprovalPatch({ ...base, gate: { role: "admin" }, targetIsAdmin: false })
-    ).toEqual({ ok: false, reason: "admin" });
+    expect(buildApprovalPatch({ ...base, gate: { role: "admin" }, targetIsAdmin: false })).toEqual({
+      ok: false,
+      reason: "admin",
+    });
     expect(buildApprovalPatch({ ...base, gate: {}, targetIsAdmin: true })).toEqual({
       ok: false,
       reason: "admin",
