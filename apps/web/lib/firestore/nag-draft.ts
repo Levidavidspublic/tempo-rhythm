@@ -1,8 +1,6 @@
 import { NagDocError, parseNagDoc, type NagDoc } from "../firestore-docs/nag-doc";
 
-export type NagDraftResult =
-  | { kind: "draft"; doc: NagDoc }
-  | { kind: "refused"; reason: string };
+export type NagDraftResult = { kind: "draft"; doc: NagDoc } | { kind: "refused"; reason: string };
 
 export function draftNag(label: unknown, now: number): NagDraftResult {
   if (typeof label !== "string") {

@@ -50,12 +50,13 @@ describe("draftNag", () => {
     }
   });
 
-  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
-    "refuses a non-finite now %#",
-    (now) => {
-      expect(draftNag("Stretch", now).kind).toBe("refused");
-    }
-  );
+  test.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ])("refuses a non-finite now %#", (now) => {
+    expect(draftNag("Stretch", now).kind).toBe("refused");
+  });
 
   test("does not add deletion or ownership fields", () => {
     const result = draftNag("Stretch", 1);
