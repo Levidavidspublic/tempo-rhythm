@@ -34,7 +34,11 @@ type TodayEnergyRecommendationsProps = {
 
 const ENERGY_OPTIONS: Array<{ level: EnergyLevel; label: MessageKey; icon: ReactNode }> = [
   { level: "low", label: "today.energy.low", icon: <BatteryLow className="h-4 w-4" aria-hidden /> },
-  { level: "medium", label: "today.energy.medium", icon: <BatteryMedium className="h-4 w-4" aria-hidden /> },
+  {
+    level: "medium",
+    label: "today.energy.medium",
+    icon: <BatteryMedium className="h-4 w-4" aria-hidden />,
+  },
   { level: "high", label: "today.energy.high", icon: <Zap className="h-4 w-4" aria-hidden /> },
 ];
 
@@ -80,7 +84,7 @@ export function TodayEnergyRecommendations({
             dueAt: task.dueAt,
             updatedAt: task.updatedAt,
           })),
-          { energy, todayStartMs, todayEndMs, dismissedIds },
+          { energy, todayStartMs, todayEndMs, dismissedIds }
         )
       : null;
 
@@ -135,7 +139,7 @@ export function TodayEnergyRecommendations({
                 "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 isActive
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background/70 text-foreground hover:border-primary hover:text-primary",
+                  : "border-border bg-background/70 text-foreground hover:border-primary hover:text-primary"
               )}
             >
               {option.icon}
