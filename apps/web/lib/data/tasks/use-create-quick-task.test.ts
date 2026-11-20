@@ -1,31 +1,17 @@
-import { afterAll, describe, expect, mock, test } from "bun:test";
-import { getFunctionName, type FunctionReturnType } from "convex/server";
-import { api } from "@/convex/_generated/api";
-
-const realConvexReact = { ...(await import("convex/react")) };
-afterAll(() => {
-  mock.module("convex/react", () => realConvexReact);
-});
-
-let mutationReference: Parameters<typeof getFunctionName>[0] | undefined;
-const createQuick = async () => "created-task" as FunctionReturnType<typeof api.tasks.createQuick>;
-
-mock.module("convex/react", () => ({
-  ...realConvexReact,
-  useMutation: (reference: Parameters<typeof getFunctionName>[0]) => {
-    mutationReference = reference;
-    return createQuick;
-  },
-}));
-
-const { useCreateQuickTask } = await import("./use-create-quick-task");
+import { describe, expect, test } from "bun:test";
+import { getFunctionName } from "convex/server";
+import type { Id } from "@/convex/_generated/dataModel";
+import { makeUseCreateQuickTask } from "./use-create-quick-task";
 
 describe("useCreateQuickTask", () => {
   test("binds tasks.createQuick and returns its mutation unchanged", () => {
-    const mutation = useCreateQuickTask();
+    const createQuick = async () => "created-task" as Id<"tasks">;
+    const useCreateQuickTask = makeUseCreateQuickTask((reference, ...args) => {
+      expect(getFunctionName(reference)).toBe("tasks:createQuick");
+      expect(args).toHaveLength(0);
+      return createQuick;
+    });
 
-    expect(mutationReference).toBeDefined();
-    expect(getFunctionName(mutationReference!)).toBe("tasks:createQuick");
-    expect(mutation).toBe(createQuick);
+    expect(useCreateQuickTask()).toBe(createQuick);
   });
 });
