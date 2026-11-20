@@ -8,7 +8,7 @@ type CreateQuickTaskArgs = FunctionArgs<typeof api.tasks.createQuick>;
 type CreateQuickTaskResult = FunctionReturnType<typeof api.tasks.createQuick>;
 
 export function useCreateQuickTask(): (
-  args: CreateQuickTaskArgs,
+  args: CreateQuickTaskArgs
 ) => Promise<CreateQuickTaskResult> {
   return useMutation(api.tasks.createQuick);
 }

@@ -8,8 +8,7 @@ afterAll(() => {
 });
 
 let mutationReference: Parameters<typeof getFunctionName>[0] | undefined;
-const createQuick = async () =>
-  "created-task" as FunctionReturnType<typeof api.tasks.createQuick>;
+const createQuick = async () => "created-task" as FunctionReturnType<typeof api.tasks.createQuick>;
 
 mock.module("convex/react", () => ({
   ...realConvexReact,
