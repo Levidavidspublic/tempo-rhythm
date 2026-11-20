@@ -49,9 +49,7 @@ test("stops at 50 and sets overLimit", () => {
 });
 
 test("keeps a Hebrew line as typed", () => {
-  expect(listBrainDumpLines("  להתקשר לאמא  ").lines).toEqual([
-    { index: 0, title: "להתקשר לאמא" },
-  ]);
+  expect(listBrainDumpLines("  להתקשר לאמא  ").lines).toEqual([{ index: 0, title: "להתקשר לאמא" }]);
 });
 
 test("turns kept lines into checked todo task documents", () => {
