@@ -8,9 +8,7 @@ type GoalDraftInput = {
   targetDate?: number;
 };
 
-type GoalDraftResult =
-  | { ok: true; doc: GoalDoc }
-  | { ok: false; reason: string };
+type GoalDraftResult = { ok: true; doc: GoalDoc } | { ok: false; reason: string };
 
 function shortenTitle(title: string): string {
   let shortened = title.slice(0, GOAL_TITLE_MAX);
