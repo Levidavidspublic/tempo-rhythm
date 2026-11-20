@@ -32,12 +32,7 @@ type Proposal = {
  */
 type SavedUndo = { templateId: Id<"templates">; name: string; untilMs: number };
 
-function countText(
-  t: (key: MessageKey) => string,
-  n: number,
-  one: MessageKey,
-  many: MessageKey
-): string {
+function countText(t: (key: MessageKey) => string, n: number, one: MessageKey, many: MessageKey): string {
   return n === 1 ? t(one) : t(many).replace("{n}", String(n));
 }
 
@@ -77,7 +72,7 @@ export function TemplateSketch() {
         const now = Date.now();
         setUndos((current) => current.filter((undo) => undo.untilMs > now));
       },
-      Math.max(0, soonest - Date.now())
+      Math.max(0, soonest - Date.now()),
     );
     return () => clearTimeout(timer);
   }, [undos]);
@@ -102,16 +97,9 @@ export function TemplateSketch() {
     setPending(true);
     setError(null);
     try {
-      const savedId = await create({
-        name: proposal.draft.name,
-        periodType: "none",
-        body: proposal.draft.body,
-      });
+      const savedId = await create({ name: proposal.draft.name, periodType: "none", body: proposal.draft.body });
       setProposal({ ...proposal, status: "accepted", savedId, undone: false });
-      setUndos((current) => [
-        ...current,
-        { templateId: savedId, name: proposal.draft.name, untilMs: Date.now() + UNDO_MS },
-      ]);
+      setUndos((current) => [...current, { templateId: savedId, name: proposal.draft.name, untilMs: Date.now() + UNDO_MS }]);
     } catch {
       setError("save");
     } finally {
@@ -131,9 +119,7 @@ export function TemplateSketch() {
       dropUndo(undo.templateId);
       // The proposal on screen goes back to pending only when it is the one taken back.
       setProposal((current) =>
-        current?.savedId === undo.templateId
-          ? { ...current, status: "pending", savedId: null, undone: true }
-          : current
+        current?.savedId === undo.templateId ? { ...current, status: "pending", savedId: null, undone: true } : current,
       );
     } catch {
       setError("undo");
@@ -184,13 +170,7 @@ export function TemplateSketch() {
 
       <div className="tp-split tp-split--even" data-component="Split">
         <div className="sk-col">
-          <form
-            className="tp-form tp-surface"
-            id="sk-form"
-            data-component="Form"
-            noValidate
-            onSubmit={onSubmit}
-          >
+          <form className="tp-form tp-surface" id="sk-form" data-component="Form" noValidate onSubmit={onSubmit}>
             <div className="tp-field" data-component="Field">
               <label className="tp-label" htmlFor="sk-outline">
                 {t("ts.label")}
@@ -314,12 +294,7 @@ export function TemplateSketch() {
                     <TpIcon name="edit" size="sm" />
                     <span>{t("ts.edit")}</span>
                   </Link>
-                  <button
-                    className="tp-btn tp-btn--ghost"
-                    type="button"
-                    disabled={pending}
-                    onClick={onReject}
-                  >
+                  <button className="tp-btn tp-btn--ghost" type="button" disabled={pending} onClick={onReject}>
                     <span>{t("ts.reject")}</span>
                   </button>
                 </div>
@@ -350,8 +325,7 @@ export function TemplateSketch() {
                     <TpIcon name="info" size="sm" />
                   </span>
                   <span className="tp-notice__text">
-                    <span className="tp-notice__title">{t("ts.stale.t")}</span>{" "}
-                    <span>{t("ts.stale.b")}</span>
+                    <span className="tp-notice__title">{t("ts.stale.t")}</span> <span>{t("ts.stale.b")}</span>
                   </span>
                 </div>
               ) : null}
@@ -364,12 +338,7 @@ export function TemplateSketch() {
                   <h2 className="tp-state__title">{t("ts.error.title")}</h2>
                   <p className="tp-state__body">{t("ts.error.body")}</p>
                   <div className="tp-state__actions">
-                    <button
-                      className="tp-btn tp-btn--secondary"
-                      type="button"
-                      disabled={pending}
-                      onClick={() => void onAccept()}
-                    >
+                    <button className="tp-btn tp-btn--secondary" type="button" disabled={pending} onClick={() => void onAccept()}>
                       <TpIcon name="refresh" size="sm" />
                       <span>{t("tx.retry")}</span>
                     </button>
