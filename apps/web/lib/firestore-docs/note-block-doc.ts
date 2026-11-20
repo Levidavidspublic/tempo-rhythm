@@ -211,5 +211,6 @@ export function checkNoteBlockDoc(input: unknown): CheckResult {
 }
 
 export function softDeleteNoteBlock(doc: NoteBlockDoc, nowMs: number): NoteBlockDoc {
-  return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
+  const deletedAt = Math.max(doc.createdAt, nowMs);
+  return { ...doc, deletedAt, updatedAt: deletedAt };
 }
