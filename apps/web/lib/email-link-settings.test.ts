@@ -37,7 +37,7 @@ describe("email link settings", () => {
       buildEmailLinkSettings({
         origin: "https://app.example",
         next: "/notes/abc?x=1",
-      }),
+      })
     ).toEqual({
       url: "https://app.example/sign-in?next=%2Fnotes%2Fabc%3Fx%3D1",
       handleCodeInApp: true,
@@ -46,7 +46,7 @@ describe("email link settings", () => {
       buildEmailLinkSettings({
         origin: "https://app.example",
         next: "//evil.example",
-      }),
+      })
     ).toEqual({
       url: "https://app.example/sign-in",
       handleCodeInApp: true,
