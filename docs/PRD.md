@@ -246,7 +246,7 @@ Tempo does the same for a daily planner, with one deliberate difference: **data 
 - Sign-in by magic link only.
 - Tailwind v4 on web; shadcn primitives; native `fetch` only.
 - Executor, never Composio. Details: `docs/TRD.md`.
-- **Never:** OpenRouter or any gateway · Anthropic keys in third-party code · Electron · Firebase, Supabase · Auth0, Clerk, NextAuth, BetterAuth · Stripe · Redux, Zustand, Jotai, Recoil, MobX · axios, ky, got · Tailwind v3 on web · Notion, Linear, Airtable as product integrations · code from Memos or Joplin · image generation · stock nag copy or emoji in nags · JSON shown to the user · code running outside a sandbox.
+- **Never:** OpenRouter or any gateway · Anthropic keys in third-party code · Electron · Supabase · Auth0, Clerk, NextAuth, BetterAuth · Stripe · Redux, Zustand, Jotai, Recoil, MobX · axios, ky, got · Tailwind v3 on web · Notion, Linear, Airtable as product integrations · code from Memos or Joplin · image generation · stock nag copy or emoji in nags · JSON shown to the user · code running outside a sandbox.
 - **The Vercel AI SDK is permitted (Amit 5 Oct)**, together with Convex's official components (Agent, RAG). Single-vendor AI SDKs stay banned.
 - Runtime models (what Tempo runs) and code models (what writes Tempo) are different. Every ticket says which it means.
 - Agents merge into `integration` when every machine check passes. **Only Amit deploys to live.**
