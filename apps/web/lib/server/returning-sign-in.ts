@@ -22,7 +22,7 @@ type ReturningSignInPatches = {
 export function returningSignInPatches(
   existing: ExistingGate,
   profile: SignInProfile,
-  now: number,
+  now: number
 ): ReturningSignInPatches {
   const gate: ReturningSignInPatches["gate"] = {
     email: profile.email,
@@ -47,8 +47,7 @@ export function returningSignInPatches(
   }
 
   const fullName = profile.fullName?.trim();
-  const profilePatch =
-    fullName && fullName !== "User" ? { fullName } : {};
+  const profilePatch = fullName && fullName !== "User" ? { fullName } : {};
 
   return { gate, profile: profilePatch };
 }

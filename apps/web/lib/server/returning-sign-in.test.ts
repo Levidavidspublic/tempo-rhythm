@@ -8,8 +8,8 @@ describe("returningSignInPatches", () => {
       returningSignInPatches(
         { entitlementTier: "max", userType: "paid", betaAccess: "tester" },
         { email: "person@example.com", emailVerified: true },
-        123,
-      ),
+        123
+      )
     ).toEqual({
       gate: {
         email: "person@example.com",
@@ -25,7 +25,7 @@ describe("returningSignInPatches", () => {
       const { gate } = returningSignInPatches(
         { entitlementTier, userType: "paid", betaAccess: "tester" },
         { email: "person@example.com" },
-        123,
+        123
       );
 
       expect(gate.entitlementTier).toBe("max");
@@ -36,7 +36,7 @@ describe("returningSignInPatches", () => {
     const { gate } = returningSignInPatches(
       { entitlementTier: "max", userType: "free" },
       { email: "person@example.com" },
-      123,
+      123
     );
 
     expect(gate).toEqual({
@@ -50,8 +50,8 @@ describe("returningSignInPatches", () => {
       returningSignInPatches(
         { entitlementTier: "max", betaAccess: "tester" },
         { email: "person@example.com" },
-        123,
-      ).gate.userType,
+        123
+      ).gate.userType
     ).toBe("paid");
   });
 
@@ -59,7 +59,7 @@ describe("returningSignInPatches", () => {
     const realName = returningSignInPatches(
       { entitlementTier: "max", userType: "paid", betaAccess: "tester" },
       { email: "person@example.com", fullName: "  Ada Lovelace  " },
-      123,
+      123
     );
 
     expect(realName.profile).toEqual({ fullName: "Ada Lovelace" });
@@ -69,7 +69,7 @@ describe("returningSignInPatches", () => {
       const patches = returningSignInPatches(
         { entitlementTier: "max", userType: "paid", betaAccess: "tester" },
         { email: "person@example.com", fullName },
-        123,
+        123
       );
 
       expect(patches.profile).toEqual({});
@@ -82,19 +82,19 @@ describe("returningSignInPatches", () => {
       returningSignInPatches(
         { entitlementTier: "max", userType: "paid", betaAccess: "tester" },
         { email: "healthy@example.com", emailVerified: true },
-        1,
+        1
       ),
       ...[undefined, "none", "god"].map((entitlementTier) =>
         returningSignInPatches(
           { entitlementTier },
           { email: "healed@example.com", fullName: "Ada Lovelace" },
-          2,
-        ),
+          2
+        )
       ),
       returningSignInPatches(
         { entitlementTier: "max", userType: "free" },
         { email: "free@example.com", fullName: "User" },
-        3,
+        3
       ),
     ];
 
