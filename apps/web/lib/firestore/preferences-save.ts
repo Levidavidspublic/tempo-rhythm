@@ -65,9 +65,7 @@ export function planPreferencesSave(
   }
 
   const unknownKey = editKeys.find(
-    (key) =>
-      typeof key !== "string" ||
-      !(PREFERENCE_FIELDS as readonly string[]).includes(key)
+    (key) => typeof key !== "string" || !(PREFERENCE_FIELDS as readonly string[]).includes(key)
   );
   if (unknownKey !== undefined) {
     return { ok: false, reason: "unknown-field", field: String(unknownKey) };
