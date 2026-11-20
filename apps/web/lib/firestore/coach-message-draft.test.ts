@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { checkMessageDoc, type MessageDoc } from "../firestore-docs/conversation-doc";
-import {
-  COACH_MESSAGE_MAX,
-  draftUserMessage,
-  orderThreadMessages,
-} from "./coach-message-draft";
+import { COACH_MESSAGE_MAX, draftUserMessage, orderThreadMessages } from "./coach-message-draft";
 
 describe("coach message drafts", () => {
   test("a typed message becomes a checked user document", () => {

@@ -1,13 +1,8 @@
-import {
-  checkMessageDoc,
-  type MessageDoc,
-} from "../firestore-docs/conversation-doc";
+import { checkMessageDoc, type MessageDoc } from "../firestore-docs/conversation-doc";
 
 export const COACH_MESSAGE_MAX = 4000;
 
-type DraftResult =
-  | { ok: true; doc: MessageDoc }
-  | { ok: false; reason: string };
+type DraftResult = { ok: true; doc: MessageDoc } | { ok: false; reason: string };
 
 export function draftUserMessage(
   input: { conversationId: string; text: string },
@@ -41,11 +36,9 @@ export function orderThreadMessages(
 ): Array<{ id: string; data: MessageDoc }> {
   return items
     .filter(
-      (item) =>
-        item.data.conversationId === conversationId && item.data.deletedAt === undefined
+      (item) => item.data.conversationId === conversationId && item.data.deletedAt === undefined
     )
     .sort(
-      (left, right) =>
-        left.data.createdAt - right.data.createdAt || left.id.localeCompare(right.id)
+      (left, right) => left.data.createdAt - right.data.createdAt || left.id.localeCompare(right.id)
     );
 }
