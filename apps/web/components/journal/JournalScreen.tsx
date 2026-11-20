@@ -144,7 +144,11 @@ function JournalChunk({ before, first = false }: { before: string; first?: boole
           <JournalChunk before={last.date} />
         ) : (
           <div>
-            <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setMore(true)}>
+            <button
+              className="tp-btn tp-btn--secondary"
+              type="button"
+              onClick={() => setMore(true)}
+            >
               {t("journal.more")}
             </button>
           </div>
