@@ -83,10 +83,10 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <head>
-          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
           <Script
             id="tempo-theme-init"
             strategy="beforeInteractive"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input
             dangerouslySetInnerHTML={{ __html: themeInitScript() }}
           />
         </head>
