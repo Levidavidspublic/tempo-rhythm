@@ -65,7 +65,7 @@ test("throws for bad input", () => {
   expect(() =>
     applyLiveSnapshot<ExampleDoc>({ id: "note", exists: true, data: ["not", "an", "object"] })
   ).toThrow(TypeError);
-  expect(() =>
-    applyLiveSnapshot<ExampleDoc>({ id: "  ", exists: false, data: undefined })
-  ).toThrow(TypeError);
+  expect(() => applyLiveSnapshot<ExampleDoc>({ id: "  ", exists: false, data: undefined })).toThrow(
+    TypeError
+  );
 });
