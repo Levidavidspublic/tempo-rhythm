@@ -44,8 +44,15 @@ const YOU: readonly NavItem[] = [
 /** Pages shown in the rail: pinned first, then the most recently edited. */
 const RAIL_PAGE_LIMIT = 7;
 
-
-function TreeLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string | null; onNavigate?: () => void }) {
+function TreeLink({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string | null;
+  onNavigate?: () => void;
+}) {
   const { t } = useLocale();
   return (
     <li>
@@ -108,8 +115,16 @@ function RailPages({ pathname, onNavigate }: { pathname: string | null; onNaviga
             <span className="tp-tree-item__label">{t("rail.noPages")}</span>
           </li>
         ) : null}
-        <TreeLink item={{ href: "/notes", label: "rail.allPages", icon: "list" }} pathname={pathname} onNavigate={onNavigate} />
-        <TreeLink item={{ href: "/templates", label: "nav.templates", icon: "template" }} pathname={pathname} onNavigate={onNavigate} />
+        <TreeLink
+          item={{ href: "/notes", label: "rail.allPages", icon: "list" }}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <TreeLink
+          item={{ href: "/templates", label: "nav.templates", icon: "template" }}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
       </ul>
     </div>
   );
@@ -213,7 +228,11 @@ export function Sidebar({ inert = false, onOpenPalette, onNavigate }: SidebarPro
           </span>
           <span className="tp-tree-item__label">{t("nav.language")}</span>
         </button>
-        <TreeLink item={{ href: "/settings/profile", label: "nav.settings", icon: "settings" }} pathname={pathname} onNavigate={onNavigate} />
+        <TreeLink
+          item={{ href: "/settings/profile", label: "nav.settings", icon: "settings" }}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
         <button className="tp-tree-item" type="button" onClick={handleSignOut}>
           <span className="tp-tree-item__icon">
             <TpIcon name="logout" size="sm" />

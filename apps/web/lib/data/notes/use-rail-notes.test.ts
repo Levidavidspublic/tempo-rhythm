@@ -45,9 +45,7 @@ describe("useRailNotes", () => {
       "utf8"
     );
 
-    expect(source).toContain(
-      'import { useRailNotes } from "@/lib/data/notes/use-rail-notes";'
-    );
+    expect(source).toContain('import { useRailNotes } from "@/lib/data/notes/use-rail-notes";');
     expect(source).not.toContain("api.notes.listForRail");
   });
 });
