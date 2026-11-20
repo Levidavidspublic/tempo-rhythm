@@ -1,7 +1,4 @@
-import {
-  checkConversationDoc,
-  type ConversationDoc,
-} from "../firestore-docs/conversation-doc";
+import { checkConversationDoc, type ConversationDoc } from "../firestore-docs/conversation-doc";
 
 const TITLE_LIMIT = 200;
 const CHANGED_FIELDS = ["title", "updatedAt"] as const;
