@@ -62,12 +62,7 @@ describe("checkPageOperationDoc", () => {
 
   test("enforces Firestore document ID constraints on every document ID field", () => {
     const invalidIds = [".", "..", "__reserved__", "a".repeat(1_501), "é".repeat(751)];
-    const fields = [
-      "noteId",
-      "undoneByOperationId",
-      "undoOfOperationId",
-      "proposalId",
-    ] as const;
+    const fields = ["noteId", "undoneByOperationId", "undoOfOperationId", "proposalId"] as const;
 
     for (const field of fields) {
       for (const invalidId of invalidIds) {
