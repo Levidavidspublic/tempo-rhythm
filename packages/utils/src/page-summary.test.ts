@@ -1131,6 +1131,102 @@ describe("limits", () => {
   });
 });
 
+describe("repeated lines preserve parser transitions", () => {
+  test("stable prose still emits every repeated Unicode line", () => {
+    const line = "שָׁלוֹם 🇮🇱";
+    const result = project(`${line}\n`.repeat(6));
+    expect(result.searchText).toBe(Array(6).fill(line).join(" "));
+    expect(result.truncated).toBe(false);
+  });
+
+  test("identical fence lines keep alternating between opening and closing", () => {
+    expect(project(`${TICKS}\n`.repeat(4).concat("Visible")).searchText).toBe("Visible");
+    expect(project(`${TICKS}\n`.repeat(5).concat("Hidden")).searchText).toBe("");
+  });
+
+  test("a stable malformed closing-tag run resumes text at its later terminator", () => {
+    const body = "</a\n".repeat(6).concat("PRIVATE > Visible\nVisible\nVisible");
+    expect(project(body).searchText).toBe("Visible Visible Visible");
+  });
+
+  test("stable raw HTML lines still end at their own closing marker", () => {
+    for (const [open, close] of [["<!--", "-->"], ["<?php", "?>"], ["<pre>", "</pre>"]]) {
+      const body = `${open}\n${"PRIVATE\n".repeat(6)}${close}\nVisible`;
+      expect(project(body).searchText).toBe("Visible");
+    }
+  });
+
+  test("a full collector still changes emit mode and follows a later broken block", () => {
+    const body = `before\n${"word\n".repeat(8)}${TICKS}json tempo\n{ nope }\n${TICKS}\n`;
+    const result = project(body, { searchChars: 9 });
+    expect(result.searchText).toBe("before wo");
+    expect(result.truncated).toBe(true);
+    expect(result.omittedBlocks).toBe(1);
+  });
+});
+
+describe("tab expansion and JSON classification preserve projection", () => {
+  test("tab runs align list and nested quote fences with their continuation columns", () => {
+    const bodies = [
+      `-\t${TICKS}js\n\tPRIVATE\n\t${TICKS}\nAfter`,
+      `>\t-\t${TICKS}js\n>\t\tPRIVATE\n>\t\t${TICKS}\n\nAfter`,
+    ];
+    for (const body of bodies) {
+      expect(project(body).searchText).toBe("After");
+    }
+  });
+
+  test("a tab run on a blank quote line still ends its paragraph before a fence", () => {
+    const body = `> before\n>\t\t\n>\t${TICKS}js\n>\tPRIVATE\n>\t${TICKS}\n\nAfter`;
+    expect(project(body).searchText).toBe("before After");
+  });
+
+  test("mixed tab runs preserve Unicode and match their explicit UTF-16 space columns", () => {
+    const cases = [
+      ["A\t🇮🇱\t\tשלום\tZ", "A   🇮🇱        שלום    Z", "A 🇮🇱 שלום Z"],
+      [`${HIGH}\tב\t\t${LOW}ג`, `${HIGH}   ב       ${LOW}ג`, "ב ג"],
+      ["ab\tc\u{0000}\tZ", "ab  c\u{0000}  Z", "ab c Z"],
+      ["א\u{2028}\tב", "א\u{2028}  ב", "א ב"],
+    ] as const;
+    for (const [body, expanded, text] of cases) {
+      const result = project(body);
+      expect(result).toEqual(project(expanded));
+      expect(result.searchText).toBe(text);
+    }
+  });
+
+  test("unchanged JSON-looking text remains hidden after retained format marks are removed", () => {
+    for (const line of [
+      '\u{200D}{"secret":"PRIVATE"}',
+      '["PRIVATE"]\u{200C}',
+      '"\u{200D}key": 1,',
+    ]) {
+      expect(project(`Before\n\n${line}\n\nAfter`).searchText).toBe("Before After");
+    }
+  });
+
+  test("JSON revealed by tabbed headings and checkboxes still receives its separate check", () => {
+    for (const line of [
+      '#\t{"secret":"PRIVATE"}',
+      '##\t\u{200D}["PRIVATE"]',
+      '- [x]\t{"secret":"PRIVATE"}',
+    ]) {
+      expect(project(`Before\n\n${line}\n\nAfter`).searchText).toBe("Before After");
+    }
+  });
+
+  test("non-JSON quoted prose and unfinished backslash runs remain visible", () => {
+    const lines = [
+      '"'.concat("\\".repeat(9), "still open"),
+      '"ordinary" trailing words',
+      'שָׁלוֹם "quoted" trailing',
+    ];
+    for (const line of lines) {
+      expect(project(line).searchText).toBe(line);
+    }
+  });
+});
+
 describe("pathological bodies stay linear", () => {
   const size = 1_000_000;
   /**
