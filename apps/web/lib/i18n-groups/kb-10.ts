@@ -4,7 +4,8 @@ export const en = {
   "kb10.signIn": "Sign in",
   "kb10.signUp": "Create your account",
   "kb10.signInLede": "No password. We'll email you a link that signs you in.",
-  "kb10.signUpLede": "No password. We'll email you a link that creates your account. Amit approves new accounts by hand.",
+  "kb10.signUpLede":
+    "No password. We'll email you a link that creates your account. Amit approves new accounts by hand.",
   "kb10.email": "Email",
   "kb10.placeholder": "you@example.com",
   "kb10.invalid": "Enter a valid email address to get your link.",
@@ -13,7 +14,8 @@ export const en = {
   "kb10.sent": "Check your email",
   "kb10.sentPrefix": "We sent a link to",
   "kb10.sentSuffix": "Open it on any device to continue.",
-  "kb10.approval": "For a new account, the link opens a short waiting-for-approval page. Amit approves each new account by hand.",
+  "kb10.approval":
+    "For a new account, the link opens a short waiting-for-approval page. Amit approves each new account by hand.",
   "kb10.reset": "Use a different email",
   "kb10.rateError": "You've tried a few times. Please pause for a moment and try again.",
   "kb10.sendError": "We couldn't send the link yet. Check your email and try again.",
@@ -38,7 +40,8 @@ export const he: Record<keyof typeof en, string> = {
   "kb10.signIn": "כניסה",
   "kb10.signUp": "יצירת חשבון",
   "kb10.signInLede": "בלי סיסמה. נשלח קישור בדוא״ל לכניסה לחשבון.",
-  "kb10.signUpLede": "בלי סיסמה. נשלח קישור בדוא״ל ליצירת החשבון. עמית מאשר חשבונות חדשים באופן אישי.",
+  "kb10.signUpLede":
+    "בלי סיסמה. נשלח קישור בדוא״ל ליצירת החשבון. עמית מאשר חשבונות חדשים באופן אישי.",
   "kb10.email": "דוא״ל",
   "kb10.placeholder": "you@example.com",
   "kb10.invalid": "יש להזין כתובת דוא״ל תקינה כדי לקבל קישור.",
@@ -47,7 +50,8 @@ export const he: Record<keyof typeof en, string> = {
   "kb10.sent": "כדאי לבדוק את הדוא״ל",
   "kb10.sentPrefix": "שלחנו קישור לכתובת",
   "kb10.sentSuffix": "אפשר לפתוח אותו בכל מכשיר כדי להמשיך.",
-  "kb10.approval": "לחשבון חדש, הקישור פותח דף המתנה קצר לאישור. עמית מאשר כל חשבון חדש באופן אישי.",
+  "kb10.approval":
+    "לחשבון חדש, הקישור פותח דף המתנה קצר לאישור. עמית מאשר כל חשבון חדש באופן אישי.",
   "kb10.reset": "שימוש בכתובת דוא״ל אחרת",
   "kb10.rateError": "נראה שהיו כמה ניסיונות. אפשר להמתין רגע ולנסות שוב.",
   "kb10.sendError": "לא הצלחנו לשלוח את הקישור עדיין. כדאי לבדוק את הכתובת ולנסות שוב.",
