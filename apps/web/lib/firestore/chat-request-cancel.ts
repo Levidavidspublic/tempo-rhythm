@@ -1,7 +1,4 @@
-import {
-  checkChatRequestDoc,
-  type ChatRequestDoc,
-} from "../firestore-docs/chat-request-doc";
+import { checkChatRequestDoc, type ChatRequestDoc } from "../firestore-docs/chat-request-doc";
 
 type ChatRequestCancelPlan =
   | {
@@ -14,10 +11,7 @@ type ChatRequestCancelPlan =
     }
   | { kind: "refused"; reason: string };
 
-export function planChatRequestCancel(
-  stored: ChatRequestDoc,
-  now: number
-): ChatRequestCancelPlan {
+export function planChatRequestCancel(stored: ChatRequestDoc, now: number): ChatRequestCancelPlan {
   if (stored.deletedAt !== undefined) {
     return { kind: "refused", reason: "Chat request is deleted" };
   }

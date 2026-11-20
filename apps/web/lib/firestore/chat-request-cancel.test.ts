@@ -16,18 +16,15 @@ const baseRequest: ChatRequestDoc = {
 };
 
 describe("planChatRequestCancel", () => {
-  test.each(["queued", "running"] as const)(
-    "plans a cancellation for a %s request",
-    (status) => {
-      const stored = { ...baseRequest, status };
+  test.each(["queued", "running"] as const)("plans a cancellation for a %s request", (status) => {
+    const stored = { ...baseRequest, status };
 
-      expect(planChatRequestCancel(stored, 2_000)).toEqual({
-        kind: "patch",
-        patch: { status: "cancelled", updatedAt: 2_000 },
-        fields: ["status", "updatedAt"],
-      });
-    }
-  );
+    expect(planChatRequestCancel(stored, 2_000)).toEqual({
+      kind: "patch",
+      patch: { status: "cancelled", updatedAt: 2_000 },
+      fields: ["status", "updatedAt"],
+    });
+  });
 
   test.each([
     ["completed", "Chat request is completed"],
@@ -41,9 +38,10 @@ describe("planChatRequestCancel", () => {
   });
 
   test("refuses a deleted request", () => {
-    expect(
-      planChatRequestCancel({ ...baseRequest, deletedAt: 1_500 }, 2_000)
-    ).toEqual({ kind: "refused", reason: "Chat request is deleted" });
+    expect(planChatRequestCancel({ ...baseRequest, deletedAt: 1_500 }, 2_000)).toEqual({
+      kind: "refused",
+      reason: "Chat request is deleted",
+    });
   });
 
   test("refuses a fractional current time", () => {
