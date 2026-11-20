@@ -66,10 +66,13 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
       reason: "Proposal status must be pending, accepted, or rejected.",
     };
   }
+  const taskIdsSnapshot = Array.isArray(taskIds) ? Array.from(taskIds) : null;
   if (
-    !Array.isArray(taskIds) ||
-    taskIds.some((taskId) => typeof taskId !== "string" || taskId.trim().length === 0) ||
-    new Set(taskIds).size !== taskIds.length
+    taskIdsSnapshot === null ||
+    taskIdsSnapshot.some(
+      (taskId) => typeof taskId !== "string" || taskId.trim().length === 0
+    ) ||
+    new Set(taskIdsSnapshot).size !== taskIdsSnapshot.length
   ) {
     return {
       ok: false,
@@ -130,7 +133,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
 
   const doc: CoachProposalDoc = {
     status,
-    taskIds: [...taskIds],
+    taskIds: taskIdsSnapshot,
     tenSecondAction,
     realism: {
       ok: realism.ok,
