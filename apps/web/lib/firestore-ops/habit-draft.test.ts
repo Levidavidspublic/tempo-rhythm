@@ -57,10 +57,43 @@ test("new habit has no lastCompletedAt key", () => {
 
 test("list is sorted, drops deleted habits, and leaves input untouched", () => {
   const habits = [
-    { id: "b", name: "B", cadence: "daily" as const, currentStreak: 0, longestStreak: 0, createdAt: 2, updatedAt: 2 },
-    { id: "z", name: "Deleted", cadence: "daily" as const, currentStreak: 0, longestStreak: 0, createdAt: 0, updatedAt: 3, deletedAt: 3 },
-    { id: "c", name: "C", cadence: "weekly" as const, currentStreak: 0, longestStreak: 0, createdAt: 1, updatedAt: 1 },
-    { id: "a", name: "A", cadence: "daily" as const, currentStreak: 0, longestStreak: 0, createdAt: 2, updatedAt: 2 },
+    {
+      id: "b",
+      name: "B",
+      cadence: "daily" as const,
+      currentStreak: 0,
+      longestStreak: 0,
+      createdAt: 2,
+      updatedAt: 2,
+    },
+    {
+      id: "z",
+      name: "Deleted",
+      cadence: "daily" as const,
+      currentStreak: 0,
+      longestStreak: 0,
+      createdAt: 0,
+      updatedAt: 3,
+      deletedAt: 3,
+    },
+    {
+      id: "c",
+      name: "C",
+      cadence: "weekly" as const,
+      currentStreak: 0,
+      longestStreak: 0,
+      createdAt: 1,
+      updatedAt: 1,
+    },
+    {
+      id: "a",
+      name: "A",
+      cadence: "daily" as const,
+      currentStreak: 0,
+      longestStreak: 0,
+      createdAt: 2,
+      updatedAt: 2,
+    },
   ];
   const originalOrder = habits.slice();
 
