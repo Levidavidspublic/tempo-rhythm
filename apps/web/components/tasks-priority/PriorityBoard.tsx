@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useRestoreTask } from "@/lib/data/tasks/use-restore-task";
 import { reflowElastic, splitByFlexibility } from "./calibrate";
 
 type Priority = Doc<"tasks">["priority"];
@@ -23,13 +24,10 @@ export function PriorityBoard() {
   // confirms that the authenticated identity has a corresponding user row.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
-  const tasks = useQuery(
-    api.tasks.list,
-    isAuthenticated && hasConvexUser ? {} : "skip"
-  );
+  const tasks = useQuery(api.tasks.list, isAuthenticated && hasConvexUser ? {} : "skip");
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
-  const restoreTask = useMutation(api.tasks.restore);
+  const restoreTask = useRestoreTask();
   const [busyTaskId, setBusyTaskId] = useState<Id<"tasks"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [undo, setUndo] = useState<UndoState | null>(null);
@@ -57,7 +55,10 @@ export function PriorityBoard() {
     };
   }, [tasks]);
 
-  async function update(taskId: Id<"tasks">, change: { flexibility?: Flexibility; priority?: Priority }) {
+  async function update(
+    taskId: Id<"tasks">,
+    change: { flexibility?: Flexibility; priority?: Priority }
+  ) {
     setBusyTaskId(taskId);
     setError(null);
     try {
@@ -100,8 +101,7 @@ export function PriorityBoard() {
 
   if (
     isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && tasks === undefined)))
+    (isAuthenticated && (profile === undefined || (hasConvexUser && tasks === undefined)))
   ) {
     return <p className="text-sm text-muted-foreground">Loading your priorities…</p>;
   }
@@ -123,7 +123,10 @@ export function PriorityBoard() {
       </header>
 
       {error ? (
-        <p role="alert" className="mb-5 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        <p
+          role="alert"
+          className="mb-5 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+        >
           {error}
         </p>
       ) : null}
@@ -150,7 +153,12 @@ export function PriorityBoard() {
       {undo ? (
         <output className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-full border bg-background px-5 py-3 text-sm shadow-lg">
           <span>Task removed.</span>
-          <Button variant="link" className="h-auto p-0" onClick={() => void restore()} disabled={busyTaskId === undo.taskId}>
+          <Button
+            variant="link"
+            className="h-auto p-0"
+            onClick={() => void restore()}
+            disabled={busyTaskId === undo.taskId}
+          >
             Undo
           </Button>
         </output>
@@ -159,44 +167,89 @@ export function PriorityBoard() {
   );
 }
 
-function TaskSection({ busyTaskId, emptyMessage, heading, onRemove, onUpdate, tasks }: {
+function TaskSection({
+  busyTaskId,
+  emptyMessage,
+  heading,
+  onRemove,
+  onUpdate,
+  tasks,
+}: {
   busyTaskId: Id<"tasks"> | null;
   emptyMessage: string;
   heading: string;
   onRemove: (taskId: Id<"tasks">) => Promise<void>;
-  onUpdate: (taskId: Id<"tasks">, change: { flexibility?: Flexibility; priority?: Priority }) => Promise<void>;
+  onUpdate: (
+    taskId: Id<"tasks">,
+    change: { flexibility?: Flexibility; priority?: Priority }
+  ) => Promise<void>;
   tasks: Doc<"tasks">[];
 }) {
   return (
     <section aria-labelledby={`${heading.startsWith("Fixed") ? "fixed" : "flexible"}-heading`}>
-      <h2 id={`${heading.startsWith("Fixed") ? "fixed" : "flexible"}-heading`} className="mb-3 text-lg font-semibold">
+      <h2
+        id={`${heading.startsWith("Fixed") ? "fixed" : "flexible"}-heading`}
+        className="mb-3 text-lg font-semibold"
+      >
         {heading}
       </h2>
       {tasks.length === 0 ? (
-        <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">{emptyMessage}</p>
+        <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
+          {emptyMessage}
+        </p>
       ) : (
         <ul className="space-y-3">
           {tasks.map((task) => {
             const isBusy = busyTaskId === task._id;
             const flexibility = task.flexibility ?? "elastic";
             return (
-              <li key={task._id} className="rounded-2xl border bg-card p-4 shadow-sm" aria-busy={isBusy}>
+              <li
+                key={task._id}
+                className="rounded-2xl border bg-card p-4 shadow-sm"
+                aria-busy={isBusy}
+              >
                 <p className="mb-4 font-medium">{task.title}</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Movement
-                    <select className="h-9 rounded-md border bg-background px-3 text-sm text-foreground" value={flexibility} disabled={isBusy} onChange={(event) => void onUpdate(task._id, { flexibility: event.target.value as Flexibility })} aria-label={`Movement for ${task.title}`}>
+                    <select
+                      className="h-9 rounded-md border bg-background px-3 text-sm text-foreground"
+                      value={flexibility}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        void onUpdate(task._id, { flexibility: event.target.value as Flexibility })
+                      }
+                      aria-label={`Movement for ${task.title}`}
+                    >
                       <option value="fixed">Fixed</option>
                       <option value="elastic">Flexible</option>
                     </select>
                   </label>
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Priority
-                    <select className="h-9 rounded-md border bg-background px-3 text-sm text-foreground" value={task.priority} disabled={isBusy} onChange={(event) => void onUpdate(task._id, { priority: event.target.value as Priority })} aria-label={`Priority for ${task.title}`}>
-                      {(Object.keys(priorityLabels) as Priority[]).map((priority) => <option key={priority} value={priority}>{priorityLabels[priority]}</option>)}
+                    <select
+                      className="h-9 rounded-md border bg-background px-3 text-sm text-foreground"
+                      value={task.priority}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        void onUpdate(task._id, { priority: event.target.value as Priority })
+                      }
+                      aria-label={`Priority for ${task.title}`}
+                    >
+                      {(Object.keys(priorityLabels) as Priority[]).map((priority) => (
+                        <option key={priority} value={priority}>
+                          {priorityLabels[priority]}
+                        </option>
+                      ))}
                     </select>
                   </label>
-                  <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" disabled={isBusy} onClick={() => void onRemove(task._id)} aria-label={`Delete ${task.title}`}>
+                  <Button
+                    variant="ghost"
+                    className="ml-auto text-destructive hover:text-destructive"
+                    disabled={isBusy}
+                    onClick={() => void onRemove(task._id)}
+                    aria-label={`Delete ${task.title}`}
+                  >
                     Delete
                   </Button>
                 </div>
