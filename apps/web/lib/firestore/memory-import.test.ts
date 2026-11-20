@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { checkMemoryDoc } from "../firestore-docs/memory-doc";
-import {
-  draftKeptMemories,
-  MEMORY_IMPORT_MAX_ITEMS,
-  readMemoryPaste,
-} from "./memory-import";
+import { draftKeptMemories, MEMORY_IMPORT_MAX_ITEMS, readMemoryPaste } from "./memory-import";
 
 describe("readMemoryPaste", () => {
   test("turns three plain lines into three review items", () => {
@@ -38,7 +34,7 @@ describe("readMemoryPaste", () => {
 
   test("keeps at most 200 distinct lines", () => {
     const result = readMemoryPaste(
-      Array.from({ length: 205 }, (_, index) => `Memory ${index}`).join("\n"),
+      Array.from({ length: 205 }, (_, index) => `Memory ${index}`).join("\n")
     );
 
     expect(result.items).toHaveLength(MEMORY_IMPORT_MAX_ITEMS);
@@ -59,11 +55,7 @@ describe("draftKeptMemories", () => {
   });
 
   test("refuses an invalid now value", () => {
-    const result = draftKeptMemories(
-      [{ index: 0, content: "Memory" }],
-      [0],
-      -1,
-    );
+    const result = draftKeptMemories([{ index: 0, content: "Memory" }], [0], -1);
 
     expect(result.ok).toBe(false);
   });

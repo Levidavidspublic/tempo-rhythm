@@ -1,7 +1,4 @@
-import {
-  checkMemoryDoc,
-  type MemoryDoc,
-} from "../firestore-docs/memory-doc";
+import { checkMemoryDoc, type MemoryDoc } from "../firestore-docs/memory-doc";
 
 export const MEMORY_IMPORT_MAX_ITEMS = 200;
 export const MEMORY_IMPORT_MAX_LENGTH = 500;
@@ -59,7 +56,7 @@ export function readMemoryPaste(text: string): {
 export function draftKeptMemories(
   items: readonly MemoryReviewItem[],
   keptIndexes: readonly number[],
-  now: number,
+  now: number
 ): { ok: true; docs: MemoryDoc[] } | { ok: false; reason: string } {
   if (!Number.isFinite(now) || now < 0) {
     return { ok: false, reason: "now must be a nonnegative finite number" };
