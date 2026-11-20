@@ -2,10 +2,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
-import {
-  type FirebaseWebEnv,
-  readFirebaseWebConfig,
-} from "@/lib/firebase-web-config";
+import { type FirebaseWebEnv, readFirebaseWebConfig } from "@/lib/firebase-web-config";
 
 export type FirebaseClient = Readonly<{
   app: FirebaseApp;
