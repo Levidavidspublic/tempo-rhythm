@@ -7,7 +7,9 @@ import { api } from "@/convex/_generated/api";
 type ListPeriodPagesArgs = FunctionArgs<typeof api.notes.listPeriodPages>;
 type ListPeriodPagesResult = FunctionReturnType<typeof api.notes.listPeriodPages>;
 
-export function makeUsePeriodPages(useQueryImpl: typeof useQuery<typeof api.notes.listPeriodPages>) {
+export function makeUsePeriodPages(
+  useQueryImpl: typeof useQuery<typeof api.notes.listPeriodPages>
+) {
   return function usePeriodPages(
     args: ListPeriodPagesArgs | "skip"
   ): ListPeriodPagesResult | undefined {
