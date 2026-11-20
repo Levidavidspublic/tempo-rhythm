@@ -47,7 +47,7 @@ function encodeValue(value: string | number | boolean): RestValue {
   if (!Number.isFinite(value)) {
     throw new FirestoreQueryError("Numbers must be finite");
   }
-  if (Number.isInteger(value)) return { integerValue: String(value) };
+  if (Number.isSafeInteger(value)) return { integerValue: String(value) };
   return { doubleValue: value };
 }
 

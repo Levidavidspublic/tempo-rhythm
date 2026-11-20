@@ -74,6 +74,28 @@ describe("Firestore list query builder", () => {
     });
   });
 
+  test("encodes large integral filter and cursor values as doubles", () => {
+    const query = buildListQuery({
+      uid: "owner1",
+      collection: "tasks",
+      filters: [{ field: "score", op: ">", value: 1e20 }],
+      orderBy: { field: "score", direction: "asc" },
+      startAfter: 1e20,
+    }).body.structuredQuery;
+
+    expect(query.where).toEqual({
+      fieldFilter: {
+        field: { fieldPath: "score" },
+        op: "GREATER_THAN",
+        value: { doubleValue: 1e20 },
+      },
+    });
+    expect(query.startAt).toEqual({
+      values: [{ doubleValue: 1e20 }],
+      before: false,
+    });
+  });
+
   test("refuses unsafe owner and collection segments", () => {
     for (const request of [
       { uid: "two/owners", collection: "tasks" },
