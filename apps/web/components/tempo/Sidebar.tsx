@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
+import { useRailNotes } from "@/lib/data/notes/use-rail-notes";
 import type { MessageKey } from "@/lib/i18n";
 import { isCurrent } from "@/lib/shell";
 import { TpIcon, type TpIconName } from "./TpIcon";
@@ -70,7 +71,7 @@ function RailPages({ pathname, onNavigate }: { pathname: string | null; onNaviga
   // so the rail waits for it instead of hitting requireUser early (same gate as NotesScreen).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   // Bounded and metadata-only: the shell never subscribes to page bodies.
-  const notes = useQuery(api.notes.listForRail, profile ? { limit: RAIL_PAGE_LIMIT } : "skip");
+  const notes = useRailNotes(profile ? { limit: RAIL_PAGE_LIMIT } : "skip");
   const pages = notes ?? [];
 
   return (
