@@ -67,6 +67,8 @@ const DIGEST = /^[0-9a-f]{64}$/;
 const KINDS = new Set(["save", "patch_block", "add_task", "undo"]);
 const SOURCES = new Set(["ui", "coach", "mcp", "legacy"]);
 const RESULTS = new Set(["applied", "noop"]);
+const FIRESTORE_DOCUMENT_ID_MAX_BYTES = 1_500;
+const RESERVED_DOCUMENT_ID = /^__[\s\S]*__$/;
 
 function fail(reason: string): CheckResult {
   return { ok: false, reason };
@@ -85,7 +87,15 @@ function isRevision(value: unknown): value is number {
 }
 
 function isDocumentId(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0 && !value.includes("/");
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    value !== "." &&
+    value !== ".." &&
+    !value.includes("/") &&
+    !RESERVED_DOCUMENT_ID.test(value) &&
+    new TextEncoder().encode(value).byteLength <= FIRESTORE_DOCUMENT_ID_MAX_BYTES
+  );
 }
 
 /** Checks an untrusted, content-free Firestore page-operation receipt. */

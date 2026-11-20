@@ -60,6 +60,26 @@ describe("checkPageOperationDoc", () => {
     expect(checkPageOperationDoc(applied({ requestId: "req_not-a-ulid" })).ok).toBe(false);
   });
 
+  test("enforces Firestore document ID constraints on every document ID field", () => {
+    const invalidIds = [".", "..", "__reserved__", "a".repeat(1_501), "é".repeat(751)];
+    const fields = ["noteId", "undoneByOperationId", "undoOfOperationId", "proposalId"] as const;
+
+    for (const field of fields) {
+      for (const invalidId of invalidIds) {
+        expect(checkPageOperationDoc(applied({ [field]: invalidId }))).toEqual({
+          ok: false,
+          reason: `${field} must be a document id`,
+        });
+      }
+    }
+  });
+
+  test("accepts ordinary and maximum-length Firestore document IDs", () => {
+    expect(checkPageOperationDoc(applied({ noteId: "note_01" })).ok).toBe(true);
+    expect(checkPageOperationDoc(applied({ noteId: "a".repeat(1_500) })).ok).toBe(true);
+    expect(checkPageOperationDoc(applied({ noteId: "é".repeat(750) })).ok).toBe(true);
+  });
+
   test("rejects an uppercase digest", () => {
     expect(checkPageOperationDoc(applied({ requestDigest: "A".repeat(64) })).ok).toBe(false);
   });
