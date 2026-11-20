@@ -65,7 +65,7 @@ function validateNoteDoc(
 
   const value = input as Record<string, unknown>;
   const unknownKey = Object.keys(value).find((key) => !NOTE_KEYS.has(key as keyof NoteDoc));
-  if (unknownKey) return { ok: false, reason: `unknown key: ${unknownKey}` };
+  if (unknownKey !== undefined) return { ok: false, reason: `unknown key: ${unknownKey}` };
 
   if (typeof value.title !== "string") {
     return { ok: false, reason: "title must be a string" };
