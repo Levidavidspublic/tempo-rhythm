@@ -1,6 +1,6 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
@@ -19,7 +19,7 @@ import {
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
-import { api } from "@/convex/_generated/api";
+import { useTaskList } from "@/lib/data/tasks/use-task-list";
 import {
   filterProjects,
   isProjectFilter,
@@ -104,7 +104,7 @@ function ProjectsContent() {
   const signedIn = useSignedIn();
   const online = useOnline();
   const startProject = useStartProject();
-  const tasks = useQuery(api.tasks.list, signedIn === "ready" ? {} : "skip");
+  const tasks = useTaskList(signedIn === "ready" ? {} : "skip");
   const [filter, setFilter] = useQueryParam<ProjectFilter>("status", "all", isProjectFilter);
 
   if (signedIn === "signedOut") {
