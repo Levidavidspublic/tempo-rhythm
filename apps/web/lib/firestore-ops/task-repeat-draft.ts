@@ -1,7 +1,4 @@
-import {
-  parseTaskRepeatDoc,
-  type TaskRepeatDoc,
-} from "../firestore-docs/task-repeat-doc";
+import { parseTaskRepeatDoc, type TaskRepeatDoc } from "../firestore-docs/task-repeat-doc";
 
 export type TaskRepeatDraftInput = {
   cycle: "DAILY" | "WEEKLY";
@@ -13,13 +10,7 @@ export type TaskRepeatDraft =
   | { ok: true; doc: TaskRepeatDoc }
   | {
       ok: false;
-      reason:
-        | "bad-cycle"
-        | "bad-every"
-        | "no-weekday"
-        | "bad-weekday"
-        | "bad-time"
-        | "invalid";
+      reason: "bad-cycle" | "bad-every" | "no-weekday" | "bad-weekday" | "bad-time" | "invalid";
     };
 
 export function draftTaskRepeat(input: TaskRepeatDraftInput, now: number): TaskRepeatDraft {
