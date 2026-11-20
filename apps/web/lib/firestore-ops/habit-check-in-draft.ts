@@ -1,7 +1,4 @@
-import {
-  checkHabitCheckInDoc,
-  type HabitCheckInDoc,
-} from "../firestore-docs/habit-doc";
+import { checkHabitCheckInDoc, type HabitCheckInDoc } from "../firestore-docs/habit-doc";
 
 const NOTE_LIMIT = 500;
 const NEW_CHECK_IN_SOURCES = new Set(["habits", "today", "suggestion"]);

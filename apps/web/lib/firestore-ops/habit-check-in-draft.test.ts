@@ -24,7 +24,12 @@ describe("draftHabitCheckIn", () => {
 
   test("trims and shortens a note", () => {
     const result = draftHabitCheckIn(
-      { habitId: "habit-1", localDate: "2026-11-20", source: "habits", note: `  ${"x".repeat(501)}  ` },
+      {
+        habitId: "habit-1",
+        localDate: "2026-11-20",
+        source: "habits",
+        note: `  ${"x".repeat(501)}  `,
+      },
       1
     );
 
