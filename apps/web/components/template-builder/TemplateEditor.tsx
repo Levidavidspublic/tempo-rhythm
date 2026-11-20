@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUpdateTemplate } from "@/lib/data/templates/use-update-template";
 import type { MessageKey } from "@/lib/i18n";
 import {
   insertSection,
@@ -53,7 +54,7 @@ type RemovedUndo = { section: TemplateSection; index: number };
 function EditorForm({ template }: { template: SourceTemplate }) {
   const { t } = useLocale();
   const router = useRouter();
-  const update = useMutation(api.templates.update);
+  const update = useUpdateTemplate();
   const online = useOnline();
   const readOnly = template.source === "starter";
   const initial = draftFrom(template);
