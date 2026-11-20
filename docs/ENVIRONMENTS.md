@@ -2,7 +2,14 @@
 
 This document defines the four-mode environment model for Tempo Flow. Every agent, contributor, and tool that touches an env var, Convex deployment, or Vercel project must read this first. Where this file and any other doc disagree, this file wins. See also HARD_RULES §13.
 
-> **Out of date in parts (2 Oct 2026).** Since 2 Oct 04:50 IDT the Vercel Preview build of `integration` is live at https://preview.tempoflow.dev and uses the test Convex deployment `ceaseless-dog-617`. Lines below that say preview is "disabled this weekend" or "not yet provisioned" are older text marked *(out of date — see #435)*. The full rewrite of this file is tracked in #435.
+## Internal-testing tier (preview)
+
+- **Preview pairing:** https://preview.tempoflow.dev (branch integration) → ceaseless-dog-617
+- `SITE_URL` on `ceaseless-dog-617` = https://preview.tempoflow.dev.
+- Vercel Preview `NEXT_PUBLIC_CONVEX_URL` = `https://ceaseless-dog-617.eu-west-1.convex.cloud` (test deployment `ceaseless-dog-617`).
+- Only `preview.tempoflow.dev` is excepted from Vercel protection. Other preview URLs still ask for the Vercel login.
+
+Never point preview at prod `precious-wildcat-890`. Only Amit deploys to live.
 
 ---
 
@@ -11,17 +18,16 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 | Mode | Purpose | Convex | Vercel | Repo env file | Trust gate |
 |---|---|---|---|---|---|
 | **Dev** | Coding, immediate local testing | `dev:<your-slug>` (auto via `bun x convex dev`) | N/A (`next dev` locally) | `.env.local` (git-ignored) | May break at any time. Not a QA surface. |
-| **Test** | Prove behavior | Dev deployment | Local `next build` + CI | `.env.local` + CI env | CI green + local smoke pass. Not a shareable URL. |
-| **Preview** | Branch / PR validation | `preview:<slug>` (target state — not yet provisioned) | Preview URL from PR (**disabled this weekend**) *(out of date — see #435)* | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
+| **Test** | Prove behavior | Test deployment `ceaseless-dog-617` | Local `next build` + CI | `.env.local` + CI env | CI green + local smoke pass. Not a shareable URL. |
+| **Preview** | Branch / PR validation | Test deployment `ceaseless-dog-617` | `integration` preview at https://preview.tempoflow.dev | Vercel env table (preview scope) | Agents MUST NOT treat preview as shipped. |
 | **Deployment** | Promoted stable surface | `prod:<slug>` | Production domain | Vercel env table (production scope) + Convex dashboard env | Only code that passed preview + explicit human promote. |
 
 ---
 
 ## Convex: deployments
 
-- **`dev`** — current registry candidate: `dev:tremendous-bass-443` (`https://tremendous-bass-443.convex.cloud`). Every local machine can also get its own `dev:*` slug via `bun x convex dev`.
-- **`preview`** — [placeholder — not yet provisioned] *(out of date — see #435)*. Documented here as the target model. Provisioning is a `human-amit` / `twin` action: Convex dashboard → Project Settings → Deployments → Add preview deployment. Until then, PRs run against the author's `dev` deployment.
-- **`staging`** — current registry candidate: `staging:ceaseless-dog-617` (`https://ceaseless-dog-617.convex.cloud`).
+- **`dev`** — local only: each machine gets its own `dev:*` slug via `bun x convex dev`. The older `dev:tremendous-bass-443` is not used by the preview.
+- **`test`** — `ceaseless-dog-617` (`https://ceaseless-dog-617.eu-west-1.convex.cloud`). This is the test deployment used by the `integration` preview. It is not a separate staging tier. There is no separate `preview:*` Convex deployment.
 - **`prod`** — current production deployment: `prod:precious-wildcat-890` (`https://precious-wildcat-890.eu-west-1.convex.cloud`).
 
 Rule: no agent provisions Convex deployments without an explicit human choice of
@@ -37,18 +43,10 @@ Known local CLI state on 2026-06-02:
 
 ---
 
-## Vercel: production domain only this weekend
+## Vercel: preview and production
 
-*(Out of date — see #435: preview builds of `integration` are live.)* Preview builds are explicitly disabled for the weekend. To disable via the Vercel dashboard [human-amit action]:
-
-1. Open Vercel → Project `tempo-rhythm-web` → Settings → Git.
-2. Set "Ignored Build Step" to: `if [ "$VERCEL_GIT_COMMIT_REF" = "master" ]; then exit 1; else exit 0; fi`
-   — or toggle "Deploy Previews" off entirely.
-3. Confirm by pushing a throwaway branch and verifying that no preview URL appears on the PR.
-
-Rationale: a broken preview can mask as "tested" when it isn't, or a preview against a dev Convex can leak partial behavior the user reads as real. Until a `preview:*` Convex deployment exists, previews add risk without benefit.
-
-When previews are re-enabled, update this section with the exact dashboard steps taken.
+- Preview builds of `integration` serve https://preview.tempoflow.dev and use Convex test `ceaseless-dog-617` (see the preview pairing above).
+- Production serves https://www.tempoflow.dev from `master` and uses Convex prod `precious-wildcat-890`. Only Amit promotes to production.
 
 ---
 
@@ -81,15 +79,13 @@ Negative rule: do not create or read `apps/web/.env` or `apps/mobile/.env`. Use 
 | `[local]` | Developer secrets on one machine only | The developer on that machine | Shell env / `.env.local` loaded by Next.js / Convex CLI |
 | `[convex dashboard]` | Runtime secrets for Convex functions | human-amit (dashboard owner) | Convex injects at function invocation |
 | `[vercel production]` | Secrets for production Next.js builds and RSC routes | human-amit (Vercel project owner) | Vercel injects at build and edge runtime |
-| `[vercel preview]` | Secrets for Vercel Preview builds (branch `integration` and PR branches; there is no `preview` branch) | human-amit (Vercel project owner) | Vercel injects at preview build. Live: Preview builds of `integration` serve https://preview.tempoflow.dev (public via the protection exception; see #435) |
+| `[vercel preview]` | Secrets for Vercel Preview builds (branch `integration` and PR branches; there is no `preview` branch) | human-amit (Vercel project owner) | Vercel injects at preview build. Live: Preview builds of `integration` serve https://preview.tempoflow.dev (public via the protection exception) |
 | `[EAS secrets]` | Mobile build secrets | human-amit (EAS project owner) | EAS injects during `eas build` |
 
 ---
 
 ## What is NOT decided yet
 
-- **Preview Convex provisioned.** The `preview:*` deployment is planned but not provisioned. Do not reference preview Convex URLs in any config. *(Out of date — see #435.)*
-- **Vercel preview re-enablement plan.** *(Out of date — see #435: re-enabled 2 Oct.)* Previews are disabled this weekend. When re-enabled, this file must be updated with the actual scope of preview secrets and the confirmation step.
 - **Convex local dev attachment.** Choose existing `dev:tremendous-bass-443` vs a new personal `dev:*` deployment before running an interactive `bun x convex dev` configuration.
 - **EAS project identity.** Resolved on 2026-06-04: `apps/mobile/app.json` points at the accessible Expo/EAS project `@amitlevin/tempi` with project ID `90dfac90-0baa-461b-946c-351d2306e607`. The `tempi` slug is the existing Tempo Rhythm Expo project name; app display name, bundle identifier, Android package, and URL scheme remain Tempo Rhythm / `com.temporhythm.app` / `tempo-rhythm`.
 
