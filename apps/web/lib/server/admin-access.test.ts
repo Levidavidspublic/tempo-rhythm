@@ -4,11 +4,9 @@ import { approvalFor, initialApproval, isAdmin, parseAdminEmails } from "./admin
 
 describe("admin access", () => {
   test("parses a mixed admin email list", () => {
-    expect(parseAdminEmails(" Admin@Example.COM, second@example.com\ninvalid entry THIRD@EXAMPLE.COM ")).toEqual([
-      "admin@example.com",
-      "second@example.com",
-      "third@example.com",
-    ]);
+    expect(
+      parseAdminEmails(" Admin@Example.COM, second@example.com\ninvalid entry THIRD@EXAMPLE.COM ")
+    ).toEqual(["admin@example.com", "second@example.com", "third@example.com"]);
   });
 
   test("recognizes an admin role", () => {
@@ -33,7 +31,7 @@ describe("admin access", () => {
     const admins = ["admin@example.com"];
 
     expect(approvalFor({ email: "ADMIN@EXAMPLE.COM", approvalStatus: "revoked" }, admins)).toBe(
-      "approved",
+      "approved"
     );
     expect(approvalFor({ approvalStatus: "revoked" }, admins)).toBe("revoked");
     expect(approvalFor({ approvalStatus: "approved" }, admins)).toBe("approved");

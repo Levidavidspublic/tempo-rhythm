@@ -13,7 +13,7 @@ export function parseAdminEmails(raw: string | null | undefined): string[] {
 
 export function isAdmin(
   gate: { email?: string | null; role?: string },
-  admins: readonly string[],
+  admins: readonly string[]
 ): boolean {
   if (gate.role === "admin") {
     return true;
@@ -23,16 +23,13 @@ export function isAdmin(
   return email !== "" && admins.includes(email);
 }
 
-export function initialApproval(
-  email: string,
-  admins: readonly string[],
-): "pending" | "approved" {
+export function initialApproval(email: string, admins: readonly string[]): "pending" | "approved" {
   return admins.includes(normalizeEmail(email)) ? "approved" : "pending";
 }
 
 export function approvalFor(
   gate: { email?: string | null; role?: string; approvalStatus?: string },
-  admins: readonly string[],
+  admins: readonly string[]
 ): ApprovalStatus {
   if (isAdmin(gate, admins)) {
     return "approved";
