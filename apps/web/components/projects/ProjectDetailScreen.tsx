@@ -22,6 +22,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { useRenameProject } from "@/lib/data/tasks/use-rename-project";
 import {
   dayLabel,
   isNewProjectId,
@@ -90,7 +91,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const createTask = useMutation(api.tasks.create);
   const removeTask = useMutation(api.tasks.remove);
   const updateTask = useMutation(api.tasks.update);
-  const renameProject = useMutation(api.tasks.renameProject);
+  const renameProject = useRenameProject();
   const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate((store, { taskId }) => {
     const rows = store.getQuery(api.tasks.list, args);
     if (!rows) return;
