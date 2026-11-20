@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useRestoreTask } from "@/lib/data/tasks/use-restore-task";
 import { reflowElastic, splitByFlexibility } from "./calibrate";
 
 type Priority = Doc<"tasks">["priority"];
@@ -29,7 +30,7 @@ export function PriorityBoard() {
   );
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
-  const restoreTask = useMutation(api.tasks.restore);
+  const restoreTask = useRestoreTask();
   const [busyTaskId, setBusyTaskId] = useState<Id<"tasks"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [undo, setUndo] = useState<UndoState | null>(null);
