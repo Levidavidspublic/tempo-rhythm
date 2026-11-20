@@ -86,6 +86,15 @@ test("rejects unsupported values with their field paths", () => {
   }
 });
 
+test("rejects sparse array elements with their indexed field paths", () => {
+  expect(() => encodeFields({ items: new Array(1) })).toThrow(FirestoreValueError);
+  expect(() => encodeFields({ items: new Array(1) })).toThrow("items[0]");
+
+  expect(encodeFields({ items: [null] })).toEqual({
+    items: { arrayValue: { values: [{ nullValue: null }] } },
+  });
+});
+
 test("round trips a task-like object", () => {
   expect(decodeFields(encodeFields(task))).toEqual(task);
 });
