@@ -65,13 +65,24 @@ describe("Firestore list query builder", () => {
       buildListQuery({
         uid: "owner1",
         collection: "notes",
-        orderBy: { field: "title", direction: "desc" },
+        orderBy: { field: "sequence", direction: "desc", unique: true },
         startAfter: "later",
       }).body.structuredQuery
     ).toMatchObject({
-      orderBy: [{ field: { fieldPath: "title" }, direction: "DESCENDING" }],
+      orderBy: [{ field: { fieldPath: "sequence" }, direction: "DESCENDING" }],
       startAt: { values: [{ stringValue: "later" }], before: false },
     });
+  });
+
+  test("refuses a cursor on an order field that is not guaranteed unique", () => {
+    expect(() =>
+      buildListQuery({
+        uid: "owner1",
+        collection: "notes",
+        orderBy: { field: "title", direction: "asc" },
+        startAfter: "same",
+      })
+    ).toThrow("startAfter requires a unique orderBy field");
   });
 
   test("refuses unsafe owner and collection segments", () => {
