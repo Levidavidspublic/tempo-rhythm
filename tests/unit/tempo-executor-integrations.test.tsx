@@ -1,6 +1,6 @@
-import { resolveSync, spawn } from "bun";
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { join, resolve } from "node:path";
+import { resolveSync, spawn } from "bun";
 import type { ReactElement } from "react";
 import type { Root } from "react-dom/client";
 import type { ExecutorStatusView } from "../../apps/web/lib/executor-connection";
