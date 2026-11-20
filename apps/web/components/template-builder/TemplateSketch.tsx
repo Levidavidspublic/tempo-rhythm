@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useCreateTemplate } from "@/lib/data/templates/use-create-template";
 import type { MessageKey } from "@/lib/i18n";
 import { parseSketch, SKETCH_MAX_CHARS, type SketchDraft } from "@/lib/template-sketch";
 import { useOnline } from "@/lib/useOnline";
@@ -45,7 +46,7 @@ function countText(t: (key: MessageKey) => string, n: number, one: MessageKey, m
 export function TemplateSketch() {
   const { t } = useLocale();
   const online = useOnline();
-  const create = useMutation(api.templates.create);
+  const create = useCreateTemplate();
   const remove = useMutation(api.templates.remove);
   const [outline, setOutline] = useState("");
   const [proposal, setProposal] = useState<Proposal | null>(null);
