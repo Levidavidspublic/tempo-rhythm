@@ -55,7 +55,11 @@ describe("note edit plan", () => {
 
   test("refuses to edit a deleted note", () => {
     expect(
-      planNoteEdit({ ...storedNote, deletedAt: 1_795_100_000_000 }, { pinned: true }, 1_795_132_800_000)
+      planNoteEdit(
+        { ...storedNote, deletedAt: 1_795_100_000_000 },
+        { pinned: true },
+        1_795_132_800_000
+      )
     ).toEqual({ kind: "refused", reason: "note is deleted" });
   });
 
