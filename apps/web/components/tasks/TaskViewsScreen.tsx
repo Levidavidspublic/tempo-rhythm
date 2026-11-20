@@ -868,12 +868,12 @@ function TaskList({
   );
 }
 
-type GroupedTaskListProps<TGroup extends string> = Omit<TaskListProps, "tasks"> & {
-  groups: Record<TGroup, TaskViewRecord[]>;
-  labels: Record<TGroup, MessageKey>;
+type GroupedTaskListProps<Group extends string> = Omit<TaskListProps, "tasks"> & {
+  groups: Record<Group, TaskViewRecord[]>;
+  labels: Record<Group, MessageKey>;
 };
 
-function GroupedTaskList<TGroup extends string>({
+function GroupedTaskList<Group extends string>({
   groups,
   labels,
   editingId,
@@ -884,11 +884,11 @@ function GroupedTaskList<TGroup extends string>({
   onDelete,
   onToggle,
   onChecklistToggle,
-}: GroupedTaskListProps<TGroup>) {
+}: GroupedTaskListProps<Group>) {
   const { t } = useLocale();
   return (
     <div className="tk-groups">
-      {(Object.keys(labels) as TGroup[]).map((group) => (
+      {(Object.keys(labels) as Group[]).map((group) => (
         <section
           key={group}
           className="tp-section"
