@@ -15,7 +15,7 @@ export type HabitsForDay<T> = {
 export function splitHabitsForDay<T extends HabitTodayRow>(
   rows: readonly T[],
   dayStartMs: number,
-  dayEndMs: number,
+  dayEndMs: number
 ): HabitsForDay<T> {
   if (!Number.isFinite(dayStartMs) || !Number.isFinite(dayEndMs) || dayStartMs >= dayEndMs) {
     return { todo: [], done: [], doneCount: 0, total: 0 };
