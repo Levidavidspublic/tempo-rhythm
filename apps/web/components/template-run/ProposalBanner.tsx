@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { api } from "@/convex/_generated/api";
+import { useTemplateProposal } from "@/lib/data/templates/use-template-proposal";
 
 type PeriodType = "daily" | "weekly" | "monthly" | "none";
 type Proposal = { templateId: string; name: string; reason: string };
@@ -11,8 +10,7 @@ type Proposal = { templateId: string; name: string; reason: string };
 export function ProposalBanner({ periodType, title }: { periodType: PeriodType; title: string }) {
   const { t } = useLocale();
   const trimmed = title.trim();
-  const proposal = useQuery(
-    api.templates.proposeForPage,
+  const proposal = useTemplateProposal(
     trimmed.length > 0 ? { periodType, title: trimmed } : { periodType }
   );
   const kept = useRef<{ periodType: PeriodType; proposal: Proposal | null } | null>(null);
