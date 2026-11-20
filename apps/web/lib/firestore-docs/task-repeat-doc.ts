@@ -50,7 +50,7 @@ const OPTIONAL_KEYS = [
 
 const LEGACY_KEYS = new Set(["userId", "_id", "_creationTime"]);
 const KNOWN_KEYS = new Set<string>([...REQUIRED_KEYS, ...OPTIONAL_KEYS]);
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function invalid(field: string): never {
   throw new TaskRepeatDocError(field);
@@ -62,6 +62,22 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isWeekday(value: unknown): value is number {
   return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 6;
+}
+
+function isCalendarDate(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+
+  const match = DATE_PATTERN.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) return false;
+
+  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day >= 1 && day <= daysInMonth[month - 1];
 }
 
 export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
@@ -88,9 +104,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
     invalid("weekdays");
   if (
     !Array.isArray(source.deletedInstanceDates) ||
-    !source.deletedInstanceDates.every(
-      (date) => typeof date === "string" && DATE_PATTERN.test(date)
-    )
+    !source.deletedInstanceDates.every(isCalendarDate)
   )
     invalid("deletedInstanceDates");
 
@@ -120,11 +134,7 @@ export function parseTaskRepeatDoc(input: unknown): TaskRepeatDoc {
     (!isFiniteNumber(source.defaultEstimate) || source.defaultEstimate < 0)
   )
     invalid("defaultEstimate");
-  if (
-    source.lastTaskCreationDay !== undefined &&
-    (typeof source.lastTaskCreationDay !== "string" ||
-      !DATE_PATTERN.test(source.lastTaskCreationDay))
-  )
+  if (source.lastTaskCreationDay !== undefined && !isCalendarDate(source.lastTaskCreationDay))
     invalid("lastTaskCreationDay");
   if (source.deletedAt !== undefined && !isFiniteNumber(source.deletedAt)) invalid("deletedAt");
 

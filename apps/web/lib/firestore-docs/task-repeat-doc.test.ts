@@ -60,6 +60,29 @@ describe("task repeat documents", () => {
     );
   });
 
+  test("validates calendar dates for skipped instances and task creation", () => {
+    expect(
+      parseTaskRepeatDoc({
+        ...minimal,
+        deletedInstanceDates: ["2028-02-29"],
+        lastTaskCreationDay: "2028-02-29",
+      })
+    ).toEqual({
+      ...minimal,
+      deletedInstanceDates: ["2028-02-29"],
+      lastTaskCreationDay: "2028-02-29",
+    });
+
+    for (const date of ["2026-02-30", "2026-13-01"]) {
+      expect(() => parseTaskRepeatDoc({ ...minimal, deletedInstanceDates: [date] })).toThrow(
+        new TaskRepeatDocError("deletedInstanceDates")
+      );
+      expect(() => parseTaskRepeatDoc({ ...minimal, lastTaskCreationDay: date })).toThrow(
+        new TaskRepeatDocError("lastTaskCreationDay")
+      );
+    }
+  });
+
   test("drops legacy keys and refuses unknown keys", () => {
     const withLegacy = {
       ...minimal,
