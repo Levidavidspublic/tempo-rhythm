@@ -3,7 +3,7 @@
 import { useConvexAuth } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type MouseEvent } from "react";
+import { type MouseEvent, useState } from "react";
 import {
   E2E_HARNESS,
   OfflineNotice,
@@ -29,7 +29,7 @@ import {
   type ProjectSummary,
   summarizeProjects,
 } from "@/lib/goals-projects";
-import { translateKb08, type Kb08Lang, type Kb08Key } from "@/lib/i18n-groups/kb-08";
+import { type Kb08Key, type Kb08Lang, translateKb08 } from "@/lib/i18n-groups/kb-08";
 import "@/app/v3/kb-08.css";
 
 const FILTER_LABEL = {
