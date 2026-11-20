@@ -69,7 +69,7 @@ describe("draftTimeBlock", () => {
   test("optional ids are left out when missing or empty and no value is undefined", () => {
     const result = draftTimeBlock(
       { ...validInput, taskId: "", habitId: "   ", dayPlanId: undefined },
-      123,
+      123
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
