@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { usePeriodPages } from "@/lib/data/notes/use-period-pages";
 import { journalDate, promptFor } from "@/lib/journal";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -90,7 +91,7 @@ export function JournalScreen() {
 /** Ten days at a time (bounded reads); "Show more" mounts the next ten after the last date. */
 function JournalChunk({ before, first = false }: { before: string; first?: boolean }) {
   const { t, lang } = useLocale();
-  const rows = useQuery(api.notes.listPeriodPages, { pageType: "daily", before, limit: CHUNK });
+  const rows = usePeriodPages({ pageType: "daily", before, limit: CHUNK });
   const [more, setMore] = useState(false);
 
   if (rows === undefined) {
