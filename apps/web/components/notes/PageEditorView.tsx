@@ -1,7 +1,7 @@
 "use client";
 
 import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/utils";
-import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvex, useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -18,6 +18,7 @@ import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { useCreateNote } from "@/lib/data/notes/use-create-note";
 import {
   closesPageMenu,
   exportContents,
@@ -94,7 +95,7 @@ export function PageEditorView(props: Props) {
   const router = useRouter();
   const convex = useConvex();
   const { isAuthenticated } = useConvexAuth();
-  const createNote = useMutation(api.notes.create);
+  const createNote = useCreateNote();
   const backlinks = useQuery(api.notes.backlinks, isAuthenticated ? { noteId } : "skip");
   // The coach panel beside this page reads it as context.
   useRegisterCoachPage(noteId);
