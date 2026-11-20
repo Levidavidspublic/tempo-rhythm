@@ -1,0 +1,15 @@
+{
+  "command": "CI=1 bunx playwright test tests/e2e/landing-motion.spec.ts --reporter=line --workers=1",
+  "exit": 0,
+  "startedAt": "2026-10-22T06:59:07Z",
+  "endedAt": "2026-10-22T07:01:48Z",
+  "testBlob": "03c1da58502aa6dab6a8c815dfe8aafddd360d32",
+  "baseHead": "d2333ecbd942de5eb136411363bfe0dc3ccd2021",
+  "passed": 8,
+  "failed": 0,
+  "reportedDuration": "2.6m",
+  "bun": "1.3.9",
+  "productSourceUnchanged": true,
+  "authorization": "Amit AT-28, 2026-10-22: one additional scoped test correction",
+  "cleanup": "Owned Next process group 266879 had only zombies, no live members; port 3000 was free after exit."
+}
