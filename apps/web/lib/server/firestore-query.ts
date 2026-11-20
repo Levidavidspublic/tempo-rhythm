@@ -106,8 +106,7 @@ export function buildListQuery(request: ListRequest): {
   if (request.orderBy) {
     validateField(request.orderBy.field);
     const mismatchedInequalityFilter = filters.find(
-      (filter) =>
-        INEQUALITY_OPERATORS.has(filter.op) && filter.field !== request.orderBy?.field
+      (filter) => INEQUALITY_OPERATORS.has(filter.op) && filter.field !== request.orderBy?.field
     );
     if (mismatchedInequalityFilter) {
       throw new FirestoreQueryError("orderBy must start with the inequality filter field");
