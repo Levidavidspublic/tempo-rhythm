@@ -30,34 +30,34 @@ test("no blocks gives an empty result", () => {
 });
 
 test("two overlapping blocks give one pair with the overlap minutes", () => {
-  expect(findTimeBlockClashes([block("later", 45, 30), block("earlier", 30, 30)], "2026-11-20"))
-    .toEqual({
-      pairs: [{ firstId: "earlier", secondId: "later", overlapMinutes: 15 }],
-      clashingIds: ["earlier", "later"],
-      count: 1,
-    });
+  expect(
+    findTimeBlockClashes([block("later", 45, 30), block("earlier", 30, 30)], "2026-11-20")
+  ).toEqual({
+    pairs: [{ firstId: "earlier", secondId: "later", overlapMinutes: 15 }],
+    clashingIds: ["earlier", "later"],
+    count: 1,
+  });
 });
 
 test("touching blocks do not clash", () => {
-  expect(findTimeBlockClashes([block("first", 30, 30), block("second", 60, 30)], "2026-11-20"))
-    .toEqual({ pairs: [], clashingIds: [], count: 0 });
+  expect(
+    findTimeBlockClashes([block("first", 30, 30), block("second", 60, 30)], "2026-11-20")
+  ).toEqual({ pairs: [], clashingIds: [], count: 0 });
 });
 
 test("a block inside another clashes for the inner block length", () => {
-  expect(findTimeBlockClashes([block("outer", 30, 90), block("inner", 45, 20)], "2026-11-20"))
-    .toEqual({
-      pairs: [{ firstId: "outer", secondId: "inner", overlapMinutes: 20 }],
-      clashingIds: ["outer", "inner"],
-      count: 1,
-    });
+  expect(
+    findTimeBlockClashes([block("outer", 30, 90), block("inner", 45, 20)], "2026-11-20")
+  ).toEqual({
+    pairs: [{ firstId: "outer", secondId: "inner", overlapMinutes: 20 }],
+    clashingIds: ["outer", "inner"],
+    count: 1,
+  });
 });
 
 test("three mutually overlapping blocks give three pairs and three ids", () => {
   expect(
-    findTimeBlockClashes(
-      [block("c", 40, 30), block("a", 20, 40), block("b", 30, 40)],
-      "2026-11-20"
-    )
+    findTimeBlockClashes([block("c", 40, 30), block("a", 20, 40), block("b", 30, 40)], "2026-11-20")
   ).toEqual({
     pairs: [
       { firstId: "a", secondId: "b", overlapMinutes: 30 },
@@ -72,8 +72,11 @@ test("three mutually overlapping blocks give three pairs and three ids", () => {
 test("deleted and skipped blocks are left out", () => {
   const deleted = { ...block("deleted", 35, 30), deletedAt: 2 };
   const skipped = { ...block("skipped", 40, 30), status: "skipped" as const };
-  expect(findTimeBlockClashes([block("kept", 30, 30), deleted, skipped], "2026-11-20"))
-    .toEqual({ pairs: [], clashingIds: [], count: 0 });
+  expect(findTimeBlockClashes([block("kept", 30, 30), deleted, skipped], "2026-11-20")).toEqual({
+    pairs: [],
+    clashingIds: [],
+    count: 0,
+  });
 });
 
 test("blocks from another date are left out and the input is not changed", () => {
