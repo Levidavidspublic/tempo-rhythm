@@ -1,0 +1,61 @@
+/* The shared Button and slotted links keep their desktop density. */
+@media (max-width: 767px) {
+  .kb71-button {
+    min-block-size: var(--tp-touch);
+    min-inline-size: var(--tp-touch);
+    max-inline-size: 100%;
+    flex-shrink: 0;
+  }
+
+  /* Let shared-button action rows wrap when labels need their full width. */
+  :where(.flex:not(.flex-nowrap)):has(> .kb71-button) {
+    flex-wrap: wrap;
+  }
+
+  /* Built-in fixed heights become content-sized when labels wrap. A caller's explicit height class remains in charge. */
+  .kb71-button:is(.h-9, .h-10, .h-11) {
+    height: auto;
+  }
+
+  .kb71-button.kb71-button {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .kb71-gallery__long {
+    max-inline-size: min(100%, calc(var(--tp-space-20) * 3));
+  }
+}
+
+.kb71-gallery {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--tp-space-4);
+  max-inline-size: 100%;
+  min-block-size: 100dvh;
+  padding: var(--tp-space-6) var(--tp-space-4);
+  background: var(--tp-ground);
+  color: var(--tp-ink);
+}
+
+.kb71-gallery__title {
+  margin: 0;
+  font-family: var(--tp-font-serif);
+  font-size: var(--tp-text-2xl);
+}
+
+.kb71-gallery__lede {
+  margin: 0;
+  max-inline-size: 55ch;
+  color: var(--tp-ink-muted);
+}
+
+.kb71-gallery__samples {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  align-items: start;
+  gap: var(--tp-space-3);
+  max-inline-size: 100%;
+}
