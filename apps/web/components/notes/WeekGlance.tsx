@@ -27,8 +27,9 @@ function WeekGlanceData({ monday }: { monday: string }) {
   const tasks = useDoneTasksInRange(range ?? "skip");
   const blocks = useQuery(api.focusBlocks.listInRange, range ?? "skip");
   const glance = useMemo(
-    () => (tasks === undefined || blocks === undefined ? undefined : weekGlance(monday, tasks, blocks)),
-    [monday, tasks, blocks],
+    () =>
+      tasks === undefined || blocks === undefined ? undefined : weekGlance(monday, tasks, blocks),
+    [monday, tasks, blocks]
   );
   if (!bounds || glance === null) return null;
   if (glance === undefined) {

@@ -24,7 +24,7 @@ describe("useDoneTasksInRange", () => {
 
     expect(useDoneTasksInRange(args)).toBe(result);
     expect(getFunctionName(calls[0]?.[0] as Parameters<typeof getFunctionName>[0])).toBe(
-      "tasks:listDoneInRange",
+      "tasks:listDoneInRange"
     );
     expect(calls[0]?.[1]).toBe(args);
   });
