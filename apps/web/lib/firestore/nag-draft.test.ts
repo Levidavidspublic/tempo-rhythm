@@ -41,22 +41,27 @@ describe("draftNag", () => {
   });
 
   test("does not split an emoji when shortening", () => {
-    const result = draftNag(`${"a".repeat(119)}😀trailing`, 1);
+    const fittingEmoji = draftNag(`${"a".repeat(118)}😀trailing`, 1);
+    const overflowingEmoji = draftNag(`${"a".repeat(119)}😀trailing`, 1);
 
-    expect(result.kind).toBe("draft");
-    if (result.kind === "draft") {
-      expect(result.doc.label).toBe("a".repeat(119));
-      expect(result.doc.label).not.toContain("�");
+    expect(fittingEmoji.kind).toBe("draft");
+    if (fittingEmoji.kind === "draft") {
+      expect(fittingEmoji.doc.label).toBe(`${"a".repeat(118)}😀`);
+      expect(fittingEmoji.doc.label).not.toContain("�");
+    }
+    expect(overflowingEmoji.kind).toBe("draft");
+    if (overflowingEmoji.kind === "draft") {
+      expect(overflowingEmoji.doc.label).toBe("a".repeat(119));
+      expect(overflowingEmoji.doc.label).not.toContain("�");
     }
   });
 
-  test.each([
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY,
-  ])("refuses a non-finite now %#", (now) => {
-    expect(draftNag("Stretch", now).kind).toBe("refused");
-  });
+  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "refuses a non-finite now %#",
+    (now) => {
+      expect(draftNag("Stretch", now).kind).toBe("refused");
+    }
+  );
 
   test("does not add deletion or ownership fields", () => {
     const result = draftNag("Stretch", 1);

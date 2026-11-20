@@ -2,6 +2,19 @@ import { NagDocError, parseNagDoc, type NagDoc } from "../firestore-docs/nag-doc
 
 export type NagDraftResult = { kind: "draft"; doc: NagDoc } | { kind: "refused"; reason: string };
 
+function shortenLabel(label: string): string {
+  let shortened = "";
+
+  for (const character of label.trim()) {
+    if ((shortened + character).length > 120) {
+      break;
+    }
+    shortened += character;
+  }
+
+  return shortened.trim();
+}
+
 export function draftNag(label: unknown, now: number): NagDraftResult {
   if (typeof label !== "string") {
     return { kind: "refused", reason: "label must be a string" };
@@ -10,11 +23,7 @@ export function draftNag(label: unknown, now: number): NagDraftResult {
     return { kind: "refused", reason: "now must be a finite number" };
   }
 
-  const labelCodePoints = Array.from(label.trim()).slice(0, 120);
-  while (labelCodePoints.join("").length > 120) {
-    labelCodePoints.pop();
-  }
-  const normalizedLabel = labelCodePoints.join("").trim();
+  const normalizedLabel = shortenLabel(label);
   if (normalizedLabel.length === 0) {
     return { kind: "refused", reason: "label is empty" };
   }
