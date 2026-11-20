@@ -30,7 +30,7 @@ export type PinToggleOutcome = "toggled" | "signed-out" | "error";
 
 export async function runPinToggle(
   isAuthenticated: boolean,
-  toggle: () => Promise<unknown>,
+  toggle: () => Promise<unknown>
 ): Promise<PinToggleOutcome> {
   if (!isAuthenticated) return "signed-out";
   try {
@@ -117,7 +117,10 @@ function NotesList() {
   const handleDelete = async (id: Id<"notes">) => {
     const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
-    setRemovedStack((stack) => [...stack.filter((r) => r.id !== id), { id, undoUntilMs: result.undoUntilMs }]);
+    setRemovedStack((stack) => [
+      ...stack.filter((r) => r.id !== id),
+      { id, undoUntilMs: result.undoUntilMs },
+    ]);
   };
 
   const handleUndo = async () => {
@@ -209,7 +212,11 @@ function NotesList() {
                         >
                           {t("notes.confirmDelete")}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setPendingDeleteId(null)}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setPendingDeleteId(null)}
+                        >
                           {t("notes.cancel")}
                         </Button>
                       </>
@@ -264,7 +271,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const note = useQuery(
     api.notes.getSafe,
-    isAuthenticated && profile != null ? { noteId } : "skip",
+    isAuthenticated && profile != null ? { noteId } : "skip"
   );
   const updateNote = useMutation(api.notes.update);
   const togglePin = useToggleNotePin();
@@ -302,7 +309,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
       if (!wasDeleted.current) {
-        void updateNote({ noteId: noteId as Id<"notes">, ...notePatch(edits.current, titleRef.current, bodyRef.current) });
+        void updateNote({
+          noteId: noteId as Id<"notes">,
+          ...notePatch(edits.current, titleRef.current, bodyRef.current),
+        });
       }
     };
   }, [noteId, updateNote]);
@@ -311,7 +321,11 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   // page, or the same page in another tab. With no unsaved body edit here the editor takes the
   // new text, so the next autosave can't write over it. Unsaved edits here (or a save on its
   // way) win, as before.
-  const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
+  const [remoteBody, setRemoteBody] = useState<{
+    before: string;
+    after: string;
+    seq: number;
+  } | null>(null);
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
     if (note.body === bodyRef.current || edits.current.body || saveTimer.current) return;
@@ -323,7 +337,15 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   // The same for the title: a rename saved in another tab shows here instead of being written back.
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
-    if (!shouldAdoptRemoteTitle(note.title, titleRef.current, edits.current.title, saveTimer.current !== null)) return;
+    if (
+      !shouldAdoptRemoteTitle(
+        note.title,
+        titleRef.current,
+        edits.current.title,
+        saveTimer.current !== null
+      )
+    )
+      return;
     titleRef.current = note.title;
     setTitle(note.title);
   }, [note]);
@@ -491,7 +513,10 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       onConfirmDelete={() => void handleDelete()}
       onCancelDelete={() => setConfirmingDelete(false)}
       backHref={backHref}
-      lead={lead ?? (note?.pageType === "weekly" && note.date ? <WeekGlance monday={note.date} /> : undefined)}
+      lead={
+        lead ??
+        (note?.pageType === "weekly" && note.date ? <WeekGlance monday={note.date} /> : undefined)
+      }
       canDelete={canDelete}
     />
   );
