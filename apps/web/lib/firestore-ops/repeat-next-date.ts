@@ -42,10 +42,7 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function nextRepeatDate(
-  rule: TaskRepeatDoc,
-  afterDate: string
-): NextRepeatDateResult {
+export function nextRepeatDate(rule: TaskRepeatDoc, afterDate: string): NextRepeatDateResult {
   if (rule.isPaused) return { kind: "none", reason: "paused" };
   if (rule.deletedAt !== undefined) return { kind: "none", reason: "deleted" };
 
