@@ -64,15 +64,16 @@ describe("planNagSwitch", () => {
     });
   });
 
-  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
-    "refuses a non-finite time: %s",
-    (now) => {
-      expect(planNagSwitch(nag(false), true, now)).toEqual({
-        kind: "refused",
-        reason: "now must be finite",
-      });
-    }
-  );
+  test.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ])("refuses a non-finite time: %s", (now) => {
+    expect(planNagSwitch(nag(false), true, now)).toEqual({
+      kind: "refused",
+      reason: "now must be finite",
+    });
+  });
 
   test("does not change the stored nag or its phrases", () => {
     const stored = nag(false);
