@@ -12,9 +12,7 @@ export function pickNotes<Row extends NoteListRow>(
   const query = search.trim().toLocaleLowerCase();
 
   return rows
-    .filter(
-      (row) => row.deletedAt === undefined && row.title.toLocaleLowerCase().includes(query)
-    )
+    .filter((row) => row.deletedAt === undefined && row.title.toLocaleLowerCase().includes(query))
     .toSorted(
       (left, right) =>
         Number(right.pinned) - Number(left.pinned) ||

@@ -24,11 +24,7 @@ describe("pickNotes", () => {
   });
 
   test("trims search and matches titles without regard to case", () => {
-    expect(pickNotes(rows, "  nOtE  ").map(({ id }) => id)).toEqual([
-      "pinned",
-      "newer",
-      "older",
-    ]);
+    expect(pickNotes(rows, "  nOtE  ").map(({ id }) => id)).toEqual(["pinned", "newer", "older"]);
   });
 
   test("matches a Hebrew title", () => {
