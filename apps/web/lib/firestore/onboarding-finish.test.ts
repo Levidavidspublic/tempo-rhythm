@@ -20,13 +20,13 @@ test("new person with no name gets only onboardedAt", () => {
 
 test("already onboarded with the same name gives no-change", () => {
   expect(
-    planOnboardingFinish({ name: "Ada", fullName: "Ada", onboardedAt: 10 }, "Ada", 102),
+    planOnboardingFinish({ name: "Ada", fullName: "Ada", onboardedAt: 10 }, "Ada", 102)
   ).toEqual({ ok: true, kind: "no-change" });
 });
 
 test("already onboarded with a new name patches only name", () => {
   expect(
-    planOnboardingFinish({ name: "Ada", fullName: "Ada", onboardedAt: 10 }, "Grace", 103),
+    planOnboardingFinish({ name: "Ada", fullName: "Ada", onboardedAt: 10 }, "Grace", 103)
   ).toEqual({ ok: true, patch: { name: "Grace" }, changedFields: ["name"] });
 });
 

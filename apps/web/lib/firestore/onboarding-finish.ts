@@ -34,7 +34,7 @@ function cleanName(value: unknown): string | undefined {
 export function planOnboardingFinish(
   stored: StoredProfile | null,
   typedName: unknown,
-  now: number,
+  now: number
 ): OnboardingFinishPlan {
   if (!Number.isFinite(now) || now <= 0) {
     return { ok: false, reason: "invalid-now" };
