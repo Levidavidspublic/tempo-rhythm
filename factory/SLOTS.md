@@ -21,7 +21,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-5 | Review gate | CodeRabbit (set by Amit 2026-11-02) | **Batch loop (2026-10-06, `factory/LOOP.md`): CodeRabbit reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after CodeRabbit clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). Bugbot security deep scan comparison = pending. |
 | B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
-| — | Backend | Convex | folder `convex/` (not `packages/backend`) |
+| — | Backend | Convex today, moving to Firebase (Auth + Firestore; server ops in Vercel routes). Plan: `docs/backlog/FIREBASE-MIGRATION-PLAN.md` | old folder `convex/` (read-only until the plan's Stage 5); Firebase server code `apps/web/lib/server/` |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
 | C-2 | Configurator | UNKNOWN | |
 | C-3 | Code map | Graphify 0.9.74 + Understand-Anything (MIT); Archify (diagrams) | Graphify: `.github/workflows/graphify.yml` installs `graphifyy==0.9.74` and runs on push to `integration`. Understand-Anything repo-local provisioning is proposed by config PR #1384; it is not installed by this rule-adoption PR. Cloud availability is UNKNOWN until verified; unavailable required tools block dependent edits. Archify: UNKNOWN (no package, workflow or map) |
@@ -47,7 +47,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 
 ## Stack (this repo)
 - Package manager: `bun@1.3.9`, lockfile `bun.lock`. Workspaces: `apps/*`, `packages/*`.
-- Backend folder: `convex/`.
+- Backend folder: `convex/` (old, read-only until the migration plan's Stage 5). Firebase server code: `apps/web/lib/server/`.
 - Shared packages that exist: `packages/ui`, `packages/types`, `packages/utils`, `packages/config`. No `packages/core` directory.
 - Web shell: `apps/web` (Next.js, Tailwind v4).
 - Mobile shell: `apps/mobile` (Expo, NativeWind, Tailwind v3 in that app's package.json).
