@@ -62,12 +62,7 @@ describe("pickUpcomingEvents", () => {
       { id: "edge", startsAtMs: 10 },
     ];
 
-    expect(pickUpcomingEvents(rows, 10).map(({ id }) => id)).toEqual([
-      "edge",
-      "a",
-      "b",
-      "later",
-    ]);
+    expect(pickUpcomingEvents(rows, 10).map(({ id }) => id)).toEqual(["edge", "a", "b", "later"]);
   });
 
   test("cuts the sorted events to max", () => {

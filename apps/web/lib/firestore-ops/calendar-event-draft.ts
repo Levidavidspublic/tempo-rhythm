@@ -1,7 +1,4 @@
-import {
-  parseCalendarEventDoc,
-  type CalendarEventDoc,
-} from "../firestore-docs/calendar-doc";
+import { parseCalendarEventDoc, type CalendarEventDoc } from "../firestore-docs/calendar-doc";
 
 type DraftCalendarEventResult =
   | { ok: true; doc: CalendarEventDoc }
@@ -50,8 +47,7 @@ export function pickUpcomingEvents<T extends UpcomingEventRow>(
     .filter((row) => row.deletedAt === undefined && row.startsAtMs >= fromMs)
     .sort(
       (left, right) =>
-        left.startsAtMs - right.startsAtMs ||
-        (left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+        left.startsAtMs - right.startsAtMs || (left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
     )
     .slice(0, Math.floor(max));
 }
