@@ -44,7 +44,7 @@ describe("useTodayTasks", () => {
   test("TodayScreen uses the hook instead of calling tasks.listToday directly", () => {
     const source = readFileSync(
       join(import.meta.dir, "../../../components/today/TodayScreen.tsx"),
-      "utf8",
+      "utf8"
     );
 
     expect(source).toContain('import { useTodayTasks } from "@/lib/data/tasks/use-today-tasks";');
