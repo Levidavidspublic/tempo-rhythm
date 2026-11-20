@@ -46,7 +46,8 @@ export function NotesList() {
   const lastNotes = useRef<{ userId: string; value: NonNullable<typeof notes> } | null>(null);
   if (!userId) lastNotes.current = null;
   else if (notes !== undefined) lastNotes.current = { userId, value: notes };
-  const shown = notes ?? (lastNotes.current?.userId === userId ? lastNotes.current?.value : undefined);
+  const shown =
+    notes ?? (lastNotes.current?.userId === userId ? lastNotes.current?.value : undefined);
   const isLoading = isAuthenticated && shown === undefined;
   const visible = filterByPeriod(shown ?? [], type).sort(
     (a, b) => Number(b.pinned) - Number(a.pinned)
@@ -156,7 +157,11 @@ export function NotesList() {
             <option value="monthly">{t("notes.type.monthly")}</option>
           </select>
         </div>
-        <button className="tp-btn tp-btn--primary" type="submit" disabled={busy || !isAuthenticated}>
+        <button
+          className="tp-btn tp-btn--primary"
+          type="submit"
+          disabled={busy || !isAuthenticated}
+        >
           <TpIcon name="plus" size="sm" />
           <span>{t("notes.new")}</span>
         </button>
@@ -237,7 +242,11 @@ export function NotesList() {
           <p>{filtered ? t("notes.noMatchHint") : t("notes.noneHint")}</p>
         </div>
       ) : (
-        <section className="tp-section tp-surface" aria-labelledby="nt-all-h" data-component="Section">
+        <section
+          className="tp-section tp-surface"
+          aria-labelledby="nt-all-h"
+          data-component="Section"
+        >
           <div className="tp-section__head">
             <h2 className="tp-section__title" id="nt-all-h">
               {t("notes.all")}
@@ -285,7 +294,10 @@ export function NotesList() {
                           void perform(async () => {
                             const result = await remove({ noteId: note._id });
                             if (result.success) {
-                              setRemoved((items) => [...items, { noteId: note._id, undoUntilMs: result.undoUntilMs }]);
+                              setRemoved((items) => [
+                                ...items,
+                                { noteId: note._id, undoUntilMs: result.undoUntilMs },
+                              ]);
                               setPendingDelete(null);
                             }
                           })
