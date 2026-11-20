@@ -1,0 +1,20 @@
+(pass) KB-59 web search preference request ownership > synchronous callback throw is recoverable
+(pass) KB-59 web search preference request ownership > unmounted request cannot announce into surviving SettingsScreen
+(pass) KB-59 web search preference request ownership > older mount cannot change replacement row
+(pass) KB-59 web search preference request ownership > parent removal commit fences a settling request
+(pass) KB-59 web search preference request ownership > StrictMode lifecycle still permits current success
+(pass) KB-59 web search preference request ownership > unavailable provider stays off and locked
+(pass) KB-59 web search preference request ownership > daily remaining count stays clamped without a new quota lock
+(pass) KB-59 web search preference request ownership > UTC midnight refresh preserves latest intent and cleans timer
+(pass) KB-59 web search preference request ownership > query boundary keeps the preferences page usable
+(pass) KB-59 web search preference request ownership > keyboard switching retains focus and phone targets
+(pass) KB-59 web search preference request ownership > caller and gallery render English Hebrew responsive theme matrix
+(pass) KB-59 web search preference request ownership > gallery shares production save and recover behavior
+(pass) KB-59 web search preference request ownership > fixture interactions avoid uncaught app errors and extra operations
+(pass) KB-59 web search preference request ownership > request settlement during either query loading retains feedback ownership
+
+tests/unit/kb-66.test.tsx:
+killed 1 dangling process
+(fail) load-more view names the currently visible count and preserves LTR numerals [240021.18ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)

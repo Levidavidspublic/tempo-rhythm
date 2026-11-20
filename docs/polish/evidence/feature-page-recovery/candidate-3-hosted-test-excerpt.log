@@ -1,0 +1,47 @@
+Hosted public job: https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39681857160/job/119506069603
+Head: 8bd013c0e48bd0ba47ce98dc9118de3ade8dccd7
+Selected excerpt; fetched by GitHub connector; original retained in tool storage.
+2026-10-21T21:53:34.1687571Z ##[group]tests/unit/tempo-page-error-recovery.test.tsx:
+2026-10-21T21:53:36.8203735Z (pass) page action recovery > failed autosave retains both edited fields and offers explicit recovery [1599.99ms]
+2026-10-21T21:53:38.3872585Z (pass) page action recovery > explicit retry saves the current draft once and clears its own error [1563.99ms]
+2026-10-21T21:53:39.1467809Z (pass) page action recovery > older success cannot mark a newer draft saved and writes stay ordered [758.00ms]
+2026-10-21T21:53:40.7633021Z (pass) page action recovery > old-note failure cannot alter another note's current state [1617.98ms]
+2026-10-21T21:53:41.5624726Z (pass) page action recovery > queued outgoing draft survives navigation after earlier save resolves [801.00ms]
+2026-10-21T21:53:42.3624015Z (pass) page action recovery > queued outgoing draft survives navigation after earlier save rejects [801.00ms]
+2026-10-21T21:53:43.1254210Z (pass) page action recovery > queued outgoing draft survives unmount after earlier save resolves [762.00ms]
+2026-10-21T21:53:43.8874888Z (pass) page action recovery > queued outgoing draft survives unmount after earlier save rejects [763.00ms]
+2026-10-21T21:53:44.6927022Z (pass) page action recovery > pending debounce cleanup stays ordered on navigation [805.00ms]
+2026-10-21T21:53:45.4611087Z (pass) page action recovery > pending debounce cleanup stays ordered on unmount [768.00ms]
+2026-10-21T21:53:46.2885789Z (pass) page action recovery > reopened same-note writes follow outgoing writes after earlier save resolves [827.00ms]
+2026-10-21T21:53:47.1162937Z (pass) page action recovery > reopened same-note writes follow outgoing writes after earlier save rejects [826.00ms]
+2026-10-21T21:53:47.8746692Z (pass) page action recovery > a pending outgoing note never blocks a distinct note's save [760.00ms]
+2026-10-21T21:53:48.6418957Z (pass) page action recovery > a clean reopened page's coach flush rejects its outgoing save failure [767.00ms]
+2026-10-21T21:53:49.5775540Z (pass) page action recovery > a clean reopened page's confirmed deletion waits for its outgoing save [935.00ms]
+2026-10-21T21:53:50.3580290Z (pass) page action recovery > pin failure is caught and repeated pending clicks submit once [781.00ms]
+2026-10-21T21:53:52.0060614Z (pass) page action recovery > failed dirty flush prevents deletion even after the old timer cleared [1646.99ms]
+2026-10-21T21:53:52.8763050Z (pass) page action recovery > failed removal preserves URL, editor and confirmation without an Undo receipt [867.00ms]
+2026-10-21T21:53:53.8313069Z (pass) page action recovery > successful explicit deletion retry starts the unchanged Undo and restores [957.00ms]
+2026-10-21T21:53:54.7242779Z (pass) page action recovery > cancelling confirmation during its dirty flush prevents a later remove [893.00ms]
+2026-10-21T21:53:55.4415701Z (pass) page action recovery > the real coach flush rejects failed persistence without any action request [719.00ms]
+2026-10-21T21:53:57.0584676Z (pass) page action recovery > coach flush joins an in-flight failure without silently retrying it [1613.99ms]
+2026-10-21T21:53:57.8252834Z (pass) page action recovery > pagehide rejection offers recovery and does not leave a duplicate timer [769.00ms]
+2026-10-21T21:53:58.5435009Z (pass) page action recovery > a hidden document exposes save failure and retains the editable body [718.00ms]
+2026-10-21T21:54:00.1083810Z (pass) page action recovery > plain page retains its exact Markdown through failed save and recovery [1565.99ms]
+2026-10-21T21:54:01.6913248Z (pass) page action recovery > daily page retains its exact Markdown through failed save and recovery [1581.99ms]
+2026-10-21T21:54:03.3915048Z (pass) page action recovery > weekly page retains its exact Markdown through failed save and recovery [1700.99ms]
+2026-10-21T21:54:04.9842752Z (pass) page action recovery > project page retains its exact Markdown through failed save and recovery [1589.99ms]
+2026-10-21T21:54:06.5654710Z (pass) page action recovery > template page retains its exact Markdown through failed save and recovery [1583.99ms]
+2026-10-21T21:54:20.2895510Z (pass) page action recovery > after EN/HE recovery screenshots at both widths and themes [13721.94ms]
+2026-10-21T21:54:20.3702523Z 
+2026-10-21T21:54:20.3703434Z ##[endgroup]
+2026-10-21T21:56:03.3877358Z 1 tests failed:
+2026-10-21T21:56:03.3877746Z (fail) KB-67 selected-nag phrase editing > (unnamed) [60000.67ms]
+2026-10-21T21:56:03.3878198Z   ^ a beforeEach/afterEach hook timed out for this test.
+2026-10-21T21:56:03.3878459Z 
+2026-10-21T21:56:03.3878549Z  3523 pass
+2026-10-21T21:56:03.3878754Z  3 todo
+2026-10-21T21:56:03.3878940Z  1 fail
+2026-10-21T21:56:03.3879147Z  81646 expect() calls
+2026-10-21T21:56:03.3879452Z Ran 3527 tests across 212 files. [373.10s]
+2026-10-21T21:56:03.4373863Z error: script "test" exited with code 1
+2026-10-21T21:56:03.4386417Z ##[error]Process completed with exit code 1.
