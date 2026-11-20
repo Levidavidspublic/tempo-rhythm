@@ -46,7 +46,7 @@ For the hard non-negotiables, see [`HARD_RULES.md`](./HARD_RULES.md). This file 
 
 | Category | Forbidden | Use |
 |---|---|---|
-| Backend-as-a-Service | Firebase, Supabase | Convex |
+| Backend-as-a-Service | Supabase | Convex or Firebase (Firebase is allowed; see HARD_RULES §2) |
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators |
 | Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
 | Payments | Stripe direct SDK | RevenueCat (mobile); web may use Polar in this repo — converge on PRD |
@@ -59,7 +59,8 @@ For the hard non-negotiables, see [`HARD_RULES.md`](./HARD_RULES.md). This file 
 
 **Rationale.**
 
-- **Firebase / Supabase:** Convex gives reactive queries, serverless functions, file storage, cron, and auth in one product. Adding another BaaS balloons infra cost and adds a sync-between-two-backends problem.
+- **Firebase:** allowed (Amit, 2026-11-08). A change may move to production once it is proven in preview.
+- **Supabase:** Convex gives reactive queries, serverless functions, file storage, cron, and auth in one product. Adding another BaaS balloons infra cost and adds a sync-between-two-backends problem.
 - **ORMs:** Convex's schema + validators are the ORM. Adding Prisma or Drizzle would duplicate the schema definition and introduce a second source of truth.
 - **Auth libraries:** Convex Auth is designed for Convex. Third-party auth forces a user table in a second system, which fights against the tenant-isolation model.
 - **Stripe direct:** RevenueCat wraps App Store, Play Store, and Stripe in a single SDK with subscription state management. Going direct means building three parallel billing systems.

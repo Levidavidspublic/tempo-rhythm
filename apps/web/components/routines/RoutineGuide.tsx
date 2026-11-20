@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -16,8 +15,8 @@ import {
 } from "@/components/habits/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
-import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { useSafeNote } from "@/lib/data/notes/use-safe-note";
 import {
   finishStep,
   isRunFinished,
@@ -208,7 +207,7 @@ function GuideContent({ routineId }: { routineId: string }) {
   const profile = useProfileState();
   const ready = profile === "ready";
   // getSafe returns null for an id that is not one of this person's pages.
-  const note = useQuery(api.notes.getSafe, ready ? { noteId: routineId } : "skip");
+  const note = useSafeNote(ready ? { noteId: routineId } : "skip");
 
   let body: ReactNode;
   if (profile === "loading" || (ready && note === undefined)) {
