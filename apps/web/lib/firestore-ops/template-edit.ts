@@ -12,12 +12,7 @@ export type TemplateEditPlan =
   | { kind: "unchanged" }
   | { kind: "refused"; reason: string };
 
-const periodTypes = new Set<TemplateDoc["periodType"]>([
-  "daily",
-  "weekly",
-  "monthly",
-  "none",
-]);
+const periodTypes = new Set<TemplateDoc["periodType"]>(["daily", "weekly", "monthly", "none"]);
 
 export function planTemplateEdit(
   stored: TemplateDoc,
