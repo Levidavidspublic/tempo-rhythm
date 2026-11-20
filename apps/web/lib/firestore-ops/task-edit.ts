@@ -24,12 +24,7 @@ const EDITABLE_FIELDS = [
   "projectName",
 ] as const;
 const EDITABLE_FIELD_SET = new Set<string>(EDITABLE_FIELDS);
-const CLEARABLE_FIELD_SET = new Set<string>([
-  "description",
-  "dueAt",
-  "energy",
-  "projectName",
-]);
+const CLEARABLE_FIELD_SET = new Set<string>(["description", "dueAt", "energy", "projectName"]);
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];
 type ClearableField = Exclude<EditableField, "title" | "priority">;
@@ -51,7 +46,10 @@ export function planTaskEdit(stored: TaskDoc, edits: TaskEdits, now: number): Ta
   if (Object.keys(editRecord).some((key) => !EDITABLE_FIELD_SET.has(key))) {
     return { ok: false, reason: "invalid" };
   }
-  if (Object.hasOwn(editRecord, "title") && (typeof edits.title !== "string" || !edits.title.trim())) {
+  if (
+    Object.hasOwn(editRecord, "title") &&
+    (typeof edits.title !== "string" || !edits.title.trim())
+  ) {
     return { ok: false, reason: "empty-title" };
   }
 
