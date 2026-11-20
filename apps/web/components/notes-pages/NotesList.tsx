@@ -8,6 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useNoteList } from "@/lib/data/notes/use-note-list";
 import { filterByPeriod, type PeriodType, plainPreview } from "./filterNotes";
 import { PeriodFilter } from "./PeriodFilter";
 
@@ -27,7 +28,7 @@ export function NotesList() {
   // instead, so subscribe only once it has resolved a user (until then: loading state, not an error).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const userId = isAuthenticated && profile ? profile._id : null;
-  const notes = useQuery(api.notes.list, userId ? { search, pinnedOnly } : "skip");
+  const notes = useNoteList(userId ? { search, pinnedOnly } : "skip");
   const create = useMutation(api.notes.create);
   const togglePin = useMutation(api.notes.togglePin);
   const remove = useMutation(api.notes.remove);
