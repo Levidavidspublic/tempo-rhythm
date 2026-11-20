@@ -3,6 +3,8 @@ import {
   lastLocalDaysRange,
   lastSevenDaysSeries,
   localDayKey,
+  MAX_BLOCK_MINUTES,
+  parseBlockMinutes,
   totalsPerLocalDay,
 } from "./focusBlockStats";
 
@@ -30,6 +32,32 @@ describe("focusBlockStats", () => {
       { day: "2026-10-04", blocks: 1, minutes: 25 },
       { day: "2026-10-05", blocks: 2, minutes: 15 },
     ]);
+  });
+
+  test("block minutes: 1 to 8 hours, anything else is refused before it reaches the server", () => {
+    expect(MAX_BLOCK_MINUTES).toBe(480);
+    expect(parseBlockMinutes("25")).toBe(25);
+    expect(parseBlockMinutes("1")).toBe(1);
+    expect(parseBlockMinutes("480")).toBe(480);
+    expect(parseBlockMinutes("481")).toBeNull();
+    expect(parseBlockMinutes("600")).toBeNull();
+    expect(parseBlockMinutes("0")).toBeNull();
+    expect(parseBlockMinutes("-5")).toBeNull();
+    expect(parseBlockMinutes("")).toBeNull();
+    expect(parseBlockMinutes("abc")).toBeNull();
+  });
+
+  test("block minutes: ASCII digits only, so a decimal or exponent never logs a wrong duration", () => {
+    expect(parseBlockMinutes("2.5")).toBeNull();
+    expect(parseBlockMinutes("1e2")).toBeNull();
+    expect(parseBlockMinutes("+5")).toBeNull();
+    expect(parseBlockMinutes("0x10")).toBeNull();
+    expect(parseBlockMinutes("25.0")).toBeNull();
+    expect(parseBlockMinutes("٢٥")).toBeNull();
+    // Spaces around the digits are trimmed (a number field drops them itself); inside, they aren't.
+    expect(parseBlockMinutes(" 25 ")).toBe(25);
+    expect(parseBlockMinutes("2 5")).toBeNull();
+    expect(parseBlockMinutes("025")).toBe(25);
   });
 
   test("range spans seven local days ending at tomorrow's local midnight", () => {

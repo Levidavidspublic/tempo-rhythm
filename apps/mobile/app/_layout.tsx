@@ -8,6 +8,7 @@ import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 
+import { PrefsProvider } from '@/components/v3/prefs';
 import { RevenueCatProvider } from '@/contexts/RevenueCatContext';
 import { bootstrapRTL } from '@/lib/rtlBootstrap';
 import { getConvexUrl, readPublicConvexUrl } from '@/utils/convexConfig';
@@ -88,7 +89,10 @@ export default function RootLayout() {
         {/* ספק RevenueCat לניהול מנויים ורכישות */}
         <RevenueCatProvider>
           {/* Slot מעבד את הראוטים (Routes) הילדים - ה-Layouts הפנימיים מנהלים את הניווט שלהם */}
-          <Slot />
+          {/* v3 preferences (language, theme, text size) for the Tempo screens and onboarding */}
+          <PrefsProvider>
+            <Slot />
+          </PrefsProvider>
         </RevenueCatProvider>
       </ConvexAuthProvider>
     </SafeAreaProvider>

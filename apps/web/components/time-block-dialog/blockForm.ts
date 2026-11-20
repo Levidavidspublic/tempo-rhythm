@@ -34,6 +34,14 @@ export type BlockFormResult =
 
 const MINUTES_PER_DAY = 1440;
 
+export function profileGatedArgs<Args>(
+  isAuthenticated: boolean,
+  profile: unknown,
+  args: Args
+): Args | "skip" {
+  return isAuthenticated && profile != null ? args : "skip";
+}
+
 export function minuteToTimeString(minute: number): string {
   const h = Math.floor(minute / 60);
   const m = minute % 60;

@@ -7,8 +7,11 @@
 //   pr         opens or updates ONE Release PR integration -> master as the token user (Division6066), label
 //              `release`. A Release PR opened by someone else (e.g. github-actions from factory-release-pr) is
 //              closed with a note first: Bugbot can't review bot-authored PRs (E1).
-//   bugbot     ONE Cursor Bugbot review of the release PR head. Reuses a finished review of the same SHA;
-//              otherwise waits for an automatic run, then posts "@cursor review" once. Findings = gate fails.
+//   bugbot     ONE code review of the release PR head. REVIEWER selects it (default bugbot; coderabbit
+//              when repo variable RELEASE_REVIEWER=coderabbit). Bugbot reuses a finished review of the
+//              same SHA, else waits, then posts "@cursor review" once. CodeRabbit polls the CodeRabbit
+//              commit status (a skipped success does not pass) and posts "@coderabbitai review" once
+//              when that SHA has no completed review. Findings = gate fails.
 //   verdict    collects the gate jobs. Any failure -> label `blocked:amit` + comment. No auto-fix on release.
 //   pr-ready   waits until GitHub says the release PR is mergeable (required checks green, not behind/dirty).
 //   convex-key checks CONVEX_DEPLOY_KEY_LIVE targets prod:precious-wildcat-890 (value never printed).
@@ -22,7 +25,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
-import { fetchBugbot } from "./review-gate.mjs";
+import { fetchBugbot, fetchCoderabbit, isCoderabbitCompletedStatus } from "./review-gate.mjs";
 import { reviewNeeded, latestChecks } from "./batch-loop.mjs";
 import { releaseTitle, prNumbersFromMessage, israelDate } from "./release-pr.mjs";
 import { assertLiveKeyTarget } from "./deploy-live-plan.mjs";
@@ -36,6 +39,14 @@ export const DEFAULT_PROD_ENVIRONMENT = "Production";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const truthy = (v) => v === true || v === "true";
 const short = (s) => String(s || "").slice(0, 7);
+
+// Repo variable RELEASE_REVIEWER. Empty keeps Bugbot, so an unset variable does not change the release.
+export function reviewKind(raw = process.env.REVIEWER) {
+  const v = String(raw ?? "").trim().toLowerCase();
+  if (!v || v === "bugbot") return "bugbot";
+  if (v === "coderabbit") return "coderabbit";
+  return "";
+}
 
 // ---------- pure helpers (unit-tested in test-factory.mjs) ----------
 
@@ -241,9 +252,8 @@ async function bugbot(o, r) {
     if (s.pr.head.sha !== x) return block(o, r, n, [`PR head moved to ${short(s.pr.head.sha)} during the gate (gate SHA ${short(x)}). Click again.`]).then(() => process.exit(1));
     if (s.state === "clean") { out("detail", s.detail); return say(`Bugbot: clean (${s.detail}).`); }
     if (s.state === "findings") {
-      const list = s.findings.map((f, i) => `${i + 1}. ${f.path}${f.line ? `:${f.line}` : ""} ${f.url || ""}\n   ${(f.body || "").split("\n").find((l) => l.trim()) || ""}`.slice(0, 400));
       out("detail", s.detail);
-      return block(o, r, n, [`Bugbot found problems on \`${short(x)}\`: ${s.detail}.`, ...list]).then(() => process.exit(1));
+      return block(o, r, n, [`Bugbot found problems on \`${short(x)}\`: ${s.detail}.`, ...reviewFindings(s)]).then(() => process.exit(1));
     }
     if (s.state === "blocked") { out("detail", s.detail); return block(o, r, n, [`Bugbot couldn't review: ${s.detail}`]).then(() => process.exit(1)); }
     if (!requested) {
@@ -256,6 +266,53 @@ async function bugbot(o, r) {
     await sleep(30_000);
   }
   return block(o, r, n, [`Bugbot gave no result for \`${short(x)}\` within ${process.env.BUGBOT_WAIT_MINUTES || 30} min.`]).then(() => process.exit(1));
+}
+
+function reviewFindings(s) {
+  return s.findings.map((f, i) => `${i + 1}. ${f.path}${f.line ? `:${f.line}` : ""} ${f.url || ""}\n   ${(f.body || "").split("\n").find((l) => l.trim()) || ""}`.slice(0, 400));
+}
+
+// A skipped CodeRabbit status is success on GitHub. Keep polling after "@coderabbitai review" so a
+// later completed review can replace it. Any other blocked reason stops immediately. Timeout still fails.
+async function coderabbitReview(o, r) {
+  needUserToken("Requesting CodeRabbit");
+  const n = Number(process.env.PR_NUMBER), x = process.env.RELEASE_SHA;
+  const minutes = Number(process.env.CODERABBIT_WAIT_MINUTES || 45);
+  const deadline = Date.now() + minutes * 60_000;
+  let requested = false;
+  let last = "no CodeRabbit status for the head commit yet";
+  for (;;) {
+    const s = await fetchCoderabbit(o, r, n);
+    last = s.detail;
+    if (s.pr.head.sha !== x) return block(o, r, n, [`PR head moved to ${short(s.pr.head.sha)} during the gate (gate SHA ${short(x)}). Click again.`]).then(() => process.exit(1));
+    if (s.state === "clean") { out("detail", s.detail); return say(`CodeRabbit: clean (${s.detail}).`); }
+    if (s.state === "findings") {
+      out("detail", s.detail);
+      return block(o, r, n, [`CodeRabbit found problems on \`${short(x)}\`: ${s.detail}.`, ...reviewFindings(s)]).then(() => process.exit(1));
+    }
+    const skipped = /review skipped/i.test(s.detail || "");
+    if (s.state === "blocked" && !skipped) { out("detail", s.detail); return block(o, r, n, [`CodeRabbit couldn't review: ${s.detail}`]).then(() => process.exit(1)); }
+    // No completed review yet: ask once. A pending status means CodeRabbit is already reviewing, so don't ask again.
+    const inFlight = s.status?.state === "pending";
+    if (!requested && !isCoderabbitCompletedStatus(s.status) && !inFlight) {
+      await comment(o, r, n, "@coderabbitai review");
+      requested = true;
+      await say(`CodeRabbit: posted "@coderabbitai review" on #${n}.`);
+    }
+    if (Date.now() >= deadline) break;
+    await sleep(30_000);
+  }
+  const why = /review skipped/i.test(last)
+    ? `CodeRabbit review was skipped for \`${short(x)}\` and did not finish within ${minutes} min. A skipped review does not pass the gate.`
+    : `CodeRabbit gave no completed review for \`${short(x)}\` within ${minutes} min.`;
+  return block(o, r, n, [why, last]).then(() => process.exit(1));
+}
+
+async function codeReview(o, r) {
+  const kind = reviewKind();
+  if (kind === "coderabbit") return coderabbitReview(o, r);
+  if (kind === "bugbot") return bugbot(o, r);
+  return block(o, r, Number(process.env.PR_NUMBER), [`REVIEWER must be bugbot or coderabbit (got "${process.env.REVIEWER}").`]).then(() => process.exit(1));
 }
 
 async function verdict(o, r) {
@@ -365,7 +422,7 @@ async function ship(o, r) {
 async function main() {
   const { owner, repo } = repoParts();
   const cmd = process.argv[2];
-  const fns = { preflight, pr: openPr, bugbot, verdict, "pr-ready": prReady, "convex-key": convexKey, ship };
+  const fns = { preflight, pr: openPr, bugbot: codeReview, verdict, "pr-ready": prReady, "convex-key": convexKey, ship };
   if (!fns[cmd]) throw new Error(`command must be one of ${Object.keys(fns).join("|")}`);
   await fns[cmd](owner, repo);
 }

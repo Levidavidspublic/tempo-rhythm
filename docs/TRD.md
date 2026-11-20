@@ -213,7 +213,7 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 - OpenRouter or any gateway
 - Anthropic keys in third-party code
 - Electron
-- Firebase, Supabase
+- Supabase (Firebase is allowed: a change may move to production once it is proven in preview; Amit, 2026-11-08)
 - Auth0, Clerk, NextAuth, BetterAuth
 - Stripe
 - Redux, Zustand, Jotai, Recoil, MobX, and json-render's adapters for them

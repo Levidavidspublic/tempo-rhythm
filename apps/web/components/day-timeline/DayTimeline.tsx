@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import {
@@ -11,8 +12,9 @@ import {
   parseDateInputValue,
   toDateInputValue,
 } from "@/lib/calendar/date-math";
-import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
+import type { Lang } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { intlLocale } from "@/lib/you/screenState";
 import {
   DAY_MINUTES,
   layoutItems,
@@ -57,15 +59,18 @@ const kindClassName: Record<DayTimelineBlock["kind"], string> = {
   other: "border-accent/50 bg-accent/25",
 };
 
-function formatMinute(minute: number): string {
+/** English reads 9:30 AM; Hebrew reads the 24-hour 09:30, with no English suffix (as DayPlanSummary). */
+function formatMinute(minute: number, lang: Lang): string {
   const clamped = Math.max(0, Math.min(DAY_MINUTES, minute));
   const hours = Math.floor(clamped / 60) % 24;
-  const mins = clamped % 60;
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+  const mins = String(clamped % 60).padStart(2, "0");
+  if (lang === "he") return `${String(hours).padStart(2, "0")}:${mins}`;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  return `${hours % 12 === 0 ? 12 : hours % 12}:${mins} ${suffix}`;
 }
 
-function formatRange(startMinute: number, durationMinutes: number): string {
-  return `${formatMinute(startMinute)}–${formatMinute(startMinute + durationMinutes)}`;
+function formatRange(startMinute: number, durationMinutes: number, lang: Lang): string {
+  return `${formatMinute(startMinute, lang)}–${formatMinute(startMinute + durationMinutes, lang)}`;
 }
 
 function itemBox(item: TimelineLayoutItem): {
@@ -84,6 +89,7 @@ function itemBox(item: TimelineLayoutItem): {
 }
 
 export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelineProps) {
+  const { t, lang } = useLocale();
   const bounds = useLocalDayBounds();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -94,7 +100,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const [now, setNow] = useState(() => new Date());
   const [mounted, setMounted] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState(false);
 
   const todayLocalDate = toDateInputValue(new Date(bounds.startMs));
   const requestedDate = localDate ?? todayLocalDate;
@@ -167,11 +173,6 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
     return () => cancelAnimationFrame(frame);
   }, [isAuthenticated, isLoading, profile, requestedDate]);
 
-  const agendaById = useMemo(() => {
-    const agenda = mapCalendarEventsToAgenda(events ?? []);
-    return new Map(agenda.map((event) => [event.id, event]));
-  }, [events]);
-
   const laidOut = useMemo(() => {
     if (!blocks || !events || !range) return [];
     const blockItems = blocks.map((block) => ({
@@ -199,11 +200,11 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
 
   async function changeStatus(block: DayTimelineBlock, status: BlockStatus) {
     setPendingId(block._id);
-    setActionError(null);
+    setActionError(false);
     try {
       await setStatus({ timeBlockId: block._id, status });
     } catch {
-      setActionError("That didn't stick. You can try again.");
+      setActionError(true);
     } finally {
       setPendingId(null);
     }
@@ -219,7 +220,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
 
   if (isLoading) {
     return (
-      <section aria-busy="true" aria-label="Day timeline" className="space-y-3">
+      <section aria-busy="true" aria-label={t("timeline.title")} className="space-y-3">
         <div className="h-8 w-48 animate-pulse rounded-xl bg-muted" />
         <div className="h-[32rem] animate-pulse rounded-3xl bg-muted" />
       </section>
@@ -229,15 +230,15 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   if (!isAuthenticated || !profile) {
     return (
       <section
-        aria-label="Day timeline"
+        aria-label={t("timeline.title")}
         className="rounded-3xl border border-border bg-card px-5 py-8 text-center"
       >
-        <h2 className="font-heading text-xl font-semibold text-foreground">Day timeline</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Sign in to see this day's blocks and events.
-        </p>
+        <h2 className="font-heading text-xl font-semibold text-foreground">
+          {t("timeline.title")}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("timeline.signedOut")}</p>
         <Button asChild className="mt-4">
-          <Link href="/sign-in">Sign in</Link>
+          <Link href="/sign-in">{t("timeline.signIn")}</Link>
         </Button>
       </section>
     );
@@ -246,10 +247,10 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   if (!range) {
     return (
       <section
-        aria-label="Day timeline"
+        aria-label={t("timeline.title")}
         className="rounded-3xl border border-border bg-card px-5 py-8"
       >
-        <p className="text-sm text-muted-foreground">That date doesn't look right.</p>
+        <p className="text-sm text-muted-foreground">{t("timeline.badDate")}</p>
       </section>
     );
   }
@@ -259,12 +260,14 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
   const blockCount = blocks?.length ?? 0;
 
   return (
-    <section aria-label="Day timeline" className="space-y-3" data-testid="day-timeline">
+    <section aria-label={t("timeline.title")} className="space-y-3" data-testid="day-timeline">
       <div>
-        <h2 className="font-heading text-xl font-semibold text-foreground">Day timeline</h2>
+        <h2 className="font-heading text-xl font-semibold text-foreground">
+          {t("timeline.title")}
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>
           {mounted
-            ? new Date(range.startMs).toLocaleDateString(undefined, {
+            ? new Date(range.startMs).toLocaleDateString(intlLocale(lang), {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
@@ -274,12 +277,10 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
       </div>
 
       {blockCount === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nothing planned yet. Click a time to add a block.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("timeline.empty")}</p>
       ) : null}
 
-      {actionError ? <p className="text-sm text-muted-foreground">{actionError}</p> : null}
+      {actionError ? <p className="text-sm text-muted-foreground">{t("timeline.error")}</p> : null}
 
       <div
         className="h-[72rem] max-h-[80vh] overflow-y-auto rounded-3xl border border-border bg-card"
@@ -288,7 +289,9 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
         <div className="relative" style={{ height: DAY_HOURS * HOUR_HEIGHT_PX }}>
           {Array.from({ length: DAY_HOURS }, (_, hour) => (
             <button
-              aria-label={`Add a block at ${formatMinute(hour * 60)}`}
+              aria-label={t("timeline.addAt").replace("{time}", () =>
+                formatMinute(hour * 60, lang)
+              )}
               className="absolute inset-x-0 border-t border-border-soft text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               key={hour}
               onClick={(event) => createAtHour(hour, event)}
@@ -296,7 +299,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
               type="button"
             >
               <span className="pointer-events-none px-2 pt-1 text-xs text-muted-foreground">
-                {formatMinute(hour * 60)}
+                {formatMinute(hour * 60, lang)}
               </span>
             </button>
           ))}
@@ -304,14 +307,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
           {laidOut.map((item) => {
             const box = itemBox(item);
             if (item.kind === "event") {
-              return (
-                <EventCard
-                  box={box}
-                  event={eventsById.get(item.id)}
-                  key={item.id}
-                  timeLabel={agendaById.get(item.id)?.timeLabel}
-                />
-              );
+              return <EventCard box={box} event={eventsById.get(item.id)} key={item.id} />;
             }
             const block = blocksById.get(item.id);
             if (!block) return null;
@@ -338,7 +334,7 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
               }}
             >
               <span className="absolute -top-3 left-0 rounded-full bg-primary px-2 text-xs text-primary-foreground">
-                Now
+                {t("timeline.now")}
               </span>
             </div>
           ) : null}
@@ -350,14 +346,14 @@ export function DayTimeline({ localDate, onSelectBlock, onCreateAt }: DayTimelin
 
 function EventCard({
   event,
-  timeLabel,
   box,
 }: {
   event: CalendarEventRow | undefined;
-  timeLabel: string | undefined;
   box: { top: number; height: number; left: string; width: string };
 }) {
+  const { lang } = useLocale();
   if (!event) return null;
+  const timeLabel = formatMinute(localMinuteOfDay(event.startsAtMs), lang);
   return (
     <div
       className="absolute z-10 box-border flex flex-col justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-background/80 px-2 text-muted-foreground"
@@ -365,7 +361,7 @@ function EventCard({
       style={box}
     >
       <p className="truncate text-xs leading-tight">{event.title}</p>
-      {timeLabel ? <p className="truncate text-xs leading-tight">{timeLabel}</p> : null}
+      <p className="truncate text-xs leading-tight">{timeLabel}</p>
     </div>
   );
 }
@@ -383,10 +379,12 @@ function StatusActions({
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
   rangeLabel: string;
 }) {
+  const { t } = useLocale();
+  const withRange = (template: string) => template.replace("{range}", () => rangeLabel);
   return (
     <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto">
       <Button
-        aria-label={`Done ${rangeLabel}`}
+        aria-label={withRange(t("timeline.doneAt"))}
         className={buttonClassName}
         disabled={busy || block.status === "done"}
         onClick={(event) => {
@@ -396,10 +394,10 @@ function StatusActions({
         size="sm"
         type="button"
       >
-        Done
+        {t("timeline.done")}
       </Button>
       <Button
-        aria-label={`Let it go ${rangeLabel}`}
+        aria-label={withRange(t("timeline.letGoAt"))}
         className={buttonClassName}
         disabled={busy || block.status === "skipped"}
         onClick={(event) => {
@@ -410,10 +408,10 @@ function StatusActions({
         type="button"
         variant="outline"
       >
-        Let it go
+        {t("timeline.letGo")}
       </Button>
       <Button
-        aria-label={`Undo ${rangeLabel}`}
+        aria-label={withRange(t("timeline.undoAt"))}
         className={buttonClassName}
         disabled={busy || block.status === "planned"}
         onClick={(event) => {
@@ -424,7 +422,7 @@ function StatusActions({
         type="button"
         variant="ghost"
       >
-        Undo
+        {t("timeline.undo")}
       </Button>
     </div>
   );
@@ -443,14 +441,17 @@ function BlockCard({
   onSelect?: (block: DayTimelineBlock) => void;
   onChangeStatus: (block: DayTimelineBlock, status: BlockStatus) => void;
 }) {
-  const range = formatRange(block.startMinute, block.durationMinutes);
+  const { t, lang } = useLocale();
+  const range = formatRange(block.startMinute, block.durationMinutes, lang);
+  // An isolated LTR run, so a Hebrew page shows 09:00–10:00 and not 10:00–09:00.
+  const rangeText = <span className="tp-num">{range}</span>;
   const skipped = block.status === "skipped";
   const tint = skipped ? "border-border bg-muted text-muted-foreground" : kindClassName[block.kind];
   const showTime = box.height >= FULL_CARD_MIN_PX;
   const stacked = box.height >= STACKED_CARD_MIN_PX;
   let statusNote = "";
-  if (skipped) statusNote = " · Let go";
-  else if (block.status === "done") statusNote = " · Done";
+  if (skipped) statusNote = ` · ${t("timeline.status.letGo")}`;
+  else if (block.status === "done") statusNote = ` · ${t("timeline.status.done")}`;
   let density: "full" | "stacked" | "compact" = "compact";
   if (showTime) density = "full";
   else if (stacked) density = "stacked";
@@ -471,7 +472,11 @@ function BlockCard({
       style={box}
     >
       <button
-        aria-label={skipped ? `${block.title}, ${range}, Let go` : `${block.title}, ${range}`}
+        aria-label={
+          skipped
+            ? `${block.title}, ${range}, ${t("timeline.status.letGo")}`
+            : `${block.title}, ${range}`
+        }
         className={
           stacked
             ? "min-h-0 shrink overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -491,19 +496,19 @@ function BlockCard({
               }`}
             >
               {block.title}
-              {showTime ? null : ` · ${range}`}
+              {showTime ? null : <> · {rangeText}</>}
               {showTime ? null : statusNote}
             </span>
             {showTime ? (
               <span className="block truncate text-xs leading-tight text-muted-foreground">
-                {range}
+                {rangeText}
                 {statusNote}
               </span>
             ) : null}
           </>
         ) : (
           <>
-            {block.title} · {range}
+            {block.title} · {rangeText}
             {statusNote}
           </>
         )}

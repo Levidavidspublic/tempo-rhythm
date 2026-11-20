@@ -1,419 +1,401 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { HABIT_NAME_MAX, parseHabitName } from "@/components/habits-library/habitForm";
-import { SoftCard } from "@/components/soft-editorial/SoftCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { HabitSheet } from "@/components/habits/HabitSheet";
+import {
+  ScreenErrorBoundary,
+  type SkeletonRow,
+  StateEmpty,
+  StateError,
+  StateLoading,
+  StateOffline,
+  StateSignedOut,
+  Template,
+  useOnline,
+  useProfileState,
+} from "@/components/habits/ScreenStates";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import {
+  detailSummary,
+  fillTemplate,
+  parseLocalDate,
+  settlePending,
+  toLocalDateKey,
+  withPending,
+} from "@/lib/habits-view";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
-import { cn } from "@/lib/utils";
 import { buildSixWeekGrid, type SixWeekCell } from "./sixWeekGrid";
 
-const SAVE_ERROR = "That didn't save. Try again when you want.";
-const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const WEEKDAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+const LOADING_ROWS: readonly SkeletonRow[] = [
+  ["w100"],
+  ["w100"],
+  ["w100"],
+  ["w100"],
+  ["w100"],
+  ["w60"],
+];
+const DOW_MONDAY_FIRST = [
+  "hr.dow.1",
+  "hr.dow.2",
+  "hr.dow.3",
+  "hr.dow.4",
+  "hr.dow.5",
+  "hr.dow.6",
+  "hr.dow.0",
 ] as const;
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+const EASIEST = [
+  "hd.easy.0",
+  "hd.easy.1",
+  "hd.easy.2",
+  "hd.easy.3",
+  "hd.easy.4",
+  "hd.easy.5",
+  "hd.easy.6",
 ] as const;
 
-type HabitView = {
-  name: string;
-  cadence: "daily" | "weekly";
-  currentStreak: number;
-  longestStreak: number;
-};
-
-type CheckInView = {
-  localDate: string;
-  deletedAt?: number;
-};
-
-function cellAriaLabel(localDate: string, checked: boolean): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(localDate);
-  if (!match) {
-    return checked ? `${localDate}, checked` : localDate;
-  }
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(Number(match[1]), month - 1, day);
-  const spoken = `${WEEKDAYS[date.getDay()]} ${day} ${MONTHS[month - 1]}`;
-  return checked ? `${spoken}, checked` : spoken;
-}
-
-function checkedDateSet(
-  checkIns: readonly CheckInView[],
-  pending: ReadonlyMap<string, boolean>
-): Set<string> {
-  const dates = new Set<string>();
-  for (const row of checkIns) {
-    if (row.deletedAt !== undefined) {
-      continue;
-    }
-    dates.add(row.localDate);
-  }
-  for (const [localDate, on] of pending) {
-    if (on) {
-      dates.add(localDate);
-    } else {
-      dates.delete(localDate);
-    }
-  }
-  return dates;
-}
-
+/**
+ * Habit detail (docs/design/v3/screens/web/habit-detail.html): Log today as the one main action,
+ * 6 Monday-first weeks of filled circles / empty rings, and one plain sentence. No streaks.
+ * A past day's circle can be tapped too, to log or un-log that day.
+ *
+ * Left out until the backend has them: the reminder in your own words (nags are not linked to
+ * habits and have no time: no nags.getForHabit), Start fresh and Pause (no habits.startFresh or
+ * habits.pause), and so the paused state. "When it usually happens" is not stored either, so the
+ * subtitle is the rhythm alone.
+ */
 export function HabitDetail({ habitId }: { habitId: string }) {
-  const id = habitId as Id<"habits">;
   const bounds = useLocalDayBounds();
-  const today = useMemo(() => new Date(bounds.startMs), [bounds.startMs]);
+  return (
+    <ScreenErrorBoundary fallback={(retry) => <DetailFailed onRetry={retry} />}>
+      <DetailContent key={bounds.startMs} habitId={habitId} todayMs={bounds.startMs} />
+    </ScreenErrorBoundary>
+  );
+}
+
+function BackLink() {
+  const { t } = useLocale();
+  return (
+    <Link className="tp-btn tp-btn--ghost" href="/habits">
+      <TpIcon name="chevron" size="sm" className="tp-icon--back" />
+      <span>{t("hd.back")}</span>
+    </Link>
+  );
+}
+
+function DetailFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLocale();
+  return (
+    <div className="tp-page" data-component="PageLayout">
+      <BackLink />
+      <StateError title={t("hd.error")} onRetry={onRetry} />
+    </div>
+  );
+}
+
+function DetailContent({ habitId, todayMs }: { habitId: string; todayMs: number }) {
+  const { t } = useLocale();
+  const online = useOnline();
+  const profile = useProfileState();
+  const ready = profile === "ready";
+  const id = habitId as Id<"habits">;
+  const today = useMemo(() => new Date(todayMs), [todayMs]);
   const range = useMemo(() => {
     const grid = buildSixWeekGrid(today, new Set());
-    return {
-      fromLocalDate: grid[0][0].localDate,
-      toLocalDate: grid[5][6].localDate,
-    };
+    return { fromLocalDate: grid[0][0].localDate, toLocalDate: grid[5][6].localDate };
   }, [today]);
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const canQuery = isAuthenticated && profile != null;
-  const habit = useQuery(api.habits.get, canQuery ? { habitId: id } : "skip");
+  const habit = useQuery(api.habits.get, ready ? { habitId: id } : "skip");
   const checkIns = useQuery(
     api.habitCheckIns.listForHabit,
-    canQuery ? { habitId: id, ...range } : "skip"
+    ready ? { habitId: id, ...range } : "skip"
   );
-  const isLoading =
-    isAuthLoading ||
-    (isAuthenticated && profile === undefined) ||
-    (canQuery && (habit === undefined || checkIns === undefined));
+  const loading =
+    profile === "loading" || (ready && (habit === undefined || checkIns === undefined));
 
-  if (isLoading) {
-    return <DetailSkeleton />;
-  }
-
-  if (!isAuthenticated || profile === null) {
-    return (
-      <main className="mx-auto w-full max-w-4xl p-8 text-center">
-        <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Habit</h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in again to see this habit and its check-in days.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-        </SoftCard>
-      </main>
+  let body: ReactNode;
+  if (loading) {
+    body = (
+      <>
+        {online ? null : <StateOffline />}
+        <StateLoading label={t("hd.loading")} rows={LOADING_ROWS} />
+      </>
     );
+  } else if (profile === "signed-out") {
+    body = <StateSignedOut />;
+  } else if (!habit) {
+    body = <StateEmpty icon="habit" title={t("hd.gone")} />;
+  } else {
+    body = <DetailBody habit={habit} checkIns={checkIns ?? []} today={today} online={online} />;
   }
 
-  if (habit === null) {
-    return (
-      <main className="mx-auto w-full max-w-4xl p-8">
-        <SoftCard className="mx-auto max-w-xl text-center">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            This habit isn&apos;t here any more.
-          </h1>
-          <Button asChild className="mt-6" variant="outline">
-            <Link href="/habits">Back to habits</Link>
-          </Button>
-        </SoftCard>
-      </main>
-    );
-  }
-
-  if (habit === undefined || checkIns === undefined) {
-    return <DetailSkeleton />;
-  }
-
-  return <HabitDetailBody habitId={id} habit={habit} checkIns={checkIns} today={today} />;
+  return (
+    <div className="tp-page" data-component="PageLayout">
+      <BackLink />
+      {body}
+    </div>
+  );
 }
 
-function HabitDetailBody({
-  habitId,
+function DetailBody({
   habit,
   checkIns,
   today,
+  online,
 }: {
-  habitId: Id<"habits">;
-  habit: HabitView;
-  checkIns: CheckInView[];
+  habit: Doc<"habits">;
+  checkIns: readonly { localDate: string }[];
   today: Date;
+  online: boolean;
 }) {
+  const { t, lang } = useLocale();
   const check = useMutation(api.habitCheckIns.check);
   const undo = useMutation(api.habitCheckIns.undo);
   const update = useMutation(api.habits.update);
+  // Optimistic toggles: localDate -> wanted state, until the server agrees.
   const [pending, setPending] = useState<ReadonlyMap<string, boolean>>(() => new Map());
-  const [busy, setBusy] = useState<ReadonlySet<string>>(() => new Set());
-  const [streak, setStreak] = useState<
-    { currentStreak: number; longestStreak: number } | undefined
-  >(undefined);
-  const [draftName, setDraftName] = useState<string | undefined>(undefined);
-  const [savingName, setSavingName] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const toggleGeneration = useRef(0);
-  const liveStreak = useRef({
-    currentStreak: habit.currentStreak,
-    longestStreak: habit.longestStreak,
+  const busy = useRef(new Set<string>());
+  const [saveError, setSaveError] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const server = useMemo(() => new Set(checkIns.map((row) => row.localDate)), [checkIns]);
+  useEffect(() => {
+    setPending((prev) => settlePending(prev, (localDate) => server.has(localDate)));
+  }, [server]);
+  const logged = useMemo(() => withPending(server, pending), [server, pending]);
+  const grid = useMemo(() => buildSixWeekGrid(today, logged), [today, logged]);
+  const todayKey = toLocalDateKey(today);
+  const gridStartKey = grid[0][0].localDate;
+  const summary = detailSummary({
+    gridStartKey,
+    todayKey,
+    createdKey: toLocalDateKey(new Date(habit.createdAt)),
+    logged,
   });
+  const anyLogged = [...logged].some((key) => key >= gridStartKey && key <= todayKey);
+  const locale = lang === "he" ? "he-IL" : "en-GB";
+  const dayMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
 
-  useEffect(() => {
-    setPending((prev) => {
-      if (prev.size === 0) {
-        return prev;
-      }
-      const server = new Set(
-        checkIns.flatMap((row) => (row.deletedAt === undefined ? [row.localDate] : []))
-      );
-      const next = new Map(prev);
-      let changed = false;
-      for (const [localDate, want] of prev) {
-        if (server.has(localDate) === want) {
-          next.delete(localDate);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [checkIns]);
-
-  useEffect(() => {
-    // The live habit query wins as soon as it moves, even when its streaks
-    // differ from a toggle response that has not landed yet.
-    liveStreak.current = {
-      currentStreak: habit.currentStreak,
-      longestStreak: habit.longestStreak,
-    };
-    setStreak((prev) => {
-      if (prev === undefined) {
-        return prev;
-      }
-      return undefined;
-    });
-  }, [habit.currentStreak, habit.longestStreak]);
-
-  const grid = useMemo(
-    () => buildSixWeekGrid(today, checkedDateSet(checkIns, pending)),
-    [today, checkIns, pending]
-  );
-  const name = draftName ?? habit.name;
-  const currentStreak = streak?.currentStreak ?? habit.currentStreak;
-  const longestStreak = streak?.longestStreak ?? habit.longestStreak;
-
-  const toggle = (cell: SixWeekCell) => {
-    if (cell.isFuture || busy.has(cell.localDate)) {
-      return;
-    }
-    const nextChecked = !cell.checked;
-    setNotice(null);
-    setBusy((prev) => {
-      const next = new Set(prev);
-      next.add(cell.localDate);
-      return next;
-    });
-    setPending((prev) => {
-      const next = new Map(prev);
-      next.set(cell.localDate, nextChecked);
-      return next;
-    });
-
-    const generation = toggleGeneration.current + 1;
-    toggleGeneration.current = generation;
-    const streaksAtStart = {
-      currentStreak: habit.currentStreak,
-      longestStreak: habit.longestStreak,
-    };
-    const action = cell.checked
-      ? undo({ habitId, localDate: cell.localDate })
-      : check({ habitId, localDate: cell.localDate, source: "habits" });
-
-    void action
-      .then((result) => {
-        if (generation !== toggleGeneration.current) {
-          return;
-        }
-        const live = liveStreak.current;
-        if (
-          live.currentStreak !== streaksAtStart.currentStreak ||
-          live.longestStreak !== streaksAtStart.longestStreak
-        ) {
-          setStreak(undefined);
-          return;
-        }
-        setStreak({
-          currentStreak: result.currentStreak,
-          longestStreak: result.longestStreak,
-        });
-      })
-      .catch(() => {
-        setPending((prev) => {
-          const next = new Map(prev);
-          next.delete(cell.localDate);
-          return next;
-        });
-        if (generation === toggleGeneration.current) {
-          setNotice(SAVE_ERROR);
-        }
-      })
+  const toggle = (localDate: string) => {
+    if (busy.current.has(localDate) || localDate > todayKey) return;
+    const next = !logged.has(localDate);
+    busy.current.add(localDate);
+    setSaveError(false);
+    setPending((prev) => new Map(prev).set(localDate, next));
+    const action = next
+      ? check({ habitId: habit._id, localDate, source: "habits", asOfLocalDate: todayKey })
+      : undo({ habitId: habit._id, localDate, asOfLocalDate: todayKey });
+    // Convex resolves a mutation once the queries show its writes, so the optimistic entry can go
+    // either way: on success the server now agrees, on failure the circle goes back.
+    action
+      .catch(() => setSaveError(true))
       .finally(() => {
-        setBusy((prev) => {
-          const next = new Set(prev);
-          next.delete(cell.localDate);
-          return next;
+        busy.current.delete(localDate);
+        setPending((prev) => {
+          if (!prev.has(localDate)) return prev;
+          const map = new Map(prev);
+          map.delete(localDate);
+          return map;
         });
       });
   };
 
-  const saveName = () => {
-    if (savingName) {
-      return;
-    }
-    const parsed = parseHabitName(name);
-    if (!parsed.ok) {
-      if (name.trim().length === 0) {
-        setDraftName(undefined);
-        setNotice(null);
-        return;
-      }
-      setNotice(parsed.error);
-      return;
-    }
-    if (parsed.name === habit.name) {
-      setDraftName(undefined);
-      setNotice(null);
-      return;
-    }
-    setSavingName(true);
-    setNotice(null);
-    void update({ habitId, name: parsed.name })
-      .then(() => setDraftName(undefined))
-      .catch(() => setNotice(SAVE_ERROR))
-      .finally(() => setSavingName(false));
-  };
+  const longDate = (cell: SixWeekCell) =>
+    parseLocalDate(cell.localDate)?.toLocaleDateString(locale, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }) ?? cell.localDate;
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
-      <p>
-        <Link
-          href="/habits"
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          Back to habits
-        </Link>
-      </p>
-
-      <header className="space-y-4">
-        <form
-          className="space-y-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            saveName();
-          }}
-        >
-          <Label htmlFor="habit-detail-name">Habit name</Label>
-          <Input
-            id="habit-detail-name"
-            value={name}
-            maxLength={HABIT_NAME_MAX}
-            onChange={(event) => setDraftName(event.target.value)}
-            onBlur={saveName}
-            disabled={savingName}
-            autoComplete="off"
-          />
-        </form>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">Cadence</span> {habit.cadence}
-        </p>
-        <dl className="flex flex-wrap gap-6">
-          <div>
-            <dt className="text-sm text-muted-foreground">Current streak</dt>
-            <dd className="font-heading text-3xl font-semibold text-foreground">{currentStreak}</dd>
-          </div>
-          <div>
-            <dt className="text-sm text-muted-foreground">Longest streak</dt>
-            <dd className="font-heading text-3xl font-semibold text-foreground">{longestStreak}</dd>
-          </div>
-        </dl>
+    <>
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title" dir="auto">
+            {habit.name}
+          </h1>
+          <p className="tp-pagehead__sub">
+            {habit.cadence === "weekly" ? t("hd.sub.weekly") : t("hd.sub.daily")}
+          </p>
+        </div>
+        <div className="tp-pagehead__actions">
+          <button
+            className="tp-btn tp-btn--ghost"
+            type="button"
+            aria-controls="edit-habit"
+            aria-expanded={editOpen}
+            onClick={() => setEditOpen(true)}
+          >
+            <TpIcon name="edit" size="sm" />
+            <span>{t("hb.edit")}</span>
+          </button>
+        </div>
       </header>
 
-      <section aria-labelledby="habit-six-week-heading" className="space-y-3">
-        <h2
-          id="habit-six-week-heading"
-          className="font-heading text-xl font-semibold text-foreground"
-        >
-          Six weeks
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Tap a day to check it, or tap again to undo. Days that have not happened yet stay quiet.
+      {online ? null : <StateOffline />}
+      {saveError ? (
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__text">{t("hr.saveError")}</span>
         </p>
-        {notice ? <output className="block text-sm text-muted-foreground">{notice}</output> : null}
-        <div className="grid grid-cols-7 gap-2" data-testid="habit-six-week-grid">
-          {WEEKDAY_HEADERS.map((label) => (
-            <div
-              key={label}
-              aria-hidden
-              className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            >
-              {label}
-            </div>
-          ))}
-          {grid.flat().map((cell) => (
-            <button
-              key={cell.localDate}
-              type="button"
-              aria-pressed={cell.checked}
-              aria-current={cell.isToday ? "date" : undefined}
-              aria-label={cellAriaLabel(cell.localDate, cell.checked)}
-              disabled={cell.isFuture || busy.has(cell.localDate)}
-              onClick={() => toggle(cell)}
-              className={cn(
-                "flex min-h-11 items-center justify-center rounded-xl border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed",
-                cell.checked
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground",
-                cell.isFuture ? "opacity-40" : "hover:border-primary",
-                cell.isToday ? "ring-2 ring-primary/40" : ""
-              )}
-            >
-              {Number(cell.localDate.slice(8))}
-            </button>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
-}
+      ) : null}
+      {anyLogged ? null : (
+        <StateEmpty icon="habit" title={t("hd.empty.t")} body={t("hd.empty.b")} />
+      )}
 
-function DetailSkeleton() {
-  return (
-    <main className="mx-auto w-full max-w-4xl p-8" aria-hidden>
-      <div className="space-y-4">
-        <div className="h-10 w-48 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
-        <div className="h-16 animate-pulse rounded-3xl bg-muted motion-reduce:animate-none" />
-        <div className="h-64 animate-pulse rounded-3xl bg-muted motion-reduce:animate-none" />
+      <div className="hd-stack">
+        <section
+          className="tp-surface tp-block-habit"
+          data-component="HabitBlock"
+          aria-labelledby="hd-grid-title"
+        >
+          <div
+            className="tp-habit hd-card"
+            data-habit={habit._id}
+            data-logged={String(summary.todayLogged)}
+          >
+            <div className="tp-habit__head">
+              <h2 className="tp-habit__name tp-h3" id="hd-grid-title">
+                {t("hd.grid")}
+              </h2>
+              <span className="tp-habit__when">
+                <span>{t("hd.today")}</span>{" "}
+                <span>
+                  {today.toLocaleDateString(locale, {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+              </span>
+              <button
+                className="tp-btn tp-btn--primary tp-habit__log"
+                type="button"
+                aria-pressed={summary.todayLogged}
+                data-component="Button"
+                onClick={() => toggle(todayKey)}
+              >
+                <TpIcon name="check" size="sm" />
+                <span>{summary.todayLogged ? t("hb.logged") : t("hb.log")}</span>
+              </button>
+            </div>
+
+            {/* biome-ignore lint/a11y/useSemanticElements: the design's labelled grid group; a fieldset would add a form box around it */}
+            <div
+              className="hd-grid"
+              role="group"
+              aria-labelledby="hd-grid-title"
+              data-testid="habit-six-week-grid"
+            >
+              <div className="hd-row" aria-hidden="true">
+                <span />
+                <ol className="tp-habit-days">
+                  {DOW_MONDAY_FIRST.map((key) => (
+                    <li key={key} className="tp-habit-day">
+                      <span className="tp-habit-day__label">{t(key)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              {grid.map((week, index) => {
+                const start = parseLocalDate(week[0].localDate) ?? today;
+                const label =
+                  index === grid.length - 1
+                    ? t("hd.thisweek")
+                    : fillTemplate(t("hd.week"), {
+                        date: start.toLocaleDateString(locale, { day: "numeric", month: "long" }),
+                      });
+                return (
+                  <div className="hd-row" key={week[0].localDate} data-week={week[0].localDate}>
+                    <span className="tp-small tp-muted">
+                      {dayMonth.formatToParts(start).map((part, k) =>
+                        part.type === "day" ? (
+                          <span key={k} className="tp-num">
+                            {part.value}
+                          </span>
+                        ) : (
+                          <Fragment key={k}>{part.value}</Fragment>
+                        )
+                      )}
+                    </span>
+                    <ol className="tp-habit-days" aria-label={label}>
+                      {week.map((cell) => {
+                        const day = Number(cell.localDate.slice(8));
+                        if (cell.isFuture) {
+                          return (
+                            <li key={cell.localDate} className="tp-habit-day" aria-hidden="true">
+                              <span className="tp-habit-day__label tp-num">{day}</span>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li
+                            key={cell.localDate}
+                            className="tp-habit-day"
+                            data-done={String(cell.checked)}
+                            data-today={cell.isToday ? "true" : undefined}
+                          >
+                            <button
+                              type="button"
+                              className="hd-day"
+                              aria-pressed={cell.checked}
+                              aria-current={cell.isToday ? "date" : undefined}
+                              onClick={() => toggle(cell.localDate)}
+                            >
+                              <span className="tp-habit-day__dot" aria-hidden="true">
+                                <TpIcon name="check" />
+                              </span>
+                              <span className="tp-habit-day__label tp-num" aria-hidden="true">
+                                {day}
+                              </span>
+                              <span className="tp-sr-only">
+                                {longDate(cell)}, {cell.checked ? t("hb.dayDone") : t("hb.dayOpen")}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                );
+              })}
+            </div>
+
+            <output className="tp-habit__summary" id="hd-summary" data-component="ChartSummary">
+              {summary.logged > 0 && summary.total > 1 ? (
+                <>
+                  <Template
+                    template={t("hd.sum")}
+                    slots={{
+                      n: <span className="tp-num">{summary.logged}</span>,
+                      total: <span className="tp-num">{summary.total}</span>,
+                    }}
+                  />{" "}
+                </>
+              ) : null}
+              {summary.easiestWeekday === null ? null : (
+                <>{t(EASIEST[summary.easiestWeekday] ?? "hd.easy.0")} </>
+              )}
+              {summary.todayLogged ? t("hd.todayDone") : t("hd.todayOpen")}
+            </output>
+          </div>
+        </section>
       </div>
-    </main>
+
+      {editOpen ? (
+        <HabitSheet
+          id="edit-habit"
+          title={t("hb.edit")}
+          initial={{ name: habit.name, cadence: habit.cadence }}
+          submitVariant="secondary"
+          onSubmit={async ({ name, cadence }) => {
+            await update({ habitId: habit._id, name, cadence });
+          }}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }

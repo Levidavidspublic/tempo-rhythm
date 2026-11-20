@@ -1,30 +1,21 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routine-detail
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Guided run of a routine.
- * @queries: routines.get
- * @mutations: routines.logRun
+ * @source: docs/design/v3/screens/web/routine-detail.html
+ * @summary: Guided run of a routine, one step at a time.
+ * @queries: notes.getSafe
+ * @mutations: (none; the run lives on the screen)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { RoutineGuide } from "@/components/routines/RoutineGuide";
 
 type Params = { id: string };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function Page({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   return (
-    <ScaffoldScreen
-      title="Routine guided"
-      category="Library"
-      source="screens-3.jsx"
-      summary={`Guided run of a routine. (id: ${id})`}
-    />
+    <div data-testid="routine-detail-route">
+      <RoutineGuide routineId={id} />
+    </div>
   );
 }

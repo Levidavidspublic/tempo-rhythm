@@ -8,9 +8,12 @@ test("event created in Day view appears in Week and Month views for that date", 
   page,
 }) => {
   await page.goto("/calendar");
-  await expect(page.getByRole("heading", { name: "One source for every calendar view" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Calendar", exact: true })).toBeVisible();
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
+  // Type only once the page has hydrated: text typed into the server-rendered field before React
+  // takes over is lost, and the Add then reads an empty title.
+  await page.waitForLoadState("networkidle");
 
   await page.getByRole("textbox", { name: "Event title" }).fill("Boundary planning call");
   await page.getByLabel("Event date").fill("2026-08-01");

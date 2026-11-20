@@ -4,14 +4,16 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
+import { fillTemplate } from "@/lib/habits-view";
+import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { cn } from "@/lib/utils";
 import { checkedHabitIds, localDateKey } from "./checkedState";
 
-const SAVE_ERROR = "That didn't save. Try again when you want.";
-
 export function HabitCheckInStrip() {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const bounds = useLocalDayBounds();
@@ -34,6 +36,7 @@ export function HabitCheckInStrip() {
 
   const liveHabits = habits.filter((habit) => habit.deletedAt === undefined);
   const serverChecked = checkedHabitIds(checkIns);
+  const [emptyBefore, emptyAfter] = t("hb.strip.empty").split("{link}");
 
   return (
     <section
@@ -44,22 +47,20 @@ export function HabitCheckInStrip() {
         id="habit-checkin-strip-heading"
         className="font-heading text-xl font-semibold text-foreground"
       >
-        Habits today
+        {t("hb.strip.title")}
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Check a habit for this calendar day. Undo it whenever you want.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{t("hb.strip.sub")}</p>
 
       {liveHabits.length === 0 ? (
         <p className="mt-5 text-sm font-medium text-foreground">
-          No habits yet. Add one on the{" "}
+          {emptyBefore}
           <Link
             href="/habits"
             className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            Habits page
+            {t("hb.strip.emptyLink")}
           </Link>
-          .
+          {emptyAfter}
         </p>
       ) : (
         <HabitCheckInList
@@ -86,6 +87,7 @@ function HabitCheckInList({
   }[];
   serverChecked: Set<string>;
 }) {
+  const { t } = useLocale();
   const check = useMutation(api.habitCheckIns.check);
   const undo = useMutation(api.habitCheckIns.undo);
   const [optimistic, setOptimistic] = useState<ReadonlyMap<string, boolean>>(() => new Map());
@@ -156,7 +158,7 @@ function HabitCheckInList({
           next.delete(habitId);
           return next;
         });
-        setNotice(SAVE_ERROR);
+        setNotice(t("hr.saveError"));
       })
       .finally(() => {
         setBusy((prev) => {
@@ -183,25 +185,26 @@ function HabitCheckInList({
               <button
                 type="button"
                 aria-pressed={pressed}
-                aria-label={
-                  pressed
-                    ? `Undo today's check for ${habit.name}`
-                    : `Check ${habit.name} for today`
-                }
+                aria-label={fillTemplate(t(pressed ? "hb.strip.uncheck.sr" : "hb.strip.check.sr"), {
+                  name: habit.name,
+                })}
                 disabled={isBusy}
                 onClick={() => toggle(habit._id, pressed)}
                 className={cn(
-                  "flex min-h-11 w-full items-center justify-between gap-3 rounded-full border px-4 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-70",
+                  "flex min-h-11 w-full items-center justify-between gap-3 rounded-full border px-4 py-2 text-start text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-70",
                   pressed
                     ? "border-primary/30 bg-primary/10 text-primary"
                     : "border-border bg-background text-foreground hover:border-primary hover:text-primary",
                 )}
               >
-                <span className="font-medium text-foreground">{habit.name}</span>
-                <span className="text-muted-foreground">{pressed ? "Checked" : "Check"}</span>
+                {/* A long name wraps inside the row; the label keeps its width and stays on the row. */}
+                <span className="min-w-0 font-medium text-foreground wrap-anywhere">{habit.name}</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {t(pressed ? "hb.strip.checked" : "hb.strip.check")}
+                </span>
               </button>
               {streak >= 2 ? (
-                <p className="mt-1 px-4 text-xs text-muted-foreground">{streak} days in a row</p>
+                <p className="mt-1 px-4 text-xs text-muted-foreground">{streakText(t, streak)}</p>
               ) : null}
             </li>
           );
@@ -209,6 +212,11 @@ function HabitCheckInList({
       </ul>
     </>
   );
+}
+
+/** "{n} days in a row", with its own wording for a single day. */
+function streakText(t: (key: MessageKey) => string, days: number): string {
+  return days === 1 ? t("hb.strip.streak.one") : fillTemplate(t("hb.strip.streak.many"), { n: days });
 }
 
 function StripSkeleton() {

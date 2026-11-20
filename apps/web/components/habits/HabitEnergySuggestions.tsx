@@ -1,17 +1,13 @@
 "use client";
 
+import { type EnergySuggestion, resolveEnergySuggestion } from "@tempo/utils";
 import { useMutation } from "convex/react";
-import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Id } from "@/convex/_generated/dataModel";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
-import {
-  habitRoutineCopy,
-  resolveEnergySuggestion,
-  type EnergySuggestion,
-} from "@tempo/utils";
-import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
-import { localDateKey } from "../habit-checkin-strip/checkedState";
+import type { Id } from "@/convex/_generated/dataModel";
+import { Template } from "./ScreenStates";
 
 type HabitEnergySource = {
   _id: Id<"habits">;
@@ -19,9 +15,7 @@ type HabitEnergySource = {
   completedToday: boolean;
 };
 
-function suggestionsFromHabits(
-  habits: readonly HabitEnergySource[],
-): EnergySuggestion[] {
+function suggestionsFromHabits(habits: readonly HabitEnergySource[]): EnergySuggestion[] {
   return habits
     .filter((habit) => !habit.completedToday)
     .slice(0, 3)
@@ -29,117 +23,111 @@ function suggestionsFromHabits(
       id: habit._id,
       habitName: habit.name,
       energy: "low",
-      title: `A gentle ${habit.name} step`,
-      body: "One small repeat is enough for now.",
+      title: habit.name,
+      body: "",
       status: "pending",
     }));
 }
 
+/**
+ * Up to three habits not yet logged today, as gentle low-energy picks. Built by code, not the
+ * coach. Accepting one is the person's own tap and logs today (source "suggestion"), so the
+ * habit card and the Today check-in strip both show it; "Not for now" just sets it aside.
+ */
 export function HabitEnergySuggestions({
   habits,
+  localDate,
 }: {
   habits: readonly HabitEnergySource[];
+  localDate: string;
 }) {
-  // Accepting a suggestion is a check-in (source "suggestion"), so HabitsLibrary and the
-  // Today check-in strip, which read habitCheckIns, both show it as done.
+  const { t } = useLocale();
   const checkIn = useMutation(api.habitCheckIns.check);
-  const bounds = useLocalDayBounds();
   const [suggestions, setSuggestions] = useState<EnergySuggestion[]>(() =>
-    suggestionsFromHabits(habits),
+    suggestionsFromHabits(habits)
   );
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState(false);
 
-  const pending = useMemo(
+  const shown = useMemo(
     () => suggestions.filter((suggestion) => suggestion.status !== "rejected"),
-    [suggestions],
+    [suggestions]
   );
 
-  if (pending.length === 0) {
-    return null;
-  }
+  if (shown.length === 0) return null;
 
   const accept = async (suggestionId: string) => {
     setPendingId(suggestionId);
+    setSaveError(false);
     try {
       await checkIn({
         habitId: suggestionId as Id<"habits">,
-        localDate: localDateKey(new Date(bounds.startMs)),
+        localDate,
         source: "suggestion",
+        asOfLocalDate: localDate,
       });
-      setSuggestions((current) =>
-        resolveEnergySuggestion(current, suggestionId, "accepted"),
-      );
+      setSuggestions((current) => resolveEnergySuggestion(current, suggestionId, "accepted"));
+    } catch {
+      setSaveError(true);
     } finally {
       setPendingId(null);
     }
   };
 
   const reject = (suggestionId: string) => {
-    setSuggestions((current) =>
-      resolveEnergySuggestion(current, suggestionId, "rejected"),
-    );
+    setSuggestions((current) => resolveEnergySuggestion(current, suggestionId, "rejected"));
   };
 
   return (
-    <section
-      className="rounded-3xl border border-border/80 bg-card/90 p-5"
-      aria-labelledby="habit-energy-heading"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Sparkles className="h-5 w-5" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2
-            id="habit-energy-heading"
-            className="font-heading text-xl font-semibold text-foreground"
-          >
-            Energy-aware suggestions
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {habitRoutineCopy.habits.suggestionPrompt}
-          </p>
-        </div>
+    <section className="tp-section" data-component="Section" aria-labelledby="hb-energy">
+      <div className="tp-section__head">
+        <h2 className="tp-section__title" id="hb-energy">
+          {t("hb.energy.title")}
+        </h2>
       </div>
-
-      <ul className="mt-5 space-y-3">
-        {pending.map((suggestion) => (
-          <li
-            key={suggestion.id}
-            className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3"
-          >
-            <p className="font-medium text-foreground">{suggestion.title}</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              {suggestion.body}
-            </p>
-            {suggestion.status === "accepted" ? (
-              <p className="mt-3 text-sm font-medium text-primary">
-                Added as today&apos;s check for {suggestion.habitName}.
+      <p className="tp-muted tp-small">{t("hb.energy.prompt")}</p>
+      {saveError ? (
+        <p className="tp-error-text" role="alert">
+          {t("hr.saveError")}
+        </p>
+      ) : null}
+      <ul className="hb-list">
+        {shown.map((suggestion) => {
+          const name = <bdi>{suggestion.habitName}</bdi>;
+          return (
+            <li key={suggestion.id} className="tp-surface hb-card">
+              <p className="tp-h3">
+                <Template template={t("hb.energy.item")} slots={{ name }} />
               </p>
-            ) : (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={pendingId === suggestion.id}
-                  onClick={() => {
-                    void accept(suggestion.id);
-                  }}
-                  className="inline-flex min-h-11 items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-70"
-                >
-                  {habitRoutineCopy.habits.acceptLabel}
-                </button>
-                <button
-                  type="button"
-                  disabled={pendingId === suggestion.id}
-                  onClick={() => reject(suggestion.id)}
-                  className="inline-flex min-h-11 items-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  {habitRoutineCopy.habits.rejectLabel}
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
+              <p className="tp-muted">{t("hb.energy.body")}</p>
+              {suggestion.status === "accepted" ? (
+                <output className="tp-small">
+                  <Template template={t("hb.energy.done")} slots={{ name }} />
+                </output>
+              ) : (
+                <div className="hb-actions">
+                  <button
+                    className="tp-btn tp-btn--secondary"
+                    type="button"
+                    disabled={pendingId === suggestion.id}
+                    onClick={() => void accept(suggestion.id)}
+                  >
+                    <TpIcon name="check" size="sm" />
+                    <span>{t("hb.energy.accept")}</span>
+                  </button>
+                  <button
+                    className="tp-btn tp-btn--ghost"
+                    type="button"
+                    disabled={pendingId === suggestion.id}
+                    onClick={() => reject(suggestion.id)}
+                  >
+                    <span>{t("hb.energy.reject")}</span>
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

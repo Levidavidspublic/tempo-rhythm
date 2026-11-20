@@ -258,6 +258,7 @@ describe("preferences", () => {
       timeZone: "UTC",
       emailReminders: true,
       inAppNotifications: true,
+      coachWebSearch: false,
     });
     expect(await handler(preferences.update)(ctx, { theme: "dark", weekStartsOn: 0, emailReminders: false })).toBeNull();
     expect(await handler(preferences.get)(ctx, {})).toEqual({
@@ -267,7 +268,31 @@ describe("preferences", () => {
       timeZone: "UTC",
       emailReminders: false,
       inAppNotifications: true,
+      coachWebSearch: false,
     });
+    expect(await handler(preferences.update)(ctx, { coachWebSearch: true })).toBeNull();
+    expect(await handler(preferences.get)(ctx, {})).toMatchObject({ theme: "dark", coachWebSearch: true });
+  });
+
+  test("a row stored before coachWebSearch existed reads it as off", async () => {
+    const ctx = makeFakeCtx({
+      identity: { subject: userA._id },
+      users: [{ ...userA }],
+    });
+    await ctx.db.insert("userPreferences", {
+      userId: userA._id,
+      theme: "light",
+      locale: "he",
+      weekStartsOn: 0,
+      timeZone: "Asia/Jerusalem",
+      emailReminders: true,
+      inAppNotifications: false,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    expect(await handler(preferences.get)(ctx, {})).toMatchObject({ locale: "he", coachWebSearch: false });
+    expect(await handler(preferences.update)(ctx, { emailReminders: false })).toBeNull();
+    expect(await handler(preferences.get)(ctx, {})).toMatchObject({ emailReminders: false, coachWebSearch: false });
   });
 });
 

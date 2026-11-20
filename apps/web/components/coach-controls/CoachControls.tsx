@@ -2,10 +2,12 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { MessageKey } from "@/lib/i18n";
 import {
   clampDial,
   dialLabel,
@@ -15,16 +17,21 @@ import {
   type DialFlight,
 } from "./dial";
 
-const SAVE_ERROR = "That didn't save. Try again?";
-const PANIC_FALLBACK = "Take a breath. Nothing is due right now.";
+/** The dial's own levels (dial.ts) read from en/he copy. */
+const LEVEL_KEY = {
+  Gentle: "coachCtl.level.gentle",
+  Steady: "coachCtl.level.steady",
+  Firm: "coachCtl.level.firm",
+} as const satisfies Record<ReturnType<typeof dialLabel>, MessageKey>;
 
-function minutesCopy(minutes: number): string {
-  if (minutes <= 0) return "Under a minute left";
-  if (minutes === 1) return "1 minute left";
-  return `${minutes} minutes left`;
+function minutesCopy(minutes: number, t: (key: MessageKey) => string): string {
+  if (minutes <= 0) return t("coachCtl.minutes.under");
+  if (minutes === 1) return t("coachCtl.minutes.one");
+  return t("coachCtl.minutes.many").replace("{n}", () => String(minutes));
 }
 
 export function CoachControls() {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const settings = useQuery(api.coach.getSettings, isAuthenticated ? {} : "skip");
   const setDial = useMutation(api.coach.setDial);
@@ -34,7 +41,7 @@ export function CoachControls() {
   const [draft, setDraft] = useState<number | null>(null);
   const [savedDial, setSavedDial] = useState<number | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [actionText, setActionText] = useState<string | null>(null);
   const [panicOverride, setPanicOverride] = useState<number | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
@@ -63,9 +70,9 @@ export function CoachControls() {
           id="coach-controls-heading"
           className="font-heading text-xl font-semibold text-foreground"
         >
-          How the coach pushes
+          {t("coachCtl.title")}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">Loading your coach settings.</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("coachCtl.loading")}</p>
       </section>
     );
   }
@@ -76,11 +83,12 @@ export function CoachControls() {
 
   const persisted = savedDial ?? serverDial ?? clampDial(settings.dial);
   const shown = draft ?? persisted;
-  const label = dialLabel(shown);
+  const label = t(LEVEL_KEY[dialLabel(shown)]);
   const panicUntil = panicOverride !== undefined ? panicOverride : settings.panicUntil;
   const panicActive = panicUntil !== null && panicUntil > now;
   const minutes = panicMinutesLeft(panicUntil, now);
-  const cardText = actionText && actionText.trim().length > 0 ? actionText : PANIC_FALLBACK;
+  const cardText =
+    actionText && actionText.trim().length > 0 ? actionText : t("coachCtl.panicFallback");
 
   const runDialSave = (value: number) => {
     const pending = flightRef.current.pending;
@@ -94,7 +102,7 @@ export function CoachControls() {
         const settled = settleDialSave(flightRef.current, value, true, draftRef.current);
         flightRef.current = settled.flight;
         setSavedDial(value);
-        setError(null);
+        setError(false);
         if (settled.flashSaved) {
           draftRef.current = null;
           setDraft(null);
@@ -111,7 +119,7 @@ export function CoachControls() {
         if (settled.revertDraft) {
           draftRef.current = null;
           setDraft(null);
-          setError(SAVE_ERROR);
+          setError(true);
         }
         if (settled.save !== null) runDialSave(settled.save);
       });
@@ -130,7 +138,7 @@ export function CoachControls() {
     draftRef.current = result.release.value;
     setDraft(result.release.value);
     setSavedFlash(false);
-    setError(null);
+    setError(false);
     if (result.release.action === "save") runDialSave(result.release.value);
   };
 
@@ -138,17 +146,17 @@ export function CoachControls() {
     if (panicLock.current) return;
     panicLock.current = true;
     setPanicBusy(true);
-    setError(null);
+    setError(false);
     void pressPanic({})
       .then((result) => {
         setPanicOverride(result.panicUntil);
         const text = result.action.text.trim();
         setActionText(text.length > 0 ? result.action.text : null);
         setNow(Date.now());
-        setError(null);
+        setError(false);
       })
       .catch(() => {
-        setError(SAVE_ERROR);
+        setError(true);
       })
       .finally(() => {
         panicLock.current = false;
@@ -160,16 +168,16 @@ export function CoachControls() {
     if (clearLock.current) return;
     clearLock.current = true;
     setClearBusy(true);
-    setError(null);
+    setError(false);
     void clearPanic({})
       .then(() => {
         setPanicOverride(null);
         setActionText(null);
         setNow(Date.now());
-        setError(null);
+        setError(false);
       })
       .catch(() => {
-        setError(SAVE_ERROR);
+        setError(true);
       })
       .finally(() => {
         clearLock.current = false;
@@ -184,16 +192,16 @@ export function CoachControls() {
           id="coach-controls-heading"
           className="font-heading text-xl font-semibold text-foreground"
         >
-          How the coach pushes
+          {t("coachCtl.title")}
         </h2>
         <p id="coach-push-dial-hint" className="mt-1 text-sm text-muted-foreground">
-          0 is gentle. 10 is firm. Let go of the slider to save.
+          {t("coachCtl.hint")}
         </p>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
-          <Label htmlFor="coach-push-dial">How the coach pushes</Label>
+          <Label htmlFor="coach-push-dial">{t("coachCtl.title")}</Label>
           <p className="text-sm text-foreground">
             <span className="font-medium">{label}</span>
             <span className="text-muted-foreground"> {shown}</span>
@@ -212,7 +220,7 @@ export function CoachControls() {
             const next = clampDial(Number(event.target.value));
             draftRef.current = next;
             setSavedFlash(false);
-            setError(null);
+            setError(false);
             setDraft(next);
           }}
           onPointerUp={(event) => {
@@ -228,7 +236,7 @@ export function CoachControls() {
           className="w-full accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
         <output className="block min-h-5 text-sm text-muted-foreground">
-          {savedFlash ? "Saved" : ""}
+          {savedFlash ? t("coachCtl.saved") : ""}
         </output>
       </div>
 
@@ -240,28 +248,26 @@ export function CoachControls() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{minutesCopy(minutes)}</p>
+            <p className="text-sm text-muted-foreground">{minutesCopy(minutes, t)}</p>
           </CardContent>
           <CardFooter>
             <Button type="button" variant="outline" onClick={onClear} disabled={clearBusy}>
-              I&rsquo;m okay now
+              {t("coachCtl.clear")}
             </Button>
           </CardFooter>
         </Card>
       ) : (
         <div className="space-y-2">
           <Button type="button" variant="secondary" onClick={onPanic} disabled={panicBusy}>
-            Panic
+            {t("coachCtl.panic")}
           </Button>
-          <p className="text-sm text-muted-foreground">
-            One small action, then the coach stays quiet until you clear it.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("coachCtl.panicHint")}</p>
         </div>
       )}
 
       {error ? (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {t("coachCtl.saveError")}
         </p>
       ) : null}
     </section>

@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — coach-thread.html */
+  .ct-thread { display: grid; gap: var(--tp-space-5); align-content: start; min-width: 0; }
+  .ct-turn { display: grid; gap: var(--tp-space-3); min-width: 0; }
+  .ct-stream { display: grid; gap: var(--tp-space-2); }
+  .ct-state { padding-block: var(--tp-space-6); }
+  .ct-paused { display: grid; gap: var(--tp-space-2); }
+</style>
+</head>
+<body>
+<!--
+@screen   Coach conversation
+@route    apps/web/app/(tempo)/coach/[threadId]/page.tsx
+@layout   TempoShell
+@data     thread = coach.getThread({ threadId })                          // Convex query, live: messages, proposals (kind, status, preview), streaming flag
+@data     dial = profiles.getCoachDial({})                                // Convex query: 0–10
+@data     crisisResources = safety.resourcesFor({ country: "IL" })        // Convex query: fixed, human-written card text (never model output)
+@actions  send message -> coach.send({ threadId, text })                  // streaming action; reply arrives token by token
+@actions  accept proposal -> coach.applyProposal({ proposalId })          // add task / template / module / scheduled job; Undo 5 min -> coach.undoProposal({ proposalId })
+@actions  edit proposal -> coach.editProposal({ proposalId, changes })    // inline edit of the preview names first
+@actions  reject proposal -> coach.rejectProposal({ proposalId })         // nothing changes
+@actions  read a message aloud -> voice.speak({ text, lang })
+@actions  set coach dial -> profiles.setCoachDial({ value })              // debounced 400 ms
+@actions  press panic -> coach.logPanic({})                               // optional analytics only; the grounding card is fixed copy, no model call
+@actions  start a voice call -> link to voice-call (voice.startSession({ lang }))
+@states   default | empty | loading | error | offline  (?state=)   + crisis (?view=crisis) + undo (?state=undo)
+@flow     1. Show the conversation with the newest turn at the bottom and the composer under it.
+          2. The coach answers in short lines. When it wants to change something, it shows a proposal card with the exact change: add a task, use a template, turn on a module, or set up a scheduled job.
+          3. Nothing changes until Accept. Edit lets Maya fix the names first. Reject leaves everything as it was. Accept shows Undo with a 5-minute countdown.
+          4. While the coach writes, its words appear as they arrive, with "Coach is writing" next to them.
+          5. "Coach style" opens a sheet with the dial from 0 (quiet) to 10 (push). The number and the word both show.
+          6. "I'm overwhelmed" opens a grounding card at once: a slow breathing line with words, and one 10-second action. No model call.
+          7. If Maya signals a crisis, the coach stops coaching and shows a fixed card with real resources for her country (shown here with ?view=crisis).
+          8. Empty: a kind opener. Error: "Couldn't reach the coach. Your list is safe." Offline: "The coach is offline. Your list still works."
+@i18n     en, he
+-->
+<a class="tp-skip" href="#thread" data-i18n="skip">Skip to conversation</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'coach' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li><a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a></li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Chat history','A lighter Monday'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="coach-history.html" data-i18n="nav.history">Chat history</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="th.title">A lighter Monday</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main: the conversation ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — + button | props: { title, subtitle, actions: [Coach style, Talk with voice, Panic] } | events: open-sheet, link, panic -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="th.title">A lighter Monday</h1>
+          <p class="tp-pagehead__sub"><span data-i18n="th.started">Started today at</span> <span class="tp-num tp-mono">08:58</span> · <span data-i18n="th.sub">Reads Today and your pages. Asks before changing anything.</span></p>
+        </div>
+        <div class="tp-pagehead__actions" data-crisis-hide>
+          <!-- @component PanicButton | shadcn: button | props: { label: "I'm overwhelmed" } | events: onPress -> panic (opens GroundingCard, no model call) -->
+          <button class="tp-panic" type="button" data-action="panic" aria-controls="grounding" aria-expanded="false" data-component="PanicButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lifebuoy"/></svg><span data-i18n="panic">I'm overwhelmed</span></button>
+          <button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="dial-sheet" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg><span data-i18n="dial.open">Coach style</span> <span class="tp-num" id="dial-chip">4</span></button>
+          <a class="tp-btn tp-btn--ghost" href="voice-call.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="voice.open">Talk with voice</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text: 'The coach is offline. Your list still works.' } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">The coach is offline. Your list still works.</span><span data-i18n="off.body">You can read this conversation. New messages wait until you're back.</span></span>
+      </div>
+
+      <!-- @component GroundingCard | shadcn: card | props: { action: { text: 'Put both feet flat on the floor', seconds: 10 } } | events: onDone -> grounding-done -->
+      <section class="tp-grounding" id="grounding" aria-labelledby="gr-title" data-component="GroundingCard" hidden>
+        <h2 class="tp-grounding__title" id="gr-title" data-i18n="gr.title">Let's slow down for a moment.</h2>
+        <p class="tp-grounding__body" data-i18n="gr.body">Nothing needs deciding right now. Your list will wait. Follow the line with your breath.</p>
+        <div class="tp-breath" data-phase="in">
+          <div class="tp-breath__track" aria-hidden="true"><span class="tp-breath__line"></span></div>
+          <p class="tp-breath__label" aria-live="polite" data-i18n="breath.in">Breathe in</p>
+        </div>
+        <div class="tp-grounding__action">
+          <span class="tp-grounding__action-text"><span data-i18n="gr.actionLead">One thing,</span> <span class="tp-num">10</span> <span data-i18n="gr.action">seconds: put both feet flat on the floor and notice them.</span></span>
+          <button class="tp-btn tp-btn--secondary" type="button" data-action="grounding-done"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="gr.done">Done</span></button>
+        </div>
+        <p class="tp-small tp-muted" data-grounding-done hidden data-i18n="gr.after">That counts. Stay here as long as you like, or carry on when you're ready.</p>
+      </section>
+
+      <!-- ===== Thread ===== -->
+      <div class="ct-thread" id="thread" role="log" aria-live="polite" aria-label="Conversation" data-i18n-attr="aria-label:th.log" tabindex="-1">
+
+        <!-- turn 1 · add a task -->
+        <div class="ct-turn" data-state-hide data-crisis-hide>
+          <!-- @component UserMessage | shadcn: scroll-area | props: { who: 'you', text } | events: — -->
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m1.user">I'm wiped today. Can you add "call the bank" before noon?</p>
+          </div>
+          <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: onReadAloud -> voice.speak({ text, lang }) -->
+          <div class="tp-msg" data-component="CoachMessage">
+            <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m1.coach">Of course. Here is exactly what I would add. Nothing changes until you say yes.</p>
+            <div class="tp-msg__actions">
+              <!-- @component ReadAloudButton | shadcn: toggle | props: { text } | events: onToggle -> voice.speak({ text, lang }) -->
+              <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+            </div>
+          </div>
+          <!-- @component ProposalCard | shadcn: card + button ×3 | props: { kind: 'task', target: 'Today', changes: {op:'add',title,detail}[] } | events: onAccept -> coach.applyProposal({ proposalId }), onEdit -> coach.editProposal, onReject -> coach.rejectProposal; Undo 5 min -> coach.undoProposal -->
+          <section class="tp-proposal" data-component="ProposalCard" data-status="pending" aria-labelledby="p1-title" data-key="p1">
+            <div class="tp-proposal__head">
+              <span class="tp-proposal__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-task"/></svg><span data-i18n="kind.task">Task</span></span>
+              <strong id="p1-title" data-i18n="p1.title">1 change to Today</strong>
+              <span class="tp-proposal__target" data-i18n="p1.target">Mon 12 Oct</span>
+            </div>
+            <ul class="tp-proposal__changes" role="list">
+              <!-- @component ChangePreview | shadcn: — | props: { op: 'add', title, detail } | events: — -->
+              <li class="tp-change" data-op="add" data-component="ChangePreview">
+                <span class="tp-change__sign"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="op.add">Add</span></span>
+                <span class="tp-change__body">
+                  <span class="tp-change__title" dir="auto" data-i18n="p1.task">Call the bank</span>
+                  <span class="tp-change__detail"><span data-i18n="p1.detail">Task ·</span> <span class="tp-num">10</span> <span data-i18n="unit.min">min</span> · <span data-i18n="p1.before">before</span> <span class="tp-num tp-mono">12:00</span></span>
+                </span>
+              </li>
+            </ul>
+            <div class="tp-proposal__actions">
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="accept"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="proposal.accept">Accept</span></button>
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="edit" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="proposal.edit">Edit</span></button>
+              <button class="tp-btn tp-btn--ghost" type="button" data-action="reject"><span data-i18n="proposal.reject">Reject</span></button>
+            </div>
+            <p class="tp-proposal__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+          </section>
+        </div>
+
+        <!-- turn 2 · template -->
+        <div class="ct-turn" data-state-hide data-crisis-hide>
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m2.user">Mondays are always like this.</p>
+          </div>
+          <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: onReadAloud -> voice.speak -->
+          <div class="tp-msg" data-component="CoachMessage">
+            <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m2.coach">That makes sense after a weekend. A gentler Monday template could start each Monday smaller. Today stays as it is.</p>
+            <div class="tp-msg__actions">
+              <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+            </div>
+          </div>
+          <!-- @component ProposalCard | shadcn: card + button ×3 | props: { kind: 'template', title, what: {label,value}[] } | events: onAccept -> coach.applyProposal -> templates.create + pages.setDefaultTemplate({ weekday: 1 }), onEdit, onReject; Undo 5 min -->
+          <section class="tp-proposal" data-kind="template" data-component="ProposalCard" data-status="pending" aria-labelledby="p2-title" data-key="p2">
+            <div class="tp-proposal__head">
+              <span class="tp-proposal__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="kind.template">Template</span></span>
+              <strong id="p2-title" data-i18n="p2.title">Start Mondays from a gentler template</strong>
+              <span class="tp-proposal__target" data-i18n="p2.target">Every Monday</span>
+            </div>
+            <dl class="tp-proposal__what">
+              <div class="tp-what-row"><dt data-i18n="what.name">Name</dt><dd><span class="tp-change__title" dir="auto" data-i18n="p2.name">Gentle Monday</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.adds">Adds</dt><dd><span data-i18n="p2.adds1">At most</span> <span class="tp-num">3</span> <span data-i18n="p2.adds2">tasks, a</span> <span class="tp-num">10</span><span data-i18n="p2.adds3">-minute walk, and one quiet hour</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.changes">Changes</dt><dd data-i18n="p2.changes">New Monday pages from 19 Oct. Pages you already have stay as they are.</dd></div>
+            </dl>
+            <div class="tp-proposal__actions">
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="accept"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="proposal.accept">Accept</span></button>
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="edit" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="proposal.edit">Edit</span></button>
+              <button class="tp-btn tp-btn--ghost" type="button" data-action="reject"><span data-i18n="proposal.reject">Reject</span></button>
+            </div>
+            <p class="tp-proposal__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+          </section>
+        </div>
+
+        <!-- turn 3 · module -->
+        <div class="ct-turn" data-state-hide data-crisis-hide>
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m3.user">I also forget to drink water when I'm like this.</p>
+          </div>
+          <div class="tp-msg" data-component="CoachMessage">
+            <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m3.coach">I can turn on a small water module. It adds one tracker to Today and nothing else. You can switch it off in Modules.</p>
+            <div class="tp-msg__actions">
+              <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+            </div>
+          </div>
+          <!-- @component ProposalCard | shadcn: card + button ×3 | props: { kind: 'module', title, what: {label,value}[] } | events: onAccept -> coach.applyProposal -> modules.install({ spec }), onEdit, onReject; Undo 5 min -> modules.uninstall -->
+          <section class="tp-proposal" data-kind="module" data-component="ProposalCard" data-status="pending" aria-labelledby="p3-title" data-key="p3">
+            <div class="tp-proposal__head">
+              <span class="tp-proposal__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg><span data-i18n="kind.module">Module</span></span>
+              <strong id="p3-title" data-i18n="p3.title">Turn on a water tracker</strong>
+              <span class="tp-proposal__target" data-i18n="p3.target">Today page</span>
+            </div>
+            <dl class="tp-proposal__what">
+              <div class="tp-what-row"><dt data-i18n="what.name">Name</dt><dd><span class="tp-change__title" dir="auto" data-i18n="p3.name">Water</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.adds">Adds</dt><dd><span data-i18n="p3.adds1">A tracker on Today, goal</span> <span class="tp-num">6</span> <span data-i18n="p3.adds2">glasses</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.changes">Changes</dt><dd data-i18n="p3.changes">Nothing else. No reminders unless you ask.</dd></div>
+            </dl>
+            <div class="tp-proposal__actions">
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="accept"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="proposal.accept">Accept</span></button>
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="edit" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="proposal.edit">Edit</span></button>
+              <button class="tp-btn tp-btn--ghost" type="button" data-action="reject"><span data-i18n="proposal.reject">Reject</span></button>
+            </div>
+            <p class="tp-proposal__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+          </section>
+        </div>
+
+        <!-- turn 4 · scheduled job (newest proposal: the one primary) -->
+        <div class="ct-turn" data-state-hide data-crisis-hide>
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m4.user">Every weekday at 8, write my plan into Today.</p>
+          </div>
+          <div class="tp-msg" data-component="CoachMessage">
+            <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m4.coach">I can do that every weekday morning. Here is the job I would set up.</p>
+            <div class="tp-msg__actions">
+              <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+            </div>
+          </div>
+          <!-- @component ProposalCard | shadcn: card + button ×3 | props: { kind: 'job', title, what: {label,value}[] } | events: onAccept -> coach.applyProposal -> jobs.create({ cron: "0 8 * * 1-5", task, pageId }), onEdit, onReject; Undo 5 min -> jobs.remove -->
+          <section class="tp-proposal" data-kind="job" data-component="ProposalCard" data-status="pending" aria-labelledby="p4-title" data-key="p4">
+            <div class="tp-proposal__head">
+              <span class="tp-proposal__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="kind.job">Scheduled job</span></span>
+              <strong id="p4-title" data-i18n="p4.title">Write my plan into Today</strong>
+              <span class="tp-proposal__target" data-i18n="p4.target">Weekdays</span>
+            </div>
+            <dl class="tp-proposal__what">
+              <div class="tp-what-row"><dt data-i18n="what.name">Name</dt><dd><span class="tp-change__title" dir="auto" data-i18n="p4.name">Morning plan</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.when">When</dt><dd><span class="tp-ltr tp-mono tp-num">Mon–Fri 08:00</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.does">Does</dt><dd data-i18n="p4.does">Reads your tasks and calendar, then writes a short plan at the top of Today.</dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.stop">Stop it</dt><dd data-i18n="p4.stop">Switch it off in Modules, any time.</dd></div>
+            </dl>
+            <div class="tp-proposal__actions">
+              <button class="tp-btn tp-btn--primary" type="button" data-action="accept"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="proposal.accept">Accept</span></button>
+              <button class="tp-btn tp-btn--secondary" type="button" data-action="edit" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="proposal.edit">Edit</span></button>
+              <button class="tp-btn tp-btn--ghost" type="button" data-action="reject"><span data-i18n="proposal.reject">Reject</span></button>
+            </div>
+            <p class="tp-proposal__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+          </section>
+        </div>
+
+        <!-- turn 5 · streaming reply -->
+        <div class="ct-turn" data-state-hide data-crisis-hide>
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="m5.user">Thanks. So what do I do first?</p>
+          </div>
+          <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text (streaming), streaming: true } | events: — -->
+          <div class="tp-msg ct-stream" data-component="CoachMessage" aria-busy="true">
+            <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+            <p class="tp-msg__text" dir="auto" id="stream-text" data-i18n="m5.coach">Start with the bank call. It's ten minutes, and once it's done</p>
+            <!-- @component TypingIndicator | shadcn: — | props: { label: 'Coach is writing' } | events: — -->
+            <div class="tp-typing" role="status" data-component="TypingIndicator">
+              <span class="tp-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span data-i18n="typing">Coach is writing</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- crisis view (?view=crisis) — coaching stops, fixed card -->
+        <div class="ct-turn" data-crisis-show hidden>
+          <div class="tp-msg tp-msg--user" data-component="UserMessage">
+            <span class="tp-msg__who" data-i18n="msg.you">You</span>
+            <p class="tp-msg__text" dir="auto" data-i18n="cr.user">I haven't slept in three nights and I don't think I can keep going.</p>
+          </div>
+          <!-- @component CrisisCard | shadcn: card | props: { country: 'IL', resources: {name, detail, phone}[] } | events: tel: links — FIXED text written by people, never by the model; no animation -->
+          <section class="tp-crisis" aria-labelledby="cr-title" data-component="CrisisCard" tabindex="-1" id="crisis">
+            <h2 class="tp-crisis__title" id="cr-title" data-i18n="cr.title">You don't have to carry this alone.</h2>
+            <p class="tp-crisis__body" data-i18n="cr.body">What you're feeling matters. The people below are trained to help, any hour, and talking to them is free.</p>
+            <ul class="tp-crisis__list" role="list">
+              <li class="tp-crisis__item">
+                <span class="tp-crisis__item-text"><span class="tp-crisis__name" data-i18n="cr.eran">ERAN: emotional first aid</span><span class="tp-crisis__detail"><span data-i18n="cr.eranD">Phone, any hour. Hebrew, Arabic, English and more.</span> <span class="tp-num tp-mono">1201</span></span></span>
+                <a class="tp-btn tp-btn--secondary" href="tel:1201"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="cr.call">Call</span> <span class="tp-num">1201</span></a>
+              </li>
+              <li class="tp-crisis__item">
+                <span class="tp-crisis__item-text"><span class="tp-crisis__name" data-i18n="cr.sahar">SAHAR: support by chat</span><span class="tp-crisis__detail"><span data-i18n="cr.saharD">If talking out loud is hard, you can write.</span> <span class="tp-ltr">sahar.org.il</span></span></span>
+                <a class="tp-btn tp-btn--secondary" href="https://sahar.org.il" rel="noopener"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg><span data-i18n="cr.open">Open chat</span></a>
+              </li>
+              <li class="tp-crisis__item">
+                <span class="tp-crisis__item-text"><span class="tp-crisis__name" data-i18n="cr.mda">If you are in danger right now</span><span class="tp-crisis__detail"><span data-i18n="cr.mdaD">Magen David Adom, emergency</span> <span class="tp-num tp-mono">101</span></span></span>
+                <a class="tp-btn tp-btn--secondary" href="tel:101"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="cr.call">Call</span> <span class="tp-num">101</span></a>
+              </li>
+            </ul>
+            <p class="tp-crisis__note" data-i18n="cr.note">This card was written by people, not by the coach. The coach has paused. Resources shown for Israel; you can change the country in Settings.</p>
+          </section>
+          <div class="tp-notice ct-paused" role="status">
+            <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="cr.pausedT">Coaching is paused.</span><span data-i18n="cr.pausedB">Your list and pages still work. You can come back to the coach whenever you want.</span></span>
+          </div>
+        </div>
+
+        <!-- empty: a new conversation -->
+        <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text: opener } | events: onReadAloud -> voice.speak -->
+        <div class="tp-msg" data-component="CoachMessage" data-state-show="empty">
+          <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+          <p class="tp-msg__text" dir="auto" data-i18n="empty.opener">Hi Maya. I can see Today. Ask me to plan, shrink or sort anything. Nothing changes until you say yes.</p>
+          <div class="tp-msg__actions">
+            <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+          </div>
+        </div>
+
+        <!-- @component TypingIndicator | shadcn: — | props: { label: 'Opening your conversation' } | events: — -->
+        <div class="tp-typing ct-state" role="status" data-component="TypingIndicator" data-state-show="loading">
+          <span class="tp-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span data-i18n="loading">Opening your conversation</span>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't reach the coach." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error ct-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't reach the coach.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Your list is safe, and Today works without the coach.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+
+      <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }), onAttach -> page picker -->
+      <form class="tp-composer" data-component="Composer" onsubmit="return false" data-state-hide="offline" data-crisis-hide>
+        <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+        <div class="tp-composer__box">
+          <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+          <div class="tp-composer__bar">
+            <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" aria-label="Attach a page" data-i18n-attr="aria-label:composer.attach"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></button>
+            <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:voice.open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+            <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+          </div>
+        </div>
+        <p class="tp-composer__hint" data-i18n="composer.hint">The coach can be wrong. Every change waits for your yes.</p>
+      </form>
+    </div>
+  </main>
+
+  <!-- ===== Coach dial sheet ===== -->
+  <!-- @component MobileSheet | shadcn: sheet (bottom) / drawer | props: { id: 'dial-sheet', title: 'Coach style' } | events: onOpenChange -> open-sheet / close-sheet, Esc -->
+  <div class="tp-sheet-scrim" data-for="dial-sheet" data-action="close-sheet" hidden></div>
+  <section class="tp-sheet tp-glass" id="dial-sheet" role="dialog" aria-modal="true" aria-labelledby="dial-title" data-component="MobileSheet" hidden>
+    <span class="tp-sheet__grabber" aria-hidden="true"></span>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="dial-title" data-i18n="dial.title">Coach style</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <!-- @component CoachDial | shadcn: slider | props: { value: 4 } | events: onValueChange -> profiles.setCoachDial({ value }) -->
+      <div class="tp-card" data-component="CoachDial">
+        <div class="tp-dial" data-component="Dial">
+          <div class="tp-dial__head">
+            <label class="tp-label" for="dial" data-i18n="dial.label">How much should the coach push?</label>
+            <span class="tp-dial__value"><span class="tp-dial__num tp-num" data-dial-num>4</span><span class="tp-dial__of" data-i18n="dial.of">of 10</span><span class="tp-dial__word" data-dial-word>Steady</span></span>
+          </div>
+          <input class="tp-slider" id="dial" type="range" min="0" max="10" step="1" value="4" aria-describedby="dial-help">
+          <div class="tp-dial__scale" aria-hidden="true"><span><span class="tp-num">0</span> <span data-i18n="dial.quiet">Quiet</span></span><span data-i18n="dial.steady">Steady</span><span><span data-i18n="dial.push">Push</span> <span class="tp-num">10</span></span></div>
+        </div>
+      </div>
+      <p class="tp-help" id="dial-help" data-i18n="dial.help">Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans. You can change this any time.</p>
+    </div>
+    <div class="tp-sheet__foot">
+      <button class="tp-btn tp-btn--secondary" type="button" data-action="close-sheet"><span data-i18n="sheet.done">Done</span></button>
+    </div>
+  </section>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title: per proposal, countdown: 5:00 } | events: onUndo -> coach.undoProposal({ proposalId }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "proposal.accepted": "Done.", "proposal.rejected": "Left as it was. Nothing changed.",
+    "proposal.edit": "Edit", "proposal.doneEditing": "Done editing",
+    "toast.title": "Done", "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss",
+    "toast.p1": "Added “Call the bank” to Today", "toast.p2": "Gentle Monday template is on", "toast.p3": "Water tracker is on", "toast.p4": "Morning plan is set for weekdays",
+    "note.p1": "Done. “Call the bank” is on Today, before 12:00.", "note.p2": "Done. New Monday pages start from Gentle Monday.",
+    "note.p3": "Done. The water tracker is on Today. Switch it off in Modules.", "note.p4": "Done. Starting tomorrow, your plan lands in Today at 08:00 on weekdays.",
+    "dial.quiet": "Quiet", "dial.steady": "Steady", "dial.push": "Push", "dial.of": "of 10",
+    "breath.in": "Breathe in", "breath.hold": "Hold", "breath.out": "Breathe out",
+    "read.aloud": "Read aloud", "read.stop": "Stop reading", "state.retried": "Loaded.", "unit.min": "min",
+    "stream.more": " you can rest for a bit. The slides can wait until after lunch."
+  },
+  he: {
+    "doc.title": "מאמן · Tempo",
+    "skip": "דלגי לשיחה",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.history": "היסטוריית שיחות", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "th.title": "יום שני קליל יותר", "th.started": "התחילה היום ב־", "th.sub": "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי.", "th.log": "שיחה",
+    "panic": "יותר מדי לי עכשיו", "dial.open": "סגנון המאמן", "voice.open": "לדבר בקול",
+    "off.title": "המאמן לא זמין כרגע. הרשימה שלך ממשיכה לעבוד.", "off.body": "אפשר לקרוא את השיחה. הודעות חדשות יחכו עד שהחיבור יחזור.",
+    "gr.title": "בואי נאט רגע.", "gr.body": "שום דבר לא צריך החלטה עכשיו. הרשימה תחכה. עקבי אחרי הקו עם הנשימה.",
+    "breath.in": "שאיפה", "breath.hold": "החזקה", "breath.out": "נשיפה",
+    "gr.actionLead": "דבר אחד,", "gr.action": "שניות: להניח את שתי כפות הרגליים על הרצפה ולהרגיש אותן.", "gr.done": "סיימתי",
+    "gr.after": "זה נחשב. אפשר להישאר כאן כמה שתרצי, או להמשיך כשתהיי מוכנה.",
+    "msg.you": "את", "coach.name": "מאמן",
+    "m1.user": "אני גמורה היום. אפשר להוסיף ״להתקשר לבנק״ לפני הצהריים?",
+    "m1.coach": "בטח. זה בדיוק מה שהייתי מוסיף. שום דבר לא משתנה עד שתאשרי.",
+    "kind.task": "משימה", "p1.title": "שינוי אחד בהיום", "p1.target": "יום ב׳ 12.10", "op.add": "הוספה",
+    "p1.task": "להתקשר לבנק", "p1.detail": "משימה ·", "unit.min": "דק׳", "p1.before": "עד",
+    "proposal.accept": "אישור", "proposal.edit": "עריכה", "proposal.doneEditing": "סיום עריכה", "proposal.reject": "דחייה",
+    "proposal.accepted": "בוצע.", "proposal.rejected": "נשאר כמו שהיה. שום דבר לא השתנה.",
+    "m2.user": "ימי שני תמיד ככה.",
+    "m2.coach": "זה הגיוני אחרי סוף שבוע. תבנית רכה ליום שני יכולה להתחיל כל יום שני קטן יותר. היום נשאר כמו שהוא.",
+    "kind.template": "תבנית", "p2.title": "להתחיל את ימי שני מתבנית רכה יותר", "p2.target": "כל יום שני",
+    "what.name": "שם", "what.adds": "מוסיפה", "what.changes": "משנה", "what.when": "מתי", "what.does": "מה עושה", "what.stop": "להפסיק",
+    "p2.name": "יום שני רך", "p2.adds1": "לכל היותר", "p2.adds2": "משימות, הליכה של", "p2.adds3": " דקות, ושעה שקטה אחת",
+    "p2.changes": "דפי יום שני חדשים החל מ־19.10. דפים שכבר קיימים נשארים כמו שהם.",
+    "m3.user": "אני גם שוכחת לשתות מים כשאני ככה.",
+    "m3.coach": "אפשר להפעיל מודול מים קטן. הוא מוסיף מעקב אחד להיום ולא יותר. אפשר לכבות אותו במודולים.",
+    "kind.module": "מודול", "p3.title": "להפעיל מעקב מים", "p3.target": "דף היום",
+    "p3.name": "מים", "p3.adds1": "מעקב בהיום, יעד של", "p3.adds2": "כוסות", "p3.changes": "שום דבר אחר. בלי תזכורות אלא אם תבקשי.",
+    "m4.user": "בכל יום חול ב־8, תכתוב את התוכנית שלי בהיום.",
+    "m4.coach": "אפשר לעשות את זה בכל בוקר של יום חול. זו המשימה הקבועה שהייתי מגדיר.",
+    "kind.job": "משימה מתוזמנת", "p4.title": "לכתוב את התוכנית שלי בהיום", "p4.target": "ימי חול",
+    "p4.name": "תוכנית בוקר", "p4.does": "קורא את המשימות ואת היומן שלך, ואז כותב תוכנית קצרה בראש דף היום.", "p4.stop": "לכבות במודולים, בכל רגע.",
+    "m5.user": "תודה. אז מה אני עושה קודם?",
+    "m5.coach": "קודם השיחה לבנק. זה עשר דקות, וכשזה מאחורייך",
+    "stream.more": " אפשר לנוח קצת. השקפים יכולים לחכות לאחרי הצהריים.",
+    "typing": "המאמן כותב",
+    "read.aloud": "הקראה", "read.stop": "עצירת ההקראה",
+    "cr.user": "לא ישנתי שלושה לילות ואני לא חושבת שאני יכולה להמשיך.",
+    "cr.title": "את לא צריכה לשאת את זה לבד.", "cr.body": "מה שאת מרגישה חשוב. האנשים כאן למטה הוכשרו לעזור, בכל שעה, והשיחה איתם בחינם.",
+    "cr.eran": "ער״ן: עזרה ראשונה נפשית", "cr.eranD": "טלפון, בכל שעה. בעברית, ערבית, אנגלית ועוד.", "cr.call": "להתקשר",
+    "cr.sahar": "סה״ר: תמיכה בצ׳אט", "cr.saharD": "אם קשה לדבר בקול, אפשר לכתוב.", "cr.open": "לפתוח צ׳אט",
+    "cr.mda": "אם את בסכנה עכשיו", "cr.mdaD": "מגן דוד אדום, חירום",
+    "cr.note": "את הכרטיס הזה כתבו אנשים, לא המאמן. המאמן עצר. המידע מוצג לישראל; אפשר לשנות מדינה בהגדרות.",
+    "cr.pausedT": "האימון מושהה.", "cr.pausedB": "הרשימה והדפים שלך ממשיכים לעבוד. אפשר לחזור למאמן מתי שתרצי.",
+    "empty.opener": "היי מאיה. אני רואה את היום. אפשר לבקש ממני לתכנן, להקטין או לסדר כל דבר. שום דבר לא משתנה עד שתאשרי.",
+    "loading": "פותח את השיחה שלך", "error.title": "לא הצלחנו להגיע למאמן.", "error.body": "הרשימה שלך שמורה, והיום עובד גם בלי המאמן.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "composer.label": "הודעה למאמן", "composer.ph": "לשאול, לתכנן, או לחשוב בקול", "composer.attach": "צירוף דף", "composer.send": "שליחה",
+    "composer.hint": "המאמן יכול לטעות. כל שינוי מחכה לאישור שלך.",
+    "dial.title": "סגנון המאמן", "dial.label": "כמה המאמן ידחוף?", "dial.of": "מתוך 10", "dial.quiet": "שקט", "dial.steady": "יציב", "dial.push": "דוחף",
+    "dial.help": "שקט: המאמן מחכה שתשאלי. יציב: בדיקות עדינות. דוחף: יותר תזכורות ותוכניות נחרצות יותר. אפשר לשנות בכל רגע.",
+    "sheet.close": "סגירה", "sheet.done": "סיום",
+    "toast.title": "בוצע", "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "toast.p1": "״להתקשר לבנק״ נוסף להיום", "toast.p2": "תבנית יום שני רך פעילה", "toast.p3": "מעקב המים פעיל", "toast.p4": "תוכנית הבוקר מוגדרת לימי חול",
+    "note.p1": "בוצע. ״להתקשר לבנק״ בהיום, עד 12:00.", "note.p2": "בוצע. דפי יום שני חדשים יתחילו מיום שני רך.",
+    "note.p3": "בוצע. מעקב המים בהיום. אפשר לכבות אותו במודולים.", "note.p4": "בוצע. החל ממחר, התוכנית שלך תגיע להיום ב־08:00 בימי חול.",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  var S = window.TP_STRINGS;
+  function lang() { return S[document.documentElement.lang] ? document.documentElement.lang : "en"; }
+
+  /* Each proposal kind has its own confirmation line and Undo toast title. */
+  TP.onAccept = function (card) {
+    // REAL: convex coach.applyProposal({ proposalId }) — p1 tasks.create · p2 templates.create + pages.setDefaultTemplate · p3 modules.install · p4 jobs.create({ cron: "0 8 * * 1-5" })
+    var k = card.getAttribute("data-key");
+    S[lang()]["toast.title"] = TP.t("toast." + k);
+    var note = card.querySelector("[data-note]"); if (note) note.textContent = TP.t("note." + k);
+  };
+  TP.onUndo = function (card) {
+    // REAL: convex coach.undoProposal({ proposalId }) — reverses exactly what Accept did; allowed for 5 minutes
+  };
+
+  /* Coach dial: mirror the value into the header button. */
+  document.addEventListener("input", function (e) {
+    if (e.target.id !== "dial") return;
+    // REAL: convex profiles.setCoachDial({ value }) — debounced 400 ms
+    document.getElementById("dial-chip").textContent = e.target.value;
+  });
+
+  /* Streaming: the coach's words arrive a few at a time (demo). */
+  TP.onReady2 = function (params) {
+    // REAL: convex coach.send streams tokens into thread.messages[i].text; the UI re-renders as they arrive
+    var view = params.get("view");
+    if (view === "crisis") {
+      // REAL: safety.check flags crisis -> coach stops; the card comes from safety.resourcesFor({ country }), fixed human-written text
+      document.querySelectorAll("[data-crisis-hide]").forEach(function (el) { el.hidden = true; });
+      document.querySelectorAll("[data-crisis-show]").forEach(function (el) { el.hidden = false; });
+      var c = document.getElementById("crisis"); if (c) c.focus({ preventScroll: false });
+      return;
+    }
+    var p = document.getElementById("stream-text"); if (!p) return;
+    var rest = TP.t("stream.more").split(" "), i = 0;
+    var timer = setInterval(function () {
+      if (i >= rest.length) {
+        clearInterval(timer);
+        var msg = p.closest(".tp-msg"); msg.removeAttribute("aria-busy");
+        var ty = msg.querySelector(".tp-typing"); if (ty) ty.hidden = true;
+        return;
+      }
+      p.textContent += (i === 0 ? "" : " ") + rest[i]; i++;
+    }, 260);
+  };
+})();
+</script>
+</body>
+</html>

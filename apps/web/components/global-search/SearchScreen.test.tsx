@@ -3,13 +3,26 @@
  * is outside this ticket's scope. bun:test plus react-dom/server covers the
  * render states: skipped query, grouped links, and "No matches".
  */
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 let queryParam = "";
 let result: unknown;
 const useQueryCalls: unknown[][] = [];
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "next/navigation": { ...(await import("next/navigation")) },
+  "next/link": { ...(await import("next/link")) },
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("convex/react", () => ({
   useQuery: (...args: unknown[]) => {
@@ -30,8 +43,16 @@ mock.module("@/convex/_generated/api", () => ({
   api: { search: { all: "search.all" } },
 }));
 
-const { SearchScreen } = await import("./SearchScreen");
-const render = () => renderToStaticMarkup(createElement(SearchScreen));
+// The screen reads its copy from the locale context; English, as the app's default.
+const { translate } = await import("@/lib/i18n");
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: Parameters<typeof translate>[1]) => translate("en", key) }),
+}));
+
+// SearchScreen renders its body once mounted (after hydration); the body is what these
+// static renders check.
+const { SearchScreenBody } = await import("./SearchScreen");
+const render = () => renderToStaticMarkup(createElement(SearchScreenBody));
 
 beforeEach(() => {
   queryParam = "";
@@ -56,16 +77,24 @@ describe("SearchScreen", () => {
     };
     const html = render();
     expect(useQueryCalls.at(-1)?.[1]).toEqual({ query: "plan" });
-    expect(html).toContain("Notes (1)");
+    expect(html).toContain('data-group="notes"');
+    expect(html).toContain(">Notes</h2>");
+    expect(html).toContain("3 results");
     expect(html).toContain('href="/notes/n1"');
     expect(html).toContain('href="/tasks"');
     expect(html).toContain('href="/goals"');
-    expect(html).not.toContain("Habits");
+    expect(html).not.toContain('data-group="habits"');
   });
 
   test("shows No matches when every group is empty", () => {
     queryParam = "zzz";
     result = { notes: [], tasks: [], habits: [], goals: [] };
     expect(render()).toContain("No matches");
+  });
+
+  test("isolates the typed query in the empty state", () => {
+    queryParam = "zzz";
+    result = { notes: [], tasks: [], habits: [], goals: [] };
+    expect(render()).toContain('No matches for “<bdi dir="auto">zzz</bdi>”.');
   });
 });

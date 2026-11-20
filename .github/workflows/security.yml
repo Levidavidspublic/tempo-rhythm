@@ -6,7 +6,7 @@ name: Security
 
 on:
   pull_request:
-    branches: [master, integration]
+    branches: [master, integration, 'batch/**']
     types: [opened, synchronize, reopened, ready_for_review]
   # Required check name is the job `secret-scan`. The queue must be able to run it.
   merge_group:
@@ -14,6 +14,10 @@ on:
   push:
     branches: [master, integration]
   workflow_dispatch:
+  # Weekly full-history scan (Sun 03:17 UTC). The merge-queue run scans only the queued commits,
+  # so this keeps whole-history coverage. Old findings show up here, not in the queue.
+  schedule:
+    - cron: "17 3 * * 0"
   # release.yml (Phase H) re-runs the scans on the exact integration SHA; base_sha = master tip (scan range).
   workflow_call:
     inputs:
@@ -22,11 +26,17 @@ on:
         type: string
         required: false
         default: ""
+      concurrency_group:
+        description: Own concurrency group for this call. release-go.yml passes one so its candidate scans and release.yml's gate scans never cancel each other. Empty = security-<event>-<ref>, as before.
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   # event_name keeps release.yml's call (event workflow_dispatch, ref integration) from cancelling, or being
-  # cancelled by, the push run on integration.
-  group: security-${{ github.event_name }}-${{ github.ref }}
+  # cancelled by, the push run on integration. inputs is empty for every event but workflow_call, so every
+  # existing run keeps security-<event>-<ref>; only a caller that passes concurrency_group gets its own group.
+  group: ${{ inputs.concurrency_group || format('security-{0}-{1}', github.event_name, github.ref) }}
   cancel-in-progress: true
 
 permissions:
@@ -82,6 +92,12 @@ jobs:
         uses: trufflesecurity/trufflehog@4dd8831c5f12599465d4d45c3c447b4018a34c85 # v3.97.9
         with:
           path: ./
+          # merge_group: scan only the queued commits (base..head). Without these the action gets
+          # empty BASE/HEAD on merge_group runs and scans the whole history. Other events keep their
+          # current behaviour; the weekly schedule run does the full-history scan.
+          # Reusable release scans supply the base explicitly and run on the candidate SHA.
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || inputs.base_sha || '' }}
+          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || (inputs.base_sha && github.sha) || '' }}
           extra_args: --results=verified,unknown
 
   secret-scan-self-test:

@@ -344,4 +344,21 @@ describe("memory", () => {
 		expect(out.markdown).toContain("## Emotional");
 		expect(out.markdown).toContain("- Likes tea");
 	});
+
+	test("exportAll says where each imported memory came from", async () => {
+		const { ctx, db } = makeFakeCtx();
+		await run(memory.remember, ctx, { content: "Likes tea" });
+		const fromChatGpt = await run(memory.remember, ctx, { content: "Runs on Sundays" });
+		await db.patch(fromChatGpt, { metadata: { source: "chatgpt", importedAt: 1 } });
+		const fromOther = await run(memory.remember, ctx, { content: "Plays cello" });
+		await db.patch(fromOther, { metadata: { source: "other", importedAt: 1 } });
+		const unknownSource = await run(memory.remember, ctx, { content: "Reads at night" });
+		await db.patch(unknownSource, { metadata: { source: "somewhere" } });
+
+		const lines = (await run(memory.exportAll, ctx)).markdown.split("\n");
+		expect(lines).toContain("- Likes tea");
+		expect(lines).toContain("- Runs on Sundays (imported from ChatGPT)");
+		expect(lines).toContain("- Plays cello (imported)");
+		expect(lines).toContain("- Reads at night");
+	});
 });

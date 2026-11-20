@@ -3,18 +3,13 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import { ComingSoonOnly } from "@/components/coming-soon/ComingSoonOnly";
 import { Providers } from "@/components/providers/providers";
+import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { DATA_BACKEND } from "@/lib/backend-flag";
+import { getSurface } from "@/lib/surface";
 import { themeInitScript } from "@/lib/theme-script";
-
-const inter = localFont({
-  src: "../fonts/inter/Inter-latin.woff2",
-  weight: "400 700",
-  style: "normal",
-  variable: "--font-inter",
-  display: "swap",
-  adjustFontFallback: "Arial",
-});
 
 const newsreader = localFont({
   src: "../fonts/newsreader/Newsreader-latin.woff2",
@@ -50,37 +45,56 @@ const ibmPlexMono = localFont({
 
 export const metadata: Metadata = {
   title: "Tempo Flow — your brain's operating system",
-  description:
-    "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
+  description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3ebe2" },
-    { media: "(prefers-color-scheme: dark)", color: "#131312" },
+    { media: "(prefers-color-scheme: light)", color: "#F3EEE4" },
+    { media: "(prefers-color-scheme: dark)", color: "#161412" },
   ],
 };
 
+/** Root layout. On the coming-soon surface it renders a bare document with no app providers. */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Coming-soon surface (live): one public page. No sign-in, no backend client, no theme script.
+  if (getSurface() === "coming-soon") {
+    return (
+      <html lang="en" dir="ltr" data-backend={DATA_BACKEND}>
+        <body data-tempo-flow="" style={{ margin: 0, background: "var(--tp-ground)" }}>
+          {/* App pages need the providers below. Without this guard they throw when the build prerenders them. */}
+          <ComingSoonOnly>{children}</ComingSoonOnly>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ConvexAuthNextjsServerProvider>
       <html
         lang="en"
         dir="ltr"
-        className={`${inter.variable} ${newsreader.variable} ${ibmPlexMono.variable}`}
+        data-backend={DATA_BACKEND}
+        className={`${newsreader.variable} ${ibmPlexMono.variable}`}
         suppressHydrationWarning
       >
         <head>
-          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
-          <Script id="tempo-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+          <Script
+            id="tempo-theme-init"
+            strategy="beforeInteractive"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input
+            dangerouslySetInnerHTML={{ __html: themeInitScript() }}
+          />
         </head>
         <body className="antialiased" suppressHydrationWarning>
           <ThemeProvider>
-            <Providers>{children}</Providers>
+            <LocaleProvider>
+              <Providers>{children}</Providers>
+            </LocaleProvider>
           </ThemeProvider>
         </body>
       </html>

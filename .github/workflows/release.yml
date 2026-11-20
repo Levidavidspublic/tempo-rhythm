@@ -8,8 +8,9 @@ name: Release to production
 #               stops here if there is a blocker; a dry run reports it and keeps going.
 # 2. release-pr Opens/updates ONE Release PR integration -> master as Division6066 (FACTORY_BATCH_TOKEN), label release.
 # 3. Second gate on that exact SHA: full CI (ci.yml), secret scans (security.yml), Playwright against the integration
-#    Vercel preview, then ONE Cursor Bugbot review of the whole release PR. Any failure or Bugbot finding -> the
-#    PR gets blocked:amit + a summary comment and the run stops. No auto-fix on release.
+#    Vercel preview, then ONE code review of the whole release PR (Bugbot, or CodeRabbit when repo variable
+#    RELEASE_REVIEWER=coderabbit). Any failure or review finding -> the PR gets blocked:amit + a summary
+#    comment and the run stops. No auto-fix on release. A skipped CodeRabbit status does not pass.
 # 4. dry_run=true stops after the gate (nothing merged, no Convex deploy, nothing live).
 # 5. Real run: waits until GitHub says the PR is mergeable, deploys Convex prod (precious-wildcat-890) only when
 #    convex/ changed, merges the PR pinned to the gate SHA (Vercel then deploys tempo-web to production), waits for
@@ -194,11 +195,12 @@ jobs:
           retention-days: 30
 
   bugbot:
-    name: gate Bugbot (one review)
-    # Bugbot costs money: ask for it only after CI, scans and preview E2E are green.
+    name: gate code review (one review)
+    # One review, and only after CI, scans and preview E2E are green.
+    # REVIEWER comes from repo variable RELEASE_REVIEWER (bugbot by default, or coderabbit).
     needs: [preflight, release-pr, gate-ci, gate-security, gate-e2e-preview]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     outputs:
       detail: ${{ steps.bb.outputs.detail }}
     steps:
@@ -209,13 +211,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: One Cursor Bugbot review of the release PR
+      - name: One code review of the release PR
         id: bb
         env:
           GH_TOKEN: ${{ secrets.FACTORY_BATCH_TOKEN || github.token }}
           PR_NUMBER: ${{ needs.release-pr.outputs.number }}
+          REVIEWER: ${{ vars.RELEASE_REVIEWER || 'bugbot' }}
           BUGBOT_WAIT_AUTO_SECONDS: "60"
           BUGBOT_WAIT_MINUTES: "35"
+          CODERABBIT_WAIT_MINUTES: "45"
         run: node scripts/factory/release-gate.mjs bugbot
 
   verdict:
@@ -243,7 +247,7 @@ jobs:
              "CI (lint, typecheck, unit, scans, notices, local E2E, build)": "${{ needs.gate-ci.result }}",
              "secret scans": "${{ needs.gate-security.result }}",
              "Playwright on the integration preview": "${{ needs.gate-e2e-preview.result }}",
-             "Cursor Bugbot": "${{ needs.bugbot.result }}"}
+             "code review (${{ vars.RELEASE_REVIEWER || 'bugbot' }})": "${{ needs.bugbot.result }}"}
         run: node scripts/factory/release-gate.mjs verdict
 
   pr-ready:

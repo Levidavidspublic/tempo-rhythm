@@ -21,7 +21,7 @@ test.describe("today tasks and energy", () => {
 
     await page.goto(url("/today"));
     const quickAdd = page.getByLabel("Add something small for today");
-    const taskList = page.getByRole("region", { name: "Today" });
+    const taskList = page.getByRole("region", { name: "Today", exact: true });
 
     for (const title of titles) {
       await quickAdd.fill(title);
@@ -41,6 +41,10 @@ test.describe("today tasks and energy", () => {
       await expect(taskList.getByText(title, { exact: true })).toBeVisible();
     }
     await expect(taskList.getByText("Done today (1)")).toBeVisible();
+    const completedTitle = taskList.getByText(titles[0], { exact: true });
+    await expect(completedTitle).toBeHidden();
+    await taskList.getByText("Done today (1)", { exact: true }).click();
+    await expect(completedTitle).toBeVisible();
     await page.screenshot({ path: "test-results/T-PLAN-07/after-tasks.png", fullPage: true });
 
     expect(consoleErrors).toEqual([]);
@@ -61,11 +65,14 @@ test.describe("today tasks and energy", () => {
     await page.reload();
     await expect(lowEnergy).toHaveAttribute("aria-pressed", "true");
     await expect(
-      recommendations.getByText(/fit for low energy|fits that energy|today's plan/i).first(),
+      recommendations.getByText(/fit for low energy|fits that energy|today's plan/i).first()
     ).toBeVisible();
     await page.screenshot({ path: "test-results/T-PLAN-07/after-energy.png", fullPage: true });
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.screenshot({ path: "test-results/T-PLAN-07/after-energy-mobile.png", fullPage: true });
+    await page.screenshot({
+      path: "test-results/T-PLAN-07/after-energy-mobile.png",
+      fullPage: true,
+    });
 
     expect(consoleErrors).toEqual([]);
   });

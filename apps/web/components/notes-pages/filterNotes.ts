@@ -18,7 +18,7 @@ export function looksLikeJson(text: string): boolean {
   return JSON_LINE.test(text.trim());
 }
 
-export function plainPreview(body: string): string {
+export function plainPreview(body: string, empty = "No content yet."): string {
   let fenced = false;
   for (const line of body.split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -36,5 +36,5 @@ export function plainPreview(body: string): string {
     if (looksLikeJson(plain)) continue;
     if (plain) return plain.length > 140 ? `${plain.slice(0, 140)}…` : plain;
   }
-  return "No content yet.";
+  return empty;
 }

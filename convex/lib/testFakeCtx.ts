@@ -40,15 +40,18 @@ export function makeFakeCtx(userId: string, extraUsers: string[] = []) {
 				return builder(rows.filter(ok), conds.find((c) => c.op !== "eq")?.field);
 			},
 			order: (dir: "asc" | "desc") => builder(rows, sortField, dir === "desc"),
-			collect: async () => {
-				const out = [...rows];
-				if (sortField) {
-					out.sort((a, b) => (rank(a[sortField]) as number) - (rank(b[sortField]) as number));
-					if (desc) out.reverse();
-				}
-				return out;
-			},
+			collect: async () => sorted(),
+			take: async (n: number) => sorted().slice(0, n),
+			first: async () => sorted()[0] ?? null,
 		};
+		function sorted() {
+			const out = [...rows];
+			if (sortField) {
+				out.sort((a, b) => (rank(a[sortField]) as number) - (rank(b[sortField]) as number));
+				if (desc) out.reverse();
+			}
+			return out;
+		}
 	}
 
 	const db = {

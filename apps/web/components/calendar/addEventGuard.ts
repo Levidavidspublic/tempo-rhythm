@@ -7,9 +7,11 @@ export type AddEventAuthState = "wait" | "signed-out" | "ready";
 export function getAddEventAuthState(auth: {
   isAuthenticated: boolean;
   isLoading: boolean;
+  profile: unknown | null | undefined;
 }): AddEventAuthState {
   if (auth.isLoading) return "wait";
-  return auth.isAuthenticated ? "ready" : "signed-out";
+  if (!auth.isAuthenticated) return "signed-out";
+  return auth.profile == null ? "wait" : "ready";
 }
 
 /** Calm copy for a failed create; never surfaces raw Convex text or JSON. */

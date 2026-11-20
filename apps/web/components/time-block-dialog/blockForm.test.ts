@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type BlockFormInput, parseBlockForm } from "./blockForm";
+import { type BlockFormInput, parseBlockForm, profileGatedArgs } from "./blockForm";
 
 const base: BlockFormInput = {
   localDate: "2026-10-05",
@@ -61,5 +61,22 @@ describe("parseBlockForm", () => {
       expect(result.value.taskId).toBe("t1");
       expect(result.value.habitId).toBe("h1");
     }
+  });
+});
+
+describe("profileGatedArgs", () => {
+  const args = { localDate: "2026-10-05" };
+
+  test("skips when the user is not authenticated", () => {
+    expect(profileGatedArgs(false, { _id: "user-1" }, args)).toBe("skip");
+  });
+
+  test("skips while the profile is loading or missing", () => {
+    expect(profileGatedArgs(true, undefined, args)).toBe("skip");
+    expect(profileGatedArgs(true, null, args)).toBe("skip");
+  });
+
+  test("returns the query arguments when the profile is ready", () => {
+    expect(profileGatedArgs(true, { _id: "user-1" }, args)).toBe(args);
   });
 });

@@ -1,7 +1,15 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { fromDateInputValue, toDateInputValue } from "@/lib/calendar/date-math";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
+import {
+  fromDateInputValue,
+  parseDateInputValue,
+  toDateInputValue,
+} from "@/lib/calendar/date-math";
+import type { MessageKey } from "@/lib/i18n";
+import { intlLocale } from "@/lib/you/screenState";
 
 export type EventRowEvent = {
   id: string;
@@ -21,21 +29,42 @@ const dateFormat: Intl.DateTimeFormatOptions = {
   year: "numeric",
 };
 
-export function EventRow({ event, actions }: { event: EventRowEvent; actions?: EventRowActions }) {
-  const [isEditing, setIsEditing] = useState(false);
+/**
+ * Copy for a failed save. A raw error is server or parser text in English, so the row names the
+ * likely cause from what the form holds, in the app language.
+ */
+export function saveErrorKey(title: string, dateValue: string): MessageKey {
+  if (!parseDateInputValue(dateValue)) return "cal.err.date";
+  if (!title.trim()) return "cal.err.needTitle";
+  return "cal.row.err";
+}
+
+export function EventRow({
+  event,
+  actions,
+  initialEditing = false,
+}: {
+  event: EventRowEvent;
+  actions?: EventRowActions;
+  /** Opens the row in its edit form; the tests render that state without clicking Edit. */
+  initialEditing?: boolean;
+}) {
+  const { lang, t } = useLocale();
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [title, setTitle] = useState(event.title);
   const [dateValue, setDateValue] = useState(() => toDateInputValue(new Date(event.startsAtMs)));
-  const [error, setError] = useState<string | null>(null);
+  // A key, not text, so a message already on screen follows a language switch.
+  const [error, setError] = useState<MessageKey | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
-  async function run(action: () => Promise<void>, onDone?: () => void) {
+  async function run(action: () => Promise<void>, failKey: MessageKey, onDone?: () => void) {
     setIsBusy(true);
     try {
       await action();
       setError(null);
       onDone?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "That did not go through yet.");
+    } catch {
+      setError(failKey);
     } finally {
       setIsBusy(false);
     }
@@ -50,40 +79,38 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
         const startsAtMs = fromDateInputValue(dateValue).getTime();
         await onUpdate(event, { title, startsAtMs });
       },
+      saveErrorKey(title, dateValue),
       () => setIsEditing(false)
     );
   }
 
   return (
-    <li className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+    <li className="tp-list-row cal-event" data-component="EventRow" data-editing={isEditing}>
       {isEditing ? (
-        <form className="flex flex-wrap items-end gap-3" onSubmit={handleSave}>
-          <label className="flex flex-col gap-1 text-caption text-muted-foreground">
-            Title
+        <form className="cal-event__edit" onSubmit={handleSave}>
+          <label className="tp-field cal-event__title-field">
+            <span className="tp-label">{t("cal.row.title")}</span>
             <input
-              className="rounded-xl border border-border bg-background px-3 py-2 text-body text-foreground"
+              className="tp-input"
+              dir="auto"
               onChange={(e) => setTitle(e.target.value)}
               value={title}
             />
           </label>
-          <label className="flex flex-col gap-1 text-caption text-muted-foreground">
-            Date
+          <label className="tp-field">
+            <span className="tp-label">{t("cal.row.date")}</span>
             <input
-              className="rounded-xl border border-border bg-background px-3 py-2 text-body text-foreground"
+              className="tp-input tp-num"
               onChange={(e) => setDateValue(e.target.value)}
               type="date"
               value={dateValue}
             />
           </label>
-          <button
-            className="min-h-11 rounded-xl bg-primary px-4 text-small font-medium text-primary-foreground"
-            disabled={isBusy}
-            type="submit"
-          >
-            Save
+          <button className="tp-btn tp-btn--primary tp-btn--sm" disabled={isBusy} type="submit">
+            {t("cal.row.save")}
           </button>
           <button
-            className="min-h-11 rounded-xl px-4 text-small text-muted-foreground"
+            className="tp-btn tp-btn--ghost tp-btn--sm"
             onClick={() => {
               setIsEditing(false);
               setTitle(event.title);
@@ -91,22 +118,27 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
             }}
             type="button"
           >
-            Cancel
+            {t("cal.row.cancel")}
           </button>
         </form>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-medium text-foreground">{event.title}</p>
-            <p className="mt-1 text-caption text-muted-foreground">
-              {new Date(event.startsAtMs).toLocaleDateString(undefined, dateFormat)}
-            </p>
-          </div>
+        <>
+          <span className="tp-list-row__icon">
+            <TpIcon name="calendar-grid" size="sm" />
+          </span>
+          <span className="tp-list-row__body">
+            <span className="tp-list-row__title" dir="auto">
+              {event.title}
+            </span>
+            <span className="tp-list-row__meta tp-num">
+              {new Date(event.startsAtMs).toLocaleDateString(intlLocale(lang), dateFormat)}
+            </span>
+          </span>
           {actions ? (
-            <div className="flex gap-2">
+            <span className="tp-list-row__end">
               <button
-                aria-label={`Edit ${event.title}`}
-                className="min-h-11 rounded-xl px-3 text-small text-muted-foreground hover:text-foreground"
+                aria-label={t("cal.row.editName").replace("{title}", () => event.title)}
+                className="tp-btn tp-btn--ghost tp-btn--sm"
                 onClick={() => {
                   setTitle(event.title);
                   setDateValue(toDateInputValue(new Date(event.startsAtMs)));
@@ -114,24 +146,24 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
                 }}
                 type="button"
               >
-                Edit
+                {t("cal.row.edit")}
               </button>
               <button
-                aria-label={`Delete ${event.title}`}
-                className="min-h-11 rounded-xl px-3 text-small text-muted-foreground hover:text-foreground"
+                aria-label={t("cal.row.deleteName").replace("{title}", () => event.title)}
+                className="tp-btn tp-btn--danger-ghost tp-btn--sm"
                 disabled={isBusy}
-                onClick={() => void run(() => actions.onDelete(event))}
+                onClick={() => void run(() => actions.onDelete(event), "cal.row.err")}
                 type="button"
               >
-                Delete
+                {t("cal.row.delete")}
               </button>
-            </div>
+            </span>
           ) : null}
-        </div>
+        </>
       )}
       {error ? (
-        <p className="mt-2 text-small text-destructive" role="alert">
-          {error}
+        <p className="tp-error-text cal-event__error" role="alert">
+          {t(error)}
         </p>
       ) : null}
     </li>
@@ -150,7 +182,8 @@ export function UndoToast({
   onUndo: () => Promise<void>;
   onExpire: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
+  const { t } = useLocale();
+  const [error, setError] = useState<MessageKey | null>(null);
   // Ignore further clicks while a restore is in flight: a second restore would hit the already
   // restored row and report a false "can no longer be restored".
   const [isUndoing, setIsUndoing] = useState(false);
@@ -168,35 +201,46 @@ export function UndoToast({
   }, [undoUntilMs, onExpire]);
 
   return (
-    <output className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-2xl border border-border bg-card px-5 py-3 shadow-soft">
-      <span className="text-small text-foreground">Event removed.</span>
-      <button
-        className="min-h-11 text-small font-medium text-primary"
-        disabled={isUndoing}
-        aria-busy={isUndoing}
-        onClick={() => {
-          if (undoingRef.current) return;
-          undoingRef.current = true;
-          setIsUndoing(true);
-          setError(null);
-          onUndo()
-            .catch((err: unknown) =>
-              setError(err instanceof Error ? err.message : "Could not undo that yet.")
-            )
-            .finally(() => {
-              undoingRef.current = false;
-              setIsUndoing(false);
-            });
-        }}
-        type="button"
-      >
-        Undo
-      </button>
-      {error ? (
-        <span className="text-small text-destructive" role="alert">
-          {error}
+    // The region positions the toast; the toast itself only animates.
+    <div className="tp-toast-region">
+      <output className="tp-toast tp-glass">
+        <span className="tp-toast__text">
+          <span className="tp-toast__title">{t("cal.row.removed")}</span>
         </span>
-      ) : null}
-    </output>
+        <button
+          className="tp-btn tp-btn--secondary tp-btn--sm"
+          disabled={isUndoing}
+          aria-busy={isUndoing}
+          onClick={() => {
+            if (undoingRef.current) return;
+            undoingRef.current = true;
+            setIsUndoing(true);
+            setError(null);
+            onUndo()
+              .catch((err: unknown) =>
+                // CalendarViews throws its own "can no longer be restored" copy; any other error
+                // is raw server text in English.
+                setError(
+                  err instanceof Error && err.message === t("cal.err.undoGone")
+                    ? "cal.err.undoGone"
+                    : "cal.row.undoErr"
+                )
+              )
+              .finally(() => {
+                undoingRef.current = false;
+                setIsUndoing(false);
+              });
+          }}
+          type="button"
+        >
+          {t("cal.row.undo")}
+        </button>
+        {error ? (
+          <span className="tp-error-text" role="alert">
+            {t(error)}
+          </span>
+        ) : null}
+      </output>
+    </div>
   );
 }

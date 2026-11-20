@@ -10,6 +10,7 @@ import {
   updateEventForUser,
 } from "./calendar_events";
 import { getDayPlanForUser } from "./dayPlans";
+import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { dayBoundsMs, isValidTimeZone, localDateOf } from "./lib/mcp/dates";
 import { createNoteForUser, listNotesForUser, updateNoteForUser } from "./notes";
 import { createTaskForUser, listTasksForUser, updateTaskForUser } from "./tasks";
@@ -223,6 +224,15 @@ export const runBrainDump = internalAction({
     accept: v.optional(v.boolean()),
   },
   handler: async (ctx, { userId, text, accept }): Promise<unknown> => {
+    if (isCrisisText(text)) {
+      return {
+        crisis: true,
+        accepted: false,
+        created: 0,
+        plan: { priorities: [] },
+        resources: crisisCardText(CRISIS_CARD),
+      };
+    }
     const plan = await planBrainDump(text);
     if (!accept) {
       return { plan, accepted: false };

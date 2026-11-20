@@ -1,15 +1,26 @@
-import { ProfileReady } from "@/components/today/ProfileReady";
-import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
+/**
+ * @screen: settings-profile (docs/design/v3/screens/web/settings-profile.html)
+ * @data: users.getProfile; saves users.updateMyProfile, preferences.update({ locale })
+ * @auth: required
+ */
 import { ProfileForm } from "@/components/account/ProfileForm";
+import { SettingsScreen } from "@/components/settings/SettingsScreen";
 
 export default function Page() {
   return (
-    <div data-testid="settings-profile" className="flex flex-col gap-6 p-6">
-      <h2 className="text-lg font-medium">Profile</h2>
-      <ProfileReady>
+    <div data-testid="settings-profile" className="tp-page tp-page--narrow" data-component="PageLayout">
+      <SettingsScreen
+        title="set.profile.title"
+        sub="set.profile.sub"
+        offline="set.profile.offline"
+        loading="set.profile.loading"
+        errorTitle="set.profile.errorTitle"
+        errorBody="set.profile.errorBody"
+        bodyClassName="sp-body"
+        stateClassName="sp-state"
+      >
         <ProfileForm />
-        <DeleteAccountCard />
-      </ProfileReady>
+      </SettingsScreen>
     </div>
   );
 }

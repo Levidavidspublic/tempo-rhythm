@@ -1,10 +1,9 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { Loader2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/convex/_generated/api";
+import { useCreateQuickTask } from "@/lib/data/tasks/use-create-quick-task";
 
 type TodayQuickAddProps = {
   /** Any timestamp inside the current local calendar day; used so the task shows in Today immediately. */
@@ -12,7 +11,7 @@ type TodayQuickAddProps = {
 };
 
 export function TodayQuickAdd({ dueAt }: TodayQuickAddProps) {
-  const createQuick = useMutation(api.tasks.createQuick);
+  const createQuick = useCreateQuickTask();
   const [title, setTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hint, setHint] = useState("");

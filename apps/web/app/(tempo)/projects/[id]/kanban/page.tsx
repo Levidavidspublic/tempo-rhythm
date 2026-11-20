@@ -1,21 +1,15 @@
 /**
  * @screen: project-kanban
- * @category: Library
- * @source: docs/design/claude-export/design-system/screens-4.jsx
- * @summary: Project kanban leftover from #170. Status moves use tasks.update.
- * @queries: tasks.list
- * @mutations: tasks.update
- * @auth: required (gentle sign-in card otherwise)
+ * @source: docs/design/v3/screens/web/project-kanban.html
+ * @queries: users.getProfile, tasks.list
+ * @mutations: tasks.update (moves), tasks.create, tasks.remove (Undo)
+ * @auth: required
  */
 import { TaskKanbanBoard } from "@/components/tasks/TaskKanbanBoard";
 
 type Params = { id: string };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function Page({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   return <TaskKanbanBoard projectSlug={id} />;
 }

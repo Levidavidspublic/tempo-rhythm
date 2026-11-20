@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Use template: Weekly page · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — template-run.html */
+  .run-top { inset-inline: 0; }
+  .run-main { max-width: calc(var(--tp-space-20) * 14); margin-inline: auto; display: grid; gap: var(--tp-space-5); padding-block-end: var(--tp-space-16); }
+  .run-step { display: grid; gap: var(--tp-space-4); }
+  .run-step__head { display: grid; gap: var(--tp-space-1); }
+  .run-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .run-actions__end { margin-inline-start: auto; display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .run-side { display: grid; gap: var(--tp-space-4); }
+  .run-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-2); }
+  .run-steps li { display: flex; align-items: center; justify-content: space-between; gap: var(--tp-space-2); min-height: var(--tp-touch); }
+  .run-choices { display: grid; gap: var(--tp-space-2); }
+  .run-gets { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+</style>
+</head>
+<body>
+<!--
+@screen   Template · run (bare)
+@route    apps/web/app/(bare)/templates/run/[id]/page.tsx
+@layout   Bare
+@data     template = templates.get({ id })                                    // Convex query: name, questions in order, blocks it adds
+@data     draft = templates.getRunDraft({ templateId: id })                  // Convex query: answers kept so far (resume where she left)
+@data     fixedThisWeek = calendar.listFixed({ weekOf: "2026-10-12" })        // Convex query: fixed events to offer in step 4
+@actions  answer a step -> templates.saveRunDraft({ templateId, step, answer })   // autosave on Next / Back / Skip
+@actions  make the page -> templates.apply({ templateId, answers })  -> returns pageId   // Undo 5 min -> pages.remove({ id })
+@actions  leave -> router.push("/templates")                                 // the draft stays; nothing is made
+@states   default | empty | loading | error | offline  (?state=)   + done (after "Make the page")
+@flow     1. Bare screen: a back link to Templates, the template name and "Step 2 of 4". No rail, coach or tab bar.
+          2. One question at a time. Next saves the answer and moves on; Back goes back with the answer kept; "Skip this one" leaves it blank.
+          3. Every answer is optional. Nothing is judged; blank parts stay as empty headings on the page.
+          4. The side column lists the steps (Done / Now / Next, as words) and what the page will get.
+          5. On the last step the one primary button says "Make the page". The page opens with Undo for 5 minutes.
+          6. Leaving early keeps the draft; next time she is asked "Pick up where you left off?".
+          7. Empty: this template has no questions, so the page can be made straight away. Error: "Your data is safe." + Retry. Offline: answers stay on this device and the page is made when she's back.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to the question</a>
+
+<!-- @component MobileTopBar | shadcn: — (layout) | props: { title: 'Weekly page', back: '/templates' } | events: onBack -> router.push('/templates') -->
+<header class="tp-mtopbar tp-glass run-top" data-component="MobileTopBar">
+  <a class="tp-btn tp-btn--ghost" href="templates.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="back">Templates</span></a>
+  <span class="tp-mtopbar__title" data-i18n="top.title">Weekly page</span>
+  <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</header>
+
+<main class="tp-app__main run-main" id="main" tabindex="-1">
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Your answers stay here, and the page is made when you're back.</span></span></div>
+
+  <!-- @component Split | shadcn: — | props: { variant: 'default' } | events: — -->
+  <div class="tp-split" data-component="Split" data-state-hide id="run-wrap">
+
+    <!-- ===== The current step ===== -->
+    <!-- @component TemplateRunStep | shadcn: card + form | props: { step: {index, total, prompt, kind}, answer } | events: onNext -> templates.saveRunDraft, onBack, onSkip, onFinish -> templates.apply -->
+    <section class="tp-surface run-step" data-component="TemplateRunStep" aria-labelledby="step-q">
+      <div class="run-step__head">
+        <p class="tp-eyebrow" aria-live="polite"><span data-i18n="step.word">Step</span> <span class="tp-num" id="step-n">2</span> <span data-i18n="step.of">of</span> <span class="tp-num">4</span></p>
+        <h1 class="tp-pagehead__title" id="step-q" tabindex="-1" data-i18n="q2">What three things matter this week?</h1>
+      </div>
+
+      <form class="tp-form" id="run-form" novalidate>
+        <!-- step 1 -->
+        <!-- @component Field | shadcn: form item | props: { id: 'a1', label: 'Page name' } | events: — -->
+        <div class="tp-field" data-step="1" hidden>
+          <label class="tp-label" for="a1" data-i18n="a1.label">Page name</label>
+          <input class="tp-input" id="a1" type="text" dir="auto" value="Week 42" data-i18n-attr="value:a1.v" aria-describedby="a1-help">
+          <p class="tp-help" id="a1-help" data-i18n="a1.help">We filled in this week's name. Change it if you like.</p>
+        </div>
+
+        <!-- step 2 -->
+        <!-- @component Textarea | shadcn: textarea | props: { rows: 4 } | events: — -->
+        <div class="tp-field" data-step="2">
+          <label class="tp-label" for="a2" data-i18n="a2.label">Write one per line. Small is fine.</label>
+          <textarea class="tp-textarea" id="a2" rows="4" dir="auto" aria-describedby="a2-help" data-i18n="a2.v">Finish the Thursday talk
+Book the moving van with Yoni
+Sleep before midnight</textarea>
+          <p class="tp-help" id="a2-help" data-i18n="a2.help">These become the first three tasks on the page.</p>
+        </div>
+
+        <!-- step 3 -->
+        <div class="tp-field" data-step="3" hidden>
+          <span class="tp-label" id="a3-label" data-i18n="a3.label">How much energy do you expect to have?</span>
+          <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['quiet','steady','push'], value: 'steady' } | events: onChange -->
+          <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="a3-label" data-component="Segmented">
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="en.quiet">Quiet</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0"><span data-i18n="en.steady">Steady</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="en.push">Push</span></button>
+          </div>
+          <p class="tp-help" data-i18n="a3.help">The plan for the week gets lighter or fuller to match. You can change it any day.</p>
+        </div>
+
+        <!-- step 4 -->
+        <fieldset class="tp-field" data-step="4" hidden>
+          <legend class="tp-label" data-i18n="a4.label">Which fixed things should go on the page?</legend>
+          <!-- @component Checkbox ×3 | shadcn: checkbox | props: { event: {title, when} } | events: — -->
+          <div class="run-choices" data-component="Checkbox">
+            <label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-choice__text"><span data-i18n="ev1">Dentist</span><span class="tp-choice__hint"><span data-i18n="d.wed">Wed</span> <span class="tp-num tp-mono">09:30</span></span></span></label>
+            <label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-choice__text"><span data-i18n="ev2">Thursday talk</span><span class="tp-choice__hint"><span data-i18n="d.thu">Thu</span> <span class="tp-num tp-mono">14:00</span></span></span></label>
+            <label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-choice__text"><span data-i18n="ev3">Dinner with Dana</span><span class="tp-choice__hint"><span data-i18n="d.fri">Fri</span> <span class="tp-num tp-mono">19:30</span></span></span></label>
+          </div>
+        </fieldset>
+
+        <div class="run-actions">
+          <button class="tp-btn tp-btn--secondary" type="button" id="run-back"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="btn.back">Back</span></button>
+          <div class="run-actions__end">
+            <button class="tp-btn tp-btn--ghost" type="button" id="run-skip" data-i18n="btn.skip">Skip this one</button>
+            <button class="tp-btn tp-btn--primary" type="submit" id="run-next"><span id="run-next-label" data-i18n="btn.next">Next</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== Side: steps + what the page gets ===== -->
+    <aside class="run-side" aria-label="Your progress" data-i18n-attr="aria-label:side.label">
+      <!-- @component RunSteps | shadcn: — (ordered list) | props: { steps: {name, status: 'done'|'now'|'next'}[] } | events: — -->
+      <section class="tp-card" data-component="RunSteps" aria-labelledby="steps-h">
+        <h2 class="tp-card__title" id="steps-h" data-i18n="steps.h">Steps</h2>
+        <ol class="run-steps" id="run-steps">
+          <li data-i="1"><span data-i18n="s1">Name the page</span><span class="tp-chip tp-chip--done" data-i18n="st.done">Done</span></li>
+          <li data-i="2" aria-current="step"><span class="tp-strong" data-i18n="s2">Three things that matter</span><span class="tp-chip" data-i18n="st.now">Now</span></li>
+          <li data-i="3"><span data-i18n="s3">Energy this week</span><span class="tp-chip tp-muted" data-i18n="st.next">Next</span></li>
+          <li data-i="4"><span data-i18n="s4">Fixed things</span><span class="tp-chip tp-muted" data-i18n="st.next">Next</span></li>
+        </ol>
+      </section>
+      <!-- @component Card | shadcn: card | props: { adds: string[] } | events: — -->
+      <section class="tp-card" data-component="Card" aria-labelledby="gets-h">
+        <h2 class="tp-card__title" id="gets-h" data-i18n="gets.h">The page will get</h2>
+        <ul class="run-gets">
+          <li data-i18n="gets.1">A week strip, Monday to Sunday</li>
+          <li data-i18n="gets.2">Your three things, as tasks</li>
+          <li data-i18n="gets.3">An energy check-in</li>
+          <li data-i18n="gets.4">The fixed things you pick</li>
+        </ul>
+        <p class="tp-muted tp-small" data-i18n="gets.note">Your draft saves as you go. Leaving is safe.</p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- done: the page was made -->
+  <!-- @component StatusPanel | shadcn: card | props: { tone: 'done', title, body } | events: onOpen -> router.push('/notes/[pageId]'), onUndo -> pages.remove -->
+  <section class="tp-status-panel" data-tone="done" data-component="StatusPanel" id="run-done" hidden aria-labelledby="done-h">
+    <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-check"/></svg></span>
+    <h1 class="tp-status-panel__title" id="done-h" tabindex="-1" data-i18n="done.title">Your Week 42 page is ready.</h1>
+    <p class="tp-status-panel__body" data-i18n="done.body">Three tasks, an energy check-in and two fixed things. Anything can be changed on the page.</p>
+    <div class="tp-status-panel__actions">
+      <a class="tp-btn tp-btn--secondary" href="weekly-page.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="done.open">Open the page</span></a>
+      <a class="tp-btn tp-btn--ghost" href="templates.html" data-i18n="done.back">Back to templates</a>
+    </div>
+  </section>
+
+  <!-- empty: a template with no questions -->
+  <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onMake -> templates.apply({ templateId, answers: {} }) -->
+  <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+    <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-template"/></svg></span>
+    <h2 class="tp-state__title" data-i18n="empty.title">No questions in this one.</h2>
+    <p class="tp-state__body" data-i18n="empty.body">This template doesn't ask anything, so the page can be made straight away.</p>
+    <div class="tp-state__actions">
+      <a class="tp-btn tp-btn--secondary" href="weekly-page.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="empty.make">Make the page</span></a>
+      <a class="tp-btn tp-btn--ghost" href="template-builder.html" data-i18n="empty.edit">Add questions in the builder</a>
+    </div>
+  </div>
+
+  <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+  <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+    <span class="tp-sr-only" data-i18n="loading">Loading the template</span>
+    <div class="tp-skel-list">
+      <div class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></div>
+      <div class="tp-skeleton tp-skeleton--w80"></div>
+      <div class="tp-skeleton tp-skeleton--block"></div>
+      <div class="tp-skeleton tp-skeleton--w60"></div>
+    </div>
+  </div>
+
+  <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load this template." } | events: onRetry -> refetch -->
+  <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+    <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+    <h2 class="tp-state__title" data-i18n="error.title">Couldn't load this template.</h2>
+    <p class="tp-state__body" data-i18n="error.body">Your data is safe, and so are the answers you gave.</p>
+    <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+  </div>
+</main>
+
+<!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> pages.remove({ id }) -->
+<div class="tp-toast-region" aria-live="polite"></div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "q1": "What should this page be called?", "q2": "What three things matter this week?", "q3": "How does this week feel?",
+        "q4": "Anything fixed this week?", "btn.make": "Make the page", "toast.made": "Week 42 page made", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "שימוש בתבנית: דף שבועי · Tempo",
+    "skip": "דלגו לשאלה", "back": "תבניות", "top.title": "דף שבועי", "top.theme": "ערכת צבעים כהה",
+    "st.offline": "אין חיבור כרגע. התשובות נשמרות כאן, והדף ייווצר כשתחזרי לרשת.",
+    "step.word": "שלב", "step.of": "מתוך",
+    "q1": "איך לקרוא לדף הזה?", "q2": "אילו שלושה דברים חשובים השבוע?", "q3": "איך השבוע הזה מרגיש?", "q4": "יש משהו קבוע השבוע?",
+    "a1.label": "שם הדף", "a1.v": "שבוע 42", "a1.help": "מילאנו את שם השבוע. אפשר לשנות.",
+    "a2.label": "כתבי אחד בכל שורה. קטן זה בסדר.", "a2.v": "לסיים את ההרצאה של יום חמישי\nלהזמין טנדר למעבר עם יוני\nלישון לפני חצות",
+    "a2.help": "אלה יהיו שלוש המשימות הראשונות בדף.",
+    "a3.label": "כמה אנרגיה את מצפה שתהיה לך?", "en.quiet": "שקט", "en.steady": "יציב", "en.push": "דחיפה",
+    "a3.help": "התוכנית לשבוע תהיה קלה או מלאה יותר בהתאם. אפשר לשנות בכל יום.",
+    "a4.label": "אילו דברים קבועים להכניס לדף?", "ev1": "רופאת שיניים", "ev2": "ההרצאה של יום חמישי", "ev3": "ארוחת ערב עם דנה",
+    "d.wed": "רביעי", "d.thu": "חמישי", "d.fri": "שישי",
+    "btn.back": "חזרה", "btn.skip": "לדלג על זה", "btn.next": "הבא", "btn.make": "ליצור את הדף",
+    "side.label": "ההתקדמות שלך", "steps.h": "שלבים", "s1": "שם לדף", "s2": "שלושה דברים חשובים", "s3": "אנרגיה השבוע", "s4": "דברים קבועים",
+    "st.done": "בוצע", "st.now": "עכשיו", "st.next": "הבא",
+    "gets.h": "מה ייכנס לדף", "gets.1": "פס שבוע, שני עד ראשון", "gets.2": "שלושת הדברים שלך, כמשימות", "gets.3": "בדיקת אנרגיה", "gets.4": "הדברים הקבועים שתבחרי",
+    "gets.note": "הטיוטה נשמרת תוך כדי. אפשר לצאת בלי לאבד כלום.",
+    "done.title": "הדף של שבוע 42 מוכן.", "done.body": "שלוש משימות, בדיקת אנרגיה ושני דברים קבועים. אפשר לשנות הכל בדף עצמו.",
+    "done.open": "לפתוח את הדף", "done.back": "חזרה לתבניות",
+    "empty.title": "אין שאלות בתבנית הזו.", "empty.body": "התבנית הזו לא שואלת כלום, אז אפשר ליצור את הדף מיד.",
+    "empty.make": "ליצור את הדף", "empty.edit": "להוסיף שאלות בבנייה",
+    "loading": "טוען את התבנית", "error.title": "לא הצלחנו לטעון את התבנית הזו.", "error.body": "המידע שלך שמור, וגם התשובות שכבר נתת.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.made": "הדף של שבוע 42 נוצר", "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד", "toast.title": "בוצע"
+  }
+};
+
+/* Screen behaviour: one question at a time; Back / Skip / Next; the last step makes the page. */
+TP.onReady2 = function () {
+  var step = 2, total = 4;
+  var form = document.getElementById("run-form"), q = document.getElementById("step-q");
+  var label = document.getElementById("run-next-label"), back = document.getElementById("run-back");
+
+  function show(n, moveFocus) {
+    step = n;
+    form.querySelectorAll("[data-step]").forEach(function (f) { f.hidden = Number(f.getAttribute("data-step")) !== n; });
+    q.setAttribute("data-i18n", "q" + n); q.textContent = TP.t("q" + n);
+    document.getElementById("step-n").textContent = n;
+    label.setAttribute("data-i18n", n === total ? "btn.make" : "btn.next"); label.textContent = TP.t(n === total ? "btn.make" : "btn.next");
+    back.disabled = n === 1;
+    document.querySelectorAll("#run-steps li").forEach(function (li) {
+      var i = Number(li.getAttribute("data-i")), chip = li.querySelector(".tp-chip"), name = li.firstElementChild;
+      var key = i < n ? "st.done" : i === n ? "st.now" : "st.next";
+      chip.className = "tp-chip" + (i < n ? " tp-chip--done" : i > n ? " tp-muted" : "");
+      chip.setAttribute("data-i18n", key); chip.textContent = TP.t(key);
+      name.className = i === n ? "tp-strong" : "";
+      if (i === n) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    });
+    if (moveFocus) q.focus();
+  }
+
+  /** Save this answer — REAL: convex templates.saveRunDraft({ templateId, step, answer }). STATE: next step shown. */
+  function next() {
+    if (step < total) { show(step + 1, true); return; }
+    /** Make the page — REAL: convex templates.apply({ templateId, answers }) -> pageId. STATE: done panel + Undo 5 min. */
+    document.getElementById("run-wrap").hidden = true;
+    var done = document.getElementById("run-done"); done.hidden = false; document.getElementById("done-h").focus();
+    TP.toast({ title: TP.t("toast.made"), onUndo: function () {
+      // REAL: convex pages.remove({ id: pageId })  (the draft answers are kept)
+      done.hidden = true; document.getElementById("run-wrap").hidden = false; show(total, true);
+    } });
+  }
+  form.addEventListener("submit", function (e) { e.preventDefault(); next(); });
+  document.getElementById("run-skip").addEventListener("click", next);
+  back.addEventListener("click", function () { if (step > 1) show(step - 1, true); });
+  show(step, false);
+};
+</script>
+</body>
+</html>

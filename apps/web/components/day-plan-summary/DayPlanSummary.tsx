@@ -4,29 +4,39 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Circle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toLocalDateKey } from "@/components/day-plan-panel/dayPlanDraft";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { Lang, MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { cn } from "@/lib/utils";
 import { pickNextBlocks, planProgress } from "./nextBlocks";
 
-const SAVE_ERROR = "That didn't save. Try again when you want.";
-const ENERGY_LABEL = { low: "Low energy", medium: "Medium energy", high: "High energy" } as const;
+const ENERGY_LABEL = {
+  low: "dp.badge.low",
+  medium: "dp.badge.medium",
+  high: "dp.badge.high",
+} as const;
 
 function minuteOfDay(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
 
-function formatMinute(minute: number): string {
+/** English reads 9:30 AM; Hebrew reads the 24-hour 09:30, with no English suffix. */
+function formatMinute(minute: number, lang: Lang): string {
   const wrapped = ((minute % 1440) + 1440) % 1440;
   const hours = Math.floor(wrapped / 60);
   const mins = String(wrapped % 60).padStart(2, "0");
+  if (lang === "he") return `${String(hours).padStart(2, "0")}:${mins}`;
   const suffix = hours >= 12 ? "PM" : "AM";
   return `${hours % 12 === 0 ? 12 : hours % 12}:${mins} ${suffix}`;
 }
 
 export function DayPlanSummary() {
+  const { t, lang } = useLocale();
+  // A function replacement, so a `$` in a title is never read as a pattern.
+  const named = (key: MessageKey, title: string) => t(key).replace("{title}", () => title);
   const bounds = useLocalDayBounds();
   const localDate = useMemo(() => toLocalDateKey(new Date(bounds.startMs)), [bounds.startMs]);
   const { isAuthenticated } = useConvexAuth();
@@ -88,17 +98,21 @@ export function DayPlanSummary() {
             id="day-plan-summary-heading"
             className="font-heading text-2xl font-semibold text-foreground"
           >
-            Your day
+            {t("dp.summary")}
           </h2>
           {plan.intention ? (
-            <blockquote className="mt-1 border-l-2 border-primary/40 pl-3 text-base italic text-foreground">
+            // An intention with no spaces wraps inside the card instead of widening the page.
+            <blockquote
+              dir="auto"
+              className="mt-1 border-s-2 border-primary/40 ps-3 text-base italic text-foreground wrap-anywhere"
+            >
               {plan.intention}
             </blockquote>
           ) : null}
         </div>
         {plan.energy ? (
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-            {ENERGY_LABEL[plan.energy]}
+            {t(ENERGY_LABEL[plan.energy])}
           </span>
         ) : null}
       </div>
@@ -106,7 +120,9 @@ export function DayPlanSummary() {
       {topTasks.length > 0 ? (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground">
-            {progress.done} of {progress.total} done
+            {t("dp.progress")
+              .replace("{done}", String(progress.done))
+              .replace("{total}", String(progress.total))}
           </p>
           <ul className="mt-2 space-y-2">
             {topTasks.map((task) => {
@@ -116,7 +132,7 @@ export function DayPlanSummary() {
                   <button
                     type="button"
                     aria-pressed={isDone}
-                    aria-label={isDone ? `Mark ${task.title} as not done` : `Mark ${task.title} done`}
+                    aria-label={named(isDone ? "dp.markUndone" : "dp.markDone", task.title)}
                     onClick={() => void run(() => toggleCompletion({ taskId: task._id as Id<"tasks"> }))}
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -132,8 +148,9 @@ export function DayPlanSummary() {
                     )}
                   </button>
                   <span
+                    dir="auto"
                     className={cn(
-                      "font-medium text-foreground",
+                      "min-w-0 font-medium text-foreground wrap-anywhere",
                       isDone && "text-muted-foreground line-through"
                     )}
                   >
@@ -148,12 +165,12 @@ export function DayPlanSummary() {
 
       <div className="mt-6">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Up next
+          {t("dp.upNext")}
         </h3>
         {blocks === undefined ? (
           <div aria-busy="true" className="mt-2 h-12 animate-pulse rounded-2xl bg-muted" />
         ) : upNext.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Nothing else is planned for today.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("dp.upNext.none")}</p>
         ) : (
           <ul className="mt-2 space-y-2">
             {upNext.map((block) => (
@@ -162,9 +179,14 @@ export function DayPlanSummary() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/80 bg-background/70 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground">{block.title}</p>
+                  <p dir="auto" className="font-medium text-foreground wrap-anywhere">
+                    {block.title}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {formatMinute(block.startMinute)} – {formatMinute(block.startMinute + block.durationMinutes)}
+                    <span className="tp-num">
+                      {formatMinute(block.startMinute, lang)} –{" "}
+                      {formatMinute(block.startMinute + block.durationMinutes, lang)}
+                    </span>
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -172,18 +194,18 @@ export function DayPlanSummary() {
                     type="button"
                     size="sm"
                     onClick={() => void run(() => setStatus({ timeBlockId: block._id, status: "done" }))}
-                    aria-label={`Mark ${block.title} done`}
+                    aria-label={named("dp.markDone", block.title)}
                   >
-                    Done
+                    {t("dp.done")}
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => void run(() => setStatus({ timeBlockId: block._id, status: "skipped" }))}
-                    aria-label={`Let ${block.title} go`}
+                    aria-label={named("dp.letGo.sr", block.title)}
                   >
-                    Let it go
+                    {t("dp.letGo")}
                   </Button>
                 </div>
               </li>
@@ -193,7 +215,7 @@ export function DayPlanSummary() {
       </div>
 
       {error ? (
-        <output className="mt-4 block text-sm text-muted-foreground">{SAVE_ERROR}</output>
+        <output className="mt-4 block text-sm text-muted-foreground">{t("hr.saveError")}</output>
       ) : null}
     </section>
   );
