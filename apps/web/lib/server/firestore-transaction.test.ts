@@ -28,9 +28,9 @@ describe("Firestore transaction request builders", () => {
     expect(buildBeginTransaction(projectId, { retryOf: "cmV0cnk=" }).body).toEqual({
       options: { readWrite: { retryTransaction: "cmV0cnk=" } },
     });
-    expect(() =>
-      buildBeginTransaction(projectId, { readOnly: true, retryOf: "cmV0cnk=" })
-    ).toThrow(FirestoreTransactionError);
+    expect(() => buildBeginTransaction(projectId, { readOnly: true, retryOf: "cmV0cnk=" })).toThrow(
+      FirestoreTransactionError
+    );
   });
 
   test("rejects invalid project ids for both builders", () => {
@@ -40,7 +40,12 @@ describe("Firestore transaction request builders", () => {
 
   test("reads and validates a transaction id from the begin answer", () => {
     expect(readTransactionId({ transaction: "dHJhbnNhY3Rpb24=" })).toBe("dHJhbnNhY3Rpb24=");
-    for (const answer of [{}, { transaction: "" }, { transaction: 3 }, { transaction: "not_base64" }]) {
+    for (const answer of [
+      {},
+      { transaction: "" },
+      { transaction: 3 },
+      { transaction: "not_base64" },
+    ]) {
       expect(() => readTransactionId(answer)).toThrow(FirestoreTransactionError);
     }
   });
