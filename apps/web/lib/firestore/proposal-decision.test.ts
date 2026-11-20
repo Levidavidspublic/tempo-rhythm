@@ -44,9 +44,10 @@ test("refuses an already accepted proposal", () => {
 });
 
 test("refuses a deleted proposal", () => {
-  expect(
-    planProposalDecision({ ...pendingProposal(), deletedAt: 150 }, "accept", 200)
-  ).toEqual({ ok: false, reason: "deleted" });
+  expect(planProposalDecision({ ...pendingProposal(), deletedAt: 150 }, "accept", 200)).toEqual({
+    ok: false,
+    reason: "deleted",
+  });
 });
 
 test("refuses an invalid stored document", () => {
@@ -57,9 +58,10 @@ test("refuses an invalid stored document", () => {
 });
 
 test("refuses an invalid decision", () => {
-  expect(
-    planProposalDecision(pendingProposal(), "later" as "accept", 200)
-  ).toEqual({ ok: false, reason: "invalid-decision" });
+  expect(planProposalDecision(pendingProposal(), "later" as "accept", 200)).toEqual({
+    ok: false,
+    reason: "invalid-decision",
+  });
 });
 
 test("refuses invalid now values without mutating the input", () => {
