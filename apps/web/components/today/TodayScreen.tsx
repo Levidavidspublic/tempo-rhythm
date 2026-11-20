@@ -10,6 +10,7 @@ import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { useTodayTasks } from "@/lib/data/tasks/use-today-tasks";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
 import { TodayAgenda } from "./TodayAgenda";
@@ -53,19 +54,13 @@ export function TodayScreen() {
   // and matches fetchCurrentUser). This avoids a race where useConvexAuth is true but
   // the task query runs before the auth token/identity is consistent for the backend.
   const hasConvexUser = profile != null;
-  const todayTasks = useQuery(
-    api.tasks.listToday,
+  const todayTasks = useTodayTasks(
     isAuthenticated && hasConvexUser ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
-  const habits = useQuery(
-    api.habits.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
-  );
+  const habits = useQuery(api.habits.list, isAuthenticated && hasConvexUser ? {} : "skip");
   const calendarEvents = useQuery(
     api.calendar_events.listInRange,
-    isAuthenticated && hasConvexUser
-      ? { startMs: bounds.startMs, endMs: bounds.endMs }
-      : "skip",
+    isAuthenticated && hasConvexUser ? { startMs: bounds.startMs, endMs: bounds.endMs } : "skip"
   );
 
   const isLoading =
@@ -73,9 +68,7 @@ export function TodayScreen() {
     (isAuthenticated &&
       (profile === undefined ||
         (hasConvexUser &&
-          (todayTasks === undefined ||
-            habits === undefined ||
-            calendarEvents === undefined))));
+          (todayTasks === undefined || habits === undefined || calendarEvents === undefined))));
 
   if (isLoading) {
     return (
