@@ -53,7 +53,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
 
   const keys = Object.keys(input);
   const unexpectedKey = keys.find((key) => !DOC_KEYS.has(key));
-  if (unexpectedKey) {
+  if (unexpectedKey !== undefined) {
     return { ok: false, reason: `Unexpected proposal key: ${unexpectedKey}.` };
   }
   const hasDecidedAt = Object.hasOwn(input, "decidedAt");
