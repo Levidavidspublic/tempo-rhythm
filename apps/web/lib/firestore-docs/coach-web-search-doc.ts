@@ -85,7 +85,8 @@ export function checkCoachWebSearchDoc(
 }
 
 export function softDeleteCoachWebSearch(doc: CoachWebSearchDoc, nowMs: number): CoachWebSearchDoc {
-  return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
+  const deletedAt = Math.max(nowMs, doc.createdAt);
+  return { ...doc, deletedAt, updatedAt: deletedAt };
 }
 
 export function countSearchesOn(docs: readonly CoachWebSearchDoc[], utcDateKey: string): number {
