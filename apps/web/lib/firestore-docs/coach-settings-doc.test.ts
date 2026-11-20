@@ -36,6 +36,16 @@ describe("coach settings Firestore document", () => {
     expect(readCoachSettings(deleted, 300)).toEqual({ ...COACH_SETTINGS_DEFAULTS, updatedAt: 300 });
   });
 
+  test("refuses malformed deletion timestamps instead of returning defaults", () => {
+    const base = { dial: 5, taskLoad: 2, acceptedStreak: 0, updatedAt: 100 };
+
+    for (const deletedAt of ["invalid", null, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => readCoachSettings({ ...base, deletedAt }, 300)).toThrow(
+        new CoachSettingsDocError("deletedAt")
+      );
+    }
+  });
+
   test("drops legacy keys and refuses an unknown key", () => {
     const legacy = {
       dial: 5,
