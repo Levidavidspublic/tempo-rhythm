@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUpdateTemplate } from "@/lib/data/templates/use-update-template";
 import type { MessageKey } from "@/lib/i18n";
 import {
   insertSection,
@@ -23,7 +24,12 @@ import {
   type TemplateSection,
 } from "@/lib/template-sections";
 import { useOnline } from "@/lib/useOnline";
-import { draftFrom, type PeriodType, type SourceTemplate, type TemplateDraft } from "./TemplateBuilder";
+import {
+  draftFrom,
+  type PeriodType,
+  type SourceTemplate,
+  type TemplateDraft,
+} from "./TemplateBuilder";
 
 const PAGE_TYPES: readonly { value: PeriodType; label: MessageKey }[] = [
   { value: "daily", label: "te.pt.daily" },
@@ -53,7 +59,7 @@ type RemovedUndo = { section: TemplateSection; index: number };
 function EditorForm({ template }: { template: SourceTemplate }) {
   const { t } = useLocale();
   const router = useRouter();
-  const update = useMutation(api.templates.update);
+  const update = useUpdateTemplate();
   const online = useOnline();
   const readOnly = template.source === "starter";
   const initial = draftFrom(template);
@@ -102,7 +108,12 @@ function EditorForm({ template }: { template: SourceTemplate }) {
   }, [removedUndo]);
 
   const newSectionTitle = t("te.newSection");
-  const currentDraft = (): TemplateDraft => ({ name, description, periodType, body: joinSections(doc, newSectionTitle) });
+  const currentDraft = (): TemplateDraft => ({
+    name,
+    description,
+    periodType,
+    body: joinSections(doc, newSectionTitle),
+  });
 
   const loadDraft = (draft: TemplateDraft) => {
     setName(draft.name);
@@ -224,13 +235,18 @@ function EditorForm({ template }: { template: SourceTemplate }) {
             <button
               className="tp-btn tp-btn--primary"
               type="button"
-              onClick={() => router.push(`/templates/builder?from=${encodeURIComponent(template.templateId)}`)}
+              onClick={() =>
+                router.push(`/templates/builder?from=${encodeURIComponent(template.templateId)}`)
+              }
             >
               <TpIcon name="plus" size="sm" />
               <span>{t("te.copy")}</span>
             </button>
           ) : (
-            <Link className="tp-btn tp-btn--secondary" href={`/templates/builder?id=${encodeURIComponent(template.templateId)}`}>
+            <Link
+              className="tp-btn tp-btn--secondary"
+              href={`/templates/builder?id=${encodeURIComponent(template.templateId)}`}
+            >
               <TpIcon name="template" size="sm" />
               <span>{t("te.builder")}</span>
             </Link>
@@ -239,7 +255,14 @@ function EditorForm({ template }: { template: SourceTemplate }) {
       </header>
 
       {nameInvalid ? (
-        <div className="tp-error-summary" role="alert" tabIndex={-1} id="ed-errors" ref={summary} data-component="FormErrorSummary">
+        <div
+          className="tp-error-summary"
+          role="alert"
+          tabIndex={-1}
+          id="ed-errors"
+          ref={summary}
+          data-component="FormErrorSummary"
+        >
           <p className="tp-error-summary__title">
             <TpIcon name="alert" size="sm" />
             {t("te.err.title")}
@@ -258,7 +281,13 @@ function EditorForm({ template }: { template: SourceTemplate }) {
         </p>
       ) : null}
 
-      <form className="tp-form ed-form" id="ed-form" data-component="Form" noValidate onSubmit={(event) => void onSubmit(event)}>
+      <form
+        className="tp-form ed-form"
+        id="ed-form"
+        data-component="Form"
+        noValidate
+        onSubmit={(event) => void onSubmit(event)}
+      >
         <div className="tp-field" data-component="Field">
           <label className="tp-label" htmlFor="ed-name">
             {t("te.name")}
@@ -365,7 +394,9 @@ function EditorForm({ template }: { template: SourceTemplate }) {
                       </div>
                       <div className="tp-field">
                         <span className="tp-label">{t("te.s.holds")}</span>
-                        <span className="tp-chip ed-section__kind">{t(KIND_LABEL[sectionKind(section)])}</span>
+                        <span className="tp-chip ed-section__kind">
+                          {t(KIND_LABEL[sectionKind(section)])}
+                        </span>
                       </div>
                       <div className="ed-section__tools">
                         <button
@@ -406,7 +437,12 @@ function EditorForm({ template }: { template: SourceTemplate }) {
           )}
           {readOnly ? null : (
             <div className="ed-row">
-              <button className="tp-btn tp-btn--secondary" type="button" ref={addButton} onClick={onAdd}>
+              <button
+                className="tp-btn tp-btn--secondary"
+                type="button"
+                ref={addButton}
+                onClick={onAdd}
+              >
                 <TpIcon name="plus" size="sm" />
                 <span>{t("te.s.add")}</span>
               </button>
@@ -438,7 +474,11 @@ function EditorForm({ template }: { template: SourceTemplate }) {
             />
           ) : null}
           {removedUndo ? (
-            <UndoToastRow title={t("te.removed")} onUndo={onUndoRemove} onDismiss={() => setRemovedUndo(null)} />
+            <UndoToastRow
+              title={t("te.removed")}
+              onUndo={onUndoRemove}
+              onDismiss={() => setRemovedUndo(null)}
+            />
           ) : null}
         </div>
       ) : null}
