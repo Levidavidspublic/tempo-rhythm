@@ -26,7 +26,9 @@ test("archives an active goal", () => {
 });
 
 test("archives a completed goal", () => {
-  expect(planGoalArchive(goal({ status: "completed", progressPercent: 100 }), "archive", NOW)).toEqual({
+  expect(
+    planGoalArchive(goal({ status: "completed", progressPercent: 100 }), "archive", NOW)
+  ).toEqual({
     ok: true,
     changed: true,
     status: "archived",
@@ -57,7 +59,7 @@ test("restores a goal at 40 percent as active", () => {
 
 test("restores a goal at 100 percent as completed", () => {
   expect(
-    planGoalArchive(goal({ status: "archived", progressPercent: 100 }), "restore", NOW),
+    planGoalArchive(goal({ status: "archived", progressPercent: 100 }), "restore", NOW)
   ).toEqual({
     ok: true,
     changed: true,
