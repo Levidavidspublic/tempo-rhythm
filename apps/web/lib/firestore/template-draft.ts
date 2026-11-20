@@ -6,12 +6,7 @@ type DraftTemplateResult =
   | { kind: "draft"; doc: TemplateDoc }
   | { kind: "refused"; reason: string };
 
-const periodTypes = new Set<TemplateDoc["periodType"]>([
-  "daily",
-  "weekly",
-  "monthly",
-  "none",
-]);
+const periodTypes = new Set<TemplateDoc["periodType"]>(["daily", "weekly", "monthly", "none"]);
 
 export function draftTemplate(
   input: { name: unknown; body: unknown; periodType?: unknown; description?: unknown },
@@ -30,7 +25,10 @@ export function draftTemplate(
     }
 
     const periodType = input.periodType === undefined ? "none" : input.periodType;
-    if (typeof periodType !== "string" || !periodTypes.has(periodType as TemplateDoc["periodType"])) {
+    if (
+      typeof periodType !== "string" ||
+      !periodTypes.has(periodType as TemplateDoc["periodType"])
+    ) {
       return { kind: "refused", reason: "periodType is invalid" };
     }
 

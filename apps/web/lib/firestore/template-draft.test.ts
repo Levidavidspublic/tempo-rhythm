@@ -56,9 +56,7 @@ test("leaves out a blank description", () => {
 
 test("refuses a non-finite timestamp without throwing", () => {
   expect(draftTemplate({ name: "Plan", body: "" }, Number.NaN).kind).toBe("refused");
-  expect(draftTemplate({ name: "Plan", body: "" }, Number.POSITIVE_INFINITY).kind).toBe(
-    "refused"
-  );
+  expect(draftTemplate({ name: "Plan", body: "" }, Number.POSITIVE_INFINITY).kind).toBe("refused");
 });
 
 test("does not add a deletion timestamp", () => {
