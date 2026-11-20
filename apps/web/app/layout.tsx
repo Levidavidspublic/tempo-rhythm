@@ -45,8 +45,7 @@ const ibmPlexMono = localFont({
 
 export const metadata: Metadata = {
   title: "Tempo Flow — your brain's operating system",
-  description:
-    "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
+  description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
 };
 
 export const viewport: Viewport = {
@@ -85,7 +84,11 @@ export default function RootLayout({
       >
         <head>
           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
-          <Script id="tempo-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+          <Script
+            id="tempo-theme-init"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{ __html: themeInitScript() }}
+          />
         </head>
         <body className="antialiased" suppressHydrationWarning>
           <ThemeProvider>
