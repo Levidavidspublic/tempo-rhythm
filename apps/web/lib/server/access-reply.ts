@@ -10,7 +10,7 @@ export type AccessRefusal = Readonly<{
 
 export function accessRefusal(
   access: AccountAccess,
-  need: "active" | "approved",
+  need: "active" | "approved"
 ): AccessRefusal | null {
   switch (access) {
     case "missing":
@@ -32,7 +32,7 @@ export function accessRefusal(
 
 export function gateRefusal(
   gate: AccountGate | null | undefined,
-  need: "active" | "approved",
+  need: "active" | "approved"
 ): AccessRefusal | null {
   return accessRefusal(accountAccess(gate), need);
 }

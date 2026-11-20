@@ -20,7 +20,7 @@ describe("account access replies", () => {
 
     expect(gateRefusal({ deletedAt: 1, isActive: true }, "active")).toEqual(expected);
     expect(gateRefusal({ isActive: false, approvalStatus: "approved" }, "approved")).toEqual(
-      expected,
+      expected
     );
   });
 
