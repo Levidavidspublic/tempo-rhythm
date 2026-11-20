@@ -28,10 +28,10 @@ export function readFirestoreFailure(error: unknown): FirestoreFailure {
     switch (error.status) {
       case 401:
         return {
-          kind: "sign-in-again",
-          httpStatus: 401,
+          kind: "setup",
+          httpStatus: 503,
           retry: false,
-          copyKey: "fs.fail.sign-in-again",
+          copyKey: "fs.fail.setup",
         };
       case 403:
         return {

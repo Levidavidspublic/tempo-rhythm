@@ -1,0 +1,23 @@
+# KB-69 approval waiting evidence
+
+The existing `ApprovalGate` still passes `email` and `revoked` to the mounted `WaitingForApproval` screen, and its live status query remains unchanged. The screen mounts `ApprovalStatus` and `WaitingNameFeedback`; the former explains waiting or paused access, and the latter stays next to the optional name field. The field still uses `users.getProfile({})`, `users.updateMyProfile({ fullName: check.name })`, and the checked-in name helper. Successful sign-out still replaces the route with `/sign-in`; a rejected sign-out now offers a visible retry without navigation.
+
+The [contact sheet](./kb-69-approval-waiting.jpg) pairs the saved pre-edit source at commit `52bf2803e9105b25c2538aedd81a754a9fbfdedb` with the mounted current screen at 390 and 1280 px in English and Hebrew, light and dark. Both bundles use the same fictional Maya email/profile and v3 tokens. The old source used Tailwind utility classes; the isolated baseline fixture translates those classes to equivalent basic layout rules, so the sheet is a source-derived comparison rather than a production shell screenshot. Tiles crop blank viewport space to make content legible; browser assertions use the full viewport. The original screen had a name form and sign-out control, but no sign-out failure alert or revision-aware save notice.
+
+## Browser findings
+
+- The actual mounted waiting and revoked states have one `main` and one `h1`. The waiting state shows the optional name field, while revoked does not.
+- During a held save, the name input remains editable and the submit control prevents duplicate writes. A newer edit survives either success or rejection of the earlier save. Only the matching submitted draft receives Saved or error feedback.
+- A failed sign-out leaves the screen in place, focuses the retryable Sign out control, and never calls `router.replace`; a successful retry uses `/sign-in`.
+- Hebrew has an RTL subtree while the email is isolated LTR in `bdi`. User-written names retain `dir=auto`. At 390 px, the field and buttons meet 44 px height, visible keyboard focus is present, and long fictional email content does not overflow. Reduced motion is enabled in the browser fixture.
+- The interactive `Kb69Gallery` exercises waiting, revoked, name pending/saved/error, sign-out error/retry, disabled and long-content examples through the real status/feedback exports. Its examples are controlled display states, while behavioral assertions mount the production screen with fictional query/mutation/auth stubs.
+
+The final command table and failure tails are in draft PR #1164. These fixtures do not claim a live account, actual backend writes, or deployed approval behavior. Device screen-reader results remain **UNKNOWN**. Hebrew copy needs Amit's native read.
+
+## Hebrew gallery saving-label review
+
+The pending-state control now says `השם בשמירה` (the name is being saved), distinct from `השם נשמר` (the name was saved). The added regression selects both controls by exact Hebrew accessible name, checks their selected states, and verifies saving versus saved feedback from the real exported view. The appended gallery captures show both states at 390 and 1280 px in light and dark. The original source-derived before/after waiting-screen sheet is retained above them.
+
+Browser coverage remains mandatory: missing Playwright and system browsers still produce `KB-69 fixture requires installed Playwright Chromium or system Chrome/Chromium`. The fixture checks Playwright's executable followed by `/usr/bin/chromium`, `/usr/bin/google-chrome`, and `/usr/bin/chromium-browser`; this sandbox has `/usr/bin/chromium`. `AGENTS.md` documents installed Chromium as part of cloud setup. The existing CI unit job uses `ubuntu-latest` with the system-browser fallback, and its separate E2E job explicitly runs `bunx playwright install --with-deps chromium`. PR #1164's pre-repair commit `77e225d618088f1a70adb1c54085307c9c19a36e` recorded successful Test, E2E and aggregate CI checks. Those results describe the prior commit; the updated commit still requires its own full checks. No test skips, timeouts, assertions or CI configuration were weakened.
+
+The fixture now runs every original assertion in a child Bun test process, separating its `Bun.build` plugins and `Bun.serve` lifecycle from other files' process-wide mocks. The parent requires exit zero and a successful record for every named case; an abnormal exit or missing case fails the suite. The existing setup and individual test timeouts remain unchanged. This addresses the cross-file fixture interference found in hosted integration checks without making browser coverage optional.

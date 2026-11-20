@@ -91,6 +91,9 @@ export function checkHabitDoc(input: unknown): CheckResult<HabitDoc> {
     if (!isStreak(input.currentStreak) || !isStreak(input.longestStreak)) {
       return { ok: false, reason: "streaks must be non-negative integers" };
     }
+    if (input.longestStreak < input.currentStreak) {
+      return { ok: false, reason: "longestStreak must be at least currentStreak" };
+    }
     if (
       !isFiniteNumber(input.createdAt) ||
       !isFiniteNumber(input.updatedAt) ||

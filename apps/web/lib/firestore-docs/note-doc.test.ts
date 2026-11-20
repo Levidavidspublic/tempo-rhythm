@@ -19,10 +19,14 @@ describe("note document", () => {
     expect(checkNoteDoc(validNote)).toEqual({ ok: true, doc: validNote });
   });
 
-  test("rejects the unknown userId key", () => {
+  test("rejects unknown keys, including an empty-string key", () => {
     expect(checkNoteDoc({ ...validNote, userId: "user-1" })).toEqual({
       ok: false,
       reason: "unknown key: userId",
+    });
+    expect(checkNoteDoc({ ...validNote, "": 123 })).toEqual({
+      ok: false,
+      reason: "unknown key: ",
     });
 
     const uninspectableNote = new Proxy(validNote, {

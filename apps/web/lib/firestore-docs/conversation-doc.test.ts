@@ -73,6 +73,18 @@ describe("message documents", () => {
     ).toBe(false);
   });
 
+  test("refuses an HTTPS source URL without a host", () => {
+    expect(
+      checkMessageDoc({
+        conversationId: "conversation-1",
+        role: "assistant",
+        content: "Try this.",
+        sources: [{ title: "Incomplete", site: "incomplete", url: "https://" }],
+        createdAt: 1,
+      }).ok
+    ).toBe(false);
+  });
+
   test("keeps deletedAt on a soft-deleted message", () => {
     const result = checkMessageDoc({
       conversationId: "conversation-1",
@@ -84,5 +96,37 @@ describe("message documents", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.doc.deletedAt).toBe(2);
+  });
+
+  test.each(["councilResponse", "toolCalls"] as const)("refuses nested arrays in %s", (field) => {
+    expect(
+      checkMessageDoc({
+        conversationId: "conversation-1",
+        role: "assistant",
+        content: "Results",
+        [field]: {
+          rows: [
+            [1, 2],
+            [3, 4],
+          ],
+        },
+        createdAt: 1,
+      }).ok
+    ).toBe(false);
+  });
+
+  test.each([
+    "councilResponse",
+    "toolCalls",
+  ] as const)("accepts maps in arrays and arrays stored in maps for %s", (field) => {
+    expect(
+      checkMessageDoc({
+        conversationId: "conversation-1",
+        role: "assistant",
+        content: "Results",
+        [field]: [{ rows: [1, 2] }],
+        createdAt: 1,
+      }).ok
+    ).toBe(true);
   });
 });

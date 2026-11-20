@@ -15,6 +15,7 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/",
   "/sign-in",
   "/sign-up",
+  "/pricing",
   "/terms",
   "/privacy",
   "/contact",
@@ -29,12 +30,14 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/api/mcp",
 ] as const;
 
+export const CALENDAR_E2E_BYPASS_KEY = "isCalendarE2EBypass";
+
 export function decideEntryRedirect(input: {
   pathname: string;
   search: string;
   isAuthenticated: boolean;
   isPublicRoute: boolean;
-  isCalendarE2EBypass: boolean;
+  [CALENDAR_E2E_BYPASS_KEY]: boolean;
 }): string | null {
   const query = input.search.startsWith("?") ? input.search.slice(1) : input.search;
   const code = new URLSearchParams(query).get("code");
@@ -50,7 +53,7 @@ export function decideEntryRedirect(input: {
     return null;
   }
 
-  if (!(input.isPublicRoute || input.isCalendarE2EBypass || input.isAuthenticated)) {
+  if (!(input.isPublicRoute || input[CALENDAR_E2E_BYPASS_KEY] || input.isAuthenticated)) {
     const nextPath = `${input.pathname}${input.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return `/sign-in?${params.toString()}`;

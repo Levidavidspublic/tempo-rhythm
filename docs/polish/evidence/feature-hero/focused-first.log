@@ -1,0 +1,161 @@
+
+Running 8 tests using 1 worker
+
+(node:159002) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en no-preference
+  1) [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en no-preference ────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "none"
+    Received: "matrix(1, 0, 0, 1, 0, 0)"
+
+      40 |           expect(animation.finished).toBe(true);
+      41 |         }
+    > 42 |         expect(animation.transform).toBe("none");
+         |                                     ^
+      43 |         expect(animation.opacity).toBe("1");
+      44 |         const settledBox = await copy.boundingBox();
+      45 |         expect(settledBox).not.toBeNull();
+        at /workspace/work/lane2-features/tests/e2e/landing-motion.spec.ts:42:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-en-no-preference-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-motion-landing-hero-390-en-no-preference-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-en-no-preference-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-motion-landing-hero-390-en-no-preference-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:159248) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[2/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en reduce
+[3/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he no-preference
+  2) [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he no-preference ────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "none"
+    Received: "matrix(1, 0, 0, 1, 0, 0)"
+
+      40 |           expect(animation.finished).toBe(true);
+      41 |         }
+    > 42 |         expect(animation.transform).toBe("none");
+         |                                     ^
+      43 |         expect(animation.opacity).toBe("1");
+      44 |         const settledBox = await copy.boundingBox();
+      45 |         expect(settledBox).not.toBeNull();
+        at /workspace/work/lane2-features/tests/e2e/landing-motion.spec.ts:42:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-he-no-preference-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-motion-landing-hero-390-he-no-preference-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-he-no-preference-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-motion-landing-hero-390-he-no-preference-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:159511) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[4/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he reduce
+[5/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en no-preference
+  3) [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en no-preference ───────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "none"
+    Received: "matrix(1, 0, 0, 1, 0, 0)"
+
+      40 |           expect(animation.finished).toBe(true);
+      41 |         }
+    > 42 |         expect(animation.transform).toBe("none");
+         |                                     ^
+      43 |         expect(animation.opacity).toBe("1");
+      44 |         const settledBox = await copy.boundingBox();
+      45 |         expect(settledBox).not.toBeNull();
+        at /workspace/work/lane2-features/tests/e2e/landing-motion.spec.ts:42:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-1280-en-no-preference-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-motion-landing-hero-1280-en-no-preference-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-1280-en-no-preference-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-motion-landing-hero-1280-en-no-preference-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:159783) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[6/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en reduce
+[7/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he no-preference
+  4) [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he no-preference ───────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "none"
+    Received: "matrix(1, 0, 0, 1, 0, 0)"
+
+      40 |           expect(animation.finished).toBe(true);
+      41 |         }
+    > 42 |         expect(animation.transform).toBe("none");
+         |                                     ^
+      43 |         expect(animation.opacity).toBe("1");
+      44 |         const settledBox = await copy.boundingBox();
+      45 |         expect(settledBox).not.toBeNull();
+        at /workspace/work/lane2-features/tests/e2e/landing-motion.spec.ts:42:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-1280-he-no-preference-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-motion-landing-hero-1280-he-no-preference-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-1280-he-no-preference-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-motion-landing-hero-1280-he-no-preference-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:160039) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[8/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he reduce
+  4 failed
+    [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en no-preference ─────────
+    [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he no-preference ─────────
+    [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en no-preference ────────
+    [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he no-preference ────────
+  4 passed (2.6m)
