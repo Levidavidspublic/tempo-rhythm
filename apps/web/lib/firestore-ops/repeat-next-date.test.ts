@@ -55,6 +55,13 @@ describe("nextRepeatDate", () => {
     expect(nextRepeatDate(rule, "2026-11-20")).toEqual({ kind: "date", date: "2026-11-22" });
   });
 
+  test("returns no date when the interval cannot produce a later date", () => {
+    expect(nextRepeatDate({ ...baseRule, repeatEvery: 0 }, "2026-11-20")).toEqual({
+      kind: "none",
+      reason: "no_date_found",
+    });
+  });
+
   test("returns none for paused, deleted, and malformed input dates", () => {
     expect(nextRepeatDate({ ...baseRule, isPaused: true }, "2026-11-20")).toEqual({
       kind: "none",

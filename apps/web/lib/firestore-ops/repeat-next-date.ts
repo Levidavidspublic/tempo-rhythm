@@ -53,6 +53,10 @@ export function nextRepeatDate(rule: TaskRepeatDoc, afterDate: string): NextRepe
     return { kind: "unsupported", cycle: rule.repeatCycle };
   }
 
+  if (!Number.isInteger(rule.repeatEvery) || rule.repeatEvery < 1) {
+    return { kind: "none", reason: "no_date_found" };
+  }
+
   const deletedDates = new Set(rule.deletedInstanceDates);
 
   if (rule.repeatCycle === "DAILY") {
@@ -73,14 +77,12 @@ export function nextRepeatDate(rule: TaskRepeatDoc, afterDate: string): NextRepe
 
   const weekdays = new Set(rule.weekdays);
   const afterWeekStart = addDays(after, -after.getUTCDay());
-  let matchesTried = 0;
 
-  for (let offset = 1; matchesTried < MAX_TRIES; offset += 1) {
+  for (let offset = 1; offset <= MAX_TRIES; offset += 1) {
     const candidate = addDays(after, offset);
     const weekOffset = Math.floor((candidate.getTime() - afterWeekStart.getTime()) / (7 * DAY_MS));
     if (weekOffset % rule.repeatEvery !== 0 || !weekdays.has(candidate.getUTCDay())) continue;
 
-    matchesTried += 1;
     const date = formatDate(candidate);
     if (!deletedDates.has(date)) return { kind: "date", date };
   }
