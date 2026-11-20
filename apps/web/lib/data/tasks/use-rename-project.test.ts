@@ -37,7 +37,7 @@ describe("useRenameProject", () => {
   test("ProjectDetailScreen renames projects through the hook", () => {
     const source = readFileSync(
       join(import.meta.dir, "../../../components/projects/ProjectDetailScreen.tsx"),
-      "utf8",
+      "utf8"
     );
 
     expect(source).toContain("useRenameProject()");
