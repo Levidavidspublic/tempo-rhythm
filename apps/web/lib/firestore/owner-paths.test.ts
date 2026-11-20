@@ -53,6 +53,16 @@ test("rejects invalid uid and document id segments", () => {
   }
 });
 
+test("enforces the Firestore segment limit in UTF-8 bytes", () => {
+  const maximumMultibyteId = "é".repeat(750);
+  const oversizedMultibyteId = "é".repeat(751);
+
+  expect(ownerDocPath("user-1", "tasks", maximumMultibyteId)).toBe(
+    `users/user-1/tasks/${maximumMultibyteId}`
+  );
+  expect(() => ownerDocPath("user-1", "tasks", oversizedMultibyteId)).toThrow(OwnerPathError);
+});
+
 test("does not include rejected uid or document id values in errors", () => {
   const uid = "private/user-value";
   const docId = "private/document-value";
