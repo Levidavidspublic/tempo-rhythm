@@ -25,10 +25,7 @@ test("picks only the requested parent's direct subtasks", () => {
 });
 
 test("sorts oldest first with the id tie-break", () => {
-  const result = pickSubtasks(
-    [row("later", { createdAt: 2 }), row("b"), row("a")],
-    "parent"
-  );
+  const result = pickSubtasks([row("later", { createdAt: 2 }), row("b"), row("a")], "parent");
 
   expect(result.subtasks.map(({ id }) => id)).toEqual(["a", "b", "later"]);
 });
