@@ -96,7 +96,13 @@ export function toTaskDoc(input: Record<string, unknown>): TaskDoc {
 
   if ("timeSpentOnDay" in clean) {
     const spent = clean.timeSpentOnDay;
-    if (typeof spent !== "object" || spent === null || Array.isArray(spent)) fail("timeSpentOnDay");
+    if (
+      typeof spent !== "object" ||
+      spent === null ||
+      Object.getPrototypeOf(spent) !== Object.prototype
+    ) {
+      fail("timeSpentOnDay");
+    }
     for (const [day, amount] of Object.entries(spent)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isFiniteNumber(amount) || amount < 0) {
         fail("timeSpentOnDay");
