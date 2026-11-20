@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "578597f4850bddfb6cd0b032e7273dcfbbae0a9e"
     }
   },
   "components": [
@@ -305,6 +305,43 @@
         }
       ]
     }
+    ,
+    {
+      "id": "firestore",
+      "type": "database",
+      "label": "Firestore",
+      "sublabel": "migration target, preview project",
+      "pos": [250, 470],
+      "size": [190, 72],
+      "tag": "switch default convex",
+      "sources": [
+        {"path": ".firebaserc", "line": 1, "end_line": 6, "label": "project tempo-flow-preview-20261106"},
+        {"path": "apps/web/lib/server/firestore.ts", "line": 9, "end_line": 14, "label": "Firestore REST, server only"},
+        {"path": "apps/web/lib/backend-flag.ts", "line": 1, "end_line": 6, "label": "NEXT_PUBLIC_DATA_BACKEND switch"}
+      ]
+    },
+    {
+      "id": "whop",
+      "type": "external",
+      "label": "Whop",
+      "sublabel": "$1 trial memberships",
+      "pos": [36, 48],
+      "size": [160, 60],
+      "sources": [
+        {"path": "apps/web/app/api/whop/webhook/route.ts", "line": 8, "end_line": 17, "label": "signed webhook into Firestore"}
+      ]
+    },
+    {
+      "id": "mistral",
+      "type": "external",
+      "label": "Mistral",
+      "sublabel": "web search, mistral-small",
+      "pos": [860, 600],
+      "size": [180, 64],
+      "sources": [
+        {"path": "convex/lib/webSearch.ts", "line": 68, "end_line": 71, "label": "conversations API and search model"}
+      ]
+    }
   ],
   "boundaries": [
     {
@@ -334,9 +371,18 @@
         "data"
       ],
       "pad": 18
+    },
+    {
+      "kind": "security-group",
+      "label": "Google Cloud",
+      "wraps": ["firestore"],
+      "pad": 18
     }
   ],
   "connections": [
+    {"id": "web-firestore", "from": "web", "to": "firestore", "label": "server REST (service account)"},
+    {"id": "whop-web", "from": "whop", "to": "web", "label": "signed webhook", "variant": "security"},
+    {"id": "convex-mistral", "from": "convex", "to": "mistral", "label": "web search"},
     {
       "id": "person-web",
       "from": "person",
@@ -417,7 +463,7 @@
       "items": [
         "Web is apps/web (Next.js 16). Mobile is apps/mobile (Expo 54). Package manager is Bun.",
         "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production is https://www.tempoflow.dev (release.yml health check).",
-        "Polar checkout route sets server to sandbox."
+        "Polar checkout route sets server to sandbox. Whop sends membership events to POST /api/whop/webhook; each is stored in Firestore."
       ]
     },
     {
@@ -426,7 +472,8 @@
       "items": [
         "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
         "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow.",
+        "Backend is moving from Convex to Firebase (Amit, 2026-11-20; docs/backlog/FIREBASE-MIGRATION-PLAN.md). NEXT_PUBLIC_DATA_BACKEND (convex default, or firebase) picks the backend per screen. convex/ is read-only until Stage 5. Convex Auth is still the sign-in. Which Firebase project serves production: UNKNOWN."
       ]
     },
     {
@@ -435,15 +482,15 @@
       "items": [
         "convex/lib/ai_router.ts calls https://api.deepinfra.com/v1/openai/chat/completions with native fetch (key: Convex env DEEPINFRA_API_KEY).",
         "Model is TEMPO_AI_MODEL, default deepseek-ai/DeepSeek-V4.1-Flash. Tiers fast, balanced and deep all map to it for now.",
-        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it."
+        "MCP: external clients POST /mcp on Convex HTTP with a per-user token; apps/web/app/api/mcp proxies to it. Web search calls the Mistral conversations API (mistral-small-latest)."
       ]
     },
     {
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
-        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
+        "People, Vercel, Polar, Whop, DeepInfra, Mistral, MCP clients, and RevenueCat sit outside the Convex security group.",
+        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex. Firestore sits in its own Google Cloud group; Vercel functions reach it as a service account and firestore.rules close every collection to clients.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
     }
