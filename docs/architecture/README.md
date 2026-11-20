@@ -2,11 +2,11 @@
 
 Standalone Archify diagrams (v3.0.1). Open the `.html` in a browser (standalone, no install).
 
-Mapped from integration @ 5f9cf22443ed7a15881f1214b3b31ac203c82a21
+Mapped from integration @ 578597f4850bddfb6cd0b032e7273dcfbbae0a9e
 
 | File | What it shows |
 |---|---|
-| `system-architecture.json` / `.html` | Tempo Flow runtime: web (Next.js 16 on Vercel), mobile (Expo 54), Convex Auth, Convex functions, Convex data (dev `tremendous-bass-443`, test `ceaseless-dog-617`, prod `precious-wildcat-890`, Amit only), Mistral slots, Polar checkout, RevenueCat webhook. Trust boundary is the Convex security group. |
+| `system-architecture.json` / `.html` | Tempo Flow runtime: web (Next.js 16 on Vercel), mobile (Expo 54), Convex Auth, Convex functions, Convex data (dev `tremendous-bass-443`, test `ceaseless-dog-617`, prod `precious-wildcat-890`, Amit only), Mistral web search, Polar checkout, Whop webhook, RevenueCat webhook, and Firestore (Convex to Firebase migration, behind `NEXT_PUBLIC_DATA_BACKEND`). Trust boundaries are the Convex and Google Cloud security groups. |
 | `factory-workflow.json` / `.html` | Ticket (`factory-write-tickets`, `factory-promote`) → dispatcher (`factory-dispatch`, gh-aw Copilot, `FACTORY_MODEL_DISPATCH`, routing only) → 3 lanes (`factory-lane-claude`, `factory-lane-cursor`, `factory-lane-codex`) → checks (CI, scope-guard, config-guard, Security) → Bugbot (planned: no workflow file) → ship (GitHub merge queue into `integration`, then Vercel preview and `convex-deploy-test` to `ceaseless-dog-617`). Live deploy is planned (no `deploy-live` workflow). Pause switch and `blocked:amit` after 3 failed fixes are on the failure lane. |
 
 The three build lanes are one node with three source files. A separate box per lane failed the showcase corridor check.
