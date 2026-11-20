@@ -12,6 +12,7 @@
     "./primitives": "./src/primitives/index.ts",
     "./native": "./src/native/index.ts",
     "./theme": "./src/theme/tokens.ts",
+    "./theme/tempo-flow-tokens.css": "./src/theme/tempo-flow-tokens.css",
     "./blocks/catalog": "./src/blocks/catalog.ts",
     "./blocks/block-spec": "./src/blocks/block-spec.ts",
     "./blocks/decision-steps": "./src/blocks/decision-steps.tsx"

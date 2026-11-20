@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { Component, type ReactNode, useMemo } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
+import { useDoneTasksInRange } from "@/lib/data/tasks/use-done-tasks-in-range";
 import { weekBounds, weekGlance } from "@/lib/week-glance";
 import { WeekGlanceView } from "./WeekGlanceView";
 
@@ -23,11 +24,12 @@ function WeekGlanceData({ monday }: { monday: string }) {
   const bounds = useMemo(() => weekBounds(monday), [monday]);
   const range = bounds ? { startMs: bounds[0] as number, endMs: bounds[7] as number } : null;
   // Only this week's finished tasks, read through an index (not every task ever finished).
-  const tasks = useQuery(api.tasks.listDoneInRange, range ?? "skip");
+  const tasks = useDoneTasksInRange(range ?? "skip");
   const blocks = useQuery(api.focusBlocks.listInRange, range ?? "skip");
   const glance = useMemo(
-    () => (tasks === undefined || blocks === undefined ? undefined : weekGlance(monday, tasks, blocks)),
-    [monday, tasks, blocks],
+    () =>
+      tasks === undefined || blocks === undefined ? undefined : weekGlance(monday, tasks, blocks),
+    [monday, tasks, blocks]
   );
   if (!bounds || glance === null) return null;
   if (glance === undefined) {
