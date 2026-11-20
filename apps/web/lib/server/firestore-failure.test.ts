@@ -3,12 +3,12 @@ import { FirestoreError } from "./firestore";
 import { readFirestoreFailure } from "./firestore-failure";
 
 describe("readFirestoreFailure", () => {
-  test("maps 401 to sign-in-again", () => {
+  test("maps a service-account 401 to setup rather than a user-session failure", () => {
     expect(readFirestoreFailure(new FirestoreError(401))).toEqual({
-      kind: "sign-in-again",
-      httpStatus: 401,
+      kind: "setup",
+      httpStatus: 503,
       retry: false,
-      copyKey: "fs.fail.sign-in-again",
+      copyKey: "fs.fail.setup",
     });
   });
 
