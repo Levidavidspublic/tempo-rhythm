@@ -50,11 +50,15 @@ test.describe("core task views", () => {
     await page.goto("/tasks/energy");
     await expect(main.getByRole("heading", { name: "Energy", exact: true })).toBeVisible();
     await expect(main.getByRole("heading", { name: "Low energy" })).toBeVisible();
-    await expect(page.getByText(updatedTitle)).toBeVisible();
-    await expect(page.getByText("Done")).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Medium energy" })).toBeVisible();
+    await expect(main.getByRole("heading", { name: "High energy" })).toBeVisible();
+    await expect(page.getByText(updatedTitle)).toBeHidden();
+    await expect(main.getByText("Nothing here right now")).toHaveCount(3);
+    await expect(main.getByText("Loading tasks...")).toHaveCount(0);
 
     await page.reload();
-    await expect(page.getByText(updatedTitle)).toBeVisible();
-    await expect(page.getByText("Done")).toBeVisible();
+    await expect(page.getByText(updatedTitle)).toBeHidden();
+    await expect(main.getByText("Nothing here right now")).toHaveCount(3);
+    await expect(main.getByText("Loading tasks...")).toHaveCount(0);
   });
 });

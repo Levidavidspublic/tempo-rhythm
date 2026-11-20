@@ -1,5 +1,5 @@
-import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
+import { EnergyBoard } from "@/components/tasks-energy/EnergyBoard";
 
 export default function EnergyTasksPage() {
-  return <TaskViewsScreen view="energy" />;
+  return <EnergyBoard />;
 }
