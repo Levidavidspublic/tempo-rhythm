@@ -26,10 +26,7 @@ export function ChecklistBoard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
-  const tasks = useQuery(
-    api.tasks.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
-  );
+  const tasks = useQuery(api.tasks.list, isAuthenticated && hasConvexUser ? {} : "skip");
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useRemoveTask();
   const restoreTask = useMutation(api.tasks.restore);
@@ -52,16 +49,15 @@ export function ChecklistBoard() {
   const openTasks = useMemo(
     () =>
       (tasks ?? []).filter(
-        (task): task is OpenTask => task.status === "todo" || task.status === "in_progress",
+        (task): task is OpenTask => task.status === "todo" || task.status === "in_progress"
       ),
-    [tasks],
+    [tasks]
   );
   const withSteps = openTasks.filter((task) => (task.checklist?.length ?? 0) > 0);
   const withoutSteps = openTasks.filter((task) => (task.checklist?.length ?? 0) === 0);
   const isLoading =
     isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && tasks === undefined)));
+    (isAuthenticated && (profile === undefined || (hasConvexUser && tasks === undefined)));
 
   async function saveChecklist(task: OpenTask, checklist: ChecklistStep[]) {
     setPendingTaskId(task._id);
@@ -118,7 +114,7 @@ export function ChecklistBoard() {
       <div aria-live="polite" className="mb-6 min-h-6 text-sm text-muted-foreground">
         {removed ? (
           <span>
-            Task removed. {" "}
+            Task removed.{" "}
             <button
               className="font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
@@ -238,7 +234,10 @@ function TaskChecklistCard({
       {steps.length > 0 ? (
         <ul className="mb-4 space-y-2" aria-label={`${task.title} steps`}>
           {steps.map((step) => (
-            <li key={step.id} className="flex min-h-11 items-center gap-3 rounded-xl bg-surface-sunken px-3 py-2">
+            <li
+              key={step.id}
+              className="flex min-h-11 items-center gap-3 rounded-xl bg-surface-sunken px-3 py-2"
+            >
               <input
                 type="checkbox"
                 checked={step.completed}
@@ -248,24 +247,34 @@ function TaskChecklistCard({
                 className="h-5 w-5 rounded border-border text-primary"
               />
               {editingId === step.id ? (
-                <form className="flex min-w-0 flex-1 gap-2" onSubmit={(event) => submitRename(event, step.id)}>
+                <form
+                  className="flex min-w-0 flex-1 gap-2"
+                  onSubmit={(event) => submitRename(event, step.id)}
+                >
                   <input
                     aria-label={`Rename ${step.text}`}
                     value={editingText}
                     onChange={(event) => setEditingText(event.target.value)}
                     className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3"
                   />
-                  <Button type="submit" disabled={disabled || !editingText.trim()}>Save</Button>
+                  <Button type="submit" disabled={disabled || !editingText.trim()}>
+                    Save
+                  </Button>
                 </form>
               ) : (
                 <>
-                  <span className={`min-w-0 flex-1 ${step.completed ? "text-muted-foreground line-through" : ""}`}>
+                  <span
+                    className={`min-w-0 flex-1 ${step.completed ? "text-muted-foreground line-through" : ""}`}
+                  >
                     {step.text}
                   </span>
                   <button
                     type="button"
                     disabled={disabled}
-                    onClick={() => { setEditingId(step.id); setEditingText(step.text); }}
+                    onClick={() => {
+                      setEditingId(step.id);
+                      setEditingText(step.text);
+                    }}
                     className="min-h-11 px-2 text-sm font-medium text-primary"
                   >
                     Rename
@@ -286,7 +295,9 @@ function TaskChecklistCard({
       ) : null}
 
       <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitNewStep}>
-        <label className="sr-only" htmlFor={`new-step-${task._id}`}>Add a step to {task.title}</label>
+        <label className="sr-only" htmlFor={`new-step-${task._id}`}>
+          Add a step to {task.title}
+        </label>
         <input
           id={`new-step-${task._id}`}
           value={newStep}
@@ -295,7 +306,9 @@ function TaskChecklistCard({
           placeholder="What is the next small step?"
           className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-foreground"
         />
-        <Button type="submit" disabled={disabled || !newStep.trim()}>Add step</Button>
+        <Button type="submit" disabled={disabled || !newStep.trim()}>
+          Add step
+        </Button>
       </form>
     </li>
   );
