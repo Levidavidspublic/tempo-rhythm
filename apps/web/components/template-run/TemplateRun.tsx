@@ -70,11 +70,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
     setPending(true);
     setError("");
     try {
-      const id = await createNote({
-        title: draft.title,
-        body: draft.body,
-        periodType: template.periodType,
-      });
+      const id = await createNote({ title: draft.title, body: draft.body, periodType: template.periodType });
       if (declined.current) return;
       router.push(`/notes/${id}`);
     } catch {
@@ -118,11 +114,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <p className="tp-small tp-muted">{t("tplRun.previewHint")}</p>
         <ReadView
           body={draft?.body ?? template.body}
-          labels={{
-            minutes: t("editor.minutes"),
-            brokenBlock: t("editor.broken"),
-            template: t("editor.template"),
-          }}
+          labels={{ minutes: t("editor.minutes"), brokenBlock: t("editor.broken"), template: t("editor.template") }}
         />
       </section>
       {error ? (
@@ -131,21 +123,11 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         </p>
       ) : null}
       <div className="tp-pagehead__actions">
-        <button
-          type="button"
-          className="tp-btn tp-btn--primary"
-          onClick={onAccept}
-          disabled={pending || !draft}
-        >
+        <button type="button" className="tp-btn tp-btn--primary" onClick={onAccept} disabled={pending || !draft}>
           <TpIcon name="play" size="sm" />
           <span>{pending ? t("tplRun.creating") : t("tplRun.accept")}</span>
         </button>
-        <button
-          type="button"
-          className="tp-btn tp-btn--ghost"
-          onClick={onReject}
-          disabled={pending}
-        >
+        <button type="button" className="tp-btn tp-btn--ghost" onClick={onReject} disabled={pending}>
           {t("tplRun.reject")}
         </button>
       </div>
