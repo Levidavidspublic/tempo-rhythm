@@ -88,7 +88,9 @@ function isFirestoreValue(value: unknown, insideArray = false): boolean {
     return true;
   }
   if (Array.isArray(value)) {
-    return !insideArray && value.every((item) => item !== undefined && isFirestoreValue(item, true));
+    return (
+      !insideArray && value.every((item) => item !== undefined && isFirestoreValue(item, true))
+    );
   }
   if (isPlainObject(value)) {
     return Object.values(value).every((item) => item === undefined || isFirestoreValue(item));
