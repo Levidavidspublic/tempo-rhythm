@@ -69,9 +69,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
   const taskIdsSnapshot = Array.isArray(taskIds) ? Array.from(taskIds) : null;
   if (
     taskIdsSnapshot === null ||
-    taskIdsSnapshot.some(
-      (taskId) => typeof taskId !== "string" || taskId.trim().length === 0
-    ) ||
+    taskIdsSnapshot.some((taskId) => typeof taskId !== "string" || taskId.trim().length === 0) ||
     new Set(taskIdsSnapshot).size !== taskIdsSnapshot.length
   ) {
     return {
