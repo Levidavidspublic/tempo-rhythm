@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import { ReadView } from "@/components/editor/ReadView";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { useTemplate } from "@/lib/data/templates/use-template";
 import { localIsoDate } from "@/lib/period-pages";
 import { templatePageDraft } from "@/lib/template-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -21,7 +22,7 @@ import { ProposalBanner } from "./ProposalBanner";
 export function TemplateRun({ templateId }: { templateId: string }) {
   const router = useRouter();
   const { t, lang } = useLocale();
-  const template = useQuery(api.templates.get, { templateId });
+  const template = useTemplate({ templateId });
   const createNote = useMutation(api.notes.create);
   const bounds = useLocalDayBounds();
   const [mounted, setMounted] = useState(false);
