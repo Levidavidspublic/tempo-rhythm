@@ -41,7 +41,9 @@ describe("readPageProposal", () => {
       secondsLeft: 5,
       task: { title: "Call the bank", durationMin: 15 },
     });
-    expect(view.task).not.toBe(doc.payload.state === "available" ? doc.payload.task : undefined);
+    expect(view.task).not.toBe(
+      doc.payload.state === "available" ? doc.payload.task : undefined,
+    );
     expect(doc).toEqual(proposal());
   });
 
@@ -67,17 +69,16 @@ describe("readPageProposal", () => {
     });
   });
 
-  test.each([
-    "confirmed",
-    "rejected",
-    "cancelled",
-  ] as const)("maps the %s status to a finished view", (status) => {
-    expect(readPageProposal(proposal({ status }), NOW)).toEqual({
-      state: status,
-      canDecide: false,
-      secondsLeft: 0,
-    });
-  });
+  test.each(["confirmed", "rejected", "cancelled"] as const)(
+    "maps the %s status to a finished view",
+    (status) => {
+      expect(readPageProposal(proposal({ status }), NOW)).toEqual({
+        state: status,
+        canDecide: false,
+        secondsLeft: 0,
+      });
+    },
+  );
 
   test("returns gone for a deleted proposal before considering its status", () => {
     const doc = proposal({ status: "confirmed", deletedAt: NOW });
@@ -88,21 +89,21 @@ describe("readPageProposal", () => {
     });
   });
 
-  test.each([
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY,
-  ])("fails closed for non-finite now value %s", (now) => {
-    expect(readPageProposal(proposal(), now)).toEqual({
-      state: "expired",
-      canDecide: false,
-      secondsLeft: 0,
-    });
-  });
+  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "fails closed for non-finite now value %s",
+    (now) => {
+      expect(readPageProposal(proposal(), now)).toEqual({
+        state: "expired",
+        canDecide: false,
+        secondsLeft: 0,
+      });
+    },
+  );
 
   test("rounds a partial second up", () => {
-    expect(readPageProposal(proposal({ proposalExpiresAtMs: NOW + 1_001 }), NOW).secondsLeft).toBe(
-      2
-    );
+    expect(
+      readPageProposal(proposal({ proposalExpiresAtMs: NOW + 1_001 }), NOW)
+        .secondsLeft,
+    ).toBe(2);
   });
 });
