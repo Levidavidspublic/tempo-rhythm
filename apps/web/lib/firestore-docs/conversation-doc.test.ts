@@ -73,6 +73,18 @@ describe("message documents", () => {
     ).toBe(false);
   });
 
+  test("refuses an HTTPS source URL without a host", () => {
+    expect(
+      checkMessageDoc({
+        conversationId: "conversation-1",
+        role: "assistant",
+        content: "Try this.",
+        sources: [{ title: "Incomplete", site: "incomplete", url: "https://" }],
+        createdAt: 1,
+      }).ok
+    ).toBe(false);
+  });
+
   test("keeps deletedAt on a soft-deleted message", () => {
     const result = checkMessageDoc({
       conversationId: "conversation-1",
