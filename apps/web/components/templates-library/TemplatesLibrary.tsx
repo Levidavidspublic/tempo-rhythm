@@ -53,7 +53,9 @@ export function TemplatesLibrary() {
     const next = SCOPES[(index + step + SCOPES.length) % SCOPES.length] as TemplateScope;
     selectScope(next);
     const group = event.currentTarget.parentElement;
-    window.requestAnimationFrame(() => group?.querySelector<HTMLButtonElement>(`[data-scope="${next}"]`)?.focus());
+    window.requestAnimationFrame(() =>
+      group?.querySelector<HTMLButtonElement>(`[data-scope="${next}"]`)?.focus()
+    );
   };
 
   const confirmDelete = async (templateId: string) => {
@@ -69,7 +71,8 @@ export function TemplatesLibrary() {
     }
   };
 
-  const shown = templates === undefined ? [] : filterTemplates(templates as ListedTemplate[], scope, query);
+  const shown =
+    templates === undefined ? [] : filterTemplates(templates as ListedTemplate[], scope, query);
   const builtIn = shown.filter((template) => template.source === "starter");
   const mine = shown.filter((template) => template.source === "user");
   const searching = query.trim().length > 0;
@@ -131,7 +134,12 @@ export function TemplatesLibrary() {
             />
           </div>
         </div>
-        <div className="tp-segmented" role="radiogroup" aria-label={t("tpl.show")} data-component="Segmented">
+        <div
+          className="tp-segmented"
+          role="radiogroup"
+          aria-label={t("tpl.show")}
+          data-component="Segmented"
+        >
           {SCOPES.map((option, index) => (
             // biome-ignore lint/a11y/useSemanticElements: one option of the v3 segmented control
             <button
