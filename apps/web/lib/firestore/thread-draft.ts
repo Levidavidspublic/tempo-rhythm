@@ -1,7 +1,4 @@
-import {
-  checkConversationDoc,
-  type ConversationDoc,
-} from "../firestore-docs/conversation-doc";
+import { checkConversationDoc, type ConversationDoc } from "../firestore-docs/conversation-doc";
 import { stampCreate } from "./write-stamps";
 
 export const THREAD_TITLE_MAX = 60;
@@ -34,7 +31,7 @@ export function draftThread(firstMessage: unknown, now: number): DraftThreadResu
 }
 
 export function sortThreads<T extends { id: string; updatedAt: number; deletedAt?: number }>(
-  threads: readonly T[],
+  threads: readonly T[]
 ): T[] {
   return threads
     .filter((thread) => thread.deletedAt === undefined)
