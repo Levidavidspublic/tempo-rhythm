@@ -28,15 +28,15 @@ function byUpdatedAtDescendingThenId<T extends GoalListRow>(left: T, right: T): 
   return updatedAtDifference !== 0 ? updatedAtDifference : compareIds(left, right);
 }
 
-export function pickGoalsForList<T extends GoalListRow>(rows: readonly T[]): {
+export function pickGoalsForList<T extends GoalListRow>(
+  rows: readonly T[]
+): {
   active: T[];
   completed: T[];
   activeCount: number;
   completedCount: number;
 } {
-  const liveRows = rows.filter(
-    (row) => row.deletedAt === undefined && row.status !== "archived"
-  );
+  const liveRows = rows.filter((row) => row.deletedAt === undefined && row.status !== "archived");
   const active = liveRows.filter((row) => row.status === "active").sort(byTargetDateThenId);
   const completed = liveRows
     .filter((row) => row.status === "completed")
