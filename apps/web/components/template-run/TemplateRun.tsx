@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import { ReadView } from "@/components/editor/ReadView";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { useTemplate } from "@/lib/data/templates/use-template";
 import { localIsoDate } from "@/lib/period-pages";
 import { templatePageDraft } from "@/lib/template-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -21,7 +22,7 @@ import { ProposalBanner } from "./ProposalBanner";
 export function TemplateRun({ templateId }: { templateId: string }) {
   const router = useRouter();
   const { t, lang } = useLocale();
-  const template = useQuery(api.templates.get, { templateId });
+  const template = useTemplate({ templateId });
   const createNote = useMutation(api.notes.create);
   const bounds = useLocalDayBounds();
   const [mounted, setMounted] = useState(false);
@@ -69,7 +70,11 @@ export function TemplateRun({ templateId }: { templateId: string }) {
     setPending(true);
     setError("");
     try {
-      const id = await createNote({ title: draft.title, body: draft.body, periodType: template.periodType });
+      const id = await createNote({
+        title: draft.title,
+        body: draft.body,
+        periodType: template.periodType,
+      });
       if (declined.current) return;
       router.push(`/notes/${id}`);
     } catch {
@@ -113,7 +118,11 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <p className="tp-small tp-muted">{t("tplRun.previewHint")}</p>
         <ReadView
           body={draft?.body ?? template.body}
-          labels={{ minutes: t("editor.minutes"), brokenBlock: t("editor.broken"), template: t("editor.template") }}
+          labels={{
+            minutes: t("editor.minutes"),
+            brokenBlock: t("editor.broken"),
+            template: t("editor.template"),
+          }}
         />
       </section>
       {error ? (
@@ -122,11 +131,21 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         </p>
       ) : null}
       <div className="tp-pagehead__actions">
-        <button type="button" className="tp-btn tp-btn--primary" onClick={onAccept} disabled={pending || !draft}>
+        <button
+          type="button"
+          className="tp-btn tp-btn--primary"
+          onClick={onAccept}
+          disabled={pending || !draft}
+        >
           <TpIcon name="play" size="sm" />
           <span>{pending ? t("tplRun.creating") : t("tplRun.accept")}</span>
         </button>
-        <button type="button" className="tp-btn tp-btn--ghost" onClick={onReject} disabled={pending}>
+        <button
+          type="button"
+          className="tp-btn tp-btn--ghost"
+          onClick={onReject}
+          disabled={pending}
+        >
           {t("tplRun.reject")}
         </button>
       </div>
