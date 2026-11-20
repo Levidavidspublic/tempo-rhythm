@@ -1,11 +1,11 @@
 /** Onboarding progress and resume copy. Hebrew is machine-drafted for Amit's native read. */
 export const en = {
-  "summary": "Step {step} of {total}",
+  summary: "Step {step} of {total}",
   "summary.aria": "Onboarding progress: step {step} of {total}",
   "resume.title": "Welcome back to step {step}.",
   "resume.body": "After a refresh, check earlier choices before finishing.",
   "resume.review": "Review earlier steps",
-  "optional": "This step is optional. You can change it later.",
+  optional: "This step is optional. You can change it later.",
   "gallery.title": "Onboarding preview",
   "gallery.language": "Preview language",
   "gallery.state": "Preview state",
@@ -30,12 +30,12 @@ export const en = {
 
 // Machine-drafted Hebrew; needs Amit's native read.
 export const he: Record<keyof typeof en, string> = {
-  "summary": "שלב {step} מתוך {total}",
+  summary: "שלב {step} מתוך {total}",
   "summary.aria": "התקדמות ההגדרה: שלב {step} מתוך {total}",
   "resume.title": "חזרה לשלב {step}.",
   "resume.body": "אחרי רענון, כדאי לבדוק את הבחירות הקודמות לפני הסיום.",
   "resume.review": "בדיקת השלבים הקודמים",
-  "optional": "השלב הזה אינו חובה. אפשר לשנות אותו אחר כך.",
+  optional: "השלב הזה אינו חובה. אפשר לשנות אותו אחר כך.",
   "gallery.title": "תצוגה מקדימה של ההגדרה",
   "gallery.language": "שפת התצוגה המקדימה",
   "gallery.state": "מצב התצוגה המקדימה",
@@ -61,6 +61,12 @@ export const he: Record<keyof typeof en, string> = {
 export type Kb44Lang = "en" | "he";
 export type Kb44Key = keyof typeof en;
 
-export function translateKb44(lang: Kb44Lang, key: Kb44Key, values: Record<string, string | number> = {}) {
-  return (lang === "he" ? he : en)[key].replace(/\{(\w+)\}/g, (_match, field: string) => String(values[field] ?? ""));
+export function translateKb44(
+  lang: Kb44Lang,
+  key: Kb44Key,
+  values: Record<string, string | number> = {}
+) {
+  return (lang === "he" ? he : en)[key].replace(/\{(\w+)\}/g, (_match, field: string) =>
+    String(values[field] ?? "")
+  );
 }
