@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useRemoveTask } from "@/lib/data/tasks/use-remove-task";
 import {
   addStep,
   progress,
@@ -30,7 +31,7 @@ export function ChecklistBoard() {
     isAuthenticated && hasConvexUser ? {} : "skip",
   );
   const updateTask = useMutation(api.tasks.update);
-  const removeTask = useMutation(api.tasks.remove);
+  const removeTask = useRemoveTask();
   const restoreTask = useMutation(api.tasks.restore);
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<{ taskId: Id<"tasks">; undoUntilMs: number } | null>(null);
