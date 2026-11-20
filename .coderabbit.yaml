@@ -8,3 +8,7 @@ reviews:
   auto_review:
     base_branches:
       - "^master$"
+    # Cursor loop brief PRs (branch loop/*, title "[LOOP BRIEF] ...") are relayed and closed by
+    # the VPS loop runner, so never review them. Title match is case-insensitive.
+    ignore_title_keywords:
+      - "[LOOP BRIEF]"
