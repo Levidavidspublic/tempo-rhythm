@@ -10,11 +10,7 @@ export type NagSwitchPlan =
   | { kind: "refused"; reason: string };
 
 /** Plans a checked, immutable Firestore patch for switching a nag on or off. */
-export function planNagSwitch(
-  stored: NagDoc,
-  enabled: unknown,
-  now: number,
-): NagSwitchPlan {
+export function planNagSwitch(stored: NagDoc, enabled: unknown, now: number): NagSwitchPlan {
   try {
     if (stored.deletedAt !== undefined) {
       return { kind: "refused", reason: "nag is deleted" };
