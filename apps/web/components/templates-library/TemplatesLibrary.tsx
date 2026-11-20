@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { type KeyboardEvent, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -8,6 +8,7 @@ import { useShellSlots } from "@/components/tempo/ShellSlots";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useTemplateList } from "@/lib/data/templates/use-template-list";
 import { filterTemplates, type TemplateScope } from "@/lib/template-pages";
 import { TemplateCard, type TemplateCardModel } from "./TemplateCard";
 
@@ -26,7 +27,7 @@ const SCOPE_LABEL = { all: "tpl.all", starter: "tpl.builtin", mine: "tpl.yours" 
 export function TemplatesLibrary() {
   const { t } = useLocale();
   const shell = useShellSlots();
-  const templates = useQuery(api.templates.list, { scope: "all" });
+  const templates = useTemplateList({ scope: "all" });
   const remove = useMutation(api.templates.remove);
   const [scope, setScope] = useState<TemplateScope>("all");
   const [query, setQuery] = useState("");
@@ -52,7 +53,9 @@ export function TemplatesLibrary() {
     const next = SCOPES[(index + step + SCOPES.length) % SCOPES.length] as TemplateScope;
     selectScope(next);
     const group = event.currentTarget.parentElement;
-    window.requestAnimationFrame(() => group?.querySelector<HTMLButtonElement>(`[data-scope="${next}"]`)?.focus());
+    window.requestAnimationFrame(() =>
+      group?.querySelector<HTMLButtonElement>(`[data-scope="${next}"]`)?.focus()
+    );
   };
 
   const confirmDelete = async (templateId: string) => {
@@ -68,7 +71,8 @@ export function TemplatesLibrary() {
     }
   };
 
-  const shown = templates === undefined ? [] : filterTemplates(templates as ListedTemplate[], scope, query);
+  const shown =
+    templates === undefined ? [] : filterTemplates(templates as ListedTemplate[], scope, query);
   const builtIn = shown.filter((template) => template.source === "starter");
   const mine = shown.filter((template) => template.source === "user");
   const searching = query.trim().length > 0;
@@ -130,7 +134,12 @@ export function TemplatesLibrary() {
             />
           </div>
         </div>
-        <div className="tp-segmented" role="radiogroup" aria-label={t("tpl.show")} data-component="Segmented">
+        <div
+          className="tp-segmented"
+          role="radiogroup"
+          aria-label={t("tpl.show")}
+          data-component="Segmented"
+        >
           {SCOPES.map((option, index) => (
             // biome-ignore lint/a11y/useSemanticElements: one option of the v3 segmented control
             <button
