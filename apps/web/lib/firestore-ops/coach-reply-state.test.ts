@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  checkChatRequestDoc,
-  type ChatRequestDoc,
-} from "../firestore-docs/chat-request-doc";
+import { checkChatRequestDoc, type ChatRequestDoc } from "../firestore-docs/chat-request-doc";
 import { readCoachReplyState } from "./coach-reply-state";
 
 const baseRequest: ChatRequestDoc = {
