@@ -30,7 +30,7 @@ Before writing code:
 
 ## Forbidden tech (never add as a dependency or reference)
 
-- Firebase, Supabase (any service)
+- Supabase (any service). Firebase is allowed: a change may move to production once it is proven in preview (Amit, 2026-11-08).
 - Prisma, Drizzle, TypeORM, any other ORM
 - Auth0, Clerk, NextAuth, BetterAuth (we use Convex Auth)
 - Stripe direct SDK (we use RevenueCat)
