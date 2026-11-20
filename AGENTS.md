@@ -43,8 +43,8 @@ Don't:
 Report the results in the PR body (or your final message when you're not opening a PR) under `Test results (cloud agent sandbox)`: the Bun version used, then each command with pass, fail or skip counts, plus the last 20 lines of any failure. Anything you could not run goes in as `UNKNOWN: <command> (<reason>)`.
 
 ## Layout
-- `packages/backend` — schema and backend functions. Convex is frozen; no ticket authorizes backend changes under the current owner rule.
-- In this repo the backend folder is the one named in SLOTS.md (tempo: convex/).
+- Backend: moving from Convex to Firebase (Amit, 2026-11-20). The plan and the ticket order are in `docs/backlog/FIREBASE-MIGRATION-PLAN.md`. New backend work is Firestore on the client and op modules under `apps/web/lib/server/ops/` on the server.
+- The old backend folder is `convex/`. It is read-only until Stage 5 of that plan.
 - `packages/core` — shared logic. No UI, no platform APIs.
 - `packages/ui` — shared components, built on the design system named in SLOTS.md.
 - `apps/<shell>` — thin shells (web, mobile, desktop, extension). Shells differ only in OS-access features.
@@ -83,7 +83,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 1. One ticket = one folder, one branch, one PR. Branch name: `t/<issue-number>-<short-slug>`.
 2. Touch only files listed in SCOPE. If the work truly needs more, stop and report `blocked: scope overflow`. Don't split the ticket yourself.
 3. Change only the systems named in MUTATES. A change outside MUTATES fails the checks.
-4. Convex is frozen, including `convex/`, schema, functions, environment and deployments. Ticket 0, a ticket scope or the `convex-arch` label does not authorize an exception. If a required backend function is missing, report `blocked: missing backend <function>`.
+4. `convex/**`, its schema, functions, environment and deployments are read-only until Stage 5 of `docs/backlog/FIREBASE-MIGRATION-PLAN.md`. Ticket 0, a ticket scope or the `convex-arch` label does not authorize an exception; only a Stage 5 ticket of that plan does. A screen that needs backend work gets a Firebase port ticket from that plan, never a new Convex function. If something is missing, report `blocked: missing backend <function>`.
 5. You are done when the DONE command prints its expected output and all checks are green. Paste both into the PR as EVIDENCE.
 6. A mock or demo key never proves DONE when DONE names a real check.
 7. Anything you could not verify goes in the PR as `UNKNOWN: <what>`. Never fill a gap with a plausible guess.
@@ -143,7 +143,7 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 4. **Branch:** `t/<issue>-<ticket-id-lowercase>` off `integration`, e.g. `t/712-b04-03`, the factory's name (`ticketBranch()` in `scripts/factory/factory-lib.mjs`). If the branch already exists, continue on it.
 5. **PR:** a **draft** PR **into `integration`** (never `master` or `live`), opened as Division6066, with `Closes #<issue>` in the body. One ticket per PR. Then remove `needs:manual-run` and the `agent:*` label, and add `status:in-pr`.
 6. **CI must pass:** run `bun run lint`, `bun run typecheck`, `bun run test` and the ticket's DONE commands locally first. A PR with red CI isn't done: fix it, or comment that you're blocked.
-7. **Stay in scope:** only touch the ticket's SCOPE folders. **Convex is frozen**, including `convex/`, schema, functions, environment and deployments. Ticket 0 and a ticket scope do not authorize an exception.
+7. **Stay in scope:** only touch the ticket's SCOPE folders. **`convex/**` is read-only** (schema, functions, environment, deployments) until Stage 5 of `docs/backlog/FIREBASE-MIGRATION-PLAN.md`. Ticket 0 and a ticket scope do not authorize an exception.
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
 
