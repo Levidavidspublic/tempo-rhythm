@@ -1,11 +1,12 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { BatteryLow, BatteryMedium, Plus, Sparkles, X, Zap } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
+import { useUpdateTask } from "@/lib/data/tasks/use-update-task";
 import {
   type EnergyLevel,
   type EnergyRecommendation,
@@ -62,7 +63,7 @@ export function TodayEnergyRecommendations({
   const [energy, setEnergy] = useState<EnergyLevel | null>(null);
   const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const updateTask = useMutation(api.tasks.update);
+  const updateTask = useUpdateTask();
 
   // Only subscribe once the user has opted in by picking an energy level.
   const tasks = useQuery(api.tasks.list, energy !== null ? {} : "skip");
