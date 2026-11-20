@@ -59,6 +59,8 @@ const OPERATOR = {
   ">=": "GREATER_THAN_OR_EQUAL",
 } as const;
 
+const INEQUALITY_OPERATORS = new Set<ListFilter["op"]>(["<", "<=", ">", ">="]);
+
 function fieldFilter(filter: ListFilter) {
   validateField(filter.field);
   return {
@@ -103,6 +105,12 @@ export function buildListQuery(request: ListRequest): {
 
   if (request.orderBy) {
     validateField(request.orderBy.field);
+    const mismatchedInequalityFilter = filters.find(
+      (filter) => INEQUALITY_OPERATORS.has(filter.op) && filter.field !== request.orderBy?.field
+    );
+    if (mismatchedInequalityFilter) {
+      throw new FirestoreQueryError("orderBy must start with the inequality filter field");
+    }
     structuredQuery.orderBy = [
       {
         field: { fieldPath: request.orderBy.field },
