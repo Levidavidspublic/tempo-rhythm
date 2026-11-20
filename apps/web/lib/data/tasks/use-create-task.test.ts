@@ -1,36 +1,24 @@
-import { afterAll, expect, mock, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Id } from "@/convex/_generated/dataModel";
+import { getFunctionName } from "convex/server";
+import { makeUseCreateTask } from "./use-create-task";
 
-// bun's mock.module is process-wide. Load the real modules first and restore them after this file.
-const realModules = {
-  "convex/react": { ...(await import("convex/react")) },
-  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
-};
-afterAll(() => {
-  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
-});
+test("useCreateTask uses tasks.create and returns its mutation unchanged", () => {
+  const createTask = Object.assign(async () => "created" as Id<"tasks">, {
+    withOptimisticUpdate: () => {
+      throw new Error("Unexpected optimistic update");
+    },
+  });
+  const mutationCalls: unknown[][] = [];
+  const useCreateTask = makeUseCreateTask((reference, ...args) => {
+    mutationCalls.push([getFunctionName(reference), ...args]);
+    return createTask;
+  });
 
-const mutationCalls: unknown[] = [];
-const marker = async () => "created";
-
-mock.module("convex/react", () => ({
-  useMutation: (mutation: unknown) => {
-    mutationCalls.push(mutation);
-    return marker;
-  },
-}));
-mock.module("@/convex/_generated/api", () => ({
-  api: { tasks: { create: "tasks.create" } },
-}));
-
-const { useCreateTask } = await import("./use-create-task");
-
-test("useCreateTask calls useMutation with tasks.create and returns its value", () => {
-  mutationCalls.length = 0;
-
-  expect(useCreateTask() as unknown).toBe(marker);
-  expect(mutationCalls).toEqual(["tasks.create"]);
+  expect(useCreateTask()).toBe(createTask);
+  expect(mutationCalls).toEqual([["tasks:create"]]);
 });
 
 test("TaskViewsScreen creates tasks through useCreateTask", () => {
