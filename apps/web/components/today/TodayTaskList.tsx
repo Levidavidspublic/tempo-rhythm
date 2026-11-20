@@ -1,10 +1,9 @@
 "use client";
 
 import type { Id } from "@/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { CheckCircle2, Circle, ListTodo } from "lucide-react";
 import Link from "next/link";
-import { api } from "@/convex/_generated/api";
+import { useToggleTask } from "@/lib/data/tasks/use-toggle-task";
 import { cn } from "@/lib/utils";
 
 type TodayTask = {
@@ -32,7 +31,7 @@ const priorityLabel: Record<TodayTask["priority"], string> = {
 };
 
 export function TodayTaskList({ tasks }: TodayTaskListProps) {
-  const toggleCompletion = useMutation(api.tasks.toggleCompletion);
+  const toggleCompletion = useToggleTask();
 
   const activeTasks = tasks.filter((task) => task.status !== "done");
   const visibleTasks = activeTasks.slice(0, 3);
