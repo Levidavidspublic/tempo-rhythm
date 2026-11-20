@@ -7,7 +7,13 @@ test("empty start", () => {
   const empty = emptyPagedList<Row>();
   const started = startPage(empty);
 
-  expect(empty).toEqual({ items: [], nextCursor: null, hasMore: true, loading: false, requestId: 0 });
+  expect(empty).toEqual({
+    items: [],
+    nextCursor: null,
+    hasMore: true,
+    loading: false,
+    requestId: 0,
+  });
   expect(started).toEqual({ ...empty, loading: true, requestId: 1 });
   expect(startPage(started)).toBe(started);
 });
