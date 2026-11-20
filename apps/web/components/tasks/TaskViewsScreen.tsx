@@ -15,6 +15,7 @@ import {
   toggleChecklistItem,
 } from "@/convex/lib/taskChecklists";
 import type { MessageKey } from "@/lib/i18n";
+import { useCreateTask } from "@/lib/data/tasks/use-create-task";
 import {
   clearTaskDraft,
   type KeptTaskDraft,
@@ -266,7 +267,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const bounds = useLocalDayBounds();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const convexTasks = useQuery(api.tasks.list, isAuthenticated ? {} : "skip");
-  const createTask = useMutation(api.tasks.create);
+  const createTask = useCreateTask();
   const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
@@ -867,12 +868,12 @@ function TaskList({
   );
 }
 
-type GroupedTaskListProps<TGroup extends string> = Omit<TaskListProps, "tasks"> & {
-  groups: Record<TGroup, TaskViewRecord[]>;
-  labels: Record<TGroup, MessageKey>;
+type GroupedTaskListProps<Group extends string> = Omit<TaskListProps, "tasks"> & {
+  groups: Record<Group, TaskViewRecord[]>;
+  labels: Record<Group, MessageKey>;
 };
 
-function GroupedTaskList<TGroup extends string>({
+function GroupedTaskList<Group extends string>({
   groups,
   labels,
   editingId,
@@ -883,11 +884,11 @@ function GroupedTaskList<TGroup extends string>({
   onDelete,
   onToggle,
   onChecklistToggle,
-}: GroupedTaskListProps<TGroup>) {
+}: GroupedTaskListProps<Group>) {
   const { t } = useLocale();
   return (
     <div className="tk-groups">
-      {(Object.keys(labels) as TGroup[]).map((group) => (
+      {(Object.keys(labels) as Group[]).map((group) => (
         <section
           key={group}
           className="tp-section"
@@ -1052,7 +1053,7 @@ function TaskRow({
           type="button"
           className={cn(
             "tp-btn tp-btn--sm",
-            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost",
+            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost"
           )}
           disabled={actionsDisabled}
           aria-label={named(confirmingDelete ? "tasks.confirmDeleteName" : "tasks.deleteName")}
