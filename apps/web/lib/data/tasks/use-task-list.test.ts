@@ -1,11 +1,17 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { getFunctionName, type FunctionReturnType } from "convex/server";
-import { api } from "@/convex/_generated/api";
+import type { api } from "@/convex/_generated/api";
 
 const calls: Array<{ functionName: string; args: unknown }> = [];
 const result: FunctionReturnType<typeof api.tasks.list> = [];
+const realConvexReact = { ...(await import("convex/react")) };
+
+afterAll(() => {
+  mock.module("convex/react", () => realConvexReact);
+});
 
 mock.module("convex/react", () => ({
+  ...realConvexReact,
   useQuery: (reference: Parameters<typeof getFunctionName>[0], args: unknown) => {
     calls.push({ functionName: getFunctionName(reference), args });
     return result;
