@@ -29,7 +29,12 @@ export function planRetry({
     return { action: "stop", reason: "not-retryable" };
   }
 
-  if (!Number.isInteger(attempt) || attempt < 1 || !isValidTime(elapsedMs) || !isValidTime(budgetMs)) {
+  if (
+    !Number.isInteger(attempt) ||
+    attempt < 1 ||
+    !isValidTime(elapsedMs) ||
+    !isValidTime(budgetMs)
+  ) {
     return { action: "stop", reason: "bad-input" };
   }
 
