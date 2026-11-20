@@ -39,6 +39,10 @@ describe("checkCoachProposalDoc", () => {
     expect(checkCoachProposalDoc({ ...pending, status: "applied" }).ok).toBe(false);
   });
 
+  test("refuses a proposal with a missing taskIds element", () => {
+    expect(checkCoachProposalDoc({ ...pending, taskIds: new Array(1) }).ok).toBe(false);
+  });
+
   test("refuses an accepted proposal without decidedAt", () => {
     expect(checkCoachProposalDoc({ ...pending, status: "accepted" }).ok).toBe(false);
   });
