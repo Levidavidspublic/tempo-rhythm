@@ -7,6 +7,7 @@ import { ComingSoonOnly } from "@/components/coming-soon/ComingSoonOnly";
 import { Providers } from "@/components/providers/providers";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { DATA_BACKEND } from "@/lib/backend-flag";
 import { getSurface } from "@/lib/surface";
 import { themeInitScript } from "@/lib/theme-script";
 
@@ -44,8 +45,7 @@ const ibmPlexMono = localFont({
 
 export const metadata: Metadata = {
   title: "Tempo Flow — your brain's operating system",
-  description:
-    "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
+  description: "An overwhelm-first AI daily planner for ADHD, autistic, and neurodivergent brains.",
 };
 
 export const viewport: Viewport = {
@@ -64,7 +64,7 @@ export default function RootLayout({
   // Coming-soon surface (live): one public page. No sign-in, no backend client, no theme script.
   if (getSurface() === "coming-soon") {
     return (
-      <html lang="en" dir="ltr">
+      <html lang="en" dir="ltr" data-backend={DATA_BACKEND}>
         <body data-tempo-flow="" style={{ margin: 0, background: "var(--tp-ground)" }}>
           {/* App pages need the providers below. Without this guard they throw when the build prerenders them. */}
           <ComingSoonOnly>{children}</ComingSoonOnly>
@@ -78,12 +78,17 @@ export default function RootLayout({
       <html
         lang="en"
         dir="ltr"
+        data-backend={DATA_BACKEND}
         className={`${newsreader.variable} ${ibmPlexMono.variable}`}
         suppressHydrationWarning
       >
         <head>
-          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input */}
-          <Script id="tempo-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+          <Script
+            id="tempo-theme-init"
+            strategy="beforeInteractive"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: pre-hydration theme script, locally generated, no user input
+            dangerouslySetInnerHTML={{ __html: themeInitScript() }}
+          />
         </head>
         <body className="antialiased" suppressHydrationWarning>
           <ThemeProvider>
