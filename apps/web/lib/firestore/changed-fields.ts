@@ -82,7 +82,11 @@ export function findChangedFields(before: unknown, after: unknown): ChangedField
 
     if (existedBefore && (!existsAfter || nextValue === undefined)) {
       removed.push(name);
-    } else if (existsAfter && nextValue !== undefined && (!existedBefore || !valuesEqual(before[name], nextValue))) {
+    } else if (
+      existsAfter &&
+      nextValue !== undefined &&
+      (!existedBefore || !valuesEqual(before[name], nextValue))
+    ) {
       Object.defineProperty(set, name, {
         configurable: true,
         enumerable: true,

@@ -4,7 +4,9 @@ import { findChangedFields } from "./changed-fields";
 
 describe("findChangedFields", () => {
   test("returns empty collections when nothing changed", () => {
-    expect(findChangedFields({ title: "Plan", priority: 2 }, { title: "Plan", priority: 2 })).toEqual({
+    expect(
+      findChangedFields({ title: "Plan", priority: 2 }, { title: "Plan", priority: 2 })
+    ).toEqual({
       set: {},
       removed: [],
       names: [],
@@ -56,7 +58,12 @@ describe("findChangedFields", () => {
   });
 
   test("never includes undefined in set", () => {
-    expect(findChangedFields({ keep: true, old: "value" }, { keep: true, old: undefined, new: undefined })).toEqual({
+    expect(
+      findChangedFields(
+        { keep: true, old: "value" },
+        { keep: true, old: undefined, new: undefined }
+      )
+    ).toEqual({
       set: {},
       removed: ["old"],
       names: ["old"],
