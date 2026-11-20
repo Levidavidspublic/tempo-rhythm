@@ -74,7 +74,7 @@ export function parseNagDoc(input: unknown): NagDoc {
   }
 
   const phraseIds = new Set<string>();
-  const phrases = input.phrases.map((phrase, index): NagPhrase => {
+  const phrases = Array.from(input.phrases, (phrase, index): NagPhrase => {
     const prefix = `phrases[${index}]`;
     if (!isRecord(phrase)) {
       throw new NagDocError(prefix);
