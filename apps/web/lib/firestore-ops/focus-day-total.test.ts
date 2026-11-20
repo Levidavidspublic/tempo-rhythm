@@ -56,7 +56,11 @@ test("only the start boundary is included", () => {
 
 test("a session running past midnight counts in full on its start day", () => {
   expect(
-    focusDayTotal([block({ startedAtMs: DAY_END - 30_000, durationMs: 120_000 })], DAY_START, DAY_END)
+    focusDayTotal(
+      [block({ startedAtMs: DAY_END - 30_000, durationMs: 120_000 })],
+      DAY_START,
+      DAY_END
+    )
   ).toMatchObject({ totalMs: 120_000, totalMinutes: 2, sessions: 1 });
 });
 
