@@ -8,7 +8,13 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useGoalList } from "@/lib/data/goals/use-goal-list";
-import { filterGoals, GOAL_FILTERS, type GoalFilter, goalStatus, isGoalFilter } from "@/lib/goals-projects";
+import {
+  filterGoals,
+  GOAL_FILTERS,
+  type GoalFilter,
+  goalStatus,
+  isGoalFilter,
+} from "@/lib/goals-projects";
 import {
   makeToast,
   OfflineNotice,
@@ -250,7 +256,11 @@ function GoalsContent() {
               title={t("gl.none.title")}
               body={t("gl.none.body")}
               action={
-                <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setFilter("all")}>
+                <button
+                  className="tp-btn tp-btn--secondary"
+                  type="button"
+                  onClick={() => setFilter("all")}
+                >
                   <span>{t("gl.showall")}</span>
                 </button>
               }
@@ -341,7 +351,12 @@ function GoalCard({ goal }: { goal: Doc<"goals"> }) {
   const titleId = `goal-${goal._id}-title`;
   const why = goal.description?.trim();
   return (
-    <article className="tp-card gl-card" data-component="Card" data-status={status} aria-labelledby={titleId}>
+    <article
+      className="tp-card gl-card"
+      data-component="Card"
+      data-status={status}
+      aria-labelledby={titleId}
+    >
       <div className="tp-card__head">
         <StatusBadge kind="goal" status={status} />
       </div>
