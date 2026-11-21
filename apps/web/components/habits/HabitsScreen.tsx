@@ -9,6 +9,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useHabitList } from "@/lib/data/habits/use-habit-list";
 import { fillTemplate, type LocalDay, lastLocalDays, settlePending } from "@/lib/habits-view";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { HabitEnergySuggestions } from "./HabitEnergySuggestions";
@@ -132,7 +133,7 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
   const today = useMemo(() => new Date(todayMs), [todayMs]);
   const days = useMemo(() => lastLocalDays(today, 7), [today]);
   const todayKey = days[days.length - 1]?.localDate ?? "";
-  const habits = useQuery(api.habits.list, ready ? {} : "skip");
+  const habits = useHabitList(ready ? {} : "skip");
   const checkIns = useWeekCheckIns(days, ready);
   const create = useMutation(api.habits.create);
   const remove = useMutation(api.habits.remove);
