@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
+import { getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
@@ -10,7 +10,7 @@ export type FirebaseClient = Readonly<{
   db: Firestore;
 }>;
 
-let cachedClient: FirebaseClient | null | undefined;
+let cachedClient: FirebaseClient | undefined;
 
 export function getFirebaseClient(env?: FirebaseWebEnv): FirebaseClient | null {
   if (cachedClient !== undefined) {
@@ -19,11 +19,15 @@ export function getFirebaseClient(env?: FirebaseWebEnv): FirebaseClient | null {
 
   const config = readFirebaseWebConfig(env);
   if (config === null) {
-    cachedClient = null;
-    return cachedClient;
+    return null;
   }
 
-  const app = getApps().length > 0 ? getApp() : initializeApp(config);
+  const options: FirebaseOptions = {
+    ...config,
+    storageBucket: config.storageBucket ?? undefined,
+    messagingSenderId: config.messagingSenderId ?? undefined,
+  };
+  const app = getApps()[0] ?? initializeApp(options);
   cachedClient = Object.freeze({
     app,
     auth: getAuth(app),

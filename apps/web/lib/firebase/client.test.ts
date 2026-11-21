@@ -11,13 +11,15 @@ describe("getFirebaseClient", () => {
     expect(getFirebaseClient({})).toBeNull();
   });
 
-  test("creates and caches one client for a complete fake configuration", () => {
+  test("creates and caches one client for a complete fake configuration after missing config", () => {
     const env = {
       NEXT_PUBLIC_FIREBASE_API_KEY: "test-api-key",
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "demo-project.firebaseapp.com",
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "demo-project",
       NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:test",
     };
+
+    expect(getFirebaseClient({})).toBeNull();
 
     const first = getFirebaseClient(env);
     const second = getFirebaseClient(env);
