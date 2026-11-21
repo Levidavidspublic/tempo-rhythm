@@ -1,13 +1,20 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { filterGoals, GOAL_FILTERS, type GoalFilter, goalStatus, isGoalFilter } from "@/lib/goals-projects";
+import { useGoalList } from "@/lib/data/goals/use-goal-list";
+import {
+  filterGoals,
+  GOAL_FILTERS,
+  type GoalFilter,
+  goalStatus,
+  isGoalFilter,
+} from "@/lib/goals-projects";
 import {
   makeToast,
   OfflineNotice,
@@ -111,7 +118,7 @@ function GoalsContent() {
   const { t } = useLocale();
   const signedIn = useSignedIn();
   const online = useOnline();
-  const goals = useQuery(api.goals.list, signedIn === "ready" ? {} : "skip");
+  const goals = useGoalList(signedIn === "ready" ? {} : "skip");
   const createGoal = useMutation(api.goals.create);
   const removeGoal = useMutation(api.goals.remove);
   const [filter, setFilter] = useQueryParam<GoalFilter>("status", "all", isGoalFilter);
@@ -249,7 +256,11 @@ function GoalsContent() {
               title={t("gl.none.title")}
               body={t("gl.none.body")}
               action={
-                <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setFilter("all")}>
+                <button
+                  className="tp-btn tp-btn--secondary"
+                  type="button"
+                  onClick={() => setFilter("all")}
+                >
                   <span>{t("gl.showall")}</span>
                 </button>
               }
@@ -340,7 +351,12 @@ function GoalCard({ goal }: { goal: Doc<"goals"> }) {
   const titleId = `goal-${goal._id}-title`;
   const why = goal.description?.trim();
   return (
-    <article className="tp-card gl-card" data-component="Card" data-status={status} aria-labelledby={titleId}>
+    <article
+      className="tp-card gl-card"
+      data-component="Card"
+      data-status={status}
+      aria-labelledby={titleId}
+    >
       <div className="tp-card__head">
         <StatusBadge kind="goal" status={status} />
       </div>
