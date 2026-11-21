@@ -54,15 +54,9 @@ export function TrackingDashboard() {
   useEffect(() => {
     const nextMidnight = new Date(nowMs);
     nextMidnight.setHours(24, 0, 1, 0);
-    const timer = setTimeout(
-      () => setNowMs(Date.now()),
-      Math.max(1000, nextMidnight.getTime() - Date.now())
-    );
+    const timer = setTimeout(() => setNowMs(Date.now()), Math.max(1000, nextMidnight.getTime() - Date.now()));
     const onVisible = () => {
-      if (
-        document.visibilityState === "visible" &&
-        new Date().toDateString() !== new Date(nowMs).toDateString()
-      ) {
+      if (document.visibilityState === "visible" && new Date().toDateString() !== new Date(nowMs).toDateString()) {
         setNowMs(Date.now());
       }
     };
@@ -158,17 +152,13 @@ export function TrackingDashboard() {
       try {
         const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
         if (locks) {
-          await locks.request(
-            `tempo-tracking-import:${userId}`,
-            { ifAvailable: true },
-            async (lock) => {
-              if (!lock) {
-                migratedFor.current = null;
-                return;
-              }
-              await runImport();
+          await locks.request(`tempo-tracking-import:${userId}`, { ifAvailable: true }, async (lock) => {
+            if (!lock) {
+              migratedFor.current = null;
+              return;
             }
-          );
+            await runImport();
+          });
         } else {
           await runImport();
         }
@@ -215,9 +205,7 @@ export function TrackingDashboard() {
     return (
       <div className="mx-auto w-full max-w-4xl p-8 text-center">
         <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            {t("track.title")}
-          </h1>
+          <h1 className="font-heading text-2xl font-semibold text-foreground">{t("track.title")}</h1>
           <p className="mt-3 text-muted-foreground">{t("track.signedOut")}</p>
           <Button asChild className="mt-6">
             <Link href="/sign-in?next=/tracking">{t("track.signIn")}</Link>
