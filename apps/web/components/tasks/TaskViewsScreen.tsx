@@ -15,6 +15,7 @@ import {
   toggleChecklistItem,
 } from "@/convex/lib/taskChecklists";
 import type { MessageKey } from "@/lib/i18n";
+import { useCreateRepeatCfg } from "@/lib/data/tasks/use-create-repeat-cfg";
 import { useCreateTask } from "@/lib/data/tasks/use-create-task";
 import {
   clearTaskDraft,
@@ -268,7 +269,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const convexTasks = useQuery(api.tasks.list, isAuthenticated ? {} : "skip");
   const createTask = useCreateTask();
-  const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
+  const createRepeatCfg = useCreateRepeatCfg();
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
