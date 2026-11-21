@@ -1,12 +1,13 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useGoalList } from "@/lib/data/goals/use-goal-list";
 import { filterGoals, GOAL_FILTERS, type GoalFilter, goalStatus, isGoalFilter } from "@/lib/goals-projects";
 import {
   makeToast,
@@ -111,7 +112,7 @@ function GoalsContent() {
   const { t } = useLocale();
   const signedIn = useSignedIn();
   const online = useOnline();
-  const goals = useQuery(api.goals.list, signedIn === "ready" ? {} : "skip");
+  const goals = useGoalList(signedIn === "ready" ? {} : "skip");
   const createGoal = useMutation(api.goals.create);
   const removeGoal = useMutation(api.goals.remove);
   const [filter, setFilter] = useQueryParam<GoalFilter>("status", "all", isGoalFilter);
