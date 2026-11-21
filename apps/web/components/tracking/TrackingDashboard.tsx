@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useFocusBlocksInRange } from "@/lib/data/focus/use-focus-blocks-in-range";
 import { fillTemplate } from "@/lib/habits-view";
 import type { MessageKey } from "@/lib/i18n";
 import {
@@ -66,8 +67,7 @@ export function TrackingDashboard() {
     };
   }, [nowMs]);
   const range = useMemo(() => lastLocalDaysRange(nowMs), [nowMs]);
-  const blocks = useQuery(
-    api.focusBlocks.listInRange,
+  const blocks = useFocusBlocksInRange(
     isAuthenticated && hasConvexUser ? range : "skip"
   );
   const createBlock = useMutation(api.focusBlocks.create);
