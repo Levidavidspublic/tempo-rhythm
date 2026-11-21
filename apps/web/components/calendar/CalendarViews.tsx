@@ -102,15 +102,15 @@ function DueTaskList({
                   {task.title}
                 </span>
                 <span className="tp-list-row__meta">
-                {task.dueAt !== undefined
-                  ? new Date(task.dueAt).toLocaleDateString(intlLocale(lang), {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : t("cal.due.noDate")}
-                {task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
+                  {task.dueAt !== undefined
+                    ? new Date(task.dueAt).toLocaleDateString(intlLocale(lang), {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : t("cal.due.noDate")}
+                  {task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
                 </span>
               </span>
             </li>
@@ -340,11 +340,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
           >
             <TpIcon name="plus" size="sm" />
             <span>
-              {isAuthWaiting
-                ? t("cal.waiting")
-                : isSubmitting
-                  ? t("cal.adding")
-                  : t("cal.add")}
+              {isAuthWaiting ? t("cal.waiting") : isSubmitting ? t("cal.adding") : t("cal.add")}
             </span>
           </button>
         </div>
