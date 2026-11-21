@@ -7,12 +7,18 @@ const markerMutation = Object.assign(async () => ({ pinned: true }), {
 });
 
 test("passes notes.togglePin to useMutation", () => {
+  let receivedReference: Parameters<typeof getFunctionName>[0] | undefined;
   const useToggleNotePin = makeUseToggleNotePin((reference) => {
-    expect(getFunctionName(reference)).toBe("notes:togglePin");
+    receivedReference = reference;
     return markerMutation;
   });
 
   useToggleNotePin();
+
+  if (receivedReference === undefined) {
+    throw new Error("useMutation was not called");
+  }
+  expect(getFunctionName(receivedReference)).toBe("notes:togglePin");
 });
 
 test("returns the mutation from useMutation unchanged", () => {
