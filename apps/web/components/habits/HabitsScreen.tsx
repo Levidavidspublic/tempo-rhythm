@@ -52,7 +52,10 @@ type CheckInRow = { habitId: string; localDate: string };
  * settles. The flag is set before the first await, so a double click that lands before React has
  * re-rendered the button as disabled still makes one call. Resolves to false when it was skipped.
  */
-export async function createOnce(flag: { current: boolean }, run: () => Promise<unknown>): Promise<boolean> {
+export async function createOnce(
+  flag: { current: boolean },
+  run: () => Promise<unknown>
+): Promise<boolean> {
   if (flag.current) return false;
   flag.current = true;
   try {
@@ -209,7 +212,8 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
     setToasts((prev) => [...prev, { habitId, undoUntilMs: Date.now() + UNDO_WINDOW_MS }]);
   };
 
-  const closeToast = (habitId: Id<"habits">) => setToasts((prev) => prev.filter((item) => item.habitId !== habitId));
+  const closeToast = (habitId: Id<"habits">) =>
+    setToasts((prev) => prev.filter((item) => item.habitId !== habitId));
 
   const undoAdd = async (habitId: Id<"habits">) => {
     try {
