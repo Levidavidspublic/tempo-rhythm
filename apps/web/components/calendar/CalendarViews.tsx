@@ -19,6 +19,7 @@ import {
   type StoredCalendarEvent,
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
+import { useTasksDueInRange } from "@/lib/data/tasks/use-tasks-due-in-range";
 import type { MessageKey } from "@/lib/i18n";
 import { intlLocale } from "@/lib/you/screenState";
 import { getAddEventAuthState } from "./addEventGuard";
@@ -201,8 +202,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     api.calendar_events.listInRange,
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
   );
-  const dueTasks = useQuery(
-    api.tasks.listDueInRange,
+  const dueTasks = useTasksDueInRange(
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
   );
   const events = useMemo<DisplayCalendarEvent[]>(() => {
