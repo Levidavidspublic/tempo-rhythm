@@ -20,14 +20,14 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 
 | Category | Forbidden | Use instead |
 |---|---|---|
-| Backend-as-a-Service | Supabase | Convex or Firebase (see below) |
-| ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
-| Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
+| Backend-as-a-Service | Supabase | Backend: moving to Firebase. `convex/**` read-only until the migration plan's last stage. |
+| ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` (until Firebase migration) |
+| Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth (until Firebase migration) |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
 | AI provider SDKs | `openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, `@mistralai/mistralai` | Mistral API via native `fetch` against `https://api.mistral.ai/v1/chat/completions` |
-| Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries are the state |
+| Client state | Redux, Zustand, Jotai, Recoil, MobX | Convex reactive queries are the state (until Firebase migration) |
 | HTTP | Axios, ky, got | Native `fetch` |
-| Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions |
+| Direct DB clients | `mongodb`, `pg`, `mysql2` | Convex queries / mutations / actions (until Firebase migration) |
 | Styling | A second global utility-CSS stack on web, or downgrading `apps/web` off Tailwind v4 | **Web:** Tailwind CSS v4 (`@tailwindcss/postcss`). **Mobile:** NativeWind 4 with Tailwind 3.x in `apps/mobile` |
 | Task trackers in agent spine | Notion, Linear, Airtable | GitHub Issues + GitHub Projects + `TASKS.md` + Convex `agent_*` tables + Discord |
 
