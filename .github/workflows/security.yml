@@ -98,7 +98,10 @@ jobs:
           # Reusable release scans supply the base explicitly and run on the candidate SHA.
           base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || inputs.base_sha || '' }}
           head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || (inputs.base_sha && github.sha) || '' }}
-          extra_args: --results=verified,unknown
+          # --exclude-paths: one test file only (.trufflehog-exclude-paths.txt). It holds two placeholder
+          # credential-in-URL strings on fake hosts that its tests must reject (URI detector, unverified).
+          # gitleaks still scans that file; every other file and detector is unchanged.
+          extra_args: --results=verified,unknown --exclude-paths=.trufflehog-exclude-paths.txt
 
   secret-scan-self-test:
     name: Secret scan self-test (fixture)
