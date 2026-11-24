@@ -1,10 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   groupSearchHits,
@@ -14,6 +12,7 @@ import {
   threadDateLabel,
   threadTitle,
 } from "@/lib/coach-threads";
+import { useMessageSearch } from "@/lib/data/messages/use-message-search";
 import type { MessageKey } from "@/lib/i18n";
 import { intlLocale } from "@/lib/you/screenState";
 
@@ -110,7 +109,7 @@ export function CoachThreads({
   const typed = searchQueryOf(raw);
   const settledRaw = useSettled(raw, SEARCH_DEBOUNCE_MS);
   const query = searchQueryOf(settledRaw);
-  const hits = useQuery(api.messages.searchMine, searchReady && query ? { query } : "skip");
+  const hits = useMessageSearch(searchReady && query ? { query } : "skip");
   // An in-flight search is undefined: keep the last answered search so a keystroke never blanks the list.
   const [lastHits, setLastHits] = useState<{ query: string; hits: NonNullable<typeof hits> } | null>(null);
   if (query === null) {
