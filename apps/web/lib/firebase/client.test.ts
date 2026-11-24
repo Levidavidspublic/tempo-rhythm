@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
+import type { FirebaseWebEnv } from "@/lib/firebase-web-config";
 import { getFirebaseClient, resetFirebaseClientForTests } from "./client";
 
 afterEach(() => {
@@ -12,12 +13,12 @@ describe("getFirebaseClient", () => {
   });
 
   test("creates and caches one client for a complete fake configuration after missing config", () => {
-    const env = {
-      NEXT_PUBLIC_FIREBASE_API_KEY: "test-api-key",
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "demo-project.firebaseapp.com",
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "demo-project",
-      NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:test",
-    };
+    const env: FirebaseWebEnv = Object.fromEntries([
+      ["NEXT_PUBLIC_FIREBASE_API_KEY", "test-api-key"],
+      ["NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "demo-project.firebaseapp.com"],
+      ["NEXT_PUBLIC_FIREBASE_PROJECT_ID", "demo-project"],
+      ["NEXT_PUBLIC_FIREBASE_APP_ID", "1:123456789:web:test"],
+    ]);
 
     expect(getFirebaseClient({})).toBeNull();
 
