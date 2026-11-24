@@ -17,6 +17,7 @@ import {
 } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useNotificationList } from "@/lib/data/notifications/use-notification-list";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { translateKb70, type Kb70Lang } from "@/lib/i18n-groups/kb-70";
 import { splitByToday } from "@/lib/you/feeds";
@@ -87,7 +88,7 @@ function NotificationsContent({ onRetry }: { onRetry: () => void }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   // notifications.list calls requireUser: wait for the users row.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const notices = useQuery(api.notifications.list, isAuthenticated && profile ? {} : "skip");
+  const notices = useNotificationList(isAuthenticated && profile ? {} : "skip");
   const markRead = useMutation(api.notifications.markRead);
   const markAllRead = useMutation(api.notifications.markAllRead);
   const input = { isAuthLoading, isAuthenticated, profile, data: notices };
