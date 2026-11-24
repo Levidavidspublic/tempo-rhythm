@@ -19,6 +19,7 @@ import {
 import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useNagList } from "@/lib/data/nags/use-nag-list";
 import type { MessageKey } from "@/lib/i18n";
 import { type Kb67Key, type Kb67Lang, kb67t } from "@/lib/i18n-groups/kb-67";
 import {
@@ -117,7 +118,7 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   // nags.list calls requireUser: wait for the users row.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const nags = useQuery(api.nags.list, isAuthenticated && profile ? {} : "skip");
+  const nags = useNagList(isAuthenticated && profile ? {} : "skip");
   const create = useMutation(api.nags.create);
   const addPhrase = useMutation(api.nags.addPhrase);
   const decidePhrase = useMutation(api.nags.decidePhrase);
