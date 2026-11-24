@@ -249,7 +249,8 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
 - PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
 - All of these must pass before merge.
-- **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
+- **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
+- Jev judge gate switched off by Amit on 2026-11-24; the workflow files stay for reference.
 
 ---
 
