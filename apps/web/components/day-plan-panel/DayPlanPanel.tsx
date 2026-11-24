@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useDayPlanForDate } from "@/lib/data/day-plans/use-day-plan-for-date";
 import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { MAX_TOP_TASKS, pruneTopTasks, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
@@ -28,7 +29,7 @@ export function DayPlanPanel() {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const ready = isAuthenticated && profile != null;
 
-  const plan = useQuery(api.dayPlans.getForDate, ready ? { localDate } : "skip");
+  const plan = useDayPlanForDate(ready ? { localDate } : "skip");
   const todayTasks = useQuery(
     api.tasks.listToday,
     ready ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
