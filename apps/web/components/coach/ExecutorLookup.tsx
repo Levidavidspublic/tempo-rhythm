@@ -111,7 +111,12 @@ export function ExecutorLookupView({
               <TpIcon name="search" size="sm" />
               <span>{working ? t("exec.look.working") : t("exec.look.submit")}</span>
             </button>
-            <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={working} onClick={() => onClose?.()}>
+            <button
+              className="tp-btn tp-btn--ghost tp-btn--sm"
+              type="button"
+              disabled={working}
+              onClick={() => onClose?.()}
+            >
               <span>{t("exec.look.close")}</span>
             </button>
           </div>
@@ -141,7 +146,12 @@ export function ExecutorLookupView({
       {outcome && !working && outcome.action ? (
         <div className="tp-msg__actions">
           {outcome.action === "retry" ? (
-            <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={disabled} onClick={() => onRetry?.()}>
+            <button
+              className="tp-btn tp-btn--ghost tp-btn--sm"
+              type="button"
+              disabled={disabled}
+              onClick={() => onRetry?.()}
+            >
               <TpIcon name="refresh" size="sm" />
               <span>{t("exec.look.retry")}</span>
             </button>
@@ -168,7 +178,13 @@ class LookupBoundary extends Component<{ children: ReactNode }, { failed: boolea
   }
 }
 
-function LiveExecutorLookup({ conversationId, disabled }: { conversationId: Id<"conversations">; disabled: boolean }) {
+function LiveExecutorLookup({
+  conversationId,
+  disabled,
+}: {
+  conversationId: Id<"conversations">;
+  disabled: boolean;
+}) {
   const { isAuthenticated } = useConvexAuth();
   const status = useConnectionStatus(isAuthenticated ? { provider: "executor" } : "skip");
   const lookUp = useAction(api.coach.lookUpInExecutor);
@@ -183,7 +199,9 @@ function LiveExecutorLookup({ conversationId, disabled }: { conversationId: Id<"
   if (!lookupAllowed(executorPhase(status)) && !outcome && !working) return null;
 
   const focusChip = () => {
-    window.requestAnimationFrame(() => chipHolder.current?.querySelector<HTMLButtonElement>("button")?.focus());
+    window.requestAnimationFrame(() =>
+      chipHolder.current?.querySelector<HTMLButtonElement>("button")?.focus()
+    );
   };
 
   const run = async (text: string) => {
@@ -238,7 +256,13 @@ function LiveExecutorLookup({ conversationId, disabled }: { conversationId: Id<"
 }
 
 /** "Look in my apps" under the coach thread; renders nothing unless Executor is connected. */
-export function ExecutorLookup({ conversationId, disabled = false }: { conversationId: Id<"conversations">; disabled?: boolean }) {
+export function ExecutorLookup({
+  conversationId,
+  disabled = false,
+}: {
+  conversationId: Id<"conversations">;
+  disabled?: boolean;
+}) {
   return (
     <LookupBoundary>
       <LiveExecutorLookup conversationId={conversationId} disabled={disabled} />
@@ -251,13 +275,20 @@ export function ExecutorLookup({ conversationId, disabled = false }: { conversat
  * tools each has, then the total. Draws nothing for any other message. Only names and counts are
  * shown; the stored object itself (and never raw JSON) is not.
  */
-export function ExecutorLookupCard({ toolCalls, card: given }: { toolCalls?: unknown; card?: LookupCard | null }) {
+export function ExecutorLookupCard({
+  toolCalls,
+  card: given,
+}: {
+  toolCalls?: unknown;
+  card?: LookupCard | null;
+}) {
   const { t } = useLocale();
   const id = useId();
   const card = given ?? executorLookupOf(toolCalls);
   if (!card) return null;
   const titleId = `${id}-title`;
-  const count = (n: number, kind: "row" | "total") => t(toolCountKey(n, kind)).replace("{n}", String(n));
+  const count = (n: number, kind: "row" | "total") =>
+    t(toolCountKey(n, kind)).replace("{n}", String(n));
   return (
     <section className="tp-proposal" data-component="ExecutorLookupCard" aria-labelledby={titleId}>
       <div className="tp-proposal__head">
@@ -289,7 +320,9 @@ export function ExecutorLookupCard({ toolCalls, card: given }: { toolCalls?: unk
       <p className="tp-proposal__note">
         <TpIcon name={card.total > 0 ? "hand" : "info"} size="sm" />
         <span>
-          {card.total > 0 ? `${count(card.total, "total")} ${t("exec.card.ask")}` : t("exec.card.none")}
+          {card.total > 0
+            ? `${count(card.total, "total")} ${t("exec.card.ask")}`
+            : t("exec.card.none")}
         </span>
       </p>
     </section>

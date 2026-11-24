@@ -45,7 +45,9 @@ describe("useCoachSettings", () => {
       "utf8"
     );
 
-    expect(source).toContain('import { useCoachSettings } from "@/lib/data/coach/use-coach-settings";');
+    expect(source).toContain(
+      'import { useCoachSettings } from "@/lib/data/coach/use-coach-settings";'
+    );
     expect(source).not.toContain("api.coach.getSettings");
   });
 });

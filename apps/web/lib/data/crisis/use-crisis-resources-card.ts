@@ -8,7 +8,9 @@ import { api } from "@/convex/_generated/api";
 export function makeUseCrisisResourcesCard(
   useQueryImpl: typeof useQuery<typeof api.crisis.resourcesCard>
 ) {
-  return function useCrisisResourcesCard(args: FunctionArgs<typeof api.crisis.resourcesCard> | "skip") {
+  return function useCrisisResourcesCard(
+    args: FunctionArgs<typeof api.crisis.resourcesCard> | "skip"
+  ) {
     return useQueryImpl(api.crisis.resourcesCard, args);
   };
 }

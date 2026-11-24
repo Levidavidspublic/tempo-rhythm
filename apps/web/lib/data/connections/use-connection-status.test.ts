@@ -45,7 +45,9 @@ describe("useConnectionStatus", () => {
       "utf8"
     );
 
-    expect(source).toContain('import { useConnectionStatus } from "@/lib/data/connections/use-connection-status";');
+    expect(source).toContain(
+      'import { useConnectionStatus } from "@/lib/data/connections/use-connection-status";'
+    );
     expect(source).not.toContain("api.connections.status");
   });
 });

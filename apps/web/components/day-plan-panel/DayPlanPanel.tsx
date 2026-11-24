@@ -34,7 +34,10 @@ export function DayPlanPanel() {
     api.tasks.listToday,
     ready ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
-  const carryOver = useQuery(api.dayPlans.listCarryOver, ready ? { beforeMs: bounds.startMs } : "skip");
+  const carryOver = useQuery(
+    api.dayPlans.listCarryOver,
+    ready ? { beforeMs: bounds.startMs } : "skip"
+  );
   const upsert = useMutation(api.dayPlans.upsert);
   const commit = useMutation(api.dayPlans.commit);
 
@@ -85,7 +88,11 @@ export function DayPlanPanel() {
   const committed = plan?.status === "committed";
   const readOnly = committed && !editing;
 
-  const save = async (patch: { intention?: string; topTaskIds?: Id<"tasks">[]; energy?: Energy }) => {
+  const save = async (patch: {
+    intention?: string;
+    topTaskIds?: Id<"tasks">[];
+    energy?: Energy;
+  }) => {
     setError(null);
     try {
       await upsert({

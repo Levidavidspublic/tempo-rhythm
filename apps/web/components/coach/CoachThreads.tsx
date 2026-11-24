@@ -48,7 +48,8 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
 /**
  * The chats column on /coach (Kitchen, owner-approved): New chat, a search across every chat
@@ -111,7 +112,10 @@ export function CoachThreads({
   const query = searchQueryOf(settledRaw);
   const hits = useMessageSearch(searchReady && query ? { query } : "skip");
   // An in-flight search is undefined: keep the last answered search so a keystroke never blanks the list.
-  const [lastHits, setLastHits] = useState<{ query: string; hits: NonNullable<typeof hits> } | null>(null);
+  const [lastHits, setLastHits] = useState<{
+    query: string;
+    hits: NonNullable<typeof hits>;
+  } | null>(null);
   if (query === null) {
     if (lastHits !== null) setLastHits(null);
   } else if (hits !== undefined && lastHits?.query !== query) {
@@ -120,7 +124,10 @@ export function CoachThreads({
   const shown = query !== null && hits !== undefined ? { query, hits } : lastHits;
   const searching = typed !== null && (typed !== query || hits === undefined);
   const searchActive = typed !== null;
-  const results = useMemo(() => (shown && threads ? groupSearchHits(shown.hits, threads) : null), [shown, threads]);
+  const results = useMemo(
+    () => (shown && threads ? groupSearchHits(shown.hits, threads) : null),
+    [shown, threads]
+  );
   const titleOf = useMemo(() => {
     const titles = new Map<string, CoachThread>();
     for (const thread of threads ?? []) titles.set(thread._id, thread);
@@ -177,7 +184,9 @@ export function CoachThreads({
   const cancelDelete = (id: Id<"conversations">) => {
     setConfirmingId(null);
     setDeleteError(null);
-    window.requestAnimationFrame(() => document.getElementById(`coach-thread-delete-${id}`)?.focus());
+    window.requestAnimationFrame(() =>
+      document.getElementById(`coach-thread-delete-${id}`)?.focus()
+    );
   };
 
   // Escape on the confirm step keeps the chat (before the drawer's own Escape sees it).
@@ -218,7 +227,9 @@ export function CoachThreads({
 
   return (
     <>
-      {modal ? <div className="tp-coach-threads-scrim" aria-hidden="true" onClick={onClose} /> : null}
+      {modal ? (
+        <div className="tp-coach-threads-scrim" aria-hidden="true" onClick={onClose} />
+      ) : null}
       <section
         ref={panelRef}
         id="coach-threads"
@@ -235,13 +246,24 @@ export function CoachThreads({
             {t("cc.chats")}
           </h2>
           {drawer ? (
-            <button className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" aria-label={t("cc.closeChats")} onClick={onClose}>
+            <button
+              className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
+              type="button"
+              aria-label={t("cc.closeChats")}
+              onClick={onClose}
+            >
               <TpIcon name="x" size="sm" />
             </button>
           ) : null}
         </div>
 
-        <button ref={newRef} className="tp-btn tp-btn--secondary tp-btn--sm tp-btn--block" type="button" onClick={onNew} disabled={creating}>
+        <button
+          ref={newRef}
+          className="tp-btn tp-btn--secondary tp-btn--sm tp-btn--block"
+          type="button"
+          onClick={onNew}
+          disabled={creating}
+        >
           <TpIcon name="plus" size="sm" />
           <span>{t("cc.newChat")}</span>
         </button>
@@ -295,8 +317,13 @@ export function CoachThreads({
                         <span className="tp-chat-row__title" dir="auto">
                           {title}
                         </span>
-                        <time className="tp-chat-row__time" dateTime={new Date(thread.updatedAt).toISOString()}>
-                          {threadDateLabel(thread.updatedAt, now, locale, { yesterday: t("cc.yesterday") })}
+                        <time
+                          className="tp-chat-row__time"
+                          dateTime={new Date(thread.updatedAt).toISOString()}
+                        >
+                          {threadDateLabel(thread.updatedAt, now, locale, {
+                            yesterday: t("cc.yesterday"),
+                          })}
                         </time>
                         <span className="tp-chat-row__last" dir="auto">
                           {matchSnippet(result.content, shown?.query ?? "")}
@@ -315,11 +342,17 @@ export function CoachThreads({
             <ul className="tp-chat-list" aria-labelledby="coach-threads-title">
               {threads.map((thread) => {
                 const title = threadTitle(thread.title, t("cc.untitled"));
-                const date = threadDateLabel(thread.updatedAt, now, locale, { yesterday: t("cc.yesterday") });
+                const date = threadDateLabel(thread.updatedAt, now, locale, {
+                  yesterday: t("cc.yesterday"),
+                });
                 const confirming = confirmingId === thread._id;
                 const deleting = deletingId === thread._id;
                 return (
-                  <li key={thread._id} className="tp-coach-threads__item" data-confirming={confirming ? "true" : undefined}>
+                  <li
+                    key={thread._id}
+                    className="tp-coach-threads__item"
+                    data-confirming={confirming ? "true" : undefined}
+                  >
                     <button
                       className="tp-chat-row tp-coach-threads__row"
                       type="button"
@@ -329,7 +362,10 @@ export function CoachThreads({
                       <span className="tp-chat-row__title" dir="auto">
                         {title}
                       </span>
-                      <time className="tp-chat-row__time" dateTime={new Date(thread.updatedAt).toISOString()}>
+                      <time
+                        className="tp-chat-row__time"
+                        dateTime={new Date(thread.updatedAt).toISOString()}
+                      >
                         {date}
                       </time>
                     </button>
@@ -338,7 +374,9 @@ export function CoachThreads({
                         id={`coach-thread-delete-${thread._id}`}
                         className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-coach-threads__delete"
                         type="button"
-                        aria-label={t("cc.delete").replace("{title}", () => title).replace("{date}", () => date)}
+                        aria-label={t("cc.delete")
+                          .replace("{title}", () => title)
+                          .replace("{date}", () => date)}
                         onClick={() => {
                           setDeleteError(null);
                           setConfirmingId(thread._id);
@@ -352,7 +390,9 @@ export function CoachThreads({
                         <p id={`coach-thread-confirm-${thread._id}`} className="tp-small">
                           {t("cc.confirm")}
                         </p>
-                        {deleteError ? <p className="tp-small tp-coach-threads__error">{deleteError}</p> : null}
+                        {deleteError ? (
+                          <p className="tp-small tp-coach-threads__error">{deleteError}</p>
+                        ) : null}
                         <div className="tp-coach-threads__confirm-actions">
                           <button
                             className="tp-btn tp-btn--danger tp-btn--sm"

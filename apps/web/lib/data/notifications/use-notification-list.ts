@@ -8,7 +8,9 @@ type Args = FunctionArgs<typeof api.notifications.list>;
 type Result = FunctionReturnType<typeof api.notifications.list>;
 
 /** Step A seam; step B adds Firebase by changing only this file. */
-export function makeUseNotificationList(useQueryImpl: typeof useQuery<typeof api.notifications.list>) {
+export function makeUseNotificationList(
+  useQueryImpl: typeof useQuery<typeof api.notifications.list>
+) {
   return function useNotificationList(args: Args | "skip"): Result | undefined {
     return useQueryImpl(api.notifications.list, args);
   };

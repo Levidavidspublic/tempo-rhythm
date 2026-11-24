@@ -34,7 +34,9 @@ describe("useNotificationList", () => {
       "utf8"
     );
 
-    expect(source).toContain('import { useNotificationList } from "@/lib/data/notifications/use-notification-list";');
+    expect(source).toContain(
+      'import { useNotificationList } from "@/lib/data/notifications/use-notification-list";'
+    );
     expect(source).toContain("useNotificationList(");
     expect(source).not.toContain("useQuery(api.notifications.list");
   });

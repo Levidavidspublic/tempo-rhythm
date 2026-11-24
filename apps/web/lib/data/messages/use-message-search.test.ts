@@ -45,7 +45,9 @@ describe("useMessageSearch", () => {
       "utf8"
     );
 
-    expect(source).toContain('import { useMessageSearch } from "@/lib/data/messages/use-message-search";');
+    expect(source).toContain(
+      'import { useMessageSearch } from "@/lib/data/messages/use-message-search";'
+    );
     expect(source).not.toContain("api.messages.searchMine");
   });
 });

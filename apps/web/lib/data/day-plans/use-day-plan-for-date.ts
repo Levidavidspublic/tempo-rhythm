@@ -8,7 +8,9 @@ type Args = FunctionArgs<typeof api.dayPlans.getForDate>;
 type Result = FunctionReturnType<typeof api.dayPlans.getForDate>;
 
 /** Step A seam; step B adds Firebase by changing only this file. */
-export function makeUseDayPlanForDate(useQueryImpl: typeof useQuery<typeof api.dayPlans.getForDate>) {
+export function makeUseDayPlanForDate(
+  useQueryImpl: typeof useQuery<typeof api.dayPlans.getForDate>
+) {
   return function useDayPlanForDate(args: Args | "skip"): Result | undefined {
     return useQueryImpl(api.dayPlans.getForDate, args);
   };
