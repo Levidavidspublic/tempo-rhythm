@@ -1,12 +1,13 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import { useCoachSettings } from "@/lib/data/coach/use-coach-settings";
 import type { MessageKey } from "@/lib/i18n";
 import {
   clampDial,
@@ -33,7 +34,7 @@ function minutesCopy(minutes: number, t: (key: MessageKey) => string): string {
 export function CoachControls() {
   const { t } = useLocale();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const settings = useQuery(api.coach.getSettings, isAuthenticated ? {} : "skip");
+  const settings = useCoachSettings(isAuthenticated ? {} : "skip");
   const setDial = useMutation(api.coach.setDial);
   const pressPanic = useMutation(api.coach.pressPanic);
   const clearPanic = useMutation(api.coach.clearPanic);
