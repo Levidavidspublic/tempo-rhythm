@@ -1,12 +1,13 @@
 "use client";
 
-import { useAction, useConvexAuth, useQuery } from "convex/react";
+import { useAction, useConvexAuth } from "convex/react";
 import Link from "next/link";
 import { Component, type ReactNode, useId, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useConnectionStatus } from "@/lib/data/connections/use-connection-status";
 import {
   executorLookupOf,
   executorPhase,
@@ -169,7 +170,7 @@ class LookupBoundary extends Component<{ children: ReactNode }, { failed: boolea
 
 function LiveExecutorLookup({ conversationId, disabled }: { conversationId: Id<"conversations">; disabled: boolean }) {
   const { isAuthenticated } = useConvexAuth();
-  const status = useQuery(api.connections.status, isAuthenticated ? { provider: "executor" } : "skip");
+  const status = useConnectionStatus(isAuthenticated ? { provider: "executor" } : "skip");
   const lookUp = useAction(api.coach.lookUpInExecutor);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
