@@ -89,7 +89,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 7. Anything you could not verify goes in the PR as `UNKNOWN: <what>`. Never fill a gap with a plausible guess.
 8. Build tickets never edit the six docs. If a doc is wrong, say so under `notes for ticket sync` in your report. Doc changes go through the spec line.
 9. Never edit, close or reassign another ticket.
-10. Use the code model the dispatcher assigned. Code is written only with mid-tier (billing-tier) models.
+10. Use the code model the dispatcher assigned. Code is written only with workhorse models: Opus, Soul, Sol, Grok, or Gemini Neon (Gemini only through Amit's Google subscription). Amit's decision, 2026-11-24.
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
 12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 

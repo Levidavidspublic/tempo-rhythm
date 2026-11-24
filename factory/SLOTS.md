@@ -38,7 +38,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 3. When Bugbot is clean **and** the 5 required checks are green → enqueue via GraphQL `enqueuePullRequest` (squash). Do **not** add Bugbot as a merge-queue required check.
 
 ## Code model of the week
-Mid-tier by BILLING only. Fill in this week's pick:
+Workhorse models only: Opus, Soul, Sol, Grok, or Gemini Neon (Gemini only through Amit's Google subscription). Amit's decision, 2026-11-24. Fill in this week's pick:
 - code model: ______
 - fallback: ______
 
