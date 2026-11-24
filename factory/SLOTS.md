@@ -19,7 +19,7 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 | B-3c | Agent lane C | Codex cloud via @codex (subscription only, never an OpenAI API key) | workflow file `.github/workflows/factory-lane-codex.yml` exists. Whether a task actually starts: UNKNOWN |
 | B-4 | Checks | GitHub Actions CI + Playwright | confirmed: `.github/workflows/ci.yml` and `.github/workflows/e2e-preview.yml` |
 | B-5 | Review gate | CodeRabbit (set by Amit 2026-11-02) | **Batch loop (2026-10-06, `factory/LOOP.md`): CodeRabbit reviews ONE PR per loop — the batch PR `batch/<loop-id>` → integration — never the component PRs (CI only, opened as draft).** Pre-queue only (not an MQ required check). Fix loop on the batch branch: `factory-review-fix.yml` → `factory-lane-claude` `target_branch`, max 3 (`review-fix:1..3`) then `blocked:amit`. Enqueue after CodeRabbit clean + 5 checks green (`factory-batch.yml` / `scripts/factory/batch-loop.mjs`). Bugbot security deep scan comparison = pending. |
-| B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. Bugbot is the review gate before a PR enters the queue when Bugbot is enabled. It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
+| B-6 | Auto-merge | GitHub merge queue (public repos) / GitHub auto-merge (private repos) | tempo-rhythm is public, so this slot is the GitHub merge queue on `integration`. The 5 required checks below have a `merge_group` trigger in this change. CodeRabbit is the review gate before a batch PR enters the queue (2026-11-24; Bugbot is off). It is not a required queue check. The active ruleset has no merge-queue rule (checked 2026-10-05). The queue itself is not turned on in this change |
 | B-7 | Preview host | Vercel preview | Preview environments exist (`Preview`, `Preview – tempo-web`). Whether `FACTORY_HAS_PREVIEW` is `true`: UNKNOWN (variables not readable) |
 | — | Backend | Convex today, moving to Firebase (Auth + Firestore; server ops in Vercel routes). Plan: `docs/backlog/FIREBASE-MIGRATION-PLAN.md` | old folder `convex/` (read-only until the plan's Stage 5); Firebase server code `apps/web/lib/server/` |
 | C-1 | Secrets vault | UNKNOWN | 1Password was not confirmed in this repo |
@@ -29,13 +29,13 @@ Repo: `Levidavidspublic/tempo-rhythm`. Visibility: public (confirmed 2026-10-05)
 
 
 ## Review gate loop (B-5) — how to invoke
-0. Batch loop (`factory/LOOP.md`): component PRs get CI only (draft, no Bugbot). `batch-loop.mjs build/open` makes the batch PR; `review` posts ONE `@cursor review` on it. Steps 2-3 below apply to the batch PR.
+0. Batch loop (`factory/LOOP.md`): component PRs get CI only (draft, no review bot). `batch-loop.mjs build/open` makes the batch PR; `review` posts ONE `@coderabbitai review` on it. Steps 2-3 below apply to the batch PR.
 1. (Before 2026-10-06) Lane opens a PR (`t/<issue>-…` or `factory/…`); Bugbot reviews (auto on push, or comment `bugbot run`).
 2. `factory-review-fix` runs on Bugbot `pull_request_review` (batch/ heads only since 2026-10-06) **or** by hand:
    - Actions → `factory-review-fix` → Run workflow → `pr_number` (optional `dry_run`).
    - Findings → `workflow_dispatch` the PR's `factory-lane-<lane>` with `fix_note` = findings; same branch. Labels `review-fix:1..3`; after 3 → `blocked:amit`.
    - Bugbot "couldn't run" → `blocked:amit`.
-3. When Bugbot is clean **and** the 5 required checks are green → enqueue via GraphQL `enqueuePullRequest` (squash). Do **not** add Bugbot as a merge-queue required check.
+3. When CodeRabbit is clean **and** the 5 required checks are green → enqueue via GraphQL `enqueuePullRequest` (squash); `batch-loop.mjs status/enqueue` check this (`enqueueGate`, 2026-11-24). Do **not** add CodeRabbit as a merge-queue required check.
 
 ## Code model of the week
 Workhorse models only: Opus, Soul, Sol, Grok, or Gemini Neon (Gemini only through Amit's Google subscription). Amit's decision, 2026-11-24. Fill in this week's pick:
@@ -79,7 +79,7 @@ Active ruleset `factory-integration` (id 24427298, enforcement active, branch `i
 4. `config-guard`
 5. `scope-guard`
 
-Bugbot is the review gate when Bugbot is enabled (review passed = no unresolved findings). It is not a required reviewer on this ruleset today, and it is not one of the merge-queue checks.
+CodeRabbit is the review gate (2026-11-24; Bugbot is off; review passed = CodeRabbit status completed and no unresolved CodeRabbit thread). It is not a required reviewer on this ruleset today, and it is not one of the merge-queue checks.
 
 This change adds `merge_group` next to the existing pull-request trigger on these workflows, so the queue can run the same five check names:
 
@@ -154,7 +154,7 @@ Mark each one `configured`, then `tested` once a real run has shown it working. 
 
 - Branch protection on the default branch (`integration`): **configured, not yet tested.** Ruleset `factory-integration` is active: pull request required, the 5 checks above required, non-fast-forward. Review gate is **not yet** part of that ruleset (approving review count is 0; Bugbot is not listed).
 - Live environment requires owner approval: **not yet.** Ruleset `factory-live` is active on `master` (pull request, the same 5 checks, update restriction, no deletion, no force-push). GitHub environments `Production`, `Production – tempo-web`, and `Production – tempo-marketing` have empty `protection_rules`. Owner approval on the environment was not found.
-- Integration allows the merge queue only when checks and the review gate pass: **not yet.** The 5 checks are required, and their workflows now include `merge_group` (not yet tested on a real queue). There is no merge-queue rule. Bugbot is a pre-queue gate only, not a queue check.
+- Integration allows the merge queue only when checks and the review gate pass: **not yet.** The 5 checks are required, and their workflows now include `merge_group` (not yet tested on a real queue). There is no merge-queue rule. CodeRabbit is a pre-queue gate only, not a queue check.
 - Claude `.claude/settings.json` denies reading `.env*` and pushing to `master`, `main`, and `integration`: **configured in this change, not yet tested.** No Claude session has been shown hitting the deny.
 - The same denials for every other lane: **not yet.** Cursor hooks deny writing `.env` (except `.env.example`) and force-push to `main`/`master`. They do not deny reading `.env*` or a normal push to `integration`. Codex sandbox rules for the same denials: UNKNOWN.
 - Secret scanning on: **configured, not yet tested** (this session did not watch a scan run). Workflow `.github/workflows/security.yml` exists, and `secret-scan` is a required check.

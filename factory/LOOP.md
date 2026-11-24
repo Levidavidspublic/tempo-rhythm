@@ -45,7 +45,7 @@ table: `docs/factory/QUIET-HOURS.md`. Script: `scripts/factory/quiet-hours.mjs`.
 
 ## Tokens (R15)
 `build` / `open` / `review` / `enqueue` need a **user** token (Division6066): PRs opened with GITHUB_TOKEN start no CI, and
-Bugbot needs a covered author. In Actions that is secret `FACTORY_BATCH_TOKEN` (not set → PARKED); otherwise run
+the batch PR needs a human author (Division6066). In Actions that is secret `FACTORY_BATCH_TOKEN` (not set → PARKED); otherwise run
 `GH_TOKEN=… GITHUB_REPOSITORY=Levidavidspublic/tempo-rhythm node scripts/factory/batch-loop.mjs run --loop <id>`.
 
 ## Known limit — Codex can't push from a PR-comment task

@@ -4,16 +4,17 @@
 //   build    creates batch/<loop-id> from integration (if missing); for each ready component PR: retargets
 //            its base to batch/<loop-id>, then merges its head commit into the batch branch with the merges
 //            API (POST /merges, a merge commit). GitHub then marks the PR "merged" into the batch branch
-//            (history kept). Works on DRAFT PRs on purpose: component PRs stay draft so Bugbot (which
-//            auto-reviews non-draft PRs on every push while the dashboard auto-run is on) never runs on them.
+//            (history kept). Works on DRAFT PRs on purpose: component PRs stay draft so no review bot
+//            auto-reviews them; the only review is CodeRabbit on the batch PR.
 //            Not ready (CI not green, blocked:amit, config) -> left alone. Conflict (409) -> base goes back to
 //            integration, label batch:conflict + comment (rolls to the next loop).
 //   open     opens ONE PR batch/<loop-id> -> integration (body: "Closes #N" for every merged ticket, so the
 //            issues close when the batch lands; labels batch + factory).
 //   review   requests ONE CodeRabbit review on the batch PR ("@coderabbitai review") unless CodeRabbit already
 //            reviewed the head commit or a request is already pending (waits --wait-auto seconds first).
-//   status   prints CI + Bugbot gate for the batch PR; after 3 review-fix rounds with findings -> blocked:amit.
-//   enqueue  CI green (5 required checks) + Bugbot clean + not blocked -> GraphQL enqueuePullRequest.
+//   status   prints CI + CodeRabbit gate for the batch PR; after 3 review-fix rounds with findings -> blocked:amit.
+//   enqueue  CI green (5 required checks) + CodeRabbit clean + not blocked -> GraphQL enqueuePullRequest.
+//            (2026-11-24: the gate was Bugbot; Bugbot is off, CodeRabbit is the only reviewer. See enqueueGate().)
 //   finalize after the batch PR merged: comment on every component PR "landed via #B", label
 //            merged-via-batch; tickets -> status:done (GitHub closes them via the batch PR's Closes lines).
 //   plan     read-only: which PRs are in the loop and whether each is ready.
@@ -21,8 +22,9 @@
 // Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem `build`/`run` never START a new loop (batch branch
 // missing -> notice, exit 0). An in-flight loop (branch exists) keeps going; open/review/status/enqueue/finalize
 // are never gated. Override: FACTORY_QUIET_HOURS=off.
-// Bugbot fix loop: factory-review-fix (Bugbot review on a batch/* head) dispatches factory-lane-claude with
-// target_branch=batch/<loop-id>; each fix push then needs `review` again (max 3 rounds, review-fix:1..3).
+// Fix loop: not wired for CodeRabbit yet. factory-review-fix handles only Bugbot reviews, so no workflow
+// dispatches factory-lane-claude for CodeRabbit findings. enqueue fails closed while findings remain: a person
+// (or an agent they run) fixes batch/<loop-id>, then runs `review` again (max 3 rounds, review-fix:1..3).
 // Loop PRs = --prs 1,2,3, else open PRs into integration or batch/<loop-id> whose linked ticket has
 // front-matter `loop: <id>` or `batch: <id>`.
 // Usage: node scripts/factory/batch-loop.mjs <command> --loop <id> [--prs 1,2] [--dry-run] [--wait-auto 180]
@@ -38,7 +40,7 @@ import {
   comment,
   BASE,
 } from './factory-lib.mjs';
-import {fetchBugbot} from './review-gate.mjs';
+import {fetchCoderabbit} from './review-gate.mjs';
 import {appendFile} from 'node:fs/promises';
 
 // Ticket labels a landed batch clears (status:done is added). status:ready stayed on f3-1's tickets.
@@ -93,6 +95,19 @@ export function readiness({pr, labels, checkRuns}) {
   if (!ci.ok) return {ok: false, why: `CI not green: ${ci.bad.join(', ')}`};
   return {ok: true, why: 'CI green'};
 }
+// Enqueue gate for the batch PR: open, not blocked:amit, 5 required checks green, CodeRabbit clean.
+// review = coderabbitState().state: clean | findings | blocked | pending.
+export function enqueueGate({prState = 'open', labels = [], ci, review}) {
+  if (prState !== 'open') return {ok: false, why: `PR is ${prState}`};
+  if (labels.includes('blocked:amit'))
+    return {ok: false, why: 'blocked:amit: not enqueued'};
+  if (!ci?.ok || review !== 'clean')
+    return {
+      ok: false,
+      why: `not enqueued: CI ${ci?.ok ? 'green' : 'not green'}, CodeRabbit ${review}`,
+    };
+  return {ok: true, why: 'CI green + CodeRabbit clean'};
+}
 // data ticket first, then ticket id order.
 export function mergeOrder(items) {
   return [...items].sort(
@@ -107,7 +122,7 @@ export function mergeOrder(items) {
 }
 export function batchBody({loop, merged, skipped}) {
   return [
-    `Factory loop **${loop}**: ONE Bugbot review for the whole loop (factory/LOOP.md). Each component PR below passed CI on its own and was merged into \`batch/${loop}\`.`,
+    `Factory loop **${loop}**: ONE CodeRabbit review for the whole loop (factory/LOOP.md). Each component PR below passed CI on its own and was merged into \`batch/${loop}\`.`,
     '',
     '## Tickets (close when this PR lands on integration)',
     ...merged.map(
@@ -121,8 +136,8 @@ export function batchBody({loop, merged, skipped}) {
         ]
       : []),
     '',
-    'Review: Bugbot reviews this PR only (`@cursor review`, once; max 3 fix rounds on this branch, then blocked:amit).',
-    'Merge: GitHub merge queue (squash) when Bugbot is clean and the 5 required checks are green.',
+    'Review: CodeRabbit reviews this PR only (`@coderabbitai review`, once; max 3 fix rounds on this branch, then blocked:amit).',
+    'Merge: GitHub merge queue (squash) when CodeRabbit is clean and the 5 required checks are green.',
   ].join('\n');
 }
 // Is a CodeRabbit review already done / requested for the head commit?
@@ -435,14 +450,14 @@ async function status(owner, repo, loop) {
     say('no batch PR');
     return null;
   }
-  const r = await fetchBugbot(owner, repo, pr.number);
+  const r = await fetchCoderabbit(owner, repo, pr.number);
   const ci = ciGreen(await checksOf(owner, repo, r.pr.head.sha));
   const labels = labelNames(r.pr);
   const tries = [1, 2, 3].filter(n =>
     labels.includes(`review-fix:${n}`),
   ).length;
   say(
-    `#${pr.number} ${r.pr.state}${r.pr.merged_at ? ' (merged)' : ''} head ${r.pr.head.sha.slice(0, 8)}: CI ${ci.ok ? 'green' : ci.bad.join(', ')}; Bugbot ${r.state} (${r.detail}); review-fix ${tries}/3`,
+    `#${pr.number} ${r.pr.state}${r.pr.merged_at ? ' (merged)' : ''} head ${r.pr.head.sha.slice(0, 8)}: CI ${ci.ok ? 'green' : ci.bad.join(', ')}; CodeRabbit ${r.state} (${r.detail}); review-fix ${tries}/3`,
   );
   if (
     r.pr.state === 'open' &&
@@ -451,31 +466,31 @@ async function status(owner, repo, loop) {
     !labels.includes('blocked:amit')
   )
     await act(
-      `label #${pr.number} blocked:amit (3 Bugbot fix rounds used)`,
+      `label #${pr.number} blocked:amit (3 CodeRabbit fix rounds used)`,
       async () => {
         await addLabels(owner, repo, pr.number, ['blocked:amit']);
         await comment(
           owner,
           repo,
           pr.number,
-          'Factory batch: 3 Bugbot fix rounds used and findings remain. Labelled blocked:amit.',
+          'Factory batch: 3 CodeRabbit fix rounds used and findings remain. Labelled blocked:amit.',
         );
       },
     );
-  return {pr: r.pr, bugbot: r.state, ci, labels};
+  return {pr: r.pr, review: r.state, ci, labels};
 }
 
 async function enqueue(owner, repo, loop) {
   const s = await status(owner, repo, loop);
   if (!s || s.pr.state !== 'open') return;
-  if (s.labels.includes('blocked:amit')) {
-    say('blocked:amit: not enqueued');
-    return;
-  }
-  if (!s.ci.ok || s.bugbot !== 'clean') {
-    say(
-      `not enqueued: CI ${s.ci.ok ? 'green' : 'not green'}, Bugbot ${s.bugbot}`,
-    );
+  const g = enqueueGate({
+    prState: s.pr.state,
+    labels: s.labels,
+    ci: s.ci,
+    review: s.review,
+  });
+  if (!g.ok) {
+    say(g.why);
     return;
   }
   await act(
@@ -515,7 +530,7 @@ async function finalize(owner, repo, loop) {
         owner,
         repo,
         p.number,
-        `Landed on \`${BASE}\` via batch PR #${pr.number} (${pr.merge_commit_sha?.slice(0, 8) || 'merge queue'}). This PR was merged into \`${branch}\`; the batch PR carried it through Bugbot and the merge queue.`,
+        `Landed on \`${BASE}\` via batch PR #${pr.number} (${pr.merge_commit_sha?.slice(0, 8) || 'merge queue'}). This PR was merged into \`${branch}\`; the batch PR carried it through CodeRabbit and the merge queue.`,
       );
       await addLabels(owner, repo, p.number, ['merged-via-batch']);
       const [t] = linkedTickets(p.body);
