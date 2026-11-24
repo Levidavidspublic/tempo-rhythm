@@ -25,7 +25,7 @@ Amit adds them to the ruleset.
 
 ## Jev judge details
 
-**Switched off by Amit 2026-11-24.** The `jev-judge` job in `jev-judge.yml` and the `4 jev judge` job in `merge-gate.yml` are disabled with `if: ${{ false }}`; the files stay for reference. To turn it back on, remove those `if` lines and set `5 coderabbit` back to `needs: jev`. `process-check` is unaffected and still runs.
+**Switched off by Amit 2026-11-24.** The `jev-judge` job in `jev-judge.yml` and the `4 jev judge` job in `merge-gate.yml` are disabled with `if: ${{ false }}`; the files stay for reference. To turn it back on, remove the `if` line from `jev-judge` in `jev-judge.yml`, set the `4 jev judge` condition in `merge-gate.yml` back to `if: vars.MERGE_GATE_ENABLED == 'true'` (do not just delete it, or Jev runs while the merge gate is off), and set `5 coderabbit` back to `needs: jev`. `process-check` is unaffected and still runs.
 
 - **Model**: `~typesafe/jev-latest` on OpenRouter. This is Amit's only OpenRouter exception.
 - **Key**: repository secret `OPENROUTER_API_KEY`. Amit adds the value himself; the value is never

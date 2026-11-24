@@ -67,6 +67,7 @@ jobs:
   coderabbit:
     name: 5 coderabbit
     needs: checks # was `needs: jev` until 2026-11-24 (Jev gate switched off)
+    if: vars.MERGE_GATE_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:
