@@ -288,7 +288,7 @@ jobs:
             Never push `master`, `main`, or `integration`.
           claude_args: |
             --max-turns 25
-            --model claude-sonnet-5
+            --model opus
             --setting-sources user
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit),Bash(/usr/local/bin/tempo-safe-git branch-new)"
       - name: Push the claude branch

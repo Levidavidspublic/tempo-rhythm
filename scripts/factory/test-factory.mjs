@@ -29,6 +29,7 @@ import {
   batchBranch,
   isConflict,
   FINALIZE_CLEARS,
+  enqueueGate,
 } from './batch-loop.mjs';
 import {loopRouting} from './validate-tickets.mjs';
 import {
@@ -1081,6 +1082,31 @@ t(
     );
   },
 );
+t('batch loop: enqueue gate is CodeRabbit clean + CI green (not Bugbot)', () => {
+  const green = {ok: true, bad: []};
+  assert.equal(enqueueGate({labels: [], ci: green, review: 'clean'}).ok, true);
+  for (const review of ['findings', 'pending', 'blocked', undefined])
+    assert.equal(enqueueGate({labels: [], ci: green, review}).ok, false);
+  assert.match(
+    enqueueGate({labels: [], ci: green, review: 'findings'}).why,
+    /CodeRabbit findings/,
+  );
+  assert.equal(
+    enqueueGate({labels: [], ci: {ok: false, bad: ['ci=failure']}, review: 'clean'}).ok,
+    false,
+  );
+  assert.equal(
+    enqueueGate({labels: ['blocked:amit'], ci: green, review: 'clean'}).ok,
+    false,
+  );
+  assert.equal(
+    enqueueGate({prState: 'closed', labels: [], ci: green, review: 'clean'}).ok,
+    false,
+  );
+  const body = batchBody({loop: 'x', merged: [], skipped: []});
+  assert.match(body, /@coderabbitai review/);
+  assert.doesNotMatch(body, /Bugbot|@cursor review/);
+});
 t('batch fix: finding goes to the ticket that owns the file', () => {
   const tickets = [
     {number: 1, fm: {scope: ['apps/web/components/a/']}},

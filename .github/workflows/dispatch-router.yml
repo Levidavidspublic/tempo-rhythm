@@ -295,7 +295,7 @@ jobs:
           # --force, --delete, HEAD:integration, or commit -F. The wrappers refuse
           # extra arguments, and these rules do not use :*.
           claude_args: >-
-            --model claude-sonnet-5 --max-turns 40
+            --model opus --max-turns 40
             --setting-sources user
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(/usr/local/bin/tempo-safe-git status),Bash(/usr/local/bin/tempo-safe-git diff),Bash(/usr/local/bin/tempo-safe-git diff-cached),Bash(/usr/local/bin/tempo-safe-git log),Bash(/usr/local/bin/tempo-safe-git add),Bash(/usr/local/bin/tempo-safe-git commit)"
       - name: Open draft pull request
