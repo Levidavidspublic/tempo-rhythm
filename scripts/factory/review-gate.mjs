@@ -37,7 +37,7 @@ export function bugbotState({ headSha, checkRuns = [], threads = [], comments = 
   return { state: "pending", findings: [], detail: "no Bugbot result for the head commit yet" };
 }
 
-const REVIEW_THREADS_QUERY = `query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}}`;
+const REVIEW_THREADS_QUERY = `query($o:String!,$r:String!,$n:Int!,$c:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$c){pageInfo{hasNextPage endCursor} nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}}`;
 
 export function mapReviewThread(t) {
   const c = t.comments.nodes[0] || {};
@@ -53,10 +53,21 @@ export function mapReviewThread(t) {
   };
 }
 
-export async function fetchReviewThreads(owner, repo, number) {
-  const g = await gh("/graphql", { method: "POST", body: { query: REVIEW_THREADS_QUERY, variables: { o: owner, r: repo, n: Number(number) } } });
-  const nodes = g?.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
-  return nodes.map(mapReviewThread);
+// Reads every page. Throws (fails closed) on a GraphQL error or a missing page, so a caller never sees a
+// partial thread list and reports "clean" by mistake. ghImpl is injectable for tests.
+export async function fetchReviewThreads(owner, repo, number, ghImpl = gh) {
+  const out = [];
+  let after = null;
+  for (let page = 0; page < 50; page++) {
+    const g = await ghImpl("/graphql", { method: "POST", body: { query: REVIEW_THREADS_QUERY, variables: { o: owner, r: repo, n: Number(number), c: after } } });
+    const rt = g?.data?.repository?.pullRequest?.reviewThreads;
+    if (g?.errors || !rt || !Array.isArray(rt.nodes)) throw new Error(`reviewThreads for #${number}: incomplete response${g?.errors ? `: ${JSON.stringify(g.errors).slice(0, 200)}` : ""}`);
+    out.push(...rt.nodes.map(mapReviewThread));
+    if (!rt.pageInfo?.hasNextPage) return out;
+    if (!rt.pageInfo.endCursor) throw new Error(`reviewThreads for #${number}: next page without a cursor`);
+    after = rt.pageInfo.endCursor;
+  }
+  throw new Error(`reviewThreads for #${number}: more than 50 pages`);
 }
 
 export async function fetchBugbot(owner, repo, number) {

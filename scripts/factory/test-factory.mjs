@@ -15,6 +15,7 @@ import {
   coderabbitState,
   CODERABBIT_LOGINS,
   findingsNote,
+  fetchReviewThreads,
 } from './review-gate.mjs';
 import {reviewKind} from './release-gate.mjs';
 import {nextStep, ownerTicket} from './review-fix.mjs';
@@ -1091,10 +1092,8 @@ t('batch loop: enqueue gate is CodeRabbit clean + CI green (not Bugbot)', () => 
     enqueueGate({labels: [], ci: green, review: 'findings'}).why,
     /CodeRabbit findings/,
   );
-  assert.equal(
-    enqueueGate({labels: [], ci: {ok: false, bad: ['ci=failure']}, review: 'clean'}).ok,
-    false,
-  );
+  const red = {ok: false, bad: ['ci=failure']};
+  assert.equal(enqueueGate({labels: [], ci: red, review: 'clean'}).ok, false);
   assert.equal(
     enqueueGate({labels: ['blocked:amit'], ci: green, review: 'clean'}).ok,
     false,
@@ -1106,6 +1105,48 @@ t('batch loop: enqueue gate is CodeRabbit clean + CI green (not Bugbot)', () => 
   const body = batchBody({loop: 'x', merged: [], skipped: []});
   assert.match(body, /@coderabbitai review/);
   assert.doesNotMatch(body, /Bugbot|@cursor review/);
+});
+// async test: awaited at top level so a failure stops the run before 'all n passed'.
+const ta = async (name, fn) => {
+  await fn();
+  n++;
+  console.log(`ok ${n} - ${name}`);
+};
+await ta('review threads: every page is read; a broken page fails closed', async () => {
+  const node = login => ({
+    isResolved: false,
+    isOutdated: false,
+    path: 'a.ts',
+    line: 1,
+    comments: {nodes: [{author: {login}, body: 'x', url: 'u'}]},
+  });
+  const page = (nodes, next) => ({
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            pageInfo: {hasNextPage: !!next, endCursor: next},
+            nodes,
+          },
+        },
+      },
+    },
+  });
+  const pages = [page([node('a')], 'c1'), page([node('coderabbitai')], null)];
+  const seen = [];
+  const fake = async (_p, o) => {
+    seen.push(o.body.variables.c);
+    return pages[seen.length - 1];
+  };
+  const all = await fetchReviewThreads('o', 'r', 1, fake);
+  assert.deepEqual(seen, [null, 'c1']);
+  assert.deepEqual(
+    all.map(t => t.author.login),
+    ['a', 'coderabbitai'],
+  );
+  await assert.rejects(
+    fetchReviewThreads('o', 'r', 1, async () => ({errors: [{m: 'x'}]})),
+  );
 });
 t('batch fix: finding goes to the ticket that owns the file', () => {
   const tickets = [

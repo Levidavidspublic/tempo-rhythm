@@ -22,8 +22,9 @@
 // Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem `build`/`run` never START a new loop (batch branch
 // missing -> notice, exit 0). An in-flight loop (branch exists) keeps going; open/review/status/enqueue/finalize
 // are never gated. Override: FACTORY_QUIET_HOURS=off.
-// Bugbot fix loop: factory-review-fix (Bugbot review on a batch/* head) dispatches factory-lane-claude with
-// target_branch=batch/<loop-id>; each fix push then needs `review` again (max 3 rounds, review-fix:1..3).
+// Fix loop: not wired for CodeRabbit yet. factory-review-fix handles only Bugbot reviews, so no workflow
+// dispatches factory-lane-claude for CodeRabbit findings. enqueue fails closed while findings remain: a person
+// (or an agent they run) fixes batch/<loop-id>, then runs `review` again (max 3 rounds, review-fix:1..3).
 // Loop PRs = --prs 1,2,3, else open PRs into integration or batch/<loop-id> whose linked ticket has
 // front-matter `loop: <id>` or `batch: <id>`.
 // Usage: node scripts/factory/batch-loop.mjs <command> --loop <id> [--prs 1,2] [--dry-run] [--wait-auto 180]
