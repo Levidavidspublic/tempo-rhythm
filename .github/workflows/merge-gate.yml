@@ -1,7 +1,7 @@
 name: merge-gate
 
 # Ordered merge gate (JOB 4, 2026-10-28). Each gate blocks the next:
-#   1 scope -> 2 checks (includes 3 google-style) -> 4 jev judge -> 5 coderabbit (5b fallback) -> 6 merge
+#   1 scope -> 2 checks (includes 3 google-style) -> 4 jev judge (OFF since 2026-11-24) -> 5 coderabbit (5b fallback) -> 6 merge
 # pull_request_target: workflow + script come from the base branch; PR code is never checked out or run here.
 # OFF switch: repo variable MERGE_GATE_ENABLED must be "true" for gates 4-6 (judge spend, reviews, merge).
 # Gates 1-3 always run (read-only).
@@ -50,7 +50,9 @@ jobs:
   jev:
     name: 4 jev judge
     needs: checks
-    if: vars.MERGE_GATE_ENABLED == 'true'
+    # disabled by Amit 2026-11-24 (Jev gate removed). To turn it back on, restore the line
+    # `if: vars.MERGE_GATE_ENABLED == 'true'` here and set coderabbit `needs: jev` again.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -64,7 +66,8 @@ jobs:
 
   coderabbit:
     name: 5 coderabbit
-    needs: jev
+    needs: checks # was `needs: jev` until 2026-11-24 (Jev gate switched off)
+    if: vars.MERGE_GATE_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:

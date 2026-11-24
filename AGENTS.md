@@ -94,7 +94,7 @@ A model named in a ticket is labelled either `code model` (the model that writes
 12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 
 ## Merging and Firebase (Amit, 2026-11-08)
-- Agents may merge a PR when it is secure and every required check passes (CodeRabbit, Jev, CI), or when Amit explicitly says so.
+- Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so.
 - Firebase is allowed. A change may move to production once it is proven in preview.
 
 ## Never — and what enforces it
@@ -163,7 +163,8 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 - CodeRabbit is the only PR reviewer. Deep Scan and Vercel Agent review stay off. Architecture councils are advisory and do not replace PR review.
 - Config changes use a separate config PR. Agents may add or remove the `config` approval label on Amit's behalf when Amit has approved the change in chat, or when the change is a CI/config fix he asked for (standing permission from Amit). Other approval labels stay Amit's. Preserve the repository's existing guard and current-head approval requirement; an approval for an earlier head does not approve a later push.
 - Preserve all required checks, their names, thresholds and layers. Never weaken a check, skip or delete a test to pass, or treat a stub or fixture as real runtime proof.
-- Merge flow: exact scope, CI/programmatic checks, language formatting, Jev judge, CodeRabbit, then only the repository-authorized integration merge path. Master merge and production deployment remain Amit's.
+- Merge flow: exact scope, CI/programmatic checks, language formatting, CodeRabbit, then only the repository-authorized integration merge path. Master merge and production deployment remain Amit's.
+- Jev judge gate switched off by Amit on 2026-11-24; the workflow files stay for reference.
 - Jev is the only OpenRouter exception. Its existing repository thresholds and enforcement remain in force. Unverified thresholds or four-gate definitions are UNKNOWN; do not invent or activate them.
 - Keep exactly one existing workflow status label: status:ready, status:dispatched, status:in-pr or status:done. Preserve status:ready for manual-run selection and status:in-pr for an open ticket PR. Assignment labels such as agent:freebuff, agent:opencode and lane:* are separate; never replace the workflow status with an assignment label. Agents apply the `config` approval label only as the config PR rule above allows.
 - Prove each step with the command and its actual output. Check the current PR head. If unsure whether it worked, report that it did not prove success.
