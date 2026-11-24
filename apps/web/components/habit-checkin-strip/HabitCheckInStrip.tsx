@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
+import { useHabitCheckInsForDate } from "@/lib/data/habits/use-habit-check-ins-for-date";
 import { fillTemplate } from "@/lib/habits-view";
 import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -21,7 +22,7 @@ export function HabitCheckInStrip() {
   const hasConvexUser = profile != null;
   const canQuery = isAuthenticated && hasConvexUser;
   const habits = useQuery(api.habits.list, canQuery ? {} : "skip");
-  const checkIns = useQuery(api.habitCheckIns.listForDate, canQuery ? { localDate } : "skip");
+  const checkIns = useHabitCheckInsForDate(canQuery ? { localDate } : "skip");
   if (isAuthLoading || (isAuthenticated && profile === undefined)) {
     return <StripSkeleton />;
   }
