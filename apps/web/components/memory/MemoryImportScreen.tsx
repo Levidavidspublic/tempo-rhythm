@@ -18,6 +18,7 @@ import {
 import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useSaveReviewedMemories } from "@/lib/data/memory-import/use-save-reviewed-memories";
 import type { MessageKey } from "@/lib/i18n";
 import {
   type ImportChoice,
@@ -103,7 +104,7 @@ function MemoryImportContent() {
   const ready = isAuthenticated && profile != null;
   // Only used to mark items Tempo already remembers.
   const existing = useQuery(api.memory.list, ready ? { limit: 200 } : "skip");
-  const saveReviewed = useMutation(api.memoryImport.saveReviewed);
+  const saveReviewed = useSaveReviewedMemories();
   const forgetAll = useMutation(api.memory.forgetAll);
   const state = deriveScreenState({
     isAuthLoading,
