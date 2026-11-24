@@ -100,7 +100,9 @@ jobs:
           head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || (inputs.base_sha && github.sha) || '' }}
           # --exclude-paths: one test file only (.trufflehog-exclude-paths.txt). It holds two placeholder
           # credential-in-URL strings on fake hosts that its tests must reject (URI detector, unverified).
-          # gitleaks still scans that file; every other file and detector is unchanged.
+          # trufflehog has no per-value allowlist, and an inline ignore cannot fix the old commit, so this
+          # path is the narrowest option. Known gap: gitleaks has no URL-credential rule, so credentials in
+          # URLs in this one file are not caught. Every other file and detector is unchanged.
           extra_args: --results=verified,unknown --exclude-paths=.trufflehog-exclude-paths.txt
 
   secret-scan-self-test:
