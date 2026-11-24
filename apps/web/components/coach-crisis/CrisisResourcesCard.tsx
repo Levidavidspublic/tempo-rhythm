@@ -1,8 +1,8 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { Component, type ReactNode } from "react";
-import { api } from "@/convex/_generated/api";
+import { useCrisisResourcesCard } from "@/lib/data/crisis/use-crisis-resources-card";
 import {
   COACH_NOT_THERAPIST,
   FALLBACK_CARD,
@@ -47,7 +47,7 @@ class CrisisCardBoundary extends Component<BoundaryProps, BoundaryState> {
 
 function CrisisResourcesCardQuery() {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const card = useQuery(api.crisis.resourcesCard, isAuthenticated ? {} : "skip");
+  const card = useCrisisResourcesCard(isAuthenticated ? {} : "skip");
 
   if (isLoading || card === undefined) {
     return <CrisisCardView card={FALLBACK_CARD} />;
