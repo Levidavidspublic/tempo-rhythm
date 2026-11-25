@@ -133,9 +133,20 @@ Migration for `habits`, `habit_check_ins`, `goals`, `day_plans`, `time_blocks`, 
 | IF-503 | K | Import op: creates InsForge users by email, inserts rows by `legacy_convex_id` (re-runnable). |
 | IF-504 | R | Import into `insforge-app` (preview). Counts match. |
 | IF-505 | R | Vercel Preview `NEXT_PUBLIC_DATA_BACKEND=insforge`; Playwright + alpha sweep green. |
-| IF-506 | AT | Production project (UNKNOWN: second InsForge project or Pro), import, flip. Amit's yes. |
+| IF-505a | R/AT | Before IF-506: impose a Convex write-freeze, or run a final incremental export/sync after that freeze, then reconcile against the IF-501 baseline (and any later incremental batches). Convex writes made after the IF-501 export must not be lost. A row-count check alone is not enough: reconcile by `legacy_convex_id` (and equivalent keys) for inserts, updates and deletes in the window between IF-501 and the freeze. |
+| IF-506 | AT | Production project (UNKNOWN: second InsForge project or Pro), import, flip. Amit's yes. Must not run until (1) IF-505a (write-freeze or final incremental sync plus reconciliation) has succeeded, and (2) Stage 6 (mobile app migrated) is done, so installed mobile clients are not still writing to Convex. |
 | IF-507 | R | After soak: Convex half of each hook, `convex/`, Convex packages/vars/workflows, and the unused Firebase helpers moved to an archive folder (never deleted). |
 | IF-508 | R | AGENTS.md, CLAUDE.md, HARD_RULES, SLOTS, six docs name InsForge only. |
+
+**IF-506 gates.** The production flip waits for both of the following. A green IF-505 preview is not enough.
+
+1. **No lost writes after the IF-501 export.** IF-505a must complete a write-freeze or a final incremental sync, plus reconciliation, before IF-506 starts. Writes made on Convex after IF-501 and before the flip can otherwise be dropped while a count check still passes.
+2. **Stage 6 (mobile) is done.** IF-506 must not run until the mobile app has migrated (Stage 6 complete). Otherwise installed mobile clients can keep writing to Convex after the production flip. The preview web flip (IF-505) may happen before Stage 6; the production flip may not.
+
+### Stage 6: mobile
+22 files in `apps/mobile`, same pattern, after the web flip on preview (IF-505). RN support of `@insforge/sdk`: UNKNOWN.
+
+Stage 6 must be complete before the production flip (IF-506). Do not start IF-506 while installed mobile clients could still write to Convex. If RN support of `@insforge/sdk` is a blocker, stop and report; do not flip production around it.
 
 ### Stage 7: hosting from Vercel to InsForge deployments (after the migration merges)
 Amit, 2026-11-25: "InsForge also once it's merged should replace Vercel because it's one subscription to rule them all."
@@ -150,13 +161,13 @@ What InsForge deployments are (from the `insforge-cli` skill `references/deploym
 
 | Vercel today | InsForge deployments | Status |
 |---|---|---|
-| Git push auto-deploys (preview per PR, production from `master`) | CLI upload (`deployments deploy`). Git integration / PR previews not documented. A GitHub Action could run the CLI on merge. | UNKNOWN: preview-per-PR. EXTRAPOLATED plan: one InsForge project = preview (`insforge-app`), a second project = production. |
+| Git push auto-deploys (preview per PR, production from `master`) | CLI upload (`deployments deploy`). Git integration / PR previews not documented. A GitHub Action can run the CLI for each PR head. | Plan (IF-703): one InsForge preview per PR head SHA, used by the required preview check. Whether the platform already offers preview-per-PR is UNKNOWN; if it cannot, that is a blocker — do not fall back to the shared integration URL. EXTRAPOLATED hosting split: one InsForge project = preview (`insforge-app`), a second project = production. |
 | Projects `tempo-web`, `tempo-marketing` | One site per InsForge project (`deployments metadata`). Two sites may need two projects. | UNKNOWN |
 | Env vars per environment | `deployments env` per project | works; but `env set <key> <value>` puts the value on the command line. Amit's rule forbids keys on command lines. UNKNOWN: a stdin or file-free way to set them. Until verified, Amit sets secret env vars himself (AT). Public names (`NEXT_PUBLIC_INSFORGE_URL`) are fine. |
 | Next.js route handlers (`/api/op/*`, webhooks), `proxy.ts` middleware | Built on Vercel underneath, so expected to work | UNKNOWN until a test deploy proves it |
 | Vercel Cron | Not used after Stage 4 (InsForge schedules replace it) | n/a |
 | Vercel OIDC keyless Firestore access | Not needed after the Firebase move stops | n/a |
-| `VERCEL_AUTOMATION_BYPASS_SECRET`, `e2e-preview.yml` against Vercel previews | Must point at the InsForge preview URL | rail ticket, UNKNOWN details |
+| `VERCEL_AUTOMATION_BYPASS_SECRET`, `e2e-preview.yml` against Vercel previews | Must point at that PR head's own InsForge preview URL. `wait-preview.mjs` uses the head URL, not the shared integration deployment. Required check names unchanged. | plan: IF-703; this config PR is docs only (no workflow file or check-name changes) |
 | Domains on Vercel | `domains attach` via Cloudflare | DNS move is AT |
 | Vercel Analytics / logs / runtime errors | `insforge logs`, PostHog integration (`insforge posthog`) | UNKNOWN parity |
 | Free plan limits for deployments | not listed in the docs read | UNKNOWN; ask InsForge |
@@ -166,18 +177,15 @@ Tickets (all after Stage 5 flip and soak):
 |---|---|---|
 | IF-701 | WALK/R | Test deploy of `apps/web` to the free `insforge-app` project with the switch on `insforge` and mock-free public env names; prove route handlers, `proxy.ts`, sign-in and one webhook work. Record the live URL. |
 | IF-702 | AT | Amit sets the secret deploy env vars (`INSFORGE_API_KEY`, `WHOP_WEBHOOK_SECRET`, `TEMPO_CRON_SECRET`, `MISTRAL_API_KEY`, ...) in InsForge, until a no-command-line method is verified. |
-| IF-703 | R | GitHub Action: on push to `integration`, run `insforge deployments deploy apps/web` against the preview project (CLI auth as a GitHub secret, names only). Point `e2e-preview.yml` at that URL. Required check names unchanged. |
+| IF-703 | R | GitHub Action: on each pull request, deploy that PR's head SHA to its own InsForge preview (CLI auth as a GitHub secret, names only). The required preview check must use that head's preview URL, not the shared integration deployment. `wait-preview.mjs` is pointed at the head URL. `e2e-preview.yml` is planned to consume that same head URL. Required check names stay unchanged. This PR records the plan only; it does not change workflow files or check names. |
 | IF-704 | AT | Production InsForge project (second free project or Pro), production env vars, domain attach + DNS (Cloudflare). |
 | IF-705 | R | Release workflow: promote to production from `master` via the CLI; Vercel workflows (`deploy-live.yml`, release steps) archived, not deleted. |
 | IF-706 | AT | After a soak: Amit cancels or downgrades Vercel (plan change). |
 
-Risks: InsForge hosting is Vercel underneath, so Vercel's own content rules still apply indirectly (not an issue for Tempo); less control over build settings; preview-per-PR may be lost; one more vendor dependency for everything ("one subscription to rule them all" is also one point of failure).
-
-### Stage 6: mobile
-22 files in `apps/mobile`, same pattern, after the web flip on preview. RN support of `@insforge/sdk`: UNKNOWN.
+Risks: InsForge hosting is Vercel underneath, so Vercel's own content rules still apply indirectly (not an issue for Tempo); less control over build settings; preview-per-PR support on InsForge is UNKNOWN and is a blocker for IF-703 if missing (the required preview check must not be pointed at the shared integration deployment); one more vendor dependency for everything ("one subscription to rule them all" is also one point of failure).
 
 ## UNKNOWN
-- InsForge deployments: preview-per-PR, two sites per project, setting secret env vars without the command line, free-plan limits.
+- InsForge deployments: whether the platform can provision a preview per PR head SHA (required by IF-703; do not use the shared integration URL as a fallback), two sites per project, setting secret env vars without the command line, free-plan limits.
 - Whether `@insforge/sdk` offers magic-link (not OTP) passwordless sign-in.
 - How many real people have data in Convex production/preview.
 - Production InsForge project: separate free project, or Pro (spend, AT).
