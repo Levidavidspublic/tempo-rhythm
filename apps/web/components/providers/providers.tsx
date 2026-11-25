@@ -30,11 +30,12 @@ export function withInsforgeSession(backend: DataBackend, children: React.ReactN
 
 // רכיב ספקים (Providers) העוטף את האפליקציה
 // מספק את הקונטקסט של Convex Auth לכל הרכיבים בתוך האפליקציה
-export function Providers({ children }: ProvidersProps) {
+export function Providers({ children: app }: ProvidersProps) {
+  const children = withInsforgeSession(DATA_BACKEND, app);
   return (
     <ConvexAuthNextjsProvider client={convex}>
       <ClearTabStateOnSignOut />
-      {withInsforgeSession(DATA_BACKEND, children)}
+      {children}
     </ConvexAuthNextjsProvider>
   );
 }
