@@ -107,6 +107,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://expo.github.io/vector-icons
 - Used by: apps/mobile/package.json
 
+### @insforge/sdk
+
+- Version: 1.5.2
+- License: Apache-2.0
+- Source: https://github.com/InsForge/insforge-sdk-js
+- Used by: apps/web/package.json
+- Notes: InsForge client SDK (auth, database, realtime) for the planned InsForge backend. Not imported yet.
+
 ### @json-render/core
 
 - Version: 0.21.0
