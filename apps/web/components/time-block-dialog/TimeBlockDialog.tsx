@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useCreateTimeBlock } from "@/lib/data/time-blocks/use-create-time-block";
 import type { Lang, MessageKey } from "@/lib/i18n";
 import {
   BLOCK_KINDS,
@@ -120,7 +121,7 @@ function TimeBlockDialogBody({
   const isEdit = block !== undefined;
   const { t, lang } = useLocale();
   const { isAuthenticated } = useConvexAuth();
-  const createBlock = useMutation(api.timeBlocks.create);
+  const createBlock = useCreateTimeBlock();
   const updateBlock = useMutation(api.timeBlocks.update);
   const removeBlock = useMutation(api.timeBlocks.remove);
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
+import { useHabitCheckInsForDate } from "@/lib/data/habits/use-habit-check-ins-for-date";
 import { fillTemplate } from "@/lib/habits-view";
 import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
@@ -18,10 +19,10 @@ export function HabitCheckInStrip() {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const bounds = useLocalDayBounds();
   const localDate = localDateKey(new Date(bounds.startMs));
-  const hasConvexUser = profile != null;
+  const hasConvexUser = profile !== null && profile !== undefined;
   const canQuery = isAuthenticated && hasConvexUser;
   const habits = useQuery(api.habits.list, canQuery ? {} : "skip");
-  const checkIns = useQuery(api.habitCheckIns.listForDate, canQuery ? { localDate } : "skip");
+  const checkIns = useHabitCheckInsForDate(canQuery ? { localDate } : "skip");
   if (isAuthLoading || (isAuthenticated && profile === undefined)) {
     return <StripSkeleton />;
   }
@@ -92,7 +93,9 @@ function HabitCheckInList({
   const undo = useMutation(api.habitCheckIns.undo);
   const [optimistic, setOptimistic] = useState<ReadonlyMap<string, boolean>>(() => new Map());
   const [busy, setBusy] = useState<ReadonlySet<string>>(() => new Set());
-  const [streakOverride, setStreakOverride] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const [streakOverride, setStreakOverride] = useState<ReadonlyMap<string, number>>(
+    () => new Map()
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -194,11 +197,13 @@ function HabitCheckInList({
                   "flex min-h-11 w-full items-center justify-between gap-3 rounded-full border px-4 py-2 text-start text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-70",
                   pressed
                     ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-border bg-background text-foreground hover:border-primary hover:text-primary",
+                    : "border-border bg-background text-foreground hover:border-primary hover:text-primary"
                 )}
               >
                 {/* A long name wraps inside the row; the label keeps its width and stays on the row. */}
-                <span className="min-w-0 font-medium text-foreground wrap-anywhere">{habit.name}</span>
+                <span className="min-w-0 font-medium text-foreground wrap-anywhere">
+                  {habit.name}
+                </span>
                 <span className="shrink-0 text-muted-foreground">
                   {t(pressed ? "hb.strip.checked" : "hb.strip.check")}
                 </span>
@@ -216,7 +221,9 @@ function HabitCheckInList({
 
 /** "{n} days in a row", with its own wording for a single day. */
 function streakText(t: (key: MessageKey) => string, days: number): string {
-  return days === 1 ? t("hb.strip.streak.one") : fillTemplate(t("hb.strip.streak.many"), { n: days });
+  return days === 1
+    ? t("hb.strip.streak.one")
+    : fillTemplate(t("hb.strip.streak.many"), { n: days });
 }
 
 function StripSkeleton() {

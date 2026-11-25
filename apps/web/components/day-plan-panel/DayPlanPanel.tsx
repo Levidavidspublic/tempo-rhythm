@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useDayPlanForDate } from "@/lib/data/day-plans/use-day-plan-for-date";
 import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { MAX_TOP_TASKS, pruneTopTasks, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
@@ -26,14 +27,17 @@ export function DayPlanPanel() {
   const localDate = useMemo(() => toLocalDateKey(new Date(bounds.startMs)), [bounds.startMs]);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const ready = isAuthenticated && profile != null;
+  const ready = isAuthenticated && profile !== null && profile !== undefined;
 
-  const plan = useQuery(api.dayPlans.getForDate, ready ? { localDate } : "skip");
+  const plan = useDayPlanForDate(ready ? { localDate } : "skip");
   const todayTasks = useQuery(
     api.tasks.listToday,
     ready ? { dueFrom: bounds.startMs, dueTo: bounds.endMs } : "skip"
   );
-  const carryOver = useQuery(api.dayPlans.listCarryOver, ready ? { beforeMs: bounds.startMs } : "skip");
+  const carryOver = useQuery(
+    api.dayPlans.listCarryOver,
+    ready ? { beforeMs: bounds.startMs } : "skip"
+  );
   const upsert = useMutation(api.dayPlans.upsert);
   const commit = useMutation(api.dayPlans.commit);
 
@@ -84,7 +88,11 @@ export function DayPlanPanel() {
   const committed = plan?.status === "committed";
   const readOnly = committed && !editing;
 
-  const save = async (patch: { intention?: string; topTaskIds?: Id<"tasks">[]; energy?: Energy }) => {
+  const save = async (patch: {
+    intention?: string;
+    topTaskIds?: Id<"tasks">[];
+    energy?: Energy;
+  }) => {
     setError(null);
     try {
       await upsert({
