@@ -2,7 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { parseDataBackend } from "./backend-flag";
 
 describe("parseDataBackend", () => {
-  test.each([undefined, "", "convex", "Firebase", "other", "InsForge", "insforge2"])("defaults %p to convex", (raw) => {
+  test.each([
+    undefined,
+    "",
+    "convex",
+    "Firebase",
+    "other",
+    "InsForge",
+    "insforge2",
+  ])("defaults %p to convex", (raw) => {
     expect(parseDataBackend(raw)).toBe("convex");
   });
 
