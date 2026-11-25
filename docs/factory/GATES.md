@@ -2,8 +2,7 @@
 
 Every per-PR gate for `tempo-rhythm`. Each row lists what the gate checks, its pass rule, and the
 job that runs it. The five required checks are wired into the `factory-integration` ruleset on
-`integration`; the three gates added by the 2026-11-01 config ticket run as advisory PR checks until
-Amit adds them to the ruleset.
+`integration`; format-naming remains an advisory PR check. The Jev judge and process-check gates were removed on 2026-11-25 (Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine."). Those files now live in `_to_delete/jev-judge/`.
 
 ## Required checks (ruleset `factory-integration`)
 
@@ -20,24 +19,10 @@ Amit adds them to the ruleset.
 | Gate | Checks | Pass rule | Job |
 | --- | --- | --- | --- |
 | `format-naming` | Formatting via `biome format` and naming via Biome's `useNamingConvention` (Google casing) on the PR's changed TS/JS files under `apps/` and `packages/` | no file needs reformatting and no identifier breaks Google naming | `.github/workflows/format-naming.yml` → `format-naming` |
-| `jev-judge` (**Switched off by Amit 2026-11-24**) | TypeSafe Jev (`~typesafe/jev-latest`, OpenRouter System One) scores the PR on instruction-following (a), formatting (b), naming (c), clean code (d), and massive violation (e) | a–d each ≥ 0.85 and e < 0.5; scores posted as one PR comment | `.github/workflows/jev-judge.yml` → `jev-judge` |
-| `process-check` | The agent's REPORT comment lists the ticket's DONE command and covers every STEP | the DONE command appears and every STEP's key words are covered | `.github/workflows/jev-judge.yml` → `process-check` |
 
-## Jev judge details
+## Jev and process-check (removed 2026-11-25)
 
-**Switched off by Amit 2026-11-24.** The `jev-judge` job in `jev-judge.yml` and the `4 jev judge` job in `merge-gate.yml` are disabled with `if: ${{ false }}`; the files stay for reference. To turn it back on, remove the `if` line from `jev-judge` in `jev-judge.yml`, set the `4 jev judge` condition in `merge-gate.yml` back to `if: vars.MERGE_GATE_ENABLED == 'true'` (do not just delete it, or Jev runs while the merge gate is off), and set `5 coderabbit` back to `needs: jev`. `process-check` is unaffected and still runs.
-
-- **Model**: `~typesafe/jev-latest` on OpenRouter. This is Amit's only OpenRouter exception.
-- **Key**: repository secret `OPENROUTER_API_KEY`. Amit adds the value himself; the value is never
-  written anywhere. If the secret is missing the job fails with
-  `OPENROUTER_API_KEY not set: Amit adds it in repo Settings > Secrets > Actions`.
-- **Input**: the ticket (issue) text, `AGENTS.md` and `include.md` (Amit's style rules), a link to
-  and short summary of Google's TypeScript style guide, the PR diff, and the agent's REPORT comment.
-- **Request format**: OpenRouter System One API (`POST https://openrouter.ai/api/v1/systemone`),
-  five `noul` (probability) questions. See
-  https://openrouter.ai/docs/guides/community/typesafe-sdk.md.
-- The script is `.github/scripts/jev-judge.ts` with unit tests in
-  `.github/scripts/jev-judge.test.ts`.
+Removed by Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine." The former workflow `.github/workflows/jev-judge.yml` (jobs `process-check` and `jev-judge`) and the already-disabled `4 jev judge` job in `merge-gate.yml` are gone. The workflow and scripts were moved to `_to_delete/jev-judge/` (never deleted). Do not restore them. Do not use OpenRouter for anything else.
 
 ## How to test a gate locally
 
@@ -46,8 +31,6 @@ Amit adds them to the ruleset.
 bunx biome format --config-path=packages/config/biome.json <changed-ts-files>          # formatting (check mode)
 bunx biome lint --config-path=.github/scripts/google-naming.json --only=useNamingConvention <changed-ts-files>
 
-# jev-judge + process-check (unit tests; the live judge needs OPENROUTER_API_KEY)
-bun test ./.github/scripts/jev-judge.test.ts
 ```
 
 Note on formatting: this repo's formatter (Biome) uses double quotes, which is the repo's
@@ -55,5 +38,3 @@ convention. Google's TypeScript guide prefers single quotes; the formatting gate
 Biome configuration (the formatter the repo already has) and the naming gate enforces Google's
 casing rules.
 
-The live Jev call and the REPORT-comment matching run only in GitHub Actions against a real PR, and
-only a PR that links a ticket (`Closes #N`). Config PRs link no ticket, so both gates skip.

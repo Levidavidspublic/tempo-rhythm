@@ -250,7 +250,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
 - All of these must pass before merge.
 - **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
-- Jev judge gate switched off by Amit on 2026-11-24; the workflow files stay for reference.
+- Jev checks removed on 2026-11-25 by Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine." The former jev-judge workflow, process-check job, and "4 jev judge" merge-gate job are gone. Workflow and script files were moved to `_to_delete/jev-judge/` (never deleted). Do not add the Jev or process-check gates back. The OpenRouter exception existed only for Jev; do not use OpenRouter for anything else.
 
 ---
 

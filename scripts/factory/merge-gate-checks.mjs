@@ -7,7 +7,6 @@ export const SELF_CHECKS = new Set([
   'merge-gate',
   '1 scope',
   '2 checks',
-  '4 jev judge',
   '5 coderabbit',
   '5b fallback review',
   '6 merge',
