@@ -442,7 +442,10 @@ async function runJudge(prNumber: string, ticketNumber: number): Promise<void> {
   const comment = formatComment(scores, result);
   postComment(prNumber, comment);
   console.log(comment);
-  if (!result.pass) process.exit(1);
+  if (!result.pass) {
+    process.exitCode = 1;
+    return;
+  }
 }
 
 async function runProcessCheck(prNumber: string, ticketNumber: number): Promise<void> {
@@ -453,13 +456,15 @@ async function runProcessCheck(prNumber: string, ticketNumber: number): Promise<
     console.error(
       "No REPORT comment found on the PR (expected a comment with `status:` and `ticket:`)."
     );
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const result = checkReportCoverage(ticket, report);
   if (result.problems.length) {
     console.error("Process check failed:");
     for (const problem of result.problems) console.error(`  - ${problem}`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   console.log(
     `Process check passed: REPORT comment covers ${ticket.steps.length} STEP(s) and the DONE command.`
@@ -471,7 +476,8 @@ async function main(): Promise<void> {
   const prNumber = process.env.PR_NUMBER ?? "";
   if (!prNumber) {
     console.error("PR_NUMBER is not set; running outside a pull request context.");
-    process.exit(2);
+    process.exitCode = 2;
+    return;
   }
   const prBody = sh(`gh pr view ${prNumber} --json body --jq .body`);
   const ticketNumber = linkedTicketNumber(prBody);
@@ -486,6 +492,6 @@ async function main(): Promise<void> {
 if (import.meta.main) {
   main().catch((err) => {
     console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
+    process.exitCode = 1;
   });
 }
