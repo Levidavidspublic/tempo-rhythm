@@ -27,7 +27,7 @@ export function DayPlanPanel() {
   const localDate = useMemo(() => toLocalDateKey(new Date(bounds.startMs)), [bounds.startMs]);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const ready = isAuthenticated && profile != null;
+  const ready = isAuthenticated && profile !== null && profile !== undefined;
 
   const plan = useDayPlanForDate(ready ? { localDate } : "skip");
   const todayTasks = useQuery(

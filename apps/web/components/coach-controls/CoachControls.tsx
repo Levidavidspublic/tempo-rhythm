@@ -19,11 +19,16 @@ import {
 } from "./dial";
 
 /** The dial's own levels (dial.ts) read from en/he copy. */
-const LEVEL_KEY = {
-  Gentle: "coachCtl.level.gentle",
-  Steady: "coachCtl.level.steady",
-  Firm: "coachCtl.level.firm",
-} as const satisfies Record<ReturnType<typeof dialLabel>, MessageKey>;
+function levelKey(label: ReturnType<typeof dialLabel>): MessageKey {
+  switch (label) {
+    case "Gentle":
+      return "coachCtl.level.gentle";
+    case "Steady":
+      return "coachCtl.level.steady";
+    case "Firm":
+      return "coachCtl.level.firm";
+  }
+}
 
 function minutesCopy(minutes: number, t: (key: MessageKey) => string): string {
   if (minutes <= 0) return t("coachCtl.minutes.under");
@@ -84,7 +89,7 @@ export function CoachControls() {
 
   const persisted = savedDial ?? serverDial ?? clampDial(settings.dial);
   const shown = draft ?? persisted;
-  const label = t(LEVEL_KEY[dialLabel(shown)]);
+  const label = t(levelKey(dialLabel(shown)));
   const panicUntil = panicOverride !== undefined ? panicOverride : settings.panicUntil;
   const panicActive = panicUntil !== null && panicUntil > now;
   const minutes = panicMinutesLeft(panicUntil, now);

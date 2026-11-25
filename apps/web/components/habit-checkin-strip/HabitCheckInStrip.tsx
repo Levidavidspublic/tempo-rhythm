@@ -19,7 +19,7 @@ export function HabitCheckInStrip() {
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const bounds = useLocalDayBounds();
   const localDate = localDateKey(new Date(bounds.startMs));
-  const hasConvexUser = profile != null;
+  const hasConvexUser = profile !== null && profile !== undefined;
   const canQuery = isAuthenticated && hasConvexUser;
   const habits = useQuery(api.habits.list, canQuery ? {} : "skip");
   const checkIns = useHabitCheckInsForDate(canQuery ? { localDate } : "skip");

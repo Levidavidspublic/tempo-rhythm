@@ -101,7 +101,7 @@ function MemoryImportContent() {
   const { t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const ready = isAuthenticated && profile != null;
+  const ready = isAuthenticated && profile !== null && profile !== undefined;
   // Only used to mark items Tempo already remembers.
   const existing = useQuery(api.memory.list, ready ? { limit: 200 } : "skip");
   const saveReviewed = useSaveReviewedMemories();
