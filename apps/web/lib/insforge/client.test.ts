@@ -12,10 +12,7 @@ describe("makeInsforgeClientGetter", () => {
     ["whitespace-only key", baseUrl, " \n"],
   ] as const)("returns null for %s", (_label, url, key) => {
     const create = mock(() => ({}));
-    const getClient = makeInsforgeClientGetter(
-      { NEXT_PUBLIC_INSFORGE_URL: url, NEXT_PUBLIC_INSFORGE_ANON_KEY: key },
-      create
-    );
+    const getClient = makeInsforgeClientGetter({ url, anonKey: key }, create);
 
     expect(getClient()).toBeNull();
     expect(create).not.toHaveBeenCalled();
@@ -26,8 +23,8 @@ describe("makeInsforgeClientGetter", () => {
     const create = mock(() => client);
     const getClient = makeInsforgeClientGetter(
       {
-        NEXT_PUBLIC_INSFORGE_URL: ` ${baseUrl} `,
-        NEXT_PUBLIC_INSFORGE_ANON_KEY: ` ${anonKey} `,
+        url: ` ${baseUrl} `,
+        anonKey: ` ${anonKey} `,
       },
       create
     );
