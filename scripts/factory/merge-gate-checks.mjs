@@ -4,13 +4,12 @@
 // latest attempt (ids increase for re-runs). A newer failure still fails.
 
 export const SELF_CHECKS = new Set([
-  'merge-gate',
-  '1 scope',
-  '2 checks',
-  '4 jev judge',
-  '5 coderabbit',
-  '5b fallback review',
-  '6 merge',
+  "merge-gate",
+  "1 scope",
+  "2 checks",
+  "5 coderabbit",
+  "5b fallback review",
+  "6 merge",
 ]);
 
 export function latestRunPerName(runs) {
