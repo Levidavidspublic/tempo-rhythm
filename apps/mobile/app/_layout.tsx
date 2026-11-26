@@ -1,17 +1,17 @@
-import { ConvexAuthProvider } from '@convex-dev/auth/react';
-import { ConvexReactClient } from 'convex/react';
-import { Slot } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
-import { Text, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import '../global.css';
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexReactClient } from "convex/react";
+import { Slot } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useMemo } from "react";
+import { Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import "../global.css";
 
-import { PrefsProvider } from '@/components/v3/prefs';
-import { RevenueCatProvider } from '@/contexts/RevenueCatContext';
-import { bootstrapRTL } from '@/lib/rtlBootstrap';
-import { getConvexUrl, readPublicConvexUrl } from '@/utils/convexConfig';
+import { PrefsProvider } from "@/components/v3/prefs";
+import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
+import { bootstrapRTL } from "@/lib/rtlBootstrap";
+import { getConvexUrl, readPublicConvexUrl } from "@/utils/convexConfig";
 
 // אסטרטגיית RTL (ראה docs/rtl-knowhow.md):
 // 1. תוסף expo-localization (app.json) - מגדיר RTL ברמת ה-Native (עובד ב-Dev Builds ו-Production)
