@@ -84,9 +84,9 @@ test("InsForge renders OTP on the page and in the modal without calling Convex a
   expect(useAuthActions).not.toHaveBeenCalled();
 });
 
-const NON_OTP_BACKENDS = ["convex", "firebase"] as const;
+const nonOtpBackends: DataBackend[] = ["convex", "firebase"];
 
-test.each(NON_OTP_BACKENDS)("%s keeps magic links on the page and in the modal", (backend) => {
+test.each(nonOtpBackends)("%s keeps magic links on the page and in the modal", (backend) => {
   setBackend(backend);
   const page = renderToStaticMarkup(createElement(SignInPage));
   const modal = renderToStaticMarkup(createElement(SignInForm, { variant: "modal" }));
