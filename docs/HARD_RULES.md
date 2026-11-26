@@ -20,7 +20,7 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 
 | Category | Forbidden | Use instead |
 |---|---|---|
-| Backend-as-a-Service | Supabase | Convex or Firebase (see below) |
+| Backend-as-a-Service | Supabase | Convex, Firebase or InsForge (see below) |
 | ORM | Prisma, Drizzle, TypeORM, Mongoose | Convex `v.*` validators + `defineSchema` |
 | Auth | Auth0, Clerk, NextAuth, BetterAuth | Convex Auth |
 | Payments | Stripe SDK direct | RevenueCat (wraps Stripe, App Store, Play Store) |
@@ -32,6 +32,8 @@ Tempo Flow is an overwhelm-first personal operating system for neurodivergent pe
 | Task trackers in agent spine | Notion, Linear, Airtable | GitHub Issues + GitHub Projects + `TASKS.md` + Convex `agent_*` tables + Discord |
 
 **Firebase is allowed.** A change may move to production once it is proven in preview. (Amit, 2026-11-08. Supersedes the earlier Firebase ban in this table.)
+
+**InsForge is allowed** (Amit, 2026-11-25). It is Tempo's next backend; see `docs/backlog/INSFORGE-MIGRATION-PLAN.md`. Use `@insforge/sdk`; never the `pg` client. Supabase and every other row above stay forbidden.
 
 If you believe you need one of these, open an issue first with the specific justification. Do not add it on your own authority.
 
