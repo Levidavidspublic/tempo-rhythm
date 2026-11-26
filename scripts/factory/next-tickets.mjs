@@ -6,20 +6,27 @@
 //     has a scope folder equal to, inside, or containing one of its scope folders
 //     (exception: both have overlap_test: true);
 //  4. open factory tickets < FACTORY_MAX_IN_FLIGHT (picks fill the remaining capacity);
-//  5. not paused (FACTORY_PAUSED_ALL / FACTORY_PAUSED, unless FORCE=true from a manual run);
+//  5. not paused (FACTORY_PAUSED_ALL / FACTORY_PAUSED, unless FORCE=true from a manual run) and not inside quiet
+//     hours (22:00-09:00 Asia/Jerusalem, FACTORY_QUIET_START/END; FACTORY_QUIET_HOURS=off overrides; FORCE does not);
 //  6. its batch is in FACTORY_ACTIVE_BATCHES (comma list) or that is `all` (`none`/empty = nothing).
-// Also: the lane quota per batch (equal thirds; data tickets always claude) for the agent, and
-// codex_mode (FACTORY_CODEX_MODE: issue | pr | manual; manual = codex gets no tickets, its share
-// goes to the other two lanes).
+// Also: the final lane of every ready ticket (scripts/factory/lane-limits.mjs: FACTORY_*_AT_LIMIT and
+// FACTORY_AGENT_PREFERENCE; build tickets balanced over claude+codex by default, cursor last; browser_test -> codex,
+// then cursor; data -> claude first), and codex_mode (FACTORY_CODEX_MODE: issue | pr | manual; manual = codex gets
+// no tickets). A ticket no lane can take (claude, codex and cursor all at their limit) goes to `manual_fallback`
+// with lane freebuff, or opencode if FACTORY_FREEBUFF_AT_LIMIT=true, and `labels` agent:<x> + needs:manual-run; the
+// dispatcher adds the labels and starts nothing (a person runs it). If both fallbacks are at their limit too, `labels`
+// is blocked:amit ("usage limits"). No capacity slot is used. Tickets labelled needs:manual-run are skipped.
 // Usage: node next-tickets.mjs [--out ready.json] [--local <dir-of-ticket-.md-files>]
 //   --local reads tickets from files (dry run): front-matter + optional `labels:` line in the
 //   front-matter for status labels. No API calls in --local mode.
+import { quietHours } from "./quiet-hours.mjs";
+import { LANES, chooseLane, limitsSummary, ticketKind } from "./lane-limits.mjs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { frontMatter, scopeOf, listOf, labelNames, truthy, allTickets } from "./factory-lib.mjs";
 import { repoParts, summary } from "./gh-api.mjs";
 
-export const CODEX_MODE_DEFAULT = "issue"; // issue | pr | manual (override: FACTORY_CODEX_MODE)
+export const CODEX_MODE_DEFAULT = "pr"; // pr | issue | manual (override: FACTORY_CODEX_MODE)
 const OPEN = ["status:dispatched", "status:in-pr"];
 const norm = (f) => f.replace(/^\.\//, "").replace(/^\/+/, "").replace(/\/?$/, "/");
 export const overlaps = (a, b) => a.some((x) => b.some((y) => { const p = norm(x), q = norm(y); return p.startsWith(q) || q.startsWith(p); }));
@@ -32,16 +39,24 @@ export function activeBatches(v) {
 }
 
 // tickets: [{ number, title, labels: [..], fm }]
-export function pick(tickets, env) {
+export function pick(tickets, env, now = new Date()) {
   const paused = (env.FACTORY_PAUSED_ALL === "true" || env.FACTORY_PAUSED === "true") && env.FORCE !== "true";
   const max = Number(env.FACTORY_MAX_IN_FLIGHT || 15);
   const batches = activeBatches(env.FACTORY_ACTIVE_BATCHES);
   const codexMode = env.FACTORY_CODEX_MODE || CODEX_MODE_DEFAULT;
   const byId = new Map(tickets.map((t) => [t.fm.ticket, t]));
   const open = tickets.filter((t) => t.labels.some((l) => OPEN.includes(l)));
-  const out = { paused, codex_mode: codexMode, max_in_flight: max, open: open.length, active_batches: batches === "all" ? "all" : [...batches], ready: [], skipped: [], lane_quota: {} };
+  const out = { paused, codex_mode: codexMode, max_in_flight: max, open: open.length, active_batches: batches === "all" ? "all" : [...batches], ready: [], skipped: [], manual_fallback: [], ...limitsSummary(env, { codexMode }) };
   if (paused) { out.reason = "paused (FACTORY_PAUSED_ALL or FACTORY_PAUSED is true)"; return out; }
+  const q = quietHours({ env, now });
+  if (q.quiet) { out.paused = true; out.reason = q.reason; return out; }
   let capacity = max - open.length;
+  // Lane load per batch for balancing: tickets already carrying lane:<x> plus this run's picks.
+  const counts = new Map();
+  const laneCounts = (b) => {
+    if (!counts.has(b)) counts.set(b, Object.fromEntries(LANES.map((l) => [l, tickets.filter((x) => String(x.fm.batch) === b && x.labels.includes(`lane:${l}`)).length])));
+    return counts.get(b);
+  };
   const taken = open.map((t) => t);
   const ready = tickets.filter((t) => t.labels.includes("status:ready"))
     .sort((a, b) => String(a.fm.batch).localeCompare(String(b.fm.batch)) || String(a.fm.ticket).localeCompare(String(b.fm.ticket), undefined, { numeric: true }));
@@ -49,6 +64,7 @@ export function pick(tickets, env) {
     const id = t.fm.ticket, skip = (reason) => out.skipped.push({ issue: t.number, ticket: id, reason });
     if (t.labels.includes("blocked:amit")) { skip("blocked:amit"); continue; }
     if (t.labels.includes("paused:dependency")) { skip("paused:dependency"); continue; }
+    if (t.labels.includes("needs:manual-run")) { skip("needs:manual-run (manual fallback agent, waiting for a person)"); continue; }
     if (t.labels.some((l) => OPEN.includes(l))) { skip("already dispatched / in PR"); continue; }
     if (batches !== "all" && !batches.has(String(t.fm.batch))) { skip(`batch ${t.fm.batch} not in FACTORY_ACTIVE_BATCHES`); continue; }
     const deps = listOf(t.fm.depends_on).filter((d) => !(byId.get(d)?.labels || []).includes("status:done"));
@@ -58,18 +74,12 @@ export function pick(tickets, env) {
     const clash = taken.find((o) => overlaps(scope, scopeOf(o.fm)) && !(truthy(t.fm.overlap_test) && truthy(o.fm.overlap_test)));
     if (clash) { skip(`scope overlaps open/picked ticket ${clash.fm.ticket} (${scopeOf(clash.fm).join(", ")})`); continue; }
     if (capacity <= 0) { skip(`FACTORY_MAX_IN_FLIGHT (${max}) reached`); continue; }
-    capacity--; taken.push(t);
-    out.ready.push({ issue: t.number, ticket: id, batch: t.fm.batch, type: t.fm.type, lane: t.fm.type === "data" ? "claude" : (t.fm.lane || "auto"), scope, title: t.title });
-  }
-  // Lane quota per batch: equal thirds over ALL tickets of the batch; lanes already used
-  // (lane:* labels) count; data -> claude. codex manual -> codex share split over the others.
-  const lanes = codexMode === "manual" ? ["claude", "cursor"] : ["claude", "codex", "cursor"];
-  for (const b of new Set(out.ready.map((r) => String(r.batch)))) {
-    const all = tickets.filter((t) => String(t.fm.batch) === b);
-    const per = Math.floor(all.length / lanes.length), extra = all.length % lanes.length;
-    const quota = Object.fromEntries(lanes.map((l, i) => [l, per + (i < extra ? 1 : 0)]));
-    for (const t of all) { const l = t.labels.find((x) => x.startsWith("lane:"))?.slice(5); if (l && quota[l] !== undefined) quota[l]--; }
-    out.lane_quota[b] = { total: all.length, remaining: quota };
+    const kind = ticketKind(t.fm);
+    const want = truthy(t.fm.lane_pin) && LANES.includes(t.fm.lane) ? t.fm.lane : null;
+    const c = chooseLane({ kind, want, counts: laneCounts(String(t.fm.batch)) }, env, { codexMode });
+    if (c.manual || c.blocked) { out.manual_fallback.push({ issue: t.number, ticket: id, lane: c.lane, labels: c.labels, reason: c.reason }); skip(c.reason); continue; }
+    capacity--; taken.push(t); laneCounts(String(t.fm.batch))[c.lane]++;
+    out.ready.push({ issue: t.number, ticket: id, batch: t.fm.batch, type: t.fm.type, kind, lane: c.lane, lane_reason: c.reason, scope, title: t.title });
   }
   return out;
 }
@@ -99,7 +109,9 @@ async function main() {
   const result = pick(tickets, process.env);
   await writeFile(outFile, JSON.stringify(result, null, 2) + "\n");
   await summary([`## next-tickets`, `paused: ${result.paused}${result.reason ? ` (${result.reason})` : ""}; open ${result.open}/${result.max_in_flight}; active batches: ${JSON.stringify(result.active_batches)}; codex_mode: ${result.codex_mode}`,
-    ...result.ready.map((r) => `- READY #${r.issue} ${r.ticket} (${r.type}, lane ${r.lane}) scope ${r.scope.join(", ")}`),
+    `agents: preference ${result.agent_preference.join(",")}; at limit: ${Object.keys(result.at_limit).filter((k) => result.at_limit[k]).join(", ") || "none"}; available: ${result.available_lanes.join(", ") || "NONE (usage limits -> freebuff/opencode, manual)"}`,
+    ...result.ready.map((r) => `- READY #${r.issue} ${r.ticket} (${r.type}, lane ${r.lane}: ${r.lane_reason}) scope ${r.scope.join(", ")}`),
+    ...result.manual_fallback.map((u) => `- MANUAL ${u.lane || "none"} #${u.issue} ${u.ticket}: ${u.reason} -> ${u.labels.join(" + ")}`),
     ...result.skipped.map((s) => `- skip #${s.issue} ${s.ticket}: ${s.reason}`)]);
 }
 

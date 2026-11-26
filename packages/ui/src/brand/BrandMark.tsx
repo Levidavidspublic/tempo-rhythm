@@ -21,7 +21,9 @@ export function BrandMark({ size = 28, className }: Props) {
     >
       <title id={`${id}-title`}>Tempo Flow</title>
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+        {/* userSpaceOnUse: the bar and the stem are straight lines with a zero-height or
+            zero-width box, and a box-relative gradient doesn't paint those (only the dot showed). */}
+        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="64" y2="64">
           <stop offset="0%" stopColor="#D97757" />
           <stop offset="100%" stopColor="#E8A87C" />
         </linearGradient>

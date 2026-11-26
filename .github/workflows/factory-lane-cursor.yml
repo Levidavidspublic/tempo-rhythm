@@ -1,15 +1,15 @@
 name: factory-lane-cursor
 
-# Phase 04 Step 5c. Cursor lane. vars.FACTORY_CURSOR_MODE:
-#   automation (default): the Factory App re-adds label run:cursor on the ticket issue; the Cursor
-#     Automation "Factory build - tempo-rhythm" (GitHub trigger "Issue label changed", run:cursor,
-#     base integration, model vars.FACTORY_MODEL_CURSOR, PR creation ON) builds it. Created by hand,
-#     left DISABLED until Phase 07 (BROWSER-TODO B8).
-#   api (fallback B): POST https://api.cursor.com/v1/agents with secret CURSOR_API_KEY.
-# Script: scripts/factory/cursor-lane.mjs. PARKED until the Factory App exists (both modes write
-# labels/branches with its token; never GITHUB_TOKEN for PR work, R15) and, for api, CURSOR_API_KEY.
+# Phase E3 (2026-10-05): Cursor lane via Cloud Agents API. No Factory App.
+# Trigger A: label `run:cursor` added on an issue (issues.labeled).
+# Trigger B: workflow_dispatch (force=true OK while paused).
+# Mode: vars.FACTORY_CURSOR_MODE (tempo = api). Secret name: CURSOR_API_KEY (org).
+# GH_TOKEN = github.token (labels/comments/branch refs only). Cursor App opens the PR
+# (autoCreatePR); if Bugbot rejects bot author, Division6066 re-opens (standing rule E1).
 
 on:
+  issues:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -27,33 +27,56 @@ on:
         default: false
 
 permissions:
-  contents: read
-
-concurrency:
-  group: factory-lane-${{ inputs.issue_number }}
-  cancel-in-progress: false
+  contents: write
+  issues: write
+  pull-requests: read
 
 jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    # Same condition as `start`, so unrelated label events still start no job at all.
+    if: >
+      (github.event_name == 'issues' && github.event.label.name == 'run:cursor' &&
+        vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true')
+      || (github.event_name == 'workflow_dispatch' &&
+        ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true))
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-lane-cursor #${{ github.event.issue.number || inputs.issue_number }}"
+      exempt: ${{ github.event_name == 'workflow_dispatch' && inputs.fix_note != '' }}
+      exempt_reason: fix run for work already in flight (fix_note)
   start:
-    if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    # Label path: only when run:cursor was added. Dispatch path: honor pause unless force.
+    needs: quiet
+    if: >
+      needs.quiet.outputs.quiet != 'true' && (
+      (github.event_name == 'issues' && github.event.label.name == 'run:cursor' &&
+        vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true')
+      || (github.event_name == 'workflow_dispatch' &&
+        ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true)))
+    # Job-level (was workflow-level): every other `labeled` event on the issue used to join
+    # factory-lane-<issue> too, so a burst of labels cancelled pending runs in that group - 70 cancelled
+    # runs in 2 days, and it could cancel a pending run:cursor start or a pending claude/codex lane run
+    # for the same issue (same group name). Skipped jobs never take the group. (audit 2026-10-06)
+    concurrency:
+      group: factory-lane-${{ github.event_name == 'issues' && github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: force=true only from a person
-        if: inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
         run: |
           echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
           exit 1
-      - name: Factory App configured?
+      - name: CURSOR_API_KEY present?
         env:
-          APP_ID: ${{ secrets.FACTORY_APP_ID }}
+          K: ${{ secrets.CURSOR_API_KEY }}
         run: |
-          if [ -z "$APP_ID" ]; then echo "::error::PARKED: secrets FACTORY_APP_ID / FACTORY_APP_PRIVATE_KEY are not set (Factory App not created yet)."; exit 1; fi
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: token
-        with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          if [ -z "$K" ]; then
+            echo "::error::PARKED: secret CURSOR_API_KEY is not visible to this repo (expected org secret)."
+            exit 1
+          fi
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: integration
@@ -64,13 +87,22 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: Start the Cursor lane
+      - name: Resolve issue number
+        id: iss
+        run: |
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            echo "n=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "n=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Start the Cursor lane (API)
         env:
-          GH_TOKEN: ${{ steps.token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
-          FIX_NOTE: ${{ inputs.fix_note }}
-          CURSOR_MODE: ${{ vars.FACTORY_CURSOR_MODE || 'automation' }}
+          ISSUE_NUMBER: ${{ steps.iss.outputs.n }}
+          FIX_NOTE: ${{ github.event_name == 'workflow_dispatch' && inputs.fix_note || '' }}
+          # E3: always API gate (no Factory App / no Automation dependency)
+          CURSOR_MODE: api
           MODEL: ${{ vars.FACTORY_MODEL_CURSOR }}
           MODEL_PARAMS: ${{ vars.FACTORY_MODEL_CURSOR_PARAMS }}
         run: node scripts/factory/cursor-lane.mjs

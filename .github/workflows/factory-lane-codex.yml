@@ -1,12 +1,11 @@
 name: factory-lane-codex
 
-# Phase 04 Step 5b. Codex lane: posts "@codex <lane prompt>" as Amit (secret CODEX_MENTION_PAT,
-# fine-grained: Issues + Pull requests write only, so it can never merge). Codex's model comes from
-# Codex settings (vars.FACTORY_MODEL_CODEX is a record). Never an OpenAI API key (R4).
-# Mode = vars.FACTORY_CODEX_MODE: issue (A, default) | pr (B: Factory App opens a draft scaffold PR,
-# comment goes there) | manual (C). Script: scripts/factory/codex-lane.mjs.
-# UNKNOWN: whether @codex on an ISSUE starts a task that opens a PR (Phase 07 rung 1 tests it).
-# PARKED until CODEX_MENTION_PAT exists (and, for mode pr, the Factory App).
+# Phase 04 Step 5b. Codex lane. Mode = vars.FACTORY_CODEX_MODE: pr (default) | issue (legacy) | manual.
+# pr: github.token creates t/<issue>-<slug> from integration with one empty commit (a ref, not a PR),
+# then the CODEX_MENTION_PAT user (Issues + Pull requests write) opens a DRAFT PR "Closes #<issue>"
+# and posts "@codex implement ..." ON THE PR. Codex ignores @codex on issues (tested 2026-10-06).
+# No Factory App. Codex's model comes from Codex settings (vars.FACTORY_MODEL_CODEX is a record).
+# Never an OpenAI API key / openai/codex-action (R4). Script: scripts/factory/codex-lane.mjs.
 
 on:
   workflow_dispatch:
@@ -26,7 +25,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write # mode pr: create the t/<issue>-<slug> branch + empty commit only (PR + comments use CODEX_MENTION_PAT)
   issues: read
   pull-requests: read
 
@@ -35,8 +34,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  mention:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-lane-codex #${{ inputs.issue_number }}"
+      exempt: ${{ inputs.fix_note != '' }}
+      exempt_reason: fix run for work already in flight (fix_note)
+  mention:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -45,17 +53,6 @@ jobs:
         run: |
           echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
           exit 1
-      - name: Factory App configured? (mode pr only)
-        id: app
-        env:
-          APP_ID: ${{ secrets.FACTORY_APP_ID }}
-        run: if [ -n "$APP_ID" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: token
-        if: steps.app.outputs.ok == 'true'
-        with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: integration
@@ -68,10 +65,9 @@ jobs:
           node-version: 22
       - name: Post the @codex comment
         env:
-          GH_TOKEN: ${{ steps.token.outputs.token || github.token }}
-          APP_OK: ${{ steps.app.outputs.ok }}
+          GH_TOKEN: ${{ github.token }}
           MENTION_TOKEN: ${{ secrets.CODEX_MENTION_PAT }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
           FIX_NOTE: ${{ inputs.fix_note }}
-          CODEX_MODE: ${{ vars.FACTORY_CODEX_MODE || 'issue' }}
+          CODEX_MODE: ${{ vars.FACTORY_CODEX_MODE || 'pr' }}
         run: node scripts/factory/codex-lane.mjs
