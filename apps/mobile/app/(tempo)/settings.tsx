@@ -55,7 +55,13 @@ export default function SettingsScreen() {
       </View>
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
         <SettingsBody ready={session.ready} />
@@ -67,7 +73,15 @@ export default function SettingsScreen() {
 function Section({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
   const { colors: c } = usePrefs();
   return (
-    <View style={{ backgroundColor: c.paper, borderWidth: 1, borderColor: c.line, borderRadius: RADIUS.lg, overflow: "hidden" }}>
+    <View
+      style={{
+        backgroundColor: c.paper,
+        borderWidth: 1,
+        borderColor: c.line,
+        borderRadius: RADIUS.lg,
+        overflow: "hidden",
+      }}
+    >
       <View style={{ gap: 2, paddingVertical: 16, paddingHorizontal: 20 }}>
         <T size="lg" serif weight="500" accessibilityRole="header">
           {title}
@@ -138,7 +152,8 @@ function SettingsBody({ ready }: { ready: boolean }) {
     );
   }
 
-  if (!session.profile || coach === undefined || plan === undefined) return <StateLoading label={t("load.label")} rows={5} />;
+  if (!session.profile || coach === undefined || plan === undefined)
+    return <StateLoading label={t("load.label")} rows={5} />;
 
   const dialValue = dial ?? coach.dial;
   const changeDial = (next: number) => {
@@ -281,7 +296,13 @@ function SettingsBody({ ready }: { ready: boolean }) {
 
       <Button block icon={LogOut} label={t("out.btn")} onPress={() => setSheet("out")} />
 
-      <Sheet visible={sheet === "out"} title={t("out.title")} onClose={() => setSheet(null)} closeLabel={t("more.close")} alert>
+      <Sheet
+        visible={sheet === "out"}
+        title={t("out.title")}
+        onClose={() => setSheet(null)}
+        closeLabel={t("more.close")}
+        alert
+      >
         <T>{t("out.body")}</T>
         <View style={{ gap: 8 }}>
           <Button block icon={LogOut} label={t("out.go")} onPress={doSignOut} />
