@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { getAccessTokenCookieName, getRefreshTokenCookieName } from "@insforge/sdk/ssr";
 import { NextRequest } from "next/server";
+import { POST } from "../../app/api/auth/insforge/refresh/route";
 import {
   CALENDAR_E2E_BYPASS_OPTION,
   decideEntryRedirect,
@@ -8,6 +9,7 @@ import {
   isInsforgeRefreshRequest,
   PUBLIC_ROUTE_PATTERNS,
 } from "../rootEntry";
+import { SESSION_REQUEST_HEADER } from "./client";
 import { hasVerifiedInsforgeSession } from "./server-session";
 
 const origin = "https://tempo.example.test";
@@ -102,6 +104,34 @@ describe("app entry auth policy", () => {
   test("hands the exact refresh POST to the route without widening the public patterns", () => {
     expect(isInsforgeRefreshRequest(refreshPath, "POST")).toBe(true);
     expect((PUBLIC_ROUTE_PATTERNS as readonly string[]).includes(refreshPath)).toBe(false);
+  });
+
+  test("the refresh handler returns 401 without an InsForge session", async () => {
+    const env = [
+      ["NEXT_PUBLIC_DATA_BACKEND", "insforge"],
+      ["NEXT_PUBLIC_INSFORGE_URL", provider.url],
+      ["NEXT_PUBLIC_INSFORGE_ANON_KEY", provider.anonKey],
+    ] as const;
+    const previous = env.map(([key, value]) => {
+      const prior = process.env[key];
+      process.env[key] = value;
+      return [key, prior] as const;
+    });
+    try {
+      const req = new NextRequest(`${origin}${refreshPath}`, {
+        method: "POST",
+        headers: { [SESSION_REQUEST_HEADER]: "1" },
+      });
+      expect(isInsforgeRefreshRequest(req.nextUrl.pathname, req.method)).toBe(true);
+      const response = await POST(req);
+      expect(response.status).toBe(401);
+      expect(await response.json()).toEqual({ user: null });
+    } finally {
+      for (const [key, value] of previous) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
   });
 
   test.each([
