@@ -126,6 +126,8 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         onboarded_at: optional(user, "onboardedAt", millis),
         ...dates,
       };
+      const gateBootstrap = "updated_at = created_at AND approval_status = 'pending'" +
+        " AND approval_updated_at = created_at AND approval_updated_by IS NULL";
       sql.push(
         "INSERT INTO auth.users (email, email_verified) SELECT " + emailSql + ", " +
           bool(user.emailVerified ?? false, "emailVerified") + " WHERE " + sameLegacy +
@@ -134,11 +136,13 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         "SELECT 'users' AS \"table\", " + legacy +
           " AS id, 'email cannot resolve to a unique, unclaimed auth user' AS reason WHERE NOT (" + resolved + ");",
         "UPDATE public.profiles SET updated_at = least(updated_at, " + dates.updated_at +
-          ") WHERE user_id = " + owner + " AND EXISTS (SELECT 1 FROM public.account_gate" +
-          " WHERE user_id = " + owner + " AND legacy_convex_id IS NULL);",
+          ") WHERE user_id = " + owner + " AND updated_at = created_at" +
+          " AND EXISTS (SELECT 1 FROM public.account_gate WHERE user_id = " + owner +
+          " AND legacy_convex_id IS NULL AND " + gateBootstrap + ");",
         upsert("profiles", "user_id", profileValues, resolved),
-        "UPDATE public.account_gate SET legacy_convex_id = " + legacy + ", updated_at = least(updated_at, " +
-          dates.updated_at + ") WHERE user_id = " + owner + " AND legacy_convex_id IS NULL;",
+        "UPDATE public.account_gate SET legacy_convex_id = " + legacy + ", updated_at = CASE WHEN " +
+          gateBootstrap + " THEN least(updated_at, " + dates.updated_at + ") ELSE updated_at END" +
+          " WHERE user_id = " + owner + " AND legacy_convex_id IS NULL;",
         upsert("account_gate", "legacy_convex_id", gateValues, resolved),
       );
       usersMapped.set(user._id, emailSql);
@@ -166,7 +170,9 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         " AND pg_catalog.lower(auth_user.email) = pg_catalog.lower(" + emailSql + ")" +
         " AND (SELECT count(*) FROM auth.users WHERE pg_catalog.lower(email) = pg_catalog.lower(" + emailSql + ")) = 1)";
       const resolved = owner + " IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.subscription_states" +
-        " WHERE legacy_convex_id = " + legacy + " AND user_id <> " + owner + ")";
+        " WHERE (legacy_convex_id = " + legacy + " AND user_id <> " + owner + ")" +
+        " OR (user_id = " + owner + " AND legacy_convex_id <> " + legacy + "))" +
+        " AND (SELECT count(*) FROM public.subscription_states WHERE user_id = " + owner + ") <= 1";
       const dates = dateColumns(subscription);
       const values = {
         user_id: owner,
@@ -181,11 +187,11 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
       sql.push(
         "SELECT 'subscriptionStates' AS \"table\", " + legacy +
           " AS id, 'userId cannot resolve to the subscription owner' AS reason WHERE NOT (" + resolved + ");",
-        "UPDATE public.subscription_states SET legacy_convex_id = " + legacy +
-          ", updated_at = least(updated_at, " + dates.updated_at + ") WHERE id = " +
-          "(SELECT (array_agg(id))[1] FROM public.subscription_states WHERE user_id = " + owner +
-          " AND legacy_convex_id IS NULL AND source = 'open_signup_grant' HAVING count(*) = 1)" +
-          " AND " + resolved + " AND NOT EXISTS (SELECT 1 FROM public.subscription_states WHERE legacy_convex_id = " + legacy + ");",
+        "UPDATE public.subscription_states SET legacy_convex_id = " + legacy + ", updated_at = CASE WHEN" +
+          " updated_at = created_at AND source = 'open_signup_grant' AND plan = 'max'" +
+          " AND billing_cycle = 'lifetime' AND status = 'active' AND trial_used THEN least(updated_at, " +
+          dates.updated_at + ") ELSE updated_at END WHERE user_id = " + owner +
+          " AND legacy_convex_id IS NULL AND " + resolved + ";",
         upsert("subscription_states", "legacy_convex_id", values, resolved),
       );
     } catch (error) {

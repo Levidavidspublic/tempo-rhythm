@@ -31,6 +31,8 @@ test("emits auth before trigger-row reconciliation and preserves the approval de
   expect(sql).toContain("E'basic', E'monthly', E'active', FALSE, NULL, E'sub1', 1700000000005, 1700000000009");
   expect(sql.match(/ON CONFLICT \(legacy_convex_id\)/g)).toHaveLength(2);
   expect(sql.match(/WHERE excluded.updated_at >= target.updated_at/g)).toHaveLength(3);
+  expect(sql).toContain("updated_at = created_at AND approval_status = 'pending'");
+  expect(sql).toContain("updated_at = created_at AND source = 'open_signup_grant' AND plan = 'max'");
 });
 
 test("maps explicit account flags, profile fields, and epoch-ms timestamps", () => {
