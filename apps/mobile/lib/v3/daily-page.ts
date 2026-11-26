@@ -23,8 +23,17 @@ export function newBlockId(now: number = Date.now(), random: () => number = Math
 }
 
 /** The page-meta fence that marks a body as the daily page for `iso`. */
-export function dailyPageMeta(iso: string, now: number = Date.now(), random: () => number = Math.random): string {
-  const block = { id: newBlockId(now, random), v: 1, type: "page-meta", data: { pageType: "daily", date: iso, tags: [] } };
+export function dailyPageMeta(
+  iso: string,
+  now: number = Date.now(),
+  random: () => number = Math.random
+): string {
+  const block = {
+    id: newBlockId(now, random),
+    v: 1,
+    type: "page-meta",
+    data: { pageType: "daily", date: iso, tags: [] },
+  };
   return `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`\n`;
 }
 
@@ -33,8 +42,14 @@ export function dayTokens(iso: string, lang: Lang): Record<string, string> {
   const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
   const date = new Date(Date.UTC(y, m - 1, d));
   const locale = lang === "he" ? "he-IL" : "en-GB";
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(date);
-  const long = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC" }).format(date);
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(
+    date
+  );
+  const long = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(date);
   return { date: iso, weekday, day: long, title: `${weekday}, ${long}` };
 }
 
@@ -47,7 +62,9 @@ function withoutTopHeading(body: string): string {
 /** The template's own page-meta and template blocks describe the template, not the new page. */
 function withoutTemplateBlocks(body: string): string {
   return splitTempoFences(body)
-    .filter((s) => !(s.kind === "tempo" && (s.info.type === "page-meta" || s.info.type === "template")))
+    .filter(
+      (s) => !(s.kind === "tempo" && (s.info.type === "page-meta" || s.info.type === "template"))
+    )
     .map((s) => s.source)
     .join("");
 }
@@ -59,8 +76,8 @@ export function applyTokens(text: string, values: Readonly<Record<string, string
       s.kind === "tempo"
         ? s.source
         : s.source.replace(/\{\{\s*([a-zA-Z][\w-]*)\s*\}\}/g, (whole, name: string) =>
-            Object.hasOwn(values, name) ? (values[name] as string) : whole,
-          ),
+            Object.hasOwn(values, name) ? (values[name] as string) : whole
+          )
     )
     .join("");
 }
@@ -71,7 +88,7 @@ export function dailyPageDraft(
   templateBody: string,
   lang: Lang,
   now: number = Date.now(),
-  random: () => number = Math.random,
+  random: () => number = Math.random
 ): { title: string; body: string } {
   const tokens = dayTokens(iso, lang);
   const prose = applyTokens(withoutTopHeading(withoutTemplateBlocks(templateBody)), tokens);

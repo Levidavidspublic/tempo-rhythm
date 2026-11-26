@@ -133,8 +133,11 @@ export function weekRange(monday: string, lang: Lang): string {
     timeZone: "UTC",
   });
   // formatRange is not in every Hermes build; fall back to two dates joined by a dash.
-  const ranged = (fmt as Intl.DateTimeFormat & { formatRange?: (a: Date, b: Date) => string }).formatRange;
-  return typeof ranged === "function" ? ranged.call(fmt, start, end) : `${fmt.format(start)} – ${fmt.format(end)}`;
+  const ranged = (fmt as Intl.DateTimeFormat & { formatRange?: (a: Date, b: Date) => string })
+    .formatRange;
+  return typeof ranged === "function"
+    ? ranged.call(fmt, start, end)
+    : `${fmt.format(start)} – ${fmt.format(end)}`;
 }
 
 /** The part of the day a greeting uses. */
