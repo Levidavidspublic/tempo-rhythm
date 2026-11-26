@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import {
   createInsforgeSessionStore,
   type InsforgeSessionAuth,
@@ -132,5 +132,54 @@ describe("createInsforgeSessionStore", () => {
     expect(fake.listenerCount()).toBe(0);
     await fake.flush();
     expect(store.getSnapshot()).toEqual({ status: "loading" });
+  });
+
+  test("a failed lookup is reported to onError, thrown or returned", async () => {
+    const onError = mock((_error: unknown) => {});
+    const fake = fakeAuth([new Error("network"), { data: null, error: new Error("expired") }]);
+    const store = createInsforgeSessionStore(fake.auth, onError);
+    store.start();
+    await fake.flush();
+    fake.emit("tokenRefreshed");
+    await fake.flush();
+    expect(store.getSnapshot()).toEqual({ status: "signedOut" });
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
+  test("an older read that settles last does not overwrite a newer one", async () => {
+    const settle: Array<(answer: CurrentUser | Error) => void> = [];
+    const callbacks = new Set<(event: string) => void>();
+    const auth: InsforgeSessionAuth = {
+      getCurrentUser: () =>
+        new Promise((resolve, reject) => {
+          settle.push((answer) => (answer instanceof Error ? reject(answer) : resolve(answer)));
+        }),
+      onAuthStateChange(callback) {
+        callbacks.add(callback);
+        return () => callbacks.delete(callback);
+      },
+    };
+    const store = createInsforgeSessionStore(auth);
+    store.start();
+    for (const callback of callbacks) callback("signedIn");
+    expect(settle).toHaveLength(2);
+
+    settle[1]?.(signedIn("u1", "a@example.com"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.getSnapshot()).toEqual({ status: "signedIn", uid: "u1", email: "a@example.com" });
+
+    settle[0]?.(new Error("refresh failed"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.getSnapshot()).toEqual({ status: "signedIn", uid: "u1", email: "a@example.com" });
+  });
+
+  test("a throwing onError does not block the signed-out update", async () => {
+    const fake = fakeAuth([new Error("network")]);
+    const store = createInsforgeSessionStore(fake.auth, () => {
+      throw new Error("diagnostic failed");
+    });
+    store.start();
+    await fake.flush();
+    expect(store.getSnapshot()).toEqual({ status: "signedOut" });
   });
 });
