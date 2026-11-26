@@ -8,6 +8,7 @@ import { DATA_BACKEND } from "./lib/backend-flag";
 import { E2E_WIRING_ROUTES } from "./lib/e2eWiringRoutes";
 import { hasVerifiedInsforgeSession } from "./lib/insforge/server-session";
 import {
+  CALENDAR_E2E_BYPASS_OPTION,
   decideEntryRedirect,
   hasAuthenticatedEntrySession,
   isInsforgeRefreshRequest,
@@ -28,20 +29,20 @@ const isCoreTaskViewRoute = createRouteMatcher([
 ]);
 
 // Wiring smoke specs (tests/e2e/wiring/) open these signed out under the same dev-only bypass.
-const isWiringE2ERoute = createRouteMatcher([...E2E_WIRING_ROUTES]);
+const isWiringE2eRoute = createRouteMatcher([...E2E_WIRING_ROUTES]);
 
 const appProxy = convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_AUTH_BYPASS === "1" &&
     process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1" &&
-    (isCoreTaskViewRoute(request) || isWiringE2ERoute(request))
+    (isCoreTaskViewRoute(request) || isWiringE2eRoute(request))
   ) {
     return;
   }
 
   const { convexAuth } = ctx;
-  const isCalendarE2EBypass =
+  const isCalendarE2eBypass =
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_PUBLIC_CALENDAR === "1" &&
     request.nextUrl.pathname === "/calendar";
@@ -55,7 +56,7 @@ const appProxy = convexAuthNextjsMiddleware(async (request: NextRequest, ctx) =>
     search: request.nextUrl.search,
     isAuthenticated,
     isPublicRoute: isPublicRoute(request),
-    isCalendarE2EBypass,
+    [CALENDAR_E2E_BYPASS_OPTION]: isCalendarE2eBypass,
   });
   if (redirectTo) {
     return nextjsMiddlewareRedirect(request, redirectTo);

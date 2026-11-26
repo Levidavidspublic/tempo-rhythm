@@ -2,6 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { getAccessTokenCookieName, getRefreshTokenCookieName } from "@insforge/sdk/ssr";
 import { NextRequest } from "next/server";
 import {
+  CALENDAR_E2E_BYPASS_OPTION,
   decideEntryRedirect,
   hasAuthenticatedEntrySession,
   isInsforgeRefreshRequest,
@@ -21,7 +22,7 @@ function request(withAccessCookie = false) {
 }
 
 function upstream(respond: () => Response) {
-  const fetcher = mock(async (_input: Parameters<typeof fetch>[0], _init?: RequestInit) =>
+  const fetcher = mock<(...args: Parameters<typeof fetch>) => Promise<Response>>(async () =>
     respond()
   );
   return Object.assign(fetcher, { preconnect: fetch.preconnect });
@@ -62,10 +63,7 @@ describe("server-verified InsForge session", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  test.each([
-    "INVALID_TOKEN",
-    "TOKEN_EXPIRED",
-  ])("denies a session the provider rejects as %s", async (error) => {
+  test.each(["INVALID_TOKEN", "TOKEN_EXPIRED"])("denies provider rejection %s", async (error) => {
     const fetcher = upstream(() => Response.json({ error }, { status: 401 }));
     expect(await hasVerifiedInsforgeSession(request(true), provider, fetcher)).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(1);
@@ -122,7 +120,7 @@ describe("app entry auth policy", () => {
         search: "",
         isAuthenticated: false,
         isPublicRoute: PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern === pathname),
-        isCalendarE2EBypass: false,
+        [CALENDAR_E2E_BYPASS_OPTION]: false,
       }) ?? "",
       origin
     );
