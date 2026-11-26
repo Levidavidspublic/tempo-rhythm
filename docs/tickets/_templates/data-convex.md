@@ -2,7 +2,8 @@
 ticket: TEMPO-Bxx-01
 batch: Bxx
 type: data
-lane: claude             # data tickets are always claude
+lane: claude             # ticket 0 of the loop: the Convex architecture for EVERY component in the loop
+browser_test: false
 scope:
   - convex/
 depends_on: []
@@ -14,9 +15,9 @@ hold: false              # data tickets are never held
 ---
 
 FOR: the component tickets of batch Bxx
-WHEN: first in the batch; components depend on it
+WHEN: ticket 0 - first in the loop; it must land on integration (CI only, no Bugbot) before any component ticket starts
 WHY: <PRD section(s)>
-GOAL: provide every function in docs/contracts/Bxx.md
+GOAL: provide the schema tables, indexes and every query / mutation / action in docs/contracts/Bxx.md for ALL components of the loop
 SCOPE: convex/ only (schema, functions, and the regenerated convex/_generated/)
 MUTATES: <schema.ts tables/indexes, convex/<module>.ts files>
 STEPS:
