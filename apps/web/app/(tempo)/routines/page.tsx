@@ -1,23 +1,18 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: routines
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Routine library.
- * @queries: routines.list
- * @mutations: routines.create
+ * @source: docs/design/v3/screens/web/routines.html
+ * @summary: Routines as cards. A routine is a page tagged #routine; its list items are the steps.
+ * @queries: notes.list
+ * @mutations: notes.create (New routine)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { RoutinesScreen } from "@/components/routines/RoutinesScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Routines"
-      category="Library"
-      source="screens-3.jsx"
-      summary="Routine library."
-    />
+    <div data-testid="routines-route">
+      <RoutinesScreen />
+    </div>
   );
 }

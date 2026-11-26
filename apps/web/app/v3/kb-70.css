@@ -1,0 +1,10 @@
+/* KB-70: pending explanation and isolated notification gallery. */
+.kb70-feedback { display: block; color: var(--tp-ink-muted); font-size: var(--tp-text-sm); line-height: var(--tp-leading-body); }
+.kb70-gallery { display: grid; gap: var(--tp-space-4); max-width: var(--tp-paper-max); min-width: 0; margin-inline: auto; padding: var(--tp-space-4); color: var(--tp-ink); background: var(--tp-paper); font-family: var(--tp-font-sans); }
+.kb70-gallery__controls, .kb70-gallery__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); min-width: 0; }
+.kb70-gallery__controls { margin: 0; padding: 0; border: 0; }
+.kb70-gallery button { min-width: var(--tp-touch); min-height: var(--tp-touch); }
+.kb70-gallery button:focus-visible { outline: var(--tp-focus-w) solid var(--tp-accent); outline-offset: var(--tp-focus-gap); }
+.kb70-gallery .tp-list-row, .kb70-gallery .tp-list-row__body, .kb70-gallery .nt-title, .kb70-gallery .nt-text { min-width: 0; overflow-wrap: anywhere; }
+.kb70-gallery__result { color: var(--tp-ink); }
+@media (prefers-reduced-motion: reduce) { .kb70-gallery *, .kb70-feedback { animation-duration: 0s; transition-duration: 0s; } }
