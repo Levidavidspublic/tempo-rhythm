@@ -2,54 +2,194 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { requestInsforgeOtp, verifyInsforgeOtp } from "@/app/sign-in/insforge-actions";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
+import { DATA_BACKEND } from "@/lib/backend-flag";
+import { normalizeSignInEmail } from "@/lib/email-link-sign-in";
 
 export type SignInFormProps = {
   /** Page layout uses Soft Editorial; modal keeps compact dark styling */
   variant?: "page" | "modal";
   nextPath?: string;
-  /** "sign-up" only changes the copy; both flows send the same magic link. */
+  /** "sign-up" only changes the copy; both flows use the same auth method. */
   flow?: "sign-in" | "sign-up";
   onSuccess?: () => void;
   onSwitch?: () => void;
 };
 
-/**
- * Magic-link only auth form (Convex Auth Resend provider).
- * The same link signs in an existing account or creates a new one.
- */
-export function SignInForm({
+type PendingInsforgeOtp = Readonly<{ email: string; nextPath: string }>;
+
+let pendingInsforgeOtp: PendingInsforgeOtp | null = null;
+
+export function getPostAuthDestination(nextPath: string | null | undefined): string {
+  const path = nextPath?.trim();
+  if (!path?.startsWith("/") || path.startsWith("//") || /[\s\\]/u.test(path)) return "/today";
+
+  try {
+    const origin = "https://tempo.invalid";
+    const url = new URL(path, origin);
+    const pathname = decodeURIComponent(url.pathname);
+    if (
+      url.origin !== origin ||
+      pathname.startsWith("//") ||
+      /[\\\p{Cc}]/u.test(pathname) ||
+      /%(?:2f|5c)/i.test(url.pathname) ||
+      /^\/(?:dashboard|sign-in|sign-up)(?:\/|$)/i.test(pathname)
+    ) {
+      return "/today";
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/today";
+  }
+}
+
+export function getPendingInsforgeOtp(): PendingInsforgeOtp | null {
+  return pendingInsforgeOtp;
+}
+
+export function clearPendingInsforgeOtp() {
+  pendingInsforgeOtp = null;
+}
+
+export async function requestInsforgeCode(email: string): Promise<string | null> {
+  let status: Awaited<ReturnType<typeof requestInsforgeOtp>>["status"];
+  try {
+    ({ status } = await requestInsforgeOtp(email));
+  } catch {
+    status = "unavailable";
+  }
+  if (status === "requested") return null;
+  if (status === "invalid-email") return "Enter a valid email address.";
+  return "We couldn't request a code right now. Try again in a moment.";
+}
+
+export async function startInsforgeSignIn(
+  rawEmail: string,
+  nextPath: string | undefined,
+  navigate: (href: string) => void
+): Promise<string | null> {
+  clearPendingInsforgeOtp();
+  const email = normalizeSignInEmail(rawEmail);
+  if (!email) return "Enter a valid email address.";
+
+  const error = await requestInsforgeCode(email);
+  if (error) return error;
+
+  pendingInsforgeOtp = { email, nextPath: getPostAuthDestination(nextPath) };
+  navigate("/sign-in/verify");
+  return null;
+}
+
+export async function finishInsforgeSignIn(
+  challenge: PendingInsforgeOtp,
+  code: string,
+  navigate: (href: string) => void
+): Promise<string | null> {
+  if (challenge !== pendingInsforgeOtp) return "Request a new code to continue.";
+
+  let status: Awaited<ReturnType<typeof verifyInsforgeOtp>>["status"];
+  try {
+    ({ status } = await verifyInsforgeOtp(challenge.email, code));
+  } catch {
+    status = "unavailable";
+  }
+
+  if (challenge !== pendingInsforgeOtp) return "Request a new code to continue.";
+  if (status === "invalid-code") return "That code didn't work. Try again or request a new one.";
+  if (status === "invalid-email") return "Request a new code to continue.";
+  if (status === "unavailable")
+    return "We couldn't verify your code right now. Try again in a moment.";
+
+  clearPendingInsforgeOtp();
+  navigate(challenge.nextPath);
+  return null;
+}
+
+export async function sendConvexMagicLink(
+  signIn: ReturnType<typeof useAuthActions>["signIn"],
+  email: string,
+  nextPath?: string
+): Promise<null> {
+  await signIn("resend", { email, ...(nextPath ? { redirectTo: nextPath } : {}) });
+  return null;
+}
+
+export function SignInForm(props: SignInFormProps) {
+  return DATA_BACKEND === "insforge" ? (
+    <InsforgeSignInForm {...props} />
+  ) : (
+    <ConvexSignInForm {...props} />
+  );
+}
+
+function InsforgeSignInForm({ nextPath, ...props }: SignInFormProps) {
+  const router = useRouter();
+  return (
+    <EmailSignInForm
+      {...props}
+      nextPath={getPostAuthDestination(nextPath)}
+      otp={true}
+      requestEmail={(email) => startInsforgeSignIn(email, nextPath, (href) => router.push(href))}
+    />
+  );
+}
+
+function ConvexSignInForm({ nextPath, ...props }: SignInFormProps) {
+  const { signIn } = useAuthActions();
+  return (
+    <EmailSignInForm
+      {...props}
+      nextPath={nextPath}
+      requestEmail={(email) => sendConvexMagicLink(signIn, email, nextPath)}
+    />
+  );
+}
+
+type EmailSignInFormProps = SignInFormProps & {
+  otp?: boolean;
+  requestEmail: (email: string) => Promise<string | null>;
+};
+
+function EmailSignInForm({
   variant = "modal",
   nextPath,
   flow = "sign-in",
   onSuccess,
   onSwitch,
-}: SignInFormProps) {
-  const { signIn } = useAuthActions();
+  otp = false,
+  requestEmail,
+}: EmailSignInFormProps) {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const fieldId = `${flow}-email`;
 
-  const isPage = variant === "page";
   const isSignUp = flow === "sign-up";
+  const submitLabel = otp ? "Request sign-in code" : "Send magic link";
+  const pendingLabel = otp ? "Requesting code…" : "Sending link…";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     try {
-      await signIn("resend", {
-        email,
-        ...(nextPath ? { redirectTo: nextPath } : {}),
-      });
-      setMagicLinkSent(true);
+      const requestError = await requestEmail(email);
+      if (requestError) {
+        setError(requestError);
+        return;
+      }
+      if (!otp) setMagicLinkSent(true);
       onSuccess?.();
     } catch (err: unknown) {
-      const message = (err as { message?: string }).message || "";
-      if (message.includes("TooManyRequests")) {
+      const message = (err as { message?: string } | null)?.message || "";
+      if (otp) {
+        setError("We couldn't continue sign-in right now. Try again in a moment.");
+      } else if (message.includes("TooManyRequests")) {
         setError("You've tried a few times. Please pause for a moment and try again.");
       } else {
         setError("We couldn't send the link yet. Please check your email and try again.");
@@ -62,27 +202,18 @@ export function SignInForm({
   const otherHref = (pathname: string) =>
     nextPath ? { pathname, query: { next: nextPath } } : pathname;
 
-  const inputClass = isPage
-    ? "w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-primary"
-    : "w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition";
-
-  const labelClass = isPage
-    ? "mb-2 block text-sm font-medium text-foreground"
-    : "block text-sm font-medium text-gray-300 mb-2";
-
-  const linkClass = isPage
-    ? "font-semibold text-primary hover:underline"
-    : "font-semibold text-orange-500 transition hover:text-orange-400";
-
-  if (isPage) {
+  if (variant === "page") {
     return (
       <PageCard
         flow={flow}
+        fieldId={fieldId}
         email={email}
         setEmail={setEmail}
         isLoading={isLoading}
         error={error}
         sent={magicLinkSent}
+        otp={otp}
+        submitText={isLoading ? pendingLabel : submitLabel}
         onSubmit={handleSubmit}
         onReset={() => {
           setMagicLinkSent(false);
@@ -95,15 +226,8 @@ export function SignInForm({
 
   if (magicLinkSent) {
     return (
-      <div className={isPage ? "w-full max-w-md text-center" : "text-center"}>
-        {isPage && (
-          <div className="mb-8 text-center">
-            <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-              Check your email
-            </h1>
-          </div>
-        )}
-        <p className={`mb-6 ${isPage ? "text-muted-foreground" : "text-gray-400"}`}>
+      <div className="text-center">
+        <p className="mb-6 text-gray-400">
           We sent a sign-in link to <strong>{email}</strong>. Open it on any device to continue.
         </p>
         <button
@@ -112,7 +236,7 @@ export function SignInForm({
             setMagicLinkSent(false);
             setError("");
           }}
-          className={`text-sm ${isPage ? "text-primary hover:underline" : "text-orange-500 hover:text-orange-400 transition"}`}
+          className="text-sm text-orange-500 hover:text-orange-400 transition"
         >
           Use a different email
         </button>
@@ -121,43 +245,30 @@ export function SignInForm({
   }
 
   return (
-    <div className={isPage ? "w-full max-w-md" : ""}>
-      {isPage && (
-        <div className="mb-8 text-center">
-          <h1 className="font-heading text-4xl font-semibold tracking-tight text-gradient-primary">
-            {isSignUp ? "Create account" : "Welcome back"}
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            {isSignUp ? "Join Tempo Flow — free to start" : "Sign in to Tempo Flow"}
-          </p>
-        </div>
-      )}
-
+    <div>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor={`${flow}-email`} className={labelClass}>
+          <label htmlFor={fieldId} className="block text-sm font-medium text-gray-300 mb-2">
             Email
           </label>
           <input
-            id={`${flow}-email`}
+            id={fieldId}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
+            className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
             placeholder="you@example.com"
             required={true}
             disabled={isLoading}
             autoComplete="email"
+            aria-describedby={error ? `${fieldId}-error` : undefined}
           />
         </div>
 
         {error && (
           <div
-            className={
-              isPage
-                ? "rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-                : "bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm"
-            }
+            id={`${fieldId}-error`}
+            className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm"
             role="alert"
           >
             {error}
@@ -167,36 +278,28 @@ export function SignInForm({
         <button
           type="submit"
           disabled={isLoading}
-          className={
-            isPage
-              ? "w-full rounded-xl bg-linear-to-r from-[#D97757] to-[#E8A87C] py-3 font-semibold text-primary-foreground shadow-md transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-              : "w-full bg-linear-to-r from-orange-500 to-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          }
+          className="w-full bg-linear-to-r from-orange-500 to-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Sending link…
+              {pendingLabel}
             </span>
           ) : (
-            "Send magic link"
+            submitLabel
           )}
         </button>
       </form>
 
-      <p
-        className={`mt-6 text-center text-sm ${isPage ? "text-muted-foreground" : "text-gray-400"}`}
-      >
+      <p className="mt-6 text-center text-sm text-gray-400">
         {isSignUp ? "Already have an account? " : "Don't have an account? "}
-        {isPage ? (
-          <Link href={otherHref(isSignUp ? "/sign-in" : "/sign-up")} className={linkClass}>
-            {isSignUp ? "Sign in" : "Create one"}
-          </Link>
-        ) : (
-          <button type="button" onClick={() => onSwitch?.()} className={linkClass}>
-            {isSignUp ? "Sign in" : "Create one"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onSwitch}
+          className="font-semibold text-orange-500 transition hover:text-orange-400"
+        >
+          {isSignUp ? "Sign in" : "Create one"}
+        </button>
       </p>
     </div>
   );
@@ -204,11 +307,14 @@ export function SignInForm({
 
 type PageCardProps = {
   flow: "sign-in" | "sign-up";
+  fieldId: string;
   email: string;
   setEmail: (email: string) => void;
   isLoading: boolean;
   error: string;
   sent: boolean;
+  otp: boolean;
+  submitText: string;
   onSubmit: (e: React.FormEvent) => void;
   onReset: () => void;
   otherHref: string | { pathname: string; query: { next: string } };
@@ -218,9 +324,28 @@ type PageCardProps = {
  * The v3 auth card (docs/design/v3/screens/web/sign-in.html, sign-up.html): one field, one
  * primary action, no password anywhere.
  */
-function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onReset, otherHref }: PageCardProps) {
+function PageCard({
+  flow,
+  fieldId,
+  email,
+  setEmail,
+  isLoading,
+  error,
+  sent,
+  otp,
+  submitText,
+  onSubmit,
+  onReset,
+  otherHref,
+}: PageCardProps) {
   const isSignUp = flow === "sign-up";
-  const fieldId = `${flow}-email`;
+  let description = "No password. We'll email you a link that signs you in.";
+  if (otp) {
+    description = "No password. Request a six-digit code to continue.";
+  } else if (isSignUp) {
+    description =
+      "No password. We'll email you a link that makes your account, and Amit approves it by hand.";
+  }
   return (
     <div className="tp-auth-card" data-component="AuthCard">
       {/* Outside the app shell, so the page brings the icon sprite itself. */}
@@ -242,7 +367,11 @@ function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onR
               </p>
             ) : null}
           </div>
-          <button type="button" className="tp-btn tp-btn--secondary tp-btn--block" onClick={onReset}>
+          <button
+            type="button"
+            className="tp-btn tp-btn--secondary tp-btn--block"
+            onClick={onReset}
+          >
             Use a different email
           </button>
         </>
@@ -250,14 +379,10 @@ function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onR
         <>
           <div>
             <h1 className="tp-auth-card__title">{isSignUp ? "Create your account" : "Sign in"}</h1>
-            <p className="tp-auth-card__lede">
-              {isSignUp
-                ? "No password. We'll email you a link that makes your account, and Amit approves it by hand."
-                : "No password. We'll email you a link that signs you in."}
-            </p>
+            <p className="tp-auth-card__lede">{description}</p>
           </div>
           {error ? (
-            <div className="tp-notice" data-tone="danger" role="alert">
+            <div id={`${fieldId}-error`} className="tp-notice" data-tone="danger" role="alert">
               <span className="tp-notice__icon">
                 <TpIcon name="alert" size="sm" />
               </span>
@@ -282,16 +407,24 @@ function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onR
                 required={true}
                 disabled={isLoading}
                 autoComplete="email"
+                aria-describedby={error ? `${fieldId}-error` : undefined}
               />
             </div>
-            <button type="submit" className="tp-btn tp-btn--primary tp-btn--block" disabled={isLoading}>
+            <button
+              type="submit"
+              className="tp-btn tp-btn--primary tp-btn--block"
+              disabled={isLoading}
+            >
               <TpIcon name="mail" size="sm" />
-              <span>{isLoading ? "Sending link…" : "Send magic link"}</span>
+              <span>{submitText}</span>
             </button>
           </form>
           <p className="tp-auth-card__foot">
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
-            <Link href={otherHref} className="font-semibold text-foreground underline underline-offset-2">
+            <Link
+              href={otherHref}
+              className="font-semibold text-foreground underline underline-offset-2"
+            >
               {isSignUp ? "Sign in" : "Create one"}
             </Link>
           </p>
