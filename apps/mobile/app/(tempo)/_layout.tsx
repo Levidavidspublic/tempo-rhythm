@@ -26,7 +26,11 @@ export default function TempoLayout() {
 
   return (
     <ToastProvider>
-      <StatusBar style={dark ? "light" : "dark"} backgroundColor={colors.ground} translucent={false} />
+      <StatusBar
+        style={dark ? "light" : "dark"}
+        backgroundColor={colors.ground}
+        translucent={false}
+      />
       <Stack
         screenOptions={{
           headerShown: false,

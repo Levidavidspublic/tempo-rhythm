@@ -25,7 +25,17 @@ import type { Id } from "@/convex/_generated/dataModel";
 
 const STEPS = 5;
 
-function Choice({ label, hint, checked, onPress }: { label: string; hint: string; checked: boolean; onPress: () => void }) {
+function Choice({
+  label,
+  hint,
+  checked,
+  onPress,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onPress: () => void;
+}) {
   const { colors: c, row } = usePrefs();
   return (
     <Pressable
@@ -33,7 +43,13 @@ function Choice({ label, hint, checked, onPress }: { label: string; hint: string
       accessibilityRole="radio"
       accessibilityLabel={`${label}, ${hint}`}
       accessibilityState={{ checked }}
-      style={{ flexDirection: row, alignItems: "flex-start", gap: 12, minHeight: TOUCH, paddingVertical: 8 }}
+      style={{
+        flexDirection: row,
+        alignItems: "flex-start",
+        gap: 12,
+        minHeight: TOUCH,
+        paddingVertical: 8,
+      }}
     >
       <View
         style={{
@@ -48,7 +64,9 @@ function Choice({ label, hint, checked, onPress }: { label: string; hint: string
           justifyContent: "center",
         }}
       >
-        {checked ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.ink }} /> : null}
+        {checked ? (
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.ink }} />
+        ) : null}
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <T>{label}</T>
@@ -68,7 +86,9 @@ export default function OnboardingScreen() {
   const session = useTempoSession();
   const offline = useOffline();
   const params = useLocalSearchParams<{ step?: string }>();
-  const [step, setStep] = useState(() => Math.min(STEPS, Math.max(1, Number.parseInt(params.step ?? "1", 10) || 1)));
+  const [step, setStep] = useState(() =>
+    Math.min(STEPS, Math.max(1, Number.parseInt(params.step ?? "1", 10) || 1))
+  );
   const [name, setName] = useState("");
   const [dial, setDial] = useState(4);
   const [dump, setDump] = useState("");
@@ -144,7 +164,10 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: c.ground }}>
       <StatusBar style={p.dark ? "light" : "dark"} backgroundColor={c.ground} translucent={false} />
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 24 }}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 24 }}
+      >
         {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
         <Row style={{ alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <View accessible accessibilityLiveRegion="polite">
@@ -171,19 +194,47 @@ export default function OnboardingScreen() {
         {step === 1 ? (
           <View style={{ gap: 20 }}>
             <Head title={t("s1.title")} lede={t("s1.lede")} />
-            <View accessibilityRole="radiogroup" accessibilityLabel={t("lang.legend")} style={{ gap: 4 }}>
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("lang.legend")}
+              style={{ gap: 4 }}
+            >
               <T size="sm" weight="600">
                 {t("lang.legend")}
               </T>
-              <Choice label="English" hint={t("lang.en.hint")} checked={p.lang === "en"} onPress={() => p.setLang("en")} />
-              <Choice label="עברית" hint={t("lang.he.hint")} checked={p.lang === "he"} onPress={() => p.setLang("he")} />
+              <Choice
+                label="English"
+                hint={t("lang.en.hint")}
+                checked={p.lang === "en"}
+                onPress={() => p.setLang("en")}
+              />
+              <Choice
+                label="עברית"
+                hint={t("lang.he.hint")}
+                checked={p.lang === "he"}
+                onPress={() => p.setLang("he")}
+              />
             </View>
-            <View accessibilityRole="radiogroup" accessibilityLabel={t("font.legend")} style={{ gap: 4 }}>
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t("font.legend")}
+              style={{ gap: 4 }}
+            >
               <T size="sm" weight="600">
                 {t("font.legend")}
               </T>
-              <Choice label={t("font.std")} hint={t("font.std.hint")} checked={!p.readingFont} onPress={() => p.setReadingFont(false)} />
-              <Choice label={t("font.dys")} hint={t("font.dys.hint")} checked={p.readingFont} onPress={() => p.setReadingFont(true)} />
+              <Choice
+                label={t("font.std")}
+                hint={t("font.std.hint")}
+                checked={!p.readingFont}
+                onPress={() => p.setReadingFont(false)}
+              />
+              <Choice
+                label={t("font.dys")}
+                hint={t("font.dys.hint")}
+                checked={p.readingFont}
+                onPress={() => p.setReadingFont(true)}
+              />
             </View>
           </View>
         ) : null}
