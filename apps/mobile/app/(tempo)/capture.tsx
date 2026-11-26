@@ -88,7 +88,9 @@ function CaptureSheet() {
     // A retry from the failure notice leaves newer words in the box alone.
     if (textRef.current.trim() === title) change("");
     const where = dest;
-    const created = createQuick(where === "today" ? { title, dueAt: endOfDayDueAt(today.iso) } : { title });
+    const created = createQuick(
+      where === "today" ? { title, dueAt: endOfDayDueAt(today.iso) } : { title }
+    );
     created
       .then((taskId: Id<"tasks">) => {
         toast({
@@ -111,17 +113,38 @@ function CaptureSheet() {
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: c.glassSolid }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={{ alignSelf: "center", width: 40, height: 4, marginTop: 8, borderRadius: 999, backgroundColor: c.lineStrong }} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View
+          style={{
+            alignSelf: "center",
+            width: 40,
+            height: 4,
+            marginTop: 8,
+            borderRadius: 999,
+            backgroundColor: c.lineStrong,
+          }}
+        />
         <Row style={{ alignItems: "center", paddingVertical: 8, paddingHorizontal: 8 }}>
           <View style={{ flex: 1, paddingHorizontal: 12 }}>
             <T size="lg" serif weight="500" accessibilityRole="header">
               {t("cap.title")}
             </T>
           </View>
-          <Button variant="ghost" iconOnly icon={X} accessibilityLabel={t("cap.close")} onPress={close} />
+          <Button
+            variant="ghost"
+            iconOnly
+            icon={X}
+            accessibilityLabel={t("cap.close")}
+            onPress={close}
+          />
         </Row>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 20 }}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 20 }}
+        >
           {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
           {failed ? (
             <Notice
@@ -130,7 +153,14 @@ function CaptureSheet() {
               title={t("err.title")}
               body={t("err.body")}
               live="assertive"
-              action={<Button small icon={RefreshCw} label={t("state.retry")} onPress={() => save(failed)} />}
+              action={
+                <Button
+                  small
+                  icon={RefreshCw}
+                  label={t("state.retry")}
+                  onPress={() => save(failed)}
+                />
+              }
             />
           ) : null}
           <TextField
@@ -180,7 +210,16 @@ function CaptureSheet() {
             </T>
           </View>
         </ScrollView>
-        <View style={{ gap: 8, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderTopWidth: 1, borderTopColor: c.line }}>
+        <View
+          style={{
+            gap: 8,
+            paddingHorizontal: 20,
+            paddingTop: 12,
+            paddingBottom: 12,
+            borderTopWidth: 1,
+            borderTopColor: c.line,
+          }}
+        >
           <Button
             variant="primary"
             block
