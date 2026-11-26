@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — sign-in.html */
+  .si-foot { display: grid; gap: var(--tp-space-3); justify-items: center; }
+</style>
+</head>
+<body>
+<!--
+@screen   Sign in
+@route    apps/web/app/(auth)/sign-in/page.tsx
+@layout   Auth
+@data     next = searchParams.next        // where to go after sign-in; defaults to /today
+@actions  send magic link -> auth.sendMagicLink({ email, next })   // Resend, from noreply@tempoflow.dev, link valid 30 minutes; same answer whether or not the email has access
+@actions  continue as guest -> auth.continueAsGuest({})           // PREVIEW ONLY: preview.tempoflow.dev, never on live
+@actions  new here -> link to /sign-up
+@states   default | empty | loading | error | offline  (?state=)   + sending, invalid (?state=sending | ?state=invalid)
+@flow     1. No password anywhere. One field: email.
+          2. "Send magic link" is the one primary action. Empty or malformed email shows the error summary and the message under the field.
+          3. While sending, the button reads "Sending…" and can't be pressed twice.
+          4. On success go to /link-sent with the email (and next).
+          5. Error (?state=error): "Couldn't send the link. Nothing was lost." The email stays in the field.
+          6. Offline: banner, button disabled with a reason in words.
+          7. On preview only, an "or" divider and "Continue as guest" (secondary, never accent).
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main id="main" class="tp-auth" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card + form | props: { title: 'Sign in', lede } | events: onSubmit -> auth.sendMagicLink -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <a class="tp-auth-card__brand" href="landing.html" data-i18n="brand">Tempo</a>
+    <div>
+      <h1 class="tp-auth-card__title" data-i18n="title">Sign in</h1>
+      <p class="tp-auth-card__lede" data-i18n="lede">No password. We'll email you a link that signs you in.</p>
+    </div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">We can send your link when you're back online.</span></span>
+    </div>
+
+    <!-- @component StateError | shadcn: alert | props: { what: 'link' } | events: onRetry -> submit again -->
+    <div class="tp-notice" data-tone="danger" role="alert" data-component="StateError" data-state-show="error">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't send the link.</span> <span data-i18n="err.body">Nothing was lost. Try again in a moment.</span></span>
+    </div>
+
+    <!-- @component FormErrorSummary | shadcn: alert | props: { errors: {field, text}[] } | events: link -> focus field -->
+    <div class="tp-error-summary" role="alert" tabindex="-1" data-component="FormErrorSummary" id="si-summary" hidden>
+      <p class="tp-error-summary__title" data-i18n="sum.title">Please check one thing</p>
+      <ul role="list"><li><a href="#si-email" data-i18n="err.email">Enter your email, like name@example.com</a></li></ul>
+    </div>
+
+    <!-- @component Form | shadcn: form | props: — | events: onSubmit -> auth.sendMagicLink({ email, next }) -->
+    <form class="tp-form" id="si-form" data-component="Form" action="link-sent.html" method="get" novalidate>
+      <!-- @component EmailField | shadcn: input | props: { id: 'si-email', label: 'Email' } | events: — -->
+      <div class="tp-field" data-component="EmailField">
+        <label class="tp-label" for="si-email" data-i18n="email.label">Email</label>
+        <input class="tp-input" id="si-email" name="email" type="email" autocomplete="email" inputmode="email" dir="ltr" spellcheck="false" required aria-describedby="si-email-help si-email-error" placeholder="name@example.com">
+        <p class="tp-help" id="si-email-help" data-i18n="email.help">Use the email you asked to join with.</p>
+        <p class="tp-error-text" id="si-email-error" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="err.email">Enter your email, like name@example.com</span></p>
+      </div>
+      <div class="tp-form__actions">
+        <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" id="si-submit" aria-describedby="si-note"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg><span data-submit-label data-i18n="submit">Send magic link</span></button>
+      </div>
+      <p class="tp-small tp-muted" id="si-note" role="status" data-note data-i18n="note">The link works for 30 minutes.</p>
+    </form>
+
+    <!-- PREVIEW-ONLY: Continue as guest renders on preview.tempoflow.dev only, never on live -->
+    <!-- @component DividerText | shadcn: separator | props: { label: 'or' } | events: — -->
+    <p class="tp-divider-text" data-component="DividerText" data-i18n="or">or</p>
+    <!-- @component GuestButton | shadcn: button | props: — | events: onClick -> auth.continueAsGuest -->
+    <button class="tp-btn tp-btn--secondary tp-btn--block" type="button" id="si-guest" data-component="GuestButton" aria-describedby="si-guest-help"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg><span data-i18n="guest">Continue as guest</span></button>
+    <p class="tp-help" id="si-guest-help" data-i18n="guest.help">Try it without an account. Guest notes stay on this preview.</p>
+
+    <div class="tp-auth-card__foot si-foot">
+      <p><span data-i18n="foot.new">New here?</span> <a class="tp-btn tp-btn--link" href="sign-up.html" data-i18n="foot.join">Ask to join</a></p>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "Sign in · Tempo", "sending": "Sending…", "offline.note": "You're offline. This will work when you're back." },
+  he: {
+    "doc.title": "כניסה · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "lang.label": "שפה",
+    "title": "כניסה", "lede": "בלי סיסמה. נשלח לך במייל קישור שמכניס אותך.",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "נוכל לשלוח את הקישור כשהחיבור יחזור.",
+    "err.title": "לא הצלחנו לשלוח את הקישור.", "err.body": "שום דבר לא אבד. נסו שוב בעוד רגע.",
+    "sum.title": "כדאי לבדוק דבר אחד",
+    "email.label": "מייל", "email.help": "המייל שאיתו ביקשת להצטרף.", "err.email": "כתבו את המייל שלכם, למשל name@example.com",
+    "submit": "שליחת קישור כניסה", "note": "הקישור עובד במשך 30 דקות.", "sending": "שולחים…", "offline.note": "אין חיבור. זה יעבוד כשהחיבור יחזור.",
+    "or": "או", "guest": "המשך כאורח/ת", "guest.help": "לנסות בלי חשבון. פתקי אורח נשארים בגרסת התצוגה הזו.",
+    "foot.new": "חדשים כאן?", "foot.join": "בקשה להצטרף"
+  }
+};
+
+(function () {
+  var doc = document, root = doc.documentElement;
+  var params = new URLSearchParams(location.search);
+  var form = doc.getElementById("si-form"), email = doc.getElementById("si-email"), summary = doc.getElementById("si-summary");
+  var submit = doc.getElementById("si-submit"), label = submit.querySelector("[data-submit-label]"), note = doc.getElementById("si-note");
+  var base = {};
+
+  var lang = root.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  doc.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () { try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {} });
+  });
+
+  /** Validate on the client. REAL: zod schema shared with convex auth.sendMagicLink. STATE: aria-invalid, error text, summary. */
+  function validate() {
+    var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+    if (ok) email.removeAttribute("aria-invalid"); else email.setAttribute("aria-invalid", "true");
+    doc.getElementById("si-email-error").hidden = ok;
+    summary.hidden = ok;
+    if (!ok) summary.focus();
+    return ok;
+  }
+
+  /** STATE: button disabled + "Sending…", form aria-busy. */
+  function setSending(on) {
+    submit.disabled = on; form.setAttribute("aria-busy", String(on));
+    label.textContent = on ? TP.t("sending") : base.label;
+  }
+  function setOffline(on) {
+    submit.disabled = on; note.textContent = on ? TP.t("offline.note") : base.note;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (root.getAttribute("data-state") === "offline") return;
+    if (!validate()) return;
+    setSending(true);
+    // REAL: convex auth.sendMagicLink({ email, next }) — Resend email from noreply@tempoflow.dev, link valid 30 minutes
+    setTimeout(function () {
+      var q = "email=" + encodeURIComponent(email.value.trim());
+      if (params.get("next")) q += "&next=" + encodeURIComponent(params.get("next"));
+      if (params.get("lang")) q += "&lang=" + params.get("lang");
+      location.href = "link-sent.html?" + q;
+    }, 900);
+  });
+  email.addEventListener("input", function () { if (email.getAttribute("aria-invalid")) { email.removeAttribute("aria-invalid"); doc.getElementById("si-email-error").hidden = true; } });
+
+  doc.getElementById("si-guest").addEventListener("click", function () {
+    // REAL: convex auth.continueAsGuest({}) — anonymous session; preview.tempoflow.dev only
+    location.href = "onboarding.html" + (params.get("lang") ? "?lang=" + params.get("lang") : "");
+  });
+
+  TP.onReady = function (p) {
+    base.label = label.textContent; base.note = note.textContent;
+    var s = p.get("state");
+    if (s === "sending") { email.value = "maya@example.com"; setSending(true); }
+    if (s === "invalid") { email.value = "maya@"; validate(); }
+    if (s === "error") email.value = "maya@example.com";
+    if (s === "offline") setOffline(true);
+  };
+})();
+</script>
+</body>
+</html>

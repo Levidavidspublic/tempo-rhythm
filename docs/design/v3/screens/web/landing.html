@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempo Flow — your brain's operating system</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — landing.html */
+  .ld-main { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .ld-block { display: grid; gap: var(--tp-space-8); padding-block: var(--tp-space-12); border-top: 1px solid var(--tp-line); min-width: 0; }
+  .ld-head { display: grid; gap: var(--tp-space-3); max-width: var(--tp-measure); }
+  .ld-figure-list { display: grid; gap: var(--tp-space-3); list-style: none; margin: 0; padding: 0; }
+  .ld-who { display: grid; gap: var(--tp-space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 3.5)), 1fr)); }
+  .ld-pricing-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
+  .ld-nav-end { display: flex; align-items: center; gap: var(--tp-space-2); }
+  .ld-offline { margin-block-start: var(--tp-space-4); }
+</style>
+</head>
+<body>
+<!--
+@screen   Landing
+@route    apps/web/app/(marketing)/page.tsx
+@layout   Marketing
+@data     none — static marketing page; prices come from the billing config (Polar products), not a query
+@actions  ask to join -> link to /sign-up                       // the one primary action
+@actions  sign in -> link to /sign-in
+@actions  switch language -> link ?lang=he | ?lang=en          // sets the locale cookie; page re-renders RTL / LTR
+@states   default | empty | loading | error | offline  (?state=)   // empty, loading and error show the default page (nothing is fetched); offline adds a banner
+@flow     1. Header: the word "Tempo", three section links, Sign in, and the language switch.
+          2. Hero says what Tempo is in one line and offers one action: Ask to join.
+          3. "What it is": pages written in Markdown, built-in templates, and a coach that remembers and can change the app.
+          4. "How it works": write, talk, then accept the coach's change. Every change can be undone.
+          5. Live voice: talk out loud, interrupt any time, and every spoken reply is also written down.
+          6. Who it's for: adults with ADHD, autism or learning disabilities. A coach, not a therapist.
+          7. Pricing teaser: Trial, Basic, Pro, Max. Prices always visible. Link to sign up.
+          8. FAQ uses native disclosure, no script.
+          9. Footer: Terms, Privacy, Contact, and the language switch.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component SiteHeader | shadcn: navigation-menu | props: { links: {href,label}[], signInHref: '/sign-in' } | events: — -->
+<header class="tp-site-header" data-component="SiteHeader">
+  <div class="tp-container tp-site-header__inner">
+    <a class="tp-site-header__brand" href="landing.html" data-i18n="brand">Tempo</a>
+    <nav class="tp-site-nav" aria-label="Main" data-i18n-attr="aria-label:nav.label">
+      <a class="tp-site-link tp-site-link--wide" href="#what" data-i18n="nav.what">What it is</a>
+      <a class="tp-site-link tp-site-link--wide" href="#pricing" data-i18n="nav.pricing">Pricing</a>
+      <a class="tp-site-link tp-site-link--wide" href="about.html" data-i18n="nav.about">About</a>
+      <a class="tp-site-link" href="sign-in.html" data-i18n="nav.signin">Sign in</a>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current: 'en'|'he' } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">EN</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עב</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="tp-container ld-main" tabindex="-1">
+
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline ld-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+    <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+    <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">This page still works. Asking to join needs a connection.</span></span>
+  </div>
+
+  <!-- @component Hero | shadcn: — | props: { eyebrow, title, lede, primary: 'Ask to join', note } | events: — -->
+  <section class="tp-hero" data-component="Hero" aria-labelledby="hero-title">
+    <span class="tp-eyebrow" data-i18n="hero.eyebrow">A starter for your brain</span>
+    <h1 class="tp-hero__title" id="hero-title" data-i18n="hero.title">Tempo Flow — your brain's operating system</h1>
+    <p class="tp-hero__lede" data-i18n="hero.lede">Notes, plans and a coach in one calm place. You write or talk. The coach remembers, paces you, and changes the app when you say yes.</p>
+    <div class="tp-hero__actions">
+      <a class="tp-btn tp-btn--primary" href="sign-up.html" data-i18n="cta.join">Ask to join</a>
+      <a class="tp-btn tp-btn--secondary" href="#how" data-i18n="cta.how">See how it works</a>
+    </div>
+    <p class="tp-hero__note" data-i18n="hero.note">We let people in a few at a time. You'll get an email when it's your turn.</p>
+  </section>
+
+  <!-- What it is -->
+  <section class="ld-block" id="what" aria-labelledby="what-title">
+    <div class="ld-head">
+      <span class="tp-eyebrow" data-i18n="what.eyebrow">What it is</span>
+      <h2 class="tp-h2" id="what-title" data-i18n="what.title">Three simple parts that work together</h2>
+    </div>
+
+    <!-- @component FeatureRow | shadcn: — | props: { title, body, figure: TaskRow ×2 } | events: — -->
+    <div class="tp-feature" data-component="FeatureRow">
+      <div class="tp-feature__text">
+        <h3 class="tp-feature__title" data-i18n="f1.title">Pages in plain Markdown</h3>
+        <p class="tp-feature__body" data-i18n="f1.body">Every note, plan and list is a page you own. Tasks, habits and time blocks sit right inside the text. You can export everything as Markdown files.</p>
+      </div>
+      <figure class="tp-feature__figure" inert>
+        <span class="tp-eyebrow" data-i18n="f1.fig">Today</span>
+        <!-- @component TaskRow ×2 | shadcn: checkbox | props: { task: {title,minutes,done} } | events: — (illustration) -->
+        <ul class="ld-figure-list" role="list">
+          <li class="tp-task-row" data-component="TaskRow">
+            <span class="tp-check" role="checkbox" aria-checked="true"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+            <span class="tp-task-row__body"><span class="tp-task-row__title" data-i18n="f1.t1">Reply to Noa about Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span></span></span>
+          </li>
+          <li class="tp-task-row" data-component="TaskRow">
+            <span class="tp-check" role="checkbox" aria-checked="false"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+            <span class="tp-task-row__body"><span class="tp-task-row__title" data-i18n="f1.t2">Draft 3 slides</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span></span></span>
+          </li>
+        </ul>
+      </figure>
+    </div>
+
+    <!-- @component FeatureRow | shadcn: — | props: { title, body, figure: Badge list, flip: true } | events: — -->
+    <div class="tp-feature tp-feature--flip" data-component="FeatureRow">
+      <div class="tp-feature__text">
+        <h3 class="tp-feature__title" data-i18n="f2.title">Templates that do the setup for you</h3>
+        <p class="tp-feature__body" data-i18n="f2.body">Start a daily page, a weekly review or a project with one choice. Ask the coach for a new template and it builds one with you.</p>
+      </div>
+      <figure class="tp-feature__figure" inert>
+        <span class="tp-eyebrow" data-i18n="f2.fig">Templates</span>
+        <!-- @component ListRow ×3 | shadcn: — | props: { icon, title, meta } | events: — (illustration) -->
+        <ul class="tp-list" role="list" data-component="ListRow">
+          <li class="tp-list-row"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" data-i18n="f2.r1">Daily page</span><span class="tp-list-row__meta" data-i18n="f2.r1m">Next up, tasks, energy</span></span></li>
+          <li class="tp-list-row"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" data-i18n="f2.r2">Weekly review</span><span class="tp-list-row__meta" data-i18n="f2.r2m">What went well, what moves</span></span></li>
+          <li class="tp-list-row"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" data-i18n="f2.r3">Project</span><span class="tp-list-row__meta" data-i18n="f2.r3m">Status, next step, notes</span></span></li>
+        </ul>
+      </figure>
+    </div>
+
+    <!-- @component FeatureRow | shadcn: — | props: { title, body, figure: ProposalCard } | events: — -->
+    <div class="tp-feature" data-component="FeatureRow">
+      <div class="tp-feature__text">
+        <h3 class="tp-feature__title" data-i18n="f3.title">A coach with memory that can change the app</h3>
+        <p class="tp-feature__body" data-i18n="f3.body">The coach reads your pages and remembers what matters, so you don't repeat yourself. It can add a task, fill a template or build a new one. It always shows you the exact change first.</p>
+      </div>
+      <figure class="tp-feature__figure" inert>
+        <!-- @component ProposalCard | shadcn: card + button ×3 | props: { changes: [{op:'add', title}] } | events: — (illustration) -->
+        <section class="tp-proposal" data-component="ProposalCard" data-status="pending" aria-labelledby="fp-title">
+          <div class="tp-proposal__head">
+            <span class="tp-proposal__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-task"/></svg><span data-i18n="fp.kind">Task</span></span>
+            <strong id="fp-title" data-i18n="fp.title">1 change to Today</strong>
+          </div>
+          <ul class="tp-proposal__changes" role="list">
+            <li class="tp-change" data-op="add">
+              <span class="tp-change__sign"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="fp.add">Add</span></span>
+              <span class="tp-change__body"><span class="tp-change__title" data-i18n="fp.task">Call the bank</span><span class="tp-change__detail"><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span>
+            </li>
+          </ul>
+          <div class="tp-proposal__actions">
+            <span class="tp-btn tp-btn--secondary"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="fp.accept">Accept</span></span>
+            <span class="tp-btn tp-btn--secondary"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="fp.edit">Edit</span></span>
+            <span class="tp-btn tp-btn--ghost" data-i18n="fp.reject">Reject</span>
+          </div>
+        </section>
+      </figure>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="ld-block" id="how" aria-labelledby="how-title">
+    <div class="ld-head">
+      <span class="tp-eyebrow" data-i18n="how.eyebrow">How it works</span>
+      <h2 class="tp-h2" id="how-title" data-i18n="how.title">Write. Talk. Say yes.</h2>
+    </div>
+    <!-- @component HowItWorks | shadcn: — | props: { steps: {title, body}[] } | events: — -->
+    <ol class="tp-steps" data-component="HowItWorks">
+      <li class="tp-step"><span class="tp-step__num" aria-hidden="true">1</span><h3 class="tp-step__title" data-i18n="s1.title">Write</h3><p class="tp-step__body" data-i18n="s1.body">Dump what's in your head onto a page. Messy is fine. Tempo helps sort it later.</p></li>
+      <li class="tp-step"><span class="tp-step__num" aria-hidden="true">2</span><h3 class="tp-step__title" data-i18n="s2.title">Talk</h3><p class="tp-step__body" data-i18n="s2.body">Type or speak to the coach. It knows your pages and helps you pick one next step.</p></li>
+      <li class="tp-step"><span class="tp-step__num" aria-hidden="true">3</span><h3 class="tp-step__title" data-i18n="s3.title">Accept, with Undo</h3><p class="tp-step__body" data-i18n="s3.body">The coach suggests a change. You accept, edit or reject it. Changed your mind? Undo for 5 minutes.</p></li>
+    </ol>
+  </section>
+
+  <!-- Live voice -->
+  <section class="ld-block" id="voice" aria-labelledby="voice-title">
+    <!-- @component FeatureRow | shadcn: — | props: { title, body, figure: LiveTranscript + CallActionConfirm, flip: true } | events: — -->
+    <div class="tp-feature tp-feature--flip" data-component="FeatureRow">
+      <div class="tp-feature__text">
+        <span class="tp-eyebrow" data-i18n="voice.eyebrow">Live voice</span>
+        <h2 class="tp-feature__title" id="voice-title" data-i18n="voice.title">Talk it through, hands free</h2>
+        <p class="tp-feature__body" data-i18n="voice.body">Start a call with the coach and just talk, in English or Hebrew. Cut in whenever you want. Every spoken reply is also written down, so you can read it back later.</p>
+      </div>
+      <figure class="tp-feature__figure" inert>
+        <!-- @component LiveTranscript | shadcn: scroll-area | props: { lines: {who, text}[] } | events: — (illustration) -->
+        <ol class="tp-call__transcript" data-component="LiveTranscript">
+          <li class="tp-call-line" data-who="you"><span class="tp-call-line__who" data-i18n="who.you">You</span><span class="tp-call-line__text" dir="auto" data-i18n="v1">I'm already behind and it's only nine.</span></li>
+          <li class="tp-call-line" data-who="coach"><span class="tp-call-line__who" data-i18n="who.coach">Coach</span><span class="tp-call-line__text" dir="auto" data-i18n="v2">Let's pick one thing. What feels heaviest?</span></li>
+          <li class="tp-call-line" data-who="you"><span class="tp-call-line__who" data-i18n="who.you">You</span><span class="tp-call-line__text" dir="auto" data-i18n="v3">Calling the bank.</span></li>
+        </ol>
+        <!-- @component CallActionConfirm | shadcn: sonner (inline) | props: { text } | events: — (illustration) -->
+        <div class="tp-call-action" data-component="CallActionConfirm">
+          <span class="tp-call-action__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <span class="tp-call-action__text" data-i18n="v.action">Added "call the bank" to Today</span>
+          <span class="tp-btn tp-btn--ghost tp-btn--sm"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="v.undo">Undo</span></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Who it's for -->
+  <section class="ld-block" id="who" aria-labelledby="who-title">
+    <div class="ld-head">
+      <span class="tp-eyebrow" data-i18n="who.eyebrow">Who it's for</span>
+      <h2 class="tp-h2" id="who-title" data-i18n="who.title">Built for brains that work differently</h2>
+    </div>
+    <div class="ld-who">
+      <!-- @component Card ×2 | shadcn: card | props: { title, body } | events: — -->
+      <div class="tp-card" data-component="Card">
+        <div class="tp-card__head"><h3 class="tp-card__title" data-i18n="who.c1.title">For adults with ADHD, autism or learning disabilities</h3></div>
+        <p data-i18n="who.c1.body">If starting, switching or remembering is the hard part, Tempo is for you. It paces you and gives gentle reminders in your own words.</p>
+      </div>
+      <div class="tp-card" data-component="Card">
+        <div class="tp-card__head"><h3 class="tp-card__title" data-i18n="who.c2.title">A coach, not a therapist</h3></div>
+        <p data-i18n="who.c2.body">Tempo helps you plan and get things done. It does not treat any condition. If things get very hard, it stops coaching and shows real places to get help.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing teaser -->
+  <section class="ld-block" id="pricing" aria-labelledby="pricing-title">
+    <div class="ld-head">
+      <span class="tp-eyebrow" data-i18n="price.eyebrow">Pricing</span>
+      <h2 class="tp-h2" id="pricing-title" data-i18n="price.title">Clear prices. Always visible.</h2>
+      <p class="tp-muted" data-i18n="price.lede">Start with a 3-week trial. We remind you 3 days, 1 day and 1 hour before it ends.</p>
+    </div>
+    <!-- @component TierCard ×4 | shadcn: card | props: { tier: {name, price, per, desc} } | events: onChoose -> link to /sign-up -->
+    <div class="tp-tiers" data-component="TierCard">
+      <article class="tp-tier">
+        <div class="tp-tier__head"><h3 class="tp-tier__name" data-i18n="t.trial">Trial</h3></div>
+        <p class="tp-tier__price od-nowrap"><span class="tp-tier__amount tp-num">$1</span><span class="tp-tier__per" data-i18n="t.trial.per">for 3 weeks</span></p>
+        <p class="tp-tier__desc" data-i18n="t.trial.desc">Try everything. Then choose a plan, or stop.</p>
+      </article>
+      <article class="tp-tier">
+        <div class="tp-tier__head"><h3 class="tp-tier__name" data-i18n="t.basic">Basic</h3></div>
+        <p class="tp-tier__price od-nowrap"><span class="tp-tier__amount tp-num">$10</span><span class="tp-tier__per" data-i18n="t.per">a month</span></p>
+        <p class="tp-tier__desc" data-i18n="t.basic.desc">Pages, templates and the coach.</p>
+      </article>
+      <article class="tp-tier">
+        <div class="tp-tier__head"><h3 class="tp-tier__name" data-i18n="t.pro">Pro</h3></div>
+        <p class="tp-tier__price od-nowrap"><span class="tp-tier__amount tp-num">$20</span><span class="tp-tier__per" data-i18n="t.per">a month</span></p>
+        <p class="tp-tier__desc" data-i18n="t.pro.desc">Everything in Basic, with more live voice time.</p>
+      </article>
+      <article class="tp-tier">
+        <div class="tp-tier__head"><h3 class="tp-tier__name" data-i18n="t.max">Max</h3></div>
+        <p class="tp-tier__price od-nowrap"><span class="tp-tier__amount tp-num">$40</span><span class="tp-tier__per" data-i18n="t.per">a month</span></p>
+        <p class="tp-tier__desc" data-i18n="t.max.desc">Everything in Pro, with the most live voice time.</p>
+      </article>
+    </div>
+    <div class="ld-pricing-foot">
+      <p class="tp-small tp-muted" data-i18n="price.annual">Pay yearly and get two months free.</p>
+      <a class="tp-btn tp-btn--link" href="sign-up.html" data-i18n="price.join">Ask to join</a>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="ld-block" id="faq" aria-labelledby="faq-title">
+    <div class="ld-head"><h2 class="tp-h2" id="faq-title" data-i18n="faq.title">Questions</h2></div>
+    <!-- @component FAQ | shadcn: accordion | props: { items: {q, a}[] } | events: — (native details) -->
+    <div class="tp-faq" data-component="FAQ">
+      <details><summary><span data-i18n="q1">Why do I have to ask to join?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a1">We let people in a few at a time so we can listen and fix things fast. Ask with your email and we'll write when you're in.</p></details>
+      <details><summary><span data-i18n="q2">Is there a password?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a2">No. You sign in with a link we email you. Nothing to remember.</p></details>
+      <details><summary><span data-i18n="q3">Does it work in Hebrew?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a3">Yes. The app, the coach and live voice work in English and Hebrew, right to left or left to right.</p></details>
+      <details><summary><span data-i18n="q4">Can the coach change things without asking?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a4">No. It shows you the exact change first. You accept, edit or reject it, and you can undo for 5 minutes.</p></details>
+      <details><summary><span data-i18n="q5">What does Tempo remember about me?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a5">Only what helps the coach help you. You can see every memory, forget any of them, and export them all as Markdown.</p></details>
+      <details><summary><span data-i18n="q6">Is Tempo therapy?</span><svg class="tp-icon tp-faq__icon" aria-hidden="true"><use href="#i-down"/></svg></summary><p class="tp-faq__answer" data-i18n="a6">No. Tempo is a coach for planning and doing. It is not a therapist or counselor.</p></details>
+    </div>
+  </section>
+</main>
+
+<!-- @component SiteFooter | shadcn: — | props: { links, lang } | events: — -->
+<footer class="tp-site-footer" data-component="SiteFooter">
+  <div class="tp-container tp-site-footer__inner">
+    <nav class="tp-site-footer__links" aria-label="Footer" data-i18n-attr="aria-label:foot.label">
+      <a class="tp-site-link" href="#" data-i18n="foot.terms">Terms</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.privacy">Privacy</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.contact">Contact</a>
+      <a class="tp-site-link" href="changelog.html" data-i18n="foot.changelog">What's new</a>
+    </nav>
+    <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+    <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+      <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+      <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+    </div>
+    <p class="tp-site-footer__small" data-i18n="foot.small">Tempo Flow. A coach, not a therapist.</p>
+  </div>
+</footer>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "doc.title": "Tempo Flow — your brain's operating system"
+  },
+  he: {
+    "doc.title": "Tempo Flow — מערכת ההפעלה של המוח שלך",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "nav.label": "ראשי", "nav.what": "מה זה", "nav.pricing": "מחירים", "nav.about": "אודות", "nav.signin": "כניסה", "lang.label": "שפה",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "הדף עדיין עובד. כדי לבקש להצטרף צריך חיבור.",
+    "hero.eyebrow": "סטרטר למוח שלך", "hero.title": "Tempo Flow — מערכת ההפעלה של המוח שלך",
+    "hero.lede": "פתקים, תוכניות ומאמן במקום אחד ורגוע. כותבים או מדברים. המאמן זוכר, קובע קצב, ומשנה את האפליקציה כשאת או אתה מאשרים.",
+    "cta.join": "בקשה להצטרף", "cta.how": "איך זה עובד", "hero.note": "אנחנו מכניסים אנשים בהדרגה. נשלח מייל כשיגיע תורך.",
+    "what.eyebrow": "מה זה", "what.title": "שלושה חלקים פשוטים שעובדים יחד",
+    "f1.title": "דפים ב-Markdown פשוט", "f1.body": "כל פתק, תוכנית ורשימה הם דף שלך. משימות, הרגלים וזמנים יושבים בתוך הטקסט. אפשר לייצא הכול כקובצי Markdown.",
+    "f1.fig": "היום", "f1.t1": "לענות לנועה לגבי יום חמישי", "f1.t2": "לכתוב 3 שקפים", "unit.min": "דק׳",
+    "f2.title": "תבניות שעושות את ההכנה בשבילך", "f2.body": "פותחים דף יומי, סיכום שבועי או פרויקט בבחירה אחת. מבקשים מהמאמן תבנית חדשה והוא בונה אותה איתך.",
+    "f2.fig": "תבניות", "f2.r1": "דף יומי", "f2.r1m": "הצעד הבא, משימות, אנרגיה", "f2.r2": "סיכום שבועי", "f2.r2m": "מה הלך טוב, מה זז", "f2.r3": "פרויקט", "f2.r3m": "מצב, צעד הבא, פתקים",
+    "f3.title": "מאמן עם זיכרון שיכול לשנות את האפליקציה", "f3.body": "המאמן קורא את הדפים שלך וזוכר את מה שחשוב, כדי שלא תצטרכו לחזור על עצמכם. הוא יכול להוסיף משימה, למלא תבנית או לבנות חדשה. הוא תמיד מראה קודם את השינוי המדויק.",
+    "fp.kind": "משימה", "fp.title": "שינוי אחד ב״היום״", "fp.add": "הוספה", "fp.task": "להתקשר לבנק", "fp.accept": "אישור", "fp.edit": "עריכה", "fp.reject": "דחייה",
+    "how.eyebrow": "איך זה עובד", "how.title": "כותבים. מדברים. מאשרים.",
+    "s1.title": "כותבים", "s1.body": "שופכים לדף את מה שבראש. מבולגן זה בסדר. Tempo עוזר לסדר אחר כך.",
+    "s2.title": "מדברים", "s2.body": "מקלידים או מדברים עם המאמן. הוא מכיר את הדפים שלך ועוזר לבחור צעד אחד הבא.",
+    "s3.title": "מאשרים, עם ביטול", "s3.body": "המאמן מציע שינוי. מאשרים, עורכים או דוחים. התחרטת? אפשר לבטל במשך 5 דקות.",
+    "voice.eyebrow": "שיחה קולית", "voice.title": "מדברים על זה, בלי ידיים", "voice.body": "פותחים שיחה עם המאמן ופשוט מדברים, בעברית או באנגלית. אפשר לקטוע מתי שרוצים. כל תשובה מדוברת נכתבת גם כטקסט, כדי שאפשר יהיה לקרוא שוב אחר כך.",
+    "who.you": "את/ה", "who.coach": "המאמן", "v1": "אני כבר בפיגור וזה רק תשע.", "v2": "בוא נבחר דבר אחד. מה הכי כבד?", "v3": "להתקשר לבנק.", "v.action": "״להתקשר לבנק״ נוסף ל״היום״", "v.undo": "ביטול",
+    "who.eyebrow": "למי זה מתאים", "who.title": "בנוי למוחות שעובדים אחרת",
+    "who.c1.title": "למבוגרים עם ADHD, אוטיזם או לקויות למידה", "who.c1.body": "אם להתחיל, לעבור בין דברים או לזכור זה החלק הקשה, Tempo בשבילך. הוא קובע קצב ונותן תזכורות עדינות במילים שלך.",
+    "who.c2.title": "מאמן, לא מטפל", "who.c2.body": "Tempo עוזר לתכנן ולעשות. הוא לא מטפל באף מצב. אם נהיה ממש קשה, הוא מפסיק לאמן ומראה מקומות אמיתיים לקבל עזרה.",
+    "price.eyebrow": "מחירים", "price.title": "מחירים ברורים. תמיד גלויים.", "price.lede": "מתחילים בתקופת ניסיון של 3 שבועות. נזכיר 3 ימים, יום אחד ושעה אחת לפני שהיא נגמרת.",
+    "t.trial": "ניסיון", "t.trial.per": "ל-3 שבועות", "t.trial.desc": "מנסים הכול. אחר כך בוחרים מסלול, או מפסיקים.",
+    "t.basic": "בסיסי", "t.per": "לחודש", "t.basic.desc": "דפים, תבניות והמאמן.",
+    "t.pro": "פרו", "t.pro.desc": "כל מה שבבסיסי, עם יותר זמן שיחה קולית.",
+    "t.max": "מקס", "t.max.desc": "כל מה שבפרו, עם הכי הרבה זמן שיחה קולית.",
+    "price.annual": "בתשלום שנתי מקבלים חודשיים חינם.", "price.join": "בקשה להצטרף",
+    "faq.title": "שאלות",
+    "q1": "למה צריך לבקש להצטרף?", "a1": "אנחנו מכניסים אנשים בהדרגה כדי להקשיב ולתקן מהר. מבקשים עם המייל ונכתוב כשנכנסת.",
+    "q2": "יש סיסמה?", "a2": "לא. נכנסים עם קישור שאנחנו שולחים במייל. אין מה לזכור.",
+    "q3": "זה עובד בעברית?", "a3": "כן. האפליקציה, המאמן והשיחה הקולית עובדים בעברית ובאנגלית, מימין לשמאל או משמאל לימין.",
+    "q4": "המאמן יכול לשנות דברים בלי לשאול?", "a4": "לא. הוא מראה קודם את השינוי המדויק. מאשרים, עורכים או דוחים, ואפשר לבטל במשך 5 דקות.",
+    "q5": "מה Tempo זוכר עליי?", "a5": "רק מה שעוזר למאמן לעזור לך. אפשר לראות כל זיכרון, למחוק כל אחד, ולייצא הכול כ-Markdown.",
+    "q6": "Tempo זה טיפול?", "a6": "לא. Tempo הוא מאמן לתכנון ולעשייה. הוא לא מטפל ולא יועץ.",
+    "foot.label": "כותרת תחתונה", "foot.terms": "תנאים", "foot.privacy": "פרטיות", "foot.contact": "יצירת קשר", "foot.changelog": "מה חדש", "foot.small": "Tempo Flow. מאמן, לא מטפל."
+  }
+};
+
+(function () {
+  var lang = document.documentElement.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie set by the /[locale] link; here localStorage stands in. */
+  document.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () {
+      // REAL: convex profiles.updatePrefs({ language }) only when signed in; public pages use the locale cookie
+      try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
