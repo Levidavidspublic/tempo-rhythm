@@ -50,8 +50,10 @@ type ChannelEntry = {
 
 const channelsByRealtime = new WeakMap<Realtime, Map<string, ChannelEntry>>();
 
-async function join(realtime: Realtime, channel: string) {
+async function join(realtime: Realtime, channel: string, isActive: () => boolean) {
   await realtime.connect();
+  // The last list may have stopped while connecting: never subscribe a channel nobody uses.
+  if (!isActive()) throw new Error("Channel released");
   const response = await realtime.subscribe(channel);
   if (!response.ok) throw new Error(response.error?.message ?? "Subscription rejected");
 }
@@ -78,7 +80,7 @@ function acquireChannel(realtime: Realtime, channel: string, onJoin: () => void)
       for (const listener of created.onJoin) listener();
     };
     const attempt = (count: number): Promise<void> =>
-      join(realtime, channel).then(
+      join(realtime, channel, current).then(
         () => {
           if (current()) joined();
         },
@@ -195,9 +197,12 @@ export function createLiveRows<Row>({
     if (!first) void fetchRows();
   });
   // Take the first snapshot after joining so a write cannot fall between the snapshot and subscription.
-  void subscription.ready.then(fetchRows, fetchRows).finally(() => {
+  const startFirstRead = () => {
+    // Clear `first` when the first read starts, so a join that lands during it starts a newer read.
     first = false;
-  });
+    return fetchRows();
+  };
+  void subscription.ready.then(startFirstRead, startFirstRead);
 
   return {
     stop() {

@@ -281,4 +281,40 @@ describe("createLiveRows", () => {
     await advanceTimers(0);
     expect(client.realtime.subscribe).toHaveBeenCalledTimes(2);
   });
+
+  test("does not subscribe when the last list stops while connecting", async () => {
+    const connecting = Promise.withResolvers<void>();
+    const { client } = makeClient();
+    client.realtime.connect.mockImplementation(() => connecting.promise);
+    const live = createLiveRows({ client, table: "tasks", uid: "owner", onRows: () => {} });
+    await advanceTimers(0);
+    live.stop();
+    connecting.resolve();
+    await advanceTimers(10_000);
+    expect(client.realtime.subscribe).not.toHaveBeenCalled();
+  });
+
+  test("a rejoin during a pending first read starts a newer read that wins", async () => {
+    const first = Promise.withResolvers<Result>();
+    let reads = 0;
+    const { client, emit } = makeClient(() => {
+      reads += 1;
+      return reads === 1
+        ? first.promise
+        : Promise.resolve({ data: [{ id: "newer" }], error: null });
+    });
+    const onRows = mock((_rows: Row[]) => {});
+    const live = createLiveRows({ client, table: "tasks", uid: "owner", onRows });
+    await advanceTimers(0);
+    expect(reads).toBe(1);
+
+    emit("connect", "");
+    await advanceTimers(0);
+    expect(reads).toBe(2);
+    first.resolve({ data: [{ id: "older" }], error: null });
+    await advanceTimers(0);
+    expect(onRows).toHaveBeenCalledTimes(1);
+    expect(onRows).toHaveBeenLastCalledWith([{ id: "newer" }]);
+    live.stop();
+  });
 });
