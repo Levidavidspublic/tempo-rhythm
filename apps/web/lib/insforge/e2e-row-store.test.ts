@@ -138,6 +138,41 @@ describe("InsForge E2E row store", () => {
     }
   });
 
+  test.each(["mutate", "reset"] as const)("isolates failing subscribers during %s", (operation) => {
+    const report = spyOn(console, "error").mockImplementation(() => {});
+    const onTask = mock(() => store.select(tasks));
+    const onNote = mock(() => store.select(notes));
+    const stops = [
+      store.subscribe(tasks, () => {
+        throw new Error("Fixture subscriber failed");
+      }),
+      store.subscribe(tasks, onTask),
+      store.subscribe(notes, onNote),
+    ];
+    try {
+      if (operation === "mutate") {
+        store.mutate(tasks, { type: "insert", row: task });
+        expect(onNote).not.toHaveBeenCalled();
+      } else {
+        store.reset([
+          { table: tasks.table, row: task },
+          { table: notes.table, row: task },
+        ]);
+        expect(onNote).toHaveBeenCalledTimes(1);
+        expect(onNote).toHaveLastReturnedWith([task]);
+      }
+      expect(onTask).toHaveBeenCalledTimes(1);
+      expect(onTask).toHaveLastReturnedWith([task]);
+      expect(report).toHaveBeenCalledTimes(1);
+      expect(report).toHaveBeenCalledWith(
+        "[insforge-e2e-row-store] Subscriber notification failed"
+      );
+    } finally {
+      for (const stop of stops) stop();
+      report.mockRestore();
+    }
+  });
+
   test("rejects invalid writes and a bad bootstrap without changing rows or notifying", () => {
     store.reset([{ table: tasks.table, row: task }]);
     const onChange = mock(() => {});

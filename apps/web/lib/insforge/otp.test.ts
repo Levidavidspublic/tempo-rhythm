@@ -90,7 +90,7 @@ describe("InsForge OTP actions", () => {
     expect(setCookie).not.toHaveBeenCalled();
   });
 
-  test.each([404, 429, 500])("does not disclose provider send errors (%i)", async (status) => {
+  test.each([404, 429])("keeps account-dependent send results generic (%i)", async (status) => {
     const { actions, fetchOtp, setCookie } = fixture(() =>
       Response.json({ message: "Provider-specific detail" }, { status })
     );
@@ -100,13 +100,23 @@ describe("InsForge OTP actions", () => {
     expect(setCookie).not.toHaveBeenCalled();
   });
 
-  test("does not disclose send transport failures", async () => {
+  test("returns unavailable without disclosing send transport failures", async () => {
     const { actions, fetchOtp } = fixture(() => {
       throw new Error("Fixture transport failed");
     });
 
-    expect(await actions.requestCode("a@example.com")).toEqual({ status: "requested" });
+    expect(await actions.requestCode("a@example.com")).toEqual({ status: "unavailable" });
     expect(fetchOtp).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([500, 503])("returns unavailable for send provider outages (%i)", async (status) => {
+    const { actions, fetchOtp, setCookie } = fixture(() =>
+      Response.json({ message: "Provider-specific detail" }, { status })
+    );
+
+    expect(await actions.requestCode("a@example.com")).toEqual({ status: "unavailable" });
+    expect(fetchOtp).toHaveBeenCalledTimes(1);
+    expect(setCookie).not.toHaveBeenCalled();
   });
 
   test("verifies the normalized inputs with the SDK and only returns safe status", async () => {
@@ -147,6 +157,24 @@ describe("InsForge OTP actions", () => {
     const { actions, setCookie } = fixture(() => Response.json({ message: "Error" }, { status }));
 
     expect(await actions.verifyCode("a@example.com", "012345")).toEqual({ status: "invalid-code" });
+    expect(setCookie).not.toHaveBeenCalled();
+  });
+
+  test.each([429, 500, 503])("returns unavailable for failed verification (%i)", async (status) => {
+    const { actions, setCookie } = fixture(() =>
+      Response.json({ message: "Provider-specific detail" }, { status })
+    );
+
+    expect(await actions.verifyCode("a@example.com", "012345")).toEqual({ status: "unavailable" });
+    expect(setCookie).not.toHaveBeenCalled();
+  });
+
+  test("returns unavailable without disclosing verification transport failures", async () => {
+    const { actions, setCookie } = fixture(() => {
+      throw new Error("Fixture transport failed");
+    });
+
+    expect(await actions.verifyCode("a@example.com", "012345")).toEqual({ status: "unavailable" });
     expect(setCookie).not.toHaveBeenCalled();
   });
 

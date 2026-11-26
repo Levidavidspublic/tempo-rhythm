@@ -38,7 +38,13 @@ function createRowStore() {
   const listeners = new Map<string, Set<() => void>>();
 
   function publish(key: string) {
-    for (const listener of Array.from(listeners.get(key) ?? [])) listener();
+    for (const listener of Array.from(listeners.get(key) ?? [])) {
+      try {
+        listener();
+      } catch {
+        console.error("[insforge-e2e-row-store] Subscriber notification failed");
+      }
+    }
   }
 
   return {

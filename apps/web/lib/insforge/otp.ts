@@ -1,3 +1,4 @@
+import type { InsForgeError } from "@insforge/sdk";
 import { type CookieStore, createAuthActions } from "@insforge/sdk/ssr";
 import type { DataBackend } from "../backend-flag";
 import { normalizeSignInEmail } from "../email-link-sign-in";
@@ -7,6 +8,10 @@ type OtpConfig = {
   url?: string;
   anonKey?: string;
 };
+
+function isProviderUnavailable({ statusCode, error }: InsForgeError): boolean {
+  return statusCode === 0 || error === "REQUEST_TIMEOUT" || (statusCode >= 500 && statusCode < 600);
+}
 
 export function makeInsforgeOtpActions(
   config: OtpConfig,
@@ -43,13 +48,13 @@ export function makeInsforgeOtpActions(
       const auth = await getAuth();
       if (!auth) return { status: "unavailable" } as const;
 
-      const requested = { status: "requested" } as const;
       try {
-        await auth.signInWithOtp({ email });
+        const { error } = await auth.signInWithOtp({ email });
+        if (error && isProviderUnavailable(error)) return { status: "unavailable" } as const;
+        return { status: "requested" } as const;
       } catch {
-        return requested;
+        return { status: "unavailable" } as const;
       }
-      return requested;
     },
 
     async verifyCode(rawEmail: unknown, rawCode: unknown) {
@@ -64,6 +69,9 @@ export function makeInsforgeOtpActions(
 
       try {
         const { data, error } = await auth.verifyOtp({ email, otp });
+        if (error && (error.statusCode === 429 || isProviderUnavailable(error))) {
+          return { status: "unavailable" } as const;
+        }
         if (error || !data?.user?.id) return { status: "invalid-code" } as const;
         return { status: "verified" } as const;
       } catch {
