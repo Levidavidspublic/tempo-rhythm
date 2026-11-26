@@ -12,15 +12,34 @@ import { ListChecks, Plus, Search } from "lucide-react-native";
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { type TextInput, View } from "react-native";
 import { useT } from "@/components/v3/prefs";
-import { Button, PageHeader, SearchField, SectionHead, Segmented, T } from "@/components/v3/primitives";
+import {
+  Button,
+  PageHeader,
+  SearchField,
+  SectionHead,
+  Segmented,
+  T,
+} from "@/components/v3/primitives";
 import { CaptureFab, MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline, useTempoSession, useToday } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { TaskRow } from "@/components/v3/TaskRow";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { filterGroups, groupsAreEmpty, groupTasks, type TaskFilter, type TaskLike } from "@/lib/v3/tasks";
+import {
+  filterGroups,
+  groupsAreEmpty,
+  groupTasks,
+  type TaskFilter,
+  type TaskLike,
+} from "@/lib/v3/tasks";
 
 export default function TasksScreen() {
   const t = useT("tasks");
@@ -35,17 +54,32 @@ export default function TasksScreen() {
   }, [params.search]);
 
   return (
-    <Screen tabs keyboard overlay={<CaptureFab label={t("fab.capture")} onPress={() => router.push("/capture")} />}>
+    <Screen
+      tabs
+      keyboard
+      overlay={<CaptureFab label={t("fab.capture")} onPress={() => router.push("/capture")} />}
+    >
       <MobileTopBar
         title={t("top.title")}
-        start={{ kind: "icon", icon: Search, label: t("top.search"), onPress: () => searchRef.current?.focus() }}
+        start={{
+          kind: "icon",
+          icon: Search,
+          label: t("top.search"),
+          onPress: () => searchRef.current?.focus(),
+        }}
       />
       {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
       <QueryBoundary
         fallback={(retry) => (
           <View style={{ gap: 24 }}>
             <PageHeader title={t("page.title")} />
-            <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+            <StateError
+              title={t("err.title")}
+              safe={t("state.safe")}
+              body={t("err.body")}
+              retryLabel={t("state.retry")}
+              onRetry={retry}
+            />
           </View>
         )}
       >
@@ -55,7 +89,13 @@ export default function TasksScreen() {
   );
 }
 
-function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<TextInput | null> }) {
+function TasksBody({
+  ready,
+  searchRef,
+}: {
+  ready: boolean;
+  searchRef: RefObject<TextInput | null>;
+}) {
   const t = useT("tasks");
   const router = useRouter();
   const toast = useToast();
@@ -66,7 +106,10 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [search, setSearch] = useState("");
 
-  const groups = useMemo(() => (tasks ? groupTasks(tasks, today.startMs, today.endMs) : null), [tasks, today.startMs, today.endMs]);
+  const groups = useMemo(
+    () => (tasks ? groupTasks(tasks, today.startMs, today.endMs) : null),
+    [tasks, today.startMs, today.endMs]
+  );
 
   if (!tasks || !groups) {
     return (
@@ -103,13 +146,27 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
     });
   };
 
-  const section = (key: string, title: string, count: string, rows: TaskLike[], extra?: ReactNode, dueDay?: boolean) =>
+  const section = (
+    key: string,
+    title: string,
+    count: string,
+    rows: TaskLike[],
+    extra?: ReactNode,
+    dueDay?: boolean
+  ) =>
     rows.length ? (
       <View key={key} style={{ gap: 12 }}>
         <SectionHead title={title} count={count} />
         <View>
           {rows.map((task, i) => (
-            <TaskRow key={task._id} task={task} todayEndMs={today.endMs} onToggle={onToggle} last={i === rows.length - 1} showDueDay={dueDay} />
+            <TaskRow
+              key={task._id}
+              task={task}
+              todayEndMs={today.endMs}
+              onToggle={onToggle}
+              last={i === rows.length - 1}
+              showDueDay={dueDay}
+            />
           ))}
         </View>
         {extra}
@@ -136,7 +193,13 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
         }
       />
       <View style={{ gap: 12 }}>
-        <SearchField label={t("search.label")} placeholder={t("search.ph")} value={search} onChangeText={setSearch} inputRef={searchRef} />
+        <SearchField
+          label={t("search.label")}
+          placeholder={t("search.ph")}
+          value={search}
+          onChangeText={setSearch}
+          inputRef={searchRef}
+        />
         <Segmented
           label={t("filter.label")}
           value={filter}
@@ -154,9 +217,21 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
         t("g.today"),
         `${shown.today.length} ${t("g.open")}`,
         shown.today,
-        <Button variant="ghost" icon={Plus} label={t("tasks.add")} onPress={() => router.push("/capture")} />,
+        <Button
+          variant="ghost"
+          icon={Plus}
+          label={t("tasks.add")}
+          onPress={() => router.push("/capture")}
+        />
       )}
-      {section("upcoming", t("g.upcoming"), `${shown.upcoming.length} ${t("g.open")}`, shown.upcoming, undefined, true)}
+      {section(
+        "upcoming",
+        t("g.upcoming"),
+        `${shown.upcoming.length} ${t("g.open")}`,
+        shown.upcoming,
+        undefined,
+        true
+      )}
       {section("inbox", t("g.inbox"), `${shown.inbox.length} ${t("g.tosort")}`, shown.inbox)}
       {section("done", t("g.done"), String(shown.doneToday.length), shown.doneToday)}
       {nothing ? (

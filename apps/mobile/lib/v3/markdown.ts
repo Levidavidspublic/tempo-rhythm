@@ -15,7 +15,9 @@ export type TempoInfo =
   | { type: "page-meta"; tags: string[] }
   | { type: "unknown" };
 
-export type Segment = { kind: "text"; source: string } | { kind: "tempo"; source: string; info: TempoInfo };
+export type Segment =
+  | { kind: "text"; source: string }
+  | { kind: "tempo"; source: string; info: TempoInfo };
 
 const LINE = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
 
@@ -40,9 +42,12 @@ function readTempo(json: string): TempoInfo {
     if (value?.type === "task" && typeof data.title === "string") {
       return { type: "task", title: data.title, done: data.status === "done" };
     }
-    if (value?.type === "template" && typeof data.name === "string") return { type: "template", name: data.name };
+    if (value?.type === "template" && typeof data.name === "string")
+      return { type: "template", name: data.name };
     if (value?.type === "page-meta") {
-      const tags = Array.isArray(data.tags) ? data.tags.filter((t): t is string => typeof t === "string") : [];
+      const tags = Array.isArray(data.tags)
+        ? data.tags.filter((t): t is string => typeof t === "string")
+        : [];
       return { type: "page-meta", tags };
     }
   } catch {
@@ -71,13 +76,23 @@ export function splitTempoFences(body: string): Segment[] {
     }
     const fence = /^( {0,3})(`{3,}|~{3,})(.*)$/.exec(c);
     if (ordinary) {
-      if (fence && fence[2]?.[0] === ordinary.marker && (fence[2]?.length ?? 0) >= ordinary.length && /^[\t ]*$/.test(fence[3] ?? "")) {
+      if (
+        fence &&
+        fence[2]?.[0] === ordinary.marker &&
+        (fence[2]?.length ?? 0) >= ordinary.length &&
+        /^[\t ]*$/.test(fence[3] ?? "")
+      ) {
         ordinary = null;
       }
       text += line;
       continue;
     }
-    if (fence && fence[1] === "" && fence[2] === "```" && /^json tempo[\t ]*$/.test(fence[3] ?? "")) {
+    if (
+      fence &&
+      fence[1] === "" &&
+      fence[2] === "```" &&
+      /^json tempo[\t ]*$/.test(fence[3] ?? "")
+    ) {
       if (text) out.push({ kind: "text", source: text });
       text = "";
       tempo = { source: line, json: "" };
@@ -114,7 +129,10 @@ const PLACEHOLDER = /⟦(\d+)[^⟧\r\n]*⟧/g;
  * The body for the plain-text editor: each Tempo fence becomes one line `⟦n · label⟧`.
  * `unmaskTempoBlocks` puts the fences back; an untouched text round-trips byte for byte.
  */
-export function maskTempoBlocks(body: string, label: (info: TempoInfo) => string): { text: string; fences: string[] } {
+export function maskTempoBlocks(
+  body: string,
+  label: (info: TempoInfo) => string
+): { text: string; fences: string[] } {
   const fences: string[] = [];
   let text = "";
   for (const seg of splitTempoFences(body)) {
@@ -144,7 +162,9 @@ export function unmaskTempoBlocks(text: string, fences: readonly string[]): stri
  * editor: if its placeholder was deleted, the block goes back at the top, where pages keep it.
  */
 export function keepPageMeta(next: string, original: string): string {
-  const meta = splitTempoFences(original).find((seg) => seg.kind === "tempo" && seg.info.type === "page-meta");
+  const meta = splitTempoFences(original).find(
+    (seg) => seg.kind === "tempo" && seg.info.type === "page-meta"
+  );
   if (!meta) return next;
   const fence = meta.source.replace(/(?:\r\n|\r|\n)$/, "");
   if (next.includes(fence)) return next;
@@ -156,7 +176,13 @@ export function keepPageMeta(next: string, original: string): string {
 /* Read view                                                            */
 /* ------------------------------------------------------------------ */
 
-export type Inline = { text: string; bold?: boolean; italic?: boolean; code?: boolean; link?: boolean };
+export type Inline = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  code?: boolean;
+  link?: boolean;
+};
 
 export type ViewBlock =
   | { kind: "heading"; level: 1 | 2 | 3; inlines: Inline[] }
@@ -171,15 +197,18 @@ export type ViewBlock =
 /** Bold, italic, inline code, [text](url) and [[wikilinks]]; everything else stays as typed. */
 export function parseInline(text: string): Inline[] {
   const out: Inline[] = [];
-  const re = /(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|\[\[[^\]]+\]\]|\[[^\]]+\]\([^)]*\)|\*[^*\s][^*]*\*)/g;
+  const re =
+    /(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|\[\[[^\]]+\]\]|\[[^\]]+\]\([^)]*\)|\*[^*\s][^*]*\*)/g;
   let last = 0;
   for (const m of text.matchAll(re)) {
     const at = m.index ?? 0;
     if (at > last) out.push({ text: text.slice(last, at) });
     const tok = m[0];
-    if (tok.startsWith("**") || tok.startsWith("__")) out.push({ text: tok.slice(2, -2), bold: true });
+    if (tok.startsWith("**") || tok.startsWith("__"))
+      out.push({ text: tok.slice(2, -2), bold: true });
     else if (tok.startsWith("`")) out.push({ text: tok.slice(1, -1), code: true });
-    else if (tok.startsWith("[[")) out.push({ text: (tok.slice(2, -2).split("|").pop() ?? "").trim(), link: true });
+    else if (tok.startsWith("[["))
+      out.push({ text: (tok.slice(2, -2).split("|").pop() ?? "").trim(), link: true });
     else if (tok.startsWith("[")) out.push({ text: tok.slice(1, tok.indexOf("](")), link: true });
     else out.push({ text: tok.slice(1, -1), italic: true });
     last = at + tok.length;
@@ -301,5 +330,7 @@ export function toggleCheckbox(body: string, line: number): string {
 
 /** True when the body has nothing to read once page details are left out. */
 export function isBlankBody(body: string): boolean {
-  return splitTempoFences(body).every((s) => (s.kind === "text" ? !s.source.trim() : s.info.type === "page-meta"));
+  return splitTempoFences(body).every((s) =>
+    s.kind === "text" ? !s.source.trim() : s.info.type === "page-meta"
+  );
 }

@@ -40,7 +40,9 @@ export function Dial({
           <T size="sm" tone="muted">
             {ofWord}
           </T>
-          <View style={{ paddingHorizontal: 8, borderRadius: RADIUS.sm, backgroundColor: c.sunken }}>
+          <View
+            style={{ paddingHorizontal: 8, borderRadius: RADIUS.sm, backgroundColor: c.sunken }}
+          >
             <T size="sm" weight="600">
               {word}
             </T>
@@ -53,16 +55,38 @@ export function Dial({
         accessibilityLabel={label}
         accessibilityValue={{ min: 0, max: 10, now: value, text: `${value} ${ofWord}, ${word}` }}
         accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-        onAccessibilityAction={(e) => set(value + (e.nativeEvent.actionName === "increment" ? 1 : -1))}
+        onAccessibilityAction={(e) =>
+          set(value + (e.nativeEvent.actionName === "increment" ? 1 : -1))
+        }
       >
         <Row className="gap-3" style={{ alignItems: "center" }}>
-          <Button iconOnly icon={Minus} accessibilityLabel={`${label} −1`} disabled={value <= 0} onPress={() => set(value - 1)} />
+          <Button
+            iconOnly
+            icon={Minus}
+            accessibilityLabel={`${label} −1`}
+            disabled={value <= 0}
+            onPress={() => set(value - 1)}
+          />
           <Row style={{ flex: 1, gap: 3 }}>
             {Array.from({ length: 10 }, (_, i) => (
-              <View key={i} style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: i < value ? c.ink : c.sunken }} />
+              <View
+                key={i}
+                style={{
+                  flex: 1,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: i < value ? c.ink : c.sunken,
+                }}
+              />
             ))}
           </Row>
-          <Button iconOnly icon={Plus} accessibilityLabel={`${label} +1`} disabled={value >= 10} onPress={() => set(value + 1)} />
+          <Button
+            iconOnly
+            icon={Plus}
+            accessibilityLabel={`${label} +1`}
+            disabled={value >= 10}
+            onPress={() => set(value + 1)}
+          />
         </Row>
       </View>
       <Row style={{ justifyContent: "space-between" }}>

@@ -1,8 +1,8 @@
-import { useAuthActions } from '@convex-dev/auth/react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, Eye, EyeOff } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useAuthActions } from "@convex-dev/auth/react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { Check, Eye, EyeOff } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,24 +13,24 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PreviewModeBanner } from '@/components/PreviewModeBanner';
-import { WebViewModal } from '@/components/WebViewModal';
-import { IS_DEV_MODE, PRIVACY_URL, TERMS_URL } from '@/config/appConfig';
-import { rtl, tw } from '@/lib/rtl';
+import { PreviewModeBanner } from "@/components/PreviewModeBanner";
+import { WebViewModal } from "@/components/WebViewModal";
+import { IS_DEV_MODE, PRIVACY_URL, TERMS_URL } from "@/config/appConfig";
+import { rtl, tw } from "@/lib/rtl";
 
-const REMEMBERED_EMAIL_KEY = 'remembered_email';
+const REMEMBERED_EMAIL_KEY = "remembered_email";
 
 export default function SignUpScreen() {
   const { signIn } = useAuthActions(); // פעולת ההרשמה (משתמשת באותה פונקציה כמו התחברות)
   const router = useRouter(); // ניווט
   const { preview } = useLocalSearchParams<{ preview?: string }>();
-  const isPreviewMode = IS_DEV_MODE && preview === 'true';
+  const isPreviewMode = IS_DEV_MODE && preview === "true";
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false); // מצב טעינה
   const [rememberMe, setRememberMe] = useState(false); // האם לזכור את האימייל
   const [showPassword, setShowPassword] = useState(false); // הצגת/הסתרת סיסמה
@@ -42,8 +42,7 @@ export default function SignUpScreen() {
   useEffect(() => {
     const loadRememberedEmail = async () => {
       try {
-        const rememberedEmail =
-          await AsyncStorage.getItem(REMEMBERED_EMAIL_KEY);
+        const rememberedEmail = await AsyncStorage.getItem(REMEMBERED_EMAIL_KEY);
         if (rememberedEmail) {
           setEmail(rememberedEmail);
           setRememberMe(true);
@@ -52,7 +51,7 @@ export default function SignUpScreen() {
         // התעלמות משגיאות אחסון
       }
     };
-    loadRememberedEmail();
+    void loadRememberedEmail();
   }, []);
 
   // פונקציית ההרשמה
@@ -63,18 +62,18 @@ export default function SignUpScreen() {
     }
 
     if (!email || !password) {
-      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
+      Alert.alert("שגיאה", "אנא מלא את כל השדות");
       return;
     }
 
     // בדיקה שהמשתמש אישר את תנאי השימוש ומדיניות הפרטיות
     if (!consentAccepted) {
-      Alert.alert('שגיאה', 'אנא קרא ואשר קודם את תנאי השימוש ומדיניות הפרטיות');
+      Alert.alert("שגיאה", "אנא קרא ואשר קודם את תנאי השימוש ומדיניות הפרטיות");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('שגיאה', 'הסיסמה חייבת להכיל לפחות 6 תווים');
+      Alert.alert("שגיאה", "הסיסמה חייבת להכיל לפחות 6 תווים");
       return;
     }
 
@@ -82,10 +81,10 @@ export default function SignUpScreen() {
 
     try {
       // יצירת משתמש חדש והתחברות (flow: 'signUp')
-      await signIn('password', {
+      await signIn("password", {
         email,
         password,
-        flow: 'signUp',
+        flow: "signUp",
       });
 
       // שמירה או מחיקה של האימייל מהזיכרון
@@ -96,31 +95,25 @@ export default function SignUpScreen() {
       }
 
       // חשבון חדש ממשיך להיכרות (onboarding)
-      router.replace('/(auth)/onboarding');
+      router.replace("/(auth)/onboarding");
     } catch (err: unknown) {
       const error = err as { message?: string };
-      const errorMessage = error.message || '';
+      const errorMessage = error.message || "";
 
       // מיפוי שגיאות Convex Auth להודעות בעברית ידידותיות למשתמש
       if (
-        errorMessage.includes('already exists') ||
-        errorMessage.includes('AccountAlreadyExists')
+        errorMessage.includes("already exists") ||
+        errorMessage.includes("AccountAlreadyExists")
       ) {
-        Alert.alert('שגיאה', 'כתובת האימייל כבר רשומה במערכת');
-      } else if (
-        errorMessage.includes('password') &&
-        errorMessage.includes('weak')
-      ) {
-        Alert.alert('שגיאה', 'הסיסמה חלשה מדי. אנא בחר סיסמה חזקה יותר');
-      } else if (errorMessage.includes('TooManyRequests')) {
-        Alert.alert('שגיאה', 'יותר מדי ניסיונות. אנא נסה שוב מאוחר יותר');
-      } else if (
-        errorMessage.includes('invalid') &&
-        errorMessage.includes('email')
-      ) {
-        Alert.alert('שגיאה', 'כתובת האימייל אינה תקינה');
+        Alert.alert("שגיאה", "כתובת האימייל כבר רשומה במערכת");
+      } else if (errorMessage.includes("password") && errorMessage.includes("weak")) {
+        Alert.alert("שגיאה", "הסיסמה חלשה מדי. אנא בחר סיסמה חזקה יותר");
+      } else if (errorMessage.includes("TooManyRequests")) {
+        Alert.alert("שגיאה", "יותר מדי ניסיונות. אנא נסה שוב מאוחר יותר");
+      } else if (errorMessage.includes("invalid") && errorMessage.includes("email")) {
+        Alert.alert("שגיאה", "כתובת האימייל אינה תקינה");
       } else {
-        Alert.alert('שגיאה', 'הרשמה נכשלה. אנא בדוק את הפרטים ונסה שוב');
+        Alert.alert("שגיאה", "הרשמה נכשלה. אנא בדוק את הפרטים ונסה שוב");
       }
     } finally {
       setLoading(false);
@@ -157,7 +150,7 @@ export default function SignUpScreen() {
 
       {/* KeyboardAvoidingView דואג שהמקלדת לא תסתיר את שדות הקלט */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         {/* באנר מצב תצוגה מקדימה */}
@@ -177,10 +170,7 @@ export default function SignUpScreen() {
             >
               צור חשבון חדש
             </Text>
-            <Text
-              className="text-zinc-400 text-base mb-8"
-              style={{ textAlign: rtl.textAlign }}
-            >
+            <Text className="text-zinc-400 text-base mb-8" style={{ textAlign: rtl.textAlign }}>
               הירשם כדי להתחיל להשתמש באפליקציה
             </Text>
 
@@ -250,14 +240,10 @@ export default function SignUpScreen() {
                 <Text className="text-zinc-300 text-sm">זכור אותי</Text>
                 <View
                   className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                    rememberMe
-                      ? 'bg-sky-400 border-sky-400'
-                      : 'border-zinc-600 bg-transparent'
+                    rememberMe ? "bg-sky-400 border-sky-400" : "border-zinc-600 bg-transparent"
                   }`}
                 >
-                  {rememberMe && (
-                    <Text className="text-white text-xs font-bold">✓</Text>
-                  )}
+                  {rememberMe && <Text className="text-white text-xs font-bold">✓</Text>}
                 </View>
               </Pressable>
             </View>
@@ -275,9 +261,7 @@ export default function SignUpScreen() {
               >
                 <View
                   className={`h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 ${
-                    consentAccepted
-                      ? 'bg-sky-400 border-sky-400'
-                      : 'bg-transparent border-zinc-600'
+                    consentAccepted ? "bg-sky-400 border-sky-400" : "bg-transparent border-zinc-600"
                   }`}
                 >
                   {consentAccepted && <Check color="#0a0a0a" size={14} />}
@@ -285,17 +269,11 @@ export default function SignUpScreen() {
                 <View className="flex-1">
                   <Text className={`${tw.textStart} text-zinc-300 text-sm`}>
                     אני מסכים ל
-                    <Text
-                      onPress={handleTermsPress}
-                      className="text-sky-400 font-semibold"
-                    >
+                    <Text onPress={handleTermsPress} className="text-sky-400 font-semibold">
                       תנאי השימוש
-                    </Text>{' '}
+                    </Text>{" "}
                     ול
-                    <Text
-                      onPress={handlePrivacyPress}
-                      className="text-sky-400 font-semibold"
-                    >
+                    <Text onPress={handlePrivacyPress} className="text-sky-400 font-semibold">
                       מדיניות הפרטיות
                     </Text>
                   </Text>
@@ -305,7 +283,7 @@ export default function SignUpScreen() {
 
             {/* כפתור הרשמה */}
             <TouchableOpacity
-              className={`bg-sky-400 rounded-xl py-4 items-center ${loading || isPreviewMode || !consentAccepted ? 'opacity-60' : ''}`}
+              className={`bg-sky-400 rounded-xl py-4 items-center ${loading || isPreviewMode || !consentAccepted ? "opacity-60" : ""}`}
               onPress={onSignUpPress}
               disabled={loading || isPreviewMode || !consentAccepted}
               activeOpacity={0.8}
@@ -321,16 +299,12 @@ export default function SignUpScreen() {
             <View className="flex-row justify-center gap-2 mt-6">
               {isPreviewMode ? (
                 <TouchableOpacity disabled={true}>
-                  <Text className="text-zinc-500 font-semibold text-base">
-                    התחבר כאן
-                  </Text>
+                  <Text className="text-zinc-500 font-semibold text-base">התחבר כאן</Text>
                 </TouchableOpacity>
               ) : (
                 <Link href="/(auth)/sign-in" asChild={true}>
                   <TouchableOpacity>
-                    <Text className="text-sky-400 font-semibold text-base">
-                      התחבר כאן
-                    </Text>
+                    <Text className="text-sky-400 font-semibold text-base">התחבר כאן</Text>
                   </TouchableOpacity>
                 </Link>
               )}

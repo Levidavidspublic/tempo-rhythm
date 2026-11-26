@@ -14,7 +14,14 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Mic, Phone, Plus, Send, Sun } from "lucide-react-native";
-import { type Dispatch, type RefObject, type SetStateAction, useEffect, useRef, useState } from "react";
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { I18nManager, ScrollView, TextInput, View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Eyebrow, RADIUS, Row, T, TOUCH } from "@/components/v3/primitives";
@@ -39,7 +46,8 @@ export default function CoachScreen() {
   const reply = useCoachReply();
 
   useEffect(() => {
-    if (params.ask === "smaller") setDraft(params.task ? `${t("sug.smaller")}: ${params.task}` : t("sug.smaller"));
+    if (params.ask === "smaller")
+      setDraft(params.task ? `${t("sug.smaller")}: ${params.task}` : t("sug.smaller"));
     if (params.ask) setTimeout(() => inputRef.current?.focus(), 300);
   }, [params.ask, params.task, t]);
 
@@ -64,11 +72,22 @@ export default function CoachScreen() {
     >
       <MobileTopBar
         title={t("top.title")}
-        start={{ kind: "icon", icon: Phone, label: t("top.call"), onPress: () => router.push("/voice-call") }}
+        start={{
+          kind: "icon",
+          icon: Phone,
+          label: t("top.call"),
+          onPress: () => router.push("/voice-call"),
+        }}
       />
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
         <Thread
@@ -85,7 +104,10 @@ export default function CoachScreen() {
   );
 }
 
-type CoachReply = { state: "idle" | "typing" | "unavailable"; request: (id: Id<"conversations">) => void };
+type CoachReply = {
+  state: "idle" | "typing" | "unavailable";
+  request: (id: Id<"conversations">) => void;
+};
 
 /**
  * The model's answer to the newest message (coach.reply). It never throws: a missing key or a
@@ -107,7 +129,7 @@ function useCoachReply(): CoachReply {
 function useSend(
   conversationId: Id<"conversations"> | null,
   setConversationId: (id: Id<"conversations">) => void,
-  onSent: (id: Id<"conversations">) => void,
+  onSent: (id: Id<"conversations">) => void
 ) {
   const create = useMutation(api.conversations.create);
   const send = useMutation(api.coach.sendMessage);
@@ -148,7 +170,8 @@ function Thread({
   const conversations = useQuery(api.conversations.list, ready ? {} : "skip");
   // Threads started in the web's Agent chat can't take legacy messages; with only those, a send
   // starts a new thread.
-  const latest = conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
+  const latest =
+    conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
   const threadId = conversationId ?? latest;
   const messages = useQuery(api.messages.list, threadId ? { conversationId: threadId } : "skip");
   const createProposal = useMutation(api.coach.createProposal);
@@ -160,7 +183,8 @@ function Thread({
     if (!conversationId && latest) setConversationId(latest);
   }, [conversationId, latest, setConversationId]);
 
-  const loading = !ready || conversations === undefined || (threadId !== null && messages === undefined);
+  const loading =
+    !ready || conversations === undefined || (threadId !== null && messages === undefined);
   const list = messages ?? [];
 
   const suggest = (text: string, plan: boolean) => {
@@ -193,11 +217,19 @@ function Thread({
         <Typing label={t("loading")} />
       ) : list.length === 0 ? (
         <View style={{ gap: 16 }}>
-          <Bubble who="coach" label={t("coach.name")} text={name ? t("empty.opener", { name }) : t("empty.opener.noname")} />
+          <Bubble
+            who="coach"
+            label={t("coach.name")}
+            text={name ? t("empty.opener", { name }) : t("empty.opener.noname")}
+          />
           {offline ? null : (
             <Row className="gap-2" wrap>
               <Button small label={t("sug.plan")} onPress={() => suggest(t("sug.plan"), true)} />
-              <Button small label={t("sug.smaller")} onPress={() => suggest(t("sug.smaller"), false)} />
+              <Button
+                small
+                label={t("sug.smaller")}
+                onPress={() => suggest(t("sug.smaller"), false)}
+              />
               <Button small label={t("sug.stuck")} onPress={() => suggest(t("sug.stuck"), false)} />
             </Row>
           )}
@@ -216,7 +248,11 @@ function Thread({
                     <Eyebrow>{`${day === today.iso ? t("day.today") : shortDay(day, lang)} · ${clockTime(m.createdAt)}`}</Eyebrow>
                   </View>
                 ) : null}
-                <Bubble who={m.role === "user" ? "you" : "coach"} label={m.role === "user" ? t("msg.you") : t("coach.name")} text={m.content} />
+                <Bubble
+                  who={m.role === "user" ? "you" : "coach"}
+                  label={m.role === "user" ? t("msg.you") : t("coach.name")}
+                  text={m.content}
+                />
               </View>
             );
           })
@@ -228,7 +264,12 @@ function Thread({
             {t("reply.unavailable")}
           </T>
           <Row>
-            <Button small variant="ghost" label={t("reply.retry")} onPress={() => reply.request(threadId)} />
+            <Button
+              small
+              variant="ghost"
+              label={t("reply.retry")}
+              onPress={() => reply.request(threadId)}
+            />
           </Row>
         </View>
       ) : null}
@@ -277,10 +318,24 @@ function Bubble({ who, label, text }: { who: "you" | "coach"; label: string; tex
 function Typing({ label }: { label: string }) {
   const { colors: c, row } = usePrefs();
   return (
-    <View accessible accessibilityRole="progressbar" accessibilityLabel={label} style={{ flexDirection: row, alignItems: "center", gap: 8 }}>
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      style={{ flexDirection: row, alignItems: "center", gap: 8 }}
+    >
       <View style={{ flexDirection: "row", gap: 4 }}>
         {[0, 1, 2].map((i) => (
-          <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.inkMuted, opacity: 0.6 }} />
+          <View
+            key={i}
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: c.inkMuted,
+              opacity: 0.6,
+            }}
+          />
         ))}
       </View>
       <T size="sm" tone="muted">
@@ -332,7 +387,9 @@ function Proposal() {
       toast({
         title: n === 1 ? t("toast.title.one") : t("toast.title", { n }),
         onUndo: async () => {
-          await Promise.all(ids.map((taskId) => update({ taskId, dueAt: before.get(taskId) ?? null })));
+          await Promise.all(
+            ids.map((taskId) => update({ taskId, dueAt: before.get(taskId) ?? null }))
+          );
           setNote(t("undo.done"));
         },
       });
@@ -346,9 +403,24 @@ function Proposal() {
   return (
     <View
       accessibilityRole="summary"
-      style={{ backgroundColor: c.paper, borderWidth: 1, borderColor: c.lineStrong, borderRadius: RADIUS.lg, overflow: "hidden" }}
+      style={{
+        backgroundColor: c.paper,
+        borderWidth: 1,
+        borderColor: c.lineStrong,
+        borderRadius: RADIUS.lg,
+        overflow: "hidden",
+      }}
     >
-      <Row style={{ alignItems: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: c.line }}>
+      <Row
+        style={{
+          alignItems: "center",
+          gap: 8,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: c.line,
+        }}
+      >
         <Sun size={16} color={c.ink} />
         <View style={{ flex: 1 }}>
           <T weight="600" accessibilityRole="header">
@@ -360,9 +432,28 @@ function Proposal() {
         </T>
       </Row>
       {proposal.tasks.map((task) => (
-        <Row key={task.taskId} style={{ gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: c.line }}>
+        <Row
+          key={task.taskId}
+          style={{
+            gap: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: c.line,
+          }}
+        >
           <Row
-            style={{ minWidth: 64, minHeight: 24, alignItems: "center", justifyContent: "center", gap: 2, paddingHorizontal: 8, borderRadius: RADIUS.sm, backgroundColor: c.doneWash, alignSelf: "flex-start" }}
+            style={{
+              minWidth: 64,
+              minHeight: 24,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              paddingHorizontal: 8,
+              borderRadius: RADIUS.sm,
+              backgroundColor: c.doneWash,
+              alignSelf: "flex-start",
+            }}
           >
             <Plus size={14} color={c.done} />
             <T size="xs" weight="700" tone="done">
@@ -379,10 +470,25 @@ function Proposal() {
           </View>
         </Row>
       ))}
-      <Row className="gap-2" wrap style={{ padding: 12, paddingHorizontal: 16, backgroundColor: c.ground }}>
+      <Row
+        className="gap-2"
+        wrap
+        style={{ padding: 12, paddingHorizontal: 16, backgroundColor: c.ground }}
+      >
         {/* Accept waits for the task list, so its Undo can always put each due date back. */}
-        <Button variant="primary" icon={Check} label={t("proposal.accept")} onPress={() => onDecide("accept")} disabled={busy || !tasks} />
-        <Button variant="ghost" label={t("proposal.reject")} onPress={() => onDecide("reject")} disabled={busy} />
+        <Button
+          variant="primary"
+          icon={Check}
+          label={t("proposal.accept")}
+          onPress={() => onDecide("accept")}
+          disabled={busy || !tasks}
+        />
+        <Button
+          variant="ghost"
+          label={t("proposal.reject")}
+          onPress={() => onDecide("reject")}
+          disabled={busy}
+        />
       </Row>
     </View>
   );
@@ -413,7 +519,8 @@ function Composer({
   const router = useRouter();
   const conversations = useQuery(api.conversations.list, {});
   // Same pick as Thread: never an Agent-mapped thread, which coach.sendMessage refuses.
-  const latest = conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
+  const latest =
+    conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
   const send = useSend(conversationId ?? latest, setConversationId, onSent);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -435,8 +542,26 @@ function Composer({
   };
 
   return (
-    <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, backgroundColor: c.ground, borderTopWidth: 1, borderTopColor: c.line }}>
-      <View style={{ gap: 8, padding: 12, backgroundColor: c.paper, borderWidth: 1, borderColor: c.lineControl, borderRadius: RADIUS.lg }}>
+    <View
+      style={{
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        paddingBottom: 12,
+        backgroundColor: c.ground,
+        borderTopWidth: 1,
+        borderTopColor: c.line,
+      }}
+    >
+      <View
+        style={{
+          gap: 8,
+          padding: 12,
+          backgroundColor: c.paper,
+          borderWidth: 1,
+          borderColor: c.lineControl,
+          borderRadius: RADIUS.lg,
+        }}
+      >
         <TextInput
           ref={inputRef}
           value={draft}
@@ -460,13 +585,28 @@ function Composer({
           </T>
         ) : null}
         <Row style={{ alignItems: "center", gap: 4 }}>
-          <Button small variant="ghost" iconOnly icon={Mic} accessibilityLabel={t("composer.voice")} onPress={() => router.push("/voice-call")} />
+          <Button
+            small
+            variant="ghost"
+            iconOnly
+            icon={Mic}
+            accessibilityLabel={t("composer.voice")}
+            onPress={() => router.push("/voice-call")}
+          />
           <View style={{ flex: 1 }}>
             <T size="xs" tone="muted">
               {t("composer.hint")}
             </T>
           </View>
-          <Button small variant="ink" iconOnly icon={Send} accessibilityLabel={t("composer.send")} onPress={submit} disabled={!draft.trim() || busy || replying} />
+          <Button
+            small
+            variant="ink"
+            iconOnly
+            icon={Send}
+            accessibilityLabel={t("composer.send")}
+            onPress={submit}
+            disabled={!draft.trim() || busy || replying}
+          />
         </Row>
       </View>
     </View>

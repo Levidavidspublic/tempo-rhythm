@@ -1,8 +1,8 @@
-import { useAuthActions } from '@convex-dev/auth/react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { Eye, EyeOff } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useAuthActions } from "@convex-dev/auth/react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { Eye, EyeOff } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,23 +13,23 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PreviewModeBanner } from '@/components/PreviewModeBanner';
-import { IS_DEV_MODE } from '@/config/appConfig';
-import { rtl, tw } from '@/lib/rtl';
+import { PreviewModeBanner } from "@/components/PreviewModeBanner";
+import { IS_DEV_MODE } from "@/config/appConfig";
+import { rtl, tw } from "@/lib/rtl";
 
-const REMEMBERED_EMAIL_KEY = 'remembered_email';
+const REMEMBERED_EMAIL_KEY = "remembered_email";
 
 export default function SignInScreen() {
   const { signIn } = useAuthActions(); // פעולת ההתחברות מ-Convex Auth
   const router = useRouter(); // ניווט
   const { preview } = useLocalSearchParams<{ preview?: string }>();
-  const isPreviewMode = IS_DEV_MODE && preview === 'true';
+  const isPreviewMode = IS_DEV_MODE && preview === "true";
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false); // מצב טעינה
   const [rememberMe, setRememberMe] = useState(false); // האם לזכור את האימייל
   const [showPassword, setShowPassword] = useState(false); // הצגת/הסתרת סיסמה
@@ -38,8 +38,7 @@ export default function SignInScreen() {
   useEffect(() => {
     const loadRememberedEmail = async () => {
       try {
-        const rememberedEmail =
-          await AsyncStorage.getItem(REMEMBERED_EMAIL_KEY);
+        const rememberedEmail = await AsyncStorage.getItem(REMEMBERED_EMAIL_KEY);
         if (rememberedEmail) {
           setEmail(rememberedEmail);
           setRememberMe(true);
@@ -48,7 +47,7 @@ export default function SignInScreen() {
         // התעלמות משגיאות אחסון
       }
     };
-    loadRememberedEmail();
+    void loadRememberedEmail();
   }, []);
 
   // פונקציית ההתחברות
@@ -59,7 +58,7 @@ export default function SignInScreen() {
     }
 
     if (!email || !password) {
-      Alert.alert('שגיאה', 'אנא מלא את כל השדות');
+      Alert.alert("שגיאה", "אנא מלא את כל השדות");
       return;
     }
 
@@ -67,7 +66,7 @@ export default function SignInScreen() {
 
     try {
       // ניסיון התחברות מול השרת
-      await signIn('password', { email, password, flow: 'signIn' });
+      await signIn("password", { email, password, flow: "signIn" });
 
       // שמירה או מחיקה של האימייל מהזיכרון בהתאם לתיבת הסימון
       if (rememberMe) {
@@ -77,26 +76,23 @@ export default function SignInScreen() {
       }
 
       // מעבר למסך היום של Tempo
-      router.replace('/(tempo)/(tabs)/today');
+      router.replace("/(tempo)/(tabs)/today");
     } catch (err: unknown) {
       const error = err as { message?: string };
-      const errorMessage = error.message || '';
+      const errorMessage = error.message || "";
 
       // מיפוי שגיאות Convex Auth להודעות בעברית ידידותיות למשתמש
-      if (errorMessage.includes('InvalidSecret')) {
-        Alert.alert('שגיאה', 'הסיסמה שהוזנה שגויה');
+      if (errorMessage.includes("InvalidSecret")) {
+        Alert.alert("שגיאה", "הסיסמה שהוזנה שגויה");
       } else if (
-        errorMessage.includes('InvalidAccountId') ||
-        errorMessage.includes('Could not find')
+        errorMessage.includes("InvalidAccountId") ||
+        errorMessage.includes("Could not find")
       ) {
-        Alert.alert('שגיאה', 'לא נמצא חשבון עם כתובת האימייל הזו');
-      } else if (errorMessage.includes('TooManyRequests')) {
-        Alert.alert(
-          'שגיאה',
-          'יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר'
-        );
+        Alert.alert("שגיאה", "לא נמצא חשבון עם כתובת האימייל הזו");
+      } else if (errorMessage.includes("TooManyRequests")) {
+        Alert.alert("שגיאה", "יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר");
       } else {
-        Alert.alert('שגיאה', 'התחברות נכשלה. אנא בדוק את הפרטים ונסה שוב');
+        Alert.alert("שגיאה", "התחברות נכשלה. אנא בדוק את הפרטים ונסה שוב");
       }
     } finally {
       setLoading(false);
@@ -110,7 +106,7 @@ export default function SignInScreen() {
 
       {/* KeyboardAvoidingView דואג שהמקלדת לא תסתיר את שדות הקלט */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         {/* באנר מצב תצוגה מקדימה */}
@@ -130,10 +126,7 @@ export default function SignInScreen() {
             >
               התחבר לחשבון
             </Text>
-            <Text
-              className="text-zinc-400 text-base mb-8"
-              style={{ textAlign: rtl.textAlign }}
-            >
+            <Text className="text-zinc-400 text-base mb-8" style={{ textAlign: rtl.textAlign }}>
               ברוך שובך! אנא התחבר כדי להמשיך
             </Text>
 
@@ -203,21 +196,17 @@ export default function SignInScreen() {
                 <Text className="text-zinc-300 text-sm">זכור אותי</Text>
                 <View
                   className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                    rememberMe
-                      ? 'bg-sky-400 border-sky-400'
-                      : 'border-zinc-600 bg-transparent'
+                    rememberMe ? "bg-sky-400 border-sky-400" : "border-zinc-600 bg-transparent"
                   }`}
                 >
-                  {rememberMe && (
-                    <Text className="text-white text-xs font-bold">✓</Text>
-                  )}
+                  {rememberMe && <Text className="text-white text-xs font-bold">✓</Text>}
                 </View>
               </Pressable>
             </View>
 
             {/* כפתור התחברות */}
             <TouchableOpacity
-              className={`bg-sky-400 rounded-xl py-4 items-center ${loading || isPreviewMode ? 'opacity-60' : ''}`}
+              className={`bg-sky-400 rounded-xl py-4 items-center ${loading || isPreviewMode ? "opacity-60" : ""}`}
               onPress={onSignInPress}
               disabled={loading || isPreviewMode}
               activeOpacity={0.8}
@@ -233,22 +222,16 @@ export default function SignInScreen() {
             <View className="flex-row justify-center gap-2 mt-6">
               {isPreviewMode ? (
                 <TouchableOpacity disabled={true}>
-                  <Text className="text-zinc-500 font-semibold text-base">
-                    הירשם כאן
-                  </Text>
+                  <Text className="text-zinc-500 font-semibold text-base">הירשם כאן</Text>
                 </TouchableOpacity>
               ) : (
                 <Link href="/(auth)/sign-up" asChild={true}>
                   <TouchableOpacity>
-                    <Text className="text-sky-400 font-semibold text-base">
-                      הירשם כאן
-                    </Text>
+                    <Text className="text-sky-400 font-semibold text-base">הירשם כאן</Text>
                   </TouchableOpacity>
                 </Link>
               )}
-              <Text className="text-zinc-400 text-base">
-                עדיין אין לך חשבון?
-              </Text>
+              <Text className="text-zinc-400 text-base">עדיין אין לך חשבון?</Text>
             </View>
           </View>
         </View>

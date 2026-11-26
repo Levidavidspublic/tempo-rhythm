@@ -4,7 +4,13 @@
  */
 import { addDays, daysBetween, localIsoDate, weekdayOf } from "./dates";
 
-export type HabitDay = { date: string; weekday: number; day: number; done: boolean; today: boolean };
+export type HabitDay = {
+  date: string;
+  weekday: number;
+  day: number;
+  done: boolean;
+  today: boolean;
+};
 
 /** The 7 days ending today, oldest first, each marked logged or not. */
 export function lastSevenDays(todayIso: string, loggedDates: ReadonlySet<string>): HabitDay[] {
@@ -32,4 +38,12 @@ export function needsWelcomeBack(input: {
   return daysBetween(input.lastLoggedIso, input.todayIso) >= 7;
 }
 
-export const WEEKDAY_KEYS = ["dow.sun", "dow.mon", "dow.tue", "dow.wed", "dow.thu", "dow.fri", "dow.sat"] as const;
+export const WEEKDAY_KEYS = [
+  "dow.sun",
+  "dow.mon",
+  "dow.tue",
+  "dow.wed",
+  "dow.thu",
+  "dow.fri",
+  "dow.sat",
+] as const;

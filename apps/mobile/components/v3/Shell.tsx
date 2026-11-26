@@ -5,7 +5,7 @@
  */
 import { useRouter } from "expo-router";
 import { type LucideIcon, Plus, X } from "lucide-react-native";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import {
   I18nManager,
   KeyboardAvoidingView,
@@ -36,7 +36,7 @@ export function Screen({
   keyboard,
   overlay,
   contentStyle,
-  testID,
+  testID: testId,
 }: {
   children: ReactNode;
   /** A tab screen: the tab bar sits below, and the floating button needs room. */
@@ -46,22 +46,33 @@ export function Screen({
   keyboard?: boolean;
   overlay?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
-  testID?: string;
-}) {
+} & Pick<ComponentProps<typeof SafeAreaView>, "testID">) {
   const { colors: c } = usePrefs();
   const body = scroll ? (
     <ScrollView
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: tabs ? 112 : 40, gap: 24 }, contentStyle]}
+      contentContainerStyle={[
+        { paddingHorizontal: 16, paddingTop: 12, paddingBottom: tabs ? 112 : 40, gap: 24 },
+        contentStyle,
+      ]}
     >
       {children}
     </ScrollView>
   ) : (
-    <View style={[{ flex: 1, paddingHorizontal: 16, paddingTop: 12, gap: 16 }, contentStyle]}>{children}</View>
+    <View style={[{ flex: 1, paddingHorizontal: 16, paddingTop: 12, gap: 16 }, contentStyle]}>
+      {children}
+    </View>
   );
   return (
-    <SafeAreaView testID={testID} edges={tabs ? ["top"] : ["top", "bottom"]} style={{ flex: 1, backgroundColor: c.ground }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={keyboard && Platform.OS === "ios" ? "padding" : undefined}>
+    <SafeAreaView
+      testID={testId}
+      edges={tabs ? ["top"] : ["top", "bottom"]}
+      style={{ flex: 1, backgroundColor: c.ground }}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={keyboard && Platform.OS === "ios" ? "padding" : undefined}
+      >
         {body}
         {footer}
       </KeyboardAvoidingView>
@@ -70,7 +81,9 @@ export function Screen({
   );
 }
 
-type StartAction = { kind: "back" } | { kind: "icon"; icon: LucideIcon; label: string; onPress: () => void };
+type StartAction =
+  | { kind: "back" }
+  | { kind: "icon"; icon: LucideIcon; label: string; onPress: () => void };
 
 export function MobileTopBar({
   title,
@@ -98,7 +111,13 @@ export function MobileTopBar({
         <Chevron back size={20} color={c.ink} />
       </Pressable>
     ) : start?.kind === "icon" ? (
-      <Button variant="ghost" iconOnly icon={start.icon} accessibilityLabel={start.label} onPress={start.onPress} />
+      <Button
+        variant="ghost"
+        iconOnly
+        icon={start.icon}
+        accessibilityLabel={start.label}
+        onPress={start.onPress}
+      />
     ) : (
       <View style={{ width: TOUCH }} />
     );
@@ -107,7 +126,9 @@ export function MobileTopBar({
       <Pressable
         onPress={() => router.push("/settings")}
         accessibilityRole="button"
-        accessibilityLabel={session.fullName ? t("top.avatar", { name: session.fullName }) : t("more.settings")}
+        accessibilityLabel={
+          session.fullName ? t("top.avatar", { name: session.fullName }) : t("more.settings")
+        }
         style={{ width: TOUCH, height: TOUCH, alignItems: "center", justifyContent: "center" }}
       >
         <Avatar initials={session.initials} />
@@ -143,7 +164,15 @@ export function MobileTopBar({
 }
 
 /** The floating + that opens Capture (CaptureButton). */
-export function CaptureFab({ label, onPress, icon: Icon = Plus }: { label: string; onPress: () => void; icon?: LucideIcon }) {
+export function CaptureFab({
+  label,
+  onPress,
+  icon: Icon = Plus,
+}: {
+  label: string;
+  onPress: () => void;
+  icon?: LucideIcon;
+}) {
   const { colors: c } = usePrefs();
   const edge = useEndEdge(16);
   return (
@@ -207,9 +236,15 @@ export function Sheet({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <Pressable
-          style={{ flex: 1, backgroundColor: p.dark ? withAlpha(c.sunken, 0.48) : withAlpha(c.ink, 0.28) }}
+          style={{
+            flex: 1,
+            backgroundColor: p.dark ? withAlpha(c.sunken, 0.48) : withAlpha(c.ink, 0.28),
+          }}
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel={closeLabel}
@@ -227,20 +262,49 @@ export function Sheet({
             paddingBottom: insets.bottom,
           }}
         >
-          <View style={{ alignSelf: "center", width: 40, height: 4, marginTop: 8, borderRadius: RADIUS.pill, backgroundColor: c.lineStrong }} />
+          <View
+            style={{
+              alignSelf: "center",
+              width: 40,
+              height: 4,
+              marginTop: 8,
+              borderRadius: RADIUS.pill,
+              backgroundColor: c.lineStrong,
+            }}
+          />
           <Row style={{ alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 8 }}>
             <View style={{ flex: 1, paddingHorizontal: 12 }}>
               <T size="lg" weight="500" serif accessibilityRole="header">
                 {title}
               </T>
             </View>
-            <Button variant="ghost" iconOnly icon={X} accessibilityLabel={closeLabel} onPress={onClose} />
+            <Button
+              variant="ghost"
+              iconOnly
+              icon={X}
+              accessibilityLabel={closeLabel}
+              onPress={onClose}
+            />
           </Row>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}
+          >
             {children}
           </ScrollView>
           {footer ? (
-            <View style={{ gap: 8, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: c.line }}>{footer}</View>
+            <View
+              style={{
+                gap: 8,
+                paddingHorizontal: 20,
+                paddingTop: 12,
+                paddingBottom: 20,
+                borderTopWidth: 1,
+                borderTopColor: c.line,
+              }}
+            >
+              {footer}
+            </View>
           ) : null}
         </View>
       </KeyboardAvoidingView>

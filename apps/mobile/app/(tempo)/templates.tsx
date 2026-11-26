@@ -10,14 +10,39 @@
  */
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import { CalendarDays, FileText, LayoutTemplate, Lock, MessageCircle, Play, Sparkles, Sun } from "lucide-react-native";
+import {
+  CalendarDays,
+  FileText,
+  LayoutTemplate,
+  Lock,
+  MessageCircle,
+  Play,
+  Sparkles,
+  Sun,
+} from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Badge, Button, Card, PageHeader, Row, SearchField, SectionHead, Segmented, T } from "@/components/v3/primitives";
+import {
+  Badge,
+  Button,
+  Card,
+  PageHeader,
+  Row,
+  SearchField,
+  SectionHead,
+  Segmented,
+  T,
+} from "@/components/v3/primitives";
 import { MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline, useTempoSession } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import { localIsoDate, shortDay } from "@/lib/v3/dates";
@@ -55,7 +80,13 @@ export default function TemplatesScreen() {
       </Card>
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
         <TemplateList ready={session.ready} />
@@ -83,7 +114,8 @@ function TemplateList({ ready }: { ready: boolean }) {
   const matches = useMemo(() => {
     const q = search.trim().toLocaleLowerCase();
     return (x: Template) =>
-      !q || [x.name, x.description ?? "", ...x.sections].some((s) => s.toLocaleLowerCase().includes(q));
+      !q ||
+      [x.name, x.description ?? "", ...x.sections].some((s) => s.toLocaleLowerCase().includes(q));
   }, [search]);
 
   if (!templates) return <StateLoading label={t("load.label")} rows={4} />;
@@ -98,7 +130,12 @@ function TemplateList({ ready }: { ready: boolean }) {
   return (
     <View style={{ gap: 24 }}>
       <View style={{ gap: 12 }}>
-        <SearchField label={t("search.label")} placeholder={t("search.ph")} value={search} onChangeText={setSearch} />
+        <SearchField
+          label={t("search.label")}
+          placeholder={t("search.ph")}
+          value={search}
+          onChangeText={setSearch}
+        />
         <Segmented
           block
           label={t("filter.label")}
@@ -113,12 +150,20 @@ function TemplateList({ ready }: { ready: boolean }) {
       </View>
       {!hasOwn && filter !== "builtin" && !search.trim() ? (
         <StateEmpty icon={LayoutTemplate} title={t("empty.title")} body={t("empty.body")}>
-          {filter === "mine" ? <Button icon={LayoutTemplate} label={t("empty.builtin")} onPress={() => setFilter("builtin")} /> : null}
+          {filter === "mine" ? (
+            <Button
+              icon={LayoutTemplate}
+              label={t("empty.builtin")}
+              onPress={() => setFilter("builtin")}
+            />
+          ) : null}
         </StateEmpty>
       ) : null}
       {showBuiltin ? <Group title={t("g.builtin")} rows={builtin} /> : null}
       {showMine ? <Group title={t("g.mine")} rows={mine} /> : null}
-      {nothing && (hasOwn || filter === "builtin" || search.trim()) ? <T tone="muted">{t("search.none")}</T> : null}
+      {nothing && (hasOwn || filter === "builtin" || search.trim()) ? (
+        <T tone="muted">{t("search.none")}</T>
+      ) : null}
     </View>
   );
 }
@@ -141,7 +186,12 @@ function TemplateCard({ template }: { template: Template }) {
   const apply = useMutation(api.templates.applyToNote);
   const remove = useMutation(api.notes.remove);
   const [busy, setBusy] = useState(false);
-  const Icon = template.periodType === "daily" ? Sun : template.periodType === "none" ? FileText : CalendarDays;
+  const Icon =
+    template.periodType === "daily"
+      ? Sun
+      : template.periodType === "none"
+        ? FileText
+        : CalendarDays;
   const builtIn = template.source === "starter";
 
   const use = async () => {
@@ -190,7 +240,13 @@ function TemplateCard({ template }: { template: Template }) {
         </View>
       ) : null}
       <Row className="gap-2" wrap>
-        <Button icon={Play} label={t("use")} accessibilityLabel={`${t("use")}: ${template.name}`} onPress={use} disabled={busy} />
+        <Button
+          icon={Play}
+          label={t("use")}
+          accessibilityLabel={`${t("use")}: ${template.name}`}
+          onPress={use}
+          disabled={busy}
+        />
       </Row>
     </Card>
   );

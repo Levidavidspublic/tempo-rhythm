@@ -16,7 +16,8 @@ import { initials, isOffline } from "@/lib/v3/display";
 export function useTempoSession() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const name = profile?.greetingName && profile.greetingName !== "there" ? profile.greetingName : "";
+  const name =
+    profile?.greetingName && profile.greetingName !== "there" ? profile.greetingName : "";
   return {
     isAuthenticated,
     isLoading: isLoading || (isAuthenticated && profile === undefined),

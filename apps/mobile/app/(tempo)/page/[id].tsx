@@ -17,7 +17,13 @@ import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Card, Checkbox, RADIUS, Row, T, TextField } from "@/components/v3/primitives";
 import { MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline, useTempoSession } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -44,10 +50,20 @@ export default function PageScreen() {
       {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
-        {id === "new" ? <PageEditor initialTitle="" initialBody="" /> : <PageView ready={session.ready} id={id ?? ""} />}
+        {id === "new" ? (
+          <PageEditor initialTitle="" initialBody="" />
+        ) : (
+          <PageView ready={session.ready} id={id ?? ""} />
+        )}
       </QueryBoundary>
     </Screen>
   );
@@ -68,9 +84,17 @@ function PageView({ ready, id }: { ready: boolean; id: string }) {
   }, [note]);
 
   if (note === undefined) return <StateLoading label={t("load.label")} rows={4} />;
-  if (note === null) return <StateEmpty icon={FileText} title={t("missing.title")} body={t("missing.body")} />;
+  if (note === null)
+    return <StateEmpty icon={FileText} title={t("missing.title")} body={t("missing.body")} />;
   if (editing) {
-    return <PageEditor noteId={note._id} initialTitle={note.title} initialBody={note.body} onDone={() => setEditing(false)} />;
+    return (
+      <PageEditor
+        noteId={note._id}
+        initialTitle={note.title}
+        initialBody={note.body}
+        onDone={() => setEditing(false)}
+      />
+    );
   }
 
   const blocks = parseMarkdownView(note.body);
@@ -91,12 +115,24 @@ function PageView({ ready, id }: { ready: boolean; id: string }) {
         {note.title.trim() || tn("untitled")}
       </T>
       <Button icon={Pencil} label={t("edit")} onPress={() => setEditing(true)} />
-      {isBlankBody(note.body) ? <T tone="muted">{t("empty.body")}</T> : <ReadView blocks={blocks} onTick={tick} />}
+      {isBlankBody(note.body) ? (
+        <T tone="muted">{t("empty.body")}</T>
+      ) : (
+        <ReadView blocks={blocks} onTick={tick} />
+      )}
     </View>
   );
 }
 
-function Inlines({ inlines, size = "md", weight }: { inlines: Inline[]; size?: "md" | "lg" | "xl" | "2xl"; weight?: "500" | "600" }) {
+function Inlines({
+  inlines,
+  size = "md",
+  weight,
+}: {
+  inlines: Inline[];
+  size?: "md" | "lg" | "xl" | "2xl";
+  weight?: "500" | "600";
+}) {
   return (
     <T size={size} weight={weight} serif={size !== "md"} user dirText={plain(inlines)}>
       {inlines.map((i, n) => (
@@ -131,7 +167,11 @@ function ReadView({ blocks, onTick }: { blocks: ViewBlock[]; onTick: (line: numb
           case "heading":
             return (
               <View key={i} accessibilityRole="header" style={{ marginTop: 8 }}>
-                <Inlines inlines={b.inlines} size={b.level === 1 ? "2xl" : b.level === 2 ? "xl" : "lg"} weight="500" />
+                <Inlines
+                  inlines={b.inlines}
+                  size={b.level === 1 ? "2xl" : b.level === 2 ? "xl" : "lg"}
+                  weight="500"
+                />
               </View>
             );
           case "paragraph":
@@ -149,8 +189,16 @@ function ReadView({ blocks, onTick }: { blocks: ViewBlock[]; onTick: (line: numb
             );
           case "check":
             return (
-              <Row key={i} className="gap-3" style={{ alignItems: "center", paddingStart: b.depth * 16 + 6 }}>
-                <Checkbox checked={b.checked} label={plain(b.inlines)} onPress={() => onTick(b.line)} />
+              <Row
+                key={i}
+                className="gap-3"
+                style={{ alignItems: "center", paddingStart: b.depth * 16 + 6 }}
+              >
+                <Checkbox
+                  checked={b.checked}
+                  label={plain(b.inlines)}
+                  onPress={() => onTick(b.line)}
+                />
                 <View style={{ flex: 1 }}>
                   <T user strike={b.checked} tone={b.checked ? "muted" : "ink"}>
                     {plain(b.inlines)}
@@ -160,20 +208,28 @@ function ReadView({ blocks, onTick }: { blocks: ViewBlock[]; onTick: (line: numb
             );
           case "quote":
             return (
-              <View key={i} style={{ borderStartWidth: 3, borderStartColor: c.lineStrong, paddingStart: 12 }}>
+              <View
+                key={i}
+                style={{ borderStartWidth: 3, borderStartColor: c.lineStrong, paddingStart: 12 }}
+              >
                 <Inlines inlines={b.inlines} />
               </View>
             );
           case "code":
             return (
-              <View key={i} style={{ backgroundColor: c.sunken, borderRadius: RADIUS.md, padding: 12 }}>
+              <View
+                key={i}
+                style={{ backgroundColor: c.sunken, borderRadius: RADIUS.md, padding: 12 }}
+              >
                 <T size="sm" mono ltr>
                   {b.text}
                 </T>
               </View>
             );
           case "rule":
-            return <View key={i} style={{ height: 1, backgroundColor: c.line, marginVertical: 8 }} />;
+            return (
+              <View key={i} style={{ height: 1, backgroundColor: c.line, marginVertical: 8 }} />
+            );
           case "tempo":
             return <TempoCard key={i} info={b.info} />;
           default:
@@ -208,7 +264,12 @@ function TempoCard({ info }: { info: TempoInfo }) {
             {info.done ? <Check size={14} color={c.paper} /> : null}
           </View>
           <View style={{ flex: 1 }}>
-            <T user strike={info.done} tone={info.done ? "muted" : "ink"} accessibilityLabel={`${t("block.task")}: ${info.title}`}>
+            <T
+              user
+              strike={info.done}
+              tone={info.done ? "muted" : "ink"}
+              accessibilityLabel={`${t("block.task")}: ${info.title}`}
+            >
               {info.title}
             </T>
           </View>
@@ -259,16 +320,17 @@ function PageEditor({
             ? `${t("block.template")}: ${info.name}`
             : info.type === "page-meta"
               ? t("block.page")
-              : "",
+              : ""
       ),
-    [initialBody, t],
+    [initialBody, t]
   );
   const [title, setTitle] = useState(initialTitle);
   const [text, setText] = useState(masked.text);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const cancel = () => (onDone ? onDone() : router.canGoBack() ? router.back() : router.replace("/notes"));
+  const cancel = () =>
+    onDone ? onDone() : router.canGoBack() ? router.back() : router.replace("/notes");
 
   const save = async () => {
     if (busy) return;
@@ -298,7 +360,14 @@ function PageEditor({
   return (
     <View style={{ gap: 16 }}>
       {/* Locked while saving: Save closes the editor, so words typed meanwhile would be lost. */}
-      <TextField label={t("title.label")} value={title} onChangeText={setTitle} user autoFocus={!noteId} editable={!busy} />
+      <TextField
+        label={t("title.label")}
+        value={title}
+        onChangeText={setTitle}
+        user
+        autoFocus={!noteId}
+        editable={!busy}
+      />
       <TextField
         label={t("body.label")}
         help={t("body.help")}
@@ -316,8 +385,22 @@ function PageEditor({
         </T>
       ) : null}
       <View style={{ gap: 8 }}>
-        <Button variant="primary" block icon={Check} label={t("save")} onPress={save} disabled={busy} />
-        <Button variant="ghost" block icon={X} label={t("cancel")} onPress={cancel} disabled={busy} />
+        <Button
+          variant="primary"
+          block
+          icon={Check}
+          label={t("save")}
+          onPress={save}
+          disabled={busy}
+        />
+        <Button
+          variant="ghost"
+          block
+          icon={X}
+          label={t("cancel")}
+          onPress={cancel}
+          disabled={busy}
+        />
       </View>
     </View>
   );

@@ -64,7 +64,9 @@ export function runReducer(run: RoutineRun, action: RunAction): RoutineRun {
       return { ...run, marks, index, updatedAt: action.now };
     }
     case "pause":
-      return run.paused ? run : { ...run, paused: true, pausedAt: action.now, updatedAt: action.now };
+      return run.paused
+        ? run
+        : { ...run, paused: true, pausedAt: action.now, updatedAt: action.now };
     case "resume":
       return run.paused ? { ...run, paused: false, pausedAt: null, updatedAt: action.now } : run;
     default:
@@ -89,7 +91,12 @@ export function parseRun(raw: string | null, routineId: string, steps: number): 
   if (!raw) return null;
   try {
     const value = JSON.parse(raw) as Partial<RoutineRun>;
-    if (value.routineId !== routineId || !Array.isArray(value.marks) || value.marks.length !== steps) return null;
+    if (
+      value.routineId !== routineId ||
+      !Array.isArray(value.marks) ||
+      value.marks.length !== steps
+    )
+      return null;
     if (typeof value.index !== "number" || value.index < 0 || value.index >= steps) return null;
     return {
       routineId,

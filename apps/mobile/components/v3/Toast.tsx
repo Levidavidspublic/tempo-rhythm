@@ -3,7 +3,16 @@
  * countdown is real and the toast leaves when the window closes. Undo calls the screen's restore.
  */
 import { Check, X } from "lucide-react-native";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AccessibilityInfo, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UNDO_MS, undoCountdown } from "@/lib/v3/undo";
@@ -27,24 +36,50 @@ export function useToast(): (toast: ToastInput) => void {
   return useContext(ToastContext);
 }
 
-export function ToastProvider({ children, bottomOffset = 88 }: { children: ReactNode; bottomOffset?: number }) {
+export function ToastProvider({
+  children,
+  bottomOffset = 88,
+}: {
+  children: ReactNode;
+  bottomOffset?: number;
+}) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const seq = useRef(0);
   const show = useCallback((input: ToastInput) => {
     seq.current += 1;
-    setToast({ ...input, id: seq.current, startedAt: Date.now(), windowMs: input.ms ?? (input.onUndo ? UNDO_MS : 6000) });
+    setToast({
+      ...input,
+      id: seq.current,
+      startedAt: Date.now(),
+      windowMs: input.ms ?? (input.onUndo ? UNDO_MS : 6000),
+    });
     AccessibilityInfo.announceForAccessibility(input.title);
   }, []);
   const value = useMemo(() => show, [show]);
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {toast ? <ToastView key={toast.id} toast={toast} bottomOffset={bottomOffset} onClose={() => setToast(null)} /> : null}
+      {toast ? (
+        <ToastView
+          key={toast.id}
+          toast={toast}
+          bottomOffset={bottomOffset}
+          onClose={() => setToast(null)}
+        />
+      ) : null}
     </ToastContext.Provider>
   );
 }
 
-function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottomOffset: number; onClose: () => void }) {
+function ToastView({
+  toast,
+  bottomOffset,
+  onClose,
+}: {
+  toast: ToastState;
+  bottomOffset: number;
+  onClose: () => void;
+}) {
   const t = useT("tasks");
   const p = usePrefs();
   const c = p.colors;
@@ -76,7 +111,13 @@ function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottom
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 16, right: 16, bottom: insets.bottom + bottomOffset, alignItems: "center" }}
+      style={{
+        position: "absolute",
+        left: 16,
+        right: 16,
+        bottom: insets.bottom + bottomOffset,
+        alignItems: "center",
+      }}
     >
       <Row
         style={{
@@ -117,8 +158,17 @@ function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottom
             </T>
           ) : null}
         </View>
-        {toast.onUndo ? <Button small variant="ghost" label={t("toast.undo")} onPress={undo} disabled={busy} /> : null}
-        <Button small variant="ghost" iconOnly icon={X} accessibilityLabel={t("toast.dismiss")} onPress={onClose} />
+        {toast.onUndo ? (
+          <Button small variant="ghost" label={t("toast.undo")} onPress={undo} disabled={busy} />
+        ) : null}
+        <Button
+          small
+          variant="ghost"
+          iconOnly
+          icon={X}
+          accessibilityLabel={t("toast.dismiss")}
+          onPress={onClose}
+        />
       </Row>
     </View>
   );

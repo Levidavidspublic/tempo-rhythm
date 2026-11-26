@@ -18,10 +18,25 @@ import { Check, FileText, Sun } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Card, ListRow, PageHeader, SectionHead, Segmented, T, TextField } from "@/components/v3/primitives";
+import {
+  Button,
+  Card,
+  ListRow,
+  PageHeader,
+  SectionHead,
+  Segmented,
+  T,
+  TextField,
+} from "@/components/v3/primitives";
 import { MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline, useTempoSession, useToday } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { api } from "@/convex/_generated/api";
 import { dailyPageDraft } from "@/lib/v3/daily-page";
 import { clockTime, longDay, shortDay } from "@/lib/v3/dates";
@@ -73,10 +88,21 @@ export default function JournalScreen() {
       <PageHeader eyebrow={longDay(today.iso, lang)} title={t("page.title")} sub={t("page.sub")} />
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
-        <JournalBody ready={session.ready} userId={session.profile?._id ?? null} iso={today.iso} offline={offline} />
+        <JournalBody
+          ready={session.ready}
+          userId={session.profile?._id ?? null}
+          iso={today.iso}
+          offline={offline}
+        />
       </QueryBoundary>
     </Screen>
   );
@@ -98,22 +124,35 @@ function JournalBody({
   const { lang } = usePrefs();
   const router = useRouter();
   const convex = useConvex();
-  const daily = useQuery(api.notes.getPeriodPage, ready ? { pageType: "daily", date: iso } : "skip");
+  const daily = useQuery(
+    api.notes.getPeriodPage,
+    ready ? { pageType: "daily", date: iso } : "skip"
+  );
   const note = useQuery(api.notes.getSafe, ready && daily ? { noteId: daily._id } : "skip");
-  const template = useQuery(api.templates.get, ready && daily === null ? { templateId: "starter:daily-page" } : "skip");
-  const past = useQuery(api.notes.listPeriodPages, ready ? { pageType: "daily", before: iso, limit: 10 } : "skip");
+  const template = useQuery(
+    api.templates.get,
+    ready && daily === null ? { templateId: "starter:daily-page" } : "skip"
+  );
+  const past = useQuery(
+    api.notes.listPeriodPages,
+    ready ? { pageType: "daily", before: iso, limit: 10 } : "skip"
+  );
   const update = useMutation(api.notes.update);
   const ensure = useMutation(api.notes.ensurePeriodPage);
 
   const [entry, setEntry] = useState<JournalEntry>({ mood: null, q1: "", q2: "" });
-  const [status, setStatus] = useState<{ kind: "draft" | "saved" | "saved.local"; at: number } | null>(null);
+  const [status, setStatus] = useState<{
+    kind: "draft" | "saved" | "saved.local";
+    at: number;
+  } | null>(null);
   // Bumped on every edit, so a save that lands after newer typing never drops that newer draft.
   const version = useRef(0);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const started = useRef<string | null>(null);
 
-  const pageReady = daily === null ? template !== undefined : daily !== undefined && note !== undefined;
+  const pageReady =
+    daily === null ? template !== undefined : daily !== undefined && note !== undefined;
 
   // Start from the phone's draft for today, else from the page's journal section.
   useEffect(() => {
@@ -142,14 +181,16 @@ function JournalBody({
       });
   }, [pageReady, iso, note, storeKey]);
 
-  if (!pageReady || past === undefined) return <StateLoading label={t("load.label")} rows={3} block />;
+  if (!pageReady || past === undefined)
+    return <StateLoading label={t("load.label")} rows={3} block />;
 
   const change = (next: JournalEntry) => {
     version.current += 1;
     setEntry(next);
     const at = Date.now();
     setStatus({ kind: "draft", at });
-    if (storeKey) AsyncStorage.setItem(storeKey, JSON.stringify({ ...next, at })).catch(() => undefined);
+    if (storeKey)
+      AsyncStorage.setItem(storeKey, JSON.stringify({ ...next, at })).catch(() => undefined);
   };
 
   const hasText = !!entry.mood || !!entry.q1.trim() || !!entry.q2.trim();
@@ -163,7 +204,10 @@ function JournalBody({
     const section = buildJournalSection(entry, copyFor(lang));
     try {
       if (note) {
-        await update({ noteId: note._id, body: upsertJournalSection(note.body, section, LABELS.heading) });
+        await update({
+          noteId: note._id,
+          body: upsertJournalSection(note.body, section, LABELS.heading),
+        });
       } else {
         const draft = dailyPageDraft(iso, template?.body ?? "", lang);
         const id = await ensure({
@@ -175,7 +219,10 @@ function JournalBody({
         // ensurePeriodPage returns an existing page without writing; then add the section to it.
         const fresh = await convex.query(api.notes.getSafe, { noteId: id });
         if (fresh && !readJournal(fresh.body, LABELS)) {
-          await update({ noteId: id, body: upsertJournalSection(fresh.body, section, LABELS.heading) });
+          await update({
+            noteId: id,
+            body: upsertJournalSection(fresh.body, section, LABELS.heading),
+          });
         }
       }
       if (version.current === savedVersion) {
@@ -214,7 +261,13 @@ function JournalBody({
             ]}
           />
         </View>
-        <TextField label={t("q1.label")} value={entry.q1} onChangeText={(q1) => change({ ...entry, q1 })} multiline user />
+        <TextField
+          label={t("q1.label")}
+          value={entry.q1}
+          onChangeText={(q1) => change({ ...entry, q1 })}
+          multiline
+          user
+        />
         <TextField
           label={t("q2.label")}
           value={entry.q2}
@@ -225,7 +278,14 @@ function JournalBody({
           user
         />
         <View style={{ gap: 8 }}>
-          <Button variant="primary" block icon={Check} label={t("save")} onPress={save} disabled={busy || !hasText} />
+          <Button
+            variant="primary"
+            block
+            icon={Check}
+            label={t("save")}
+            onPress={save}
+            disabled={busy || !hasText}
+          />
           {failed ? (
             <T size="sm" tone="danger" accessibilityRole="alert">
               {t("save.error")}

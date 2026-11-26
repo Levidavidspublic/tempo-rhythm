@@ -8,9 +8,22 @@ import { View } from "react-native";
 import { Button, Notice, SkeletonRows, T } from "./primitives";
 import { usePrefs } from "./prefs";
 
-export function StateLoading({ label, rows = 3, block }: { label: string; rows?: number; block?: boolean }) {
+export function StateLoading({
+  label,
+  rows = 3,
+  block,
+}: {
+  label: string;
+  rows?: number;
+  block?: boolean;
+}) {
   return (
-    <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}>
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityState={{ busy: true }}
+    >
       <SkeletonRows rows={rows} block={block} />
     </View>
   );
@@ -21,7 +34,14 @@ function StateIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
     <View
       importantForAccessibility="no-hide-descendants"
-      style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.sunken, alignItems: "center", justifyContent: "center" }}
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: c.sunken,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       <Icon size={24} color={c.ink} />
     </View>
@@ -42,7 +62,10 @@ export function StateError({
   onRetry: () => void;
 }) {
   return (
-    <View accessibilityRole="alert" style={{ alignItems: "center", gap: 12, paddingVertical: 48, paddingHorizontal: 16 }}>
+    <View
+      accessibilityRole="alert"
+      style={{ alignItems: "center", gap: 12, paddingVertical: 48, paddingHorizontal: 16 }}
+    >
       <StateIcon icon={RefreshCw} />
       <T size="xl" weight="500" serif center accessibilityRole="header">
         {title}
@@ -73,7 +96,11 @@ export function StateEmpty({
       <T tone="muted" center>
         {body}
       </T>
-      {children ? <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>{children}</View> : null}
+      {children ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+          {children}
+        </View>
+      ) : null}
     </View>
   );
 }

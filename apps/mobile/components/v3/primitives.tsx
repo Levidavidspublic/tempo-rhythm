@@ -11,11 +11,13 @@ import {
   I18nManager,
   Platform,
   Pressable,
+  type PressableProps,
   type StyleProp,
   Switch,
   Text,
   TextInput,
   type TextInputProps,
+  type TextProps,
   type TextStyle,
   View,
   type ViewStyle,
@@ -34,7 +36,17 @@ export const FONT = {
 
 const SIZE = { xs: 13, sm: 15, md: 17, lg: 20, xl: 24, "2xl": 30, "3xl": 38 } as const;
 export type TextSizeName = keyof typeof SIZE;
-export type Tone = "ink" | "muted" | "subtle" | "accent" | "onAccent" | "done" | "info" | "caution" | "danger" | "paper";
+export type Tone =
+  | "ink"
+  | "muted"
+  | "subtle"
+  | "accent"
+  | "onAccent"
+  | "done"
+  | "info"
+  | "caution"
+  | "danger"
+  | "paper";
 
 function toneColor(c: Palette, tone: Tone): string {
   switch (tone) {
@@ -76,7 +88,7 @@ function plainText(children: ReactNode): string {
   return "";
 }
 
-export type TProps = {
+export type TempoTextProps = {
   children?: ReactNode;
   size?: TextSizeName;
   weight?: "400" | "500" | "600" | "700";
@@ -102,9 +114,7 @@ export type TProps = {
   accessibilityLiveRegion?: "none" | "polite" | "assertive";
   importantForAccessibility?: "auto" | "yes" | "no" | "no-hide-descendants";
   selectable?: boolean;
-  testID?: string;
-  nativeID?: string;
-};
+} & Pick<TextProps, "testID" | "nativeID">;
 
 /** Text on the v3 scale (13 px floor), in the person's text size, language direction and theme. */
 export function T({
@@ -124,11 +134,13 @@ export function T({
   snug,
   style,
   ...rest
-}: TProps) {
+}: TempoTextProps) {
   const p = usePrefs();
   const fontSize = Math.max(13, Math.round(SIZE[size] * p.textScale));
   const heading = serif && SIZE[size] >= 20;
-  const lineHeight = Math.round(fontSize * (heading ? 1.18 : snug ? 1.35 : p.readingFont ? 1.8 : 1.6));
+  const lineHeight = Math.round(
+    fontSize * (heading ? 1.18 : snug ? 1.35 : p.readingFont ? 1.8 : 1.6)
+  );
   let writingDirection: "ltr" | "rtl" = p.rtl ? "rtl" : "ltr";
   let textAlign: TextStyle["textAlign"] = center ? "center" : p.align;
   if (ltr) writingDirection = "ltr";
@@ -165,14 +177,17 @@ export function T({
 }
 
 /** Uppercase small label; Hebrew drops the case and tracking (DESIGN.md §10). */
-export function Eyebrow({ children, nativeID }: { children: ReactNode; nativeID?: string }) {
+export function Eyebrow({
+  children,
+  nativeID: nativeId,
+}: { children: ReactNode } & Pick<TextProps, "nativeID">) {
   const { rtl } = usePrefs();
   return (
     <T
       size="xs"
       weight="600"
       tone="muted"
-      nativeID={nativeID}
+      nativeID={nativeId}
       style={rtl ? undefined : { textTransform: "uppercase", letterSpacing: 0.8 }}
     >
       {children}
@@ -198,14 +213,26 @@ export function Row({
 }) {
   const { row } = usePrefs();
   return (
-    <View className={className} style={[{ flexDirection: row, flexWrap: wrap ? "wrap" : "nowrap" }, style]} {...rest}>
+    <View
+      className={className}
+      style={[{ flexDirection: row, flexWrap: wrap ? "wrap" : "nowrap" }, style]}
+      {...rest}
+    >
       {children}
     </View>
   );
 }
 
 /** A forward chevron (flips for Hebrew) or a back chevron. */
-export function Chevron({ back, size = 16, color }: { back?: boolean; size?: number; color?: string }) {
+export function Chevron({
+  back,
+  size = 16,
+  color,
+}: {
+  back?: boolean;
+  size?: number;
+  color?: string;
+}) {
   const { rtl, colors } = usePrefs();
   const forwardIsRight = !rtl;
   const right = back ? !forwardIsRight : forwardIsRight;
@@ -239,8 +266,7 @@ export type ButtonProps = {
   /** Pressed look for toggles (aria-pressed). */
   pressed?: boolean;
   style?: StyleProp<ViewStyle>;
-  testID?: string;
-};
+} & Pick<PressableProps, "testID">;
 
 export function Button({
   label,
@@ -260,7 +286,7 @@ export function Button({
   iconOnly,
   pressed: on,
   style,
-  testID,
+  testID: testId,
 }: ButtonProps) {
   const p = usePrefs();
   const c = p.colors;
@@ -292,7 +318,7 @@ export function Button({
   const slop = small ? (TOUCH - height) / 2 : 0;
   return (
     <Pressable
-      testID={testID}
+      testID={testId}
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
@@ -301,7 +327,11 @@ export function Button({
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled, ...(on !== undefined ? { selected: on } : {}), ...accessibilityState }}
+      accessibilityState={{
+        disabled: !!disabled,
+        ...(on !== undefined ? { selected: on } : {}),
+        ...accessibilityState,
+      }}
       style={({ pressed }) => [
         {
           flexDirection: p.row,
@@ -367,7 +397,17 @@ export function Chip({
   } as const;
   const [bg, fg] = map[tone];
   return (
-    <View style={{ flexDirection: row, alignItems: "center", gap: 4, minHeight: 28, paddingHorizontal: 8, borderRadius: RADIUS.sm, backgroundColor: bg }}>
+    <View
+      style={{
+        flexDirection: row,
+        alignItems: "center",
+        gap: 4,
+        minHeight: 28,
+        paddingHorizontal: 8,
+        borderRadius: RADIUS.sm,
+        backgroundColor: bg,
+      }}
+    >
       {Icon ? <Icon size={14} color={fg} /> : null}
       <Text style={{ color: fg, fontSize: 13, fontWeight: "600" }}>{label}</Text>
     </View>
@@ -392,7 +432,18 @@ export function Badge({
   } as const;
   const [bg, fg] = map[tone];
   return (
-    <View style={{ flexDirection: row, alignItems: "center", gap: 4, minHeight: 24, paddingHorizontal: 8, borderRadius: RADIUS.pill, backgroundColor: bg, alignSelf: "flex-start" }}>
+    <View
+      style={{
+        flexDirection: row,
+        alignItems: "center",
+        gap: 4,
+        minHeight: 24,
+        paddingHorizontal: 8,
+        borderRadius: RADIUS.pill,
+        backgroundColor: bg,
+        alignSelf: "flex-start",
+      }}
+    >
       {Icon ? <Icon size={14} color={fg} /> : null}
       <Text style={{ color: fg, fontSize: 13, fontWeight: "600" }}>{label}</Text>
     </View>
@@ -403,7 +454,15 @@ export function Badge({
 export function Tag({ label }: { label: string }) {
   const { colors: c } = usePrefs();
   return (
-    <View style={{ minHeight: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: RADIUS.pill, backgroundColor: c.sunken }}>
+    <View
+      style={{
+        minHeight: 28,
+        justifyContent: "center",
+        paddingHorizontal: 8,
+        borderRadius: RADIUS.pill,
+        backgroundColor: c.sunken,
+      }}
+    >
       <T size="sm" tone="muted" user>
         {`#${label}`}
       </T>
@@ -522,7 +581,14 @@ export function Avatar({ initials }: { initials: string }) {
     <View
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden
-      style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: c.ink,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       <Text style={{ color: c.ground, fontSize: 13, fontWeight: "700" }}>{initials || "·"}</Text>
     </View>
@@ -538,7 +604,15 @@ export function Divider() {
 /* Headings                                                            */
 /* ------------------------------------------------------------------ */
 
-export function PageHeader({ eyebrow, title, sub }: { eyebrow?: string; title: string; sub?: ReactNode }) {
+export function PageHeader({
+  eyebrow,
+  title,
+  sub,
+}: {
+  eyebrow?: string;
+  title: string;
+  sub?: ReactNode;
+}) {
   return (
     <View style={{ gap: 4 }}>
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
@@ -591,7 +665,13 @@ export function Checkbox({
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked, disabled: !!disabled }}
-      style={{ width: TOUCH, height: TOUCH, margin: -6, alignItems: "center", justifyContent: "center" }}
+      style={{
+        width: TOUCH,
+        height: TOUCH,
+        margin: -6,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       <View
         style={{
@@ -611,7 +691,12 @@ export function Checkbox({
   );
 }
 
-export type SegOption<V extends string> = { value: V; label: string; hint?: string; icon?: LucideIcon };
+export type SegOption<V extends string> = {
+  value: V;
+  label: string;
+  hint?: string;
+  icon?: LucideIcon;
+};
 
 /** Single choice (toggle-group): a dot and the word mark the choice, never colour alone. */
 export function Segmented<V extends string>({
@@ -668,13 +753,29 @@ export function Segmented<V extends string>({
               justifyContent: "center",
             }}
           >
-            <View style={{ flexDirection: tall ? "column" : p.row, alignItems: "center", gap: tall ? 2 : 6 }}>
-              {on ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.ink }} /> : null}
+            <View
+              style={{
+                flexDirection: tall ? "column" : p.row,
+                alignItems: "center",
+                gap: tall ? 2 : 6,
+              }}
+            >
+              {on ? (
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.ink }} />
+              ) : null}
               {Icon ? <Icon size={16} color={on ? c.ink : c.inkMuted} /> : null}
-              <Text style={{ color: on ? c.ink : c.inkMuted, fontSize: Math.max(13, Math.round(15 * p.textScale)), fontWeight: "600" }}>
+              <Text
+                style={{
+                  color: on ? c.ink : c.inkMuted,
+                  fontSize: Math.max(13, Math.round(15 * p.textScale)),
+                  fontWeight: "600",
+                }}
+              >
                 {o.label}
               </Text>
-              {o.hint ? <Text style={{ color: on ? c.ink : c.inkMuted, fontSize: 13 }}>{o.hint}</Text> : null}
+              {o.hint ? (
+                <Text style={{ color: on ? c.ink : c.inkMuted, fontSize: 13 }}>{o.hint}</Text>
+              ) : null}
             </View>
           </Pressable>
         );
@@ -751,7 +852,13 @@ export function TextField({
 }: FieldProps) {
   const p = usePrefs();
   const c = p.colors;
-  const dir = ltr ? "ltr" : user ? textDirection(value ?? "", p.rtl ? "rtl" : "ltr") : p.rtl ? "rtl" : "ltr";
+  const dir = ltr
+    ? "ltr"
+    : user
+      ? textDirection(value ?? "", p.rtl ? "rtl" : "ltr")
+      : p.rtl
+        ? "rtl"
+        : "ltr";
   return (
     <View style={{ gap: 4 }}>
       {hideLabel ? null : (
@@ -819,7 +926,10 @@ export function SearchField({
     <View style={{ justifyContent: "center" }}>
       <View
         pointerEvents="none"
-        style={[{ position: "absolute", zIndex: 1 }, p.rtl === I18nManager.isRTL ? { start: 12 } : { end: 12 }]}
+        style={[
+          { position: "absolute", zIndex: 1 },
+          p.rtl === I18nManager.isRTL ? { start: 12 } : { end: 12 },
+        ]}
       >
         <Search size={16} color={c.inkMuted} />
       </View>
@@ -1008,14 +1118,36 @@ export function SkeletonRows({ rows = 3, block }: { rows?: number; block?: boole
   const { colors: c, row } = usePrefs();
   const widths = ["80%", "60%", "100%", "60%", "40%"] as const;
   return (
-    <View style={{ gap: 16 }} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-      {block ? <View style={{ height: 120, borderRadius: RADIUS.lg, backgroundColor: c.sunken }} /> : null}
+    <View
+      style={{ gap: 16 }}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
+      {block ? (
+        <View style={{ height: 120, borderRadius: RADIUS.lg, backgroundColor: c.sunken }} />
+      ) : null}
       {Array.from({ length: rows }, (_, i) => (
         <View key={i} style={{ flexDirection: row, gap: 12, alignItems: "center" }}>
-          <View style={{ width: 22, height: 22, borderRadius: RADIUS.sm, backgroundColor: c.sunken }} />
+          <View
+            style={{ width: 22, height: 22, borderRadius: RADIUS.sm, backgroundColor: c.sunken }}
+          />
           <View style={{ flex: 1, gap: 6 }}>
-            <View style={{ height: 16, width: widths[i % widths.length], borderRadius: RADIUS.sm, backgroundColor: c.sunken }} />
-            <View style={{ height: 12, width: "40%", borderRadius: RADIUS.sm, backgroundColor: c.sunken }} />
+            <View
+              style={{
+                height: 16,
+                width: widths[i % widths.length],
+                borderRadius: RADIUS.sm,
+                backgroundColor: c.sunken,
+              }}
+            />
+            <View
+              style={{
+                height: 12,
+                width: "40%",
+                borderRadius: RADIUS.sm,
+                backgroundColor: c.sunken,
+              }}
+            />
           </View>
         </View>
       ))}

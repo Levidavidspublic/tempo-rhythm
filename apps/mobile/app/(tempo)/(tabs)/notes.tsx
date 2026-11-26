@@ -12,10 +12,26 @@ import { FileText, Hash, Pin, Plus, Search, Sun } from "lucide-react-native";
 import { type RefObject, useMemo, useRef, useState } from "react";
 import { type TextInput, View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Card, ListRow, PageHeader, Row, SearchField, SectionHead, T, Tag } from "@/components/v3/primitives";
+import {
+  Button,
+  Card,
+  ListRow,
+  PageHeader,
+  Row,
+  SearchField,
+  SectionHead,
+  T,
+  Tag,
+} from "@/components/v3/primitives";
 import { CaptureFab, MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline, useTempoSession } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { api } from "@/convex/_generated/api";
 import { clockTime, dayMonth, localIsoDate, weekdayName } from "@/lib/v3/dates";
 import { editedWhen, noteKind, topTags } from "@/lib/v3/display";
@@ -30,17 +46,32 @@ export default function NotesScreen() {
   const offline = useOffline();
   const searchRef = useRef<TextInput>(null);
   return (
-    <Screen tabs keyboard overlay={<CaptureFab label={t("new")} onPress={() => router.push("/page/new")} />}>
+    <Screen
+      tabs
+      keyboard
+      overlay={<CaptureFab label={t("new")} onPress={() => router.push("/page/new")} />}
+    >
       <MobileTopBar
         title={t("top.title")}
-        start={{ kind: "icon", icon: Search, label: t("top.search"), onPress: () => searchRef.current?.focus() }}
+        start={{
+          kind: "icon",
+          icon: Search,
+          label: t("top.search"),
+          onPress: () => searchRef.current?.focus(),
+        }}
       />
       {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
       <QueryBoundary
         fallback={(retry) => (
           <View style={{ gap: 24 }}>
             <PageHeader title={t("page.title")} />
-            <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+            <StateError
+              title={t("err.title")}
+              safe={t("state.safe")}
+              body={t("err.body")}
+              retryLabel={t("state.retry")}
+              onRetry={retry}
+            />
           </View>
         )}
       >
@@ -60,7 +91,13 @@ type NoteRow = {
   text: string;
 };
 
-function NotesBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<TextInput | null> }) {
+function NotesBody({
+  ready,
+  searchRef,
+}: {
+  ready: boolean;
+  searchRef: RefObject<TextInput | null>;
+}) {
   const t = useT("notes");
   const p = usePrefs();
   const router = useRouter();
@@ -86,7 +123,7 @@ function NotesBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
               .toLocaleLowerCase(),
           }))
         : null,
-    [notes],
+    [notes]
   );
 
   if (!rows) {
@@ -111,7 +148,8 @@ function NotesBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
 
   const q = search.trim().toLocaleLowerCase();
   const match = (r: NoteRow) =>
-    (!tag || r.tags.includes(tag)) && (!q || r.title.toLocaleLowerCase().includes(q) || r.text.includes(q));
+    (!tag || r.tags.includes(tag)) &&
+    (!q || r.title.toLocaleLowerCase().includes(q) || r.text.includes(q));
   const pinned = rows.filter((r) => r.pinned && match(r));
   const recent = rows.filter((r) => !r.pinned && match(r));
   const tags = topTags(rows.map((r) => r.tags));
@@ -164,9 +202,20 @@ function NotesBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
         }
       />
       <View style={{ gap: 12 }}>
-        <SearchField label={t("search.label")} placeholder={t("search.ph")} value={search} onChangeText={setSearch} inputRef={searchRef} />
+        <SearchField
+          label={t("search.label")}
+          placeholder={t("search.ph")}
+          value={search}
+          onChangeText={setSearch}
+          inputRef={searchRef}
+        />
         {tags.length ? (
-          <Row className="gap-2" wrap accessibilityRole="toolbar" accessibilityLabel={t("tags.label")}>
+          <Row
+            className="gap-2"
+            wrap
+            accessibilityRole="toolbar"
+            accessibilityLabel={t("tags.label")}
+          >
             {tags.map((name) => (
               <Button
                 key={name}
@@ -190,7 +239,9 @@ function NotesBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
         <View style={{ gap: 12 }}>
           <SectionHead title={t("h.recent")} />
           <Card padded={false}>{recentShown.map((r, i) => row(r, i, recentShown))}</Card>
-          {recent.length > shown ? <Button label={t("show.more")} onPress={() => setShown((n) => n + PAGE)} /> : null}
+          {recent.length > shown ? (
+            <Button label={t("show.more")} onPress={() => setShown((n) => n + PAGE)} />
+          ) : null}
         </View>
       ) : null}
       {!pinned.length && !recent.length ? <T tone="muted">{t("search.none")}</T> : null}
