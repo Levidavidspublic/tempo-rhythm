@@ -28,7 +28,11 @@ import { Sheet } from "./Shell";
 
 export type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
-const TABS: readonly { name: string; label: "tab.today" | "tab.tasks" | "tab.coach" | "tab.notes"; icon: LucideIcon }[] = [
+const TABS: readonly {
+  name: string;
+  label: "tab.today" | "tab.tasks" | "tab.coach" | "tab.notes";
+  icon: LucideIcon;
+}[] = [
   { name: "today", label: "tab.today", icon: Sun },
   { name: "tasks", label: "tab.tasks", icon: ListChecks },
   { name: "coach", label: "tab.coach", icon: MessageCircle },
@@ -37,7 +41,13 @@ const TABS: readonly { name: string; label: "tab.today" | "tab.tasks" | "tab.coa
 
 const MORE: readonly {
   href: "/journal" | "/habits" | "/calendar" | "/routines" | "/templates" | "/settings";
-  label: "more.journal" | "more.habits" | "more.calendar" | "more.routines" | "more.templates" | "more.settings";
+  label:
+    | "more.journal"
+    | "more.habits"
+    | "more.calendar"
+    | "more.routines"
+    | "more.templates"
+    | "more.settings";
   icon: LucideIcon;
 }[] = [
   { href: "/journal", label: "more.journal", icon: NotebookPen },
@@ -107,7 +117,14 @@ export function TempoTabBar({ state, navigation }: TabBarProps) {
   };
 
   return (
-    <View style={{ backgroundColor: c.ground, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 4, paddingHorizontal: 8 }}>
+    <View
+      style={{
+        backgroundColor: c.ground,
+        paddingBottom: Math.max(insets.bottom, 8),
+        paddingTop: 4,
+        paddingHorizontal: 8,
+      }}
+    >
       <Row
         accessibilityRole="tablist"
         accessibilityLabel={t("tab.label")}
@@ -126,9 +143,21 @@ export function TempoTabBar({ state, navigation }: TabBarProps) {
         }}
       >
         {TABS.map((tab) => (
-          <TabButton key={tab.name} label={t(tab.label)} icon={tab.icon} current={current === tab.name} onPress={() => go(tab.name)} />
+          <TabButton
+            key={tab.name}
+            label={t(tab.label)}
+            icon={tab.icon}
+            current={current === tab.name}
+            onPress={() => go(tab.name)}
+          />
         ))}
-        <TabButton label={t("tab.more")} icon={Ellipsis} current={false} expanded={moreOpen} onPress={() => setMoreOpen(true)} />
+        <TabButton
+          label={t("tab.more")}
+          icon={Ellipsis}
+          current={false}
+          expanded={moreOpen}
+          onPress={() => setMoreOpen(true)}
+        />
       </Row>
       <MoreSheet
         visible={moreOpen}
