@@ -312,6 +312,7 @@ describe("browser InsForge data requests", () => {
     const refreshSession = mock(async () => {
       await refreshFinished.promise;
       accessCookie = currentAccess;
+      return { data: { user: fixtureUser }, error: null };
     });
     const fetchData = Object.assign(
       mock(async (_input: Parameters<typeof fetch>[0], init?: RequestInit) => {
@@ -348,7 +349,7 @@ describe("browser InsForge data requests", () => {
   });
 
   test("does not send a data request when refresh leaves the browser signed out", async () => {
-    const refreshSession = mock(async () => {});
+    const refreshSession = mock(async () => ({ data: { user: null }, error: null }));
     const fetchData = Object.assign(
       mock(async () => Response.json([])),
       { preconnect: mock() }
@@ -358,6 +359,55 @@ describe("browser InsForge data requests", () => {
     expect(response.status).toBe(401);
     expect(refreshSession).toHaveBeenCalledTimes(1);
     expect(fetchData).not.toHaveBeenCalled();
+  });
+
+  test("updates the session store when data-triggered refresh returns 401", async () => {
+    const events = new EventTarget();
+    let accessCookie = currentAccess;
+    let signedIn = true;
+    const fetchSession = Object.assign(
+      mock(async () =>
+        signedIn
+          ? Response.json({ user: fixtureUser })
+          : Response.json({ user: null }, { status: 401 })
+      ),
+      { preconnect: mock() }
+    );
+    const fetchData = Object.assign(
+      mock(async () => Response.json([])),
+      { preconnect: mock() }
+    );
+    const source = makeInsforgeSessionSource(fixtureConfig, fetchSession, events);
+    if (!source) throw new Error("Missing fixture config");
+    const store = createInsforgeSessionStore(source);
+    const send = makeInsforgeDataFetch(
+      source.getCurrentUser,
+      () => accessCookie,
+      fetchData,
+      events
+    );
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+    store.start();
+    try {
+      await tick();
+      expect(store.getSnapshot()).toEqual({
+        status: "signedIn",
+        uid: "u1",
+        email: "a@example.com",
+      });
+
+      signedIn = false;
+      accessCookie = expiredAccess;
+      const responses = await Promise.all([send(fixtureConfig.url), send(fixtureConfig.url)]);
+      expect(responses.map(({ status }) => status)).toEqual([401, 401]);
+      await tick();
+
+      expect(store.getSnapshot()).toEqual({ status: "signedOut" });
+      expect(fetchSession).toHaveBeenCalledTimes(3);
+      expect(fetchData).not.toHaveBeenCalled();
+    } finally {
+      store.stop();
+    }
   });
 });
 

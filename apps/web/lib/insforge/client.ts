@@ -55,18 +55,23 @@ function isCurrentAccessToken(token: string | null): token is string {
 }
 
 export function makeInsforgeDataFetch(
-  refreshSession: () => Promise<unknown>,
+  refreshSession: ReturnType<typeof makeInsforgeSessionReader>,
   getAccessToken = readAccessCookie,
-  fetchData = fetch
+  fetchData = fetch,
+  events: EventTarget | undefined = globalThis.window
 ): typeof fetch {
-  let pendingRefresh: Promise<unknown> | undefined;
+  let pendingRefresh: Promise<void> | undefined;
   return Object.assign(
     async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       let token = getAccessToken();
       if (!isCurrentAccessToken(token)) {
-        pendingRefresh ??= refreshSession().finally(() => {
-          pendingRefresh = undefined;
-        });
+        pendingRefresh ??= refreshSession()
+          .then(({ data }) => {
+            if (!data.user) invalidateInsforgeSession(events);
+          })
+          .finally(() => {
+            pendingRefresh = undefined;
+          });
         await pendingRefresh;
         token = getAccessToken();
         if (!isCurrentAccessToken(token)) {
