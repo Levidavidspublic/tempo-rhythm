@@ -3,6 +3,8 @@ begin;
 select set_config('tempo_test.owner_id', :'owner_id', true);
 select set_config('tempo_test.message_count', (select count(*) from realtime.messages)::text, true);
 
+update public.account_gate set approval_status = 'approved' where user_id = :'owner_id';
+
 set local role authenticated;
 select set_config('request.jwt.claims',
   jsonb_build_object('sub', :'owner_id', 'role', 'authenticated')::text, true);
