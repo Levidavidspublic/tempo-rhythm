@@ -35,7 +35,11 @@ export default function VoiceCallScreen() {
       accessibilityViewIsModal
       accessibilityLabel={t("call.title")}
     >
-      <Row className="gap-2" wrap style={{ alignItems: "center", paddingVertical: 12, paddingHorizontal: 16 }}>
+      <Row
+        className="gap-2"
+        wrap
+        style={{ alignItems: "center", paddingVertical: 12, paddingHorizontal: 16 }}
+      >
         <View style={{ flex: 1, minWidth: 180 }}>
           <T size="lg" serif weight="500" accessibilityRole="header">
             {t("call.title")}
@@ -67,14 +71,36 @@ export default function VoiceCallScreen() {
         </Pressable>
       </Row>
 
-      <View style={{ flex: 1, alignItems: "center", gap: 16, paddingVertical: 8, paddingHorizontal: 16 }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          gap: 16,
+          paddingVertical: 8,
+          paddingHorizontal: 16,
+        }}
+      >
         <View
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden
-          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 64 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            height: 64,
+          }}
         >
           {LEVELS.map((level, i) => (
-            <View key={i} style={{ width: 6, height: 64 * level, borderRadius: RADIUS.pill, backgroundColor: c.lineStrong }} />
+            <View
+              key={i}
+              style={{
+                width: 6,
+                height: 64 * level,
+                borderRadius: RADIUS.pill,
+                backgroundColor: c.lineStrong,
+              }}
+            />
           ))}
         </View>
         <T size="3xl" serif weight="500" center accessibilityLiveRegion="polite">
@@ -84,7 +110,13 @@ export default function VoiceCallScreen() {
           {offline ? (
             <OfflineNotice title={t("off.title")} body={t("off.body")} />
           ) : (
-            <Notice tone="caution" icon={CircleAlert} title={t("unavailable.title")} body={t("unavailable.body")} live="polite" />
+            <Notice
+              tone="caution"
+              icon={CircleAlert}
+              title={t("unavailable.title")}
+              body={t("unavailable.body")}
+              live="polite"
+            />
           )}
         </View>
       </View>
