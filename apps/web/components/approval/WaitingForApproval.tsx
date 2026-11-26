@@ -18,26 +18,19 @@ import {
 
 /**
  * Calm full-screen notice for accounts that are not approved yet.
- * ApprovalGate reads the status through a live Convex query, so an approval that lands while this
- * page is open swaps in the app with no reload. The copy says so, and that no email is sent, so a
- * new person knows what happens next. While waiting, the person may say what Tempo should call
- * them (TEMPO-B07-14), so Today greets that name instead of the email handle.
+ * ApprovalGate refreshes the account status so approval opens the app without a reload.
+ * On the Convex path, the person may say what Tempo should call them (TEMPO-B07-14).
  */
-export function WaitingForApproval({ email, revoked }: { email: string; revoked: boolean }) {
-  const { signOut } = useAuthActions();
-  const router = useRouter();
+export function WaitingForApproval({
+  email,
+  revoked,
+  backend = "convex",
+}: {
+  email: string;
+  revoked: boolean;
+  backend?: "convex" | "insforge";
+}) {
   const { t } = useLocale();
-  const [signingOut, setSigningOut] = useState(false);
-
-  async function onSignOut() {
-    setSigningOut(true);
-    try {
-      await signOut();
-      router.replace("/sign-in");
-    } finally {
-      setSigningOut(false);
-    }
-  }
 
   return (
     <main
@@ -62,7 +55,7 @@ export function WaitingForApproval({ email, revoked }: { email: string; revoked:
                 <li>{t("approval.next3")}</li>
               </ol>
             </div>
-            <WaitingName email={email} />
+            {backend === "convex" ? <WaitingName email={email} /> : null}
           </>
         )}
         <p className="text-xs text-muted-foreground">
@@ -71,11 +64,32 @@ export function WaitingForApproval({ email, revoked }: { email: string; revoked:
             {email}
           </span>
         </p>
-        <Button type="button" variant="outline" onClick={onSignOut} disabled={signingOut}>
-          {signingOut ? t("approval.signingOut") : t("approval.signOut")}
-        </Button>
+        {backend === "convex" ? <ConvexSignOut /> : null}
       </section>
     </main>
+  );
+}
+
+function ConvexSignOut() {
+  const { signOut } = useAuthActions();
+  const router = useRouter();
+  const { t } = useLocale();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function onSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+      router.replace("/sign-in");
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
+  return (
+    <Button type="button" variant="outline" onClick={onSignOut} disabled={signingOut}>
+      {signingOut ? t("approval.signingOut") : t("approval.signOut")}
+    </Button>
   );
 }
 
@@ -133,7 +147,8 @@ function WaitingName({ email }: { email: string }) {
       data-testid="approval-name"
     >
       <label className="tp-label" htmlFor="waiting-name">
-        <span>{t("approval.nameLabel")}</span> <span className="tp-label__opt">{t("approval.nameOptional")}</span>
+        <span>{t("approval.nameLabel")}</span>{" "}
+        <span className="tp-label__opt">{t("approval.nameOptional")}</span>
       </label>
       <p className="tp-help" id="waiting-name-help">
         {t("approval.nameHelp")}
@@ -156,7 +171,11 @@ function WaitingName({ email }: { email: string }) {
             if (state !== "saving") setState("idle");
           }}
         />
-        <button type="submit" className="tp-btn tp-btn--secondary" aria-disabled={saving ? true : undefined}>
+        <button
+          type="submit"
+          className="tp-btn tp-btn--secondary"
+          aria-disabled={saving ? true : undefined}
+        >
           {saving ? t("approval.nameSaving") : t("approval.nameSave")}
         </button>
       </div>
