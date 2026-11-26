@@ -1,3 +1,5 @@
+import type { DataBackend } from "./backend-flag";
+
 /**
  * Default entry for "/".
  *
@@ -31,8 +33,12 @@ export const PUBLIC_ROUTE_PATTERNS = [
 
 export const CALENDAR_E2E_BYPASS_OPTION = "isCalendarE2EBypass";
 
-export function isInsforgeRefreshRequest(pathname: string, method: string): boolean {
-  return pathname === "/api/auth/insforge/refresh" && method === "POST";
+export function isInsforgeRefreshRequest(
+  pathname: string,
+  method: string,
+  backend: DataBackend
+): boolean {
+  return backend === "insforge" && pathname === "/api/auth/insforge/refresh" && method === "POST";
 }
 
 export async function hasAuthenticatedEntrySession(

@@ -2,6 +2,7 @@ import { describe, expect, mock, spyOn, test } from "bun:test";
 import { getAccessTokenCookieName, getRefreshTokenCookieName } from "@insforge/sdk/ssr";
 import { NextRequest } from "next/server";
 import { POST } from "../../app/api/auth/insforge/refresh/route";
+import { parseDataBackend } from "../backend-flag";
 import {
   CALENDAR_E2E_BYPASS_OPTION,
   decideEntryRedirect,
@@ -138,7 +139,7 @@ describe("app entry auth policy", () => {
   });
 
   test("hands the exact refresh POST to the route without widening the public patterns", () => {
-    expect(isInsforgeRefreshRequest(refreshPath, "POST")).toBe(true);
+    expect(isInsforgeRefreshRequest(refreshPath, "POST", "insforge")).toBe(true);
     expect((PUBLIC_ROUTE_PATTERNS as readonly string[]).includes(refreshPath)).toBe(false);
   });
 
@@ -158,7 +159,7 @@ describe("app entry auth policy", () => {
         method: "POST",
         headers: { [SESSION_REQUEST_HEADER]: "1" },
       });
-      expect(isInsforgeRefreshRequest(req.nextUrl.pathname, req.method)).toBe(true);
+      expect(isInsforgeRefreshRequest(req.nextUrl.pathname, req.method, "insforge")).toBe(true);
       const response = await POST(req);
       expect(response.status).toBe(401);
       expect(await response.json()).toEqual({ user: null });
@@ -171,21 +172,25 @@ describe("app entry auth policy", () => {
   });
 
   test.each([
-    [refreshPath, "GET"],
-    [refreshPath, "OPTIONS"],
-    [`${refreshPath}/`, "POST"],
-    [`${refreshPath}/other`, "POST"],
-    ["/api/auth/insforge/other", "POST"],
-    ["/api/private", "POST"],
-    ["/today", "GET"],
-  ])("preserves the anonymous redirect for %s (%s)", (pathname, method) => {
-    expect(isInsforgeRefreshRequest(pathname, method)).toBe(false);
+    ["convex", refreshPath, "POST", undefined],
+    ["firebase", refreshPath, "POST", "firebase"],
+    ["insforge", refreshPath, "GET", "insforge"],
+    ["insforge", refreshPath, "OPTIONS", "insforge"],
+    ["insforge", `${refreshPath}/`, "POST", "insforge"],
+    ["insforge", `${refreshPath}/other`, "POST", "insforge"],
+    ["insforge", "/api/auth/insforge/other", "POST", "insforge"],
+    ["insforge", "/api/private", "POST", "insforge"],
+    ["insforge", "/today", "GET", "insforge"],
+  ] as const)("%s redirects anonymous %s (%s)", (backend, pathname, method, env) => {
+    const selectedBackend = parseDataBackend(env);
+    expect(selectedBackend).toBe(backend);
+    expect(isInsforgeRefreshRequest(pathname, method, selectedBackend)).toBe(false);
     const target = new URL(
       decideEntryRedirect({
         pathname,
         search: "",
         isAuthenticated: false,
-        isPublicRoute: PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern === pathname),
+        isPublicRoute: (PUBLIC_ROUTE_PATTERNS as readonly string[]).includes(pathname),
         [CALENDAR_E2E_BYPASS_OPTION]: false,
       }) ?? "",
       origin

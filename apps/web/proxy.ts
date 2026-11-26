@@ -92,7 +92,7 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!appProxyApplies(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
-  if (isInsforgeRefreshRequest(request.nextUrl.pathname, request.method)) {
+  if (isInsforgeRefreshRequest(request.nextUrl.pathname, request.method, DATA_BACKEND)) {
     return NextResponse.next();
   }
   return appProxy(request, event);
