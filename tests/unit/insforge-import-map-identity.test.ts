@@ -12,6 +12,8 @@ const subscription = {
   trialUsed: false,
   updatedAt: 1_700_000_000_009,
 };
+const subscriptionUpsert = "INSERT INTO public.subscription_states";
+const resetSubscription = "UPDATE public.subscription_states SET plan = 'none'";
 
 test("emits auth before trigger-row reconciliation and preserves the approval default", () => {
   const { sql, rejected, counts } = mapIdentity([user], [subscription]);
@@ -52,25 +54,41 @@ test("limits every trigger-bootstrap exception to auth IDs returned by this impo
     "DO NOTHING RETURNING id) INSERT INTO pg_temp.tempo_import_inserted_users (id) SELECT id FROM inserted;"
   );
   const bootstrapUpdates = sql.split("\n").filter((line) => line.startsWith("UPDATE public."));
-  expect(bootstrapUpdates).toHaveLength(3);
+  expect(bootstrapUpdates).toHaveLength(4);
   for (const line of bootstrapUpdates) {
     expect(line).toContain("user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)");
   }
 });
 
-test("reconciles missing subscriptions only for new auth users and leaves their legacy ID null", () => {
+test("resets the trigger subscription for a new user with no exported subscription", () => {
   const { sql, rejected, counts } = mapIdentity([user], []);
   expect(rejected).toEqual([]);
   expect(counts.subscriptionStates).toEqual({ exported: 0, transformed: 0, rejected: 0 });
-  const reset = sql
-    .split("\n")
-    .find((line) => line.startsWith("UPDATE public.subscription_states"));
+  const reset = sql.split("\n").find((line) => line.startsWith(resetSubscription));
   expect(reset).toContain(
     "plan = 'none', billing_cycle = 'none', status = 'inactive', trial_used = FALSE, source = NULL"
   );
   expect(reset).toContain("user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)");
   expect(reset).toContain("legacy_convex_id IS NULL");
-  expect(sql).not.toContain("INSERT INTO public.subscription_states");
+  expect(sql).not.toContain(subscriptionUpsert);
+});
+
+test("writes a new user's valid subscription before resetting unclaimed defaults", () => {
+  const { sql, rejected, counts } = mapIdentity([user], [subscription]);
+  expect(rejected).toEqual([]);
+  expect(counts.subscriptionStates).toEqual({ exported: 1, transformed: 1, rejected: 0 });
+  expect(sql).toContain(subscriptionUpsert);
+  expect(sql.indexOf(resetSubscription)).toBeGreaterThan(sql.indexOf(subscriptionUpsert));
+  expect(sql.slice(sql.indexOf(resetSubscription))).toContain("AND legacy_convex_id IS NULL");
+});
+
+test("does not reset the trigger subscription when matching an existing auth user", () => {
+  const { sql } = mapIdentity([user], []);
+  expect(sql).toContain("IS NULL AND NOT EXISTS (SELECT 1 FROM auth.users WHERE");
+  expect(sql).toContain("DO NOTHING RETURNING id) INSERT INTO pg_temp.tempo_import_inserted_users");
+  expect(sql.slice(sql.indexOf(resetSubscription))).toContain(
+    "WHERE user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)"
+  );
 });
 
 test("maps explicit account flags, profile fields, and epoch-ms timestamps", () => {
@@ -145,12 +163,13 @@ test("quotes source text and IDs as data and rejects text Postgres cannot store"
   expect(sql).not.toContain("other@example.test");
 });
 
-test("rejects malformed subscriptions without losing a valid user", () => {
-  const { sql, rejected } = mapIdentity([user], [{ ...subscription, trialUsed: "false" }]);
+test("reports a malformed subscription and resets the new user's trigger grant", () => {
+  const { sql, rejected, counts } = mapIdentity([user], [{ ...subscription, trialUsed: "false" }]);
   expect(rejected).toEqual([
     { table: "subscriptionStates", id: "sub1", reason: "trialUsed must be boolean" },
   ]);
+  expect(counts.subscriptionStates).toEqual({ exported: 1, transformed: 0, rejected: 1 });
   expect(sql).toContain("INSERT INTO auth.users");
-  expect(sql).not.toContain("UPDATE public.subscription_states");
-  expect(sql).not.toContain("INSERT INTO public.subscription_states");
+  expect(sql).toContain(resetSubscription);
+  expect(sql).not.toContain(subscriptionUpsert);
 });

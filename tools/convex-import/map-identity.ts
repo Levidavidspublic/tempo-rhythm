@@ -200,18 +200,6 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           " AND legacy_convex_id IS NULL;",
         upsert("account_gate", "legacy_convex_id", gateValues, resolved)
       );
-      if (!subscriptionOwners.has(user._id)) {
-        sql.push(
-          "UPDATE public.subscription_states SET plan = 'none', billing_cycle = 'none'," +
-            " status = 'inactive', trial_used = FALSE, source = NULL WHERE user_id = " +
-            owner +
-            " AND " +
-            newlyInserted +
-            " AND legacy_convex_id IS NULL AND " +
-            subscriptionBootstrap +
-            ";"
-        );
-      }
       usersMapped.set(user._id, emailSql);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
@@ -305,6 +293,17 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
       if (!(error instanceof Error)) throw error;
       rejected.push({ table: "subscriptionStates", id: subscription._id, reason: error.message });
     }
+  }
+
+  if (usersMapped.size) {
+    sql.push(
+      "UPDATE public.subscription_states SET plan = 'none', billing_cycle = 'none'," +
+        " status = 'inactive', trial_used = FALSE, source = NULL WHERE " +
+        newlyInserted +
+        " AND legacy_convex_id IS NULL AND " +
+        subscriptionBootstrap +
+        ";"
+    );
   }
 
   const subscriptionsRejected = rejected.length - (users.length - usersMapped.size);
