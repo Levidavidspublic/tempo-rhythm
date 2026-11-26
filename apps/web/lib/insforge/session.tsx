@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import type React from "react";
 import {
   createContext,
@@ -9,16 +10,11 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import getInsforgeClient from "./client";
+import { makeInsforgeSessionSource } from "./client";
 
 /**
- * InsForge sign-in session (TEMPO-IF-006, #1867).
- *
- * Today the app's session is Convex Auth (`useConvexAuth()` under `ConvexAuthNextjsProvider` in
- * `components/providers/providers.tsx`). This module is the InsForge counterpart: a provider and a
- * hook that report loading / signed out / signed in (uid + email) from the InsForge client's auth
- * state. Nothing mounts it yet; IF-007 does, only when the backend switch is `insforge`.
- * The SDK owns tokens; this module never reads or stores them.
+ * InsForge sign-in session verified against the server's SSR cookies.
+ * The provider holds only the session status and user identity.
  */
 export type InsforgeSession =
   | { status: "loading" }
@@ -30,15 +26,15 @@ type CurrentUserResult = {
   error: unknown;
 };
 
-/** The two `@insforge/sdk` auth methods the session needs (`client.auth`). */
 export type InsforgeSessionAuth = {
   getCurrentUser(): Promise<CurrentUserResult>;
-  onAuthStateChange(callback: (event: string) => void): () => void;
+  subscribe(listener: () => void): () => void;
 };
 
 export type InsforgeSessionStore = {
   getSnapshot(): InsforgeSession;
   subscribe(listener: () => void): () => void;
+  refetch(): void;
   start(): void;
   stop(): void;
 };
@@ -65,7 +61,7 @@ function sameSession(a: InsforgeSession, b: InsforgeSession): boolean {
 
 /**
  * React-free session store. Starts `loading`. `start()` reads the current user once and re-reads
- * it on every auth event. Only the newest read publishes. `null` auth (client not configured) is
+ * it on invalidation. Only the newest read publishes. `null` auth (client not configured) is
  * signed out. A failed lookup is signed out too, but is also passed to `onError` so an auth outage
  * can be told apart from a signed-out user. `stop()` unsubscribes and ignores answers that arrive
  * later.
@@ -99,9 +95,8 @@ export function createInsforgeSessionStore(
       failure = error;
       next = SIGNED_OUT;
     }
-    if (readGeneration !== generation) return;
-    // An older read that settles after a newer one must not overwrite it.
-    if (sequence === readSequence) set(next);
+    if (readGeneration !== generation || sequence !== readSequence) return;
+    set(next);
     if (failure === undefined) return;
     try {
       onError?.(failure);
@@ -118,11 +113,14 @@ export function createInsforgeSessionStore(
         listeners.delete(listener);
       };
     },
+    refetch() {
+      if (unsubscribe) void read(generation);
+    },
     start() {
       if (!auth || unsubscribe) return;
       generation += 1;
       const startGeneration = generation;
-      unsubscribe = auth.onAuthStateChange(() => {
+      unsubscribe = auth.subscribe(() => {
         void read(startGeneration);
       });
       void read(startGeneration);
@@ -161,14 +159,19 @@ export function InsforgeSessionProvider({
     onErrorRef.current = onError;
   }, [onError]);
   const [store] = useState(() =>
-    createInsforgeSessionStore(getInsforgeClient()?.auth ?? null, (error) =>
-      onErrorRef.current(error)
-    )
+    createInsforgeSessionStore(makeInsforgeSessionSource(), (error) => onErrorRef.current(error))
   );
+  const pathname = usePathname();
+  const previousPath = useRef(pathname);
   useEffect(() => {
     store.start();
     return () => store.stop();
   }, [store]);
+  useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
+    store.refetch();
+  }, [pathname, store]);
   return <SessionStoreContext.Provider value={store}>{children}</SessionStoreContext.Provider>;
 }
 
