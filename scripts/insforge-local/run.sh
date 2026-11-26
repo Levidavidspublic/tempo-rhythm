@@ -4,7 +4,7 @@ export LC_ALL=C
 unset GLOBSORT
 shopt -s nullglob
 
-if (( $# > 3 )); then
+if (($# > 3)); then
   echo "Usage: bash run.sh [migrations-dir [fixtures-dir [cluster-dir]]]" >&2
   exit 2
 fi
