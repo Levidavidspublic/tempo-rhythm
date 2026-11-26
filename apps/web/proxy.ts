@@ -4,8 +4,16 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
+import { DATA_BACKEND } from "./lib/backend-flag";
 import { E2E_WIRING_ROUTES } from "./lib/e2eWiringRoutes";
-import { decideEntryRedirect, PUBLIC_ROUTE_PATTERNS } from "./lib/rootEntry";
+import { hasVerifiedInsforgeSession } from "./lib/insforge/server-session";
+import {
+  CALENDAR_E2E_BYPASS_OPTION,
+  decideEntryRedirect,
+  hasAuthenticatedEntrySession,
+  isInsforgeRefreshRequest,
+  PUBLIC_ROUTE_PATTERNS,
+} from "./lib/rootEntry";
 import { appProxyApplies, decideComingSoon, getSurface } from "./lib/surface";
 
 const isPublicRoute = createRouteMatcher([...PUBLIC_ROUTE_PATTERNS]);
@@ -21,36 +29,34 @@ const isCoreTaskViewRoute = createRouteMatcher([
 ]);
 
 // Wiring smoke specs (tests/e2e/wiring/) open these signed out under the same dev-only bypass.
-const isWiringE2ERoute = createRouteMatcher([...E2E_WIRING_ROUTES]);
+const isWiringE2eRoute = createRouteMatcher([...E2E_WIRING_ROUTES]);
 
 const appProxy = convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_AUTH_BYPASS === "1" &&
     process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1" &&
-    (isCoreTaskViewRoute(request) || isWiringE2ERoute(request))
+    (isCoreTaskViewRoute(request) || isWiringE2eRoute(request))
   ) {
     return;
   }
 
   const { convexAuth } = ctx;
-  const isCalendarE2EBypass =
+  const isCalendarE2eBypass =
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_PUBLIC_CALENDAR === "1" &&
     request.nextUrl.pathname === "/calendar";
-  let isAuthenticated = false;
-  try {
-    isAuthenticated = await convexAuth.isAuthenticated();
-  } catch {
-    isAuthenticated = false;
-  }
+  const isAuthenticated = await hasAuthenticatedEntrySession(
+    convexAuth.isAuthenticated,
+    DATA_BACKEND === "insforge" ? () => hasVerifiedInsforgeSession(request) : undefined
+  );
 
   const redirectTo = decideEntryRedirect({
     pathname: request.nextUrl.pathname,
     search: request.nextUrl.search,
     isAuthenticated,
     isPublicRoute: isPublicRoute(request),
-    isCalendarE2EBypass,
+    [CALENDAR_E2E_BYPASS_OPTION]: isCalendarE2eBypass,
   });
   if (redirectTo) {
     return nextjsMiddlewareRedirect(request, redirectTo);
@@ -84,6 +90,9 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     return comingSoonProxy(request);
   }
   if (!appProxyApplies(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+  if (isInsforgeRefreshRequest(request.nextUrl.pathname, request.method, DATA_BACKEND)) {
     return NextResponse.next();
   }
   return appProxy(request, event);
