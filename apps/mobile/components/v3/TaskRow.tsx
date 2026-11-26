@@ -58,7 +58,14 @@ export function TaskRow({
     });
   } else {
     if (showDueDay && task.dueAt !== undefined) {
-      meta.push({ key: "due", node: <T size="sm" tone="muted">{shortDay(localIsoDate(new Date(task.dueAt)), p.lang)}</T> });
+      meta.push({
+        key: "due",
+        node: (
+          <T size="sm" tone="muted">
+            {shortDay(localIsoDate(new Date(task.dueAt)), p.lang)}
+          </T>
+        ),
+      });
     } else if (task.dueAt !== undefined && task.dueAt < todayEndMs && !isEndOfDay(task.dueAt)) {
       meta.push({
         key: "before",
