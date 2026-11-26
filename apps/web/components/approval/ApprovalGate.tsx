@@ -4,6 +4,9 @@ import { useQuery } from "convex/react";
 import type { ReactNode } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
+import { DATA_BACKEND } from "@/lib/backend-flag";
+import { useInsforgeSession } from "@/lib/insforge/session";
+import { useAccountGate } from "@/lib/insforge/use-account-gate";
 import { WaitingForApproval } from "./WaitingForApproval";
 
 /**
@@ -15,17 +18,21 @@ import { WaitingForApproval } from "./WaitingForApproval";
  * Local e2e bypass mode (no real Convex) passes straight through so CI specs
  * keep working.
  */
-const E2E_BYPASS =
-  process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1";
-
 export function ApprovalGate({ children }: { children: ReactNode }) {
-  if (E2E_BYPASS) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1"
+  ) {
     return <>{children}</>;
   }
-  return <ApprovalGateInner>{children}</ApprovalGateInner>;
+  return DATA_BACKEND === "insforge" ? (
+    <InsforgeApprovalGate>{children}</InsforgeApprovalGate>
+  ) : (
+    <ConvexApprovalGate>{children}</ConvexApprovalGate>
+  );
 }
 
-function ApprovalGateInner({ children }: { children: ReactNode }) {
+function ConvexApprovalGate({ children }: { children: ReactNode }) {
   const me = useQuery(api.approval.myStatus);
   if (me === undefined) {
     // Loading: never mount protected children before the status is known.
@@ -36,6 +43,21 @@ function ApprovalGateInner({ children }: { children: ReactNode }) {
   }
   // null (signed out: the proxy redirects) or approved.
   return <>{children}</>;
+}
+
+function InsforgeApprovalGate({ children }: { children: ReactNode }) {
+  const session = useInsforgeSession();
+  const me = useAccountGate(session);
+  if (session.status === "signedOut") return null;
+  if (session.status === "loading" || me === undefined) return <ApprovalLoading />;
+  if (me?.status === "approved") return <>{children}</>;
+  return (
+    <WaitingForApproval
+      email={me?.email ?? session.email}
+      revoked={me?.status !== "pending"}
+      backend="insforge"
+    />
+  );
 }
 
 /**
@@ -56,7 +78,9 @@ function ApprovalLoading() {
           <span className="tp-skeleton tp-skeleton--w100" />
           <span className="tp-skeleton tp-skeleton--sm tp-skeleton--w80" />
         </span>
-        <span className="mt-4 block text-center text-sm text-muted-foreground">{t("approval.loading")}</span>
+        <span className="mt-4 block text-center text-sm text-muted-foreground">
+          {t("approval.loading")}
+        </span>
       </output>
     </main>
   );
