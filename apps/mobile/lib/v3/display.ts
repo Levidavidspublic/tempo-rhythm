@@ -15,7 +15,9 @@ export function clampDial(value: number): number {
 }
 
 /** Offline means the app did connect once and the socket is down now (Convex connection state). */
-export function isOffline(state: { isWebSocketConnected: boolean; hasEverConnected: boolean } | null | undefined): boolean {
+export function isOffline(
+  state: { isWebSocketConnected: boolean; hasEverConnected: boolean } | null | undefined
+): boolean {
   return !!state && state.hasEverConnected && !state.isWebSocketConnected;
 }
 
@@ -44,8 +46,12 @@ export function noteKind(note: { pageType?: string; periodType?: string }): Note
 /** How "edited …" reads: a time today, "yesterday", a weekday within the week, else a date. */
 export function editedWhen(
   updatedAt: number,
-  now: number,
-): { kind: "time" } | { kind: "yesterday" } | { kind: "day"; iso: string } | { kind: "date"; iso: string } {
+  now: number
+):
+  | { kind: "time" }
+  | { kind: "yesterday" }
+  | { kind: "day"; iso: string }
+  | { kind: "date"; iso: string } {
   const today = localIsoDate(new Date(now));
   const iso = localIsoDate(new Date(updatedAt));
   if (iso === today) return { kind: "time" };
@@ -55,7 +61,10 @@ export function editedWhen(
 }
 
 /** Item counts per local date for a week strip. */
-export function countByDate(startsAt: readonly number[], dates: readonly string[]): Record<string, number> {
+export function countByDate(
+  startsAt: readonly number[],
+  dates: readonly string[]
+): Record<string, number> {
   const out: Record<string, number> = Object.fromEntries(dates.map((d) => [d, 0]));
   for (const ms of startsAt) {
     const iso = localIsoDate(new Date(ms));
@@ -67,7 +76,8 @@ export function countByDate(startsAt: readonly number[], dates: readonly string[
 /** The most used tags, most frequent first (ties keep first-seen order), at most `limit`. */
 export function topTags(tagLists: readonly (readonly string[])[], limit = 6): string[] {
   const counts = new Map<string, number>();
-  for (const tags of tagLists) for (const tag of new Set(tags)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  for (const tags of tagLists)
+    for (const tag of new Set(tags)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)

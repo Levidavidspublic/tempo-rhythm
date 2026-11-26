@@ -26,7 +26,7 @@ export function isRtlLang(lang: Lang): boolean {
 export function fill(template: string, vars?: Vars): string {
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
-    Object.hasOwn(vars, name) ? String(vars[name]) : whole,
+    Object.hasOwn(vars, name) ? String(vars[name]) : whole
   );
 }
 
@@ -39,7 +39,12 @@ function entryFor(screen: Screen, key: string): Entry | undefined {
  * The copy for `key` on `screen` (falling back to the shared keys), in `lang`.
  * A missing key returns the key itself so a gap is visible in review, never blank.
  */
-export function translate<S extends Screen>(lang: Lang, screen: S, key: Key<S>, vars?: Vars): string {
+export function translate<S extends Screen>(
+  lang: Lang,
+  screen: S,
+  key: Key<S>,
+  vars?: Vars
+): string {
   const entry = entryFor(screen, key);
   if (!entry) return key;
   return fill(lang === "he" ? entry[1] : entry[0], vars);
@@ -56,7 +61,7 @@ export function allEntries(): { screen: string; key: string; en: string; he: str
   return out;
 }
 
-const STRONG_RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+const STRONG_RTL = /[֐-ࣿיִ-﷿ﹰ-\uFEFF]/;
 const STRONG_LTR = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]/;
 
 /**
