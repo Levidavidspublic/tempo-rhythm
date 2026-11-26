@@ -172,4 +172,14 @@ describe("createInsforgeSessionStore", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(store.getSnapshot()).toEqual({ status: "signedIn", uid: "u1", email: "a@example.com" });
   });
+
+  test("a throwing onError does not block the signed-out update", async () => {
+    const fake = fakeAuth([new Error("network")]);
+    const store = createInsforgeSessionStore(fake.auth, () => {
+      throw new Error("diagnostic failed");
+    });
+    store.start();
+    await fake.flush();
+    expect(store.getSnapshot()).toEqual({ status: "signedOut" });
+  });
 });

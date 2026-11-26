@@ -1,7 +1,14 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import getInsforgeClient from "./client";
 
 /**
@@ -93,9 +100,14 @@ export function createInsforgeSessionStore(
       next = SIGNED_OUT;
     }
     if (readGeneration !== generation) return;
-    if (failure !== undefined) onError?.(failure);
     // An older read that settles after a newer one must not overwrite it.
     if (sequence === readSequence) set(next);
+    if (failure === undefined) return;
+    try {
+      onError?.(failure);
+    } catch {
+      // A failing diagnostic must never change or block the session.
+    }
   };
 
   return {
@@ -143,8 +155,15 @@ export function InsforgeSessionProvider({
   children,
   onError = warnLookupFailed,
 }: InsforgeSessionProviderProps) {
+  // The store lives for the provider's lifetime, so it calls the latest onError through a ref.
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
   const [store] = useState(() =>
-    createInsforgeSessionStore(getInsforgeClient()?.auth ?? null, onError)
+    createInsforgeSessionStore(getInsforgeClient()?.auth ?? null, (error) =>
+      onErrorRef.current(error)
+    )
   );
   useEffect(() => {
     store.start();
