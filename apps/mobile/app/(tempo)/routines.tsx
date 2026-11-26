@@ -10,18 +10,49 @@
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
-import { Check, Clock, Leaf, ListChecks, MessageCircle, Pause, Play, SkipForward, Sun, Undo2, Wind } from "lucide-react-native";
+import {
+  Check,
+  Clock,
+  Leaf,
+  ListChecks,
+  MessageCircle,
+  Pause,
+  Play,
+  SkipForward,
+  Sun,
+  Undo2,
+  Wind,
+} from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { BreathworkTimer } from "@/components/breathwork/BreathworkTimer";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Card, Dot, Eyebrow, ListRow, Notice, PageHeader, Row, SectionHead, T, TouchRow } from "@/components/v3/primitives";
+import {
+  Button,
+  Card,
+  Dot,
+  Eyebrow,
+  ListRow,
+  Notice,
+  PageHeader,
+  Row,
+  SectionHead,
+  T,
+  TouchRow,
+} from "@/components/v3/primitives";
 import { MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useOffline } from "@/components/v3/session";
 import { OfflineNotice, StateEmpty, StateLoading } from "@/components/v3/states";
 import { clockTime } from "@/lib/v3/dates";
 import { type GuidedMovementRoutine, guidedMovementRoutines } from "@/lib/movement-routines";
-import { isResumable, parseRun, type RoutineRun, runCounts, runReducer, startRun } from "@/lib/v3/routine-run";
+import {
+  isResumable,
+  parseRun,
+  type RoutineRun,
+  runCounts,
+  runReducer,
+  startRun,
+} from "@/lib/v3/routine-run";
 
 const runKey = (id: string) => `tempo.v3.routineRun.${id}`;
 
@@ -40,7 +71,17 @@ export default function RoutinesScreen() {
   useEffect(() => {
     let live = true;
     Promise.all(
-      guidedMovementRoutines.map(async (r) => [r.id, parseRun(await AsyncStorage.getItem(runKey(r.id)).catch(() => null), r.id, r.steps.length)] as const),
+      guidedMovementRoutines.map(
+        async (r) =>
+          [
+            r.id,
+            parseRun(
+              await AsyncStorage.getItem(runKey(r.id)).catch(() => null),
+              r.id,
+              r.steps.length
+            ),
+          ] as const
+      )
     )
       .then((pairs) => live && setRuns(Object.fromEntries(pairs)))
       .catch(() => live && setRuns({}));
@@ -77,7 +118,16 @@ export default function RoutinesScreen() {
     <Screen>
       <MobileTopBar
         title={routine ? t("title.guide") : t("top.title")}
-        start={routine ? { kind: "icon", icon: ListChecks, label: t("fin.list"), onPress: () => setActive(null) } : { kind: "back" }}
+        start={
+          routine
+            ? {
+                kind: "icon",
+                icon: ListChecks,
+                label: t("fin.list"),
+                onPress: () => setActive(null),
+              }
+            : { kind: "back" }
+        }
       />
       {offline ? <OfflineNotice title={t("offline.title")} body={t("offline.body")} /> : null}
       {!runs ? (
@@ -97,7 +147,13 @@ export default function RoutinesScreen() {
   );
 }
 
-function List({ runs, onOpen }: { runs: Record<string, RoutineRun | null>; onOpen: (r: GuidedMovementRoutine) => void }) {
+function List({
+  runs,
+  onOpen,
+}: {
+  runs: Record<string, RoutineRun | null>;
+  onOpen: (r: GuidedMovementRoutine) => void;
+}) {
   const t = useT("routines");
   const router = useRouter();
   const resume = guidedMovementRoutines
@@ -108,7 +164,11 @@ function List({ runs, onOpen }: { runs: Record<string, RoutineRun | null>; onOpe
   if (!guidedMovementRoutines.length) {
     return (
       <StateEmpty icon={ListChecks} title={t("empty.title")} body={t("empty.body")}>
-        <Button icon={MessageCircle} label={t("empty.coach")} onPress={() => router.push("/coach")} />
+        <Button
+          icon={MessageCircle}
+          label={t("empty.coach")}
+          onPress={() => router.push("/coach")}
+        />
       </StateEmpty>
     );
   }
@@ -151,7 +211,11 @@ function List({ runs, onOpen }: { runs: Record<string, RoutineRun | null>; onOpe
         <Card padded={false}>
           {guidedMovementRoutines.map((r, i) => {
             const inProgress = isResumable(runs[r.id]);
-            const meta = [`${r.steps.length} ${t("steps")}`, `${t("about")} ${r.durationMinutes} ${t("unit.min")}`, inProgress ? t("r.inprogress") : ""]
+            const meta = [
+              `${r.steps.length} ${t("steps")}`,
+              `${t("about")} ${r.durationMinutes} ${t("unit.min")}`,
+              inProgress ? t("r.inprogress") : "",
+            ]
               .filter(Boolean)
               .join(" · ");
             return (
@@ -174,7 +238,12 @@ function List({ runs, onOpen }: { runs: Record<string, RoutineRun | null>; onOpe
         <T size="sm" tone="muted">
           {t("bundled.note")}
         </T>
-        <Button variant="ghost" icon={MessageCircle} label={t("new.coach")} onPress={() => router.push("/coach")} />
+        <Button
+          variant="ghost"
+          icon={MessageCircle}
+          label={t("new.coach")}
+          onPress={() => router.push("/coach")}
+        />
       </View>
       <View style={{ gap: 12 }}>
         <SectionHead title={t("sessions.title")} />
@@ -218,13 +287,30 @@ function Guide({
   const act = (type: "done" | "skip" | "back" | "pause" | "resume") => {
     const next = runReducer(run, { type, now: Date.now() });
     setRun(next);
-    setNote(type === "skip" ? t("note.skipped") : type === "back" ? t("note.back") : type === "resume" ? t("note.resumed") : "");
+    setNote(
+      type === "skip"
+        ? t("note.skipped")
+        : type === "back"
+          ? t("note.back")
+          : type === "resume"
+            ? t("note.resumed")
+            : ""
+    );
   };
 
   if (run.finished) {
     return (
       <View style={{ alignItems: "center", gap: 12, paddingVertical: 24 }}>
-        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.doneWash, alignItems: "center", justifyContent: "center" }}>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: c.doneWash,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <Leaf size={28} color={c.done} />
         </View>
         <T size="xl" serif weight="500" center accessibilityRole="header">
@@ -279,14 +365,22 @@ function Guide({
           </T>
         </Row>
       </View>
-      {run.paused ? <Notice tone="info" icon={Pause} title={t("paused.t")} body={t("paused.b")} live="polite" /> : null}
+      {run.paused ? (
+        <Notice tone="info" icon={Pause} title={t("paused.t")} body={t("paused.b")} live="polite" />
+      ) : null}
       {note ? (
         <T size="sm" tone="muted" accessibilityLiveRegion="polite">
           {note}
         </T>
       ) : null}
       <View style={{ gap: 8 }}>
-        <Button variant="primary" block icon={Check} label={t("done")} onPress={() => act("done")} />
+        <Button
+          variant="primary"
+          block
+          icon={Check}
+          label={t("done")}
+          onPress={() => act("done")}
+        />
         <Row className="gap-2">
           <View style={{ flex: 1 }}>
             <Button block icon={SkipForward} label={t("skip.one")} onPress={() => act("skip")} />
@@ -302,7 +396,14 @@ function Guide({
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Button block variant="ghost" icon={Undo2} label={t("back.step")} disabled={run.index === 0} onPress={() => act("back")} />
+            <Button
+              block
+              variant="ghost"
+              icon={Undo2}
+              label={t("back.step")}
+              disabled={run.index === 0}
+              onPress={() => act("back")}
+            />
           </View>
         </Row>
       </View>
