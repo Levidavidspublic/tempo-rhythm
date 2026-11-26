@@ -224,7 +224,9 @@ describe("createLiveRows", () => {
   test("reports a failed read separately and retries the first read", async () => {
     let fail = true;
     const { client } = makeClient(async () =>
-      fail ? { data: null, error: new Error("read failed") } : { data: [{ id: "first" }], error: null }
+      fail
+        ? { data: null, error: new Error("read failed") }
+        : { data: [{ id: "first" }], error: null }
     );
     const onRows = mock((_rows: Row[]) => {});
     const onError = mock((_error: unknown) => {});
@@ -242,7 +244,9 @@ describe("createLiveRows", () => {
   test("keeps the last rows when a later read fails", async () => {
     let fail = false;
     const { client, emit } = makeClient(async () =>
-      fail ? { data: null, error: new Error("read failed") } : { data: [{ id: "first" }], error: null }
+      fail
+        ? { data: null, error: new Error("read failed") }
+        : { data: [{ id: "first" }], error: null }
     );
     const onRows = mock((_rows: Row[]) => {});
     const onError = mock((_error: unknown) => {});
