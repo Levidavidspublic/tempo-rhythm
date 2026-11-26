@@ -1,0 +1,482 @@
+[
+  {
+    "feature": "DayPlanPanel (intention, top tasks, energy)",
+    "pr": "#599",
+    "route": "/today",
+    "status": "not-wired",
+    "error": "component heading/controls absent",
+    "screenshot": "docs/reports/feature-test-2026-10-06/dayplanpanel-intention-top-tasks-energy.png"
+  },
+  {
+    "feature": "CarryOverStrip",
+    "pr": "#598",
+    "route": "/today",
+    "status": "not-wired",
+    "error": "heading absent. CarryOverStrip returns null when there are no older open tasks, so an empty list is indistinguishable from not mounted",
+    "screenshot": "docs/reports/feature-test-2026-10-06/carryoverstrip.png"
+  },
+  {
+    "feature": "HabitCheckInStrip",
+    "pr": "#633",
+    "route": "/today",
+    "status": "not-wired",
+    "error": "component heading/controls absent",
+    "screenshot": "docs/reports/feature-test-2026-10-06/habitcheckinstrip.png"
+  },
+  {
+    "feature": "DayPlanSummary (one-tap done)",
+    "pr": "#643",
+    "route": "/today",
+    "status": "not-wired",
+    "error": "component heading/controls absent",
+    "screenshot": "docs/reports/feature-test-2026-10-06/dayplansummary-one-tap-done.png"
+  },
+  {
+    "feature": "DayTimeline",
+    "pr": "#603",
+    "route": "/plan",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/daytimeline.png"
+  },
+  {
+    "feature": "TimeBlockDialog",
+    "pr": "#625",
+    "route": "/plan",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/timeblockdialog.png"
+  },
+  {
+    "feature": "HabitsLibrary",
+    "pr": "#635",
+    "route": "/habits",
+    "status": "not-wired",
+    "error": "component heading/controls absent; HabitsScreen is mounted instead",
+    "screenshot": "docs/reports/feature-test-2026-10-06/habitslibrary.png"
+  },
+  {
+    "feature": "HabitDetail 6-week grid",
+    "pr": "#638",
+    "route": "/habits/missing-sweep-id",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/habitdetail-6-week-grid.png"
+  },
+  {
+    "feature": "Brain dump sort and accept",
+    "pr": "#632",
+    "route": "/brain-dump",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview). Sort it is not mounted. Re-checked after approval.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/brain-dump-sort-and-accept.png"
+  },
+  {
+    "feature": "Brain dump crisis card",
+    "pr": "#632",
+    "route": "/brain-dump",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/brain-dump-crisis-card.png"
+  },
+  {
+    "feature": "Coach dial and panic",
+    "pr": "#637",
+    "route": "/coach",
+    "status": "not-wired",
+    "error": "ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. Coach dial is not on the page.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-dial-and-panic.png"
+  },
+  {
+    "feature": "Coach daily proposal",
+    "pr": "#644",
+    "route": "/coach",
+    "status": "not-wired",
+    "error": "ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. Plan my day is not on the page.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-daily-proposal.png"
+  },
+  {
+    "feature": "Coach crisis card",
+    "pr": "#647",
+    "route": "/coach",
+    "status": "broken",
+    "error": "Recorded while the inbox was pending: message input stayed disabled. Not re-sent after approval.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-crisis-card.png"
+  },
+  {
+    "feature": "Coach chat send and reload",
+    "pr": "old",
+    "route": "/coach",
+    "status": "works",
+    "error": "After approval, send survived reload. Reply: What's the smallest step you could take without any resistance? Start there \u2014 that's the whole assignment.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-chat-send-and-reload.png"
+  },
+  {
+    "feature": "Nag list",
+    "pr": "#652",
+    "route": "/settings/nags",
+    "status": "not-wired",
+    "error": "route 404 | console: Failed to load resource: the server responded with a status of 404 () | http: 404 preview.tempoflow.dev/settings/nags",
+    "screenshot": "docs/reports/feature-test-2026-10-06/nag-list.png"
+  },
+  {
+    "feature": "Nag phrases and suggestions",
+    "pr": "#654",
+    "route": "/settings/nags",
+    "status": "not-wired",
+    "error": "route 404. Suggest was not reached. Re-checked after approval.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/nag-phrases-and-suggestions.png"
+  },
+  {
+    "feature": "Memory settings",
+    "pr": "#653",
+    "route": "/settings/memory",
+    "status": "not-wired",
+    "error": "route 404 | console: Failed to load resource: the server responded with a status of 404 () | http: 404 preview.tempoflow.dev/settings/memory",
+    "screenshot": "docs/reports/feature-test-2026-10-06/memory-settings.png"
+  },
+  {
+    "feature": "TemplatesLibrary",
+    "pr": "#602",
+    "route": "/templates",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/templateslibrary.png"
+  },
+  {
+    "feature": "TemplateRun",
+    "pr": "#604",
+    "route": "/templates/run/starter:daily-page",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/templaterun.png"
+  },
+  {
+    "feature": "Template builder and editor",
+    "pr": "#628",
+    "route": "/templates/builder?from=starter:daily-page",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/template-builder-and-editor.png"
+  },
+  {
+    "feature": "Onboarding name step",
+    "pr": "#631",
+    "route": "/onboarding",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/onboarding-name-step.png"
+  },
+  {
+    "feature": "Profile name and delete guard",
+    "pr": "#636",
+    "route": "/settings/profile",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/profile-name-and-delete-guard.png"
+  },
+  {
+    "feature": "Preferences and notifications",
+    "pr": "#640",
+    "route": "/settings/preferences",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/preferences-and-notifications.png"
+  },
+  {
+    "feature": "Billing plan card",
+    "pr": "#648",
+    "route": "/billing",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/billing-plan-card.png"
+  },
+  {
+    "feature": "Search grouped results",
+    "pr": "#649",
+    "route": "/search?q=zzsmuwjeq2snomatch",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/search-grouped-results.png"
+  },
+  {
+    "feature": "Calendar events",
+    "pr": "#663",
+    "route": "/calendar",
+    "status": "broken",
+    "error": "Sign in again to add calendar events. The new title never appeared in the list.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/calendar-events.png"
+  },
+  {
+    "feature": "Focus blocks",
+    "pr": "#662",
+    "route": "/tracking",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/focus-blocks.png"
+  },
+  {
+    "feature": "Insights",
+    "pr": "#664",
+    "route": "/insights",
+    "status": "broken",
+    "error": "Insights heading is visible but the cards are still empty skeletons. No numbers, calm empty state, or Retry in the shot.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/insights.png"
+  },
+  {
+    "feature": "Notes list",
+    "pr": "#670",
+    "route": "/notes",
+    "status": "broken",
+    "error": "Pin did not become Unpin. The screenshot is the sign-in wall.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/notes-list.png"
+  },
+  {
+    "feature": "smoke /tasks",
+    "pr": "smoke",
+    "route": "/tasks",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-tasks.png"
+  },
+  {
+    "feature": "smoke /tasks/energy",
+    "pr": "smoke",
+    "route": "/tasks/energy",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-tasks-energy.png"
+  },
+  {
+    "feature": "smoke /tasks/checklists",
+    "pr": "smoke",
+    "route": "/tasks/checklists",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-tasks-checklists.png"
+  },
+  {
+    "feature": "smoke /tasks/priority",
+    "pr": "smoke",
+    "route": "/tasks/priority",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-tasks-priority.png"
+  },
+  {
+    "feature": "smoke /journal",
+    "pr": "smoke",
+    "route": "/journal",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-journal.png"
+  },
+  {
+    "feature": "smoke /routines",
+    "pr": "smoke",
+    "route": "/routines",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-routines.png"
+  },
+  {
+    "feature": "smoke /routines/missing-sweep-id",
+    "pr": "smoke",
+    "route": "/routines/missing-sweep-id",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-routines-missing-sweep-id.png"
+  },
+  {
+    "feature": "smoke /goals",
+    "pr": "smoke",
+    "route": "/goals",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-goals.png"
+  },
+  {
+    "feature": "smoke /goals/progress",
+    "pr": "smoke",
+    "route": "/goals/progress",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-goals-progress.png"
+  },
+  {
+    "feature": "smoke /goals/missing-sweep-id",
+    "pr": "smoke",
+    "route": "/goals/missing-sweep-id",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-goals-missing-sweep-id.png"
+  },
+  {
+    "feature": "smoke /projects",
+    "pr": "smoke",
+    "route": "/projects",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-projects.png"
+  },
+  {
+    "feature": "smoke /projects/missing-sweep-id",
+    "pr": "smoke",
+    "route": "/projects/missing-sweep-id",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-projects-missing-sweep-id.png"
+  },
+  {
+    "feature": "smoke /projects/missing-sweep-id/kanban",
+    "pr": "smoke",
+    "route": "/projects/missing-sweep-id/kanban",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-projects-missing-sweep-id-kanban.png"
+  },
+  {
+    "feature": "smoke /activity",
+    "pr": "smoke",
+    "route": "/activity",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-activity.png"
+  },
+  {
+    "feature": "smoke /history",
+    "pr": "smoke",
+    "route": "/history",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-history.png"
+  },
+  {
+    "feature": "smoke /command",
+    "pr": "smoke",
+    "route": "/command",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-command.png"
+  },
+  {
+    "feature": "smoke /ask-founder",
+    "pr": "smoke",
+    "route": "/ask-founder",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-ask-founder.png"
+  },
+  {
+    "feature": "smoke /empty-states",
+    "pr": "smoke",
+    "route": "/empty-states",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-empty-states.png"
+  },
+  {
+    "feature": "smoke /daily-note",
+    "pr": "smoke",
+    "route": "/daily-note",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-daily-note.png"
+  },
+  {
+    "feature": "smoke /settings/integrations",
+    "pr": "smoke",
+    "route": "/settings/integrations",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-settings-integrations.png"
+  },
+  {
+    "feature": "smoke /settings/passkeys",
+    "pr": "smoke",
+    "route": "/settings/passkeys",
+    "status": "broken",
+    "error": "sign-in wall still showing",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-settings-passkeys.png"
+  },
+  {
+    "feature": "smoke /templates/sketch",
+    "pr": "smoke",
+    "route": "/templates/sketch",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-templates-sketch.png"
+  },
+  {
+    "feature": "smoke /billing/trial-end",
+    "pr": "smoke",
+    "route": "/billing/trial-end",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-billing-trial-end.png"
+  },
+  {
+    "feature": "smoke /dashboard",
+    "pr": "smoke",
+    "route": "/dashboard",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-dashboard.png"
+  },
+  {
+    "feature": "smoke /about",
+    "pr": "smoke",
+    "route": "/about",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-about.png"
+  },
+  {
+    "feature": "smoke /changelog",
+    "pr": "smoke",
+    "route": "/changelog",
+    "status": "not-wired",
+    "error": "ScaffoldScreen (Beta preview)",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-changelog.png"
+  },
+  {
+    "feature": "smoke /contact",
+    "pr": "smoke",
+    "route": "/contact",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-contact.png"
+  },
+  {
+    "feature": "smoke /privacy",
+    "pr": "smoke",
+    "route": "/privacy",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-privacy.png"
+  },
+  {
+    "feature": "smoke /terms",
+    "pr": "smoke",
+    "route": "/terms",
+    "status": "works",
+    "error": "",
+    "screenshot": "docs/reports/feature-test-2026-10-06/smoke-terms.png"
+  },
+  {
+    "feature": "Brain dump AI (Turn this into a plan)",
+    "pr": "#632",
+    "route": "/today",
+    "status": "works",
+    "error": "Server planner returned 4 ordered lines (Reply to Sam now, kettle, walk, receipt) after the account was approved.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/brain-dump-ai-approved.png"
+  },
+  {
+    "feature": "Approval gate",
+    "pr": "#693",
+    "route": "/coach",
+    "status": "works",
+    "error": "While the inbox was pending, conversations.create returned ACCOUNT_PENDING_APPROVAL: your account is waiting for approval. That rejection is the gate. After approval the same inbox can chat.",
+    "screenshot": "docs/reports/feature-test-2026-10-06/coach-chat-send-and-reload.png"
+  }
+]
