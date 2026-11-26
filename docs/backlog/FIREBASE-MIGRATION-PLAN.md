@@ -1,5 +1,7 @@
 # Tempo Flow: Convex to Firebase migration plan
 
+> Superseded 2026-11-25 by `docs/backlog/INSFORGE-MIGRATION-PLAN.md` (Amit's decision: Tempo's backend moves to InsForge and the Firebase move stops). Kept for reference.
+
 Dated 2026-11-20. Owner decision: Amit, 20 Nov 2026 ("Tempo Flow and OmniAgent are moving from Convex to Firebase"). Written by the round-1 orchestrator (Lane F2). This file is the single plan. Tickets are cut from the WORK LIST below, in order.
 
 Older files this plan builds on (still valid where they do not disagree): `docs/backlog/FIREBASE-DATA-MODEL.md` (where every table goes) and `docs/backlog/FIREBASE-ENV-MAPPING.md` (projects and variable names). Where they say "Convex stays", this plan wins.
