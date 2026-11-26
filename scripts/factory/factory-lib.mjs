@@ -7,6 +7,15 @@ import { frontMatter } from "./scope-guard.mjs";
 export { frontMatter };
 export const BASE = "integration";
 
+// AGENTS.md: t/<issue-number>-<short-slug>. The slug is the ticket id, lowercased.
+export function ticketBranch(issueNumber, ticketId) {
+  const n = Number(issueNumber);
+  const slug = String(ticketId).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (!Number.isInteger(n) || n <= 0) throw new Error("issue number required for the branch name");
+  if (!slug) throw new Error("ticket id has no slug");
+  return `t/${n}-${slug}`;
+}
+
 export const truthy = (v) => v === true || v === "true";
 export const scopeOf = (fm) => (Array.isArray(fm?.scope) ? fm.scope : fm?.scope ? [fm.scope] : []);
 export const listOf = (v) => (Array.isArray(v) ? v : v ? [v] : []);
@@ -22,7 +31,8 @@ export async function setOutput(key, value) {
 
 export async function renderLanePrompt({ issueUrl, issueNumber, ticketId }) {
   const t = await readFile(new URL("../../.github/factory/lane-prompt.md", import.meta.url), "utf8");
-  return t.replaceAll("{{ISSUE_URL}}", issueUrl).replaceAll("{{ISSUE_NUMBER}}", String(issueNumber)).replaceAll("{{TICKET_ID}}", ticketId);
+  const branch = ticketBranch(issueNumber, ticketId);
+  return t.replaceAll("{{ISSUE_URL}}", issueUrl).replaceAll("{{ISSUE_NUMBER}}", String(issueNumber)).replaceAll("{{TICKET_ID}}", ticketId).replaceAll("{{BRANCH}}", branch);
 }
 
 // The open PR into integration whose body links this issue ("Closes #N"), if any.
