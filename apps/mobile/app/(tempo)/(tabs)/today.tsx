@@ -229,16 +229,18 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
   // While a stretch runs, the card stays on its task (fresh from the list if still open).
   const task = timer ? (tasks.find((item) => item._id === timer.task._id) ?? timer.task) : picked;
   const minutes = timer ? Math.round(timer.durationMs / 60_000) : task ? focusMinutes(task) : 25;
-  const now = useNow(1000, timer?.runningSince != null);
+  const runningSince = timer?.runningSince;
+  const running = runningSince !== null && runningSince !== undefined;
+  const now = useNow(1000, running);
   const left = timer
-    ? timer.runningSince != null
-      ? timer.leftMs - (now - timer.runningSince)
+    ? running
+      ? timer.leftMs - (now - runningSince)
       : timer.leftMs
     : minutes * 60_000;
   const logged = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!timer || timer.runningSince == null || left > 0) return;
+    if (!timer || !running || left > 0) return;
     const key = `${timer.task._id}:${timer.startedAt}`;
     if (logged.current === key) return;
     logged.current = key;
@@ -248,7 +250,7 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
       taskId: timer.task._id as Id<"tasks">,
     }).catch(() => undefined);
     setTimer(null);
-  }, [left, timer, createFocus]);
+  }, [left, timer, createFocus, running]);
 
   if (!task) {
     return (
@@ -261,9 +263,7 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
     );
   }
 
-  const mine = timer !== null;
-  const running = mine && timer?.runningSince != null;
-  const paused = mine && timer?.runningSince == null;
+  const paused = timer !== null && !running;
   const startLabel = running
     ? `${t("timer.running")} · ${formatCountdown(left)}`
     : paused
