@@ -77,6 +77,12 @@ begin
   if exists (select from realtime.channels) then
     raise exception 'other user can subscribe to the owner task channel';
   end if;
+  begin
+    insert into realtime.messages (channel_name, event_name, payload, sender_type)
+    values (realtime.channel_name(), 'INSERT', '{}'::jsonb, 'user');
+    raise exception 'client can publish directly to the owner stream';
+  exception when insufficient_privilege then null;
+  end;
 end
 $$;
 

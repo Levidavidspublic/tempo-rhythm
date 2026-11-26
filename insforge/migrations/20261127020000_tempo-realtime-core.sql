@@ -36,6 +36,9 @@ on conflict (pattern) do update
 set description = excluded.description, enabled = excluded.enabled;
 
 alter table realtime.channels enable row level security;
+-- The owner stream is server-published; clients have no message insert policy.
+alter table realtime.messages enable row level security;
+
 create policy tempo_owner_subscribe on realtime.channels
   for select to authenticated
   using (
