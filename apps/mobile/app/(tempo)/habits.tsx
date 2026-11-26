@@ -15,10 +15,25 @@ import { Check, Leaf, Plus, RefreshCw, Repeat } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Card, Notice, PageHeader, Row, SectionHead, T, TextField } from "@/components/v3/primitives";
+import {
+  Button,
+  Card,
+  Notice,
+  PageHeader,
+  Row,
+  SectionHead,
+  T,
+  TextField,
+} from "@/components/v3/primitives";
 import { MobileTopBar, Screen, Sheet } from "@/components/v3/Shell";
 import { useOffline, useTempoSession, useToday } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -39,7 +54,13 @@ export default function HabitsScreen() {
         fallback={(retry) => (
           <View style={{ gap: 24 }}>
             <PageHeader title={t("page.title")} />
-            <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+            <StateError
+              title={t("err.title")}
+              safe={t("state.safe")}
+              body={t("err.body")}
+              retryLabel={t("state.retry")}
+              onRetry={retry}
+            />
           </View>
         )}
       >
@@ -57,7 +78,10 @@ function HabitsBody({ ready }: { ready: boolean }) {
   const today = useToday();
   const toast = useToast();
   const habits = useQuery(api.habits.list, ready ? {} : "skip");
-  const checkIns = useQuery(api.habitCheckIns.listForDate, ready ? { localDate: today.iso } : "skip");
+  const checkIns = useQuery(
+    api.habitCheckIns.listForDate,
+    ready ? { localDate: today.iso } : "skip"
+  );
   const create = useMutation(api.habits.create);
   const remove = useMutation(api.habits.remove);
   const [sheet, setSheet] = useState(false);
@@ -122,7 +146,16 @@ function HabitsBody({ ready }: { ready: boolean }) {
       title={t("new.title")}
       onClose={() => setSheet(false)}
       closeLabel={t("more.close")}
-      footer={<Button variant="primary" block icon={Plus} label={t("new.add")} onPress={add} disabled={addBusy} />}
+      footer={
+        <Button
+          variant="primary"
+          block
+          icon={Plus}
+          label={t("new.add")}
+          onPress={add}
+          disabled={addBusy}
+        />
+      }
     >
       <TextField
         label={t("new.name")}
@@ -232,7 +265,9 @@ function HabitCard({
   // "Start fresh" counts as a new beginning: the 7 days run from the later of it and the last log.
   const baseline = [...dates, ...(freshFrom ? [freshFrom] : [])].sort().pop() ?? null;
   const welcome =
-    days !== undefined && !freshNote && needsWelcomeBack({ todayIso, createdAt: habit.createdAt, lastLoggedIso: baseline });
+    days !== undefined &&
+    !freshNote &&
+    needsWelcomeBack({ todayIso, createdAt: habit.createdAt, lastLoggedIso: baseline });
 
   const press = () => {
     const args = { habitId: habit._id, localDate: todayIso, asOfLocalDate: todayIso };
@@ -244,7 +279,12 @@ function HabitCard({
     <Card style={{ gap: 12 }}>
       {welcome ? (
         <View style={{ gap: 8 }}>
-          <Notice tone="info" icon={Leaf} title={t("fresh.title")} body={t("fresh.body", { name: habit.name })} />
+          <Notice
+            tone="info"
+            icon={Leaf}
+            title={t("fresh.title")}
+            body={t("fresh.body", { name: habit.name })}
+          />
           <Row className="gap-2" wrap>
             <Button
               icon={RefreshCw}
