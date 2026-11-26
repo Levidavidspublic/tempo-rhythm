@@ -22,7 +22,7 @@ export type JournalEntry = { mood: Mood | null; q1: string; q2: string };
 /** The section as Markdown, in one language. Empty parts are left out. */
 export function buildJournalSection(
   entry: JournalEntry,
-  copy: { heading: string; moodQ: string; q1: string; q2: string; mood: Record<Mood, string> },
+  copy: { heading: string; moodQ: string; q1: string; q2: string; mood: Record<Mood, string> }
 ): string {
   const parts: string[] = [`## ${copy.heading}`];
   if (entry.mood) parts.push(`**${copy.moodQ}** ${copy.mood[entry.mood]}`);
@@ -39,7 +39,10 @@ function isHeading(line: string, labels: readonly string[]): boolean {
 }
 
 /** Where the journal section sits in `body`: from its heading to the next # or ## heading. */
-export function findJournalSection(body: string, headings: readonly string[]): { start: number; end: number } | null {
+export function findJournalSection(
+  body: string,
+  headings: readonly string[]
+): { start: number; end: number } | null {
   let offset = 0;
   let start = -1;
   let inCode = false;
@@ -98,7 +101,11 @@ export function readJournal(body: string, labels: JournalLabels): JournalEntry |
 }
 
 /** `body` with its journal section replaced by `section`, or with `section` added at the end. */
-export function upsertJournalSection(body: string, section: string, headings: readonly string[]): string {
+export function upsertJournalSection(
+  body: string,
+  section: string,
+  headings: readonly string[]
+): string {
   const at = findJournalSection(body, headings);
   if (at) {
     const after = body.slice(at.end);
