@@ -112,7 +112,7 @@ describe("account gate read", () => {
     );
   });
 
-  const restrictiveStatuses = ["pending", "revoked"] as const;
+  const restrictiveStatuses: ("pending" | "revoked")[] = ["pending", "revoked"];
   test.each(restrictiveStatuses)("preserves stored %s for a regular account", async (status) => {
     const select = async () => [{ ...row, [statusColumn]: status }];
     const expected = { ...approvedGate, status };
@@ -184,7 +184,7 @@ describe("ApprovalGate render", () => {
     expect(html).not.toContain(protectedChild);
   });
 
-  const noSessionStates = ["loading", "signedOut"] as const;
+  const noSessionStates: ("loading" | "signedOut")[] = ["loading", "signedOut"];
   test.each(noSessionStates)("session %s cannot reuse an approved result", (status) => {
     useInsforgeSession.mockReturnValue({ status });
     useAccountGate.mockReturnValue(approvedGate);
