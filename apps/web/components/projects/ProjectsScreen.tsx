@@ -19,6 +19,7 @@ import {
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
+import { DATA_BACKEND } from "@/lib/backend-flag";
 import { useTaskList } from "@/lib/data/tasks/use-task-list";
 import {
   filterProjects,
@@ -47,7 +48,7 @@ const PROJECT_LIST_CLASS_NAME = "tp-cards pj-cards kb08-list";
  * tasks (Done when every task is done, else Active) and "3 of 6 tasks done". The design's why,
  * due date and "Part of" goal have no stored source yet and are left out.
  */
-export function ProjectsScreen() {
+function ConvexProjectsScreen() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   // The local Playwright harness opens /projects signed out with a placeholder Convex URL; the
   // core task-views spec reads the browser-stored project list there (as /today does).
@@ -56,6 +57,8 @@ export function ProjectsScreen() {
   }
   return <ProjectsBoundary />;
 }
+
+export const ProjectsScreen = DATA_BACKEND === "insforge" ? ProjectsBoundary : ConvexProjectsScreen;
 
 function ProjectsBoundary() {
   const { lang } = useLocale();
@@ -104,12 +107,33 @@ function ProjectsHeader({ onNew }: { onNew?: () => void }) {
   );
 }
 
+function useConvexProjectsData() {
+  const signedIn = useSignedIn();
+  const tasks = useTaskList(signedIn === "ready" ? {} : "skip");
+  return { signedIn, tasks };
+}
+
+function useInsforgeProjectsData() {
+  const { useInsforgeSession } = require("@/lib/insforge/session") as typeof import(
+    "@/lib/insforge/session"
+  );
+  const session = useInsforgeSession();
+  const signedIn = session.status === "signedIn" ? "ready" : session.status;
+  const tasks = useTaskList(
+    signedIn === "ready" ? {} : "skip",
+    session.status === "signedIn" ? session.uid : undefined
+  );
+  return { signedIn, tasks };
+}
+
+const useProjectsData =
+  DATA_BACKEND === "insforge" ? useInsforgeProjectsData : useConvexProjectsData;
+
 function ProjectsContent() {
   const { t, lang } = useLocale();
-  const signedIn = useSignedIn();
+  const { signedIn, tasks } = useProjectsData();
   const online = useOnline();
   const startProject = useStartProject();
-  const tasks = useTaskList(signedIn === "ready" ? {} : "skip");
   const [filter, setFilter] = useQueryParam<ProjectFilter>("status", "all", isProjectFilter);
 
   if (signedIn === "signedOut") {
