@@ -10,7 +10,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { tempoV3Colors, tempoV3ColorsDark } from "@tempo/ui/theme";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { getLocales } from "expo-localization";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AccessibilityInfo, I18nManager, useColorScheme } from "react-native";
 import { api } from "@/convex/_generated/api";
 import {
@@ -99,17 +108,20 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let live = true;
-    void Promise.all([readLocal(KEYS.lang), readLocal(KEYS.theme), readLocal(KEYS.textSize), readLocal(KEYS.readingFont)]).then(
-      ([l, t, s, f]) => {
-        if (!live) return;
-        if (!serverApplied.current) {
-          if (isLang(l)) setLangState(l);
-          if (t === "system" || t === "light" || t === "dark") setThemeState(t);
-        }
-        if (s === "s" || s === "m" || s === "l") setTextSizeState(s);
-        setReadingFontState(f === "on");
-      },
-    );
+    void Promise.all([
+      readLocal(KEYS.lang),
+      readLocal(KEYS.theme),
+      readLocal(KEYS.textSize),
+      readLocal(KEYS.readingFont),
+    ]).then(([l, t, s, f]) => {
+      if (!live) return;
+      if (!serverApplied.current) {
+        if (isLang(l)) setLangState(l);
+        if (t === "system" || t === "light" || t === "dark") setThemeState(t);
+      }
+      if (s === "s" || s === "m" || s === "l") setTextSizeState(s);
+      setReadingFontState(f === "on");
+    });
     return () => {
       live = false;
     };
@@ -144,7 +156,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       writeLocal(KEYS.lang, next);
       if (signedIn) updateServer({ locale: next }).catch(() => undefined);
     },
-    [signedIn, updateServer],
+    [signedIn, updateServer]
   );
   const setThemePref = useCallback(
     (next: ThemePref) => {
@@ -152,7 +164,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       writeLocal(KEYS.theme, next);
       if (signedIn) updateServer({ theme: next }).catch(() => undefined);
     },
-    [signedIn, updateServer],
+    [signedIn, updateServer]
   );
   const setTextSize = useCallback((next: TextSize) => {
     setTextSizeState(next);
@@ -184,7 +196,18 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
       setTextSize,
       setReadingFont,
     };
-  }, [lang, themePref, scheme, textSize, readingFont, reducedMotion, setLang, setThemePref, setTextSize, setReadingFont]);
+  }, [
+    lang,
+    themePref,
+    scheme,
+    textSize,
+    readingFont,
+    reducedMotion,
+    setLang,
+    setThemePref,
+    setTextSize,
+    setReadingFont,
+  ]);
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>;
 }
@@ -202,5 +225,8 @@ export function useColors(): Palette {
 /** `t(key, vars)` for one screen's copy, in the current language. */
 export function useT<S extends Screen>(screen: S): (key: Key<S>, vars?: Vars) => string {
   const { lang } = usePrefs();
-  return useCallback((key: Key<S>, vars?: Vars) => translate(lang, screen, key, vars), [lang, screen]);
+  return useCallback(
+    (key: Key<S>, vars?: Vars) => translate(lang, screen, key, vars),
+    [lang, screen]
+  );
 }
