@@ -1,6 +1,8 @@
 import { createServerClient, getAccessTokenCookieName } from "@insforge/sdk/ssr";
 import type { NextRequest } from "next/server";
 
+const UPSTREAM_TIMEOUT_MS = 8_000;
+
 type InsforgeSessionEnv = {
   url?: string;
   anonKey?: string;
@@ -23,19 +25,20 @@ export async function hasVerifiedInsforgeSession(
   try {
     if (new URL(baseUrl).protocol !== "https:") return false;
 
+    const deadline = AbortSignal.any([request.signal, AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)]);
     const { data, error } = await createServerClient({
       baseUrl,
       anonKey,
       cookies: request.cookies,
       retryCount: 0,
-      timeout: 8_000,
+      timeout: UPSTREAM_TIMEOUT_MS,
       fetch: Object.assign(
         (input: Parameters<typeof fetch>[0], init?: RequestInit) =>
           fetchUpstream(input, {
             ...init,
             cache: "no-store",
             redirect: "error",
-            signal: init?.signal ? AbortSignal.any([request.signal, init.signal]) : request.signal,
+            signal: init?.signal ? AbortSignal.any([deadline, init.signal]) : deadline,
           }),
         { preconnect: fetchUpstream.preconnect }
       ),

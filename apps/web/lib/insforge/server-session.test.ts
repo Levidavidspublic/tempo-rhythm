@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, mock, spyOn, test } from "bun:test";
 import { getAccessTokenCookieName, getRefreshTokenCookieName } from "@insforge/sdk/ssr";
 import { NextRequest } from "next/server";
 import { POST } from "../../app/api/auth/insforge/refresh/route";
@@ -79,6 +79,42 @@ describe("server-verified InsForge session", () => {
     const missingUser = upstream(() => Response.json({ user: { id: " " } }));
     expect(await hasVerifiedInsforgeSession(req, provider, failedFetch)).toBe(false);
     expect(await hasVerifiedInsforgeSession(req, provider, missingUser)).toBe(false);
+  });
+
+  test("denies a lookup when the response body stalls after headers arrive", async () => {
+    const timer = new AbortController();
+    const deadline = spyOn(AbortSignal, "timeout").mockReturnValueOnce(timer.signal);
+    const reading = Promise.withResolvers<void>();
+    const fetchUpstream = Object.assign(
+      async (...[, init]: Parameters<typeof fetch>) => {
+        const signal = init?.signal;
+        const body = new ReadableStream<Uint8Array>(
+          {
+            start(controller) {
+              signal?.addEventListener("abort", () => controller.error(signal.reason), {
+                once: true,
+              });
+            },
+            pull() {
+              reading.resolve();
+            },
+          },
+          { highWaterMark: 0 }
+        );
+        return new Response(body, { headers: { "content-type": "application/json" } });
+      },
+      { preconnect: fetch.preconnect }
+    );
+
+    try {
+      const lookup = hasVerifiedInsforgeSession(request(true), provider, fetchUpstream);
+      await reading.promise;
+      expect(deadline).toHaveBeenCalledWith(8_000);
+      timer.abort(new DOMException("Provider body stalled", "TimeoutError"));
+      expect(await lookup).toBe(false);
+    } finally {
+      deadline.mockRestore();
+    }
   });
 });
 
