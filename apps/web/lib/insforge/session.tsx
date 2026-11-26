@@ -58,14 +58,20 @@ function sameSession(a: InsforgeSession, b: InsforgeSession): boolean {
 
 /**
  * React-free session store. Starts `loading`. `start()` reads the current user once and re-reads
- * it on every auth event. `null` auth (client not configured) is signed out. `stop()`
- * unsubscribes and ignores answers that arrive later.
+ * it on every auth event. Only the newest read publishes. `null` auth (client not configured) is
+ * signed out. A failed lookup is signed out too, but is also passed to `onError` so an auth outage
+ * can be told apart from a signed-out user. `stop()` unsubscribes and ignores answers that arrive
+ * later.
  */
-export function createInsforgeSessionStore(auth: InsforgeSessionAuth | null): InsforgeSessionStore {
+export function createInsforgeSessionStore(
+  auth: InsforgeSessionAuth | null,
+  onError?: (error: unknown) => void
+): InsforgeSessionStore {
   let snapshot: InsforgeSession = auth ? LOADING : SIGNED_OUT;
   const listeners = new Set<() => void>();
   let unsubscribe: (() => void) | null = null;
   let generation = 0;
+  let readSequence = 0;
 
   const set = (next: InsforgeSession) => {
     if (sameSession(snapshot, next)) return;
@@ -75,13 +81,21 @@ export function createInsforgeSessionStore(auth: InsforgeSessionAuth | null): In
 
   const read = async (readGeneration: number) => {
     if (!auth) return;
+    const sequence = ++readSequence;
     let next: InsforgeSession;
+    let failure: unknown;
     try {
-      next = sessionFromCurrentUser(await auth.getCurrentUser());
-    } catch {
+      const result = await auth.getCurrentUser();
+      if (result.error) failure = result.error;
+      next = sessionFromCurrentUser(result);
+    } catch (error) {
+      failure = error;
       next = SIGNED_OUT;
     }
-    if (readGeneration === generation) set(next);
+    if (readGeneration !== generation) return;
+    if (failure !== undefined) onError?.(failure);
+    // An older read that settles after a newer one must not overwrite it.
+    if (sequence === readSequence) set(next);
   };
 
   return {
@@ -113,11 +127,25 @@ const SessionStoreContext = createContext<InsforgeSessionStore | null>(null);
 
 type InsforgeSessionProviderProps = {
   children: React.ReactNode;
+  /** Called when a session lookup fails. Defaults to a short console warning. */
+  onError?: (error: unknown) => void;
 };
 
+function warnLookupFailed(error: unknown) {
+  // Name only: never the message, which could carry an email or a token.
+  const name = error instanceof Error ? error.name : typeof error;
+  // biome-ignore lint/suspicious/noConsole: the only place a failed session lookup is reported
+  console.warn(`[insforge-session] session lookup failed (${name})`);
+}
+
 /** Provides the InsForge session to its children. Signed out when the InsForge env names are unset. */
-export function InsforgeSessionProvider({ children }: InsforgeSessionProviderProps) {
-  const [store] = useState(() => createInsforgeSessionStore(getInsforgeClient()?.auth ?? null));
+export function InsforgeSessionProvider({
+  children,
+  onError = warnLookupFailed,
+}: InsforgeSessionProviderProps) {
+  const [store] = useState(() =>
+    createInsforgeSessionStore(getInsforgeClient()?.auth ?? null, onError)
+  );
   useEffect(() => {
     store.start();
     return () => store.stop();
