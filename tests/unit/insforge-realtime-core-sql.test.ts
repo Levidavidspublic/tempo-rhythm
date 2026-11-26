@@ -19,7 +19,7 @@ describe("realtime core SQL", () => {
     const call = sql.match(/\bperform realtime\.publish\([\s\S]*?\);/gi);
     expect(call).toHaveLength(1);
     expect(call?.[0]?.replace(/\s+/g, " ")).toBe(
-      "perform realtime.publish( tg_table_name || ':' || new.user_id::text, tg_op, pg_catalog.jsonb_build_object('table', tg_table_name, 'op', tg_op, 'id', row_id) );",
+      "perform realtime.publish( tg_table_name || ':' || new.user_id::text, tg_op, pg_catalog.jsonb_build_object('table', tg_table_name, 'op', tg_op, 'id', row_id) );"
     );
   });
 });

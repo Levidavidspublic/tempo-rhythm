@@ -34,19 +34,28 @@ const knownTables = new Set(Object.keys(schema.tables));
 const run = promisify(execFile);
 
 function isDocument(value: JsonObject): value is ConvexDocument {
-  return typeof value._id === "string" && value._id.length > 0 &&
-    typeof value._creationTime === "number" && Number.isFinite(value._creationTime);
+  return (
+    typeof value._id === "string" &&
+    value._id.length > 0 &&
+    typeof value._creationTime === "number" &&
+    Number.isFinite(value._creationTime)
+  );
 }
 
 function isTableMetadata(value: JsonObject): value is ConvexTableMetadata {
-  return typeof value.name === "string" && tableName.test(value.name) &&
-    typeof value.id === "number" && Number.isSafeInteger(value.id) && value.id > 0;
+  return (
+    typeof value.name === "string" &&
+    tableName.test(value.name) &&
+    typeof value.id === "number" &&
+    Number.isSafeInteger(value.id) &&
+    value.id > 0
+  );
 }
 
 async function readLines<T extends JsonObject>(
   directory: string,
   label: string,
-  valid: (value: JsonObject) => value is T,
+  valid: (value: JsonObject) => value is T
 ): Promise<T[]> {
   const path = join(directory, "documents.jsonl");
   let text: string;
@@ -66,15 +75,25 @@ async function readLines<T extends JsonObject>(
     } catch {
       throw new Error(`${location}: invalid JSON`);
     }
-    if (value === null || typeof value !== "object" || Array.isArray(value) || !valid(value as JsonObject)) {
-      throw new Error(`${location}: invalid ${label.endsWith("/_tables") || label === "_tables" ? "table metadata" : "document (_id and _creationTime required)"}`);
+    if (
+      value === null ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      !valid(value as JsonObject)
+    ) {
+      throw new Error(
+        `${location}: invalid ${label.endsWith("/_tables") || label === "_tables" ? "table metadata" : "document (_id and _creationTime required)"}`
+      );
     }
     return value as T;
   });
 }
 
 /** Reads documents.jsonl entries only; generated schema sidecars and storage blobs are not loaded. See https://docs.convex.dev/database/backup-restore#downloading-a-backup. */
-export async function readExport(path: string, options: ReadExportOptions = {}): Promise<ConvexExport> {
+export async function readExport(
+  path: string,
+  options: ReadExportOptions = {}
+): Promise<ConvexExport> {
   const source = resolve(path);
   const info = await stat(source).catch(() => undefined);
   if (!info?.isDirectory() && !(info?.isFile() && source.toLowerCase().endsWith(".zip"))) {
@@ -89,7 +108,8 @@ export async function readExport(path: string, options: ReadExportOptions = {}):
     const tables = new Map<string, ConvexDocument[]>();
     const entries = await readdir(directory, { withFileTypes: true });
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-      if (entry.isSymbolicLink()) throw new Error("Symbolic links are not supported in Convex exports");
+      if (entry.isSymbolicLink())
+        throw new Error("Symbolic links are not supported in Convex exports");
       if (!entry.isDirectory()) continue;
       const name = entry.name;
       const entryPath = join(directory, name);
@@ -101,7 +121,10 @@ export async function readExport(path: string, options: ReadExportOptions = {}):
             throw new Error("Invalid Convex component directory");
           }
           const componentPath = `${label}/${child.name}`;
-          components.set(componentPath, await readNamespace(join(entryPath, child.name), `${componentPath}/`));
+          components.set(
+            componentPath,
+            await readNamespace(join(entryPath, child.name), `${componentPath}/`)
+          );
         }
       } else if (name === "_tables") {
         tableMetadata = await readLines(entryPath, label, isTableMetadata);
@@ -118,22 +141,33 @@ export async function readExport(path: string, options: ReadExportOptions = {}):
     }
     if (counts.has(`${prefix}_tables`)) {
       const names = new Set(tableMetadata.map(({ name }) => name));
-      if (names.size !== tableMetadata.length || names.size !== tables.size ||
-        [...names].some((name) => !tables.has(name))) {
-        throw new Error(`${prefix}_tables/documents.jsonl: table metadata does not match document files`);
+      if (
+        names.size !== tableMetadata.length ||
+        names.size !== tables.size ||
+        [...names].some((name) => !tables.has(name))
+      ) {
+        throw new Error(
+          `${prefix}_tables/documents.jsonl: table metadata does not match document files`
+        );
       }
     }
     return { tables: Object.fromEntries(tables), tableMetadata, storageMetadata };
   }
 
-  const extracted = info.isDirectory() ? undefined : await mkdtemp(join(tmpdir(), "convex-export-"));
+  const extracted = info.isDirectory()
+    ? undefined
+    : await mkdtemp(join(tmpdir(), "convex-export-"));
   try {
     if (extracted) {
       const env = { ...process.env, UNZIP: "", UNZIPOPT: "", ZIPINFO: "", ZIPINFOOPT: "" };
       try {
         const { stdout } = await run("/usr/bin/unzip", ["-Z1", source], { env });
         const files = stdout.split("\n").filter((entry) => entry.endsWith("/documents.jsonl"));
-        if (!files.length || new Set(files).size !== files.length || files.some((entry) => !documentPath.test(entry))) {
+        if (
+          !files.length ||
+          new Set(files).size !== files.length ||
+          files.some((entry) => !documentPath.test(entry))
+        ) {
           throw new Error();
         }
         await run("/usr/bin/unzip", ["-q", source, "*/documents.jsonl", "-d", extracted], { env });
@@ -143,11 +177,18 @@ export async function readExport(path: string, options: ReadExportOptions = {}):
     }
     const root = await readNamespace(extracted ?? source, "");
     if (!counts.size) throw new Error("Convex export has no documents.jsonl files");
-    const unknownTables = Object.keys(root.tables).filter((name) => !knownTables.has(name)).sort();
+    const unknownTables = Object.keys(root.tables)
+      .filter((name) => !knownTables.has(name))
+      .sort();
     if (unknownTables.length && !options.allowUnknownTables) {
       throw new Error(`Unknown Convex tables: ${unknownTables.join(", ")}`);
     }
-    return { ...root, components: Object.fromEntries(components), counts: Object.fromEntries(counts), unknownTables };
+    return {
+      ...root,
+      components: Object.fromEntries(components),
+      counts: Object.fromEntries(counts),
+      unknownTables,
+    };
   } finally {
     if (extracted) await rm(extracted, { recursive: true, force: true });
   }

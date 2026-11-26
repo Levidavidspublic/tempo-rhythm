@@ -41,8 +41,12 @@ function oneOf(value: unknown, field: string, choices: readonly string[]): strin
   return text(value, field);
 }
 
-function optional(value: unknown, field: string, literal: (value: unknown, field: string) => string): string {
-  return value == null ? "NULL" : literal(value, field);
+function optional(
+  value: unknown,
+  field: string,
+  literal: (value: unknown, field: string) => string
+): string {
+  return value === null || value === undefined ? "NULL" : literal(value, field);
 }
 
 function jsonb(value: unknown, field: string): string {
@@ -65,7 +69,7 @@ function array(
   value: unknown,
   field: string,
   type: "integer" | "text",
-  element: (value: unknown, field: string) => string,
+  element: (value: unknown, field: string) => string
 ): string {
   if (!Array.isArray(value)) throw new Error(field + " must be an array");
   return "ARRAY[" + value.map((item) => element(item, field)).join(", ") + "]::" + type + "[]";
@@ -85,23 +89,37 @@ function countIds(docs: readonly ConvexDoc[]) {
   return counts;
 }
 
-function stage(table: DestinationTable, rows: readonly Literals[], columns: readonly string[]): string[] {
+function stage(
+  table: DestinationTable,
+  rows: readonly Literals[],
+  columns: readonly string[]
+): string[] {
   const selection = columns.map((column) =>
-    column.endsWith("_legacy_id") ? "NULL::text AS " + column : column,
+    column.endsWith("_legacy_id") ? "NULL::text AS " + column : column
   );
   return [
     "CREATE TEMP TABLE tempo_import_" + table + " ON COMMIT DROP AS",
     "SELECT " + selection.join(", ") + " FROM public." + table + " WITH NO DATA;",
     "INSERT INTO pg_temp.tempo_import_" + table + " (" + columns.join(", ") + ") VALUES",
-    rows.map((row) => "(" + columns.map((column) => row[column]).join(", ") + ")").join(",\n") + ";",
+    rows.map((row) => "(" + columns.map((column) => row[column]).join(", ") + ")").join(",\n") +
+      ";",
   ];
 }
 
-function upsert(table: DestinationTable, columns: string[], source: string, filter: string): string[] {
+function upsert(
+  table: DestinationTable,
+  columns: string[],
+  source: string,
+  filter: string
+): string[] {
   const mutable = columns.filter((column) => column !== "user_id" && column !== "legacy_convex_id");
   return [
     "INSERT INTO public." + table + " AS target (" + columns.join(", ") + ")",
-    "SELECT " + columns.map((column) => "input." + column).join(", ") + " FROM pg_temp." + source + " AS input",
+    "SELECT " +
+      columns.map((column) => "input." + column).join(", ") +
+      " FROM pg_temp." +
+      source +
+      " AS input",
     "WHERE " + filter,
     "ON CONFLICT (legacy_convex_id) DO UPDATE SET",
     mutable.map((column) => "  " + column + " = excluded." + column).join(",\n"),
@@ -114,7 +132,7 @@ function upsert(table: DestinationTable, columns: string[], source: string, filt
 export function mapTasks(
   tasks: readonly ConvexDoc[],
   taskRepeatCfgs: readonly ConvexDoc[],
-  identityUserIds: ReadonlySet<string>,
+  identityUserIds: ReadonlySet<string>
 ) {
   const rejected: Rejection[] = [];
   const repeatIds = countIds(taskRepeatCfgs);
@@ -123,21 +141,36 @@ export function mapTasks(
   for (const repeat of taskRepeatCfgs) {
     try {
       const owner = repeat.userId;
-      if (typeof owner !== "string" || !identityUserIds.has(owner)) throw new Error("unresolved userId");
-      if (!repeat._id || repeatIds.get(repeat._id) !== 1) throw new Error("missing or duplicate repeat config ID");
+      if (typeof owner !== "string" || !identityUserIds.has(owner))
+        throw new Error("unresolved userId");
+      if (!repeat._id || repeatIds.get(repeat._id) !== 1)
+        throw new Error("missing or duplicate repeat config ID");
       repeatRows.push({
         legacy_convex_id: text(repeat._id, "_id"),
         user_legacy_id: text(owner, "userId"),
-        repeat_cycle: oneOf(repeat.repeatCycle, "repeatCycle", ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]),
+        repeat_cycle: oneOf(repeat.repeatCycle, "repeatCycle", [
+          "DAILY",
+          "WEEKLY",
+          "MONTHLY",
+          "YEARLY",
+        ]),
         repeat_every: int32(repeat.repeatEvery, "repeatEvery"),
         weekdays: array(repeat.weekdays, "weekdays", "integer", int32),
         monthly_week_of_month: optional(repeat.monthlyWeekOfMonth, "monthlyWeekOfMonth", int32),
         monthly_weekday: optional(repeat.monthlyWeekday, "monthlyWeekday", int32),
         monthly_last_day: optional(repeat.monthlyLastDay, "monthlyLastDay", bool),
-        deleted_instance_dates: array(repeat.deletedInstanceDates, "deletedInstanceDates", "text", text),
+        deleted_instance_dates: array(
+          repeat.deletedInstanceDates,
+          "deletedInstanceDates",
+          "text",
+          text
+        ),
         skip_overdue: bool(repeat.skipOverdue, "skipOverdue"),
         wait_for_completion: bool(repeat.waitForCompletion, "waitForCompletion"),
-        repeat_from_completion_date: bool(repeat.repeatFromCompletionDate, "repeatFromCompletionDate"),
+        repeat_from_completion_date: bool(
+          repeat.repeatFromCompletionDate,
+          "repeatFromCompletionDate"
+        ),
         is_paused: bool(repeat.isPaused, "isPaused"),
         default_estimate: optional(repeat.defaultEstimate, "defaultEstimate", integer),
         last_task_creation_day: optional(repeat.lastTaskCreationDay, "lastTaskCreationDay", text),
@@ -150,18 +183,29 @@ export function mapTasks(
     }
   }
 
-  const candidates = new Map<string, { owner: string; parent: string | undefined; row: Literals }>();
+  const candidates = new Map<
+    string,
+    { owner: string; parent: string | undefined; row: Literals }
+  >();
   const taskIds = countIds(tasks);
   for (const task of tasks) {
     try {
       const owner = task.userId;
-      if (typeof owner !== "string" || !identityUserIds.has(owner)) throw new Error("unresolved userId");
+      if (typeof owner !== "string" || !identityUserIds.has(owner))
+        throw new Error("unresolved userId");
       if (!task._id || taskIds.get(task._id) !== 1) throw new Error("missing or duplicate task ID");
       const repeat = task.repeatCfgId;
-      if (repeat != null && (typeof repeat !== "string" || repeatOwners.get(repeat) !== owner)) {
+      if (
+        repeat !== null &&
+        repeat !== undefined &&
+        (typeof repeat !== "string" || repeatOwners.get(repeat) !== owner)
+      ) {
         throw new Error("unresolved or cross-owner repeatCfgId");
       }
-      const parent = task.parentTaskId == null ? undefined : requireText(task.parentTaskId, "parentTaskId");
+      const parent =
+        task.parentTaskId === null || task.parentTaskId === undefined
+          ? undefined
+          : requireText(task.parentTaskId, "parentTaskId");
       candidates.set(task._id, {
         owner,
         parent,
@@ -174,9 +218,13 @@ export function mapTasks(
           description: optional(task.description, "description", text),
           status: oneOf(task.status, "status", ["todo", "in_progress", "done", "cancelled"]),
           priority: oneOf(task.priority, "priority", ["low", "medium", "high"]),
-          energy: optional(task.energy, "energy", (value, field) => oneOf(value, field, ["low", "medium", "high"])),
+          energy: optional(task.energy, "energy", (value, field) =>
+            oneOf(value, field, ["low", "medium", "high"])
+          ),
           time_estimate: optional(task.timeEstimate, "timeEstimate", integer),
-          flexibility: optional(task.flexibility, "flexibility", (value, field) => oneOf(value, field, ["fixed", "elastic"])),
+          flexibility: optional(task.flexibility, "flexibility", (value, field) =>
+            oneOf(value, field, ["fixed", "elastic"])
+          ),
           time_spent_on_day: jsonb(task.timeSpentOnDay, "timeSpentOnDay"),
           project_id: optional(task.projectId, "projectId", text),
           project_name: optional(task.projectName, "projectName", text),
@@ -226,16 +274,21 @@ export function mapTasks(
       "LEFT JOIN public.task_repeat_cfgs AS existing ON existing.legacy_convex_id = input.legacy_convex_id;",
       "SELECT 'taskRepeatCfgs' AS \"table\", legacy_convex_id AS id, reason",
       "FROM pg_temp.tempo_import_repeat_plan WHERE reason IS NOT NULL ORDER BY id;",
-      ...upsert("task_repeat_cfgs", columns.map((column) => column === "user_legacy_id" ? "user_id" : column),
-        "tempo_import_repeat_plan", "input.reason IS NULL"),
-      "COMMIT;",
+      ...upsert(
+        "task_repeat_cfgs",
+        columns.map((column) => (column === "user_legacy_id" ? "user_id" : column)),
+        "tempo_import_repeat_plan",
+        "input.reason IS NULL"
+      ),
+      "COMMIT;"
     );
   }
 
   const taskRows = [...candidates.values()].map(({ row }) => row);
   if (taskRows[0]) {
     const columns = Object.keys(taskRows[0]);
-    const eligible = "NOT EXISTS (SELECT 1 FROM pg_temp.tempo_import_task_rejections AS rejected" +
+    const eligible =
+      "NOT EXISTS (SELECT 1 FROM pg_temp.tempo_import_task_rejections AS rejected" +
       " WHERE rejected.legacy_convex_id = input.legacy_convex_id)";
     sql.push(
       "BEGIN;",
@@ -261,9 +314,20 @@ export function mapTasks(
       "FROM pg_temp.tempo_import_task_plan AS input JOIN broken USING (legacy_convex_id);",
       "SELECT 'tasks' AS \"table\", legacy_convex_id AS id, reason",
       "FROM pg_temp.tempo_import_task_rejections ORDER BY id;",
-      ...upsert("tasks", columns.filter((column) => column !== "parent_legacy_id").map((column) =>
-        column === "user_legacy_id" ? "user_id" : column === "repeat_legacy_id" ? "repeat_cfg_id" : column),
-        "tempo_import_task_plan", eligible),
+      ...upsert(
+        "tasks",
+        columns
+          .filter((column) => column !== "parent_legacy_id")
+          .map((column) =>
+            column === "user_legacy_id"
+              ? "user_id"
+              : column === "repeat_legacy_id"
+                ? "repeat_cfg_id"
+                : column
+          ),
+        "tempo_import_task_plan",
+        eligible
+      ),
       "UPDATE public.tasks AS target SET parent_task_id = parent.id",
       "FROM pg_temp.tempo_import_task_plan AS input",
       "LEFT JOIN public.tasks AS parent",
@@ -271,14 +335,18 @@ export function mapTasks(
       "WHERE target.legacy_convex_id = input.legacy_convex_id AND target.user_id = input.user_id",
       "  AND target.updated_at = input.updated_at AND target.parent_task_id IS DISTINCT FROM parent.id",
       "  AND " + eligible + ";",
-      "COMMIT;",
+      "COMMIT;"
     );
   }
   return {
     sql: sql.length ? [...sql, ""].join("\n") : "",
     rejected,
     counts: {
-      tasks: { exported: tasks.length, transformed: taskRows.length, rejected: tasks.length - taskRows.length },
+      tasks: {
+        exported: tasks.length,
+        transformed: taskRows.length,
+        rejected: tasks.length - taskRows.length,
+      },
       taskRepeatCfgs: {
         exported: taskRepeatCfgs.length,
         transformed: repeatRows.length,

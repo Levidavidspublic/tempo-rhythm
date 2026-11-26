@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readExport } from "../../tools/convex-import/read-export";
 
-const fixture = fileURLToPath(new URL("../../tools/convex-import/fixtures/mini-export/", import.meta.url));
+const fixture = fileURLToPath(
+  new URL("../../tools/convex-import/fixtures/mini-export/", import.meta.url)
+);
 
 async function withExport(run: (path: string) => Promise<void>) {
   const path = await mkdtemp(join(tmpdir(), "convex-export-test-"));
@@ -46,7 +48,9 @@ test("rejects all unknown root tables by default, or returns them and their coun
       await mkdir(join(path, name));
       await writeFile(join(path, name, "documents.jsonl"), '{"_id":"fixture","_creationTime":7}');
     }
-    await expect(readExport(path)).rejects.toThrow("Unknown Convex tables: extraThings, retiredThings");
+    await expect(readExport(path)).rejects.toThrow(
+      "Unknown Convex tables: extraThings, retiredThings"
+    );
     const result = await readExport(path, { allowUnknownTables: true });
     expect(result.unknownTables).toEqual(["extraThings", "retiredThings"]);
     expect(result.counts).toEqual({ extraThings: 1, retiredThings: 1, authSessions: 1 });
@@ -61,7 +65,10 @@ test.each([
 ])("rejects malformed rows without including their content (%s)", async (line, reason) => {
   await withExport(async (path) => {
     await mkdir(join(path, "tasks"));
-    await writeFile(join(path, "tasks", "documents.jsonl"), `{"_id":"fixture","_creationTime":7}\r\n${line}\r\n`);
+    await writeFile(
+      join(path, "tasks", "documents.jsonl"),
+      `{"_id":"fixture","_creationTime":7}\r\n${line}\r\n`
+    );
     await expect(readExport(path)).rejects.toThrow(new Error(`tasks/documents.jsonl:2: ${reason}`));
   });
 });
@@ -70,7 +77,9 @@ test("rejects a manifest that does not match the document files", async () => {
   await withExport(async (path) => {
     await cp(fixture, path, { recursive: true });
     await writeFile(join(path, "_tables", "documents.jsonl"), '{"id":10001,"name":"users"}\n');
-    await expect(readExport(path)).rejects.toThrow("_tables/documents.jsonl: table metadata does not match document files");
+    await expect(readExport(path)).rejects.toThrow(
+      "_tables/documents.jsonl: table metadata does not match document files"
+    );
   });
 });
 
@@ -78,6 +87,8 @@ test("reports unreadable ZIPs without exposing unzip output", async () => {
   await withExport(async (path) => {
     const zip = join(path, "invalid.zip");
     await writeFile(zip, "synthetic non-ZIP content");
-    await expect(readExport(zip)).rejects.toThrow(new Error("Unable to unpack Convex export ZIP with /usr/bin/unzip"));
+    await expect(readExport(zip)).rejects.toThrow(
+      new Error("Unable to unpack Convex export ZIP with /usr/bin/unzip")
+    );
   });
 });
