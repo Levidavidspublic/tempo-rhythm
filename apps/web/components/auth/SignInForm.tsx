@@ -23,6 +23,9 @@ export type SignInFormProps = {
 type PendingInsforgeOtp = Readonly<{ email: string; nextPath: string }>;
 
 let pendingInsforgeOtp: PendingInsforgeOtp | null = null;
+let latestInsforgeSignInAttempt = 0;
+let isVerifyingInsforgeOtp = false;
+const OTP_VERIFY_IN_PROGRESS = "Wait for the current code check to finish.";
 
 export function getPostAuthDestination(nextPath: string | null | undefined): string {
   const path = nextPath?.trim();
@@ -51,8 +54,11 @@ export function getPendingInsforgeOtp(): PendingInsforgeOtp | null {
   return pendingInsforgeOtp;
 }
 
-export function clearPendingInsforgeOtp() {
+export function clearPendingInsforgeOtp(): boolean {
+  if (isVerifyingInsforgeOtp) return false;
+  latestInsforgeSignInAttempt += 1;
   pendingInsforgeOtp = null;
+  return true;
 }
 
 export async function requestInsforgeCode(email: string): Promise<string | null> {
@@ -72,15 +78,18 @@ export async function startInsforgeSignIn(
   nextPath: string | undefined,
   navigate: (href: string) => void
 ): Promise<string | null> {
-  clearPendingInsforgeOtp();
+  if (!clearPendingInsforgeOtp()) return OTP_VERIFY_IN_PROGRESS;
+  const attempt = latestInsforgeSignInAttempt;
   const email = normalizeSignInEmail(rawEmail);
   if (!email) return "Enter a valid email address.";
 
   const error = await requestInsforgeCode(email);
+  if (attempt !== latestInsforgeSignInAttempt) return "Request a new code to continue.";
   if (error) return error;
 
-  pendingInsforgeOtp = { email, nextPath: getPostAuthDestination(nextPath) };
-  navigate("/sign-in/verify");
+  const destination = getPostAuthDestination(nextPath);
+  pendingInsforgeOtp = { email, nextPath: destination };
+  navigate(`/sign-in/verify?${new URLSearchParams({ next: destination })}`);
   return null;
 }
 
@@ -90,15 +99,18 @@ export async function finishInsforgeSignIn(
   navigate: (href: string) => void
 ): Promise<string | null> {
   if (challenge !== pendingInsforgeOtp) return "Request a new code to continue.";
+  if (isVerifyingInsforgeOtp) return OTP_VERIFY_IN_PROGRESS;
 
+  isVerifyingInsforgeOtp = true;
   let status: Awaited<ReturnType<typeof verifyInsforgeOtp>>["status"];
   try {
     ({ status } = await verifyInsforgeOtp(challenge.email, code));
   } catch {
     status = "unavailable";
+  } finally {
+    isVerifyingInsforgeOtp = false;
   }
 
-  if (challenge !== pendingInsforgeOtp) return "Request a new code to continue.";
   if (status === "invalid-code") return "That code didn't work. Try again or request a new one.";
   if (status === "invalid-email") return "Request a new code to continue.";
   if (status === "unavailable")

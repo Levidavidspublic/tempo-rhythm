@@ -21,6 +21,7 @@ const useConvexAuth = mock(() => ({ isAuthenticated: false, isLoading: false }))
 const useAuthActions = mock(() => ({ signIn }));
 const push = mock<(href: string) => void>();
 const replace = mock<(href: string) => void>();
+let searchParams = new URLSearchParams();
 
 function setBackend(backend: DataBackend) {
   const flagModule = { ...realModules["@/lib/backend-flag"] };
@@ -36,7 +37,7 @@ mock.module("convex/react", () => ({ ...realModules["convex/react"], useConvexAu
 mock.module("next/navigation", () => ({
   ...realModules["next/navigation"],
   useRouter: () => ({ push, replace }),
-  useSearchParams: () => new URLSearchParams({ next: "/tasks?view=week" }),
+  useSearchParams: () => searchParams,
 }));
 mock.module("@/app/sign-in/insforge-actions", () => ({
   requestInsforgeOtp: requestCode,
@@ -58,6 +59,7 @@ const {
 
 beforeEach(() => {
   setBackend("insforge");
+  searchParams = new URLSearchParams({ next: "/tasks?view=week" });
   clearPendingInsforgeOtp();
   requestCode.mockReset().mockResolvedValue({ status: "requested" });
   verifyCode.mockReset().mockResolvedValue({ status: "verified" });
@@ -110,6 +112,7 @@ test("the Convex Resend request preserves the callback path and omits it when ab
 });
 
 test("direct verification without a pending request offers a return to sign-in", () => {
+  searchParams = new URLSearchParams();
   const html = renderToStaticMarkup(createElement(VerifyPage));
   expect(html).toContain("Request a new code");
   expect(html).toContain('href="/sign-in"');
@@ -122,7 +125,7 @@ test("a normalized email stays in memory and only a verified code follows the de
     await startInsforgeSignIn(" Learner@Example.Test ", "/tasks?view=week#top", push)
   ).toBeNull();
   expect(requestCode).toHaveBeenCalledWith("learner@example.test");
-  expect(push.mock.calls).toEqual([["/sign-in/verify"]]);
+  expect(push.mock.calls).toEqual([["/sign-in/verify?next=%2Ftasks%3Fview%3Dweek%23top"]]);
   const challenge = getPendingInsforgeOtp();
   if (!challenge) throw new Error("Expected a pending OTP request");
   const html = renderToStaticMarkup(createElement(VerifyPage));
@@ -140,6 +143,58 @@ test("a normalized email stays in memory and only a verified code follows the de
   expect(verifyCode).toHaveBeenLastCalledWith("learner@example.test", "042943");
   expect(replace.mock.calls).toEqual([["/tasks?view=week#top"]]);
   expect(getPendingInsforgeOtp()).toBeNull();
+});
+
+test("restarting verification keeps the validated return destination without the email", async () => {
+  await startInsforgeSignIn("learner@example.test", "/tasks?view=week#top", push);
+  const verificationHref = push.mock.calls[0]?.[0];
+  if (!verificationHref) throw new Error("Expected a verification URL");
+
+  clearPendingInsforgeOtp();
+  searchParams = new URL(verificationHref, "https://tempo.invalid").searchParams;
+  const recoveryHref = "/sign-in?next=%2Ftasks%3Fview%3Dweek%23top";
+  const html = renderToStaticMarkup(createElement(VerifyPage));
+  expect(html).toContain(`href="${recoveryHref}"`);
+  expect(html).not.toContain("learner@example.test");
+
+  searchParams = new URLSearchParams({ next: "//outside.example" });
+  expect(renderToStaticMarkup(createElement(VerifyPage))).not.toContain("outside.example");
+});
+
+test("a superseded request cannot replace the active challenge or navigate", async () => {
+  const firstResponse = Promise.withResolvers<{ status: "requested" }>();
+  requestCode.mockReturnValueOnce(firstResponse.promise);
+  const first = startInsforgeSignIn("earlier@example.test", "/notes", push);
+  expect(await startInsforgeSignIn("latest@example.test", "/tasks", push)).toBeNull();
+  const challenge = getPendingInsforgeOtp();
+
+  firstResponse.resolve({ status: "requested" });
+  expect(await first).toContain("Request a new code");
+  expect(getPendingInsforgeOtp()).toBe(challenge);
+  expect(challenge?.email).toBe("latest@example.test");
+  expect(push.mock.calls).toEqual([["/sign-in/verify?next=%2Ftasks"]]);
+});
+
+test("the different-email action cannot clear an in-flight verification", async () => {
+  await startInsforgeSignIn("learner@example.test", undefined, push);
+  const challenge = getPendingInsforgeOtp();
+  if (!challenge) throw new Error("Expected a pending OTP request");
+  const response = Promise.withResolvers<{ status: "invalid-code" }>();
+  verifyCode.mockReturnValueOnce(response.promise);
+  const verification = finishInsforgeSignIn(challenge, "010203", replace);
+
+  const html = renderToStaticMarkup(createElement(VerifyPage));
+  const cleared = clearPendingInsforgeOtp();
+  const challengeWhileVerifying = getPendingInsforgeOtp();
+  response.resolve({ status: "invalid-code" });
+
+  expect(html).toMatch(/<button\b[^>]*>Use a different email<\/button>/);
+  expect(cleared).toBe(false);
+  expect(challengeWhileVerifying).toBe(challenge);
+  expect(await verification).toContain("didn't work");
+  expect(clearPendingInsforgeOtp()).toBe(true);
+  expect(getPendingInsforgeOtp()).toBeNull();
+  expect(replace).not.toHaveBeenCalled();
 });
 
 test("invalid emails and unavailable sends do not leave the sign-in form", async () => {

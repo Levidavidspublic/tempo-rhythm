@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useState } from "react";
 import {
   clearPendingInsforgeOtp,
   finishInsforgeSignIn,
   getPendingInsforgeOtp,
+  getPostAuthDestination,
   requestInsforgeCode,
 } from "@/components/auth/SignInForm";
 import { DATA_BACKEND } from "@/lib/backend-flag";
@@ -20,25 +21,34 @@ export default function VerifyPage() {
         <Link className="tp-auth-card__brand" href="/">
           Tempo
         </Link>
-        <VerifyCode />
+        <Suspense>
+          <VerifyCode />
+        </Suspense>
       </div>
     </main>
   );
 }
 
 function VerifyCode() {
+  const router = useRouter();
+  const requestedNext = useSearchParams()?.get("next");
   const [challenge] = useState(getPendingInsforgeOtp);
   const [code, setCode] = useState("");
   const [pending, setPending] = useState<"verify" | "resend" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestedAgain, setRequestedAgain] = useState(false);
+  const destination = challenge?.nextPath ?? getPostAuthDestination(requestedNext);
+  const signInHref =
+    challenge || requestedNext
+      ? `/sign-in?${new URLSearchParams({ next: destination })}`
+      : "/sign-in";
 
   if (!challenge) {
     return (
       <>
         <h1 className="tp-auth-card__title">Request a new code</h1>
         <p className="tp-auth-card__lede">Enter your email on the sign-in page to start again.</p>
-        <Link className="tp-btn tp-btn--primary tp-btn--block" href="/sign-in">
+        <Link className="tp-btn tp-btn--primary tp-btn--block" href={signInHref}>
           Back to sign in
         </Link>
       </>
@@ -126,13 +136,16 @@ function VerifyCode() {
         </button>
       </form>
       <p className="tp-auth-card__foot">
-        <Link
-          href={{ pathname: "/sign-in", query: { next: challenge.nextPath } }}
-          className="font-semibold text-foreground underline underline-offset-2"
-          onClick={clearPendingInsforgeOtp}
+        <button
+          type="button"
+          disabled={pending === "verify"}
+          className="font-semibold text-foreground underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => {
+            if (clearPendingInsforgeOtp()) router.push(signInHref);
+          }}
         >
           Use a different email
-        </Link>
+        </button>
       </p>
     </>
   );
