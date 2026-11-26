@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { parseDataBackend } from "@/lib/backend-flag";
 import { readInsforgeConfig, SESSION_REQUEST_HEADER } from "@/lib/insforge/client";
 
+const UPSTREAM_TIMEOUT_MS = 8_000;
+
 function sessionResponse(
   status: number,
   user?: { id: string; email: string } | null,
@@ -26,7 +28,19 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   try {
-    const options = { ...config, cookies: request.cookies, retryCount: 0 };
+    if (new URL(config.baseUrl).protocol !== "https:") return sessionResponse(503);
+
+    const deadline = AbortSignal.any([request.signal, AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)]);
+    const fetchUpstream = Object.assign(
+      (input: Parameters<typeof fetch>[0], init?: RequestInit) =>
+        fetch(input, {
+          ...init,
+          redirect: "error",
+          signal: init?.signal ? AbortSignal.any([deadline, init.signal]) : deadline,
+        }),
+      { preconnect: fetch.preconnect }
+    );
+    const options = { ...config, cookies: request.cookies, retryCount: 0, fetch: fetchUpstream };
     const { data, error } = await createServerClient(options).auth.getCurrentUser();
     if (!error && data?.user) return sessionResponse(200, data.user);
     if (error && error.statusCode !== 401) return sessionResponse(503);

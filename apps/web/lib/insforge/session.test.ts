@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { createAuthActions } from "@insforge/sdk/ssr";
+import { createAuthActions, createServerClient } from "@insforge/sdk/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { POST } from "../../app/api/auth/insforge/refresh/route";
 import {
   invalidateInsforgeSession,
+  makeInsforgeDataFetch,
   makeInsforgeSessionSource,
   SESSION_REQUEST_HEADER,
 } from "./client";
@@ -219,6 +220,7 @@ describe("browser SSR session source", () => {
       headers: { [SESSION_REQUEST_HEADER]: "1" },
       mode: "same-origin",
       redirect: "error",
+      signal: expect.any(AbortSignal),
     });
 
     result = Response.json({ user: fixtureUser });
@@ -268,6 +270,94 @@ describe("browser SSR session source", () => {
     await expect(before).rejects.toThrow("InsForge session unavailable");
     expect(await after).toEqual({ data: { user: fixtureUser }, error: null });
     expect(fetchSession).toHaveBeenCalledTimes(2);
+  });
+
+  test("aborts a stalled read and releases the next queued read", async () => {
+    const controller = new AbortController();
+    const deadline = spyOn(AbortSignal, "timeout").mockReturnValueOnce(controller.signal);
+    const fetchSession = Object.assign(
+      mock(async (_input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+        if (init?.signal !== controller.signal) return Response.json({ user: fixtureUser });
+        return new Promise<Response>((_resolve, reject) => {
+          controller.signal.addEventListener("abort", () => reject(controller.signal.reason));
+        });
+      }),
+      { preconnect: mock() }
+    );
+    try {
+      const source = makeInsforgeSessionSource(fixtureConfig, fetchSession);
+      const first = source?.getCurrentUser();
+      const second = source?.getCurrentUser();
+      await Promise.resolve();
+      expect(deadline).toHaveBeenCalledWith(10_000);
+      expect(fetchSession).toHaveBeenCalledTimes(1);
+
+      controller.abort(new DOMException("Expired", "TimeoutError"));
+      await expect(first).rejects.toHaveProperty("name", "TimeoutError");
+      expect(await second).toEqual({ data: { user: fixtureUser }, error: null });
+      expect(fetchSession).toHaveBeenCalledTimes(2);
+    } finally {
+      deadline.mockRestore();
+    }
+  });
+});
+
+const expiredAccess = `fixture.${btoa(JSON.stringify({ exp: 1 }))}.fixture`;
+const currentAccess = `fixture.${btoa(JSON.stringify({ exp: 4_102_444_800 }))}.fixture`;
+
+describe("browser InsForge data requests", () => {
+  test.each([null, expiredAccess])("refreshes a missing or expired cookie", async (initial) => {
+    let accessCookie = initial;
+    const refreshFinished = Promise.withResolvers<void>();
+    const refreshSession = mock(async () => {
+      await refreshFinished.promise;
+      accessCookie = currentAccess;
+    });
+    const fetchData = Object.assign(
+      mock(async (_input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+        const auth = new Headers(init?.headers).get("authorization");
+        expect(auth === `Bearer ${currentAccess}`).toBe(true);
+        return Response.json([{ id: "row" }]);
+      }),
+      { preconnect: mock() }
+    );
+    const client = createServerClient({
+      baseUrl: fixtureConfig.url,
+      anonKey: fixtureConfig.anonKey,
+      accessToken: initial ?? undefined,
+      fetch: makeInsforgeDataFetch(refreshSession, () => accessCookie, fetchData),
+    });
+    const read = () =>
+      client.database
+        .from("test_rows")
+        .select()
+        .then((result) => result);
+    const results = Promise.all([read(), read()]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchData).not.toHaveBeenCalled();
+
+    refreshFinished.resolve();
+    for (const result of await results) {
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([{ id: "row" }]);
+    }
+    expect((await read()).error).toBeNull();
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchData).toHaveBeenCalledTimes(3);
+  });
+
+  test("does not send a data request when refresh leaves the browser signed out", async () => {
+    const refreshSession = mock(async () => {});
+    const fetchData = Object.assign(
+      mock(async () => Response.json([])),
+      { preconnect: mock() }
+    );
+    const send = makeInsforgeDataFetch(refreshSession, () => expiredAccess, fetchData);
+    const response = await send(fixtureConfig.url);
+    expect(response.status).toBe(401);
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchData).not.toHaveBeenCalled();
   });
 });
 
@@ -365,6 +455,7 @@ describe("SSR refresh route", () => {
         expect(cookies[0]).toMatch(/^insforge_access_token=.*; Secure; SameSite=Lax$/);
         expect(cookies[1]).toMatch(/^insforge_refresh_token=.*; HttpOnly; Secure; SameSite=Lax$/);
         expect(provider).toHaveBeenCalledTimes(1);
+        expect(provider.mock.lastCall?.[1]?.redirect).toBe("error");
       }
     );
   });
@@ -417,5 +508,58 @@ describe("SSR refresh route", () => {
         expect(provider).not.toHaveBeenCalled();
       }
     );
+  });
+
+  test.each([
+    "http://insforge.example.invalid",
+    "http://localhost:7130",
+    "ftp://insforge.example.invalid",
+    "not a URL",
+  ])("rejects invalid or non-HTTPS upstreams without sending cookies", async (url) => {
+    process.env.NEXT_PUBLIC_INSFORGE_URL = url;
+    await withProvider(
+      () => {
+        throw new Error("Unexpected provider request");
+      },
+      async () => {
+        const response = await POST(request("insforge_refresh_token=old-fixture"));
+        expect(response.status).toBe(503);
+        expect(response.headers.getSetCookie()).toHaveLength(0);
+        expect(provider).not.toHaveBeenCalled();
+      }
+    );
+  });
+
+  const stalledRequestCookies = [
+    "insforge_refresh_token=old-fixture",
+    "insforge_access_token=access-fixture",
+  ];
+  test.each(stalledRequestCookies)("aborts stalled upstream calls", async (cookie) => {
+    const controller = new AbortController();
+    const deadline = spyOn(AbortSignal, "timeout").mockReturnValueOnce(controller.signal);
+    const started = Promise.withResolvers<void>();
+    const upstream = Object.assign(
+      (_input: Parameters<typeof fetch>[0], init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+          started.resolve();
+        }),
+      { preconnect: mock() }
+    );
+    const fetchMock = spyOn(globalThis, "fetch").mockImplementation(upstream);
+    try {
+      const pending = POST(request(cookie));
+      await started.promise;
+      expect(deadline).toHaveBeenCalledWith(8_000);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      controller.abort(new DOMException("Provider stalled", "TimeoutError"));
+      const response = await pending;
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ user: null });
+      expect(response.headers.getSetCookie()).toHaveLength(0);
+    } finally {
+      fetchMock.mockRestore();
+      deadline.mockRestore();
+    }
   });
 });
