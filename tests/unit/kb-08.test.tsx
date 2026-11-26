@@ -153,7 +153,7 @@ test("hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-w
       build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: "convex-react", namespace: "kb08-fixture" }));
       build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "kb08-fixture" }));
       build.onLoad({ filter: /.*/, namespace: "kb08-fixture" }, ({ path }) => ({ loader: "js", contents: path === "navigation"
-        ? 'export const useRouter = () => ({ push: (href) => { window.kb08Navigation = href; } });'
+        ? 'export const usePathname = () => "/projects"; export const useRouter = () => ({ push: (href) => { window.kb08Navigation = href; } });'
         : `import { getFunctionName } from ${JSON.stringify(join(process.cwd(), "node_modules/convex/server"))};
 export const useConvexAuth = () => ({ isAuthenticated: true, isLoading: false });
 export const useQuery = (reference, args) => args === "skip" ? undefined : getFunctionName(reference) === "users:getProfile" ? { _id: "fictional-user", greetingName: "Maya" } : [
