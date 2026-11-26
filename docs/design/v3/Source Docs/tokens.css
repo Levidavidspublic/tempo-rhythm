@@ -1,0 +1,243 @@
+/* ============================================================
+   Tempo Flow — Design Tokens
+   Source: Brand Identity & Style Guide v1.0
+   Colors, type, spacing, motion, shadows. Light + dark.
+   ============================================================ */
+
+/* ---- Fonts ------------------------------------------------ */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ---- Core palette ---------------------------------------- */
+  --ink: #131312;
+  --cream: #F3EBE2;
+  --cream-raised: #FAF6F0;
+  --cream-deep: #EBE0D2;
+  --tempo-orange: #D97757;
+  --soft-orange: #E8A87C;
+  --dust-grey: #6B6864;
+  --dust-grey-soft: #9A968F;
+  --line: #D7CEC2;
+  --line-soft: #E6DDD1;
+
+  /* ---- Semantic colors ------------------------------------- */
+  --moss: #4A7C59;
+  --moss-bg: rgba(74, 124, 89, 0.10);
+  --brick: #C8553D;
+  --brick-bg: rgba(200, 85, 61, 0.10);
+  --amber: #D4A44C;
+  --amber-bg: rgba(212, 164, 76, 0.14);
+  --slate-blue: #6E88A7;
+  --slate-blue-bg: rgba(110, 136, 167, 0.12);
+
+  /* ---- Surfaces (semantic, light) -------------------------- */
+  --surface-page: var(--cream);
+  --surface-card: var(--cream-raised);
+  --surface-sunken: var(--cream-deep);
+  --surface-inverse: var(--ink);
+
+  --fg: var(--ink);
+  --fg-muted: var(--dust-grey);
+  --fg-subtle: var(--dust-grey-soft);
+  --fg-inverse: var(--cream);
+  --fg-accent: var(--tempo-orange);
+
+  --border: var(--line);
+  --border-soft: var(--line-soft);
+  --ring: var(--tempo-orange);
+
+  /* ---- Gradient -------------------------------------------- */
+  --gradient-tempo: linear-gradient(135deg, var(--tempo-orange) 0%, var(--soft-orange) 100%);
+
+  /* ---- Type scale ------------------------------------------ */
+  --font-serif: "Newsreader", "Iowan Old Style", "Georgia", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", "JetBrains Mono", monospace;
+
+  --size-display: 56px;
+  --size-h1: 32px;
+  --size-h2: 24px;
+  --size-h3: 20px;
+  --size-body: 16px;
+  --size-small: 14px;
+  --size-caption: 12px;
+
+  --leading-display: 1.15;
+  --leading-heading: 1.2;
+  --leading-body: 1.5;
+  --tracking-display: -0.02em;
+  --tracking-eyebrow: 0.08em;
+
+  /* ---- 8-pt spacing ---------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ---- Radii ----------------------------------------------- */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px; /* rounded-xl per brand doc */
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* ---- Marketing surfaces (used on landing) ---------------- */
+  --mkt-dark-bg: #1E1D1B;
+  --mkt-dark-bg-2: #2A2826;
+  --mkt-dark-fg: #F7F0E8;
+  --mkt-dark-fg-muted: rgba(247,240,232,0.75);
+  --mkt-dark-fg-subtle: rgba(247,240,232,0.55);
+  --mkt-dark-border: rgba(247,240,232,0.12);
+  --mkt-dark-bubble: rgba(247,240,232,0.06);
+  --mkt-feat-warm: linear-gradient(145deg, #F5EADF 0%, #EBD9C7 100%);
+
+  /* ---- Shadows (extreme restraint per brand doc) ----------- */
+  --shadow-whisper: 0 1px 1px 0 rgba(19, 19, 18, 0.04);
+  --shadow-card: 0 1px 2px 0 rgba(19, 19, 18, 0.05), 0 0 0 1px rgba(19, 19, 18, 0.04);
+  --shadow-lift: 0 6px 16px -8px rgba(19, 19, 18, 0.10), 0 0 0 1px rgba(19, 19, 18, 0.04);
+  --shadow-modal: 0 30px 60px -30px rgba(19, 19, 18, 0.35);
+
+  /* ---- Motion ---------------------------------------------- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-snap: 120ms;
+  --dur-default: 220ms;
+  --dur-hero: 420ms;
+
+  /* ---- Layout ---------------------------------------------- */
+  --container: 1200px;
+  --sidebar-w: 256px;
+  --topbar-h: 56px;
+
+  /* ---- Font stacks (swappable for OpenDyslexic) ------------ */
+  --font-serif-normal: "Newsreader", "Iowan Old Style", "Georgia", serif;
+  --font-sans-normal: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---- OpenDyslexic accessibility override ----------------- */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff") format("woff");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Bold.woff") format("woff");
+  font-weight: 500 700; font-style: normal; font-display: swap;
+}
+[data-dyslexia="on"] {
+  --font-serif: "OpenDyslexic", "Newsreader", Georgia, serif;
+  --font-sans: "OpenDyslexic", "Inter", system-ui, sans-serif;
+  --leading-body: 1.7;
+  letter-spacing: 0.01em;
+}
+
+/* ---- Dark mode -------------------------------------------- */
+[data-theme="dark"] {
+  --surface-page: var(--ink);
+  --surface-card: #1C1C1A;
+  --surface-sunken: #161615;
+  --surface-inverse: var(--cream);
+
+  --fg: #F3EBE2;
+  --fg-muted: #A8A49F;
+  --fg-subtle: #7A7672;
+  --fg-inverse: var(--ink);
+  --fg-accent: var(--soft-orange);
+
+  --border: #2C2B28;
+  --border-soft: #242320;
+  --ring: var(--soft-orange);
+
+  --moss-bg: rgba(74, 124, 89, 0.18);
+  --brick-bg: rgba(200, 85, 61, 0.22);
+  --amber-bg: rgba(212, 164, 76, 0.20);
+  --slate-blue-bg: rgba(110, 136, 167, 0.22);
+
+  --shadow-whisper: 0 1px 1px 0 rgba(0, 0, 0, 0.22);
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lift: 0 6px 20px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* Marketing surfaces — in dark mode, the "dark strips" become
+     a touch lighter than the page so they still read as lifted. */
+  --mkt-dark-bg: #1F1E1C;
+  --mkt-dark-bg-2: #26241F;
+  --mkt-dark-fg: #F3EBE2;
+  --mkt-dark-fg-muted: rgba(243,235,226,0.72);
+  --mkt-dark-fg-subtle: rgba(243,235,226,0.50);
+  --mkt-dark-border: rgba(243,235,226,0.10);
+  --mkt-dark-bubble: rgba(243,235,226,0.05);
+  --mkt-feat-warm: linear-gradient(145deg, #201E1B 0%, #2A2621 100%);
+}
+
+/* ---- Base ------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  color: var(--fg);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv01";
+}
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em; }
+h1 { font-size: var(--size-h1); line-height: var(--leading-heading); }
+h2 { font-size: var(--size-h2); line-height: var(--leading-heading); }
+h3 { font-size: var(--size-h3); line-height: var(--leading-heading); }
+p { margin: 0; }
+
+.display { font-family: var(--font-serif); font-weight: 500; font-size: var(--size-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); }
+.eyebrow { font-family: var(--font-sans); font-weight: 600; font-size: 11px; letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--fg-muted); }
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+.small { font-size: var(--size-small); }
+.caption { font-size: var(--size-caption); color: var(--fg-muted); }
+.muted { color: var(--fg-muted); }
+.subtle { color: var(--fg-subtle); }
+
+/* ---- Focus ------------------------------------------------ */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* ---- Scrollbars ------------------------------------------- */
+.scroll-subtle::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-subtle::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; border: 2px solid var(--surface-page); }
+.scroll-subtle::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- Motion preferences ---------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Utilities ------------------------------------------- */
+.tempo-gradient { background: var(--gradient-tempo); }
+.tempo-gradient-text {
+  background: var(--gradient-tempo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}

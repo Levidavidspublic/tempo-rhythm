@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Templates · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — templates.html */
+  .tpl-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+  .tpl-card__badges, .tpl-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .tpl-card__adds { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+  .tpl-card__actions .tp-menu { margin-inline-start: auto; }
+  .tpl-skel { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--tp-space-20) * 3.5)), 1fr)); }
+</style>
+</head>
+<body>
+<!--
+@screen   Templates
+@route    apps/web/app/(tempo)/templates/page.tsx
+@layout   TempoShell
+@data     builtIns = templates.listBuiltIn({})            // Convex query: Daily page, Weekly page, Project page, Plain note (always present)
+@data     mine = templates.listMine({})                   // Convex query: templates Maya made or accepted from the coach
+@actions  use a template -> router.push("/templates/run/[id]")  then templates.apply({ templateId, answers }) // Undo 5 min
+@actions  edit a template -> router.push("/templates/builder?id=[id]")
+@actions  duplicate -> templates.duplicate({ id })
+@actions  delete my template -> templates.remove({ id })  // soft delete, Undo 5 min -> templates.restore({ id })
+@actions  ask the coach for a template -> open coach with intent "template" (proposal card; nothing saved until Accept)
+@states   default | empty | loading | error | offline  (?state=)   empty = no templates of her own yet; built-ins still show
+@flow     1. Show the four built-in templates first, each marked "Built-in" with a lock icon. They can be turned off in Modules, never deleted.
+          2. Show Maya's own templates below, each saying who made it (her, or the coach after she said yes) and when.
+          3. "Use" walks through the template step by step (template run). "Edit" opens the builder. More: duplicate, edit as a form, delete.
+          4. Deleting her own template hides it at once and shows Undo for 5 minutes.
+          5. Search filters by name as she types; the segmented filter shows all, built-in, or hers.
+          6. "Ask the coach for a template" is the one primary action: she describes the page in plain words and gets a preview to accept.
+          7. Empty: built-ins stay; her section explains that the coach can make one, or she can sketch an outline.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> command palette (Ctrl K) -->
+    <a class="tp-btn tp-btn--secondary tp-rail__search" href="command.html" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </a>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">You</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="insights.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chart"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.insights">Insights</span></a></li>
+        <li><a class="tp-tree-item" href="activity.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.activity">Recent activity</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+        <li><a class="tp-tree-item" href="search.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.search">Search</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.you">You</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.templates">Templates</strong>
+    </div>
+    <a class="tp-btn tp-btn--ghost tp-btn--icon" href="command.html" aria-label="Search or jump to (Ctrl K)" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></a>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Templates', subtitle, actions: ['Ask the coach for a template','New template'] } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="tpl.title">Templates</h1>
+          <p class="tp-pagehead__sub" data-i18n="tpl.sub">Page shapes you can start from. Built-in ones can be turned off in Modules, but never deleted.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--secondary" href="template-builder.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tpl.new">New template</span></a>
+          <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> open coach (intent: template) -->
+          <a class="tp-btn tp-btn--primary" href="coach.html?ask=template" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="tpl.ask">Ask the coach for a template</span></a>
+        </div>
+      </header>
+
+      <!-- @component Toolbar | shadcn: — | props: { children } | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" data-state-hide>
+        <!-- @component SearchInput | shadcn: input | props: { label: 'Search templates' } | events: onChange -> client filter by name -->
+        <div class="tp-search tp-toolbar__grow" data-component="SearchInput">
+          <label class="tp-sr-only" for="tpl-q" data-i18n="tpl.q">Search templates</label>
+          <div class="tp-search__box"><span class="tp-search__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><input class="tp-input" id="tpl-q" type="search" dir="auto" autocomplete="off" placeholder="Search templates" data-i18n-attr="placeholder:tpl.q"></div>
+        </div>
+        <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['all','builtin','mine'], value: 'all' } | events: onChange -->
+        <div class="tp-segmented" role="radiogroup" aria-label="Show" data-i18n-attr="aria-label:tpl.show" id="tpl-seg" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-show="all" aria-checked="true" tabindex="0"><span data-i18n="tpl.all">All</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-show="builtin" aria-checked="false" tabindex="-1"><span data-i18n="tpl.builtin">Built-in</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-show="mine" aria-checked="false" tabindex="-1"><span data-i18n="tpl.yours">Yours</span></button>
+        </div>
+      </div>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="tpl.offline">You're offline. You can use your templates; new ones save when you're back.</span></span></div>
+
+      <!-- ===== Built-in ===== -->
+      <!-- @component Section | shadcn: — | props: { title: 'Built-in', count: 4 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="bi-h" id="sec-builtin" data-state-show="default empty offline">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="bi-h" data-i18n="tpl.builtin">Built-in</h2><span class="tp-section__count tp-num">4</span></div>
+        <!-- @component Card ×4 | shadcn: card + badge | props: { template: {id, name, desc, adds[], builtIn: true} } | events: onUse -> template run -->
+        <div class="tp-cards" data-component="CardGrid">
+          <article class="tp-card tpl-card" data-name="daily page" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sun"/></svg><h3 class="tp-card__title" data-i18n="tpl.daily">Daily page</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="tpl.builtin">Built-in</span></span></div>
+            <p class="tp-small" data-i18n="tpl.daily.d">Today's page: next up, tasks, time blocks and an energy check-in.</p>
+            <ul class="tpl-card__adds tp-small tp-muted"><li data-i18n="tpl.daily.a1">Intention</li><li data-i18n="tpl.daily.a2">Tasks and time blocks</li><li data-i18n="tpl.daily.a3">Energy check-in</li></ul>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html" data-i18n="tpl.preview">Preview</a>
+            </div>
+          </article>
+          <article class="tp-card tpl-card" data-name="weekly page" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg><h3 class="tp-card__title" data-i18n="tpl.weekly">Weekly page</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="tpl.builtin">Built-in</span></span></div>
+            <p class="tp-small" data-i18n="tpl.weekly.d">A calm look at the week: what matters, what's fixed, one kind thing.</p>
+            <ul class="tpl-card__adds tp-small tp-muted"><li data-i18n="tpl.weekly.a1">Top three</li><li data-i18n="tpl.weekly.a2">Fixed things this week</li><li data-i18n="tpl.weekly.a3">One kind thing for you</li></ul>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html" data-i18n="tpl.preview">Preview</a>
+            </div>
+          </article>
+          <article class="tp-card tpl-card" data-name="project page" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg><h3 class="tp-card__title" data-i18n="tpl.project">Project page</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="tpl.builtin">Built-in</span></span></div>
+            <p class="tp-small" data-i18n="tpl.project.d">One place for a project: status, next steps and notes.</p>
+            <ul class="tpl-card__adds tp-small tp-muted"><li data-i18n="tpl.project.a1">Status</li><li data-i18n="tpl.project.a2">Next steps as tasks</li><li data-i18n="tpl.project.a3">Notes and links</li></ul>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html" data-i18n="tpl.preview">Preview</a>
+            </div>
+          </article>
+          <article class="tp-card tpl-card" data-name="plain note" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><h3 class="tp-card__title" data-i18n="tpl.plain">Plain note</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="tpl.builtin">Built-in</span></span></div>
+            <p class="tp-small" data-i18n="tpl.plain.d">A blank page with a title. Nothing else.</p>
+            <ul class="tpl-card__adds tp-small tp-muted"><li data-i18n="tpl.plain.a1">Title</li><li data-i18n="tpl.plain.a2">Free writing</li></ul>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html" data-i18n="tpl.preview">Preview</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ===== Yours ===== -->
+      <section class="tp-section" aria-labelledby="mine-h" id="sec-mine" data-state-show="default empty offline">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="mine-h" data-i18n="tpl.yours">Yours</h2><span class="tp-section__count tp-num" id="mine-count" data-state-hide>3</span></div>
+        <!-- @component Card ×3 | shadcn: card + badge + dropdown-menu | props: { template: {id, name, desc, madeBy, when} } | events: onUse, onEdit, onDuplicate, onDelete -->
+        <div class="tp-cards" id="mine-grid" data-state-hide>
+          <article class="tp-card tpl-card" data-name="moving day checklist" data-mine data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-box"/></svg><h3 class="tp-card__title" dir="auto" data-i18n="tpl.m1">Moving day checklist</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-tone="info" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="tpl.bycoach">Made with the coach</span></span><span class="tp-small tp-muted" data-i18n="tpl.m1.w">Sun 11 Oct</span></div>
+            <p class="tp-small" dir="auto" data-i18n="tpl.m1.d">Before the van, on the day, and the first night in the new flat.</p>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="tpl.edit">Edit</span></a>
+              <!-- @component SortMenu | shadcn: dropdown-menu | props: { items: ['duplicate','edit as form','delete'] } | events: onDuplicate -> templates.duplicate, onDelete -> templates.remove (Undo 5 min) -->
+              <div class="tp-menu" data-component="SortMenu">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" data-action="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="m-t1" aria-label="More for this template" data-i18n-attr="aria-label:tpl.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></button>
+                <div class="tp-menu__list tp-glass" id="m-t1" role="menu" hidden>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-dup><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tpl.dup">Duplicate</span></button>
+                  <a class="tp-menu__item" role="menuitem" href="template-editor.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="tpl.form">Edit as a form</span></a>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-del><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="tpl.del">Delete</span></button>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="tp-card tpl-card" data-name="talk prep" data-mine data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><h3 class="tp-card__title" dir="auto" data-i18n="tpl.m2">Talk prep</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg><span data-i18n="tpl.byyou">Made by you</span></span><span class="tp-small tp-muted" data-i18n="tpl.m2.w">Thu 8 Oct</span></div>
+            <p class="tp-small" dir="auto" data-i18n="tpl.m2.d">Outline, three slides, numbers to check, and a practice run.</p>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="tpl.edit">Edit</span></a>
+              <!-- @component SortMenu | shadcn: dropdown-menu | props: { items: ['duplicate','edit as form','delete'] } | events: onDuplicate -> templates.duplicate, onDelete -> templates.remove (Undo 5 min) -->
+              <div class="tp-menu" data-component="SortMenu">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" data-action="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="m-t2" aria-label="More for this template" data-i18n-attr="aria-label:tpl.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></button>
+                <div class="tp-menu__list tp-glass" id="m-t2" role="menu" hidden>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-dup><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tpl.dup">Duplicate</span></button>
+                  <a class="tp-menu__item" role="menuitem" href="template-editor.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="tpl.form">Edit as a form</span></a>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-del><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="tpl.del">Delete</span></button>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="tp-card tpl-card" data-name="weekly review, my way" data-mine data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg><h3 class="tp-card__title" dir="auto" data-i18n="tpl.m3">Weekly review, my way</h3></div>
+            <div class="tpl-card__badges"><span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg><span data-i18n="tpl.byyou">Made by you</span></span><span class="tp-small tp-muted" data-i18n="tpl.m3.w">Tue 6 Oct</span></div>
+            <p class="tp-small" dir="auto" data-i18n="tpl.m3.d">Based on the Weekly page, with a short look back first.</p>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-run.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="tpl.use">Use</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="tpl.edit">Edit</span></a>
+              <!-- @component SortMenu | shadcn: dropdown-menu | props: { items: ['duplicate','edit as form','delete'] } | events: onDuplicate -> templates.duplicate, onDelete -> templates.remove (Undo 5 min) -->
+              <div class="tp-menu" data-component="SortMenu">
+                <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" type="button" data-action="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="m-t3" aria-label="More for this template" data-i18n-attr="aria-label:tpl.more"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-more"/></svg></button>
+                <div class="tp-menu__list tp-glass" id="m-t3" role="menu" hidden>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-dup><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="tpl.dup">Duplicate</span></button>
+                  <a class="tp-menu__item" role="menuitem" href="template-editor.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="tpl.form">Edit as a form</span></a>
+                  <button class="tp-menu__item" type="button" role="menuitem" data-tpl-del><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="tpl.del">Delete</span></button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- @component Card | shadcn: card | props: { title: 'Ask the coach for a template' } | events: links -->
+          <article class="tp-card tpl-card" data-component="Card">
+            <div class="tp-card__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><h3 class="tp-card__title" data-i18n="tpl.askc.t">Need a new shape?</h3></div>
+            <p class="tp-small" data-i18n="tpl.askc.b">Tell the coach about the page you keep making by hand, like “a page for planning a trip”. You see a preview first; nothing is saved until you accept.</p>
+            <div class="tpl-card__actions">
+              <a class="tp-btn tp-btn--secondary tp-btn--sm" href="template-sketch.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="tpl.sketch">Sketch an outline first</span></a>
+              <a class="tp-btn tp-btn--ghost tp-btn--sm" href="template-builder.html" data-i18n="tpl.build">Build it yourself</a>
+            </div>
+          </article>
+        </div>
+        <p class="tp-muted tp-small" id="tpl-none" hidden data-i18n="tpl.none">No templates match that name.</p>
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+        <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-template"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="tpl.empty.t">You haven't made a template yet.</h2>
+          <p class="tp-state__body" data-i18n="tpl.empty.b">The built-in ones above are ready to use. When you want your own, ask the coach or sketch a rough outline.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="template-sketch.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="tpl.sketch">Sketch an outline first</span></a></div>
+        </div>
+      </section>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { cards: 4 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="tpl.loading">Loading your templates</span>
+        <div class="tpl-skel"><span class="tp-skeleton tp-skeleton--block"></span><span class="tp-skeleton tp-skeleton--block"></span><span class="tp-skeleton tp-skeleton--block"></span><span class="tp-skeleton tp-skeleton--block"></span></div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="tpl.error">Couldn't load your templates.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Coach (opens the coach screen) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open coach (Ctrl J) -->
+  <a class="tp-coach-fab tp-glass" href="coach.html" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </a>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: {href,label,icon}[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+<script>
+window.TP_STRINGS = {
+  en: {"toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "toast.title": "Done", "state.retried": "Loaded.", "tpl.deleted": "Template deleted", "tpl.duped": "Copy made"},
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.you": "את",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.insights": "תובנות",
+    "nav.activity": "פעילות אחרונה",
+    "nav.templates": "תבניות",
+    "nav.search": "חיפוש",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש או מעבר אל (Ctrl K)",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "state.retried": "נטען.",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "toast.sub": "אפשר לבטל במשך",
+    "toast.title": "בוצע",
+    "more.showing": "מוצגים",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "doc.title": "תבניות · Tempo",
+    "nav.you": "את",
+    "tpl.title": "תבניות",
+    "tpl.sub": "צורות דף שאפשר להתחיל מהן. את המובנות אפשר לכבות במודולים, אבל לא למחוק.",
+    "tpl.new": "תבנית חדשה",
+    "tpl.ask": "לבקש תבנית מהמאמן",
+    "tpl.q": "חיפוש תבניות",
+    "tpl.show": "מה להציג",
+    "tpl.all": "הכול",
+    "tpl.builtin": "מובנית",
+    "tpl.yours": "שלך",
+    "tpl.offline": "אין חיבור כרגע. אפשר להשתמש בתבניות שלך; תבניות חדשות יישמרו כשתחזרי לרשת.",
+    "tpl.use": "שימוש",
+    "tpl.preview": "תצוגה מקדימה",
+    "tpl.edit": "עריכה",
+    "tpl.more": "עוד לתבנית הזו",
+    "tpl.dup": "שכפול",
+    "tpl.form": "עריכה כטופס",
+    "tpl.del": "מחיקה",
+    "tpl.daily": "דף יומי",
+    "tpl.daily.d": "הדף של היום: הבא בתור, משימות, בלוקי זמן ובדיקת אנרגיה.",
+    "tpl.daily.a1": "כוונה",
+    "tpl.daily.a2": "משימות ובלוקי זמן",
+    "tpl.daily.a3": "בדיקת אנרגיה",
+    "tpl.weekly": "דף שבועי",
+    "tpl.weekly.d": "מבט רגוע על השבוע: מה חשוב, מה קבוע, ודבר טוב אחד בשבילך.",
+    "tpl.weekly.a1": "שלושת הדברים החשובים",
+    "tpl.weekly.a2": "דברים קבועים השבוע",
+    "tpl.weekly.a3": "דבר טוב אחד בשבילך",
+    "tpl.project": "דף פרויקט",
+    "tpl.project.d": "מקום אחד לפרויקט: סטטוס, צעדים הבאים והערות.",
+    "tpl.project.a1": "סטטוס",
+    "tpl.project.a2": "צעדים הבאים כמשימות",
+    "tpl.project.a3": "הערות וקישורים",
+    "tpl.plain": "פתק פשוט",
+    "tpl.plain.d": "דף ריק עם כותרת. לא יותר.",
+    "tpl.plain.a1": "כותרת",
+    "tpl.plain.a2": "כתיבה חופשית",
+    "tpl.bycoach": "נוצרה עם המאמן",
+    "tpl.byyou": "נוצרה על ידייך",
+    "tpl.m1": "רשימה ליום המעבר",
+    "tpl.m1.w": "א׳ 11 באוק׳",
+    "tpl.m1.d": "לפני הטנדר, ביום עצמו, והלילה הראשון בדירה החדשה.",
+    "tpl.m2": "הכנה להרצאה",
+    "tpl.m2.w": "ה׳ 8 באוק׳",
+    "tpl.m2.d": "מבנה, שלושה שקפים, מספרים לבדיקה וחזרה אחת.",
+    "tpl.m3": "סיכום שבועי, בדרך שלי",
+    "tpl.m3.w": "ג׳ 6 באוק׳",
+    "tpl.m3.d": "מבוסס על הדף השבועי, עם מבט קצר אחורה בהתחלה.",
+    "tpl.askc.t": "צריכה צורה חדשה?",
+    "tpl.askc.b": "ספרי למאמן על הדף שאת מכינה שוב ושוב ביד, למשל ״דף לתכנון טיול״. קודם תראי תצוגה מקדימה; שום דבר לא נשמר עד שתאשרי.",
+    "tpl.sketch": "לשרטט קודם מבנה",
+    "tpl.build": "לבנות בעצמי",
+    "tpl.none": "אין תבניות בשם הזה.",
+    "tpl.deleted": "התבנית נמחקה",
+    "tpl.duped": "נוצר עותק",
+    "tpl.empty.t": "עדיין לא יצרת תבנית.",
+    "tpl.empty.b": "התבניות המובנות למעלה מוכנות לשימוש. כשתרצי משהו משלך, בקשי מהמאמן או שרטטי מבנה גס.",
+    "tpl.loading": "טוענים את התבניות שלך",
+    "tpl.error": "לא הצלחנו לטעון את התבניות."
+  }
+};
+/* Screen behaviour: search by name, filter built-in / yours, duplicate + delete with Undo. */
+TP.onReady2 = function () {
+  var q = document.getElementById("tpl-q"), seg = document.getElementById("tpl-seg");
+  var none = document.getElementById("tpl-none"), count = document.getElementById("mine-count");
+  function apply() {
+    var text = q.value.trim().toLowerCase(), on = seg.querySelector('[aria-checked="true"]');
+    var show = on ? on.getAttribute("data-show") : "all", hits = 0;
+    document.getElementById("sec-builtin").style.display = show === "mine" ? "none" : "";
+    document.getElementById("sec-mine").style.display = show === "builtin" ? "none" : "";
+    document.querySelectorAll(".tpl-card[data-name]").forEach(function (c) {
+      var name = (c.querySelector(".tp-card__title").textContent || "").toLowerCase();
+      var ok = !text || name.indexOf(text) > -1; c.style.display = ok && !c.hasAttribute("data-gone") ? "" : "none"; if (ok) hits++;
+    });
+    none.hidden = !text || hits > 0;
+  }
+  q.addEventListener("input", apply);
+  seg.addEventListener("click", function () { setTimeout(apply, 0); });
+  function syncCount() { count.textContent = document.querySelectorAll(".tpl-card[data-mine]:not([data-gone])").length; }
+  document.addEventListener("click", function (e) {
+    var del = e.target.closest("[data-tpl-del]"), dup = e.target.closest("[data-tpl-dup]");
+    if (!del && !dup) return;
+    var card = e.target.closest(".tpl-card"), list = e.target.closest(".tp-menu__list");
+    list.hidden = true; list.previousElementSibling.setAttribute("aria-expanded", "false");
+    if (del) {
+      // REAL: convex templates.remove({ id })  (soft delete, 30-day grace)
+      card.setAttribute("data-gone", ""); card.style.display = "none"; syncCount();
+      TP.toast({ title: TP.t("tpl.deleted"), onUndo: function () {
+        // REAL: convex templates.restore({ id })
+        card.removeAttribute("data-gone"); card.style.display = ""; syncCount(); card.querySelector("a").focus();
+      } });
+    } else {
+      // REAL: convex templates.duplicate({ id })
+      var copy = card.cloneNode(true), t = copy.querySelector(".tp-card__title");
+      copy.querySelectorAll("[id]").forEach(function (el) { el.id = el.id + "-copy"; });
+      copy.querySelectorAll("[aria-controls]").forEach(function (el) { el.setAttribute("aria-controls", el.getAttribute("aria-controls") + "-copy"); });
+      t.removeAttribute("data-i18n"); t.textContent = t.textContent + " (2)";
+      card.after(copy); syncCount(); copy.querySelector("a").focus();
+      TP.toast({ title: TP.t("tpl.duped"), onUndo: function () { copy.remove(); syncCount(); card.querySelector("a").focus(); } });
+    }
+  });
+};
+</script>
+</body>
+</html>

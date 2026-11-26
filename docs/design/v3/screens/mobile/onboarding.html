@@ -1,0 +1,478 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (onboarding) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-space-2)); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+
+    /* ===== onboarding — layout only (Bare: no tab bar) ===== */
+    .ob-app { display: grid; gap: var(--tp-space-6); align-content: start; min-height: 100%; padding: var(--tp-space-4) var(--tp-space-5) var(--tp-space-8); }
+    .ob-top { display: flex; align-items: center; justify-content: space-between; gap: var(--tp-space-3); }
+    .ob-dots { display: flex; gap: var(--tp-space-2); margin: 0; padding: 0; list-style: none; }
+    .ob-form { display: grid; gap: var(--tp-space-6); }
+    .ob-step { display: grid; gap: var(--tp-space-5); min-width: 0; }
+    .ob-step[hidden] { display: none; }
+    .ob-step__head { display: grid; gap: var(--tp-space-2); }
+    .ob-step__head .tp-auth-card__title { margin: 0; }
+    .ob-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--tp-space-2); min-width: 0; }
+    .ob-list { display: grid; gap: var(--tp-space-2); margin: 0; padding-inline-start: var(--tp-space-5); }
+    .ob-nav { display: grid; gap: var(--tp-space-2); }
+    .ob-nav__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--tp-space-2); }
+    .ob-nav__row[hidden] { display: none; }
+  </style>
+</head>
+<body>
+<!--
+@screen   Onboarding
+@route    apps/mobile/app/(auth)/onboarding.tsx
+@layout   Bare
+@data     profile = profiles.getMine({})        // Convex query: language, readingFont, displayName, coachDial, analyticsOptIn, onboardingStep
+@actions  choose language -> profiles.updatePrefs({ key: "language", value })        // applies at once; Hebrew turns the layout right to left
+@actions  choose reading font -> profiles.updatePrefs({ key: "readingFont", value }) // applies at once
+@actions  save name -> profiles.setDisplayName({ name })                              // optional
+@actions  set coach dial -> profiles.setCoachDial({ value })                          // starts at 4, steady
+@actions  first brain dump -> capture.brainDump({ text })                            // optional; the coach sorts it later, nothing is lost
+@actions  analytics opt-in -> profiles.updatePrefs({ key: "analyticsOptIn", value })  // default OFF
+@actions  continue / back -> profiles.setOnboardingStep({ step })                     // progress is saved, so leaving is safe
+@actions  finish -> profiles.completeOnboarding({}) then router.replace("/(tempo)/(tabs)/today")
+@states   default | empty | loading | error | offline  (?state=) · plus ?step=1..5
+@flow     1. One step per view. The top says "Step 2 of 5" in words and numbers, with five dots. Back is there from step 2.
+          2. Step 1: language (English / עברית) and reading font (standard or dyslexia-friendly). Both apply at once.
+          3. Step 2: what the coach should call you. Optional; "Skip for now" is fine.
+          4. Step 3: the coach dial, 0 to 10, shown as a number and a word: quiet, steady or push. Starts at 4.
+          5. Step 4: a first brain dump. Messy is fine. Optional.
+          6. Step 5: privacy. What Tempo keeps and what it never does, plus a usage analytics switch that starts Off.
+          7. "Start using Tempo" opens Today. Everything here can be changed later in Settings.
+          8. Empty does not apply (each step has defaults), so it shows the step. Loading: skeleton rows. Error: kind words, what you typed is safe, Try again. Offline: you can keep going; it saves when you're back.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Onboarding
+        @route    apps/mobile/app/(auth)/onboarding.tsx
+        @layout   Bare
+        @data     profile = profiles.getMine({})    // Convex query
+        @actions  profiles.updatePrefs · profiles.setDisplayName · profiles.setCoachDial · capture.brainDump · profiles.setOnboardingStep · profiles.completeOnboarding
+        @states   default | empty | loading | error | offline  (?state=) · ?step=1..5
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#ob-main" data-i18n="skip">Skip to content</a>
+        <div class="ob-app" id="ob-main" tabindex="-1">
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Keep going. Your answers save when you're back.</span></span>
+          </div>
+
+          <div class="ob-top">
+            <p class="tp-eyebrow" id="ob-progress" aria-live="polite"><span data-i18n="step">Step</span> <span class="tp-num" data-step-n>1</span> <span data-i18n="of">of</span> <span class="tp-num">5</span></p>
+            <ol class="ob-dots" aria-hidden="true" id="ob-dots">
+              <li><span class="tp-dot tp-dot--fixed"></span></li>
+              <li><span class="tp-dot tp-dot--habit"></span></li>
+              <li><span class="tp-dot tp-dot--habit"></span></li>
+              <li><span class="tp-dot tp-dot--habit"></span></li>
+              <li><span class="tp-dot tp-dot--habit"></span></li>
+            </ol>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 3, label: "Getting things ready" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Getting things ready</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't save that step." } | events: onRetry -> profiles.setOnboardingStep again -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't save that step.</h2>
+            <p class="tp-state__body"><span data-i18n="err.safe">What you chose is still here.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- @component Form | shadcn: form · NativeWind: KeyboardAvoidingView + View | props: { step: 1..5 } | events: onSubmit -> profiles.setOnboardingStep({ step }) -->
+          <form class="ob-form" id="ob-form" novalidate data-component="Form" data-state-show="default empty offline">
+
+            <!-- Step 1 · language and reading font -->
+            <section class="ob-step" data-step="1" aria-labelledby="s1-title">
+              <div class="ob-step__head">
+                <h1 class="tp-auth-card__title" id="s1-title" tabindex="-1" data-i18n="s1.title">Welcome. Let's set Tempo up for you.</h1>
+                <p class="tp-auth-card__lede" data-i18n="s1.lede">Five short steps, about two minutes. You can change all of this later in Settings.</p>
+              </div>
+              <fieldset class="ob-fieldset">
+                <legend class="tp-label" data-i18n="lang.legend">Language</legend>
+                <!-- @component Radio ×2 | shadcn: radio-group · NativeWind: Pressable radio rows | props: { name: "language", value } | events: onChange -> profiles.updatePrefs({ key: "language", value }) -->
+                <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="language" value="en" data-lang-choice><span class="tp-choice__text"><span lang="en">English</span><span class="tp-choice__hint" data-i18n="lang.en.hint">Left to right</span></span></label>
+                <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="language" value="he" data-lang-choice><span class="tp-choice__text"><span lang="he">עברית</span><span class="tp-choice__hint" data-i18n="lang.he.hint">Right to left</span></span></label>
+              </fieldset>
+              <fieldset class="ob-fieldset">
+                <legend class="tp-label" data-i18n="font.legend">Reading font</legend>
+                <!-- @component Radio ×2 | shadcn: radio-group · NativeWind: Pressable radio rows | props: { name: "font", value } | events: onChange -> profiles.updatePrefs({ key: "readingFont", value }) -->
+                <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="font" value="standard" data-font-choice><span class="tp-choice__text"><span data-i18n="font.std">Standard</span><span class="tp-choice__hint" data-i18n="font.std.hint">Calm, roomy text.</span></span></label>
+                <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="font" value="dyslexia" data-font-choice><span class="tp-choice__text"><span data-i18n="font.dys">Dyslexia-friendly</span><span class="tp-choice__hint" data-i18n="font.dys.hint">Heavier letter bottoms and more space between letters.</span></span></label>
+              </fieldset>
+            </section>
+
+            <!-- Step 2 · name -->
+            <section class="ob-step" data-step="2" aria-labelledby="s2-title" hidden>
+              <div class="ob-step__head">
+                <h1 class="tp-auth-card__title" id="s2-title" tabindex="-1" data-i18n="s2.title">What should the coach call you?</h1>
+                <p class="tp-auth-card__lede" data-i18n="s2.lede">A first name or a nickname. You can leave it empty.</p>
+              </div>
+              <!-- @component Field | shadcn: form item · NativeWind: TextInput | props: { id: "ob-name", label, help, optional: true } | events: onSubmit -> profiles.setDisplayName({ name }) -->
+              <div class="tp-field" data-component="Field">
+                <label class="tp-label" for="ob-name"><span data-i18n="name.label">Your name</span> <span class="tp-label__opt" data-i18n="optional">(optional)</span></label>
+                <input class="tp-input" id="ob-name" name="name" type="text" autocomplete="given-name" dir="auto" maxlength="40" placeholder="Maya" aria-describedby="ob-name-help">
+                <p class="tp-help" id="ob-name-help" data-i18n="name.help">Only the coach uses it, to talk to you.</p>
+              </div>
+            </section>
+
+            <!-- Step 3 · coach dial -->
+            <section class="ob-step" data-step="3" aria-labelledby="s3-title" hidden>
+              <div class="ob-step__head">
+                <h1 class="tp-auth-card__title" id="s3-title" tabindex="-1" data-i18n="s3.title">How much should the coach push?</h1>
+                <p class="tp-auth-card__lede" data-i18n="s3.lede">Some days you want quiet, some days a nudge. Pick a start; you can turn it any time.</p>
+              </div>
+              <!-- @component Dial | shadcn: slider · NativeWind: @react-native-community/slider + number and word | props: { value: 4, label } | events: onChange -> profiles.setCoachDial({ value }) -->
+              <div class="tp-dial" data-component="Dial">
+                <div class="tp-dial__head">
+                  <label class="tp-label" for="ob-dial" data-i18n="dial.label">Coach dial</label>
+                  <span class="tp-dial__value"><span class="tp-dial__num tp-num" data-dial-num>4</span><span class="tp-dial__of" data-i18n="dial.of">of 10</span><span class="tp-dial__word" data-dial-word>Steady</span></span>
+                </div>
+                <input class="tp-slider" id="ob-dial" type="range" min="0" max="10" step="1" value="4" aria-describedby="ob-dial-help">
+                <div class="tp-dial__scale" aria-hidden="true"><span><span class="tp-num">0</span> <span data-i18n="dial.quiet">Quiet</span></span><span data-i18n="dial.steady">Steady</span><span><span data-i18n="dial.push">Push</span> <span class="tp-num">10</span></span></div>
+              </div>
+              <p class="tp-help" id="ob-dial-help" data-i18n="dial.help">Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans.</p>
+            </section>
+
+            <!-- Step 4 · first brain dump -->
+            <section class="ob-step" data-step="4" aria-labelledby="s4-title" hidden>
+              <div class="ob-step__head">
+                <h1 class="tp-auth-card__title" id="s4-title" tabindex="-1" data-i18n="s4.title">What's on your mind right now?</h1>
+                <p class="tp-auth-card__lede" data-i18n="s4.lede">Empty your head here. Messy is fine, half sentences are fine. The coach sorts it into tasks and notes later, and asks before changing anything.</p>
+              </div>
+              <!-- @component Textarea | shadcn: textarea · NativeWind: TextInput multiline | props: { id: "ob-dump", rows: 6, optional: true } | events: onSubmit -> capture.brainDump({ text }) -->
+              <div class="tp-field" data-component="Field">
+                <label class="tp-label" for="ob-dump"><span data-i18n="dump.label">Brain dump</span> <span class="tp-label__opt" data-i18n="optional">(optional)</span></label>
+                <textarea class="tp-textarea" id="ob-dump" rows="6" dir="auto" placeholder="Email Dana about the lease, book the van, Yoni's birthday…" data-i18n-attr="placeholder:dump.ph" aria-describedby="ob-dump-help"></textarea>
+                <p class="tp-help" id="ob-dump-help" data-i18n="dump.help">Nothing here is shared. You can also skip this and do it later.</p>
+              </div>
+            </section>
+
+            <!-- Step 5 · privacy -->
+            <section class="ob-step" data-step="5" aria-labelledby="s5-title" hidden>
+              <div class="ob-step__head">
+                <h1 class="tp-auth-card__title" id="s5-title" tabindex="-1" data-i18n="s5.title">Your privacy</h1>
+                <p class="tp-auth-card__lede" data-i18n="s5.lede">Here is what Tempo keeps, in plain words.</p>
+              </div>
+              <ul class="ob-list tp-small">
+                <li data-i18n="priv.1">Your pages, tasks and chats are yours. You can download them or delete them any time.</li>
+                <li data-i18n="priv.2">The coach remembers things you tell it, and you can see and forget each one in Settings.</li>
+                <li data-i18n="priv.3">Tempo never sells your data and never shows ads.</li>
+              </ul>
+              <!-- @component SettingRow | shadcn: — + switch | props: { label: "Share usage analytics", control: Switch (default Off) } | events: onCheckedChange -> profiles.updatePrefs({ key: "analyticsOptIn", value }) -->
+              <div class="tp-setting-row" data-component="SettingRow">
+                <div class="tp-setting-row__text">
+                  <span class="tp-setting-row__label" id="ob-an-label" data-i18n="an.label">Share usage analytics</span>
+                  <span class="tp-help" id="ob-an-help" data-i18n="an.help">Which buttons get tapped, never what you write. It helps us fix rough spots. Off unless you turn it on.</span>
+                </div>
+                <div class="tp-setting-row__control">
+                  <!-- @component Switch | shadcn: switch · NativeWind: Switch + "On"/"Off" Text | props: { checked: false } | events: onCheckedChange -->
+                  <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ob-an-label" aria-describedby="ob-an-help" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+                </div>
+              </div>
+            </section>
+
+            <p class="tp-muted tp-small" id="ob-note" role="status" aria-live="polite"></p>
+
+            <div class="ob-nav">
+              <!-- @component Button | shadcn: button · NativeWind: Pressable (accent) | props: { variant: "primary", label: "Continue" | "Start using Tempo" } | events: onPress -> profiles.setOnboardingStep({ step }) / profiles.completeOnboarding({}) -->
+              <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" id="ob-next" data-component="Button"><span data-label data-i18n="next">Continue</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              <div class="ob-nav__row" id="ob-secondary" hidden>
+                <button class="tp-btn tp-btn--ghost" type="button" id="ob-back"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="back">Back</span></button>
+                <button class="tp-btn tp-btn--ghost" type="button" id="ob-skip"><span data-i18n="skip.now">Skip for now</span></button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "next": "Continue", "finish": "Start using Tempo",
+    "switch.on": "On", "switch.off": "Off",
+    "dial.quiet": "Quiet", "dial.steady": "Steady", "dial.push": "Push", "dial.of": "of 10",
+    "note.name": "Nice to meet you,", "note.noname": "No name is fine. The coach will just say hi.",
+    "note.dump": "Saved. The coach will sort it with you on Today.", "note.nodump": "That's fine. You can empty your head any time from Capture."
+  },
+  he: {
+    "doc.title": "ברוכה הבאה · Tempo",
+    "skip": "דלגי לתוכן",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "אפשר להמשיך. התשובות יישמרו כשהחיבור יחזור.",
+    "step": "שלב", "of": "מתוך",
+    "load.label": "מכינים הכול",
+    "err.title": "לא הצלחנו לשמור את השלב הזה.", "err.safe": "מה שבחרת עדיין כאן.", "err.body": "זה אצלנו, לא אצלך.", "state.retry": "לנסות שוב",
+    "s1.title": "ברוכה הבאה. בואי נכין את Tempo בשבילך.",
+    "s1.lede": "חמישה שלבים קצרים, בערך שתי דקות. אפשר לשנות הכול אחר כך בהגדרות.",
+    "lang.legend": "שפה", "lang.en.hint": "משמאל לימין", "lang.he.hint": "מימין לשמאל",
+    "font.legend": "גופן קריאה", "font.std": "רגיל", "font.std.hint": "טקסט רגוע ומרווח.",
+    "font.dys": "ידידותי לדיסלקציה", "font.dys.hint": "תחתית אותיות כבדה יותר ויותר רווח בין האותיות.",
+    "s2.title": "איך המאמן יקרא לך?", "s2.lede": "שם פרטי או כינוי. אפשר גם להשאיר ריק.",
+    "name.label": "השם שלך", "optional": "(לא חובה)", "name.help": "רק המאמן משתמש בזה, כדי לדבר איתך.",
+    "s3.title": "כמה המאמן ידחוף?", "s3.lede": "יש ימים שרוצים שקט, ויש ימים שרוצים דחיפה קטנה. בחרי נקודת התחלה; אפשר לשנות בכל זמן.",
+    "dial.label": "חוגת המאמן", "dial.of": "מתוך 10", "dial.quiet": "שקט", "dial.steady": "יציב", "dial.push": "דחיפה",
+    "dial.help": "שקט: המאמן מחכה שתבקשי. יציב: בדיקות עדינות. דחיפה: יותר תזכורות ותוכניות נחרצות יותר.",
+    "s4.title": "מה עובר לך בראש עכשיו?",
+    "s4.lede": "רוקני את הראש כאן. בלגן זה בסדר, חצאי משפטים זה בסדר. המאמן ימיין את זה למשימות ופתקים אחר כך, ותמיד ישאל לפני שמשנה משהו.",
+    "dump.label": "פריקת מחשבות", "dump.ph": "לכתוב לדנה על החוזה, להזמין משאית, יום ההולדת של יוני…",
+    "dump.help": "שום דבר כאן לא משותף. אפשר גם לדלג ולעשות את זה אחר כך.",
+    "s5.title": "הפרטיות שלך", "s5.lede": "הנה מה ש־Tempo שומרת, במילים פשוטות.",
+    "priv.1": "הדפים, המשימות והשיחות שלך שייכים לך. אפשר להוריד או למחוק אותם בכל זמן.",
+    "priv.2": "המאמן זוכר דברים שסיפרת לו, ואפשר לראות ולמחוק כל אחד מהם בהגדרות.",
+    "priv.3": "Tempo אף פעם לא מוכרת את הנתונים שלך ואף פעם לא מציגה פרסומות.",
+    "an.label": "שיתוף נתוני שימוש",
+    "an.help": "על אילו כפתורים לוחצים, אף פעם לא מה שאת כותבת. זה עוזר לנו לתקן מקומות לא נוחים. כבוי עד שתפעילי.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "next": "המשך", "finish": "להתחיל להשתמש ב־Tempo", "back": "חזרה", "skip.now": "לדלג בינתיים",
+    "note.name": "נעים להכיר,", "note.noname": "גם בלי שם זה בסדר. המאמן פשוט יגיד שלום.",
+    "note.dump": "נשמר. המאמן ימיין את זה איתך במסך היום.", "note.nodump": "זה בסדר. אפשר לרוקן את הראש בכל זמן דרך הלכידה."
+  }
+};
+
+/* One step per view.
+   REAL: convex profiles.updatePrefs · profiles.setDisplayName · profiles.setCoachDial · capture.brainDump
+         · profiles.setOnboardingStep({ step }) · profiles.completeOnboarding({}) */
+TP.onReady = function () {
+  var root = document.documentElement, params = new URLSearchParams(location.search);
+  var step = Math.min(5, Math.max(1, parseInt(params.get("step"), 10) || 1));
+  var note = document.getElementById("ob-note");
+
+  // Reflect current language and font.
+  document.querySelectorAll("[data-lang-choice]").forEach(function (r) { r.checked = r.value === (root.lang === "he" ? "he" : "en"); });
+  document.querySelectorAll("[data-font-choice]").forEach(function (r) { r.checked = r.value === (root.getAttribute("data-dyslexia") === "on" ? "dyslexia" : "standard"); });
+
+  function show(n, focus) {
+    step = n;
+    document.querySelectorAll(".ob-step").forEach(function (s) { s.hidden = s.getAttribute("data-step") !== String(n); });
+    document.querySelector("[data-step-n]").textContent = n;
+    var dots = ""; for (var k = 1; k <= 5; k++) dots += '<li><span class="tp-dot ' + (k < n ? "tp-dot--done" : k === n ? "tp-dot--fixed" : "tp-dot--habit") + '"></span></li>';
+    document.getElementById("ob-dots").innerHTML = dots;
+    document.getElementById("ob-secondary").hidden = n === 1;
+    document.getElementById("ob-skip").hidden = !(n === 2 || n === 4);
+    var lbl = document.querySelector("#ob-next [data-label]"), key = n === 5 ? "finish" : "next";
+    lbl.setAttribute("data-i18n", key); lbl.textContent = TP.t(key);
+    if (focus) document.getElementById("s" + n + "-title").focus();
+  }
+
+  document.querySelectorAll("[data-lang-choice]").forEach(function (r) {
+    r.addEventListener("change", function () {
+      // REAL: convex profiles.updatePrefs({ key: "language", value }) — the screen re-renders in that language
+      try { localStorage.setItem("tempo-lang", r.value); } catch (e) {}
+      var p = new URLSearchParams(location.search); p.set("lang", r.value); p.set("step", "1"); p.delete("dir");
+      location.search = p.toString();
+    });
+  });
+  document.querySelectorAll("[data-font-choice]").forEach(function (r) {
+    // REAL: convex profiles.updatePrefs({ key: "readingFont", value })
+    r.addEventListener("change", function () { TP.setDyslexia(r.value === "dyslexia"); });
+  });
+  TP.onSwitch = function (sw, on) {
+    // REAL: convex profiles.updatePrefs({ key: "analyticsOptIn", value: on }) — default false
+  };
+
+  document.getElementById("ob-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (step === 2) {
+      // REAL: convex profiles.setDisplayName({ name })
+      var name = document.getElementById("ob-name").value.trim();
+      note.textContent = name ? TP.t("note.name") + " " + name + "." : TP.t("note.noname");
+    } else if (step === 3) {
+      // REAL: convex profiles.setCoachDial({ value })
+      note.textContent = "";
+    } else if (step === 4) {
+      // REAL: convex capture.brainDump({ text }) — sorted later with the user, nothing is lost
+      note.textContent = TP.t(document.getElementById("ob-dump").value.trim() ? "note.dump" : "note.nodump");
+    } else if (step === 5) {
+      // REAL: convex profiles.completeOnboarding({}) then router.replace("/(tempo)/(tabs)/today")
+      location.href = "today.html" + (root.lang === "he" ? "?lang=he" : "");
+      return;
+    } else note.textContent = "";
+    // REAL: convex profiles.setOnboardingStep({ step: step + 1 })
+    show(step + 1, true);
+  });
+  document.getElementById("ob-back").addEventListener("click", function () {
+    // REAL: convex profiles.setOnboardingStep({ step: step - 1 })
+    note.textContent = ""; show(Math.max(1, step - 1), true);
+  });
+  document.getElementById("ob-skip").addEventListener("click", function () {
+    // Skipping an optional step saves nothing for it. REAL: convex profiles.setOnboardingStep({ step: step + 1 })
+    note.textContent = ""; show(step + 1, true);
+  });
+
+  show(step, false);
+};
+</script>
+</body>
+</html>

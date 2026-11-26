@@ -1,0 +1,415 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (journal) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Journal · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== journal — layout only ===== */
+    .jr-head .tp-pagehead__title { margin: 0; }
+    .jr-entry { display: grid; gap: var(--tp-space-5); }
+    .jr-mood { display: grid; gap: var(--tp-space-2); }
+    .jr-save { display: grid; gap: var(--tp-space-2); }
+    .jr-past .tp-list-row { padding-inline: var(--tp-space-2); }
+    .jr-past .tp-list-row__title { white-space: normal; }
+  </style>
+</head>
+<body>
+<!--
+@screen   Journal
+@route    apps/mobile/app/(tempo)/journal.tsx
+@layout   MobileTabs
+@data     entry = journal.getEntry({ date: localDate })                     // Convex query (today's entry, may be blank)
+@data     past = journal.listEntries({ before: localDate, limit: 10 })        // Convex paginated query
+@actions  pick mood -> journal.saveEntry({ date, mood: "low"|"okay"|"good" })
+@actions  write -> journal.saveEntry({ date, answers })                       // autosaves on the phone while typing
+@actions  save entry -> journal.saveEntry({ date, mood, answers })            // no Undo needed: nothing is lost, it can be edited again
+@actions  open a past entry -> router.push("/journal/[date]")
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open Journal from More. Today's entry is at the top: a mood check in words (Low / Okay / Good), then two short prompts.
+          2. Every prompt is optional. Writing autosaves on the phone; "Save entry" saves it to the account and says when.
+          3. Nothing is scored, counted or compared. There is no streak.
+          4. Past entries follow, newest first, each with its date, mood word and first line.
+          5. Empty: no past entries yet; today's entry can be the first.
+          6. Loading: skeleton rows. Error: kind words, data is safe, Try again.
+          7. Offline: writing still works; a banner says it saves on the phone and syncs when back.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Journal
+        @route    apps/mobile/app/(tempo)/journal.tsx
+        @layout   MobileTabs
+        @data     entry = journal.getEntry({ date }) · past = journal.listEntries({ before, limit: 10 })   // Convex queries
+        @actions  mood · write (autosave) · save -> journal.saveEntry({ date, mood, answers }) · open past -> router.push("/journal/[date]")
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass, back) | props: { title: "Journal", back: true } | events: onBack -> router.back(), onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="today.html" aria-label="Back" data-i18n-attr="aria-label:top.back"><svg class="tp-icon tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <span class="tp-mtopbar__title" data-i18n="top.title">Journal</span>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Keep writing. It saves on your phone and syncs when you're back.</span></span>
+          </div>
+
+          <!-- @component PageHeader | shadcn: — | props: { title: "Journal", subtitle: "Monday, 12 October" } | events: — -->
+          <div class="tp-pagehead jr-head" data-component="PageHeader">
+            <div class="tp-pagehead__text">
+              <span class="tp-eyebrow" data-i18n="date.eyebrow">Monday, 12 October</span>
+              <h1 class="tp-pagehead__title" data-i18n="page.title">Journal</h1>
+              <p class="tp-pagehead__sub" data-i18n="page.sub">A few lines are plenty. Skip anything you like.</p>
+            </div>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 3, label: "Loading your journal" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your journal</span>
+            <div class="tp-skeleton tp-skeleton--block"></div>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your journal." } | events: onRetry -> refetch journal.getEntry -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your journal.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Today's entry (default, empty, offline) ===== -->
+          <!-- @component Form | shadcn: form · NativeWind: View + TextInput ×2 (autosave to MMKV) | props: { date: "2026-10-12", mood: "okay", answers } | events: onSave -> journal.saveEntry({ date, mood, answers }) -->
+          <form class="tp-card jr-entry" id="jr-form" onsubmit="return false" aria-labelledby="today-h" data-state-show="default empty offline" data-component="Form">
+            <h2 class="tp-h2" id="today-h" data-i18n="h.today">Today's entry</h2>
+
+            <div class="jr-mood">
+              <span class="tp-label" id="mood-label" data-i18n="mood.q">How was today, overall?</span>
+              <!-- @component Segmented | shadcn: toggle-group (single) · NativeWind: SegmentedControl | props: { options: ["low","okay","good"], value: "okay" } | events: onChange -> journal.saveEntry({ date, mood }) -->
+              <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="mood-label" id="mood" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="low"><span data-i18n="mood.low">Low</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0" data-value="okay"><span data-i18n="mood.okay">Okay</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="good"><span data-i18n="mood.good">Good</span></button>
+              </div>
+            </div>
+
+            <!-- @component Textarea ×2 | shadcn: textarea · NativeWind: TextInput multiline | props: { label, rows: 3, value } | events: onChange -> local draft, then journal.saveEntry -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="q1" data-i18n="q1.label">What took energy today?</label>
+              <textarea class="tp-textarea" id="q1" rows="3" dir="auto" data-component="Textarea" data-i18n="q1.text">The morning felt rushed. Calling the bank kept sitting in my head until I finally did it.</textarea>
+            </div>
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="q2" data-i18n="q2.label">One small thing that went well</label>
+              <textarea class="tp-textarea" id="q2" rows="3" dir="auto" aria-describedby="q2-help" data-component="Textarea" placeholder="Even something tiny counts." data-i18n-attr="placeholder:q2.ph"></textarea>
+              <p class="tp-help" id="q2-help"><span class="tp-label__opt" data-i18n="opt">Optional.</span></p>
+            </div>
+
+            <div class="jr-save">
+              <!-- @component Button | shadcn: button (primary) · NativeWind: Pressable | props: { label: "Save entry" } | events: onPress -> journal.saveEntry({ date, mood, answers }) -->
+              <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="save">Save entry</span></button>
+              <p class="tp-help" id="save-status" role="status"><span data-i18n="draft">Draft kept on your phone at</span> <span class="tp-num tp-mono">09:38</span></p>
+            </div>
+          </form>
+
+          <!-- ===== Empty ===== -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: — -->
+          <div class="tp-state tp-state--empty" data-state-show="empty" data-component="StateEmpty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-page"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">No past entries yet.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">Today's can be the first. There is no right way to do this, and no streak to keep.</p>
+          </div>
+
+          <!-- ===== Past entries ===== -->
+          <section class="m-stack" aria-labelledby="past-h" data-state-hide>
+            <!-- @component Section | shadcn: — | props: { title: "Earlier" } | events: — -->
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="past-h" data-i18n="h.past">Earlier</h2>
+            </div>
+            <!-- @component ListRow ×3 | shadcn: — · NativeWind: Pressable row (Link) | props: { date, mood, firstLine, href } | events: onPress -> router.push("/journal/[date]") -->
+            <ul class="tp-list tp-card jr-past" role="list" data-component="ListRow">
+              <li><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="p1.text">Packed two boxes. Felt lighter than I expected.</span><span class="tp-list-row__meta"><span data-i18n="p1.date">Sun 11 Oct</span><span data-i18n="mood.okay">Okay</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="p2.text">Lunch with Dana. We laughed about the old flat.</span><span class="tp-list-row__meta"><span data-i18n="p2.date">Sat 10 Oct</span><span data-i18n="mood.good">Good</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+              <li><a class="tp-list-row" href="#">
+                <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span>
+                <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="p3.text">Tired. Did the minimum, and that was enough.</span><span class="tp-list-row__meta"><span data-i18n="p3.date">Fri 9 Oct</span><span data-i18n="mood.low">Low</span></span></span>
+                <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+              </a></li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "more" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" aria-current="page" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "saved": "Saved at", "saved.local": "Saved on your phone at", "draft": "Draft kept on your phone at" },
+  he: {
+    "doc.title": "יומן · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "אפשר להמשיך לכתוב. זה נשמר בטלפון ויסונכרן כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב", "state.retried": "נטען.",
+    "top.back": "חזרה", "top.title": "יומן", "top.avatar": "הגדרות של מאיה רונן",
+    "date.eyebrow": "יום שני, 12 באוקטובר", "page.title": "יומן", "page.sub": "כמה שורות זה הרבה. אפשר לדלג על כל דבר.",
+    "load.label": "טוענים את היומן שלך",
+    "err.title": "לא הצלחנו לטעון את היומן שלך.", "err.body": "זה אצלנו, לא אצלך.",
+    "h.today": "הרשומה של היום",
+    "mood.q": "איך היה היום, בסך הכול?", "mood.low": "נמוך", "mood.okay": "בסדר", "mood.good": "טוב",
+    "q1.label": "מה לקח אנרגיה היום?",
+    "q1.text": "הבוקר הרגיש לחוץ. השיחה לבנק ישבה לי בראש עד שסוף סוף עשיתי אותה.",
+    "q2.label": "דבר קטן אחד שהלך טוב", "q2.ph": "גם משהו זעיר נחשב.", "opt": "לא חובה.",
+    "save": "שמירת הרשומה", "draft": "הטיוטה שמורה בטלפון מ־", "saved": "נשמר ב־", "saved.local": "נשמר בטלפון ב־",
+    "empty.title": "עוד אין רשומות קודמות.", "empty.body": "הרשומה של היום יכולה להיות הראשונה. אין דרך נכונה לעשות את זה, ואין רצף לשמור עליו.",
+    "h.past": "קודם",
+    "p1.text": "ארזתי שתי קופסאות. הרגשתי קלה יותר ממה שציפיתי.", "p1.date": "ראשון 11 באוק׳",
+    "p2.text": "ארוחת צהריים עם דנה. צחקנו על הדירה הישנה.", "p2.date": "שבת 10 באוק׳",
+    "p3.text": "עייפה. עשיתי את המינימום, וזה הספיק.", "p3.date": "שישי 9 באוק׳"
+  }
+};
+
+/* Save today's entry; the status line says when and where it was saved.
+   REAL: convex journal.saveEntry({ date: localDate, mood, answers: { energy, wentWell } }) */
+TP.onReady = function (params) {
+  var form = document.getElementById("jr-form"), status = document.getElementById("save-status");
+  if (params.get("state") === "empty") { document.getElementById("q1").value = ""; }
+  form.addEventListener("submit", function () {
+    // REAL: convex journal.saveEntry({ date, mood, answers }) — offline, it queues on the phone
+    var d = new Date(), time = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    var offline = document.documentElement.getAttribute("data-state") === "offline";
+    status.innerHTML = "";
+    var w = document.createElement("span"); w.textContent = TP.t(offline ? "saved.local" : "saved");
+    var n = document.createElement("span"); n.className = "tp-num tp-mono"; n.textContent = time;
+    status.appendChild(w); status.appendChild(document.createTextNode(" ")); status.appendChild(n);
+  });
+};
+</script>
+</body>
+</html>
