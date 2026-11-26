@@ -29,6 +29,7 @@ export type ReadExportOptions = {
 
 const tableName = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const componentName = /^[A-Za-z0-9_-]+$/;
+const documentGlob = "*/documents.jsonl";
 const documentPath = /^(?:_components\/[A-Za-z0-9_-]+\/)*[A-Za-z_][A-Za-z0-9_]*\/documents\.jsonl$/;
 const knownTables = new Set(Object.keys(schema.tables));
 const run = promisify(execFile);
@@ -161,7 +162,7 @@ export async function readExport(
     if (extracted) {
       const env = { ...process.env, UNZIP: "", UNZIPOPT: "", ZIPINFO: "", ZIPINFOOPT: "" };
       try {
-        const { stdout } = await run("/usr/bin/unzip", ["-Z1", source], { env });
+        const { stdout } = await run("/usr/bin/unzip", ["-Z1", source, documentGlob], { env });
         const files = stdout.split("\n").filter((entry) => entry.endsWith("/documents.jsonl"));
         if (
           !files.length ||
@@ -170,7 +171,7 @@ export async function readExport(
         ) {
           throw new Error();
         }
-        await run("/usr/bin/unzip", ["-q", source, "*/documents.jsonl", "-d", extracted], { env });
+        await run("/usr/bin/unzip", ["-q", source, documentGlob, "-d", extracted], { env });
       } catch {
         throw new Error("Unable to unpack Convex export ZIP with /usr/bin/unzip");
       }

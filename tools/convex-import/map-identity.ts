@@ -80,6 +80,13 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
   const emails = countBy(users, normalizedEmail);
   const userIds = countBy(users, (doc) => doc._id);
   const usersMapped = new Map<string, string>();
+  const subscriptionOwners = countBy(subscriptionStates, (doc) =>
+    typeof doc.userId === "string" ? doc.userId : undefined
+  );
+  const newlyInserted = "user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)";
+  const subscriptionBootstrap =
+    "updated_at = created_at AND source = 'open_signup_grant' AND plan = 'max'" +
+    " AND billing_cycle = 'lifetime' AND status = 'active' AND trial_used";
 
   for (const user of users) {
     try {
@@ -151,7 +158,7 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         "updated_at = created_at AND approval_status = 'pending'" +
         " AND approval_updated_at = created_at AND approval_updated_by IS NULL";
       sql.push(
-        "INSERT INTO auth.users (email, email_verified) SELECT " +
+        "WITH inserted AS (INSERT INTO auth.users (email, email_verified) SELECT " +
           emailSql +
           ", " +
           bool(user.emailVerified ?? false, "emailVerified") +
@@ -159,7 +166,8 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           sameLegacy +
           " IS NULL AND NOT EXISTS (SELECT 1 FROM auth.users WHERE " +
           sameEmail +
-          ") ON CONFLICT (email) DO NOTHING;",
+          ") ON CONFLICT (email) DO NOTHING RETURNING id)" +
+          " INSERT INTO pg_temp.tempo_import_inserted_users (id) SELECT id FROM inserted;",
         "SELECT 'users' AS \"table\", " +
           legacy +
           " AS id, 'email cannot resolve to a unique, unclaimed auth user' AS reason WHERE NOT (" +
@@ -169,6 +177,8 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           dates.updated_at +
           ") WHERE user_id = " +
           owner +
+          " AND " +
+          newlyInserted +
           " AND updated_at = created_at" +
           " AND EXISTS (SELECT 1 FROM public.account_gate WHERE user_id = " +
           owner +
@@ -179,6 +189,8 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         "UPDATE public.account_gate SET legacy_convex_id = " +
           legacy +
           ", updated_at = CASE WHEN " +
+          newlyInserted +
+          " AND " +
           gateBootstrap +
           " THEN least(updated_at, " +
           dates.updated_at +
@@ -188,6 +200,18 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           " AND legacy_convex_id IS NULL;",
         upsert("account_gate", "legacy_convex_id", gateValues, resolved)
       );
+      if (!subscriptionOwners.has(user._id)) {
+        sql.push(
+          "UPDATE public.subscription_states SET plan = 'none', billing_cycle = 'none'," +
+            " status = 'inactive', trial_used = FALSE, source = NULL WHERE user_id = " +
+            owner +
+            " AND " +
+            newlyInserted +
+            " AND legacy_convex_id IS NULL AND " +
+            subscriptionBootstrap +
+            ";"
+        );
+      }
       usersMapped.set(user._id, emailSql);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
@@ -195,9 +219,13 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
     }
   }
 
-  const subscriptionOwners = countBy(subscriptionStates, (doc) =>
-    typeof doc.userId === "string" ? doc.userId : undefined
-  );
+  if (usersMapped.size) {
+    sql.splice(
+      1,
+      0,
+      "CREATE TEMP TABLE tempo_import_inserted_users (id uuid PRIMARY KEY) ON COMMIT DROP;"
+    );
+  }
   const subscriptionIds = countBy(subscriptionStates, (doc) => doc._id);
   for (const subscription of subscriptionStates) {
     try {
@@ -260,9 +288,11 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           ");",
         "UPDATE public.subscription_states SET legacy_convex_id = " +
           legacy +
-          ", updated_at = CASE WHEN" +
-          " updated_at = created_at AND source = 'open_signup_grant' AND plan = 'max'" +
-          " AND billing_cycle = 'lifetime' AND status = 'active' AND trial_used THEN least(updated_at, " +
+          ", updated_at = CASE WHEN " +
+          newlyInserted +
+          " AND " +
+          subscriptionBootstrap +
+          " THEN least(updated_at, " +
           dates.updated_at +
           ") ELSE updated_at END WHERE user_id = " +
           owner +

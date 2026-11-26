@@ -1,8 +1,10 @@
 import { expect, test } from "bun:test";
+import { execFile } from "node:child_process";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { readExport } from "../../tools/convex-import/read-export";
 
 const fixture = fileURLToPath(
@@ -90,5 +92,22 @@ test("reports unreadable ZIPs without exposing unzip output", async () => {
     await expect(readExport(zip)).rejects.toThrow(
       new Error("Unable to unpack Convex export ZIP with /usr/bin/unzip")
     );
+  });
+});
+
+test("does not buffer a ZIP listing of ignored storage blobs", async () => {
+  await withExport(async (path) => {
+    const zip = join(path, "large-storage.zip");
+    const createZip = [
+      "import sys, zipfile",
+      "with zipfile.ZipFile(sys.argv[1], 'w') as archive:",
+      '    archive.writestr(\'tasks/documents.jsonl\', \'{"_id":"fixture","_creationTime":1}\\n\')',
+      "    for i in range(13000):",
+      "        archive.writestr(f'_storage/{i:05}-' + 'x' * 80, '')",
+    ].join("\n");
+    await promisify(execFile)("python3", ["-c", createZip, zip]);
+    const result = await readExport(zip);
+    expect(result.counts).toEqual({ tasks: 1 });
+    expect(result.storageMetadata).toEqual([]);
   });
 });

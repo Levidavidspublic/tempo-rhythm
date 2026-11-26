@@ -43,6 +43,36 @@ test("emits auth before trigger-row reconciliation and preserves the approval de
   );
 });
 
+test("limits every trigger-bootstrap exception to auth IDs returned by this import", () => {
+  const { sql } = mapIdentity([user], [subscription]);
+  expect(sql).toContain(
+    "CREATE TEMP TABLE tempo_import_inserted_users (id uuid PRIMARY KEY) ON COMMIT DROP;"
+  );
+  expect(sql).toContain(
+    "DO NOTHING RETURNING id) INSERT INTO pg_temp.tempo_import_inserted_users (id) SELECT id FROM inserted;"
+  );
+  const bootstrapUpdates = sql.split("\n").filter((line) => line.startsWith("UPDATE public."));
+  expect(bootstrapUpdates).toHaveLength(3);
+  for (const line of bootstrapUpdates) {
+    expect(line).toContain("user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)");
+  }
+});
+
+test("reconciles missing subscriptions only for new auth users and leaves their legacy ID null", () => {
+  const { sql, rejected, counts } = mapIdentity([user], []);
+  expect(rejected).toEqual([]);
+  expect(counts.subscriptionStates).toEqual({ exported: 0, transformed: 0, rejected: 0 });
+  const reset = sql
+    .split("\n")
+    .find((line) => line.startsWith("UPDATE public.subscription_states"));
+  expect(reset).toContain(
+    "plan = 'none', billing_cycle = 'none', status = 'inactive', trial_used = FALSE, source = NULL"
+  );
+  expect(reset).toContain("user_id IN (SELECT id FROM pg_temp.tempo_import_inserted_users)");
+  expect(reset).toContain("legacy_convex_id IS NULL");
+  expect(sql).not.toContain("INSERT INTO public.subscription_states");
+});
+
 test("maps explicit account flags, profile fields, and epoch-ms timestamps", () => {
   const { sql, rejected } = mapIdentity(
     [
@@ -121,5 +151,6 @@ test("rejects malformed subscriptions without losing a valid user", () => {
     { table: "subscriptionStates", id: "sub1", reason: "trialUsed must be boolean" },
   ]);
   expect(sql).toContain("INSERT INTO auth.users");
+  expect(sql).not.toContain("UPDATE public.subscription_states");
   expect(sql).not.toContain("INSERT INTO public.subscription_states");
 });

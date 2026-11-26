@@ -63,6 +63,36 @@ test("emits recurrence before tasks, then resolves parents in a timestamp-guarde
   ).toHaveLength(2);
 });
 
+test("takes the same transaction lock before planning either recurrence or tasks", () => {
+  const header =
+    "BEGIN;\nDO $$ BEGIN PERFORM pg_catalog.pg_advisory_xact_lock(20261127, 34); END $$;\n";
+  for (const [tasks, repeats] of [
+    [[task], [repeat]],
+    [[task], []],
+    [[], [repeat]],
+  ] as const) {
+    const { sql } = mapTasks(tasks, repeats, owners);
+    expect(sql.startsWith(header + "CREATE TEMP TABLE")).toBe(true);
+    expect(sql.match(/pg_advisory_xact_lock/g)).toHaveLength(1);
+    expect(sql.match(/COMMIT;/g)).toHaveLength(1);
+    expect(sql.endsWith("\nCOMMIT;\n")).toBe(true);
+  }
+});
+
+test("rounds timeEstimate to the nearest millisecond, ties up, without changing whole values", () => {
+  const { sql, rejected } = mapTasks(
+    [
+      { ...task, timeEstimate: 1500.5 },
+      { ...task, _id: "child", parentTaskId: task._id, timeEstimate: 1400 },
+    ],
+    [],
+    owners
+  );
+  expect(rejected).toEqual([]);
+  expect(sql).toContain("E'medium', NULL, 1501, NULL");
+  expect(sql).toContain("E'medium', NULL, 1400, NULL");
+});
+
 test("maps bigint timestamps, native repeat arrays, and task JSONB", () => {
   const { sql, rejected } = mapTasks(
     [

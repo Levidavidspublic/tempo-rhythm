@@ -22,6 +22,10 @@ function integer(value: unknown, field: string): string {
   return String(value);
 }
 
+function nearestMillisecond(value: unknown, field: string): string {
+  return integer(typeof value === "number" ? Math.round(value) : value, field);
+}
+
 function int32(value: unknown, field: string): string {
   if (typeof value !== "number" || value < -2147483648 || value > 2147483647) {
     throw new Error(field + " must be a 32-bit integer");
@@ -221,7 +225,7 @@ export function mapTasks(
           energy: optional(task.energy, "energy", (value, field) =>
             oneOf(value, field, ["low", "medium", "high"])
           ),
-          time_estimate: optional(task.timeEstimate, "timeEstimate", integer),
+          time_estimate: optional(task.timeEstimate, "timeEstimate", nearestMillisecond),
           flexibility: optional(task.flexibility, "flexibility", (value, field) =>
             oneOf(value, field, ["fixed", "elastic"])
           ),
@@ -259,10 +263,15 @@ export function mapTasks(
   }
 
   const sql: string[] = [];
+  if (repeatRows.length || candidates.size) {
+    sql.push(
+      "BEGIN;",
+      "DO $$ BEGIN PERFORM pg_catalog.pg_advisory_xact_lock(20261127, 34); END $$;"
+    );
+  }
   if (repeatRows[0]) {
     const columns = Object.keys(repeatRows[0]);
     sql.push(
-      "BEGIN;",
       ...stage("task_repeat_cfgs", repeatRows, columns),
       "CREATE TEMP TABLE tempo_import_repeat_plan ON COMMIT DROP AS",
       "SELECT input.*, gate.user_id, CASE",
@@ -279,8 +288,7 @@ export function mapTasks(
         columns.map((column) => (column === "user_legacy_id" ? "user_id" : column)),
         "tempo_import_repeat_plan",
         "input.reason IS NULL"
-      ),
-      "COMMIT;"
+      )
     );
   }
 
@@ -291,7 +299,6 @@ export function mapTasks(
       "NOT EXISTS (SELECT 1 FROM pg_temp.tempo_import_task_rejections AS rejected" +
       " WHERE rejected.legacy_convex_id = input.legacy_convex_id)";
     sql.push(
-      "BEGIN;",
       ...stage("tasks", taskRows, columns),
       "CREATE TEMP TABLE tempo_import_task_plan ON COMMIT DROP AS",
       "SELECT input.*, gate.user_id, repeat.id AS repeat_cfg_id, CASE",
@@ -334,12 +341,11 @@ export function mapTasks(
       "  ON parent.user_id = input.user_id AND parent.legacy_convex_id = input.parent_legacy_id",
       "WHERE target.legacy_convex_id = input.legacy_convex_id AND target.user_id = input.user_id",
       "  AND target.updated_at = input.updated_at AND target.parent_task_id IS DISTINCT FROM parent.id",
-      "  AND " + eligible + ";",
-      "COMMIT;"
+      "  AND " + eligible + ";"
     );
   }
   return {
-    sql: sql.length ? [...sql, ""].join("\n") : "",
+    sql: sql.length ? [...sql, "COMMIT;", ""].join("\n") : "",
     rejected,
     counts: {
       tasks: {

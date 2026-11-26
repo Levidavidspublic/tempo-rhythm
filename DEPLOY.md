@@ -18,7 +18,7 @@ Set the `NEXT_PUBLIC_*` names before the build, wherever it runs. Never write en
 ## Server only
 
 - `INSFORGE_API_KEY` (ops, later)
-- `MISTRAL_API_KEY`
+- `MISTRAL_API_KEY` (setting this on Hostinger does not configure the current Convex AI runtime; its router reads `DEEPINFRA_API_KEY` from the Convex environment)
 - `WHOP_WEBHOOK_SECRET`
 - `WHOP_API_KEY`
 - `WHOP_PLAN_ID`
