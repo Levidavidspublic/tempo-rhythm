@@ -9,14 +9,41 @@
  */
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import { Check, Clock, Lock, Pause, Play, Plus, Repeat, Search, Sun, Zap } from "lucide-react-native";
+import {
+  Check,
+  Clock,
+  Lock,
+  Pause,
+  Play,
+  Plus,
+  Repeat,
+  Search,
+  Sun,
+  Zap,
+} from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Card, Chip, Eyebrow, PageHeader, Row, SectionHead, Segmented, T } from "@/components/v3/primitives";
+import {
+  Button,
+  Card,
+  Chip,
+  Eyebrow,
+  PageHeader,
+  Row,
+  SectionHead,
+  Segmented,
+  T,
+} from "@/components/v3/primitives";
 import { CaptureFab, MobileTopBar, Screen } from "@/components/v3/Shell";
 import { useNow, useOffline, useTempoSession, useToday } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { TaskRow } from "@/components/v3/TaskRow";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
@@ -50,7 +77,10 @@ export default function TodayScreen() {
     : t(`date.eyebrow.${part}`, { name: "" }).replace(/,\s*$/, "").trim();
 
   return (
-    <Screen tabs overlay={<CaptureFab label={t("fab.capture")} onPress={() => router.push("/capture")} />}>
+    <Screen
+      tabs
+      overlay={<CaptureFab label={t("fab.capture")} onPress={() => router.push("/capture")} />}
+    >
       <MobileTopBar
         title={t("top.title")}
         start={{
@@ -64,7 +94,13 @@ export default function TodayScreen() {
       <PageHeader eyebrow={greeting} title={longDay(today.iso, lang)} />
       <QueryBoundary
         fallback={(retry) => (
-          <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+          <StateError
+            title={t("err.title")}
+            safe={t("state.safe")}
+            body={t("err.body")}
+            retryLabel={t("state.retry")}
+            onRetry={retry}
+          />
         )}
       >
         <TodayBody ready={session.ready} today={today} />
@@ -77,12 +113,21 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
   const t = useT("today");
   const router = useRouter();
   const toast = useToast();
-  const tasks = useQuery(api.tasks.listToday, ready ? { dueFrom: today.startMs, dueTo: today.endMs } : "skip");
+  const tasks = useQuery(
+    api.tasks.listToday,
+    ready ? { dueFrom: today.startMs, dueTo: today.endMs } : "skip"
+  );
   const plan = useQuery(api.dayPlans.getForDate, ready ? { localDate: today.iso } : "skip");
   const blocks = useQuery(api.timeBlocks.listForDate, ready ? { localDate: today.iso } : "skip");
-  const events = useQuery(api.calendar_events.listInRange, ready ? { startMs: today.startMs, endMs: today.endMs } : "skip");
+  const events = useQuery(
+    api.calendar_events.listInRange,
+    ready ? { startMs: today.startMs, endMs: today.endMs } : "skip"
+  );
   const habits = useQuery(api.habits.list, ready ? {} : "skip");
-  const checkIns = useQuery(api.habitCheckIns.listForDate, ready ? { localDate: today.iso } : "skip");
+  const checkIns = useQuery(
+    api.habitCheckIns.listForDate,
+    ready ? { localDate: today.iso } : "skip"
+  );
   const toggle = useMutation(api.tasks.toggleCompletion);
   const update = useMutation(api.tasks.update);
 
@@ -91,7 +136,12 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
   }
 
   // A habit-only day still opens the normal layout, so the habit can be logged from here.
-  if (!tasks.length && !blocks.length && !events.length && !habits.some((h) => h.deletedAt === undefined)) {
+  if (
+    !tasks.length &&
+    !blocks.length &&
+    !events.length &&
+    !habits.some((h) => h.deletedAt === undefined)
+  ) {
     return (
       <StateEmpty icon={Sun} title={t("empty.title")} body={t("empty.body")}>
         <Button icon={Plus} label={t("empty.capture")} onPress={() => router.push("/capture")} />
@@ -127,24 +177,45 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
         {ordered.length ? (
           <View>
             {ordered.map((task, i) => (
-              <TaskRow key={task._id} task={task} todayEndMs={today.endMs} onToggle={onToggle} last={i === ordered.length - 1} />
+              <TaskRow
+                key={task._id}
+                task={task}
+                todayEndMs={today.endMs}
+                onToggle={onToggle}
+                last={i === ordered.length - 1}
+              />
             ))}
           </View>
         ) : null}
-        <Button variant="ghost" icon={Plus} label={t("tasks.add")} onPress={() => router.push("/capture")} />
+        <Button
+          variant="ghost"
+          icon={Plus}
+          label={t("tasks.add")}
+          onPress={() => router.push("/capture")}
+        />
       </View>
 
       <TimeBlocks blocks={blocks} events={events} tasks={tasks} />
 
       {liveHabit ? (
-        <HabitToday habit={liveHabit} today={today} logged={checkIns.some((c) => c.habitId === liveHabit._id)} />
+        <HabitToday
+          habit={liveHabit}
+          today={today}
+          logged={checkIns.some((c) => c.habitId === liveHabit._id)}
+        />
       ) : null}
     </View>
   );
 }
 
 /** A running focus stretch keeps its own task and length, whatever Next up picks meanwhile. */
-type Timer = { task: TaskLike; durationMs: number; leftMs: number; runningSince: number | null; startedAt: number };
+type Timer = {
+  task: TaskLike;
+  durationMs: number;
+  leftMs: number;
+  runningSince: number | null;
+  startedAt: number;
+};
 
 /** NextUpCard: one task, why it was picked, how long it takes, and one primary "Start N minutes". */
 function NextUp({ tasks }: { tasks: TaskLike[] }) {
@@ -159,7 +230,11 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
   const task = timer ? (tasks.find((item) => item._id === timer.task._id) ?? timer.task) : picked;
   const minutes = timer ? Math.round(timer.durationMs / 60_000) : task ? focusMinutes(task) : 25;
   const now = useNow(1000, timer?.runningSince != null);
-  const left = timer ? (timer.runningSince != null ? timer.leftMs - (now - timer.runningSince) : timer.leftMs) : minutes * 60_000;
+  const left = timer
+    ? timer.runningSince != null
+      ? timer.leftMs - (now - timer.runningSince)
+      : timer.leftMs
+    : minutes * 60_000;
   const logged = useRef<string | null>(null);
 
   useEffect(() => {
@@ -167,9 +242,11 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
     const key = `${timer.task._id}:${timer.startedAt}`;
     if (logged.current === key) return;
     logged.current = key;
-    createFocus({ startedAtMs: timer.startedAt, durationMs: timer.durationMs, taskId: timer.task._id as Id<"tasks"> }).catch(
-      () => undefined,
-    );
+    createFocus({
+      startedAtMs: timer.startedAt,
+      durationMs: timer.durationMs,
+      taskId: timer.task._id as Id<"tasks">,
+    }).catch(() => undefined);
     setTimer(null);
   }, [left, timer, createFocus]);
 
@@ -197,7 +274,14 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
     const at = Date.now();
     if (running && timer) setTimer({ ...timer, leftMs: left, runningSince: null });
     else if (paused && timer) setTimer({ ...timer, runningSince: at });
-    else setTimer({ task, durationMs: minutes * 60_000, leftMs: minutes * 60_000, runningSince: at, startedAt: at });
+    else
+      setTimer({
+        task,
+        durationMs: minutes * 60_000,
+        leftMs: minutes * 60_000,
+        runningSince: at,
+        startedAt: at,
+      });
   };
 
   return (
@@ -212,7 +296,13 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
         <Chip icon={Zap} label={t(`energy.${energyWord(task.energy)}`)} />
       </Row>
       <View style={{ gap: 8, marginTop: 4 }}>
-        <Button variant="primary" block icon={running ? Pause : Play} label={startLabel} onPress={onStart} />
+        <Button
+          variant="primary"
+          block
+          icon={running ? Pause : Play}
+          label={startLabel}
+          onPress={onStart}
+        />
         <Row className="gap-2">
           <View style={{ flex: 1 }}>
             <Button
@@ -229,7 +319,9 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
               block
               variant="ghost"
               label={t("next.smaller")}
-              onPress={() => router.push({ pathname: "/coach", params: { ask: "smaller", task: task.title } })}
+              onPress={() =>
+                router.push({ pathname: "/coach", params: { ask: "smaller", task: task.title } })
+              }
             />
           </View>
         </Row>
@@ -239,12 +331,21 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
 }
 
 /** EnergyBlock: Quiet / Steady / Push, saved on today's day plan. Nothing is picked until you pick. */
-function EnergyCheck({ today, value }: { today: Today; value: "quiet" | "steady" | "push" | null }) {
+function EnergyCheck({
+  today,
+  value,
+}: {
+  today: Today;
+  value: "quiet" | "steady" | "push" | null;
+}) {
   const t = useT("today");
   const toast = useToast();
   const upsert = useMutation(api.dayPlans.upsert);
   // The choice shows at once; it gives way when the saved value changes.
-  const [local, setLocal] = useState<{ value: "quiet" | "steady" | "push"; base: typeof value } | null>(null);
+  const [local, setLocal] = useState<{
+    value: "quiet" | "steady" | "push";
+    base: typeof value;
+  } | null>(null);
   const shown = local && local.base === value ? local.value : value;
 
   const choose = (next: "quiet" | "steady" | "push") => {
@@ -255,7 +356,11 @@ function EnergyCheck({ today, value }: { today: Today; value: "quiet" | "steady"
     } catch {
       timezone = undefined;
     }
-    upsert({ localDate: today.iso, energy: ENERGY_TO_PLAN[next], ...(timezone ? { timezone } : {}) }).catch(() => {
+    upsert({
+      localDate: today.iso,
+      energy: ENERGY_TO_PLAN[next],
+      ...(timezone ? { timezone } : {}),
+    }).catch(() => {
       setLocal(null);
       toast({ title: t("action.error") });
     });
@@ -285,7 +390,13 @@ function EnergyCheck({ today, value }: { today: Today; value: "quiet" | "steady"
   );
 }
 
-type Block = { key: string; startMs: number; endMs?: number; title: string; kind: "fixed" | "flex" };
+type Block = {
+  key: string;
+  startMs: number;
+  endMs?: number;
+  title: string;
+  kind: "fixed" | "flex";
+};
 
 /** TimeBlock rows: fixed = solid edge, lock and "Fixed"; flexible = dashed edge and "Flexible". */
 function TimeBlocks({
@@ -293,7 +404,14 @@ function TimeBlocks({
   events,
   tasks,
 }: {
-  blocks: { _id: string; title: string; startsAtMs: number; endsAtMs: number; taskId?: string; status: string }[];
+  blocks: {
+    _id: string;
+    title: string;
+    startsAtMs: number;
+    endsAtMs: number;
+    taskId?: string;
+    status: string;
+  }[];
   events: { _id: string; title: string; startsAtMs: number }[];
   tasks: TaskLike[];
 }) {
@@ -311,10 +429,12 @@ function TimeBlocks({
           title: b.title,
           // A block is elastic unless its task is fixed (convex/schema.ts: absent = elastic).
           kind: b.taskId && flexibility.get(b.taskId) === "fixed" ? "fixed" : "flex",
-        }),
+        })
       ),
     // Calendar events keep their time, so they are fixed.
-    ...events.map((e): Block => ({ key: e._id, startMs: e.startsAtMs, title: e.title, kind: "fixed" })),
+    ...events.map(
+      (e): Block => ({ key: e._id, startMs: e.startsAtMs, title: e.title, kind: "fixed" })
+    ),
   ].sort((a, b) => a.startMs - b.startMs);
   if (!items.length) return null;
   return (
@@ -325,7 +445,9 @@ function TimeBlocks({
       <View style={{ gap: 8 }}>
         {items.map((item) => {
           const fixed = item.kind === "fixed";
-          const range = item.endMs ? `${clockTime(item.startMs)}–${clockTime(item.endMs)}` : clockTime(item.startMs);
+          const range = item.endMs
+            ? `${clockTime(item.startMs)}–${clockTime(item.endMs)}`
+            : clockTime(item.startMs);
           const word = fixed ? t("time.fixed") : t("time.flex");
           return (
             <Row
@@ -365,7 +487,15 @@ function TimeBlocks({
 }
 
 /** HabitBlock: one habit with Log today. No streak counter. */
-function HabitToday({ habit, today, logged }: { habit: { _id: Id<"habits">; name: string }; today: Today; logged: boolean }) {
+function HabitToday({
+  habit,
+  today,
+  logged,
+}: {
+  habit: { _id: Id<"habits">; name: string };
+  today: Today;
+  logged: boolean;
+}) {
   const t = useT("today");
   const toast = useToast();
   const check = useMutation(api.habitCheckIns.check);

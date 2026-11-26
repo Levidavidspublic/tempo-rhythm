@@ -13,10 +13,26 @@ import { CalendarDays, Clock, Lock, Plus } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
-import { Button, Chevron, Chip, PageHeader, RADIUS, Row, T, TextField, TOUCH } from "@/components/v3/primitives";
+import {
+  Button,
+  Chevron,
+  Chip,
+  PageHeader,
+  RADIUS,
+  Row,
+  T,
+  TextField,
+  TOUCH,
+} from "@/components/v3/primitives";
 import { MobileTopBar, Screen, Sheet } from "@/components/v3/Shell";
 import { useOffline, useTempoSession, useToday } from "@/components/v3/session";
-import { OfflineNotice, QueryBoundary, StateEmpty, StateError, StateLoading } from "@/components/v3/states";
+import {
+  OfflineNotice,
+  QueryBoundary,
+  StateEmpty,
+  StateError,
+  StateLoading,
+} from "@/components/v3/states";
 import { useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import {
@@ -46,7 +62,13 @@ export default function CalendarScreen() {
         fallback={(retry) => (
           <View style={{ gap: 24 }}>
             <PageHeader title={t("page.title")} />
-            <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
+            <StateError
+              title={t("err.title")}
+              safe={t("state.safe")}
+              body={t("err.body")}
+              retryLabel={t("state.retry")}
+              onRetry={retry}
+            />
           </View>
         )}
       >
@@ -94,7 +116,7 @@ function CalendarBody({ ready }: { ready: boolean }) {
 
   const counts = countByDate(
     events.map((e) => e.startsAtMs),
-    dates,
+    dates
   );
   const dayBounds = localDayBounds(selected);
   const agenda = events
@@ -171,7 +193,11 @@ function CalendarBody({ ready }: { ready: boolean }) {
             const on = d === selected;
             const isToday = d === today.iso;
             const dow = t(WEEKDAY_KEYS[weekdayOf(d)] ?? "dow.mon");
-            const label = [longDay(d, p.lang), n ? `${n} ${itemsWord(n)}` : t("nothing"), isToday ? t("today") : ""]
+            const label = [
+              longDay(d, p.lang),
+              n ? `${n} ${itemsWord(n)}` : t("nothing"),
+              isToday ? t("today") : "",
+            ]
               .filter(Boolean)
               .join(", ");
             return (
@@ -193,7 +219,13 @@ function CalendarBody({ ready }: { ready: boolean }) {
                   padding: 4,
                 }}
               >
-                <T size="xs" weight="600" tone={on || isToday ? "ink" : "muted"} underline={isToday} center>
+                <T
+                  size="xs"
+                  weight="600"
+                  tone={on || isToday ? "ink" : "muted"}
+                  underline={isToday}
+                  center
+                >
                   {dow}
                 </T>
                 <T size="lg" weight="600" ltr center>
@@ -278,9 +310,26 @@ function CalendarBody({ ready }: { ready: boolean }) {
         title={`${t("add")} · ${longDay(selected, p.lang)}`}
         onClose={() => setAdding(false)}
         closeLabel={t("more.close")}
-        footer={<Button variant="primary" block icon={Plus} label={t("add")} onPress={add} disabled={busy} />}
+        footer={
+          <Button
+            variant="primary"
+            block
+            icon={Plus}
+            label={t("add")}
+            onPress={add}
+            disabled={busy}
+          />
+        }
       >
-        <TextField label={t("add.what")} value={title} onChangeText={setTitle} error={errors.title} user autoFocus editable={!busy} />
+        <TextField
+          label={t("add.what")}
+          value={title}
+          onChangeText={setTitle}
+          error={errors.title}
+          user
+          autoFocus
+          editable={!busy}
+        />
         <TextField
           label={t("add.time")}
           help={t("add.timeHelp")}
@@ -301,4 +350,3 @@ function CalendarBody({ ready }: { ready: boolean }) {
     </View>
   );
 }
-
