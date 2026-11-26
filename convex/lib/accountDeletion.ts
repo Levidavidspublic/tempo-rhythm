@@ -1,7 +1,31 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
-/** User-owned tables that carry `by_userId` + `deletedAt`. */
+/**
+ * User-owned tables that carry `by_userId`, `deletedAt` and `updatedAt`. Account deletion
+ * stamps `deletedAt` and `updatedAt` with one timestamp and keeps an earlier `deletedAt`.
+ *
+ * `chatRequests` links to Agent-component messages by opaque id. Soft delete only tombstones
+ * the host row: it never calls an Agent delete API, because component tables have no
+ * `deletedAt` and a hard delete would end the 30-day recoverable grace window.
+ *
+ * `pageOperations`, `pageOperationPayloads` and `pageProposals` (#828) take the same ordinary
+ * tombstone. Soft delete only stamps `deletedAt` and `updatedAt`: it never erases inverse
+ * fragments, rewrites an `available` payload to `expired`, edits expiry metadata or schedules
+ * cleanup. Those belong to a separately reviewed cleanup path, and the 30-day account grace
+ * window does not extend an expired Undo or proposal window.
+ *
+ * A tombstone alone does not stop an endpoint from reading a row. The read side lives in
+ * `pagePrivacy.ts` (#808): every page, Undo, proposal and Agent-linked chat path calls one of its
+ * guards, which deny a deleted account, note or conversation and any tombstoned row immediately.
+ *
+ * Executor connections (#989) take two dedicated paths below, never a hard delete: a live
+ * `connections` row becomes `revoking` (and tombstoned), and a live `oauthPending` row has its
+ * encrypted PKCE verifier scrubbed. `connectionSecrets` keeps its ciphertexts under the tombstone
+ * only until `connections.revokeForAccountDeletion` (scheduled by `users.deleteMyAccount`, since
+ * this function never schedules) revokes them at Executor and scrubs them, or the sweep does an
+ * hour later.
+ */
 export const USER_OWNED_TABLES = [
   "tasks",
   "notes",
@@ -10,6 +34,23 @@ export const USER_OWNED_TABLES = [
   "memories",
   "calendarEvents",
   "taskRepeatCfgs",
+  "dayPlans",
+  "timeBlocks",
+  "habitCheckIns",
+  "focusBlocks",
+  "templates",
+  "userPreferences",
+  "notifications",
+  "noteBlocks",
+  "chatRequests",
+  "pageOperations",
+  "pageOperationPayloads",
+  "pageProposals",
+  "voiceSessions",
+  "coachWebSearches",
+  "connectionSecrets",
+  "connectionCalls",
+  "connectionLimits",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
@@ -87,6 +128,25 @@ export async function softDeleteUserAccount(
     deletedCount += await softDeleteRowsByUserId(ctx, table, userId, now);
   }
 
+  for (const table of ["nags", "coachSettings", "coachProposals"] as const) {
+    deletedCount += await softDeleteAdditionalRows(ctx, table, userId, now);
+  }
+
+  deletedCount += await markConnectionsRevoking(ctx, userId, now);
+  deletedCount += await scrubPendingConnects(ctx, userId, now);
+
+  const tokens = await ctx.db
+    .query("mcpTokens")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const token of tokens) {
+    if (token.revokedAt === undefined) {
+      await ctx.db.patch(token._id, { revokedAt: now });
+      deletedCount += 1;
+    }
+  }
+
   const conversations = await ctx.db
     .query("conversations")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -125,6 +185,79 @@ export async function softDeleteUserAccount(
   }
 
   return { deletedCount };
+}
+
+async function softDeleteAdditionalRows(
+  ctx: MutationCtx,
+  table: "nags" | "coachSettings" | "coachProposals",
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query(table)
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(
+        row._id,
+        table === "coachProposals" ? { deletedAt: now } : { deletedAt: now, updatedAt: now },
+      );
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Live Executor connections (including one still waiting for its owner's confirm) become
+ * `revoking` and are tombstoned, and an unused confirm nonce is dropped; the revoke runs later.
+ */
+async function markConnectionsRevoking(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query("connections")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(row._id, {
+        status: "revoking",
+        confirmNonceHash: undefined,
+        confirmExpiresAt: undefined,
+        deletedAt: now,
+        updatedAt: now,
+      });
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** Live connect attempts lose their encrypted PKCE verifier and are tombstoned. */
+async function scrubPendingConnects(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query("oauthPending")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(row._id, { codeVerifierCipher: undefined, deletedAt: now, updatedAt: now });
+      count += 1;
+    }
+  }
+  return count;
 }
 
 async function softDeleteRowsByUserId(
