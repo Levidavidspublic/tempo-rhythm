@@ -47,7 +47,7 @@ export default function SignInScreen() {
         // התעלמות משגיאות אחסון
       }
     };
-    loadRememberedEmail();
+    void loadRememberedEmail();
   }, []);
 
   // פונקציית ההתחברות

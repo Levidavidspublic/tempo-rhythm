@@ -51,7 +51,7 @@ export default function SignUpScreen() {
         // התעלמות משגיאות אחסון
       }
     };
-    loadRememberedEmail();
+    void loadRememberedEmail();
   }, []);
 
   // פונקציית ההרשמה
