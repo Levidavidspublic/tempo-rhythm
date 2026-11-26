@@ -1,23 +1,19 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
  * @screen: template-sketch
- * @category: You
- * @source: docs/design/claude-export/design-system/screens-5.jsx
- * @summary: Template sketch playground.
- * @queries: (none)
- * @mutations: (none)
+ * @source: docs/design/v3/screens/web/template-sketch.html
+ * @summary: A rough outline becomes a template proposal; nothing is saved until Accept.
+ * @mutations: templates.create (Accept), templates.remove (Undo)
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TemplateSketch } from "@/components/template-builder/TemplateSketch";
+import { ProfileReady } from "@/components/today/ProfileReady";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Template sketch"
-      category="You"
-      source="screens-5.jsx"
-      summary="Template sketch playground."
-    />
+    <div data-testid="template-sketch-route">
+      <ProfileReady>
+        <TemplateSketch />
+      </ProfileReady>
+    </div>
   );
 }

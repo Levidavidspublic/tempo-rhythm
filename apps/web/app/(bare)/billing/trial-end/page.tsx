@@ -1,23 +1,21 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: trial-end
- * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Anti-shame trial-ended screen (continue / pause / walk-away).
- * @queries: (none)
- * @mutations: (none)
+ * @screen: trial-end (docs/design/v3/screens/web/trial-end.html), bare layout
+ * @data: users.getMyPlan. No continue / cancel backend, so nothing here charges or changes a plan.
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TrialEnd } from "@/components/billing-plan/TrialEnd";
+import { BareScreen } from "@/components/settings/SettingsScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Trial ended"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Anti-shame trial-ended screen (continue / pause / walk-away)."
-    />
+    <BareScreen
+      testId="trial-end-route"
+      loading="set.trial.loading"
+      errorTitle="set.trial.errorTitle"
+      errorBody="set.trial.errorBody"
+      errorLink={{ href: "/billing", label: "set.trial.plans" }}
+    >
+      <TrialEnd />
+    </BareScreen>
   );
 }
