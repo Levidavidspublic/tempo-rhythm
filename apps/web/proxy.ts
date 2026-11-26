@@ -4,8 +4,15 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
+import { DATA_BACKEND } from "./lib/backend-flag";
 import { E2E_WIRING_ROUTES } from "./lib/e2eWiringRoutes";
-import { decideEntryRedirect, PUBLIC_ROUTE_PATTERNS } from "./lib/rootEntry";
+import { hasVerifiedInsforgeSession } from "./lib/insforge/server-session";
+import {
+  decideEntryRedirect,
+  hasAuthenticatedEntrySession,
+  isInsforgeRefreshRequest,
+  PUBLIC_ROUTE_PATTERNS,
+} from "./lib/rootEntry";
 import { appProxyApplies, decideComingSoon, getSurface } from "./lib/surface";
 
 const isPublicRoute = createRouteMatcher([...PUBLIC_ROUTE_PATTERNS]);
@@ -38,12 +45,10 @@ const appProxy = convexAuthNextjsMiddleware(async (request: NextRequest, ctx) =>
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_PUBLIC_CALENDAR === "1" &&
     request.nextUrl.pathname === "/calendar";
-  let isAuthenticated = false;
-  try {
-    isAuthenticated = await convexAuth.isAuthenticated();
-  } catch {
-    isAuthenticated = false;
-  }
+  const isAuthenticated = await hasAuthenticatedEntrySession(
+    convexAuth.isAuthenticated,
+    DATA_BACKEND === "insforge" ? () => hasVerifiedInsforgeSession(request) : undefined
+  );
 
   const redirectTo = decideEntryRedirect({
     pathname: request.nextUrl.pathname,
@@ -84,6 +89,9 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     return comingSoonProxy(request);
   }
   if (!appProxyApplies(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+  if (isInsforgeRefreshRequest(request.nextUrl.pathname, request.method)) {
     return NextResponse.next();
   }
   return appProxy(request, event);

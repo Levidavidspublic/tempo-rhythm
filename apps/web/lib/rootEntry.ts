@@ -29,6 +29,21 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/api/mcp",
 ] as const;
 
+export function isInsforgeRefreshRequest(pathname: string, method: string): boolean {
+  return pathname === "/api/auth/insforge/refresh" && method === "POST";
+}
+
+export async function hasAuthenticatedEntrySession(
+  verifyConvex: () => Promise<boolean>,
+  verifyInsforge?: () => Promise<boolean>
+): Promise<boolean> {
+  try {
+    return (await verifyConvex()) && (!verifyInsforge || (await verifyInsforge()));
+  } catch {
+    return false;
+  }
+}
+
 export function decideEntryRedirect(input: {
   pathname: string;
   search: string;
