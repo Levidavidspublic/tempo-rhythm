@@ -17,6 +17,7 @@ create index coach_settings_owner_deleted_idx on public.coach_settings (user_id,
 
 alter table public.coach_settings enable row level security;
 revoke all on public.coach_settings from public, anon, authenticated;
+revoke delete, truncate on public.coach_settings from project_admin;
 grant select on public.coach_settings to authenticated;
 grant insert (id, user_id, dial, panic_until, created_at, updated_at) on public.coach_settings to authenticated;
 grant update (dial, panic_until, updated_at, deleted_at) on public.coach_settings to authenticated;
@@ -49,6 +50,7 @@ create index coach_web_searches_owner_utc_date_idx on public.coach_web_searches 
 
 alter table public.coach_web_searches enable row level security;
 revoke all on public.coach_web_searches from public, anon, authenticated;
+revoke delete, truncate on public.coach_web_searches from project_admin;
 grant select, insert, update on public.coach_web_searches to project_admin;
 
 insert into realtime.channels (pattern, description, enabled)
