@@ -14,6 +14,8 @@ describe("import claim migration", () => {
     expect(grants).toEqual([
       "grant usage on schema tempo_import to project_admin",
       "grant select, insert, update on tempo_import.staged_users, tempo_import.staged_rows to project_admin",
+      "grant select, insert, update on tempo_import.load_state to project_admin",
+      "grant execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load() to project_admin",
     ]);
     expect(sql).not.toMatch(/\bcreate\s+policy\b/i);
   });
@@ -24,6 +26,9 @@ describe("import claim migration", () => {
     );
     expect(sql).toMatch(
       /revoke execute on function tempo_import\.claim_verified_user\(\) from public, anon, authenticated;/i
+    );
+    expect(sql).toMatch(
+      /revoke execute on function tempo_import\.begin_staged_load\(\), tempo_import\.finalize_staged_load\(\)\s+from public, anon, authenticated;/i
     );
   });
 
