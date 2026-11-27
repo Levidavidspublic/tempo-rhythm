@@ -76,7 +76,8 @@ create index page_proposals_cleanup_due_idx on public.page_proposals (cleanup_du
 create index page_proposals_metadata_expiry_idx on public.page_proposals (metadata_expires_at_ms);
 
 alter table public.page_proposals enable row level security;
-revoke all on public.page_proposals from public, anon, authenticated, project_admin;
+revoke all on public.page_proposals from public, anon, authenticated;
+revoke delete, truncate on public.page_proposals from project_admin;
 grant select, insert, update on public.page_proposals to project_admin;
 
 create table public.nags (
@@ -107,7 +108,8 @@ create table public.nags (
 create index nags_owner_deleted_created_idx on public.nags (user_id, deleted_at, created_at desc);
 
 alter table public.nags enable row level security;
-revoke all on public.nags from public, anon, authenticated, project_admin;
+revoke all on public.nags from public, anon, authenticated;
+revoke delete, truncate on public.nags from project_admin;
 grant select, insert, update on public.nags to authenticated, project_admin;
 
 create policy nags_select_own on public.nags
