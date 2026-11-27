@@ -48,7 +48,7 @@ from pg_class c
 join pg_namespace n on n.oid = c.relnamespace
 cross join (values ('anon'), ('authenticated')) as r(rolname)
 cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as p(privilege)
-where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
+where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'f')
 group by 1, 2 order by 1, 2;
 select defaclrole::regrole as owner_role,
   case when defaclnamespace = 0 then '(all schemas)' else defaclnamespace::regnamespace::text end as schema,
