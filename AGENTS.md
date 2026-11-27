@@ -3,7 +3,7 @@
 
 ## What this repo is
 A product built by a ticket-driven software factory. Agents close one ticket at a time.
-The owner keeps four things: decisions, secrets, spend, and deploys to live.
+The owner keeps four things: decisions, secrets, spend, and deploys to live outside the promotion flow below.
 Every tool is a slot. `factory/SLOTS.md` says which tool fills each slot in this repo.
 
 ## Read first, every session
@@ -91,15 +91,15 @@ A model named in a ticket is labelled either `code model` (the model that writes
 9. Never edit, close or reassign another ticket.
 10. Use the code model the dispatcher assigned. Code is written only with workhorse models: Opus, Soul, Sol, Grok, or Gemini Neon (Gemini only through Amit's Google subscription). Amit's decision, 2026-11-24.
 11. Running headless (CI, cloud agent): don't ask questions. Report `blocked: question — <question>` and stop.
-12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). Bugbot reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
+12. Open your PR as a draft and never ask for a review bot run (`@cursor review`, `bugbot run`). CodeRabbit reviews the whole loop once, on the batch PR (`factory/LOOP.md`).
 
 ## Merging and Firebase (Amit, 2026-11-08)
 - Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so.
-- Firebase is allowed. A change may move to production once it is proven in preview.
+- Firebase is allowed. A change may move to production only through the promotion flow below, after it is proven in preview.
 
 ## Never — and what enforces it
 These are explained here and enforced elsewhere. Each item names its enforcement, which is listed in SLOTS.md → Enforcement.
-- Deploy to live, or merge into the live branch. Enforced by: live-environment protection and branch protection.
+- Deploy to live, or merge into the live branch, except promotion to production (master) through the promotion flow below. Never push directly to master, never use --admin, and never merge a REVIEW ONLY PR. Enforced by: branch protection on master (required checks). Never merging a REVIEW ONLY PR is a policy rule: no workflow reads that label, so check it before every merge.
 - Push straight to the default branch. Enforced by: branch protection (PRs only).
 - Read, print, log or commit a secret value. Enforced by: deny rules in each agent's settings, plus secret scanning.
 - Spend money the ticket doesn't authorise (paid APIs, paid services). Enforced by: scoped keys and spend caps on each provider.
@@ -131,7 +131,7 @@ notes for ticket sync: <follow-ups, doc errors, or none>
 - For a component ticket: CI is green on your PR. The review gate runs once per loop on the batch PR (`factory/LOOP.md`), not on your PR. It is not a merge-queue check.
 - The report is posted on the ticket.
 
-What happens after that is automatic: the PR merges into the loop's batch branch, the batch PR gets one review and goes through the merge queue into integration, and integration deploys to preview. Deploying to live is the owner's job.
+What happens after that is automatic: the PR merges into the loop's batch branch, the batch PR gets one review and goes through the merge queue into integration, and integration deploys to preview. Promotion to production (master) is the promotion flow below, not a separate owner deploy.
 
 ## Picking up a factory ticket (Freebuff / OpenCode)
 
@@ -159,11 +159,11 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 - Refresh the code-map tools configured in factory/SLOTS.md slot C-3 at the start of every loop. Query those tools for scoped files and dependents before editing. If a required tool is unavailable, report UNKNOWN and block its dependent edits; continue independent work. No dashboards or localhost UIs. Keep both .understand-anything/intermediate/ and .ua/intermediate/ ignored.
 
 ## Branches, reviews and checks
-- integration is the default branch. Work through PRs into integration. Never push directly to a protected base and never touch master. A repository with a conflicting default branch needs Amit before sync.
+- integration is the default branch. Work through PRs into integration. Never push directly to a protected base and never push directly to master. Promotion to master is only the promotion flow below. Never use --admin, and never merge a REVIEW ONLY PR. A repository with a conflicting default branch needs Amit before sync.
 - CodeRabbit is the only PR reviewer. Deep Scan and Vercel Agent review stay off. Architecture councils are advisory and do not replace PR review.
-- Config changes use a separate config PR. Agents may add or remove the `config` approval label on Amit's behalf when Amit has approved the change in chat, or when the change is a CI/config fix he asked for (standing permission from Amit). Other approval labels stay Amit's. Preserve the repository's existing guard and current-head approval requirement; an approval for an earlier head does not approve a later push.
+- Config changes use a separate config PR. Agents may add or remove the `config` approval label on Amit's behalf when Amit has approved the change in chat, or when the change is a CI/config fix he asked for (standing permission from Amit), and on a rollback revert PR into master under the promotion flow (Amit, 2026-11-27: agents apply labels themselves through the merge flow; the guarded-file rule and the current-head requirement still apply). Other approval labels stay Amit's. Preserve the repository's existing guard and current-head approval requirement; an approval for an earlier head does not approve a later push.
 - Preserve all required checks, their names, thresholds and layers. Never weaken a check, skip or delete a test to pass, or treat a stub or fixture as real runtime proof.
-- Merge flow: exact scope, CI/programmatic checks, language formatting, CodeRabbit, then only the repository-authorized integration merge path. Master merge and production deployment remain Amit's.
+- Merge flow: You and your agents may merge and apply labels yourselves through the merge flow: ticket PRs -> batch branch -> CodeRabbit on the batch -> integration (= preview) -> every 5 previews, the same checks -> promotion to production (master) with rollback. Rollback scope: on a failed Convex deploy or smoke check, deploy-live rolls the Vercel frontend back automatically; Convex rollback is manual (see deploy-live.yml); a promotion that fails its production checks is also reverted by a revert PR into master, merged when its checks are green. Promote with a merge commit, not a squash, so master matches the reviewed integration tree and a rollback is one revert. After any rollback, the same revert (or a checked fix) must reach integration through a PR before the next promotion, so preview and production hold the same changes. A revert of a promotion that changed a guarded file (.github/**, scripts/factory/**, AGENTS.md, CI-decision configs) must be opened by Division6066 and carry the `config` label, added after the last push, because the label approves only that head commit. A revert PR into master that does not come from integration passes scope-guard only when it links no ticket and carries the config label. Never push directly to master, never use --admin, and never merge a REVIEW ONLY PR. The agent who promotes logs that promotion on Concord. The agent who sees an automatic Vercel rollback logs that rollback. The agent who runs a manual Convex rollback, or who opens the revert PR into master, logs that rollback on Concord. deploy-live does not write the Concord record itself. No check is ever weakened. Exact scope, CI/programmatic checks, language formatting, and CodeRabbit still apply.
 - Jev checks removed on 2026-11-25 by Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine." The former jev-judge workflow, process-check job, and "4 jev judge" merge-gate job are gone. Workflow and script files were moved to `_to_delete/jev-judge/` (never deleted). Do not add the Jev or process-check gates back. The OpenRouter exception existed only for Jev; do not use OpenRouter for anything else.
 - Keep exactly one existing workflow status label: status:ready, status:dispatched, status:in-pr or status:done. Preserve status:ready for manual-run selection and status:in-pr for an open ticket PR. Assignment labels such as agent:freebuff, agent:opencode and lane:* are separate; never replace the workflow status with an assignment label. Agents apply the `config` approval label only as the config PR rule above allows.
 - Prove each step with the command and its actual output. Check the current PR head. If unsure whether it worked, report that it did not prove success.
@@ -172,7 +172,7 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 ## Permission classes
 - WALK: agent alone, within the authorized scope, without a key or incremental spend.
 - AWAY: use a 1Password dev-vault key through Executor only, with existing task authorization. Never the op CLI. Names only; never print, log, echo, store or screenshot secret values or fragments; never click reveal.
-- AT: spending, plan changes, accepting terms, creating accounts, sending, posting, production deployment, deleting, merging to master and applying approval labels (except the `config` label, as the config PR rule above allows). Only ticket and PR status reports already explicitly authorized by the assigned work are exempt from the posting restriction; this does not authorize other messages or new disclosures. Put every other needed action under Needs me and continue everything independent.
+- AT: spending, plan changes, accepting terms, creating accounts, sending, posting, production deployment outside the promotion flow, deleting, pushing directly to master, using --admin, merging a REVIEW ONLY PR, and applying approval labels (except the `config` label, as the config PR rule above allows). Only ticket and PR status reports already explicitly authorized by the assigned work are exempt from the posting restriction; this does not authorize other messages or new disclosures. Put every other needed action under Needs me and continue everything independent.
 - Missing keys: name the vault item and field, never request the value. A missing key blocks its dependent action.
 
 ## Providers and costs
