@@ -27,6 +27,8 @@ values ('00000000-0000-4000-8000-000000000011', :'other_id', 'DAILY', 1, '{}',
 insert into public.tasks (id, user_id, title, status, priority, created_at, updated_at)
 values ('00000000-0000-4000-8000-000000000012', :'other_id', 'Other parent', 'todo', 'low', 1, 1);
 
+update public.account_gate set approval_status = 'approved' where user_id in (:'owner_id', :'other_id');
+
 set local role authenticated;
 select set_config('request.jwt.claims',
   jsonb_build_object('sub', :'owner_id', 'role', 'authenticated')::text, true);
