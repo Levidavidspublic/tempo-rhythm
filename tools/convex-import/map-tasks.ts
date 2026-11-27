@@ -3,6 +3,12 @@ type SourceTable = "tasks" | "taskRepeatCfgs";
 type DestinationTable = "tasks" | "task_repeat_cfgs";
 type Rejection = { table: SourceTable; id: string; reason: string };
 type Literals = Record<string, string>;
+type MappedTask = {
+  owner: string;
+  parent: string | undefined;
+  repeat: string | undefined;
+  row: Literals;
+};
 
 function requireText(value: unknown, field: string): string {
   if (typeof value !== "string" || value.includes("\0") || /[\uD800-\uDFFF]/u.test(value)) {
@@ -141,7 +147,7 @@ export function mapTasks(
   const rejected: Rejection[] = [];
   const repeatIds = countIds(taskRepeatCfgs);
   const repeatOwners = new Map<string, string>();
-  const repeatRows: Literals[] = [];
+  const mappedRepeats: { id: string; owner: string; row: Literals }[] = [];
   for (const repeat of taskRepeatCfgs) {
     try {
       const owner = repeat.userId;
@@ -149,7 +155,7 @@ export function mapTasks(
         throw new Error("unresolved userId");
       if (!repeat._id || repeatIds.get(repeat._id) !== 1)
         throw new Error("missing or duplicate repeat config ID");
-      repeatRows.push({
+      const row = {
         legacy_convex_id: text(repeat._id, "_id"),
         user_legacy_id: text(owner, "userId"),
         repeat_cycle: oneOf(repeat.repeatCycle, "repeatCycle", [
@@ -179,7 +185,8 @@ export function mapTasks(
         default_estimate: optional(repeat.defaultEstimate, "defaultEstimate", integer),
         last_task_creation_day: optional(repeat.lastTaskCreationDay, "lastTaskCreationDay", text),
         ...timestamps(repeat),
-      });
+      };
+      mappedRepeats.push({ id: repeat._id, owner, row });
       repeatOwners.set(repeat._id, owner);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
@@ -187,10 +194,7 @@ export function mapTasks(
     }
   }
 
-  const candidates = new Map<
-    string,
-    { owner: string; parent: string | undefined; row: Literals }
-  >();
+  const candidates = new Map<string, MappedTask>();
   const taskIds = countIds(tasks);
   for (const task of tasks) {
     try {
@@ -213,6 +217,7 @@ export function mapTasks(
       candidates.set(task._id, {
         owner,
         parent,
+        repeat: typeof repeat === "string" ? repeat : undefined,
         row: {
           legacy_convex_id: text(task._id, "_id"),
           user_legacy_id: text(owner, "userId"),
@@ -262,6 +267,7 @@ export function mapTasks(
     brokenParents.push(...(childrenByParent.get(id) ?? []));
   }
 
+  const repeatRows = mappedRepeats.map(({ row }) => row);
   const sql: string[] = [];
   if (repeatRows.length || candidates.size) {
     sql.push(
@@ -347,6 +353,8 @@ export function mapTasks(
   return {
     sql: sql.length ? [...sql, "COMMIT;", ""].join("\n") : "",
     rejected,
+    repeatRows: mappedRepeats,
+    taskRows: [...candidates].map(([id, task]) => ({ id, ...task })),
     counts: {
       tasks: {
         exported: tasks.length,
