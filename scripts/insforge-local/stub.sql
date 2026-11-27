@@ -12,8 +12,17 @@ begin
     create role authenticated nologin;
   end if;
   if not exists (select 1 from pg_roles where rolname = 'project_admin') then
-    create role project_admin nologin bypassrls;
+    create role project_admin nologin bypassrls nosuperuser nocreaterole;
   end if;
+  if exists (
+    select from pg_roles where rolname = 'project_admin'
+    and (rolsuper or rolcreaterole or not rolbypassrls or exists (
+      select from pg_catalog.pg_auth_members where member = pg_roles.oid
+    ))
+  ) then
+    raise exception 'project_admin role does not match the managed migration role';
+  end if;
+  execute format('grant create on database %I to project_admin', current_database());
 end
 $$;
 
@@ -46,7 +55,7 @@ $$;
 grant usage on schema auth to public;
 grant select (id, profile, created_at) on auth.users to public;
 grant update (profile) on auth.users to public;
-grant select on auth.users to project_admin;
+grant select, insert, update, delete, trigger, references on auth.users to project_admin;
 alter table auth.users enable row level security;
 create policy auth_users_profiles_read on auth.users for select using (true);
 create policy auth_users_profile_update on auth.users for update
@@ -103,6 +112,16 @@ grant select on realtime.channels to anon, authenticated;
 grant insert on realtime.messages to anon, authenticated;
 grant execute on function realtime.channel_name() to anon, authenticated;
 
+grant usage on schema auth, realtime to project_admin;
+alter table realtime.channels owner to project_admin;
+alter table realtime.messages owner to project_admin;
+revoke all on realtime.channels, realtime.messages from project_admin;
+grant select, insert, update, delete on realtime.channels to project_admin;
+grant select, insert on realtime.messages to project_admin;
+grant execute on function realtime.publish(text, text, jsonb), realtime.channel_name(), auth.uid()
+  to project_admin;
+
 grant usage on schema public to anon, authenticated, project_admin;
-alter default privileges in schema public
-  grant select, insert, update, delete on tables to anon, authenticated, project_admin;
+grant create on schema public to project_admin;
+alter default privileges for role project_admin in schema public
+  grant select, insert, update, delete on tables to anon, authenticated;
