@@ -76,14 +76,13 @@ begin
     return;
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(2026112701);
   select * into staged from tempo_import.staged_users
   where email_lower = pg_catalog.lower(p_email) and claimed_at is null
   for update;
   if not found then
     return;
   end if;
-
-  perform pg_catalog.pg_advisory_xact_lock(2026112701);
   if exists (
     select from tempo_import.load_state where id = 1 and completed_at is null
   ) then
@@ -298,6 +297,16 @@ begin
   if not found or state.completed_at is not null then
     return;
   end if;
+  delete from tempo_import.staged_rows as staged_row
+  using tempo_import.staged_users as staged_user
+  where staged_row.owner_email_lower = staged_user.email_lower
+    and staged_user.claimed_at is null
+    and staged_row.claimed_at is null;
+  delete from tempo_import.pending_verifications as pending
+  using tempo_import.staged_users as staged_user
+  where staged_user.claimed_at is null
+    and pending.email_lower = staged_user.email_lower;
+  delete from tempo_import.staged_users where claimed_at is null;
   if state.previous_completed_at is null then
     delete from tempo_import.load_state where id = 1;
   else

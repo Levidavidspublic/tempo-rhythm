@@ -245,4 +245,43 @@ begin
 end;
 $$;
 
+set local role project_admin;
+select tempo_import.begin_staged_load();
+insert into tempo_import.staged_users (
+  email_lower, legacy_convex_id, gate, staged_at
+) values (
+  'claim-failed@example.invalid', 'claim-legacy-failed',
+  '{"role":"user","is_active":true,"approval_status":"approved","created_at":10,"updated_at":11}',
+  100
+);
+insert into tempo_import.staged_rows (
+  target_table, id, legacy_convex_id, owner_email_lower, load_order, payload, staged_at
+) values (
+  'tasks', '00000000-0000-4000-8000-000000000481', 'claim-failed-task',
+  'claim-failed@example.invalid', 1,
+  '{"title":"Partial","status":"todo","priority":"low","created_at":10,"updated_at":11}', 100
+);
+select tempo_import.release_staged_load();
+reset role;
+insert into auth.users (id, email, email_verified)
+values ('00000000-0000-4000-8000-000000000482', 'claim-failed@example.invalid', true);
+
+do $$
+begin
+  if exists (
+    select from tempo_import.staged_users where email_lower = 'claim-failed@example.invalid'
+  ) or exists (
+    select from tempo_import.staged_rows where legacy_convex_id = 'claim-failed-task'
+  ) or exists (
+    select from public.tasks where legacy_convex_id = 'claim-failed-task'
+  ) or exists (
+    select from public.account_gate
+    where user_id = '00000000-0000-4000-8000-000000000482'
+      and legacy_convex_id = 'claim-legacy-failed'
+  ) then
+    raise exception 'A released failed load left partial staged data claimable';
+  end if;
+end;
+$$;
+
 rollback;
