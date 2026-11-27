@@ -38,12 +38,19 @@ grant select, insert, update on tempo_import.staged_users, tempo_import.staged_r
 
 create table tempo_import.load_state (
   id integer primary key check (id = 1),
-  completed_at bigint
+  completed_at bigint,
+  previous_completed_at bigint
+);
+
+create table tempo_import.pending_verifications (
+  user_id uuid primary key,
+  email_lower text not null
 );
 
 alter table tempo_import.load_state enable row level security;
-revoke all on tempo_import.load_state from public, anon, authenticated;
-grant select, insert, update on tempo_import.load_state to project_admin;
+alter table tempo_import.pending_verifications enable row level security;
+revoke all on tempo_import.load_state, tempo_import.pending_verifications from public, anon, authenticated;
+grant select, insert, update on tempo_import.load_state, tempo_import.pending_verifications to project_admin;
 
 create function tempo_import.claim_staged(p_user_id uuid, p_email text)
 returns void
@@ -76,10 +83,18 @@ begin
     return;
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(2026112701);
   if exists (
     select from tempo_import.load_state where id = 1 and completed_at is null
   ) then
-    return;
+    insert into tempo_import.pending_verifications (user_id, email_lower)
+    values (p_user_id, pg_catalog.lower(p_email))
+    on conflict (user_id) do update set email_lower = excluded.email_lower;
+    if exists (
+      select from tempo_import.load_state where id = 1 and completed_at is null
+    ) then
+      return;
+    end if;
   end if;
 
   gate := pg_catalog.jsonb_populate_record(null::public.account_gate, staged.gate);
@@ -221,8 +236,11 @@ security definer
 set search_path = tempo_import, pg_temp
 as $$
 begin
-  insert into tempo_import.load_state (id, completed_at) values (1, null)
-  on conflict (id) do update set completed_at = null;
+  insert into tempo_import.load_state (id, completed_at, previous_completed_at)
+  values (1, null, null)
+  on conflict (id) do update set
+    previous_completed_at = tempo_import.load_state.completed_at,
+    completed_at = null;
 end;
 $$;
 
@@ -236,8 +254,24 @@ declare
   verified auth.users;
   claim_ms bigint := (extract(epoch from pg_catalog.now()) * 1000)::bigint;
 begin
-  insert into tempo_import.load_state (id, completed_at) values (1, claim_ms)
-  on conflict (id) do update set completed_at = claim_ms;
+  perform pg_catalog.pg_advisory_xact_lock(2026112701);
+  insert into tempo_import.load_state (id, completed_at, previous_completed_at)
+  values (1, claim_ms, null)
+  on conflict (id) do update set completed_at = claim_ms, previous_completed_at = null;
+  for verified in
+    select users.*
+    from auth.users as users
+    join tempo_import.pending_verifications as pending on pending.user_id = users.id
+    where users.email_verified
+      and pg_catalog.lower(users.email) = pending.email_lower
+  loop
+    perform tempo_import.claim_staged(verified.id, verified.email);
+  end loop;
+  delete from tempo_import.pending_verifications as pending
+  using auth.users as users
+  where pending.user_id = users.id
+    and users.email_verified
+    and pg_catalog.lower(users.email) = pending.email_lower;
   for verified in
     select users.*
     from auth.users as users
@@ -250,9 +284,35 @@ begin
 end;
 $$;
 
-revoke execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load()
+create function tempo_import.release_staged_load()
+returns void
+language plpgsql
+security definer
+set search_path = tempo_import, pg_temp
+as $$
+declare
+  state tempo_import.load_state;
+begin
+  perform pg_catalog.pg_advisory_xact_lock(2026112701);
+  select * into state from tempo_import.load_state where id = 1 for update;
+  if not found or state.completed_at is not null then
+    return;
+  end if;
+  if state.previous_completed_at is null then
+    delete from tempo_import.load_state where id = 1;
+  else
+    update tempo_import.load_state
+    set completed_at = state.previous_completed_at, previous_completed_at = null
+    where id = 1;
+  end if;
+end;
+$$;
+
+revoke execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load(),
+  tempo_import.release_staged_load()
   from public, anon, authenticated;
-grant execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load()
+grant execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load(),
+  tempo_import.release_staged_load()
   to project_admin;
 
 -- Sort after on_auth_user_created_tempo so the INSERT trigger has created the public identity rows.

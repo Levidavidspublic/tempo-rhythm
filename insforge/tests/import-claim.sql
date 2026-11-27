@@ -144,11 +144,13 @@ begin
       or has_function_privilege(client, 'tempo_import.claim_staged(uuid, text)', 'EXECUTE')
       or has_function_privilege(client, 'tempo_import.claim_verified_user()', 'EXECUTE')
       or has_function_privilege(client, 'tempo_import.begin_staged_load()', 'EXECUTE')
-      or has_function_privilege(client, 'tempo_import.finalize_staged_load()', 'EXECUTE') then
+      or has_function_privilege(client, 'tempo_import.finalize_staged_load()', 'EXECUTE')
+      or has_function_privilege(client, 'tempo_import.release_staged_load()', 'EXECUTE') then
       raise exception 'Client has schema or claim function access: %', client;
     end if;
     foreach staged_table in array array[
-      'tempo_import.staged_users'::regclass, 'tempo_import.staged_rows'::regclass
+      'tempo_import.staged_users'::regclass, 'tempo_import.staged_rows'::regclass,
+      'tempo_import.load_state'::regclass, 'tempo_import.pending_verifications'::regclass
     ]
     loop
       if has_table_privilege(client, staged_table, 'SELECT, INSERT, UPDATE, DELETE')

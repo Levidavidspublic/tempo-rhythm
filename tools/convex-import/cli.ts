@@ -192,10 +192,15 @@ async function applyStaged(
 ): Promise<StageCounts> {
   const role = ["-c", "SET ROLE project_admin"];
   await psql([...role, "-c", "SELECT tempo_import.begin_staged_load()"]);
-  for (const { file } of files) {
-    await psql([...role, "-c", "SET statement_timeout = '25s'", "-f", join(dir, file)]);
+  try {
+    for (const { file } of files) {
+      await psql([...role, "-c", "SET statement_timeout = '25s'", "-f", join(dir, file)]);
+    }
+    await psql([...role, "-c", "SELECT tempo_import.finalize_staged_load()"]);
+  } catch (error) {
+    await psql([...role, "-c", "SELECT tempo_import.release_staged_load()"]);
+    throw error;
   }
-  await psql([...role, "-c", "SELECT tempo_import.finalize_staged_load()"]);
   const output = await psql([
     ...role,
     "-c",
