@@ -41,10 +41,24 @@ Item category: API_CREDENTIAL. Last updated 2026-11-26 18:23 UTC.
 Read-only query for check 6, once a key-safe route exists:
 
 ```sql
-select grantee, privilege_type, count(*) from information_schema.role_table_grants
-where table_schema = 'public' and grantee in ('anon', 'authenticated') group by 1, 2 order by 1, 2;
-select defaclrole::regrole, defaclacl from pg_default_acl where defaclnamespace = 'public'::regnamespace;
+select r.rolname as role, p.privilege,
+  count(*) filter (where has_table_privilege(r.rolname, c.oid, p.privilege)) as tables_granted,
+  count(*) as tables
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+cross join (values ('anon'), ('authenticated')) as r(rolname)
+cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as p(privilege)
+where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
+group by 1, 2 order by 1, 2;
+select defaclrole::regrole as owner_role,
+  case when defaclnamespace = 0 then '(all schemas)' else defaclnamespace::regnamespace::text end as schema,
+  defaclobjtype, defaclacl
+from pg_default_acl
+where defaclnamespace in (0, 'public'::regnamespace)
+order by 1, 2, 3;
 ```
+
+The first query reports effective privileges per role and privilege, using `has_table_privilege`, so grants that come through PUBLIC count as well as direct grants. The second also lists global default privileges (`defaclnamespace = 0`), with the object class in `defaclobjtype`. Both were checked for syntax on the local harness cluster only.
 
 ## What this unblocks for P45 (remote load)
 
