@@ -77,6 +77,7 @@ create index page_proposals_metadata_expiry_idx on public.page_proposals (metada
 
 alter table public.page_proposals enable row level security;
 revoke all on public.page_proposals from public, anon, authenticated;
+revoke delete, truncate on public.page_proposals from project_admin;
 grant select, insert, update on public.page_proposals to project_admin;
 
 create table public.nags (
@@ -108,6 +109,7 @@ create index nags_owner_deleted_created_idx on public.nags (user_id, deleted_at,
 
 alter table public.nags enable row level security;
 revoke all on public.nags from public, anon, authenticated;
+revoke delete, truncate on public.nags from project_admin;
 grant select, insert, update on public.nags to authenticated, project_admin;
 
 create policy nags_select_own on public.nags
