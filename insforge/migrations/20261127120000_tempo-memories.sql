@@ -24,7 +24,15 @@ create index memories_user_deleted_salience_idx
 alter table public.memories enable row level security;
 
 revoke all on public.memories from public, anon, authenticated;
-grant select, insert, update on public.memories to authenticated;
+grant select on public.memories to authenticated;
+grant insert (
+  id, user_id, content, sector, salience, decay_rate, last_accessed, access_count,
+  source, imported_at, visibility, created_at, updated_at, deleted_at
+) on public.memories to authenticated;
+grant update (
+  content, sector, salience, decay_rate, last_accessed, access_count,
+  source, imported_at, visibility, updated_at, deleted_at
+) on public.memories to authenticated;
 
 create policy memories_select_own on public.memories
   for select to authenticated

@@ -66,13 +66,13 @@ begin
   end if;
   update public.user_preferences set theme = 'dark' where user_id = owner_id;
   if found then raise exception 'The other user could update owner preferences'; end if;
-  if public.mark_notification_read('10000000-0000-4000-8000-000000000002') <> 0 then
+  if public.mark_notification_read('10000000-0000-4000-8000-000000000002') is distinct from 0 then
     raise exception 'The other account could mark an owner notification';
   end if;
-  if public.mark_all_notifications_read() <> 1 then
+  if public.mark_all_notifications_read() is distinct from 1 then
     raise exception 'Bulk mark affected something other than the caller’s single unread notification';
   end if;
-  if public.mark_all_notifications_read() <> 0 then
+  if public.mark_all_notifications_read() is distinct from 0 then
     raise exception 'Repeating bulk mark was not a no-op';
   end if;
 end;
@@ -84,6 +84,15 @@ update public.notifications set read_at = null, updated_at = 30
 where id = '10000000-0000-4000-8000-000000000003';
 
 reset role;
+create temp table preference_notice_before (id uuid primary key) on commit drop;
+insert into preference_notice_before (id)
+select id from realtime.messages
+where channel_name in (
+  'user_preferences:' || current_setting('tempo_test.owner_id'),
+  'notifications:' || current_setting('tempo_test.owner_id')
+);
+grant all on preference_notice_before to authenticated, project_admin;
+
 set local role authenticated;
 select pg_catalog.set_config(
   'request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', :'owner_id')::text, true
@@ -110,10 +119,22 @@ begin
     raise exception 'A new live preference row must have the owner and the legacy defaults';
   end if;
 
-  update public.user_preferences set theme = 'dark', coach_web_search = true
-  returning * into strict row_data;
+  set local role project_admin;
+  update public.user_preferences set updated_at = 1 where id = row_data.id;
+  insert into preference_notice_before (id)
+  select seen.id from realtime.messages as seen
+  where seen.channel_name = 'user_preferences:' || current_setting('tempo_test.owner_id')
+    and seen.event_name = 'UPDATE'
+    and seen.id not in (select id from preference_notice_before);
+  set local role authenticated;
+  with stamped as (
+    update public.user_preferences set theme = 'dark', coach_web_search = true
+    returning *
+  )
+  select * into strict row_data from stamped;
   if row_data.theme <> 'dark' or not row_data.coach_web_search or row_data.locale <> 'en'
-    or row_data.updated_at < row_data.created_at then
+    or row_data.updated_at is distinct from trunc(extract(epoch from statement_timestamp()) * 1000)::bigint
+    or row_data.updated_at = 1 then
     raise exception 'An owner partial update must retain omitted preferences and stamp the update';
   end if;
   perform set_config('tempo_test.preference_id', row_data.id::text, true);
@@ -127,6 +148,12 @@ begin
   begin
     update public.user_preferences set time_zone = E' \t\n';
     raise exception 'A blank time zone must be denied';
+  exception when sqlstate '23514' then null;
+  end;
+
+  begin
+    update public.user_preferences set time_zone = 'Other/Nowhere';
+    raise exception 'A non-IANA time zone must be denied';
   exception when sqlstate '23514' then null;
   end;
 
@@ -183,11 +210,11 @@ begin
   exception when sqlstate '42501' then null;
   end;
 
-  if public.mark_notification_read(newer_id) <> 1 then
+  if public.mark_notification_read(newer_id) is distinct from 1 then
     raise exception 'An unread owner notice must be markable';
   end if;
   select read_at into strict marked_at from public.notifications where id = newer_id;
-  if marked_at is null or marked_at <= 20 or public.mark_notification_read(newer_id) <> 0 then
+  if marked_at is null or marked_at <= 20 or public.mark_notification_read(newer_id) is distinct from 0 then
     raise exception 'A repeat mark must be a no-op and the first mark must use server time';
   end if;
 
@@ -197,15 +224,15 @@ begin
     '10000000-0000-4000-8000-000000000005'::uuid,
     null::uuid
   ] loop
-    if public.mark_notification_read(inaccessible_id) <> 0 then
+    if public.mark_notification_read(inaccessible_id) is distinct from 0 then
       raise exception 'Foreign, deleted, missing and null ids must not mark any notices';
     end if;
   end loop;
 
-  if public.mark_all_notifications_read() <> 1 then
+  if public.mark_all_notifications_read() is distinct from 1 then
     raise exception 'Bulk mark must count only this owner''s remaining live unread notices';
   end if;
-  if public.mark_all_notifications_read() <> 0 or exists (
+  if public.mark_all_notifications_read() is distinct from 0 or exists (
     select 1 from public.notifications
     where read_at is null or updated_at is distinct from read_at
       or (id = newer_id and read_at is distinct from marked_at)
@@ -249,6 +276,34 @@ begin
     where pattern in ('user_preferences:%', 'notifications:%') and enabled) <> 2 then
     raise exception 'Both preferences-domain channel patterns must be enabled';
   end if;
+  if exists (
+    select from realtime.messages as seen
+    where seen.channel_name in (
+        'user_preferences:' || owner_id, 'notifications:' || owner_id
+      )
+      and seen.id not in (select id from preference_notice_before)
+      and (
+        seen.sender_type is distinct from 'system'
+        or (seen.channel_name, seen.event_name, seen.payload) not in (
+          select wanted.table_name || ':' || owner_id, wanted.op,
+            jsonb_build_object('table', wanted.table_name, 'op', wanted.op, 'id', wanted.row_id)
+          from (values
+            ('user_preferences', 'INSERT', preference_id),
+            ('user_preferences', 'UPDATE', preference_id),
+            ('notifications', 'UPDATE', '10000000-0000-4000-8000-000000000001'::uuid),
+            ('notifications', 'UPDATE', '10000000-0000-4000-8000-000000000002'::uuid)
+          ) as wanted(table_name, op, row_id)
+        )
+      )
+  ) or (
+    select count(*) from realtime.messages as seen
+    where seen.channel_name in (
+        'user_preferences:' || owner_id, 'notifications:' || owner_id
+      )
+      and seen.id not in (select id from preference_notice_before)
+  ) is distinct from 4 then
+    raise exception 'Owner-channel events after setup must be exactly the tested ID-only writes';
+  end if;
   for expected in select * from (values
     ('user_preferences', 'INSERT', preference_id),
     ('user_preferences', 'UPDATE', preference_id),
@@ -256,9 +311,10 @@ begin
     ('notifications', 'UPDATE', '10000000-0000-4000-8000-000000000002'::uuid)
   ) as events(table_name, op, row_id) loop
     if (select count(*) from realtime.messages
-      where channel_name = expected.table_name || ':' || owner_id
+      where id not in (select id from preference_notice_before)
+        and channel_name = expected.table_name || ':' || owner_id
         and event_name = expected.op and sender_type = 'system'
-        and payload = jsonb_build_object('table', expected.table_name, 'op', expected.op, 'id', expected.row_id)) <> 1 then
+        and payload = jsonb_build_object('table', expected.table_name, 'op', expected.op, 'id', expected.row_id)) is distinct from 1 then
       raise exception 'Expected one ID-only %.% event', expected.table_name, expected.op;
     end if;
   end loop;

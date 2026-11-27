@@ -65,6 +65,7 @@ create index time_blocks_task_id_idx on public.time_blocks (task_id);
 alter table public.day_plans enable row level security;
 alter table public.time_blocks enable row level security;
 revoke all on public.day_plans, public.time_blocks from public, anon, authenticated;
+revoke delete, truncate on public.day_plans, public.time_blocks from project_admin;
 grant select, insert, update on public.day_plans, public.time_blocks to authenticated, project_admin;
 
 create policy day_plans_select_own on public.day_plans

@@ -112,6 +112,17 @@ begin
   update public.voice_leases set deleted_at = started_ms + 890000, updated_at = started_ms + 890000
   where id = other_lease_id;
 
+  begin
+    delete from public.voice_leases;
+    raise exception 'Q85: project_admin hard delete must be denied';
+  exception when sqlstate '42501' then null;
+  end;
+  begin
+    truncate public.voice_leases;
+    raise exception 'Q85: project_admin truncate must be denied';
+  exception when sqlstate '42501' then null;
+  end;
+
   insert into public.voice_leases (
     user_id, conversation_id, client_key, language, started_at, last_renewal_at,
     date_key, utc_date_key, created_at, updated_at

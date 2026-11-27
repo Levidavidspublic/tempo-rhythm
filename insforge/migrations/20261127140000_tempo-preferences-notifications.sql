@@ -85,6 +85,27 @@ $$;
 
 revoke execute on function public.stamp_user_preferences_update() from public, anon, authenticated;
 
+create function public.reject_unknown_time_zone()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $$
+begin
+  if not exists (
+    select from pg_catalog.pg_timezone_names where name = new.time_zone
+  ) then
+    raise exception 'time_zone must be an IANA zone name' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.reject_unknown_time_zone() from public, anon, authenticated;
+
+create trigger user_preferences_reject_unknown_time_zone
+  before insert or update of time_zone on public.user_preferences
+  for each row execute function public.reject_unknown_time_zone();
+
 create trigger user_preferences_stamp_update
   before update on public.user_preferences
   for each row when (current_user = 'authenticated')

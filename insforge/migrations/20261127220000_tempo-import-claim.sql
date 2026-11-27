@@ -36,6 +36,15 @@ alter table tempo_import.staged_rows enable row level security;
 revoke all on all tables in schema tempo_import from public, anon, authenticated;
 grant select, insert, update on tempo_import.staged_users, tempo_import.staged_rows to project_admin;
 
+create table tempo_import.load_state (
+  id integer primary key check (id = 1),
+  completed_at bigint
+);
+
+alter table tempo_import.load_state enable row level security;
+revoke all on tempo_import.load_state from public, anon, authenticated;
+grant select, insert, update on tempo_import.load_state to project_admin;
+
 create function tempo_import.claim_staged(p_user_id uuid, p_email text)
 returns void
 language plpgsql
@@ -67,6 +76,12 @@ begin
     return;
   end if;
 
+  if exists (
+    select from tempo_import.load_state where id = 1 and completed_at is null
+  ) then
+    return;
+  end if;
+
   gate := pg_catalog.jsonb_populate_record(null::public.account_gate, staged.gate);
   update public.account_gate set
     email = staged.email_lower,
@@ -87,8 +102,22 @@ begin
     updated_at = gate.updated_at,
     deleted_at = gate.deleted_at
   where user_id = p_user_id
-    and (legacy_convex_id is null or legacy_convex_id = staged.legacy_convex_id);
-  if not found then
+    and (legacy_convex_id is null or legacy_convex_id = staged.legacy_convex_id)
+    and (
+      (
+        updated_at = created_at
+        and approval_status = 'pending'
+        and approval_updated_at = created_at
+        and approval_updated_by is null
+      )
+      or gate.updated_at >= updated_at
+    );
+  get diagnostics inserted = row_count;
+  if inserted = 0 and not exists (
+    select from public.account_gate
+    where user_id = p_user_id
+      and (legacy_convex_id is null or legacy_convex_id = staged.legacy_convex_id)
+  ) then
     raise exception 'Import claim requires an unbound Tempo account';
   end if;
 
@@ -100,7 +129,8 @@ begin
       onboarded_at = profile.onboarded_at,
       created_at = profile.created_at,
       updated_at = profile.updated_at
-    where user_id = p_user_id;
+    where user_id = p_user_id
+      and (updated_at = created_at or profile.updated_at >= updated_at);
   end if;
 
   if staged.subscription is not null then
@@ -118,7 +148,11 @@ begin
       legacy_convex_id = subscription.legacy_convex_id,
       created_at = subscription.created_at,
       updated_at = subscription.updated_at
-    where id = subscription_id;
+    where id = subscription_id
+      and (
+        (source = 'open_signup_grant' and updated_at = created_at)
+        or subscription.updated_at >= updated_at
+      );
   else
     update public.subscription_states set
       plan = 'none', billing_cycle = 'none', status = 'inactive', trial_used = false, source = null
@@ -179,6 +213,47 @@ end;
 $$;
 
 revoke execute on function tempo_import.claim_verified_user() from public, anon, authenticated;
+
+create function tempo_import.begin_staged_load()
+returns void
+language plpgsql
+security definer
+set search_path = tempo_import, pg_temp
+as $$
+begin
+  insert into tempo_import.load_state (id, completed_at) values (1, null)
+  on conflict (id) do update set completed_at = null;
+end;
+$$;
+
+create function tempo_import.finalize_staged_load()
+returns void
+language plpgsql
+security definer
+set search_path = public, tempo_import, pg_temp
+as $$
+declare
+  verified auth.users;
+  claim_ms bigint := (extract(epoch from pg_catalog.now()) * 1000)::bigint;
+begin
+  insert into tempo_import.load_state (id, completed_at) values (1, claim_ms)
+  on conflict (id) do update set completed_at = claim_ms;
+  for verified in
+    select users.*
+    from auth.users as users
+    join tempo_import.staged_users as staged
+      on staged.email_lower = pg_catalog.lower(users.email)
+    where users.email_verified and staged.claimed_at is null
+  loop
+    perform tempo_import.claim_staged(verified.id, verified.email);
+  end loop;
+end;
+$$;
+
+revoke execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load()
+  from public, anon, authenticated;
+grant execute on function tempo_import.begin_staged_load(), tempo_import.finalize_staged_load()
+  to project_admin;
 
 -- Sort after on_auth_user_created_tempo so the INSERT trigger has created the public identity rows.
 create trigger on_auth_user_verified_tempo_import

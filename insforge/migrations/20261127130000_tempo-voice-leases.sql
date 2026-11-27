@@ -51,6 +51,7 @@ revoke all on table public.voice_leases from public, anon, authenticated;
 do $$
 begin
   if exists (select from pg_catalog.pg_roles where rolname = 'project_admin') then
+    revoke delete, truncate on public.voice_leases from project_admin;
     grant select, insert, update on public.voice_leases to project_admin;
   end if;
 end;

@@ -11,7 +11,12 @@ describe("canonical memories SQL", () => {
 
   test("the migration adds neither a delete policy nor a realtime policy", async () => {
     const sql = await Bun.file(new URL(filename, directory)).text();
-    expect(sql).not.toMatch(/\bcreate\s+policy\b[^;]*\bfor\s+(delete|all)\b/i);
+    for (const policy of sql.match(/\bcreate\s+policy\b[^;]*/gi) ?? []) {
+      const command = policy.match(/\bfor\s+(select|insert|update|delete|all)\b/i);
+      expect(command?.[1]?.toLowerCase()).not.toBe("delete");
+      expect(command?.[1]?.toLowerCase()).not.toBe("all");
+      expect(command).not.toBeNull();
+    }
     expect(sql).not.toMatch(/\bcreate\s+policy\b[^;]*\bon\s+realtime\s*\./i);
   });
 

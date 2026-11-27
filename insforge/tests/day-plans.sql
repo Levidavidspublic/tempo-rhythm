@@ -204,4 +204,20 @@ begin
 end
 $$;
 
+set local role project_admin;
+do $$
+begin
+  begin
+    delete from public.day_plans;
+    raise exception 'project_admin hard delete must be denied';
+  exception when sqlstate '42501' then null;
+  end;
+  begin
+    truncate public.time_blocks;
+    raise exception 'project_admin truncate must be denied';
+  exception when sqlstate '42501' then null;
+  end;
+end;
+$$;
+
 rollback;

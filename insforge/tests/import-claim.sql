@@ -142,7 +142,9 @@ begin
   loop
     if has_schema_privilege(client, 'tempo_import', 'USAGE, CREATE')
       or has_function_privilege(client, 'tempo_import.claim_staged(uuid, text)', 'EXECUTE')
-      or has_function_privilege(client, 'tempo_import.claim_verified_user()', 'EXECUTE') then
+      or has_function_privilege(client, 'tempo_import.claim_verified_user()', 'EXECUTE')
+      or has_function_privilege(client, 'tempo_import.begin_staged_load()', 'EXECUTE')
+      or has_function_privilege(client, 'tempo_import.finalize_staged_load()', 'EXECUTE') then
       raise exception 'Client has schema or claim function access: %', client;
     end if;
     foreach staged_table in array array[
@@ -155,6 +157,89 @@ begin
       end if;
     end loop;
   end loop;
+end;
+$$;
+
+set local role project_admin;
+select tempo_import.begin_staged_load();
+insert into tempo_import.staged_users (
+  email_lower, legacy_convex_id, gate, staged_at
+) values (
+  'claim-early@example.invalid', 'claim-legacy-early',
+  '{"role":"user","is_active":true,"approval_status":"approved","created_at":10,"updated_at":11}',
+  100
+);
+reset role;
+insert into auth.users (id, email, email_verified)
+values ('00000000-0000-4000-8000-000000000478', 'claim-early@example.invalid', true);
+
+do $$
+begin
+  if exists (
+    select from tempo_import.staged_users
+    where email_lower = 'claim-early@example.invalid' and claimed_at is not null
+  ) or exists (
+    select from public.account_gate
+    where user_id = '00000000-0000-4000-8000-000000000478' and legacy_convex_id = 'claim-legacy-early'
+  ) then
+    raise exception 'A claim during an open load sealed the staged user';
+  end if;
+end;
+$$;
+
+set local role project_admin;
+insert into tempo_import.staged_rows (
+  target_table, id, legacy_convex_id, owner_email_lower, load_order, payload, staged_at
+) values (
+  'tasks', '00000000-0000-4000-8000-000000000479', 'claim-early-task',
+  'claim-early@example.invalid', 1,
+  '{"title":"Early","status":"todo","priority":"low","created_at":10,"updated_at":11}', 100
+);
+select tempo_import.finalize_staged_load();
+reset role;
+
+do $$
+begin
+  if not exists (
+    select from tempo_import.staged_users
+    where email_lower = 'claim-early@example.invalid'
+      and claimed_user_id = '00000000-0000-4000-8000-000000000478'
+      and claimed_at is not null
+  ) or not exists (
+    select from public.tasks
+    where id = '00000000-0000-4000-8000-000000000479' and legacy_convex_id = 'claim-early-task'
+  ) then
+    raise exception 'Finalizing the load did not claim a user verified before the rows arrived';
+  end if;
+end;
+$$;
+
+set local role project_admin;
+insert into tempo_import.staged_users (
+  email_lower, legacy_convex_id, gate, staged_at
+) values (
+  'claim-newer@example.invalid', 'claim-legacy-newer',
+  '{"role":"user","is_active":true,"approval_status":"approved","created_at":10,"updated_at":11}',
+  100
+);
+reset role;
+insert into auth.users (id, email, email_verified)
+values ('00000000-0000-4000-8000-000000000480', 'claim-newer@example.invalid', false);
+update public.account_gate set
+  approval_status = 'revoked', created_at = 10, updated_at = 20, approval_updated_at = 20
+where user_id = '00000000-0000-4000-8000-000000000480';
+update auth.users set email_verified = true
+where id = '00000000-0000-4000-8000-000000000480';
+
+do $$
+begin
+  if not exists (
+    select from public.account_gate
+    where user_id = '00000000-0000-4000-8000-000000000480'
+      and approval_status = 'revoked' and updated_at = 20 and legacy_convex_id is null
+  ) then
+    raise exception 'A staged claim overwrote a newer stored account gate';
+  end if;
 end;
 $$;
 
