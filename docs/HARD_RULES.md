@@ -251,7 +251,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
 - PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
 - All of these must pass before merge.
-- **Merging (Amit, 2026-11-08; promotion flow 2026-11-27):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Promotion to production (master) follows the promotion flow in AGENTS.md (every 5 previews, the same checks, auto-rollback, logged on Concord). Never push directly to master, never use --admin, and never merge a REVIEW ONLY PR. No check is ever weakened.
+- **Merging (Amit, 2026-11-08; promotion flow 2026-11-27):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Promotion to production (master) follows the promotion flow in AGENTS.md (every 5 previews, the same checks, rollback as scoped in AGENTS.md, logged on Concord). Never push directly to master, never use --admin, and never merge a REVIEW ONLY PR (policy: no workflow reads that label, so check it before every merge). No check is ever weakened.
 - Jev checks removed on 2026-11-25 by Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine." The former jev-judge workflow, process-check job, and "4 jev judge" merge-gate job are gone. Workflow and script files were moved to `_to_delete/jev-judge/` (never deleted). Do not add the Jev or process-check gates back. The OpenRouter exception existed only for Jev; do not use OpenRouter for anything else.
 
 ---
@@ -266,7 +266,7 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
   - Screenshots or screen recording for any UI change
   - Test plan (checkable boxes)
   - Acceptance criteria copied from `TASKS.md`
-- **Reviewers** are required. For Cursor Cloud agent PRs, reviewer is the human (Amit) or a second agent flagged as `reviewer`. **Factory loops (Amit, 2026-10-06):** the reviewer is Cursor Bugbot on the loop's batch PR (`batch/<loop-id>` → `integration`, see `factory/LOOP.md`); component PRs pass CI and merge into the batch branch without their own review.
+- **Reviewers** are required. For Cursor Cloud agent PRs, reviewer is the human (Amit) or a second agent flagged as `reviewer`. **Factory loops (Amit, 2026-10-06):** the reviewer is CodeRabbit, the only PR reviewer, on the loop's batch PR (`batch/<loop-id>` → `integration`, see `factory/LOOP.md`); component PRs pass CI and merge into the batch branch without their own review.
 - **Conventional Commits** for commit and PR titles.
 
 ---
