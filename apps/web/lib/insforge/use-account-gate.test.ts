@@ -32,7 +32,8 @@ const protectedChild = "PROTECTED_CHILD";
 const bypassFlag = "NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS";
 const signOut = mock(async () => {});
 const useAuthActions = mock(() => ({ signOut }));
-const useQuery = mock<() => Awaited<ReturnType<typeof readAccountGate>> | undefined>();
+type GateResult = Awaited<ReturnType<typeof readAccountGate>>;
+const useQuery = mock<() => Exclude<GateResult, { status: "error" }> | undefined>();
 const useMutation = mock(() => async () => {});
 const useInsforgeSession = mock<() => InsforgeSession>();
 const useAccountGate =
@@ -119,12 +120,13 @@ describe("account gate read", () => {
     expect(await readAccountGate(signedIn, () => ({ select }))).toEqual(expected);
   });
 
-  test("keeps Convex's active admin rule using the persisted role", async () => {
+  const adminStatuses: ("pending" | "approved" | "revoked")[] = ["pending", "approved", "revoked"];
+  test.each(adminStatuses)("preserves stored %s for an admin, matching SQL", async (status) => {
     const select = async () => [
-      { ...row, [statusColumn]: "pending", role: "admin", email: null, [activeColumn]: null },
+      { ...row, [statusColumn]: status, role: "admin", email: null, [activeColumn]: null },
     ];
     expect(await readAccountGate(signedIn, () => ({ select }))).toEqual({
-      ...approvedGate,
+      status,
       isAdmin: true,
       email: signedIn.email,
     });
@@ -144,12 +146,14 @@ describe("account gate read", () => {
     expect(await readAccountGate(signedIn, () => ({ select: async () => result }))).toBeNull();
   });
 
-  test("fails closed when the transport is absent or the read throws", async () => {
-    expect(await readAccountGate(signedIn, () => null)).toBeNull();
+  test("distinguishes an unavailable or failing transport from a missing row", async () => {
+    const readError = { status: "error" } as const;
+    expect(await readAccountGate(signedIn, () => null)).toEqual(readError);
     const select = async () => {
       throw new Error("unavailable");
     };
-    expect(await readAccountGate(signedIn, () => ({ select }))).toBeNull();
+    expect(await readAccountGate(signedIn, () => ({ select }))).toEqual(readError);
+    expect(await readAccountGate(signedIn, () => ({ select: async () => [] }))).toBeNull();
   });
 });
 
@@ -161,10 +165,14 @@ describe("ApprovalGate render", () => {
     expect(useQuery).not.toHaveBeenCalled();
   });
 
+  const pendingAdmin = { ...approvedGate, status: "pending", isAdmin: true } as const;
+  const revokedAdmin = { ...approvedGate, status: "revoked", isAdmin: true } as const;
   const waitingScreens = [
     ["pending", { ...approvedGate, status: "pending" }, "Waiting for approval"],
     ["revoked", { ...approvedGate, status: "revoked" }, "Your access is paused"],
-    ["inactive or failed", null, "Your access is paused"],
+    ["pending admin", pendingAdmin, "Waiting for approval"],
+    ["revoked admin", revokedAdmin, "Your access is paused"],
+    ["inactive or missing", null, "Your access is paused"],
   ] as const;
   test.each(waitingScreens)("InsForge %s omits Convex actions", (_label, gate, title) => {
     useAccountGate.mockReturnValue(gate);
@@ -176,6 +184,16 @@ describe("ApprovalGate render", () => {
     expect(useQuery).not.toHaveBeenCalled();
     expect(useMutation).not.toHaveBeenCalled();
     expect(useAuthActions).not.toHaveBeenCalled();
+  });
+
+  test("a read error shows the localized retry message without mounting content", () => {
+    useAccountGate.mockReturnValue({ status: "error" });
+    const html = renderGate();
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("That didn&#x27;t go through. Try again.");
+    expect(html).not.toContain("Your access is paused");
+    expect(html).not.toContain(protectedChild);
+    expect(useQuery).not.toHaveBeenCalled();
   });
 
   test("an unresolved gate shows the skeleton without mounting content", () => {

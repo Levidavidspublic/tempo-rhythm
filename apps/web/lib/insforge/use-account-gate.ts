@@ -11,6 +11,8 @@ type AccountGate = {
   email: string;
 };
 
+type AccountGateResult = AccountGate | { status: "error" } | null;
+
 type SignedIn = Extract<InsforgeSession, { status: "signedIn" }>;
 
 const GATE_REFRESH_MS = 15_000;
@@ -21,10 +23,12 @@ export async function readAccountGate(
     NonNullable<ReturnType<typeof getOwnerRowTransport>>,
     "select"
   > | null = getOwnerRowTransport
-): Promise<AccountGate | null> {
+): Promise<AccountGateResult> {
   if (isInsforgeE2eMode()) return null;
   try {
-    const rows = await getTransport()?.select(
+    const transport = getTransport();
+    if (!transport) return { status: "error" };
+    const rows = await transport.select(
       { table: "account_gate", uid: session.uid },
       { select: "user_id,approval_status,role,email,is_active,deleted_at", filters: [] }
     );
@@ -42,19 +46,18 @@ export async function readAccountGate(
     if (uid !== session.uid || (active !== null && active !== true) || deletedAt !== null)
       return null;
     if (status !== "pending" && status !== "approved" && status !== "revoked") return null;
-    const isAdmin = role === "admin";
     return {
-      status: isAdmin ? "approved" : status,
-      isAdmin,
+      status,
+      isAdmin: role === "admin",
       email: typeof email === "string" ? email : session.email,
     };
   } catch {
-    return null;
+    return { status: "error" };
   }
 }
 
-export function useAccountGate(session: InsforgeSession): AccountGate | null | undefined {
-  const [snapshot, setSnapshot] = useState<{ session: SignedIn; gate: AccountGate | null }>();
+export function useAccountGate(session: InsforgeSession): AccountGateResult | undefined {
+  const [snapshot, setSnapshot] = useState<{ session: SignedIn; gate: AccountGateResult }>();
 
   useEffect(() => {
     if (session.status !== "signedIn" || isInsforgeE2eMode()) return;

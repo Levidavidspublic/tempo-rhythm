@@ -50,6 +50,7 @@ function InsforgeApprovalGate({ children }: { children: ReactNode }) {
   const me = useAccountGate(session);
   if (session.status === "signedOut") return null;
   if (session.status === "loading" || me === undefined) return <ApprovalLoading />;
+  if (me?.status === "error") return <ApprovalReadError />;
   if (me?.status === "approved") return <>{children}</>;
   return (
     <WaitingForApproval
@@ -57,6 +58,17 @@ function InsforgeApprovalGate({ children }: { children: ReactNode }) {
       revoked={me?.status !== "pending"}
       backend="insforge"
     />
+  );
+}
+
+function ApprovalReadError() {
+  const { t } = useLocale();
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <div className="tp-state tp-state--error" role="alert" data-component="StateError">
+        {t("proposal.error")}
+      </div>
+    </main>
   );
 }
 
