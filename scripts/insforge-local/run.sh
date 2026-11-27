@@ -66,15 +66,14 @@ run_sql() {
 }
 
 for file in "$migrations_dir"/*.sql; do
-  run_sql migrate "$file" -1
+  run_sql migrate "$file" -1 -c 'SET ROLE project_admin'
 done
 
-if ! "${psql[@]}" -d tempo_test -v owner_id="$owner_id" -v other_id="$other_id" <<'SQL'
+if ! "${psql[@]}" -d tempo_test -v owner_id="$owner_id" -v other_id="$other_id" <<'SQL'; then
 INSERT INTO auth.users (id, email) VALUES
   (:'owner_id', 'tempo-owner@example.invalid'),
   (:'other_id', 'tempo-other@example.invalid');
 SQL
-then
   setup_failed "seeding fixture users"
 fi
 
