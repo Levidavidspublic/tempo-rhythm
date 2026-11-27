@@ -381,4 +381,14 @@ These are dated targets. They are not delivered work and not a promise that all 
 - **Verification status:** this amendment verifies nothing. No item in §13 is Verified.
 
 
+## 14. Amendment — 27 November 2026
+
+> **Dated:** 27 November 2026. **Owner request:** Amit Levin. **Status:** requirements only, nothing built, nothing Verified.
+> **Status words:** **Target** = intended, not delivered. **Future** = real requirement, no date. **Verified** = proven by a recorded check. **UNKNOWN** = not established.
+
+| ID | Requirement | Status |
+|---|---|---|
+| R-10 | **Learning and anonymised sharing (opt-in).** One switch covers learning from the user's own use and sharing anonymised data. It is **OFF by default** in Tempo Flow. A clear consent screen comes before it turns on. Turning it ON gives the user **+20% inference quota**; Amit covers that cost on purpose. Shared data must be genuinely anonymised before storage. It is used to improve the global harness and for post-training. Switching OFF is honoured immediately. The privacy policy must cover learning and sharing. Sensitive data still goes only to verified services (R-09 / G-1). **UNKNOWN:** the anonymisation method, the retention period, and the exact data categories included. The same rule applies to OmniAgent. Amit's small apps are the exception: ON by default, with an easy switch off. Tempo Flow is not one of them; this PRD governs Tempo Flow only. | Future |
+
+
 ---
