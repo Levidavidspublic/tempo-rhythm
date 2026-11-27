@@ -251,14 +251,14 @@ The "Soft Editorial" palette is defined in **`packages/ui`** and **`apps/web/app
 - Every AI routing function (`route-by-task`, `confidence-router`) is unit-tested with a golden fixture set.
 - PRs run: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run scan:forbidden-tech`, `bun run scan:ram-only-audit`, `bun run scan:design-tokens`, `bun run check:notices` (see `docs/CI.md`). There is no `convex:schema-guard` script in root `package.json` today.
 - All of these must pass before merge.
-- **Merging (Amit, 2026-11-08):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Merging into the live branch stays Amit's job.
+- **Merging (Amit, 2026-11-08; promotion flow 2026-11-27):** Agents may merge a PR when it is secure and every required check passes (CodeRabbit, CI), or when Amit explicitly says so. Promotion to production (master) follows the promotion flow in AGENTS.md (every 5 previews, the same checks, auto-rollback, logged on Concord). Never push directly to master, never use --admin, and never merge a REVIEW ONLY PR. No check is ever weakened.
 - Jev checks removed on 2026-11-25 by Amit: "we're getting rid of the JEV checks in general. Was a mistake of mine." The former jev-judge workflow, process-check job, and "4 jev judge" merge-gate job are gone. Workflow and script files were moved to `_to_delete/jev-judge/` (never deleted). Do not add the Jev or process-check gates back. The OpenRouter exception existed only for Jev; do not use OpenRouter for anything else.
 
 ---
 
 ## 12. Git and PR rules
 
-- **Never push to `master`.** All work lands through a pull request against `integration`. Amit merges `integration` into `master`.
+- **Never push to `master`.** All work lands through a pull request against `integration`. Promotion to `master` is only the AGENTS.md promotion flow, never a direct push and never `--admin`.
 - **`master` is always deployable.** If a PR would break `master` once promoted, fix the PR or revert.
 - **One logical change per PR.** Large features land as a stack of PRs.
 - **PR description** must reference the `TASKS.md` task ID and include:
