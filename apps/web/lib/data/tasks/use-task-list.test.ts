@@ -4,6 +4,7 @@ import { getFunctionName } from "convex/server";
 import { readFile } from "node:fs/promises";
 import { getE2eRowStore } from "@/lib/insforge/e2e-row-store";
 import { createLiveRows } from "@/lib/insforge/use-live-rows";
+import rowsFixture from "./use-task-list.rows.json";
 import { makeUseInsforgeTaskList, makeUseTaskList } from "./use-task-list";
 
 describe("useTaskList", () => {
@@ -59,8 +60,7 @@ describe("useTaskList", () => {
 });
 
 describe("InsForge task list", () => {
-  const uid = "a187aeb4-2a0d-471f-8f01-04e8805d683d";
-  const otherUid = "8278b666-98bb-4631-aea5-489f17c4154d";
+  const uid = rowsFixture.base["user_id"];
   const bypassName = "NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS";
   let originalBypass: string | undefined;
   let originalWindow: PropertyDescriptor | undefined;
@@ -84,53 +84,108 @@ describe("InsForge task list", () => {
     else Reflect.deleteProperty(globalThis, "window");
   });
 
-  function task(sequence: number, fields: Record<string, unknown> = {}) {
+  function task(sequence: number, fields?: Exclude<keyof typeof rowsFixture, "base">) {
     return {
       table: "tasks",
       row: {
         id: `00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}`,
-        user_id: uid,
-        title: "Kitchen reset",
-        status: "todo",
-        priority: "high",
-        project_id: "house",
-        due_at: 20,
-        created_at: sequence,
-        updated_at: sequence,
-        deleted_at: null,
-        ...fields,
+        ...rowsFixture.base,
+        ...Object.fromEntries([
+          ["created_at", sequence],
+          ["updated_at", sequence],
+        ]),
+        ...(fields ? rowsFixture[fields] : undefined),
       },
     };
   }
 
-  async function read(
-    args: Parameters<ReturnType<typeof makeUseInsforgeTaskList>>[0],
-    owner: string | null = uid
-  ) {
+  type Args = Parameters<ReturnType<typeof makeUseInsforgeTaskList>>[0];
+
+  function openRead(args: Args, owner: string | null = uid) {
     type Rows = ReturnType<Parameters<typeof makeUseInsforgeTaskList>[0]>;
     let rows: Rows;
     let live: ReturnType<typeof createLiveRows> | undefined;
-    const readTaskSnapshot = makeUseInsforgeTaskList((options) => {
-      live ??= createLiveRows<NonNullable<Rows>[number]>({
-        ...options,
-        onRows: (snapshot) => {
-          rows = snapshot;
+    let failedReadKey: string | undefined;
+    const failed = Promise.withResolvers<void>();
+    const readTaskSnapshot = makeUseInsforgeTaskList(
+      (options) => {
+        live ??= createLiveRows<NonNullable<Rows>[number]>({
+          ...options,
+          debounceMs: 0,
+          onRows: (snapshot) => {
+            rows = snapshot;
+          },
+        });
+        return rows;
+      },
+      () => [
+        failedReadKey,
+        (key) => {
+          failedReadKey = key;
+          failed.resolve();
         },
-      });
-      return rows;
-    });
+      ]
+    );
+    return {
+      render: () => readTaskSnapshot(args, owner ?? undefined),
+      failed: failed.promise,
+      stop: () => live?.stop(),
+    };
+  }
 
+  async function read(args: Args, owner: string | null = uid) {
+    const request = openRead(args, owner);
     try {
-      const first = readTaskSnapshot(args, owner ?? undefined);
+      const first = request.render();
       await sleep(0);
-      return { first, result: readTaskSnapshot(args, owner ?? undefined) };
+      return { first, result: request.render() };
     } finally {
-      live?.stop();
+      request.stop();
     }
   }
 
   test("returns undefined while loading and an empty array after an empty read", async () => {
     expect(await read({})).toEqual({ first: undefined, result: [] });
+  });
+
+  test("throws during render if the initial read fails instead of returning empty or loading", async () => {
+    const select = spyOn(store, "select").mockImplementationOnce(() => {
+      throw new Error("Initial read failed");
+    });
+    const request = openRead({});
+    try {
+      expect(request.render()).toBeUndefined();
+      await request.failed;
+      expect(request.render).toThrow("Unable to load InsForge tasks");
+    } finally {
+      request.stop();
+      select.mockRestore();
+    }
+    expect(await read({})).toEqual({ first: undefined, result: [] });
+  });
+
+  test("throws during render if a realtime refresh fails instead of returning stale rows", async () => {
+    const initial = task(1);
+    store.reset([initial]);
+    const request = openRead({});
+    const select = spyOn(store, "select");
+    try {
+      expect(request.render()).toBeUndefined();
+      await sleep(0);
+      expect(request.render()?.map(({ _id }) => String(_id))).toEqual([initial.row.id]);
+      select.mockImplementationOnce(() => {
+        throw new Error("Refresh read failed");
+      });
+      store.mutate(
+        { table: "tasks", uid },
+        { type: "update", id: initial.row.id, patch: { status: "done" } }
+      );
+      await request.failed;
+      expect(request.render).toThrow("Unable to load InsForge tasks");
+    } finally {
+      request.stop();
+      select.mockRestore();
+    }
   });
 
   test("does not read the fixture store when skipped or when no owner is signed in", async () => {
@@ -148,27 +203,8 @@ describe("InsForge task list", () => {
 
   test("returns only live owner rows, newest updates first, in the task list shape", async () => {
     const older = task(3);
-    const newest = task(1, {
-      updated_at: 8,
-      description: "Empty the dishwasher",
-      status: "done",
-      energy: "low",
-      time_estimate: 0,
-      flexibility: "elastic",
-      time_spent_on_day: { "2026-11-26": 15 },
-      repeat_cfg_id: "00000000-0000-4000-9000-000000000001",
-      parent_task_id: older.row.id,
-      project_name: "Home",
-      completed_at: 7,
-      checklist: [{ id: "1", text: "Plates", completed: true }],
-      legacy_convex_id: "not-the-task-id",
-    });
-    store.reset([
-      older,
-      task(2, { user_id: otherUid, updated_at: 9 }),
-      newest,
-      task(4, { deleted_at: 6 }),
-    ]);
+    const newest = task(1, "newest");
+    store.reset([older, task(2, "otherOwner"), newest, task(4, "deleted")]);
 
     const { result } = await read({});
     expect(result?.map(({ _id }) => String(_id))).toEqual([newest.row.id, older.row.id]);
@@ -198,23 +234,19 @@ describe("InsForge task list", () => {
   });
 
   test("matches the same combined filters, including default energy and half-open due times", async () => {
-    const title = task(1, { energy: null, due_at: 10 });
-    const description = task(2, {
-      title: "Wash the dishes",
-      description: "KITCHEN reset",
-      energy: "medium",
-    });
+    const title = task(1, "windowStart");
+    const description = task(2, "matchingDescription");
     store.reset([
       title,
       description,
-      task(3, { status: "done" }),
-      task(4, { project_id: "office" }),
-      task(5, { priority: "low" }),
-      task(6, { energy: "high" }),
-      task(7, { title: "Wash the dishes" }),
-      task(8, { due_at: 9 }),
-      task(9, { due_at: 21 }),
-      task(10, { due_at: null }),
+      task(3, "done"),
+      task(4, "otherProject"),
+      task(5, "lowPriority"),
+      task(6, "highEnergy"),
+      task(7, "otherTitle"),
+      task(8, "beforeWindow"),
+      task(9, "windowEnd"),
+      task(10, "undated"),
     ]);
     const { result } = await read({
       status: "todo",
@@ -229,8 +261,8 @@ describe("InsForge task list", () => {
   });
 
   test("includes cancelled tasks in a due window; ignores a missing window endpoint", async () => {
-    const cancelled = task(1, { status: "cancelled" });
-    const undated = task(2, { due_at: null });
+    const cancelled = task(1, "cancelled");
+    const undated = task(2, "undated");
     store.reset([cancelled, undated]);
     expect((await read({ dueFrom: 0, dueTo: 30 })).result?.map(({ _id }) => String(_id))).toEqual([
       cancelled.row.id,
