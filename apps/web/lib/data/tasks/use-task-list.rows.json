@@ -1,0 +1,43 @@
+{
+  "base": {
+    "user_id": "a187aeb4-2a0d-471f-8f01-04e8805d683d",
+    "title": "Kitchen reset",
+    "status": "todo",
+    "priority": "high",
+    "project_id": "house",
+    "due_at": 20,
+    "deleted_at": null
+  },
+  "newest": {
+    "updated_at": 8,
+    "description": "Empty the dishwasher",
+    "status": "done",
+    "energy": "low",
+    "time_estimate": 0,
+    "flexibility": "elastic",
+    "time_spent_on_day": { "2026-11-26": 15 },
+    "repeat_cfg_id": "00000000-0000-4000-9000-000000000001",
+    "parent_task_id": "00000000-0000-4000-8000-000000000003",
+    "project_name": "Home",
+    "completed_at": 7,
+    "checklist": [{ "id": "1", "text": "Plates", "completed": true }],
+    "legacy_convex_id": "not-the-task-id"
+  },
+  "otherOwner": { "user_id": "8278b666-98bb-4631-aea5-489f17c4154d", "updated_at": 9 },
+  "deleted": { "deleted_at": 6 },
+  "windowStart": { "energy": null, "due_at": 10 },
+  "matchingDescription": {
+    "title": "Wash the dishes",
+    "description": "KITCHEN reset",
+    "energy": "medium"
+  },
+  "done": { "status": "done" },
+  "otherProject": { "project_id": "office" },
+  "lowPriority": { "priority": "low" },
+  "highEnergy": { "energy": "high" },
+  "otherTitle": { "title": "Wash the dishes" },
+  "beforeWindow": { "due_at": 9 },
+  "windowEnd": { "due_at": 21 },
+  "undated": { "due_at": null },
+  "cancelled": { "status": "cancelled" }
+}
