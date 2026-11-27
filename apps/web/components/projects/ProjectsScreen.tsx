@@ -114,9 +114,8 @@ function useConvexProjectsData() {
 }
 
 function useInsforgeProjectsData() {
-  const { useInsforgeSession } = require("@/lib/insforge/session") as typeof import(
-    "@/lib/insforge/session"
-  );
+  const { useInsforgeSession } =
+    require("@/lib/insforge/session") as typeof import("@/lib/insforge/session");
   const session = useInsforgeSession();
   const signedIn = session.status === "signedIn" ? "ready" : session.status;
   const tasks = useTaskList(

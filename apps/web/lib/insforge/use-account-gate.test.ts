@@ -50,23 +50,23 @@ function setEnv(name: string, value: string | undefined) {
 function setBackend(backend: DataBackend) {
   const flagModule = { ...realModules["@/lib/backend-flag"] };
   flagModule.DATA_BACKEND = backend;
-  mock.module("@/lib/backend-flag", () => flagModule);
+  void mock.module("@/lib/backend-flag", () => flagModule);
 }
 
-mock.module("@convex-dev/auth/react", () => ({
+void mock.module("@convex-dev/auth/react", () => ({
   ...realModules["@convex-dev/auth/react"],
   useAuthActions,
 }));
-mock.module("convex/react", () => ({ ...realModules["convex/react"], useQuery, useMutation }));
-mock.module("next/navigation", () => ({
+void mock.module("convex/react", () => ({ ...realModules["convex/react"], useQuery, useMutation }));
+void mock.module("next/navigation", () => ({
   ...realModules["next/navigation"],
   useRouter: () => ({ replace() {} }),
 }));
-mock.module("@/lib/insforge/session", () => ({
+void mock.module("@/lib/insforge/session", () => ({
   ...realModules["@/lib/insforge/session"],
   useInsforgeSession,
 }));
-mock.module("@/lib/insforge/use-account-gate", () => ({
+void mock.module("@/lib/insforge/use-account-gate", () => ({
   ...realModules["@/lib/insforge/use-account-gate"],
   useAccountGate,
 }));
@@ -98,7 +98,7 @@ afterEach(() => {
 });
 
 afterAll(() => {
-  for (const [path, real] of Object.entries(realModules)) mock.module(path, () => real);
+  for (const [path, real] of Object.entries(realModules)) void mock.module(path, () => real);
 });
 
 describe("account gate read", () => {

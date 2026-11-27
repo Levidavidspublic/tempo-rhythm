@@ -3,6 +3,38 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 import { createElement } from "../../apps/web/node_modules/react";
 import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
 import type { InsforgeSession } from "../../apps/web/lib/insforge/session";
+import type { createLiveRows as makeLiveRows } from "../../apps/web/lib/insforge/use-live-rows";
+
+type Row = Record<string, unknown>;
+type ReadOptions = Omit<Parameters<typeof makeLiveRows<Row>>[0], "onRows">;
+let rows: Row[] | undefined;
+let read: ReadOptions | undefined;
+let pending: PromiseWithResolvers<Row[]>;
+let live: ReturnType<typeof makeLiveRows> | undefined;
+
+function render(
+  LocaleProvider: typeof import("../../apps/web/components/providers/LocaleProvider").LocaleProvider,
+  ProjectsScreen: typeof import("../../apps/web/components/projects/ProjectsScreen").ProjectsScreen
+) {
+  return renderToStaticMarkup(createElement(LocaleProvider, null, createElement(ProjectsScreen)));
+}
+
+function startRead(createLiveRows: typeof makeLiveRows) {
+  if (!read) throw new Error("ProjectsScreen did not request tasks");
+  pending = Promise.withResolvers();
+  live = createLiveRows<Row>({
+    ...read,
+    debounceMs: 0,
+    onRows(snapshot) {
+      rows = snapshot;
+      pending.resolve(snapshot);
+    },
+    onError(error) {
+      pending.reject(error);
+    },
+  });
+  return pending.promise;
+}
 
 if (process.env.P37_FIXTURE_RENDER !== "1") {
   test("InsForge ProjectsScreen fixture renders are isolated from Bun's other module mocks", async () => {
@@ -53,25 +85,21 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
     project_name: "Other owner's project",
   };
 
-  type Row = Record<string, unknown>;
-  type ReadOptions = Omit<Parameters<typeof createLiveRows<Row>>[0], "onRows">;
   let session: InsforgeSession;
-  let rows: Row[] | undefined;
-  let read: ReadOptions | undefined;
-  let pending: PromiseWithResolvers<Row[]>;
-  let live: ReturnType<typeof createLiveRows> | undefined;
   const fetch = mock(() => Promise.reject(new Error("Unexpected provider request")));
   globalThis.fetch = Object.assign(fetch, { preconnect: () => {} });
 
   const navigation = { ...(await import("../../apps/web/node_modules/next/navigation")) };
   const liveRows = { ...(await import("../../apps/web/lib/insforge/use-live-rows")) };
   const { createLiveRows } = liveRows;
-  mock.module("../../apps/web/node_modules/next/navigation", () => ({
+  void mock.module("../../apps/web/node_modules/next/navigation", () => ({
     ...navigation,
     useRouter: () => ({ push() {} }),
   }));
-  mock.module("../../apps/web/lib/insforge/session", () => ({ useInsforgeSession: () => session }));
-  mock.module("../../apps/web/lib/insforge/use-live-rows", () => ({
+  void mock.module("../../apps/web/lib/insforge/session", () => ({
+    useInsforgeSession: () => session,
+  }));
+  void mock.module("../../apps/web/lib/insforge/use-live-rows", () => ({
     ...liveRows,
     useLiveRows(options: ReadOptions) {
       read = options;
@@ -92,7 +120,10 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
     rows = undefined;
     read = undefined;
     fetch.mockClear();
-    store.reset([{ table: "tasks", row: ownTask }, { table: "tasks", row: foreignTask }]);
+    store.reset([
+      { table: "tasks", row: ownTask },
+      { table: "tasks", row: foreignTask },
+    ]);
   });
 
   afterEach(() => {
@@ -101,32 +132,11 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  function render() {
-    return renderToStaticMarkup(createElement(LocaleProvider, null, createElement(ProjectsScreen)));
-  }
-
-  function startRead() {
-    if (!read) throw new Error("ProjectsScreen did not request tasks");
-    pending = Promise.withResolvers();
-    live = createLiveRows<Row>({
-      ...read,
-      debounceMs: 0,
-      onRows(snapshot) {
-        rows = snapshot;
-        pending.resolve(snapshot);
-      },
-      onError(error) {
-        pending.reject(error);
-      },
-    });
-    return pending.promise;
-  }
-
   test("approved owner sees only their project without a Convex provider", async () => {
-    render();
+    render(LocaleProvider, ProjectsScreen);
     expect(read?.uid).toBe(uid);
-    await startRead();
-    const markup = render();
+    await startRead(createLiveRows);
+    const markup = render(LocaleProvider, ProjectsScreen);
     expect(markup).toContain("Kitchen reset");
     expect(markup).toContain('href="/projects/kitchen"');
     expect(markup).not.toContain("/projects/private");
@@ -134,7 +144,7 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
 
   test("anonymous session sees sign-in and its task read is skipped", () => {
     session = { status: "signedOut" };
-    const markup = render();
+    const markup = render(LocaleProvider, ProjectsScreen);
     expect(read?.table).toBe("tasks");
     expect(read?.uid).toBeUndefined();
     expect(markup).toContain('data-component="StateSignedOut"');
@@ -144,7 +154,7 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
 
   test("loading session renders the skeleton without requesting any owner's tasks", () => {
     session = { status: "loading" };
-    const markup = render();
+    const markup = render(LocaleProvider, ProjectsScreen);
     expect(read?.uid).toBeUndefined();
     expect(markup).toContain('aria-busy="true"');
     expect(markup).not.toContain('data-component="StateSignedOut"');
@@ -152,15 +162,15 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
 
   test("approved owner sees the empty state after an empty read", async () => {
     store.reset([{ table: "tasks", row: foreignTask }]);
-    expect(render()).toContain('aria-busy="true"');
-    await expect(startRead()).resolves.toEqual([]);
-    expect(render()).toContain("No projects yet.");
+    expect(render(LocaleProvider, ProjectsScreen)).toContain('aria-busy="true"');
+    await expect(startRead(createLiveRows)).resolves.toEqual([]);
+    expect(render(LocaleProvider, ProjectsScreen)).toContain("No projects yet.");
   });
 
   test("an owner row change refreshes the rendered project without provider requests", async () => {
-    render();
-    await startRead();
-    expect(render()).toContain("Kitchen reset");
+    render(LocaleProvider, ProjectsScreen);
+    await startRead(createLiveRows);
+    expect(render(LocaleProvider, ProjectsScreen)).toContain("Kitchen reset");
     const transport = getOwnerRowTransport();
     if (!transport) throw new Error("Expected the keyless fixture transport");
     pending = Promise.withResolvers();
@@ -173,7 +183,7 @@ if (process.env.P37_FIXTURE_RENDER !== "1") {
       }
     );
     await pending.promise;
-    const markup = render();
+    const markup = render(LocaleProvider, ProjectsScreen);
     expect(markup).toContain("Kitchen finished");
     expect(markup).not.toContain("Kitchen reset");
   });

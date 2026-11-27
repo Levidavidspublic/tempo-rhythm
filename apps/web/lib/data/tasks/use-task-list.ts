@@ -66,7 +66,7 @@ export function makeUseInsforgeTaskList(useRows: typeof useLiveRows<TaskRow>): U
     const search = args.search?.trim().toLowerCase();
     return rows
       .filter((row) => {
-        if (row.deleted_at != null) return false;
+        if (row.deleted_at !== null && row.deleted_at !== undefined) return false;
         if (energy && (row.energy ?? "medium") !== energy) return false;
         if (
           search &&
@@ -78,7 +78,10 @@ export function makeUseInsforgeTaskList(useRows: typeof useLiveRows<TaskRow>): U
         return (
           dueFrom === undefined ||
           dueTo === undefined ||
-          (row.due_at != null && row.due_at >= dueFrom && row.due_at < dueTo)
+          (row.due_at !== null &&
+            row.due_at !== undefined &&
+            row.due_at >= dueFrom &&
+            row.due_at < dueTo)
         );
       })
       .map((row) => ({
