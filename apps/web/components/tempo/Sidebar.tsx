@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
+import { DATA_BACKEND } from "@/lib/backend-flag";
 import { useRailNotes } from "@/lib/data/notes/use-rail-notes";
 import type { MessageKey } from "@/lib/i18n";
 import { isCurrent } from "@/lib/shell";
@@ -71,14 +72,24 @@ function TreeLink({
   );
 }
 
-function RailPages({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
-  const { t } = useLocale();
+type RailPagesProps = { pathname: string | null; onNavigate?: () => void };
+
+function ConvexRailPages(props: RailPagesProps) {
   const { isAuthenticated } = useConvexAuth();
   // On a first sign-in the users row can land after auth; getProfile returns null until then,
   // so the rail waits for it instead of hitting requireUser early (same gate as NotesScreen).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   // Bounded and metadata-only: the shell never subscribes to page bodies.
   const notes = useRailNotes(profile ? { limit: RAIL_PAGE_LIMIT } : "skip");
+  return <RailPages {...props} notes={notes} />;
+}
+
+function RailPages({
+  pathname,
+  onNavigate,
+  notes,
+}: RailPagesProps & { notes?: ReturnType<typeof useRailNotes> }) {
+  const { t } = useLocale();
   const pages = notes ?? [];
 
   return (
@@ -146,13 +157,6 @@ export function Sidebar({ inert = false, onOpenPalette, onNavigate }: SidebarPro
   const pathname = usePathname();
   const { t, lang, setLang } = useLocale();
   const { dyslexia, setDyslexia } = useTheme();
-  const { signOut } = useAuthActions();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/sign-in");
-  };
 
   return (
     <nav className="tp-rail" data-component="Sidebar" aria-label={t("rail.label")} inert={inert}>
@@ -181,7 +185,11 @@ export function Sidebar({ inert = false, onOpenPalette, onNavigate }: SidebarPro
         </ul>
       </div>
 
-      <RailPages pathname={pathname} onNavigate={onNavigate} />
+      {DATA_BACKEND === "insforge" ? (
+        <RailPages pathname={pathname} onNavigate={onNavigate} />
+      ) : (
+        <ConvexRailPages pathname={pathname} onNavigate={onNavigate} />
+      )}
 
       <div className="tp-rail__group">
         <div className="tp-rail__label" id="library-label">
@@ -233,13 +241,28 @@ export function Sidebar({ inert = false, onOpenPalette, onNavigate }: SidebarPro
           pathname={pathname}
           onNavigate={onNavigate}
         />
-        <button className="tp-tree-item" type="button" onClick={handleSignOut}>
-          <span className="tp-tree-item__icon">
-            <TpIcon name="logout" size="sm" />
-          </span>
-          <span className="tp-tree-item__label">{t("nav.signOut")}</span>
-        </button>
+        {DATA_BACKEND !== "insforge" ? <ConvexSignOut /> : null}
       </div>
     </nav>
+  );
+}
+
+function ConvexSignOut() {
+  const { t } = useLocale();
+  const { signOut } = useAuthActions();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
+
+  return (
+    <button className="tp-tree-item" type="button" onClick={handleSignOut}>
+      <span className="tp-tree-item__icon">
+        <TpIcon name="logout" size="sm" />
+      </span>
+      <span className="tp-tree-item__label">{t("nav.signOut")}</span>
+    </button>
   );
 }

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
+import { DATA_BACKEND } from "@/lib/backend-flag";
+import { useInsforgeSession } from "@/lib/insforge/session";
 import { crumbsFor, initialsFor, pageIdFor } from "@/lib/shell";
 import { TpIcon } from "./TpIcon";
 
@@ -18,20 +20,46 @@ type TopbarProps = {
  * Topbar: glass, sticky (DESIGN.md §5). Breadcrumb, search, theme, avatar.
  * shadcn target: breadcrumb.
  */
-export function Topbar({ railOpen, onToggleRail, onOpenPalette }: TopbarProps) {
+export function Topbar(props: TopbarProps) {
   const pathname = usePathname() ?? "/";
-  const { t } = useLocale();
-  const { resolvedTheme, setTheme } = useTheme();
+  return DATA_BACKEND === "insforge" ? (
+    <InsforgeTopbar {...props} pathname={pathname} />
+  ) : (
+    <ConvexTopbar {...props} pathname={pathname} />
+  );
+}
+
+type TopbarRouteProps = TopbarProps & { pathname: string };
+
+function InsforgeTopbar(props: TopbarRouteProps) {
+  const session = useInsforgeSession();
+  return <TopbarContent {...props} profile={session.status === "signedIn" ? session : null} />;
+}
+
+function ConvexTopbar(props: TopbarRouteProps) {
   const { isAuthenticated } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, {});
   // On a page, read its title with the same query and arguments the page itself uses
   // (NotePage), so Convex shares one subscription. Until it arrives the bar shows "Pages".
-  const pageId = pageIdFor(pathname);
+  const pageId = pageIdFor(props.pathname);
   const page = useQuery(
     api.notes.getSafe,
-    pageId && isAuthenticated && profile != null ? { noteId: pageId } : "skip",
+    pageId && isAuthenticated && profile ? { noteId: pageId } : "skip"
   );
-  const crumbs = crumbsFor(pathname, page === undefined ? undefined : (page?.title ?? null));
+  return <TopbarContent {...props} profile={profile} pageTitle={page?.title} />;
+}
+
+function TopbarContent({
+  pathname,
+  railOpen,
+  onToggleRail,
+  onOpenPalette,
+  profile,
+  pageTitle,
+}: TopbarRouteProps & { profile: Parameters<typeof initialsFor>[0]; pageTitle?: string }) {
+  const { t } = useLocale();
+  const { resolvedTheme, setTheme } = useTheme();
+  const crumbs = crumbsFor(pathname, pageTitle);
   const initials = initialsFor(profile);
   const dark = resolvedTheme === "dark";
 

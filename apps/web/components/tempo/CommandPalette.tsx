@@ -3,10 +3,19 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { type KeyboardEvent, type RefObject, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
+import { DATA_BACKEND } from "@/lib/backend-flag";
 import {
   type CommandGroup,
   type CommandRow,
@@ -72,16 +81,49 @@ const JUMP_ICON: Readonly<Record<string, TpIconName>> = {
   notifications: "bell",
 };
 
-const GROUP_LABEL: Record<CommandGroup, MessageKey> = { recent: "cmd.g.recent", jump: "cmd.g.jump", act: "cmd.g.act" };
+const GROUP_LABEL: Record<CommandGroup, MessageKey> = {
+  recent: "cmd.g.recent",
+  jump: "cmd.g.jump",
+  act: "cmd.g.act",
+};
 
 type Variant = "dialog" | "page";
+
+function useConvexCommandData(withRecent: boolean, typed: string) {
+  const { isAuthenticated } = useConvexAuth();
+  const createNote = useMutation(api.notes.create);
+  const profile = useQuery(api.users.getProfile, withRecent && isAuthenticated ? {} : "skip");
+  const rail = useQuery(
+    api.notes.listForRail,
+    withRecent && profile && !typed ? { limit: RAIL_LIMIT } : "skip"
+  );
+  const found = useQuery(
+    api.notes.searchTitles,
+    withRecent && profile && typed ? { query: typed, limit: 6 } : "skip"
+  );
+  return { isAuthenticated, createNote, profile, rail, found };
+}
+
+const useCommandData =
+  DATA_BACKEND === "insforge"
+    ? () => ({
+        isAuthenticated: false,
+        createNote: null,
+        profile: undefined,
+        rail: undefined,
+        found: undefined,
+      })
+    : useConvexCommandData;
 
 /**
  * Where focus goes as the Ctrl K palette closes without navigating: back to the control that
  * had it before the palette opened, while that control is still in the page; otherwise the main
  * content (`#main`, the skip link's target). Null when there is neither.
  */
-export function pickReturnFocus(opener: Element | null, main: HTMLElement | null): HTMLElement | null {
+export function pickReturnFocus(
+  opener: Element | null,
+  main: HTMLElement | null
+): HTMLElement | null {
   if (!opener?.isConnected) return main;
   const doc = opener.ownerDocument;
   // Nothing was focused: the page itself is not a place to return to.
@@ -108,8 +150,6 @@ function CommandBody({
   const router = useRouter();
   const online = useOnline();
   const { resolvedTheme, setTheme, dyslexia, setDyslexia } = useTheme();
-  const { isAuthenticated } = useConvexAuth();
-  const createNote = useMutation(api.notes.create);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [newError, setNewError] = useState(false);
@@ -121,12 +161,10 @@ function CommandBody({
   const inputId = `${uid}-q`;
   const optionId = (row: Row) => `${uid}-${row.id}`;
 
-  const withRecent = variant === "dialog";
+  const withRecent = variant === "dialog" && DATA_BACKEND !== "insforge";
   const typed = query.trim();
-  // The same gate as the rail: page queries wait for the users row (getProfile is null until then).
-  const profile = useQuery(api.users.getProfile, withRecent && isAuthenticated ? {} : "skip");
-  const rail = useQuery(api.notes.listForRail, withRecent && profile && !typed ? { limit: RAIL_LIMIT } : "skip");
-  const found = useQuery(api.notes.searchTitles, withRecent && profile && typed ? { query: typed, limit: 6 } : "skip");
+  const { isAuthenticated, createNote, profile, rail, found } = useCommandData(withRecent, typed);
+  const canCreate = createNote !== null;
 
   const rows = useMemo(() => {
     const out: Row[] = [];
@@ -145,7 +183,9 @@ function CommandBody({
     }
     const screens = typed
       ? REAL_SCREENS
-      : DEFAULT_JUMP_SLUGS.map((slug) => REAL_SCREENS.find((s) => s.slug === slug)).filter((s) => s !== undefined);
+      : DEFAULT_JUMP_SLUGS.map((slug) => REAL_SCREENS.find((s) => s.slug === slug)).filter(
+          (s) => s !== undefined
+        );
     const jump: Row[] = screens.map((screen) => {
       const label = SCREEN_LABEL[screen.slug];
       const hint = JUMP_HINT[screen.slug];
@@ -161,22 +201,61 @@ function CommandBody({
       };
     });
     const actions: Row[] = [
-      { id: "a-new", group: "act", name: t("cmd.a.new"), hint: t("cmd.a.new.h"), action: "new-page", icon: "plus" },
-      { id: "a-task", group: "act", name: t("cmd.a.task"), hint: t("cmd.a.task.h"), href: "/tasks", icon: "task" },
-      { id: "a-dump", group: "act", name: t("cmd.a.dump"), hint: t("cmd.a.dump.h"), href: "/brain-dump", icon: "inbox" },
-      { id: "a-theme", group: "act", name: t("cmd.a.theme"), hint: t("cmd.a.theme.h"), action: "theme", icon: "moon" },
-      { id: "a-font", group: "act", name: t("cmd.a.font"), hint: t("cmd.a.font.h"), action: "font", icon: "type" },
-      { id: "a-all", group: "act", name: t("cmd.all"), hint: t("cmd.all.h"), href: "/search", icon: "search", always: true },
+      {
+        id: "a-task",
+        group: "act",
+        name: t("cmd.a.task"),
+        hint: t("cmd.a.task.h"),
+        href: "/tasks",
+        icon: "task",
+      },
+      {
+        id: "a-dump",
+        group: "act",
+        name: t("cmd.a.dump"),
+        hint: t("cmd.a.dump.h"),
+        href: "/brain-dump",
+        icon: "inbox",
+      },
+      {
+        id: "a-theme",
+        group: "act",
+        name: t("cmd.a.theme"),
+        hint: t("cmd.a.theme.h"),
+        action: "theme",
+        icon: "moon",
+      },
+      {
+        id: "a-font",
+        group: "act",
+        name: t("cmd.a.font"),
+        hint: t("cmd.a.font.h"),
+        action: "font",
+        icon: "type",
+      },
+      {
+        id: "a-all",
+        group: "act",
+        name: t("cmd.all"),
+        hint: t("cmd.all.h"),
+        href: "/search",
+        icon: "search",
+        always: true,
+      },
     ];
+    if (canCreate) {
+      actions.unshift({
+        id: "a-new",
+        group: "act",
+        name: t("cmd.a.new"),
+        hint: t("cmd.a.new.h"),
+        action: "new-page",
+        icon: "plus",
+      });
+    }
     // Page matches already come filtered from the server; screens and actions filter here.
     return [...out, ...filterRows(jump, typed), ...filterRows(actions, typed)];
-  }, [withRecent, typed, found, rail, t]);
-
-  // A new query starts at the first row.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on query change only
-  useEffect(() => {
-    setActive(0);
-  }, [typed]);
+  }, [withRecent, typed, found, rail, t, canCreate]);
 
   const current = rows[Math.min(active, rows.length - 1)];
 
@@ -199,7 +278,7 @@ function CommandBody({
       return;
     }
     if (row.action === "new-page") {
-      if (creating.current) return;
+      if (!createNote || creating.current) return;
       creating.current = true;
       setNewError(false);
       try {
@@ -233,7 +312,10 @@ function CommandBody({
   };
 
   const recentLoading =
-    withRecent && !typed && isAuthenticated && (profile === undefined || (profile !== null && rail === undefined));
+    withRecent &&
+    !typed &&
+    isAuthenticated &&
+    (profile === undefined || (profile !== null && rail === undefined));
   const recentEmpty = withRecent && !typed && rail !== undefined && rail.length === 0;
   const recentRows = rows.filter((row) => row.group === "recent");
   const count = rows.length;
@@ -267,7 +349,11 @@ function CommandBody({
               aria-activedescendant={current ? optionId(current) : undefined}
               placeholder={t("cmd.label")}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                setQuery(next);
+                if (next.trim() !== typed) setActive(0);
+              }}
               onKeyDown={onKeyDown}
             />
           </div>
@@ -293,7 +379,14 @@ function CommandBody({
         </p>
       ) : null}
 
-      <div className="cmd__list" role="listbox" id={listId} aria-label={t("cmd.list")} data-component="SlashMenu" ref={listRef}>
+      <div
+        className="cmd__list"
+        role="listbox"
+        id={listId}
+        aria-label={t("cmd.list")}
+        data-component="SlashMenu"
+        ref={listRef}
+      >
         {groups.map((group) => {
           const groupRows = rows.filter((row) => row.group === group);
           const isRecent = group === "recent";
@@ -302,8 +395,7 @@ function CommandBody({
           const headId = `${uid}-g-${group}`;
           const label = isRecent && typed ? t("cmd.g.pages") : t(GROUP_LABEL[group]);
           return (
-            // biome-ignore lint/a11y/useSemanticElements: a listbox group (command.html); fieldset is not allowed inside a listbox
-            <div role="group" aria-labelledby={headId} data-group={group} key={group}>
+            <div data-group={group} key={group}>
               <div className="tp-slash-menu__group" id={headId}>
                 {label}
               </div>
@@ -319,7 +411,9 @@ function CommandBody({
                   </div>
                 </div>
               ) : null}
-              {isRecent && recentEmpty ? <p className="tp-slash-item__hint">{t("cmd.recent.empty")}</p> : null}
+              {isRecent && recentEmpty ? (
+                <p className="tp-slash-item__hint">{t("cmd.recent.empty")}</p>
+              ) : null}
               {groupRows.map((row) => {
                 const selected = row === current;
                 return (
@@ -329,6 +423,7 @@ function CommandBody({
                     role="option"
                     id={optionId(row)}
                     aria-selected={selected}
+                    aria-describedby={headId}
                     tabIndex={-1}
                     onMouseDown={(event) => {
                       // Keep focus in the box; the box's keys drive the list, a press chooses.
@@ -347,8 +442,7 @@ function CommandBody({
                       <span className="tp-slash-item__name" dir="auto">
                         {row.always && typed ? (
                           <>
-                            {row.name}{" "}
-                            <q dir="auto">{typed}</q>
+                            {row.name} <q dir="auto">{typed}</q>
                           </>
                         ) : (
                           row.name
@@ -395,7 +489,11 @@ export function CommandPanel() {
   const { t } = useLocale();
   const inputRef = useRef<HTMLInputElement | null>(null);
   return (
-    <section className="tp-slash-menu tp-glass cmd cmd--page" data-component="CommandPalette" aria-label={t("cmd.title")}>
+    <section
+      className="tp-slash-menu tp-glass cmd cmd--page"
+      data-component="CommandPalette"
+      aria-label={t("cmd.title")}
+    >
       <CommandBody variant="page" onDone={() => undefined} inputRef={inputRef} />
     </section>
   );
