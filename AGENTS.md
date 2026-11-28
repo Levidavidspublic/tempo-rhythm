@@ -148,6 +148,14 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
 
 <!-- TEMPLATE PUBLIC BEGIN -->
+
+## Device terms
+
+- RIG = Amit's dad's rig, once it's built. It runs 24/7, so it becomes the default browser for agents.
+- PC2025 (also "PC25") = whichever computer Amit is on right now: his PC, or his laptop when he's on the laptop.
+- CLOUD = the browser on Amit's Hostinger VPS ("the one in the cloud"), for multitasking.
+- The same tab-group rules apply on all three: one named tab group per worker, never close another worker's tabs.
+
 # Public template rules
 
 ## Authority and scope
