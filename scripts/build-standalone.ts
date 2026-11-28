@@ -48,14 +48,29 @@ function die(message: string): never {
   throw new Error(message);
 }
 
+function canonical(target: string): string {
+  const abs = path.resolve(target);
+  const missing: string[] = [];
+  let cursor = abs;
+  while (!fs.existsSync(cursor)) {
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    missing.push(path.basename(cursor));
+    cursor = parent;
+  }
+  const real = fs.existsSync(cursor) ? fs.realpathSync(cursor) : cursor;
+  return path.join(real, ...missing.reverse());
+}
+
 function assertSafeOutDir(out: string): void {
-  const root = path.resolve(repoRoot);
-  if (out === root || root.startsWith(`${out}${path.sep}`)) {
+  const root = canonical(repoRoot);
+  const dest = canonical(out);
+  if (dest === root || root.startsWith(`${dest}${path.sep}`)) {
     die("Refusing output directory: it is the repository or a parent of it.");
   }
-  const rel = path.relative(root, out);
-  const inside = rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
-  if (!inside) return;
+  const rel = path.relative(root, dest);
+  const outside = rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel);
+  if (outside) return;
   if (rel.split(path.sep)[0] !== "dist") {
     die("Refusing output directory inside the repository unless it is under dist/.");
   }
@@ -68,9 +83,33 @@ function unset(names: readonly string[]): string[] {
   });
 }
 
-const bypassOn = NEVER_ON.filter((name) => process.env[name] === "1");
+function bypassInFile(file: string): string[] {
+  if (!fs.existsSync(file)) return [];
+  const on: string[] = [];
+  for (const raw of fs.readFileSync(file, "utf8").split("\n")) {
+    const line = raw.trim();
+    if (line === "" || line.startsWith("#")) continue;
+    const body = line.startsWith("export ") ? line.slice(7).trim() : line;
+    const eq = body.indexOf("=");
+    if (eq < 1) continue;
+    const name = body.slice(0, eq).trim();
+    const value = body
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
+    if ((NEVER_ON as readonly string[]).includes(name) && value === "1") on.push(name);
+  }
+  return on;
+}
+
+const bypassOn = [
+  ...NEVER_ON.filter((name) => process.env[name] === "1"),
+  ...[".env", ".env.local", ".env.production", ".env.production.local"].flatMap((file) =>
+    bypassInFile(path.join(appDir, file))
+  ),
+];
 if (bypassOn.length > 0) {
-  die(`Refusing to build: ${bypassOn.join(", ")} is 1. Never bake the e2e bypass.`);
+  die(`Refusing to build: ${[...new Set(bypassOn)].join(", ")} is 1. Never bake the e2e bypass.`);
 }
 
 const missing = unset(BUILD_PUBLIC);
@@ -182,9 +221,13 @@ const child = spawn(process.execPath, [server], { stdio: "inherit", env: process
 function stopChild(signal) {
   if (!child.killed) child.kill(signal);
 }
-process.on("SIGTERM", () => stopChild("SIGTERM"));
-process.on("SIGINT", () => stopChild("SIGINT"));
+function onTerm() { stopChild("SIGTERM"); }
+function onInt() { stopChild("SIGINT"); }
+process.on("SIGTERM", onTerm);
+process.on("SIGINT", onInt);
 child.on("exit", (code, signal) => {
+  process.removeListener("SIGTERM", onTerm);
+  process.removeListener("SIGINT", onInt);
   if (signal) {
     process.kill(process.pid, signal);
     return;

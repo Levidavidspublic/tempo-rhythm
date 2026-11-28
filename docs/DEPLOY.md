@@ -161,6 +161,7 @@ Set the app like this. Do not use the Next.js preset.
 | Application type | `other` |
 | Node.js version | 24 (matches the local proof; 22 is Hostinger's default) |
 | Entry file | `server.js` |
+| Root directory | `hostinger` for the default tarball (its top folder). `/` if you upload the folder's contents instead of the archive. |
 | Build command | empty |
 | Output directory | empty (ignored for `other` when an entry file is set) |
 | Package manager | leave npm; the bundle is already built |
